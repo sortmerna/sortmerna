@@ -1,0 +1,1294 @@
+\hypertarget{ssw_8c}{\section{ssw.\-c File Reference}
+\label{ssw_8c}\index{ssw.\-c@{ssw.\-c}}
+}
+{\ttfamily \#include $<$emmintrin.\-h$>$}\\*
+{\ttfamily \#include $<$stdint.\-h$>$}\\*
+{\ttfamily \#include $<$stdlib.\-h$>$}\\*
+{\ttfamily \#include $<$stdio.\-h$>$}\\*
+{\ttfamily \#include $<$string.\-h$>$}\\*
+{\ttfamily \#include $<$math.\-h$>$}\\*
+{\ttfamily \#include \char`\"{}../include/ssw.\-h\char`\"{}}\\*
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structalignment__end}{alignment\-\_\-end}
+\item 
+struct \hyperlink{structcigar}{cigar}
+\item 
+struct \hyperlink{struct__profile}{\-\_\-profile}
+\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{L\-I\-K\-E\-L\-Y}(x)~(x)
+\item 
+\#define \hyperlink{ssw_8c_ab10d0a221f4d7a706701b806c8135fd7}{U\-N\-L\-I\-K\-E\-L\-Y}(x)~(x)
+\item 
+\#define \hyperlink{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}{set\-\_\-u}(u, w, i, j)~\{ int x=(i)-\/(w); x=x$>$0?x\-:0; (u)=(j)-\/x+1; \}
+\item 
+\#define \hyperlink{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}{set\-\_\-d}(u, w, i, j, p)~\{ int x=(i)-\/(w); x=x$>$0?x\-:0; x=(j)-\/x; (u)=x$\ast$3+p; \}
+\item 
+\#define \hyperlink{ssw_8c_af808c6880732c15dd7210159c486ff82}{kroundup32}(x)~(-\/-\/(x), (x)$|$=(x)$>$$>$1, (x)$|$=(x)$>$$>$2, (x)$|$=(x)$>$$>$4, (x)$|$=(x)$>$$>$8, (x)$|$=(x)$>$$>$16, ++(x))
+\item 
+\#define \hyperlink{ssw_8c_a598c826a069547f7ad4d8221442b5ed7}{max16}(m, vm)
+\item 
+\#define \hyperlink{ssw_8c_a8100dc7b307600f3eccf388ba7197916}{max8}(m, vm)
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\-\_\-\-\_\-m128i $\ast$ \hyperlink{ssw_8c_adb00a252814739e4b8e412e6c4aba960}{q\-P\-\_\-byte} (const int8\-\_\-t $\ast$read\-\_\-num, const int8\-\_\-t $\ast$mat, const int32\-\_\-t read\-Len, const int32\-\_\-t n, uint8\-\_\-t bias)
+\item 
+\hyperlink{structalignment__end}{alignment\-\_\-end} $\ast$ \hyperlink{ssw_8c_a6e062a24463b3375dca0253e7707e779}{sw\-\_\-sse2\-\_\-byte} (const int8\-\_\-t $\ast$ref, int8\-\_\-t ref\-\_\-dir, int32\-\_\-t ref\-Len, int32\-\_\-t read\-Len, const uint8\-\_\-t weight\-\_\-gap\-O, const uint8\-\_\-t weight\-\_\-gap\-E, \-\_\-\-\_\-m128i $\ast$v\-Profile, uint8\-\_\-t terminate, uint8\-\_\-t bias, int32\-\_\-t mask\-Len)
+\item 
+\-\_\-\-\_\-m128i $\ast$ \hyperlink{ssw_8c_acf409831e48debb1e899fe98bff4b975}{q\-P\-\_\-word} (const int8\-\_\-t $\ast$read\-\_\-num, const int8\-\_\-t $\ast$mat, const int32\-\_\-t read\-Len, const int32\-\_\-t n)
+\item 
+\hyperlink{structalignment__end}{alignment\-\_\-end} $\ast$ \hyperlink{ssw_8c_aeffef63f17a0bf53fc914b0e9951bd5a}{sw\-\_\-sse2\-\_\-word} (const int8\-\_\-t $\ast$ref, int8\-\_\-t ref\-\_\-dir, int32\-\_\-t ref\-Len, int32\-\_\-t read\-Len, const uint8\-\_\-t weight\-\_\-gap\-O, const uint8\-\_\-t weight\-\_\-gap\-E, \-\_\-\-\_\-m128i $\ast$v\-Profile, uint16\-\_\-t terminate, int32\-\_\-t mask\-Len)
+\item 
+\hyperlink{structcigar}{cigar} $\ast$ \hyperlink{ssw_8c_a5c34e3b3fb6680700ca7bf0a711bcb9b}{banded\-\_\-sw} (const int8\-\_\-t $\ast$ref, const int8\-\_\-t $\ast$read, int32\-\_\-t ref\-Len, int32\-\_\-t read\-Len, int32\-\_\-t score, const uint32\-\_\-t weight\-\_\-gap\-O, const uint32\-\_\-t weight\-\_\-gap\-E, int32\-\_\-t band\-\_\-width, const int8\-\_\-t $\ast$mat, int32\-\_\-t n)
+\item 
+int8\-\_\-t $\ast$ \hyperlink{ssw_8c_abffbdfdc1439cfbdafca778ae1679e51}{seq\-\_\-reverse} (const int8\-\_\-t $\ast$seq, int32\-\_\-t end)
+\item 
+s\-\_\-profile $\ast$ \hyperlink{ssw_8c_afb7b0d0e5dfca925b8d0679edd9fed00}{ssw\-\_\-init} (const int8\-\_\-t $\ast$read, const int32\-\_\-t read\-Len, const int8\-\_\-t $\ast$mat, const int32\-\_\-t n, const int8\-\_\-t score\-\_\-size)
+\item 
+void \hyperlink{ssw_8c_a243857b244ba496a0558a68f1f2c05e4}{init\-\_\-destroy} (s\-\_\-profile $\ast$p)
+\item 
+s\-\_\-align $\ast$ \hyperlink{ssw_8c_a5ab13aa021d7fc8e19cc9293bc7cea61}{ssw\-\_\-align} (const s\-\_\-profile $\ast$prof, const int8\-\_\-t $\ast$ref, int32\-\_\-t ref\-Len, const uint8\-\_\-t weight\-\_\-gap\-O, const uint8\-\_\-t weight\-\_\-gap\-E, const uint8\-\_\-t flag, const uint16\-\_\-t filters, const int32\-\_\-t filterd, const int32\-\_\-t mask\-Len)
+\item 
+void \hyperlink{ssw_8c_ac8dd4df865a5364ae821155a8f6b8264}{align\-\_\-destroy} (s\-\_\-align $\ast$a)
+\item 
+void \hyperlink{ssw_8c_a3e27d484ae00abc8e9b6e9a7728df093}{ssw\-\_\-write} (char $\ast$fileout\-\_\-n, s\-\_\-align $\ast$a, char $\ast$read\-\_\-name, char $\ast$read\-\_\-seq, char $\ast$read\-\_\-qual, char $\ast$ref\-\_\-name, char $\ast$ref\-\_\-seq, double \hyperlink{main_8cpp_a3a53c9e3df0ddd5dd1a79602797be690}{evalue}, unsigned int bitscore, int8\-\_\-t strand, int blast\-\_\-or\-\_\-sam)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{ssw_8c_af808c6880732c15dd7210159c486ff82}{\index{ssw.\-c@{ssw.\-c}!kroundup32@{kroundup32}}
+\index{kroundup32@{kroundup32}!ssw.c@{ssw.\-c}}
+\subsubsection[{kroundup32}]{\setlength{\rightskip}{0pt plus 5cm}\#define kroundup32(
+\begin{DoxyParamCaption}
+\item[{}]{x}
+\end{DoxyParamCaption}
+)~(-\/-\/(x), (x)$|$=(x)$>$$>$1, (x)$|$=(x)$>$$>$2, (x)$|$=(x)$>$$>$4, (x)$|$=(x)$>$$>$8, (x)$|$=(x)$>$$>$16, ++(x))}}\label{ssw_8c_af808c6880732c15dd7210159c486ff82}
+Round an integer to the next closest power-\/2 integer. 
+\begin{DoxyParams}{Parameters}
+{\em x} & integer to be rounded (in place)  x will be modified. \\
+\hline
+\end{DoxyParams}
+\hypertarget{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{\index{ssw.\-c@{ssw.\-c}!L\-I\-K\-E\-L\-Y@{L\-I\-K\-E\-L\-Y}}
+\index{L\-I\-K\-E\-L\-Y@{L\-I\-K\-E\-L\-Y}!ssw.c@{ssw.\-c}}
+\subsubsection[{L\-I\-K\-E\-L\-Y}]{\setlength{\rightskip}{0pt plus 5cm}\#define L\-I\-K\-E\-L\-Y(
+\begin{DoxyParamCaption}
+\item[{}]{x}
+\end{DoxyParamCaption}
+)~(x)}}\label{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}
+\hypertarget{ssw_8c_a598c826a069547f7ad4d8221442b5ed7}{\index{ssw.\-c@{ssw.\-c}!max16@{max16}}
+\index{max16@{max16}!ssw.c@{ssw.\-c}}
+\subsubsection[{max16}]{\setlength{\rightskip}{0pt plus 5cm}\#define max16(
+\begin{DoxyParamCaption}
+\item[{}]{m, }
+\item[{}]{vm}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a598c826a069547f7ad4d8221442b5ed7}
+{\bfseries Value\-:}
+\begin{DoxyCode}
+(vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 8)); \(\backslash\)
+                      (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 4)); \(\backslash\)
+                      (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 2)); \(\backslash\)
+                      (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 1)); \(\backslash\)
+                      (m) = \_mm\_extract\_epi16((vm), 0)
+\end{DoxyCode}
+\hypertarget{ssw_8c_a8100dc7b307600f3eccf388ba7197916}{\index{ssw.\-c@{ssw.\-c}!max8@{max8}}
+\index{max8@{max8}!ssw.c@{ssw.\-c}}
+\subsubsection[{max8}]{\setlength{\rightskip}{0pt plus 5cm}\#define max8(
+\begin{DoxyParamCaption}
+\item[{}]{m, }
+\item[{}]{vm}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a8100dc7b307600f3eccf388ba7197916}
+{\bfseries Value\-:}
+\begin{DoxyCode}
+(vm) = \_mm\_max\_epi16((vm), \_mm\_srli\_si128((vm), 8)); \(\backslash\)
+                    (vm) = \_mm\_max\_epi16((vm), \_mm\_srli\_si128((vm), 4)); \(\backslash\)
+                    (vm) = \_mm\_max\_epi16((vm), \_mm\_srli\_si128((vm), 2)); \(\backslash\)
+                    (m) = \_mm\_extract\_epi16((vm), 0)
+\end{DoxyCode}
+\hypertarget{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}{\index{ssw.\-c@{ssw.\-c}!set\-\_\-d@{set\-\_\-d}}
+\index{set\-\_\-d@{set\-\_\-d}!ssw.c@{ssw.\-c}}
+\subsubsection[{set\-\_\-d}]{\setlength{\rightskip}{0pt plus 5cm}\#define set\-\_\-d(
+\begin{DoxyParamCaption}
+\item[{}]{u, }
+\item[{}]{w, }
+\item[{}]{i, }
+\item[{}]{j, }
+\item[{}]{p}
+\end{DoxyParamCaption}
+)~\{ int x=(i)-\/(w); x=x$>$0?x\-:0; x=(j)-\/x; (u)=x$\ast$3+p; \}}}\label{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}
+\hypertarget{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}{\index{ssw.\-c@{ssw.\-c}!set\-\_\-u@{set\-\_\-u}}
+\index{set\-\_\-u@{set\-\_\-u}!ssw.c@{ssw.\-c}}
+\subsubsection[{set\-\_\-u}]{\setlength{\rightskip}{0pt plus 5cm}\#define set\-\_\-u(
+\begin{DoxyParamCaption}
+\item[{}]{u, }
+\item[{}]{w, }
+\item[{}]{i, }
+\item[{}]{j}
+\end{DoxyParamCaption}
+)~\{ int x=(i)-\/(w); x=x$>$0?x\-:0; (u)=(j)-\/x+1; \}}}\label{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}
+\hypertarget{ssw_8c_ab10d0a221f4d7a706701b806c8135fd7}{\index{ssw.\-c@{ssw.\-c}!U\-N\-L\-I\-K\-E\-L\-Y@{U\-N\-L\-I\-K\-E\-L\-Y}}
+\index{U\-N\-L\-I\-K\-E\-L\-Y@{U\-N\-L\-I\-K\-E\-L\-Y}!ssw.c@{ssw.\-c}}
+\subsubsection[{U\-N\-L\-I\-K\-E\-L\-Y}]{\setlength{\rightskip}{0pt plus 5cm}\#define U\-N\-L\-I\-K\-E\-L\-Y(
+\begin{DoxyParamCaption}
+\item[{}]{x}
+\end{DoxyParamCaption}
+)~(x)}}\label{ssw_8c_ab10d0a221f4d7a706701b806c8135fd7}
+
+
+\subsection{Function Documentation}
+\hypertarget{ssw_8c_ac8dd4df865a5364ae821155a8f6b8264}{\index{ssw.\-c@{ssw.\-c}!align\-\_\-destroy@{align\-\_\-destroy}}
+\index{align\-\_\-destroy@{align\-\_\-destroy}!ssw.c@{ssw.\-c}}
+\subsubsection[{align\-\_\-destroy}]{\setlength{\rightskip}{0pt plus 5cm}void align\-\_\-destroy (
+\begin{DoxyParamCaption}
+\item[{s\-\_\-align $\ast$}]{a}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_ac8dd4df865a5364ae821155a8f6b8264}
+
+\begin{DoxyCode}
+899                                 \{
+900     \textcolor{keywordflow}{if} ( a->cigar != 0 ) \textcolor{comment}{// mine}
+901         free(a->cigar); 
+902     free(a);
+903 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_a5c34e3b3fb6680700ca7bf0a711bcb9b}{\index{ssw.\-c@{ssw.\-c}!banded\-\_\-sw@{banded\-\_\-sw}}
+\index{banded\-\_\-sw@{banded\-\_\-sw}!ssw.c@{ssw.\-c}}
+\subsubsection[{banded\-\_\-sw}]{\setlength{\rightskip}{0pt plus 5cm}{\bf cigar}$\ast$ banded\-\_\-sw (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{ref, }
+\item[{const int8\-\_\-t $\ast$}]{read, }
+\item[{int32\-\_\-t}]{ref\-Len, }
+\item[{int32\-\_\-t}]{read\-Len, }
+\item[{int32\-\_\-t}]{score, }
+\item[{const uint32\-\_\-t}]{weight\-\_\-gap\-O, }
+\item[{const uint32\-\_\-t}]{weight\-\_\-gap\-E, }
+\item[{int32\-\_\-t}]{band\-\_\-width, }
+\item[{const int8\-\_\-t $\ast$}]{mat, }
+\item[{int32\-\_\-t}]{n}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a5c34e3b3fb6680700ca7bf0a711bcb9b}
+
+\begin{DoxyCode}
+565                             \{   
+566 
+567     uint32\_t *c = (uint32\_t*)malloc(16 * \textcolor{keyword}{sizeof}(uint32\_t)), *c1;
+568     int32\_t i, j, e, f, temp1, temp2, s = 16, s1 = 8, s2 = 1024, l, max = 0;
+569     int32\_t width, width\_d, *h\_b, *e\_b, *h\_c;
+570     int8\_t *direction, *direction\_line;
+571     \hyperlink{structcigar}{cigar}* result = (\hyperlink{structcigar}{cigar}*)malloc(\textcolor{keyword}{sizeof}(\hyperlink{structcigar}{cigar}));
+572     h\_b = (int32\_t*)malloc(s1 * \textcolor{keyword}{sizeof}(int32\_t)); 
+573     e\_b = (int32\_t*)malloc(s1 * \textcolor{keyword}{sizeof}(int32\_t)); 
+574     h\_c = (int32\_t*)malloc(s1 * \textcolor{keyword}{sizeof}(int32\_t)); 
+575     direction = (int8\_t*)malloc(s2 * \textcolor{keyword}{sizeof}(int8\_t));
+576 
+577     \textcolor{keywordflow}{do} \{
+578         width = band\_width * 2 + 3, width\_d = band\_width * 2 + 1;
+579         \textcolor{keywordflow}{while} (width >= s1) \{
+580             ++s1;
+581             \hyperlink{ssw_8c_af808c6880732c15dd7210159c486ff82}{kroundup32}(s1);
+582             h\_b = (int32\_t*)realloc(h\_b, s1 * \textcolor{keyword}{sizeof}(int32\_t)); 
+583             e\_b = (int32\_t*)realloc(e\_b, s1 * \textcolor{keyword}{sizeof}(int32\_t)); 
+584             h\_c = (int32\_t*)realloc(h\_c, s1 * \textcolor{keyword}{sizeof}(int32\_t)); 
+585         \}
+586         \textcolor{keywordflow}{while} (width\_d * readLen * 3 >= s2) \{
+587             ++s2;
+588             \hyperlink{ssw_8c_af808c6880732c15dd7210159c486ff82}{kroundup32}(s2);
+589             \textcolor{keywordflow}{if} (s2 < 0) \{
+590                 \textcolor{comment}{//fprintf(stderr, "Alignment score and position are not consensus.\(\backslash\)n");}
+591                 \textcolor{comment}{//exit(1);}
+592                 free(h\_b); \textcolor{comment}{//jenya}
+593                 h\_b = NULL;
+594                 free(e\_b); \textcolor{comment}{//jenya}
+595                 e\_b = NULL;
+596                 free(h\_c); \textcolor{comment}{//jenya}
+597                 h\_c = NULL;
+598                 free(direction); \textcolor{comment}{//jenya}
+599         direction = NULL;
+600                 free(c); \textcolor{comment}{//jenya}
+601         c = NULL;
+602                 free(result); \textcolor{comment}{//jenya}
+603                 \textcolor{keywordflow}{return} 0;
+604             \}
+605             direction = (int8\_t*)realloc(direction, s2 * \textcolor{keyword}{sizeof}(int8\_t)); 
+606         \}
+607         direction\_line = direction;
+608         \textcolor{keywordflow}{for} (j = 1; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j < width - 1); j ++) h\_b[j] = 0;
+609         \textcolor{keywordflow}{for} (i = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(i < readLen); i ++) \{
+610             int32\_t beg = 0, end = refLen - 1, u = 0, edge;
+611             j = i - band\_width; beg = beg > j ? beg : j; \textcolor{comment}{// band start}
+612             j = i + band\_width; end = end < j ? end : j; \textcolor{comment}{// band end}
+613             edge = end + 1 < width - 1 ? end + 1 : width - 1;
+614             f = h\_b[0] = e\_b[0] = h\_b[edge] = e\_b[edge] = h\_c[0] = 0;
+615             direction\_line = direction + width\_d * i * 3;
+616 
+617             \textcolor{keywordflow}{for} (j = beg; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j <= end); j ++) \{
+618                 int32\_t b, e1, f1, d, de, df, dh;
+619                 \hyperlink{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}{set\_u}(u, band\_width, i, j);    \hyperlink{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}{set\_u}(e, band\_width, i - 1, j); 
+620                 \hyperlink{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}{set\_u}(b, band\_width, i, j - 1); \hyperlink{ssw_8c_aef14cd84cf22706d759dc98f92ebb3b5}{set\_u}(d, band\_width, i - 1, j - 1);
+621                 \hyperlink{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}{set\_d}(de, band\_width, i, j, 0);
+622                 \hyperlink{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}{set\_d}(df, band\_width, i, j, 1);
+623                 \hyperlink{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}{set\_d}(dh, band\_width, i, j, 2);
+624 
+625                 temp1 = i == 0 ? -weight\_gapO : h\_b[e] - weight\_gapO;
+626                 temp2 = i == 0 ? -weight\_gapE : e\_b[e] - weight\_gapE;
+627                 e\_b[u] = temp1 > temp2 ? temp1 : temp2;
+628                 direction\_line[de] = temp1 > temp2 ? 3 : 2;
+629         
+630                 temp1 = h\_c[b] - weight\_gapO;
+631                 temp2 = f - weight\_gapE;
+632                 f = temp1 > temp2 ? temp1 : temp2;
+633                 direction\_line[df] = temp1 > temp2 ? 5 : 4;
+634                 
+635                 e1 = e\_b[u] > 0 ? e\_b[u] : 0;
+636                 f1 = f > 0 ? f : 0;
+637                 temp1 = e1 > f1 ? e1 : f1;
+638                 temp2 = h\_b[d] + mat[ref[j] * n + read[i]];
+639                 h\_c[u] = temp1 > temp2 ? temp1 : temp2;
+640         
+641                 \textcolor{keywordflow}{if} (h\_c[u] > max) max = h\_c[u];
+642         
+643                 \textcolor{keywordflow}{if} (temp1 <= temp2) direction\_line[dh] = 1;
+644                 \textcolor{keywordflow}{else} direction\_line[dh] = e1 > f1 ? direction\_line[de] : direction\_line[df];
+645             \}
+646             \textcolor{keywordflow}{for} (j = 1; j <= u; j ++) h\_b[j] = h\_c[j];
+647         \}
+648         band\_width *= 2;
+649     \} \textcolor{keywordflow}{while} (\hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(max < score));
+650     band\_width /= 2;
+651 
+652     \textcolor{comment}{// trace back}
+653     i = readLen - 1;
+654     j = refLen - 1;
+655     e = 0;  \textcolor{comment}{// Count the number of M, D or I.}
+656     l = 0;  \textcolor{comment}{// record length of current cigar}
+657     f = max = 0; \textcolor{comment}{// M}
+658     temp2 = 2;  \textcolor{comment}{// h}
+659     \textcolor{keywordflow}{while} (\hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(i > 0)) \{
+660         \hyperlink{ssw_8c_ae069e0a5fefdca476c7faf678d7ab014}{set\_d}(temp1, band\_width, i, j, temp2);
+661         \textcolor{keywordflow}{switch} (direction\_line[temp1]) \{
+662             \textcolor{keywordflow}{case} 1: 
+663                 --i;
+664                 --j;
+665                 temp2 = 2;
+666                 direction\_line -= width\_d * 3;
+667                 f = 0;  \textcolor{comment}{// M}
+668                 \textcolor{keywordflow}{break};
+669             \textcolor{keywordflow}{case} 2:
+670                 --i;
+671                 temp2 = 0;  \textcolor{comment}{// e}
+672                 direction\_line -= width\_d * 3;
+673                 f = 1;  \textcolor{comment}{// I}
+674                 \textcolor{keywordflow}{break};      
+675             \textcolor{keywordflow}{case} 3:
+676                 --i;
+677                 temp2 = 2;
+678                 direction\_line -= width\_d * 3;
+679                 f = 1;  \textcolor{comment}{// I}
+680                 \textcolor{keywordflow}{break};
+681             \textcolor{keywordflow}{case} 4:
+682                 --j;
+683                 temp2 = 1;
+684                 f = 2;  \textcolor{comment}{// D}
+685                 \textcolor{keywordflow}{break};
+686             \textcolor{keywordflow}{case} 5:
+687                 --j;
+688                 temp2 = 2;
+689                 f = 2;  \textcolor{comment}{// D}
+690                 \textcolor{keywordflow}{break};
+691             \textcolor{keywordflow}{default}: 
+692                 fprintf(stderr, \textcolor{stringliteral}{"Trace back error: %d.\(\backslash\)n"}, direction\_line[temp1 - 1]); exit(1);
+693                 \textcolor{keywordflow}{return} 0;
+694         \}
+695         \textcolor{keywordflow}{if} (f == max) ++e;
+696         \textcolor{keywordflow}{else} \{
+697             ++l;
+698             \textcolor{keywordflow}{while} (l >= s) \{
+699                 ++s;
+700                 \hyperlink{ssw_8c_af808c6880732c15dd7210159c486ff82}{kroundup32}(s);
+701                 c = (uint32\_t*)realloc(c, s * \textcolor{keyword}{sizeof}(uint32\_t));
+702             \}
+703             c[l - 1] = e<<4|max;
+704             max = f;
+705             e = 1;
+706         \}
+707     \}
+708     \textcolor{keywordflow}{if} (f == 0) \{
+709         ++l;
+710         \textcolor{keywordflow}{while} (l >= s) \{
+711             ++s;
+712             \hyperlink{ssw_8c_af808c6880732c15dd7210159c486ff82}{kroundup32}(s);
+713             c = (uint32\_t*)realloc(c, s * \textcolor{keyword}{sizeof}(uint32\_t));
+714         \}
+715         c[l - 1] = (e+1)<<4;
+716     \}\textcolor{keywordflow}{else} \{
+717         l += 2;
+718         \textcolor{keywordflow}{while} (l >= s) \{
+719             ++s;
+720             \hyperlink{ssw_8c_af808c6880732c15dd7210159c486ff82}{kroundup32}(s);
+721             c = (uint32\_t*)realloc(c, s * \textcolor{keyword}{sizeof}(uint32\_t));
+722         \}
+723         c[l - 2] = e<<4|f;
+724         c[l - 1] = 16;  \textcolor{comment}{// 1M}
+725     \}
+726 
+727     \textcolor{comment}{// reverse cigar}
+728     c1 = (uint32\_t*)malloc(l * \textcolor{keyword}{sizeof}(uint32\_t));
+729     s = 0;
+730     e = l - 1;
+731     \textcolor{keywordflow}{while} (\hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(s <= e)) \{          
+732         c1[s] = c[e];       
+733         c1[e] = c[s];       
+734         ++ s;                   
+735         -- e;                       
+736     \}                               
+737     result->\hyperlink{structcigar_a1694920d3fb2dd5c120b4d41f783f7d0}{seq} = c1;
+738     result->\hyperlink{structcigar_a43382bf5af033c8e2f811ee86cd45c57}{length} = l;
+739 
+740     free(direction);
+741     direction = NULL;
+742     free(h\_c);
+743     h\_c = NULL;
+744     free(e\_b);
+745   e\_b = NULL;
+746     free(h\_b);
+747   h\_b = NULL;
+748     free(c); 
+749   c = NULL;
+750     \textcolor{keywordflow}{return} result;
+751 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_a243857b244ba496a0558a68f1f2c05e4}{\index{ssw.\-c@{ssw.\-c}!init\-\_\-destroy@{init\-\_\-destroy}}
+\index{init\-\_\-destroy@{init\-\_\-destroy}!ssw.c@{ssw.\-c}}
+\subsubsection[{init\-\_\-destroy}]{\setlength{\rightskip}{0pt plus 5cm}void init\-\_\-destroy (
+\begin{DoxyParamCaption}
+\item[{s\-\_\-profile $\ast$}]{p}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a243857b244ba496a0558a68f1f2c05e4}
+
+\begin{DoxyCode}
+789                                  \{
+790     free(p->profile\_byte);
+791     p->profile\_byte = NULL;
+792     free(p->profile\_word);
+793     p->profile\_word = NULL;
+794     free(p);
+795     p = NULL;
+796 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_adb00a252814739e4b8e412e6c4aba960}{\index{ssw.\-c@{ssw.\-c}!q\-P\-\_\-byte@{q\-P\-\_\-byte}}
+\index{q\-P\-\_\-byte@{q\-P\-\_\-byte}!ssw.c@{ssw.\-c}}
+\subsubsection[{q\-P\-\_\-byte}]{\setlength{\rightskip}{0pt plus 5cm}\-\_\-\-\_\-m128i$\ast$ q\-P\-\_\-byte (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{read\-\_\-num, }
+\item[{const int8\-\_\-t $\ast$}]{mat, }
+\item[{const int32\-\_\-t}]{read\-Len, }
+\item[{const int32\-\_\-t}]{n, }
+\item[{uint8\-\_\-t}]{bias}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_adb00a252814739e4b8e412e6c4aba960}
+
+\begin{DoxyCode}
+100                                 \{
+101  
+102     int32\_t segLen = (readLen + 15) / 16; \textcolor{comment}{/* Split the 128 bit register into 16 pieces. }
+103 \textcolor{comment}{                                     Each piece is 8 bit. Split the read into 16 segments. }
+104 \textcolor{comment}{                                     Calculate 16 segments in parallel.}
+105 \textcolor{comment}{                                   */}
+106     \_\_m128i* vProfile = (\_\_m128i*)malloc(n * segLen * \textcolor{keyword}{sizeof}(\_\_m128i));
+107     int8\_t* \hyperlink{main_8cpp_a2d39cd4e5b05734e0540770673399a64}{t} = (int8\_t*)vProfile;
+108     int32\_t nt, i, j, segNum;
+109     
+110     \textcolor{comment}{/* Generate query profile rearrange query sequence & calculate the weight of match/mismatch */}
+111     \textcolor{keywordflow}{for} (nt = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(nt < n); nt ++) \{
+112         \textcolor{keywordflow}{for} (i = 0; i < segLen; i ++) \{
+113             j = i; 
+114             \textcolor{keywordflow}{for} (segNum = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(segNum < 16) ; segNum ++) \{
+115                 *t++ = j>= readLen ? bias : mat[nt * n + read\_num[j]] + bias;
+116                 j += segLen;
+117             \}
+118         \}
+119     \}
+120     \textcolor{keywordflow}{return} vProfile;
+121 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_acf409831e48debb1e899fe98bff4b975}{\index{ssw.\-c@{ssw.\-c}!q\-P\-\_\-word@{q\-P\-\_\-word}}
+\index{q\-P\-\_\-word@{q\-P\-\_\-word}!ssw.c@{ssw.\-c}}
+\subsubsection[{q\-P\-\_\-word}]{\setlength{\rightskip}{0pt plus 5cm}\-\_\-\-\_\-m128i$\ast$ q\-P\-\_\-word (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{read\-\_\-num, }
+\item[{const int8\-\_\-t $\ast$}]{mat, }
+\item[{const int32\-\_\-t}]{read\-Len, }
+\item[{const int32\-\_\-t}]{n}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_acf409831e48debb1e899fe98bff4b975}
+
+\begin{DoxyCode}
+357                                    \{ 
+358                     
+359     int32\_t segLen = (readLen + 7) / 8; 
+360     \_\_m128i* vProfile = (\_\_m128i*)malloc(n * segLen * \textcolor{keyword}{sizeof}(\_\_m128i));
+361     int16\_t* \hyperlink{main_8cpp_a2d39cd4e5b05734e0540770673399a64}{t} = (int16\_t*)vProfile;
+362     int32\_t nt, i, j;
+363     int32\_t segNum;
+364     
+365     \textcolor{comment}{/* Generate query profile rearrange query sequence & calculate the weight of match/mismatch */}
+366     \textcolor{keywordflow}{for} (nt = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(nt < n); nt ++) \{
+367         \textcolor{keywordflow}{for} (i = 0; i < segLen; i ++) \{
+368             j = i; 
+369             \textcolor{keywordflow}{for} (segNum = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(segNum < 8) ; segNum ++) \{
+370                 *t++ = j>= readLen ? 0 : mat[nt * n + read\_num[j]];
+371                 j += segLen;
+372             \}
+373         \}
+374     \}
+375     \textcolor{keywordflow}{return} vProfile;
+376 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_abffbdfdc1439cfbdafca778ae1679e51}{\index{ssw.\-c@{ssw.\-c}!seq\-\_\-reverse@{seq\-\_\-reverse}}
+\index{seq\-\_\-reverse@{seq\-\_\-reverse}!ssw.c@{ssw.\-c}}
+\subsubsection[{seq\-\_\-reverse}]{\setlength{\rightskip}{0pt plus 5cm}int8\-\_\-t$\ast$ seq\-\_\-reverse (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{seq, }
+\item[{int32\-\_\-t}]{end}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_abffbdfdc1439cfbdafca778ae1679e51}
+
+\begin{DoxyCode}
+754 \{                                   
+755     int8\_t* reverse = (int8\_t*)calloc(end + 1, \textcolor{keyword}{sizeof}(int8\_t)); 
+756     int32\_t start = 0;
+757     \textcolor{keywordflow}{while} (\hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(start <= end)) \{            
+758         reverse[start] = seq[end];      
+759         reverse[end] = seq[start];      
+760         ++ start;                   
+761         -- end;                     
+762     \}                               
+763     \textcolor{keywordflow}{return} reverse;                 
+764 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_a5ab13aa021d7fc8e19cc9293bc7cea61}{\index{ssw.\-c@{ssw.\-c}!ssw\-\_\-align@{ssw\-\_\-align}}
+\index{ssw\-\_\-align@{ssw\-\_\-align}!ssw.c@{ssw.\-c}}
+\subsubsection[{ssw\-\_\-align}]{\setlength{\rightskip}{0pt plus 5cm}s\-\_\-align$\ast$ ssw\-\_\-align (
+\begin{DoxyParamCaption}
+\item[{const s\-\_\-profile $\ast$}]{prof, }
+\item[{const int8\-\_\-t $\ast$}]{ref, }
+\item[{int32\-\_\-t}]{ref\-Len, }
+\item[{const uint8\-\_\-t}]{weight\-\_\-gap\-O, }
+\item[{const uint8\-\_\-t}]{weight\-\_\-gap\-E, }
+\item[{const uint8\-\_\-t}]{flag, }
+\item[{const uint16\-\_\-t}]{filters, }
+\item[{const int32\-\_\-t}]{filterd, }
+\item[{const int32\-\_\-t}]{mask\-Len}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a5ab13aa021d7fc8e19cc9293bc7cea61}
+
+\begin{DoxyCode}
+806                                            \{
+807 
+808     \hyperlink{structalignment__end}{alignment\_end}* bests = 0, *bests\_reverse = 0;
+809     \_\_m128i* vP = 0;
+810     int32\_t word = 0, band\_width = 0, readLen = prof->readLen;
+811     int8\_t* read\_reverse = 0;
+812     \hyperlink{structcigar}{cigar}* path;
+813     s\_align* r = (s\_align*)calloc(1, \textcolor{keyword}{sizeof}(s\_align));
+814     r->ref\_begin1 = -1;
+815     r->read\_begin1 = -1;
+816     r->cigar = 0;
+817     r->cigarLen = 0;
+818     \textcolor{keywordflow}{if} (maskLen < 15) \{
+819         \textcolor{comment}{//fprintf(stderr, "When maskLen < 15, the function ssw\_align doesn't return 2nd best alignment
+       information.\(\backslash\)n");}
+820     \}
+821 
+822 
+823     \textcolor{comment}{// Find the alignment scores and ending positions}
+824     \textcolor{keywordflow}{if} (prof->profile\_byte) \{
+825         bests = \hyperlink{ssw_8c_a6e062a24463b3375dca0253e7707e779}{sw\_sse2\_byte}(ref, 0, refLen, readLen, weight\_gapO, weight\_gapE, prof->
+      profile\_byte, -1, prof->bias, maskLen);
+826 
+827         \textcolor{keywordflow}{if} (prof->profile\_word && bests[0].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} == 255) \{
+828             free(bests);
+829             bests = NULL;
+830             bests = \hyperlink{ssw_8c_aeffef63f17a0bf53fc914b0e9951bd5a}{sw\_sse2\_word}(ref, 0, refLen, readLen, weight\_gapO, weight\_gapE, prof->
+      profile\_word, -1, maskLen);
+831             word = 1;
+832         \} \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (bests[0].score == 255) \{
+833             fprintf(stderr, \textcolor{stringliteral}{"Please set 2 to the score\_size parameter of the function ssw\_init, otherwise
+       the alignment results will be incorrect.\(\backslash\)n"});
+834             \textcolor{keywordflow}{return} 0;
+835         \}
+836     \}\textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (prof->profile\_word) \{
+837         bests = \hyperlink{ssw_8c_aeffef63f17a0bf53fc914b0e9951bd5a}{sw\_sse2\_word}(ref, 0, refLen, readLen, weight\_gapO, weight\_gapE, prof->
+      profile\_word, -1, maskLen);
+838         word = 1;
+839     \}\textcolor{keywordflow}{else} \{
+840         fprintf(stderr, \textcolor{stringliteral}{"Please call the function ssw\_init before ssw\_align.\(\backslash\)n"});
+841         \textcolor{keywordflow}{return} 0;
+842     \}
+843     r->score1 = bests[0].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score};    
+844     r->ref\_end1 = bests[0].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref};
+845     r->read\_end1 = bests[0].\hyperlink{structalignment__end_a33ff5fb34809e94d0401e4353e3a95e7}{read};
+846 
+847     \textcolor{keywordflow}{if} (maskLen >= 15) \{
+848         \textcolor{comment}{//r->score2 = bests[1].score; //mine}
+849         \textcolor{comment}{//r->ref\_end2 = bests[1].ref; //mine}
+850     \} \textcolor{keywordflow}{else} \{
+851         \textcolor{comment}{//r->score2 = 0; //mine}
+852         \textcolor{comment}{//r->ref\_end2 = -1; //mine}
+853     \}
+854     free(bests);
+855     bests = NULL;
+856     \textcolor{keywordflow}{if} (flag == 0 || (flag == 2 && r->score1 < filters)) \textcolor{keywordflow}{goto} end;
+857 
+858 
+859     \textcolor{comment}{// Find the beginning position of the best alignment.}
+860     read\_reverse = \hyperlink{ssw_8c_abffbdfdc1439cfbdafca778ae1679e51}{seq\_reverse}(prof->read, r->read\_end1);
+861     \textcolor{keywordflow}{if} (word == 0) \{
+862         vP = \hyperlink{ssw_8c_adb00a252814739e4b8e412e6c4aba960}{qP\_byte}(read\_reverse, prof->mat, r->read\_end1 + 1, prof->n, prof->bias);
+863         bests\_reverse = \hyperlink{ssw_8c_a6e062a24463b3375dca0253e7707e779}{sw\_sse2\_byte}(ref, 1, r->ref\_end1 + 1, r->read\_end1 + 1, weight\_gapO, 
+      weight\_gapE, vP, r->score1, prof->bias, maskLen);
+864     \} \textcolor{keywordflow}{else} \{
+865         vP = \hyperlink{ssw_8c_acf409831e48debb1e899fe98bff4b975}{qP\_word}(read\_reverse, prof->mat, r->read\_end1 + 1, prof->n);
+866         bests\_reverse = \hyperlink{ssw_8c_aeffef63f17a0bf53fc914b0e9951bd5a}{sw\_sse2\_word}(ref, 1, r->ref\_end1 + 1, r->read\_end1 + 1, weight\_gapO, 
+      weight\_gapE, vP, r->score1, maskLen);
+867     \}
+868     free(vP);
+869     vP = NULL;
+870     free(read\_reverse);
+871     read\_reverse = NULL;
+872     r->ref\_begin1 = bests\_reverse[0].ref;
+873     r->read\_begin1 = r->read\_end1 - bests\_reverse[0].read;
+874     free(bests\_reverse);
+875     bests\_reverse = NULL;
+876     \textcolor{keywordflow}{if} ((7&flag) == 0 || ((2&flag) != 0 && r->score1 < filters) || ((4&flag) != 0 && (r->ref\_end1 - r->
+      ref\_begin1 > filterd || r->read\_end1 - r->read\_begin1 > filterd))) \textcolor{keywordflow}{goto} end;
+877 
+878 
+879     \textcolor{comment}{// Generate cigar.}
+880     refLen = r->ref\_end1 - r->ref\_begin1 + 1;
+881     readLen = r->read\_end1 - r->read\_begin1 + 1;
+882     band\_width = abs(refLen - readLen) + 1;
+883     path = \hyperlink{ssw_8c_a5c34e3b3fb6680700ca7bf0a711bcb9b}{banded\_sw}(ref + r->ref\_begin1, prof->read + r->read\_begin1, refLen, readLen, r->score1,
+       weight\_gapO, weight\_gapE, band\_width, prof->mat, prof->n);
+884 
+885 
+886     \textcolor{keywordflow}{if} (path == 0) \{ free(r); r = NULL; \} \textcolor{comment}{//jenya }
+887     \textcolor{keywordflow}{else} \{
+888         r->cigar = path->\hyperlink{structcigar_a1694920d3fb2dd5c120b4d41f783f7d0}{seq};
+889         r->cigarLen = path->\hyperlink{structcigar_a43382bf5af033c8e2f811ee86cd45c57}{length};
+890         free(path);
+891         path = NULL;
+892     \}
+893     
+894 end: 
+895 
+896     \textcolor{keywordflow}{return} r;
+897 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_afb7b0d0e5dfca925b8d0679edd9fed00}{\index{ssw.\-c@{ssw.\-c}!ssw\-\_\-init@{ssw\-\_\-init}}
+\index{ssw\-\_\-init@{ssw\-\_\-init}!ssw.c@{ssw.\-c}}
+\subsubsection[{ssw\-\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}s\-\_\-profile$\ast$ ssw\-\_\-init (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{read, }
+\item[{const int32\-\_\-t}]{read\-Len, }
+\item[{const int8\-\_\-t $\ast$}]{mat, }
+\item[{const int32\-\_\-t}]{n, }
+\item[{const int8\-\_\-t}]{score\-\_\-size}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_afb7b0d0e5dfca925b8d0679edd9fed00}
+
+\begin{DoxyCode}
+766                                                                                                            
+                        \{
+767     s\_profile* p = (s\_profile*)calloc(1, \textcolor{keyword}{sizeof}(\textcolor{keyword}{struct} \hyperlink{struct__profile}{\_profile}));
+768     p->profile\_byte = 0;
+769     p->profile\_word = 0;
+770     p->bias = 0;
+771     
+772     \textcolor{keywordflow}{if} (score\_size == 0 || score\_size == 2) \{
+773         \textcolor{comment}{/* Find the bias to use in the substitution matrix */}
+774         int32\_t bias = 0, i;
+775         \textcolor{keywordflow}{for} (i = 0; i < n*n; i++) \textcolor{keywordflow}{if} (mat[i] < bias) bias = mat[i];
+776         bias = abs(bias);
+777 
+778         p->bias = bias;
+779         p->profile\_byte = \hyperlink{ssw_8c_adb00a252814739e4b8e412e6c4aba960}{qP\_byte} (read, mat, readLen, n, bias);
+780     \}
+781     \textcolor{keywordflow}{if} (score\_size == 1 || score\_size == 2) p->profile\_word = \hyperlink{ssw_8c_acf409831e48debb1e899fe98bff4b975}{qP\_word} (read, mat, readLen, n);
+782     p->read = read;
+783     p->mat = mat;
+784     p->readLen = readLen;
+785     p->n = n;
+786     \textcolor{keywordflow}{return} p;
+787 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_a3e27d484ae00abc8e9b6e9a7728df093}{\index{ssw.\-c@{ssw.\-c}!ssw\-\_\-write@{ssw\-\_\-write}}
+\index{ssw\-\_\-write@{ssw\-\_\-write}!ssw.c@{ssw.\-c}}
+\subsubsection[{ssw\-\_\-write}]{\setlength{\rightskip}{0pt plus 5cm}void ssw\-\_\-write (
+\begin{DoxyParamCaption}
+\item[{char $\ast$}]{fileout\-\_\-n, }
+\item[{s\-\_\-align $\ast$}]{a, }
+\item[{char $\ast$}]{read\-\_\-name, }
+\item[{char $\ast$}]{read\-\_\-seq, }
+\item[{char $\ast$}]{read\-\_\-qual, }
+\item[{char $\ast$}]{ref\-\_\-name, }
+\item[{char $\ast$}]{ref\-\_\-seq, }
+\item[{double}]{evalue, }
+\item[{unsigned int}]{bitscore, }
+\item[{int8\-\_\-t}]{strand, }
+\item[{int}]{blast\-\_\-or\-\_\-sam}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a3e27d484ae00abc8e9b6e9a7728df093}
+
+\begin{DoxyCode}
+923 \{
+924         \textcolor{keywordtype}{char} \hyperlink{paralleltraversal_8cpp_ae3449226a5476670d1618cda4c098202}{to\_char}[4] = \{\textcolor{charliteral}{'A'},\textcolor{charliteral}{'C'},\textcolor{charliteral}{'G'},\textcolor{charliteral}{'T'}\};
+925      
+926         \textcolor{keywordflow}{if} (blast\_or\_sam == 1) \textcolor{comment}{// Blast like output}
+927         \{   
+928             FILE* fileout = fopen (fileout\_n, \textcolor{stringliteral}{"a"});
+929             \textcolor{keywordflow}{if} ( fileout == NULL )
+930             \{   
+931                 fprintf(stderr,\textcolor{stringliteral}{"  ERROR: could not open %s file\(\backslash\)n"},fileout\_n);
+932                 exit(EXIT\_FAILURE);
+933             \}
+934             
+935             fprintf(fileout, \textcolor{stringliteral}{"Sequence ID: "});
+936             \textcolor{keywordtype}{char}* tmp = ref\_name;
+937             \textcolor{keywordflow}{while} (*tmp != \textcolor{charliteral}{'\(\backslash\)n'}) fprintf(fileout,\textcolor{stringliteral}{"%c"},*tmp++);
+938             fprintf(fileout,\textcolor{stringliteral}{"\(\backslash\)n"});
+939 
+940             fprintf(fileout, \textcolor{stringliteral}{"Query ID: "});
+941             tmp = read\_name;
+942             \textcolor{keywordflow}{while} (*tmp != \textcolor{charliteral}{'\(\backslash\)n'}) fprintf(fileout,\textcolor{stringliteral}{"%c"},*tmp++);
+943             fprintf(fileout,\textcolor{stringliteral}{"\(\backslash\)n"});
+944             
+945             \textcolor{comment}{//printf("cigar: \(\backslash\)n");}
+946             \textcolor{comment}{//int32\_t g = 0;}
+947             \textcolor{comment}{//for (g = 0; g < a->cigarLen; ++g) \{}
+948             \textcolor{comment}{//  int32\_t letter = 0xf&*(a->cigar + g);}
+949             \textcolor{comment}{//  int32\_t length = (0xfffffff0&*(a->cigar + g))>>4;}
+950             \textcolor{comment}{//  printf("%d", length);}
+951             \textcolor{comment}{//  if (letter == 0) printf(" M\(\backslash\)n");}
+952             \textcolor{comment}{//  else if (letter == 1) printf(" I\(\backslash\)n");}
+953             \textcolor{comment}{//  else printf(" D\(\backslash\)n");}
+954             \textcolor{comment}{//\}}
+955 
+956             fprintf(fileout, \textcolor{stringliteral}{"Score: %d bits (%d)\(\backslash\)t"},bitscore,a->score1);
+957             fprintf(fileout, \textcolor{stringliteral}{"Expect: %.2e\(\backslash\)t"}, \hyperlink{main_8cpp_a3a53c9e3df0ddd5dd1a79602797be690}{evalue});   
+958             \textcolor{keywordflow}{if} (strand == 0) fprintf(fileout, \textcolor{stringliteral}{"strand: +\(\backslash\)n\(\backslash\)n"});
+959             \textcolor{keywordflow}{else} fprintf(fileout, \textcolor{stringliteral}{"strand: -\(\backslash\)n\(\backslash\)n"});
+960             \textcolor{keywordflow}{if} (a->cigar) \{
+961                 int32\_t i, c = 0, left = 0, e = 0, qb = a->ref\_begin1, pb = a->read\_begin1; \textcolor{comment}{//mine}
+962                 \textcolor{keywordflow}{while} (e < a->cigarLen || left > 0) \{
+963 
+964                     int32\_t count = 0;
+965                     int32\_t q = qb;
+966                     int32\_t p = pb;
+967                     fprintf(fileout, \textcolor{stringliteral}{"Target: %8d    "}, q + 1);
+968                     \textcolor{keywordflow}{for} (c = e; c < a->cigarLen; ++c) \{
+969                         int32\_t letter = 0xf&*(a->cigar + c);
+970                         int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+971                         int32\_t l = (count == 0 && left > 0) ? left: length;
+972                         \textcolor{keywordflow}{for} (i = 0; i < l; ++i) \{
+973                             \textcolor{keywordflow}{if} (letter == 1) fprintf(fileout, \textcolor{stringliteral}{"-"});
+974                             \textcolor{keywordflow}{else} \{
+975                                 fprintf(fileout, \textcolor{stringliteral}{"%c"}, to\_char[(\textcolor{keywordtype}{int})*(ref\_seq + q)]);
+976                                 ++q;
+977                             \}
+978                             ++ count;
+979                             \textcolor{keywordflow}{if} (count == 60) \textcolor{keywordflow}{goto} step2;
+980                         \}
+981                     \}
+982     step2:
+983                     fprintf(fileout, \textcolor{stringliteral}{"    %d\(\backslash\)n                    "}, q);
+984                     q = qb;
+985                     count = 0;
+986                     \textcolor{keywordflow}{for} (c = e; c < a->cigarLen; ++c) \{
+987                         int32\_t letter = 0xf&*(a->cigar + c);
+988                         int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+989                         int32\_t l = (count == 0 && left > 0) ? left: length;
+990                         \textcolor{keywordflow}{for} (i = 0; i < l; ++i)\{ 
+991                             \textcolor{keywordflow}{if} (letter == 0) \{
+992                                 \textcolor{keywordflow}{if} (to\_char[(\textcolor{keywordtype}{int})*(ref\_seq + q)] == to\_char[(\textcolor{keywordtype}{int})*(read\_seq + p)]) fprintf(
+      fileout, \textcolor{stringliteral}{"|"});
+993                                 \textcolor{keywordflow}{else} fprintf(fileout, \textcolor{stringliteral}{"*"});
+994                                 ++q;
+995                                 ++p;
+996                             \} \textcolor{keywordflow}{else} \{
+997                                 fprintf(fileout, \textcolor{stringliteral}{"*"});
+998                                 \textcolor{keywordflow}{if} (letter == 1) ++p;
+999                                 \textcolor{keywordflow}{else} ++q;
+1000                             \}
+1001                             ++ count;
+1002                             \textcolor{keywordflow}{if} (count == 60) \{
+1003                                 qb = q;
+1004                                 \textcolor{keywordflow}{goto} step3;
+1005                             \}
+1006                         \}
+1007                     \}
+1008     step3:
+1009                     p = pb;
+1010                     fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)nQuery:  %8d    "}, p + 1);
+1011                     count = 0;
+1012                     \textcolor{keywordflow}{for} (c = e; c < a->cigarLen; ++c) \{
+1013                         int32\_t letter = 0xf&*(a->cigar + c);
+1014                         int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+1015                         int32\_t l = (count == 0 && left > 0) ? left: length;
+1016                         \textcolor{keywordflow}{for} (i = 0; i < l; ++i) \{ 
+1017                             \textcolor{keywordflow}{if} (letter == 2) fprintf(fileout, \textcolor{stringliteral}{"-"});
+1018                             \textcolor{keywordflow}{else} \{                          
+1019                                 fprintf(fileout, \textcolor{stringliteral}{"%c"}, to\_char[(\textcolor{keywordtype}{int})*(read\_seq + p)]);
+1020                                 ++p;
+1021                             \}
+1022                             ++ count;
+1023                             \textcolor{keywordflow}{if} (count == 60) \{
+1024                                 pb = p;
+1025                                 left = l - i - 1;
+1026                                 e = (left == 0) ? (c + 1) : c;
+1027                                 \textcolor{keywordflow}{goto} end;
+1028                             \}
+1029                         \}
+1030                     \}
+1031                     e = c;
+1032                     left = 0;
+1033     end:
+1034                     fprintf(fileout, \textcolor{stringliteral}{"    %d\(\backslash\)n\(\backslash\)n"}, p);
+1035                 \}
+1036             \}
+1037             fclose(fileout);
+1038         \}
+1039         \textcolor{comment}{/* SAM output */}
+1040         \textcolor{keywordflow}{else}
+1041         \{
+1042             FILE* fileout = fopen (fileout\_n, \textcolor{stringliteral}{"a"});
+1043             \textcolor{keywordflow}{if} ( fileout == NULL )
+1044             \{   
+1045                 fprintf(stderr,\textcolor{stringliteral}{"  ERROR: could not open %s file\(\backslash\)n"},fileout\_n);
+1046                 exit(EXIT\_FAILURE);
+1047             \}
+1048 
+1049             \textcolor{comment}{/* (1) QNAME */}
+1050             \textcolor{keywordtype}{char}* tmp = read\_name;
+1051             \textcolor{keywordflow}{while} ((*tmp != \textcolor{charliteral}{' '}) && (*tmp != \textcolor{charliteral}{'\(\backslash\)n'}) && (*tmp != \textcolor{charliteral}{'\(\backslash\)t'})) fprintf(fileout,\textcolor{stringliteral}{"%c"},*tmp++);
+1052 
+1053             \textcolor{keywordflow}{if} (a->score1 == 0) fprintf(fileout, \textcolor{stringliteral}{"4\(\backslash\)t*\(\backslash\)t0\(\backslash\)t255\(\backslash\)t*\(\backslash\)t*\(\backslash\)t0\(\backslash\)t0\(\backslash\)t*\(\backslash\)t*\(\backslash\)n"});
+1054             \textcolor{keywordflow}{else} \{
+1055                 int32\_t c, l = a->read\_end1 - a->read\_begin1 + 1, qb = a->ref\_begin1, pb = a->read\_begin1, 
+      p;
+1056                 \textcolor{comment}{//uint32\_t mapq = -4.343 * log(1 - (double)abs(a->score1 - a->score2)/(double)a->score1);
+       //jenya}
+1057                 \textcolor{comment}{//mapq = (uint32\_t) (mapq + 4.99); //jenya}
+1058                 \textcolor{comment}{//mapq = mapq < 254 ? mapq : 254; //jenya}
+1059 
+1060                 \textcolor{comment}{/* (2) FLAG */}
+1061                 \textcolor{keywordflow}{if} (strand) fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t16\(\backslash\)t"});
+1062                 \textcolor{keywordflow}{else} fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t0\(\backslash\)t"});
+1063 
+1064                 \textcolor{comment}{/* (3) RNAME */}
+1065                 tmp = ref\_name;
+1066                 \textcolor{keywordflow}{while} ((*tmp != \textcolor{charliteral}{' '}) && (*tmp != \textcolor{charliteral}{'\(\backslash\)n'}) && (*tmp != \textcolor{charliteral}{'\(\backslash\)t'})) fprintf(fileout,\textcolor{stringliteral}{"%c"},*tmp++);
+1067 
+1068                 \textcolor{comment}{/* (4) POS */}
+1069                 fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t%d"}, a->ref\_begin1+1);
+1070 
+1071                 \textcolor{comment}{/* (5) MAPQ */}
+1072                 fprintf(fileout,\textcolor{stringliteral}{"\(\backslash\)t%d\(\backslash\)t"}, 255);
+1073 
+1074                 \textcolor{comment}{/* (6) CIGAR */}
+1075                 \textcolor{keywordflow}{for} (c = 0; c < a->cigarLen; ++c) \{
+1076                     int32\_t letter = 0xf&*(a->cigar + c);
+1077                     int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+1078                     fprintf(fileout, \textcolor{stringliteral}{"%d"}, length);
+1079                     \textcolor{keywordflow}{if} (letter == 0) fprintf(fileout, \textcolor{stringliteral}{"M"});
+1080                     \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (letter == 1) fprintf(fileout, \textcolor{stringliteral}{"I"});
+1081                     \textcolor{keywordflow}{else} fprintf(fileout, \textcolor{stringliteral}{"D"});
+1082                 \}
+1083 
+1084                 \textcolor{comment}{/* (7) RNEXT, (8) PNEXT, (9) TLEN */}
+1085                 fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t*\(\backslash\)t0\(\backslash\)t0\(\backslash\)t"});
+1086 
+1087                 \textcolor{comment}{/* (10) SEQ */}
+1088                 \textcolor{keywordflow}{for} (c = a->read\_begin1; c <= a->read\_end1; ++c) 
+1089                 \{
+1090                     fprintf(fileout, \textcolor{stringliteral}{"%c"}, to\_char[(\textcolor{keywordtype}{int})read\_seq[c]]);
+1091                 \}
+1092 
+1093                 \textcolor{comment}{/* (11) QUAL */}
+1094                 \textcolor{keywordflow}{if} (read\_qual && strand) \{
+1095                     p = a->read\_end1;
+1096                     \textcolor{keywordflow}{for} (c = 0; c < l; ++c) \{
+1097                         fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t%c"}, read\_qual[p]);
+1098                         --p;
+1099                     \}
+1100                 \}\textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (read\_qual)\{
+1101                     p = a->read\_begin1;
+1102                     \textcolor{keywordflow}{for} (c = 0; c < l; ++c) \{
+1103                         fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t%c"}, read\_qual[p]);
+1104                         ++p;
+1105                     \}
+1106                 \} \textcolor{keywordflow}{else} fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)t*"});
+1107 
+1108                 \textcolor{comment}{/* (12) OPTIONAL FIELD: alignment score generated by aligner */}
+1109                 fprintf(fileout, \textcolor{stringliteral}{"\(\backslash\)tAS:i:%d"}, a->score1);
+1110 
+1111 
+1112                 \textcolor{comment}{/* (13) OPTIONAL FIELD: edit distance to the reference */}
+1113                 uint32\_t diff = 0;
+1114                 \textcolor{keywordflow}{for} (c = 0; c < a->cigarLen; ++c) \{
+1115                     int32\_t letter = 0xf&*(a->cigar + c);
+1116                     int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+1117                     \textcolor{keywordflow}{if} (letter == 0) \{
+1118                         \textcolor{keywordflow}{for} (p = 0; p < length; ++p)\{ 
+1119                             \textcolor{keywordflow}{if} (\hyperlink{indexdb_8cpp_abbfa59b376110cc05e9a652602a00acc}{map\_nt}[(\textcolor{keywordtype}{int})*(ref\_seq + qb)] != \hyperlink{indexdb_8cpp_abbfa59b376110cc05e9a652602a00acc}{map\_nt}[(\textcolor{keywordtype}{int})*(read\_seq + pb)]) 
+      ++diff;
+1120                             ++qb;
+1121                             ++pb;
+1122                         \}
+1123                     \} \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (letter == 1) \{
+1124                         pb += length;
+1125                         diff += length;
+1126                     \} \textcolor{keywordflow}{else} \{
+1127                         qb += length;
+1128                         diff += length;
+1129                     \}
+1130                 \}
+1131 
+1132                 fprintf(fileout,\textcolor{stringliteral}{"\(\backslash\)tNM:i:%d\(\backslash\)n"}, diff);
+1133 
+1134             \}
+1135             fclose(fileout);
+1136         \}\textcolor{comment}{//~sam output  }
+1137 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_a6e062a24463b3375dca0253e7707e779}{\index{ssw.\-c@{ssw.\-c}!sw\-\_\-sse2\-\_\-byte@{sw\-\_\-sse2\-\_\-byte}}
+\index{sw\-\_\-sse2\-\_\-byte@{sw\-\_\-sse2\-\_\-byte}!ssw.c@{ssw.\-c}}
+\subsubsection[{sw\-\_\-sse2\-\_\-byte}]{\setlength{\rightskip}{0pt plus 5cm}{\bf alignment\-\_\-end}$\ast$ sw\-\_\-sse2\-\_\-byte (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{ref, }
+\item[{int8\-\_\-t}]{ref\-\_\-dir, }
+\item[{int32\-\_\-t}]{ref\-Len, }
+\item[{int32\-\_\-t}]{read\-Len, }
+\item[{const uint8\-\_\-t}]{weight\-\_\-gap\-O, }
+\item[{const uint8\-\_\-t}]{weight\-\_\-gap\-E, }
+\item[{\-\_\-\-\_\-m128i $\ast$}]{v\-Profile, }
+\item[{uint8\-\_\-t}]{terminate, }
+\item[{uint8\-\_\-t}]{bias, }
+\item[{int32\-\_\-t}]{mask\-Len}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_a6e062a24463b3375dca0253e7707e779}
+
+\begin{DoxyCode}
+142                                               \{  
+143       
+144 \textcolor{preprocessor}{#define max16(m, vm) (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 8)); \(\backslash\)}
+145 \textcolor{preprocessor}{                      (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 4)); \(\backslash\)}
+146 \textcolor{preprocessor}{                      (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 2)); \(\backslash\)}
+147 \textcolor{preprocessor}{                      (vm) = \_mm\_max\_epu8((vm), \_mm\_srli\_si128((vm), 1)); \(\backslash\)}
+148 \textcolor{preprocessor}{                      (m) = \_mm\_extract\_epi16((vm), 0)}
+149 \textcolor{preprocessor}{}
+150     uint8\_t max = 0;                             \textcolor{comment}{/* the max alignment score */}
+151     int32\_t end\_read = readLen - 1;
+152     int32\_t end\_ref = -1; \textcolor{comment}{/* 0\_based best alignment ending point; Initialized as isn't aligned -1. */}
+153     int32\_t segLen = (readLen + 15) / 16; \textcolor{comment}{/* number of segment */}
+154     
+155     \textcolor{comment}{/* array to record the largest score of each reference position */}
+156     uint8\_t* maxColumn = (uint8\_t*) calloc(refLen, 1); 
+157     
+158     \textcolor{comment}{/* array to record the alignment read ending position of the largest score of each reference position 
+      */}
+159     int32\_t* end\_read\_column = (int32\_t*) calloc(refLen, \textcolor{keyword}{sizeof}(int32\_t));
+160     
+161     \textcolor{comment}{/* Define 16 byte 0 vector. */}
+162     \_\_m128i vZero = \_mm\_set1\_epi32(0);
+163 
+164     \_\_m128i* pvHStore = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+165     \_\_m128i* pvHLoad = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+166     \_\_m128i* pvE = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+167     \_\_m128i* pvHmax = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+168 
+169     int32\_t i, j;
+170     \textcolor{comment}{/* 16 byte insertion begin vector */}
+171     \_\_m128i vGapO = \_mm\_set1\_epi8(weight\_gapO);
+172     
+173     \textcolor{comment}{/* 16 byte insertion extension vector */}
+174     \_\_m128i vGapE = \_mm\_set1\_epi8(weight\_gapE); 
+175     
+176     \textcolor{comment}{/* 16 byte bias vector */}
+177     \_\_m128i vBias = \_mm\_set1\_epi8(bias);    
+178 
+179     \_\_m128i vMaxScore = vZero; \textcolor{comment}{/* Trace the highest score of the whole SW matrix. */}
+180     \_\_m128i vMaxMark = vZero; \textcolor{comment}{/* Trace the highest score till the previous column. */}   
+181     \_\_m128i vTemp;
+182     int32\_t edge, begin = 0, end = refLen, step = 1; 
+183 \textcolor{comment}{//  int32\_t distance = readLen * 2 / 3;}
+184 \textcolor{comment}{//  int32\_t distance = readLen / 2;}
+185 \textcolor{comment}{//  int32\_t distance = readLen;}
+186 
+187     \textcolor{comment}{/* outer loop to process the reference sequence */}
+188     \textcolor{keywordflow}{if} (ref\_dir == 1) \{
+189         begin = refLen - 1;
+190         end = -1;
+191         step = -1;
+192     \}
+193     \textcolor{keywordflow}{for} (i = begin; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(i != end); i += step) \{
+194         int32\_t cmp;
+195         \_\_m128i e = vZero, vF = vZero, vMaxColumn = vZero; \textcolor{comment}{/* Initialize F value to 0. }
+196 \textcolor{comment}{                               Any errors to vH values will be corrected in the Lazy\_F loop. }
+197 \textcolor{comment}{                             */}
+198 \textcolor{comment}{//      max16(maxColumn[i], vMaxColumn);}
+199 \textcolor{comment}{//      fprintf(stderr, "middle[%d]: %d\(\backslash\)n", i, maxColumn[i]);}
+200 
+201         \_\_m128i vH = pvHStore[segLen - 1];
+202         vH = \_mm\_slli\_si128 (vH, 1); \textcolor{comment}{/* Shift the 128-bit value in vH left by 1 byte. */}
+203         \_\_m128i* vP = vProfile + ref[i] * segLen; \textcolor{comment}{/* Right part of the vProfile */}
+204 
+205         \textcolor{comment}{/* Swap the 2 H buffers. */}
+206         \_\_m128i* pv = pvHLoad;
+207         pvHLoad = pvHStore;
+208         pvHStore = pv;
+209         
+210         \textcolor{comment}{/* inner loop to process the query sequence */}
+211         \textcolor{keywordflow}{for} (j = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j < segLen); ++j) \{
+212             vH = \_mm\_adds\_epu8(vH, \_mm\_load\_si128(vP + j));
+213             vH = \_mm\_subs\_epu8(vH, vBias); \textcolor{comment}{/* vH will be always > 0 */}
+214     \textcolor{comment}{//  max16(maxColumn[i], vH);}
+215     \textcolor{comment}{//  fprintf(stderr, "H[%d]: %d\(\backslash\)n", i, maxColumn[i]);}
+216 \textcolor{comment}{//  int8\_t* t;}
+217 \textcolor{comment}{//  int32\_t ti;}
+218 \textcolor{comment}{//for (t = (int8\_t*)&vH, ti = 0; ti < 16; ++ti) fprintf(stderr, "%d\(\backslash\)t", *t++);}
+219 
+220             \textcolor{comment}{/* Get max from vH, vE and vF. */}
+221             e = \_mm\_load\_si128(pvE + j);
+222             vH = \_mm\_max\_epu8(vH, e);
+223             vH = \_mm\_max\_epu8(vH, vF);
+224             vMaxColumn = \_mm\_max\_epu8(vMaxColumn, vH);
+225             
+226     \textcolor{comment}{//  max16(maxColumn[i], vMaxColumn);}
+227     \textcolor{comment}{//  fprintf(stderr, "middle[%d]: %d\(\backslash\)n", i, maxColumn[i]);}
+228 \textcolor{comment}{//  for (t = (int8\_t*)&vMaxColumn, ti = 0; ti < 16; ++ti) fprintf(stderr, "%d\(\backslash\)t", *t++);}
+229 
+230             \textcolor{comment}{/* Save vH values. */}
+231             \_mm\_store\_si128(pvHStore + j, vH);
+232 
+233             \textcolor{comment}{/* Update vE value. */}
+234             vH = \_mm\_subs\_epu8(vH, vGapO); \textcolor{comment}{/* saturation arithmetic, result >= 0 */}
+235             e = \_mm\_subs\_epu8(e, vGapE);
+236             e = \_mm\_max\_epu8(e, vH);
+237             \_mm\_store\_si128(pvE + j, e);
+238             
+239             \textcolor{comment}{/* Update vF value. */}
+240             vF = \_mm\_subs\_epu8(vF, vGapE);
+241             vF = \_mm\_max\_epu8(vF, vH);
+242             
+243             \textcolor{comment}{/* Load the next vH. */}
+244             vH = \_mm\_load\_si128(pvHLoad + j);
+245         \}
+246 
+247         \textcolor{comment}{/* Lazy\_F loop: has been revised to disallow adjecent insertion and then deletion, so don't update
+       E(i, j), learn from SWPS3 */}
+248         \textcolor{comment}{/* reset pointers to the start of the saved data */}
+249         j = 0;
+250         vH = \_mm\_load\_si128 (pvHStore + j);
+251 
+252         \textcolor{comment}{/*  the computed vF value is for the given column.  since */}
+253         \textcolor{comment}{/*  we are at the end, we need to shift the vF value over */}
+254         \textcolor{comment}{/*  to the next column. */}
+255         vF = \_mm\_slli\_si128 (vF, 1);
+256         vTemp = \_mm\_subs\_epu8 (vH, vGapO);
+257         vTemp = \_mm\_subs\_epu8 (vF, vTemp);
+258         vTemp = \_mm\_cmpeq\_epi8 (vTemp, vZero);
+259         cmp  = \_mm\_movemask\_epi8 (vTemp);
+260 
+261         \textcolor{keywordflow}{while} (cmp != 0xffff) 
+262         \{
+263             vH = \_mm\_max\_epu8 (vH, vF);
+264             vMaxColumn = \_mm\_max\_epu8(vMaxColumn, vH);
+265             \_mm\_store\_si128 (pvHStore + j, vH);
+266             vF = \_mm\_subs\_epu8 (vF, vGapE);
+267             j++;
+268             \textcolor{keywordflow}{if} (j >= segLen)
+269             \{
+270                 j = 0;
+271                 vF = \_mm\_slli\_si128 (vF, 1);
+272             \}
+273             vH = \_mm\_load\_si128 (pvHStore + j);
+274 
+275             vTemp = \_mm\_subs\_epu8 (vH, vGapO);
+276             vTemp = \_mm\_subs\_epu8 (vF, vTemp);
+277             vTemp = \_mm\_cmpeq\_epi8 (vTemp, vZero);
+278             cmp  = \_mm\_movemask\_epi8 (vTemp);
+279         \}
+280 
+281         vMaxScore = \_mm\_max\_epu8(vMaxScore, vMaxColumn);
+282         vTemp = \_mm\_cmpeq\_epi8(vMaxMark, vMaxScore);
+283         cmp = \_mm\_movemask\_epi8(vTemp);
+284         \textcolor{keywordflow}{if} (cmp != 0xffff) \{
+285             uint8\_t temp; 
+286             vMaxMark = vMaxScore;
+287             \hyperlink{ssw_8c_a598c826a069547f7ad4d8221442b5ed7}{max16}(temp, vMaxScore);
+288             vMaxScore = vMaxMark;
+289             
+290             \textcolor{keywordflow}{if} (\hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(temp > max)) \{
+291                 max = temp;
+292                 \textcolor{keywordflow}{if} (max + bias >= 255) \textcolor{keywordflow}{break};   \textcolor{comment}{//overflow}
+293                 end\_ref = i;
+294             
+295                 \textcolor{comment}{/* Store the column with the highest alignment score in order to trace the alignment ending
+       position on read. */}
+296                 \textcolor{keywordflow}{for} (j = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j < segLen); ++j) pvHmax[j] = pvHStore[j];
+297             \}
+298         \}
+299 
+300         \textcolor{comment}{/* Record the max score of current column. */}   
+301         \hyperlink{ssw_8c_a598c826a069547f7ad4d8221442b5ed7}{max16}(maxColumn[i], vMaxColumn);
+302 \textcolor{comment}{//      fprintf(stderr, "maxColumn[%d]: %d\(\backslash\)n", i, maxColumn[i]);}
+303         \textcolor{keywordflow}{if} (maxColumn[i] == terminate) \textcolor{keywordflow}{break};
+304     \}
+305     
+306     \textcolor{comment}{/* Trace the alignment ending position on read. */}
+307     uint8\_t *\hyperlink{main_8cpp_a2d39cd4e5b05734e0540770673399a64}{t} = (uint8\_t*)pvHmax;
+308     int32\_t column\_len = segLen * 16;
+309     \textcolor{keywordflow}{for} (i = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(i < column\_len); ++i, ++\hyperlink{main_8cpp_a2d39cd4e5b05734e0540770673399a64}{t}) \{
+310         int32\_t temp;
+311         \textcolor{keywordflow}{if} (*t == max) \{
+312             temp = i / 16 + i % 16 * segLen;
+313             \textcolor{keywordflow}{if} (temp < end\_read) end\_read = temp;
+314         \}
+315     \}
+316 
+317     free(pvHmax);
+318     free(pvE);
+319     free(pvHLoad);
+320     free(pvHStore);     
+321 
+322     \textcolor{comment}{/* Find the most possible 2nd best alignment. */}
+323     \hyperlink{structalignment__end}{alignment\_end}* bests = (\hyperlink{structalignment__end}{alignment\_end}*) calloc(2, \textcolor{keyword}{sizeof}(
+      \hyperlink{structalignment__end}{alignment\_end}));
+324     bests[0].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = max + bias >= 255 ? 255 : max;
+325     bests[0].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = end\_ref;
+326     bests[0].\hyperlink{structalignment__end_a33ff5fb34809e94d0401e4353e3a95e7}{read} = end\_read;
+327     
+328     bests[1].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = 0;
+329     bests[1].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = 0;
+330     bests[1].\hyperlink{structalignment__end_a33ff5fb34809e94d0401e4353e3a95e7}{read} = 0;
+331 
+332     edge = (end\_ref - maskLen) > 0 ? (end\_ref - maskLen) : 0;
+333     \textcolor{keywordflow}{for} (i = 0; i < edge; i ++) \{
+334 \textcolor{comment}{//          fprintf (stderr, "maxColumn[%d]: %d\(\backslash\)n", i, maxColumn[i]); }
+335         \textcolor{keywordflow}{if} (maxColumn[i] > bests[1].score) \{
+336             bests[1].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = maxColumn[i];
+337             bests[1].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = i;
+338         \}
+339     \}
+340     edge = (end\_ref + maskLen) > refLen ? refLen : (end\_ref + maskLen);
+341     \textcolor{keywordflow}{for} (i = edge + 1; i < refLen; i ++) \{
+342 \textcolor{comment}{//          fprintf (stderr, "refLen: %d\(\backslash\)tmaxColumn[%d]: %d\(\backslash\)n", refLen, i, maxColumn[i]); }
+343         \textcolor{keywordflow}{if} (maxColumn[i] > bests[1].score) \{
+344             bests[1].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = maxColumn[i];
+345             bests[1].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = i;
+346         \}
+347     \}
+348     
+349     free(maxColumn);
+350     free(end\_read\_column);
+351     \textcolor{keywordflow}{return} bests;
+352 \}
+\end{DoxyCode}
+\hypertarget{ssw_8c_aeffef63f17a0bf53fc914b0e9951bd5a}{\index{ssw.\-c@{ssw.\-c}!sw\-\_\-sse2\-\_\-word@{sw\-\_\-sse2\-\_\-word}}
+\index{sw\-\_\-sse2\-\_\-word@{sw\-\_\-sse2\-\_\-word}!ssw.c@{ssw.\-c}}
+\subsubsection[{sw\-\_\-sse2\-\_\-word}]{\setlength{\rightskip}{0pt plus 5cm}{\bf alignment\-\_\-end}$\ast$ sw\-\_\-sse2\-\_\-word (
+\begin{DoxyParamCaption}
+\item[{const int8\-\_\-t $\ast$}]{ref, }
+\item[{int8\-\_\-t}]{ref\-\_\-dir, }
+\item[{int32\-\_\-t}]{ref\-Len, }
+\item[{int32\-\_\-t}]{read\-Len, }
+\item[{const uint8\-\_\-t}]{weight\-\_\-gap\-O, }
+\item[{const uint8\-\_\-t}]{weight\-\_\-gap\-E, }
+\item[{\-\_\-\-\_\-m128i $\ast$}]{v\-Profile, }
+\item[{uint16\-\_\-t}]{terminate, }
+\item[{int32\-\_\-t}]{mask\-Len}
+\end{DoxyParamCaption}
+)}}\label{ssw_8c_aeffef63f17a0bf53fc914b0e9951bd5a}
+
+\begin{DoxyCode}
+386                                               \{ 
+387 
+388 \textcolor{preprocessor}{#define max8(m, vm) (vm) = \_mm\_max\_epi16((vm), \_mm\_srli\_si128((vm), 8)); \(\backslash\)}
+389 \textcolor{preprocessor}{                    (vm) = \_mm\_max\_epi16((vm), \_mm\_srli\_si128((vm), 4)); \(\backslash\)}
+390 \textcolor{preprocessor}{                    (vm) = \_mm\_max\_epi16((vm), \_mm\_srli\_si128((vm), 2)); \(\backslash\)}
+391 \textcolor{preprocessor}{                    (m) = \_mm\_extract\_epi16((vm), 0)}
+392 \textcolor{preprocessor}{}    
+393     uint16\_t max = 0;                            \textcolor{comment}{/* the max alignment score */}
+394     int32\_t end\_read = readLen - 1;
+395     int32\_t end\_ref = 0; \textcolor{comment}{/* 1\_based best alignment ending point; Initialized as isn't aligned - 0. */}
+396     int32\_t segLen = (readLen + 7) / 8; \textcolor{comment}{/* number of segment */}
+397     
+398     \textcolor{comment}{/* array to record the largest score of each reference position */}
+399     uint16\_t* maxColumn = (uint16\_t*) calloc(refLen, 2); 
+400     
+401     \textcolor{comment}{/* array to record the alignment read ending position of the largest score of each reference position 
+      */}
+402     int32\_t* end\_read\_column = (int32\_t*) calloc(refLen, \textcolor{keyword}{sizeof}(int32\_t));
+403     
+404     \textcolor{comment}{/* Define 16 byte 0 vector. */}
+405     \_\_m128i vZero = \_mm\_set1\_epi32(0);
+406 
+407     \_\_m128i* pvHStore = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+408     \_\_m128i* pvHLoad = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+409     \_\_m128i* pvE = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+410     \_\_m128i* pvHmax = (\_\_m128i*) calloc(segLen, \textcolor{keyword}{sizeof}(\_\_m128i));
+411 
+412     int32\_t i, j, k;
+413     \textcolor{comment}{/* 16 byte insertion begin vector */}
+414     \_\_m128i vGapO = \_mm\_set1\_epi16(weight\_gapO);
+415     
+416     \textcolor{comment}{/* 16 byte insertion extension vector */}
+417     \_\_m128i vGapE = \_mm\_set1\_epi16(weight\_gapE);    
+418 
+419     \textcolor{comment}{/* 16 byte bias vector */}
+420     \_\_m128i vMaxScore = vZero; \textcolor{comment}{/* Trace the highest score of the whole SW matrix. */}
+421     \_\_m128i vMaxMark = vZero; \textcolor{comment}{/* Trace the highest score till the previous column. */}   
+422     \_\_m128i vTemp;
+423     int32\_t edge, begin = 0, end = refLen, step = 1;
+424 
+425     \textcolor{comment}{/* outer loop to process the reference sequence */}
+426     \textcolor{keywordflow}{if} (ref\_dir == 1) \{
+427         begin = refLen - 1;
+428         end = -1;
+429         step = -1;
+430     \}
+431     \textcolor{keywordflow}{for} (i = begin; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(i != end); i += step) \{
+432         int32\_t cmp;
+433         \_\_m128i e = vZero, vF = vZero; \textcolor{comment}{/* Initialize F value to 0. }
+434 \textcolor{comment}{                               Any errors to vH values will be corrected in the Lazy\_F loop. }
+435 \textcolor{comment}{                             */}
+436         \_\_m128i vH = pvHStore[segLen - 1];
+437         vH = \_mm\_slli\_si128 (vH, 2); \textcolor{comment}{/* Shift the 128-bit value in vH left by 2 byte. */}
+438         
+439         \textcolor{comment}{/* Swap the 2 H buffers. */}
+440         \_\_m128i* pv = pvHLoad;
+441         
+442         \_\_m128i vMaxColumn = vZero; \textcolor{comment}{/* vMaxColumn is used to record the max values of column i. */}
+443         
+444         \_\_m128i* vP = vProfile + ref[i] * segLen; \textcolor{comment}{/* Right part of the vProfile */}
+445         pvHLoad = pvHStore;
+446         pvHStore = pv;
+447         
+448         \textcolor{comment}{/* inner loop to process the query sequence */}
+449         \textcolor{keywordflow}{for} (j = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j < segLen); j ++) \{
+450             vH = \_mm\_adds\_epi16(vH, \_mm\_load\_si128(vP + j));
+451 
+452             \textcolor{comment}{/* Get max from vH, vE and vF. */}
+453             e = \_mm\_load\_si128(pvE + j);
+454             vH = \_mm\_max\_epi16(vH, e);
+455             vH = \_mm\_max\_epi16(vH, vF);
+456             vMaxColumn = \_mm\_max\_epi16(vMaxColumn, vH);
+457             
+458             \textcolor{comment}{/* Save vH values. */}
+459             \_mm\_store\_si128(pvHStore + j, vH);
+460 
+461             \textcolor{comment}{/* Update vE value. */}
+462             vH = \_mm\_subs\_epu16(vH, vGapO); \textcolor{comment}{/* saturation arithmetic, result >= 0 */}
+463             e = \_mm\_subs\_epu16(e, vGapE);
+464             e = \_mm\_max\_epi16(e, vH);
+465             \_mm\_store\_si128(pvE + j, e);
+466 
+467             \textcolor{comment}{/* Update vF value. */}
+468             vF = \_mm\_subs\_epu16(vF, vGapE);
+469             vF = \_mm\_max\_epi16(vF, vH);
+470             
+471             \textcolor{comment}{/* Load the next vH. */}
+472             vH = \_mm\_load\_si128(pvHLoad + j);
+473         \}
+474 
+475         \textcolor{comment}{/* Lazy\_F loop: has been revised to disallow adjecent insertion and then deletion, so don't update
+       E(i, j), learn from SWPS3 */}
+476         \textcolor{keywordflow}{for} (k = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(k < 8); ++k) \{
+477             vF = \_mm\_slli\_si128 (vF, 2);
+478             \textcolor{keywordflow}{for} (j = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j < segLen); ++j) \{
+479                 vH = \_mm\_load\_si128(pvHStore + j);
+480                 vH = \_mm\_max\_epi16(vH, vF);
+481                 \_mm\_store\_si128(pvHStore + j, vH);
+482                 vH = \_mm\_subs\_epu16(vH, vGapO);
+483                 vF = \_mm\_subs\_epu16(vF, vGapE);
+484                 \textcolor{keywordflow}{if} (\hyperlink{ssw_8c_ab10d0a221f4d7a706701b806c8135fd7}{UNLIKELY}(! \_mm\_movemask\_epi8(\_mm\_cmpgt\_epi16(vF, vH)))) \textcolor{keywordflow}{goto} end;
+485             \}
+486         \}
+487 
+488 end:    
+489         vMaxScore = \_mm\_max\_epi16(vMaxScore, vMaxColumn);   
+490         vTemp = \_mm\_cmpeq\_epi16(vMaxMark, vMaxScore);
+491         cmp = \_mm\_movemask\_epi8(vTemp);
+492         \textcolor{keywordflow}{if} (cmp != 0xffff) \{
+493             uint16\_t temp; 
+494             vMaxMark = vMaxScore;
+495             \hyperlink{ssw_8c_a8100dc7b307600f3eccf388ba7197916}{max8}(temp, vMaxScore);
+496             vMaxScore = vMaxMark;
+497             
+498             \textcolor{keywordflow}{if} (\hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(temp > max)) \{
+499                 max = temp;
+500                 end\_ref = i;
+501                 \textcolor{keywordflow}{for} (j = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(j < segLen); ++j) pvHmax[j] = pvHStore[j];
+502             \}
+503         \}
+504         
+505         \textcolor{comment}{/* Record the max score of current column. */}   
+506         \hyperlink{ssw_8c_a8100dc7b307600f3eccf388ba7197916}{max8}(maxColumn[i], vMaxColumn);
+507         \textcolor{keywordflow}{if} (maxColumn[i] == terminate) \textcolor{keywordflow}{break};
+508     \}   
+509 
+510     \textcolor{comment}{/* Trace the alignment ending position on read. */}
+511     uint16\_t *\hyperlink{main_8cpp_a2d39cd4e5b05734e0540770673399a64}{t} = (uint16\_t*)pvHmax;
+512     int32\_t column\_len = segLen * 8;
+513     \textcolor{keywordflow}{for} (i = 0; \hyperlink{ssw_8c_affde14445f49f65ff4f5b592e44ee71a}{LIKELY}(i < column\_len); ++i, ++\hyperlink{main_8cpp_a2d39cd4e5b05734e0540770673399a64}{t}) \{
+514         int32\_t temp;
+515         \textcolor{keywordflow}{if} (*t == max) \{
+516             temp = i / 8 + i % 8 * segLen;
+517             \textcolor{keywordflow}{if} (temp < end\_read) end\_read = temp;
+518         \}
+519     \}
+520 
+521     free(pvHmax);
+522     free(pvE);
+523     free(pvHLoad);
+524     free(pvHStore); 
+525     
+526     \textcolor{comment}{/* Find the most possible 2nd best alignment. */}
+527     \hyperlink{structalignment__end}{alignment\_end}* bests = (\hyperlink{structalignment__end}{alignment\_end}*) calloc(2, \textcolor{keyword}{sizeof}(
+      \hyperlink{structalignment__end}{alignment\_end}));
+528     bests[0].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = max;
+529     bests[0].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = end\_ref;
+530     bests[0].\hyperlink{structalignment__end_a33ff5fb34809e94d0401e4353e3a95e7}{read} = end\_read;
+531     
+532     bests[1].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = 0;
+533     bests[1].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = 0;
+534     bests[1].\hyperlink{structalignment__end_a33ff5fb34809e94d0401e4353e3a95e7}{read} = 0;
+535 
+536     edge = (end\_ref - maskLen) > 0 ? (end\_ref - maskLen) : 0;
+537     \textcolor{keywordflow}{for} (i = 0; i < edge; i ++) \{
+538         \textcolor{keywordflow}{if} (maxColumn[i] > bests[1].score) \{ 
+539             bests[1].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = maxColumn[i];
+540             bests[1].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = i;
+541         \}
+542     \}
+543     edge = (end\_ref + maskLen) > refLen ? refLen : (end\_ref + maskLen);
+544     \textcolor{keywordflow}{for} (i = edge; i < refLen; i ++) \{
+545         \textcolor{keywordflow}{if} (maxColumn[i] > bests[1].score) \{
+546             bests[1].\hyperlink{structalignment__end_a1de513bdeead6778bf9124d9bc112cfb}{score} = maxColumn[i];
+547             bests[1].\hyperlink{structalignment__end_aee73ab28854e114e9976e8518731e9e2}{ref} = i;
+548         \}
+549     \}
+550     
+551     free(maxColumn);
+552     free(end\_read\_column);
+553     \textcolor{keywordflow}{return} bests;
+554 \}
+\end{DoxyCode}
