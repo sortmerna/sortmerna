@@ -86,22 +86,23 @@ using namespace std;
 	bool map_size_set_gv = false;
 	bool samout_gv = false;
 	bool blastout_gv = false;
+    int32_t blast_outfmt = -1;
 	bool fastxout_gv = false;
-#ifdef OTU_MAP
     bool otumapout_gv = false;
-#endif
-    /// by default best_gv is off (-1), a value of 0 means to search all high scoring reference sequences, a value > 0 means to search best_gv sequences
-	int32_t best_gv = -1;
+    /// by default min_lis_gv is off (-1), a value of 0 means to search all high scoring reference sequences, a value > 0 means to search min_lis_gv sequences
+	int32_t min_lis_gv = -1;
     /// by default num_alignments_gv is off (-1), a value of 0 means to output all alignments, a value > 0 means to output num_alignments_gv alignments
 	int32_t num_alignments_gv = -1;
 	int32_t seed_hits_gv = -1;
 	int32_t edges_gv = -1;
 	bool full_search_gv = false;
-	char version_num[] = "1.99 beta, 11/03/2014"; /// change version number here
+    /// change version number here
+	char version_num[] = "1.99 beta, 11/03/2014";
     bool feeling_lucky_gv = false;
 	bool as_percent_gv = false;
     bool nomask_gv = false;
     bool pid_gv = false;
+    int16_t num_best_hits_gv = 3;
 
 
 
@@ -157,24 +158,26 @@ void printlist()
   printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (for aligned reads only)\n");
     printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s--blast%s           %sFLAG%s            output BLAST-like alignment                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (for aligned reads only)\n");
+  printf("     %s--blast%s           %sINT%s             output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
+  printf("                                        0 - pairwise\n");
+  printf("                                        1 - tabular (Blast -m 8 format)\n");
+  printf("                                        2 - tabular + column for CIGAR \n");
+  printf("                                        3 - tabular + columns for CIGAR and query coverage\n");
     printf("     %s--log%s             %sFLAG%s            output overall statistics                                      %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-#ifdef OTU_MAP
-    printf("     %s--otu_map%s         %sFLAG%s            output OTU map                                                 %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-#endif
+    printf("     %s--otu_map%s         %sFLAG%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("   For alignments (with --sam or --blast options):\n\n");
   printf("     %s--feeling-lucky%s   %sFLAG%s            report the first alignment per read reaching E-value           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("       %sor%s\n","\033[31m","\033[0m");
 	printf("     %s--num_alignments%s  %sINT%s             report first INT alignments per read reaching E-value          %s-1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                        (--num_alignments 0 signifies all alignments will be output)\n");
 	printf("       %sor%s (default)\n","\033[31m","\033[0m");
-	printf("     %s--best%s            %sINT%s             report single best alignment per read reaching E-value         %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         from alignments of INT best candidate reference sequences\n");
-  printf("                                         (ex. --best 2: find all alignments for the first 2\n");
-  printf("                                         best matching reference sequences and report the\n");
-  printf("                                         the single best alignment; --best %s0%s signifies\n","\033[4m","\033[0m");
-    printf("                                         all highest scoring reference sequences will be searched) \n\n");
+	printf("     %s--best%s            %sINT%s             report INT best alignments per read reaching E-value           %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         by searching --min_lis INT candidate alignments\n");
+    printf("     %s--min_lis%s         %sINT%s             search all alignments having the first INT best LIS            %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         LIS stands for Longest Increasing Subsequence, it is \n");
+    printf("                                         computed using seeds' positions to expand hits into\n");
+    printf("                                         longer matches prior to Smith-Waterman alignment. The\n");
+    printf("                                         best LIS is the longest one.\n\n\n");
 	printf("   <options>:\n");
 #ifdef NOMASK_option
     printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -186,19 +189,17 @@ void printlist()
     printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
 	printf("     %s--match %s          %sINT%s             SW score (positive integer) for a match                        %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s--mismatch%s        %sINT%s             SW score (negative integer) for a mismatch                     %s-3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s--gap_open%s        %sINT%s             SW score (positive integer) for introducing a gap               %s5%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("     %s--gap_open%s        %sINT%s             SW score (positive integer) for introducing a gap              %s5%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s--gap_ext%s         %sINT%s             SW score (positive integer) for extending a gap                %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("     %s-N%s                %sINT%s             SW score for ambiguous letters (N's)                           %sscored as --mismatch%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-F%s                %sFLAG%s            search only the forward strand                                 %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-R%s                %sFLAG%s            search only the reverse-complementary strand                   %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-a%s                %sINT%s             number of threads to use                                       %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-e%s                %sDOUBLE%s          E-value                                                        %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-#ifdef id_cov
     printf("     %s--id%s              %sDOUBLE%s          minimum %%id to keep an alignment (the alignment must           %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         still pass the E-value threshold)\n");
     printf("     %s--coverage%s        %sDOUBLE%s          minimum %%query coverage to keep an alignment (the              %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         alignment must still pass the E-value threshold)\n");
-#endif
     /// RAM cannot support 1GB default
 	if ( 1073741824/pagesize_gv > maxpages_gv/2)
   printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory               %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
@@ -206,10 +207,9 @@ void printlist()
 	else
   printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory                   %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
-	printf("     %s-v%s                %sFLAG%s            verbose                                                        %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("     %s-v%s                %sFLAG%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("   advanced <options>: (see SortMeRNA user manual for more details) \n");
-	printf("    %s--passes%s           %sSTRING%s          values for seed skip lengths for Pass 1, 2 and 3               %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("                                         must be in the form '%sINT%s,%sINT%s,%sINT%s', respectively\n","\033[4m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("    %s--passes%s           %sINT,INT,INT%s     values for seed skip lengths for Pass 1, 2 and 3               %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (L is the seed length set in ./indexdb_rna)\n");
 	printf("    %s--edges%s            %sINT%s             number (or percent if INT followed by %% sign) of               %s4%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         nucleotides to add to each edge of the read\n");
@@ -231,9 +231,9 @@ void printlist()
     printf("         sortmerna --ref bac.fasta,bac_index:euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
     printf("     (3) Filter rRNA, output first alignment reaching E-value threshold and log file\n");
     printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --fastx --sam --feeling-lucky --log \n\n");
-    printf("     (4) Search 10 candidate reference sequences for each read and output the single best alignment\n");
-    printf("         sortmerna --ref bac.fasta,bac_index --reads reads.fastq --aligned reads_aligned --sam --best 10\n\n");
-    printf("     (5) Output the first 10 alignments reaching E-value threshold\n");
+    printf("     (4) Report 3 best alignments based on all alignments having the best 2 LIS (longest increasing subsequence)\n");
+    printf("         sortmerna --ref bac.fasta,bac_index --reads reads.fastq --aligned reads_aligned --sam --best 3 --mis_lis 2\n\n");
+    printf("     (5) Report the first 10 alignments reaching E-value threshold\n");
     printf("         sortmerna --ref euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --sam --num_alignments 10\n\n");
     printf("     For more examples and user instructions, see the SortMeRNA v1.99 beta User Manual 2014 (distributed with this program)\n\n");
 
@@ -276,8 +276,9 @@ main(int argc,
     bool edges_set = false;
     bool match_ambiguous_N_gv = false;
     bool yes_SQ = false;
-    bool best_gv_set = false;
+    bool min_lis_gv_set = false;
     bool num_alignments_gv_set = false;
+    bool best_gv_set = false;
     
     /// vector of (FASTA file, index name) pairs for loading index
     vector< pair<string,string> > myfiles;
@@ -539,7 +540,6 @@ main(int argc,
                             narg++;
                         }
                     }
-#ifdef OTU_MAP
                     /// output OTU map
                     else if ( strcmp ( myoption, "otu_map" ) == 0 )
                     {
@@ -554,7 +554,6 @@ main(int argc,
                             narg++;
                         }
                     }
-#endif
                     /// don't add pid to output files
                     else if ( strcmp ( myoption, "pid" ) == 0 )
                     {
@@ -781,24 +780,54 @@ main(int argc,
 					{
 						if ( blastout_gv )
 						{
-							fprintf(stderr,"\n  %sERROR%s: --blast has already been set once.\n\n","\033[0;31m","\033[0m");
+							fprintf(stderr,"\n  %sERROR%s: --blast INT has already been set once.\n\n","\033[0;31m","\033[0m");
 							exit(EXIT_FAILURE);
 						}
 						else
 						{
-							blastout_gv = true;
-							narg++;
+                            if ( (sscanf(argv[narg+1],"%d",&blast_outfmt) != 1) || (blast_outfmt < 0) || (blast_outfmt > 3))
+                            {
+                                fprintf(stderr,"\n  %sERROR%s: --blast INT must be a positive integer with value 0<=INT<=3.\n\n","\033[0;31m","\033[0m");
+                                exit(EXIT_FAILURE);
+                            }
+                            blastout_gv = true;
+							narg+=2;
 						}
 					}
 					/// output best alignment as predicted by the longest increasing subsequence
-					else if ( strcmp ( myoption, "best" ) == 0 )
+					else if ( strcmp ( myoption, "min_lis" ) == 0 )
 					{	
 						if (argv[narg+1] == NULL)
 						{
-							fprintf(stderr,"\n  %sERROR%s: --best [INT] requires an integer (>=0) as input (ex. --best 2) (note: 0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
+							fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] requires an integer (>=0) as input (ex. --min_lis 2) (note: 0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
 							exit(EXIT_FAILURE);
 						}
-						/// best_gv has already been set
+						/// min_lis_gv has already been set
+						else if ( min_lis_gv_set )
+                        {
+ 							fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
+							printlist();
+                        }
+						else
+                        {
+                            if ( (sscanf(argv[narg+1],"%d",&min_lis_gv) != 1) || (min_lis_gv < 0) )
+							{
+								fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] must be >= 0 (0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
+								exit(EXIT_FAILURE);
+							} 
+	 						narg+=2;
+                            min_lis_gv_set = true;
+						}
+					}
+                    /// output best alignment as predicted by the longest increasing subsequence
+					else if ( strcmp ( myoption, "best" ) == 0 )
+					{
+						if (argv[narg+1] == NULL)
+						{
+							fprintf(stderr,"\n  %sERROR%s: --best [INT] requires an integer (> 0) as input (ex. --best 2).\n\n","\033[0;31m","\033[0m");
+							exit(EXIT_FAILURE);
+						}
+						/// best_gv_set has already been set
 						else if ( best_gv_set )
                         {
  							fprintf(stderr,"\n  %sERROR%s: --best [INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
@@ -806,12 +835,11 @@ main(int argc,
                         }
 						else
                         {
-							best_gv = atoi(argv[narg+1]);
-                            if ( best_gv < 0 )
+                            if ( (sscanf(argv[narg+1],"%d",&num_best_hits_gv) != 1) || (num_best_hits_gv <= 0) )
 							{
-								fprintf(stderr,"\n  %sERROR%s: --best [INT] must be >= 0 (0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
+								fprintf(stderr,"\n  %sERROR%s: --best [INT] must be > 0.\n\n","\033[0;31m","\033[0m");
 								exit(EXIT_FAILURE);
-							} 
+							}
 	 						narg+=2;
                             best_gv_set = true;
 						}
@@ -955,13 +983,16 @@ main(int argc,
 							passes_set = true;
 						}
 					}
-#ifdef id_cov
                     else if ( strcmp (myoption, "id" ) == 0 )
                     {
-                        /// %id
+                        /// % id
                         if ( align_id < 0 )
                         {
-                            sscanf(argv[narg+1],"%lf",&align_id);
+                            if ( (sscanf(argv[narg+1],"%lf",&align_id) != 1) || (align_id < 0) || (align_id > 1))
+                            {
+                                fprintf(stderr,"\n  %sERROR%s: --id must be a positive float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
+                                exit(EXIT_FAILURE);
+                            }
                             narg+=2;
                         }
                         else
@@ -972,10 +1003,14 @@ main(int argc,
                     }
                     else if ( strcmp (myoption, "coverage" ) == 0 )
                     {
-                        /// %coverage
+                        /// % query coverage
                         if ( align_cov < 0 )
                         {
-                            sscanf(argv[narg+1],"%lf",&align_cov);
+                            if ( (sscanf(argv[narg+1],"%lf",&align_cov) != 1) || (align_cov<0) || (align_cov>1) )
+                            {
+                                fprintf(stderr,"\n  %sERROR%s: --coverage must be a positive float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
+                                exit(EXIT_FAILURE);
+                            }
                             narg+=2;
                         }
                         else
@@ -984,7 +1019,6 @@ main(int argc,
                             exit(EXIT_FAILURE);
                         }
                     }
-#endif
 					/// the version number
 					else if ( strcmp ( myoption, "version"  ) == 0 )
 					{
@@ -1185,7 +1219,7 @@ main(int argc,
     }
     
 	/// if best alignment was chosen, check an alignment format has also been chosen
-	if ( (best_gv > -1) && !(blastout_gv || samout_gv) )
+	if ( (min_lis_gv > -1) && !(blastout_gv || samout_gv) )
 	{
         eprintf("\n  %sERROR%s: '--best' has been set but no alignment format has been chosen ('--blast' or '--sam').\n\n","\033[0;31m","\033[0m");
         exit(EXIT_FAILURE);
@@ -1208,7 +1242,7 @@ main(int argc,
     if ( feeling_lucky_gv )
     {
         /// only one alignment (hence reference sequence) can be observed with option --feeling-lucky
-        if (best_gv > -1)
+        if (min_lis_gv > -1)
         {
             fprintf(stderr,"\n  %sERROR%s: --feeling-lucky cannot be set with --best [INT].\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
@@ -1223,7 +1257,7 @@ main(int argc,
     }
     
     /// only one of these options is allowed (--best outputs one alignment, --num_alignments outputs > 1 alignments)
-    if ( (best_gv > -1) && (num_alignments_gv > -1) )
+    if ( (min_lis_gv > -1) && (num_alignments_gv > -1) )
     {
         fprintf(stderr,"\n  %sERROR%s: --best [INT] and --num_alignments [INT] cannot be set together, please choose one.\n","\033[0;31m","\033[0m");
         fprintf(stderr,"  (--best [INT] will search INT highest scoring reference sequences and output a single best alignment, whereas --num_alignments [INT] will output the first INT alignments).\n\n");
@@ -1290,7 +1324,7 @@ main(int argc,
 	}
     
     /// output single best alignment from 10 best candidate hits (default)
-    if ( (best_gv == -1) && (num_alignments_gv == -1) && !feeling_lucky_gv ) best_gv = 2;
+    if ( (min_lis_gv == -1) && (num_alignments_gv == -1) && !feeling_lucky_gv ) min_lis_gv = 2;
      
     /// only FASTA/FASTQ output, run in feeling-lucky mode (filtering mode)
     if ( fastxout_gv && !(blastout_gv || samout_gv) ) feeling_lucky_gv = true;
