@@ -106,7 +106,7 @@ struct kmer
 struct index_parts_stats {
     unsigned long int start_part; /// where the section starts in the file
     unsigned long int seq_part_size; /// number of bytes of reference sequences to read
-    uint32_t numseq_part; /// the number of sequences in this part 
+    uint32_t numseq_part; /// the number of sequences in this part
 };
 
 

@@ -40,11 +40,8 @@
 /// length of reads
 #define READLEN 30000
 
-/// --id and --coverage options (under development)
-#define id_cov
 /// detect chimeric reads (under development)
 //#define chimera
-#define OTU_MAP
 
 
 /// Debugging memory map and splitting of reads file into multiple file
@@ -86,10 +83,8 @@ extern bool logout_gv;
 extern bool forward_gv;
 extern bool reverse_gv;
 
-#ifdef OTU_MAP
 /// output OTU map
 extern bool otumapout_gv;
-#endif
 
 /// flag to include pid in output file names
 extern bool pid_gv;
@@ -103,11 +98,14 @@ extern bool samout_gv;
 /// BLAST-like output
 extern bool blastout_gv;
 
+/// BLAST-like output format
+extern int32_t blast_outfmt;
+
 /// FASTA/Q output
 extern bool fastxout_gv;
 
 /// output first, best or all alignments
-extern int32_t best_gv;
+extern int32_t min_lis_gv;
 
 /// output first num_alignments_gv alignments
 extern int32_t num_alignments_gv;
