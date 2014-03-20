@@ -809,7 +809,7 @@ load_ref(char* ptr_dbfile,
 /*
  *
  * @function traversetrie: collect statistics on the mini-burst trie,
- * it's size, number of trie nodes vs. buckets
+ * its size, number of trie nodes vs. buckets
  * @param NodeElement* trie_node
  * @return void
  * @version 1.0 Jan 14, 2013
@@ -901,7 +901,7 @@ void traversetrie_debug( NodeElement* trie_node, uint32_t depth, uint32_t &total
 
 /*
  *
- * @function load index: read from binary file the 9-mer look-up
+ * @function load index: read from binary file the L/2-mer look-up
  * tables, the 19-mer position tables and the mini-burst tries 
  * @return void
  * @version 1.0 Jan 16, 2013
@@ -1259,18 +1259,33 @@ void find_lis( deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b, uint32_
 
 /*
  *
- * @function paralleltraversal: for each read, traverse the burst trie and the Levenshtein 
- * automaton in parallel, output the matching reads  
+ * @function paralleltraversal: this function is the main function of SortMeRNA with the following methods:
+ * (1) divide large read files into mmap'd regions, taking into account the read (and its pair) which may
+ * be split between two file sections;
+ * (2) load the index, compute the gumbel parameters (lamda and K) using ALP
+ * (3) using 3 intervals, scan over the read and collect all L-mers on the read which match to the
+ * reference index with at most 1 error. This is done using parallel traversal between the index and the
+ * Levenshtein automaton;
+ * (4) if enough L-mers were collected, extend them into longer matches using the Longest Increasing
+ * subsequence (LIS) of positions where the L-mers matched on the read and the associated reference sequences;
+ * (5) if the LIS is long enough, use the starting positions of the LIS to estimate the starting position
+ * of an alignment and pass this reference segment and read to SSW
+ * (6) if the alignment score is at least the minimum score corresponding to the E-value threshold, keep the read,
+ * otherwise continue searching for other LIS or more L-mers using smaller intervals
+ *
  * @param char* inputreads
  * @param *ptr_filetype_ar
  * @param *ptr_filetype_or
- * @param int num_databases
- * @param char** ptr_rrnadbdile
- * @param char* ptr_log_file
- * @param long int match
- * @param long int mismatch
- * @param long int gap_open
- * @param long int gap_extension
+ * @param int32_t match
+ * @param int32_t mismatch
+ * @param int32_t gap_open
+ * @param int32_t gap_extension
+ * @param int32_t score_N
+ * @param vector< vector<uint32_t> >& skiplengths
+ * @param int argc
+ * @param char **argv
+ * @param bool yes_SQ
+ * @param vector< pair<string,string> >& myfiles
  * @return void
  * @version 1.0 Jan 14, 2013
  *
@@ -1402,7 +1417,7 @@ paralleltraversal ( char* inputreads,
 	fclose(fp);
     
     /// check there are an even number of reads for --paired-in and --paired-out options to work
-    if ( (number_total_read%2 != 0) && (pairedin_gv) || (pairedout_gv) )
+    if ( (number_total_read%2 != 0) && (pairedin_gv || pairedout_gv) )
     {
         fprintf(stderr,"\n    %sWARNING%s: for --paired-in and --paired-out options, the number of reads must be even.\n","\033[0;33m","\033[0m");
         fprintf(stderr,"    There are %d reads in your file.\n",number_total_read);
@@ -2150,11 +2165,10 @@ if ( pid_gv )
         /// array of bits to represent all reads, a bit representing an accepted read is set to 1
         vector<bool> read_hits(strs);
         
-        /// array of bits to represent all reads, if the read was aligned with a maximum SW score, the bit is set to 1
-        vector<bool> read_max_SW_score(strs);
+        /// array of uint16_t to represent all reads, if the read was aligned with a maximum SW score, its number of alignments is incremeted by 1
+        uint16_t *read_max_SW_score = new uint16_t[strs];
+        memset(read_max_SW_score, 0, sizeof(uint16_t)*strs);
         
-        /// map storing the read number and the best alignment information
-        //map <uint32_t, s_align> read_hits_align_info;
         /// map accessed by read number, storing a pair <index for smallest SSW score, pointer to array of num_best_hits_gv>
         map<uint32_t, pair<uint16_t, s_align*> > read_hits_align_info;
         
@@ -2301,7 +2315,7 @@ if ( pid_gv )
                                 if ( num_alignments_x[readn] < 0 ) continue;
                             }
                             /// the maximum scoring alignment has been found, go to next read
-                            else if ( read_max_SW_score[readn] ) continue;
+                            else if ( read_max_SW_score[readn] == num_best_hits_gv ) continue;
                         }
                         
                         /// read on integer alphabet {0,1,2,3}
@@ -2596,6 +2610,8 @@ if ( pid_gv )
                                     
 #ifdef debug_align
                                     cout << "\t\t\treadhit = " << readhit << endl; //TESTING
+                                    cout << "\t\t\tseed_hits_gv = " << seed_hits_gv << endl; //TESTING
+                                    cout << "\t\t\tnum_best_hits_gv = " << num_best_hits_gv << endl; //TESTING
 #endif
                                     
 									/// STEP 1: the number of matching windows on the read to the reference database is greater than the threshold, continue analysis of read
@@ -2650,8 +2666,8 @@ if ( pid_gv )
                                         sort(most_frequent_seq.begin(), most_frequent_seq.end(), descending_s);
                                         
                                         
-                                        /*
-                                        cout << "hits\t reference index\t reference\t total size"; //TESTING
+                                        
+                                        /*cout << "hits\t reference index\t reference\t total size"; //TESTING
                                         for ( int f = 0; f < most_frequent_seq.size(); f++ )
                                         {
                                             cout << most_frequent_seq[f].first << "\t" << (2*(int)most_frequent_seq[f].second) << "\t"; //TESTING
@@ -2666,7 +2682,7 @@ if ( pid_gv )
 										for ( uint32_t k = 0; k < most_frequent_seq.size(); k++ )
 										{
                                             /// the maximum scoring alignment has been found, do not search for anymore alignments
-                                            if ( read_max_SW_score[readn] ) break;
+                                            if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                             
 											max_occur = most_frequent_seq[k].first;
 											max_seq = most_frequent_seq[k].second;
@@ -3024,7 +3040,6 @@ if ( pid_gv )
 #ifdef DEBUG_BEST_N
                                                                             cout << "add new alignment to empty slot.\n"; //TESTING
 #endif
-                                                                            
                                                                             *smallest_alignment = *result;
                                                                             /// not all slots are filled, simply increment the smallest_score_index to next slot in array
                                                                             if ( smallest_score_index < num_best_hits_gv-1 ) alignment->second.first = smallest_score_index+1;
@@ -3053,9 +3068,13 @@ if ( pid_gv )
                                                                             cout << "free result.\n"; //TESTING
 #endif
                                                                             
+                                                                            /// the maximum possible score for this read has been found
+                                                                            if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
+                                                                            
                                                                             /// free result
                                                                             free(result);
                                                                             result = NULL;
+                                                                            
                                                                         }
                                                                         /// all num_best_hits_gv slots have been filled, replace the alignment with the lowest score
                                                                         else if ( (result->score1) > smallest_alignment->score1 )
@@ -3091,6 +3110,9 @@ if ( pid_gv )
 #endif
                                                                             
                                                                             alignment->second.first = smallest_score_index;
+                                                                            
+                                                                            /// the maximum possible score for this read has been found
+                                                                            if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
                                                                             
                                                                             /// free result, except the cigar (now new cigar)
                                                                             free(result);
@@ -3149,14 +3171,19 @@ if ( pid_gv )
                                                                         
                                                                         //read_hits_align_info.insert( pair<uint32_t, s_align>(readn,*result) );
                                                                         
+                                                                        /// the maximum possible score for this read has been found
+                                                                        if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
+                                                                        
                                                                         /// free result, except the cigar
                                                                         free(result);
                                                                         result = NULL;
-                                                                        
+
+#ifdef DEBUG_BEST_N
+                                                                        cout << "added.\n"; //TESTING
+#endif
                                                                     }
                                                                     
-                                                                    /// the maximum possible score for this read has been found
-                                                                    if ( alignment->second.second->score1 == max_SW_score ) read_max_SW_score[readn].flip();
+
                                                                 }
                                                                 /// output the Nth alignment, or all alignments
                                                                 else if ( num_alignments_gv > -1 )
@@ -3173,7 +3200,6 @@ if ( pid_gv )
                                                                     char* read_seq_ptr = myread;
                                                                     int32_t qb = result->ref_begin1;
                                                                     int32_t pb = result->read_begin1;
-                                                                    uint32_t diff = 0;
                                                                     uint32_t mismatches = 0;
                                                                     uint32_t gaps = 0;
                                                                     
@@ -3333,7 +3359,7 @@ if ( pid_gv )
                                                             }//~pragma omp critical
                                                             
                                                             /// maximum score possible for the read has been reached, stop searching for further matches
-                                                            if ( read_max_SW_score[readn] ) break;
+                                                            if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                                                 
                                                             /// stop search after the first alignment for --feeling-lucky
                                                             if ( feeling_lucky_gv ) break;
@@ -3520,8 +3546,8 @@ if ( pid_gv )
     /// clear array holding number of reference sequences to search per read prior to choosing best alignment
     if ( best_x != NULL ) delete [] best_x;
         
-    read_max_SW_score.clear();
         
+    delete [] read_max_SW_score;
         
         
     eprintf("    Total number of reads mapped (incl. all reads file sections searched): %u\n",total_reads_mapped);
@@ -3584,6 +3610,9 @@ if ( pid_gv )
                     
                     if ( (ptr_alignment->index_num == index_num) && (ptr_alignment->part == part) && (ptr_alignment->score1 > 0 ) )
                     {
+                        /// number of reads which passed the % id and % query coverage thresholds
+                        bool read_to_count = true;
+                        
                         for ( int p = 0; p < num_best_hits_gv; p++ )
                         {
                             /// format read & get read length
@@ -3713,13 +3742,17 @@ if ( pid_gv )
                             if ( ((double)id/total_pos >= align_id) && ((double)align_len/readlen >= align_cov) )
                             {
                                 passed_filters = true;
-                                total_reads_mapped_cov++;
+                                if ( read_to_count )
+                                {
+                                    total_reads_mapped_cov++;
+                                    read_to_count = false;
+                                }
                             }
                             /// do not output alignment for FASTA/Q (and aligned == false, so neither for SAM or Blast-like)
                             else read_hits[readn].flip();
 
                             /// create OTU map
-                            if ( otumapout_gv )
+                            if ( otumapout_gv && (p==0) )
                             {
                                 /// add new observed reference sequence or a read to an existing reference (alignment must have at least 97% id)
                                 if ( ((double)id/total_pos >=0.97) && ((double)id/total_pos >=0.97) && passed_filters )
@@ -3843,6 +3876,9 @@ if ( pid_gv )
                             ptr_alignment->cigar = NULL;
                             
                             ptr_alignment++;
+                            
+                            /// check whether an alignment exists
+                            if ( ptr_alignment->cigar == NULL ) break;
                         }//~for all num_best_hits_gv alignments for this read
                         
                         /// free memory for all alignments of this read

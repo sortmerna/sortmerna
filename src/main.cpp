@@ -102,7 +102,7 @@ using namespace std;
 	bool as_percent_gv = false;
     bool nomask_gv = false;
     bool pid_gv = false;
-    int16_t num_best_hits_gv = 3;
+    int16_t num_best_hits_gv = 0;
 
 
 
@@ -835,7 +835,7 @@ main(int argc,
                         }
 						else
                         {
-                            if ( (sscanf(argv[narg+1],"%d",&num_best_hits_gv) != 1) || (num_best_hits_gv <= 0) )
+                            if ( (sscanf(argv[narg+1],"%hd",&num_best_hits_gv) != 1) || (num_best_hits_gv <= 0) )
 							{
 								fprintf(stderr,"\n  %sERROR%s: --best [INT] must be > 0.\n\n","\033[0;31m","\033[0m");
 								exit(EXIT_FAILURE);
@@ -1264,6 +1264,13 @@ main(int argc,
         exit(EXIT_FAILURE);
     }
     
+    /// option --mis_lis INT accompanies --best INT, cannot be set alone
+    if ( !best_gv_set && min_lis_gv_set )
+    {
+        fprintf(stderr,"\n  %sERROR%s: --min_lis INT must be set together with --best INT.\n\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
+    }
+    
     
     if (nomask_gv)
     {
@@ -1324,7 +1331,13 @@ main(int argc,
 	}
     
     /// output single best alignment from 10 best candidate hits (default)
-    if ( (min_lis_gv == -1) && (num_alignments_gv == -1) && !feeling_lucky_gv ) min_lis_gv = 2;
+    if ( !best_gv_set && !num_alignments_gv_set && !feeling_lucky_gv )
+    {
+        num_best_hits_gv = 1;
+        min_lis_gv = 2;
+    }
+    
+    if ( best_gv_set && !min_lis_gv_set ) min_lis_gv = 2;
      
     /// only FASTA/FASTQ output, run in feeling-lucky mode (filtering mode)
     if ( fastxout_gv && !(blastout_gv || samout_gv) ) feeling_lucky_gv = true;
