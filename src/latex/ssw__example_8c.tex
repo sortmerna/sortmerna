@@ -1,0 +1,183 @@
+\hypertarget{ssw__example_8c}{\section{ssw\-\_\-example.\-c File Reference}
+\label{ssw__example_8c}\index{ssw\-\_\-example.\-c@{ssw\-\_\-example.\-c}}
+}
+{\ttfamily \#include $<$stdlib.\-h$>$}\\*
+{\ttfamily \#include $<$stdio.\-h$>$}\\*
+{\ttfamily \#include $<$stdint.\-h$>$}\\*
+{\ttfamily \#include \char`\"{}ssw.\-h\char`\"{}}\\*
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{ssw__example_8c_a61224cf3fdd6cd4deda4d3573a1a0753}{ssw\-\_\-write} (s\-\_\-align $\ast$a, char $\ast$ref\-\_\-seq, char $\ast$read\-\_\-seq, int8\-\_\-t $\ast$\hyperlink{paralleltraversal_8cpp_a4632424eb2dea529266e95ec7808ceed}{table})
+\item 
+int \hyperlink{ssw__example_8c_af3ed9c200de85b53c94cd18764b246a2}{main} (int argc, char $\ast$const argv\mbox{[}$\,$\mbox{]})
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{ssw__example_8c_af3ed9c200de85b53c94cd18764b246a2}{\index{ssw\-\_\-example.\-c@{ssw\-\_\-example.\-c}!main@{main}}
+\index{main@{main}!ssw_example.c@{ssw\-\_\-example.\-c}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (
+\begin{DoxyParamCaption}
+\item[{int}]{argc, }
+\item[{char $\ast$const}]{argv\mbox{[}$\,$\mbox{]}}
+\end{DoxyParamCaption}
+)}}\label{ssw__example_8c_af3ed9c200de85b53c94cd18764b246a2}
+
+\begin{DoxyCode}
+104                                          \{
+105     int32\_t l, m, k, match = 2, mismatch = 2, gap\_open = 3, gap\_extension = 1;  \textcolor{comment}{// default parameters for
+       genome sequence alignment}
+106     \textcolor{comment}{// reference sequence}
+107     \textcolor{keywordtype}{char} ref\_seq[40] = \{\textcolor{charliteral}{'C'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'G'}
+      , \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'T'}, 
+108                         \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}
+      , \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'\(\backslash\)0'}\};    
+109     \textcolor{keywordtype}{char} read\_seq[16] = \{\textcolor{charliteral}{'C'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'G'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'A'}, \textcolor{charliteral}{'T'}, \textcolor{charliteral}{'C'}, \textcolor{charliteral}{'\(\backslash\)0'}\};  \textcolor{comment}{
+      // read sequence}
+110     s\_profile* profile;
+111     int8\_t* num = (int8\_t*)malloc(16);  \textcolor{comment}{// the read sequence represented in numbers}
+112     int8\_t* ref\_num = (int8\_t*)malloc(64);  \textcolor{comment}{// the read sequence represented in numbers}
+113     s\_align* result;
+114 
+115     \textcolor{comment}{/* This table is used to transform nucleotide letters into numbers. */}
+116     int8\_t nt\_table[128] = \{
+117         4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+118         4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+119         4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+120         4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+121         4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+122         4, 4, 4, 4,  3, 0, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+123         4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+124         4, 4, 4, 4,  3, 0, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4 
+125     \};
+126     
+127     \textcolor{comment}{// initialize scoring matrix for genome sequences}
+128     \textcolor{comment}{//  A  C  G  T  N (or other ambiguous code) }
+129     \textcolor{comment}{//  2 -2 -2 -2  0   A}
+130     \textcolor{comment}{// -2  2 -2 -2  0   C}
+131     \textcolor{comment}{// -2 -2  2 -2  0   G}
+132     \textcolor{comment}{// -2 -2 -2  2  0   T}
+133     \textcolor{comment}{//  0  0  0  0  0   N (or other ambiguous code) }
+134     int8\_t* mat = (int8\_t*)calloc(25, \textcolor{keyword}{sizeof}(int8\_t));
+135     \textcolor{keywordflow}{for} (l = k = 0; l < 4; ++l) \{
+136         \textcolor{keywordflow}{for} (m = 0; m < 4; ++m) mat[k++] = l == m ? match : - mismatch; \textcolor{comment}{/* weight\_match : -weight\_mismatch 
+      */}
+137         mat[k++] = 0; \textcolor{comment}{// ambiguous base: no penalty}
+138     \}
+139     \textcolor{keywordflow}{for} (m = 0; m < 5; ++m) mat[k++] = 0;
+140 
+141     \textcolor{keywordflow}{for} (m = 0; m < 15; ++m) num[m] = nt\_table[(\textcolor{keywordtype}{int})read\_seq[m]];
+142     profile = \hyperlink{ssw_8c_afb7b0d0e5dfca925b8d0679edd9fed00}{ssw\_init}(num, 15, mat, 5, 2);
+143     \textcolor{keywordflow}{for} (m = 0; m < 39; ++m) ref\_num[m] = nt\_table[(\textcolor{keywordtype}{int})ref\_seq[m]];
+144 
+145     \textcolor{comment}{// Only the 8 bit of the flag is setted. ssw\_align will always return the best alignment beginning
+       position and cigar.}
+146     result = \hyperlink{ssw_8c_a5ab13aa021d7fc8e19cc9293bc7cea61}{ssw\_align} (profile, ref\_num, 39, gap\_open, gap\_extension, 1, 0, 0, 15);   
+147     \hyperlink{ssw__example_8c_a61224cf3fdd6cd4deda4d3573a1a0753}{ssw\_write}(result, ref\_seq, read\_seq, nt\_table);
+148 
+149     free(mat);
+150     free(ref\_num);
+151     free(num);
+152     \textcolor{keywordflow}{return}(0);
+153 \}
+\end{DoxyCode}
+\hypertarget{ssw__example_8c_a61224cf3fdd6cd4deda4d3573a1a0753}{\index{ssw\-\_\-example.\-c@{ssw\-\_\-example.\-c}!ssw\-\_\-write@{ssw\-\_\-write}}
+\index{ssw\-\_\-write@{ssw\-\_\-write}!ssw_example.c@{ssw\-\_\-example.\-c}}
+\subsubsection[{ssw\-\_\-write}]{\setlength{\rightskip}{0pt plus 5cm}void ssw\-\_\-write (
+\begin{DoxyParamCaption}
+\item[{s\-\_\-align $\ast$}]{a, }
+\item[{char $\ast$}]{ref\-\_\-seq, }
+\item[{char $\ast$}]{read\-\_\-seq, }
+\item[{int8\-\_\-t $\ast$}]{table}
+\end{DoxyParamCaption}
+)}}\label{ssw__example_8c_a61224cf3fdd6cd4deda4d3573a1a0753}
+
+\begin{DoxyCode}
+18                            \{ 
+19 
+20     fprintf(stdout, \textcolor{stringliteral}{"optimal\_alignment\_score: %d\(\backslash\)tsub-optimal\_alignment\_score: %d\(\backslash\)t"}, a->score1, a->score2)
+      ;
+21     \textcolor{keywordflow}{if} (a->ref\_begin1 + 1) fprintf(stdout, \textcolor{stringliteral}{"target\_begin: %d\(\backslash\)t"}, a->ref\_begin1 + 1);
+22     fprintf(stdout, \textcolor{stringliteral}{"target\_end: %d\(\backslash\)t"}, a->ref\_end1 + 1);
+23     \textcolor{keywordflow}{if} (a->read\_begin1 + 1) fprintf(stdout, \textcolor{stringliteral}{"query\_begin: %d\(\backslash\)t"}, a->read\_begin1 + 1);
+24     fprintf(stdout, \textcolor{stringliteral}{"query\_end: %d\(\backslash\)n\(\backslash\)n"}, a->read\_end1 + 1);
+25     \textcolor{keywordflow}{if} (a->cigar) \{
+26         int32\_t i, c = 0, left = 0, e = 0, qb = a->ref\_begin1, pb = a->read\_begin1;
+27         \textcolor{keywordflow}{while} (e < a->cigarLen || left > 0) \{
+28             int32\_t count = 0;
+29             int32\_t q = qb;
+30             int32\_t p = pb;
+31             fprintf(stdout, \textcolor{stringliteral}{"Target: %8d    "}, q + 1);
+32             \textcolor{keywordflow}{for} (c = e; c < a->cigarLen; ++c) \{
+33                 int32\_t letter = 0xf&*(a->cigar + c);
+34                 int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+35                 int32\_t l = (count == 0 && left > 0) ? left: length;
+36                 \textcolor{keywordflow}{for} (i = 0; i < l; ++i) \{
+37                     \textcolor{keywordflow}{if} (letter == 1) fprintf(stdout, \textcolor{stringliteral}{"-"});
+38                     \textcolor{keywordflow}{else} \{
+39                         fprintf(stdout, \textcolor{stringliteral}{"%c"}, *(ref\_seq + q));
+40                         ++ q;
+41                     \}
+42                     ++ count;
+43                     \textcolor{keywordflow}{if} (count == 60) \textcolor{keywordflow}{goto} step2;
+44                 \}
+45             \}
+46 step2:
+47             fprintf(stdout, \textcolor{stringliteral}{"    %d\(\backslash\)n                    "}, q);
+48             q = qb;
+49             count = 0;
+50             \textcolor{keywordflow}{for} (c = e; c < a->cigarLen; ++c) \{
+51                 int32\_t letter = 0xf&*(a->cigar + c);
+52                 int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+53                 int32\_t l = (count == 0 && left > 0) ? left: length;
+54                 \textcolor{keywordflow}{for} (i = 0; i < l; ++i)\{ 
+55                     \textcolor{keywordflow}{if} (letter == 0) \{
+56                         \textcolor{keywordflow}{if} (\hyperlink{paralleltraversal_8cpp_a4632424eb2dea529266e95ec7808ceed}{table}[(\textcolor{keywordtype}{int})*(ref\_seq + q)] == \hyperlink{paralleltraversal_8cpp_a4632424eb2dea529266e95ec7808ceed}{table}[(\textcolor{keywordtype}{int})*(read\_seq + p)])fprintf(
+      stdout, \textcolor{stringliteral}{"|"});
+57                         \textcolor{keywordflow}{else} fprintf(stdout, \textcolor{stringliteral}{"*"});
+58                         ++q;
+59                         ++p;
+60                     \} \textcolor{keywordflow}{else} \{
+61                         fprintf(stdout, \textcolor{stringliteral}{"*"});
+62                         \textcolor{keywordflow}{if} (letter == 1) ++p;
+63                         \textcolor{keywordflow}{else} ++q;
+64                     \}
+65                     ++ count;
+66                     \textcolor{keywordflow}{if} (count == 60) \{
+67                         qb = q;
+68                         \textcolor{keywordflow}{goto} step3;
+69                     \}
+70                 \}
+71             \}
+72 step3:
+73             p = pb;
+74             fprintf(stdout, \textcolor{stringliteral}{"\(\backslash\)nQuery:  %8d    "}, p + 1);
+75             count = 0;
+76             \textcolor{keywordflow}{for} (c = e; c < a->cigarLen; ++c) \{
+77                 int32\_t letter = 0xf&*(a->cigar + c);
+78                 int32\_t length = (0xfffffff0&*(a->cigar + c))>>4;
+79                 int32\_t l = (count == 0 && left > 0) ? left: length;
+80                 \textcolor{keywordflow}{for} (i = 0; i < l; ++i) \{ 
+81                     \textcolor{keywordflow}{if} (letter == 2) fprintf(stdout, \textcolor{stringliteral}{"-"});
+82                     \textcolor{keywordflow}{else} \{
+83                         fprintf(stdout, \textcolor{stringliteral}{"%c"}, *(read\_seq + p));
+84                         ++p;
+85                     \}
+86                     ++ count;
+87                     \textcolor{keywordflow}{if} (count == 60) \{
+88                         pb = p;
+89                         left = l - i - 1;
+90                         e = (left == 0) ? (c + 1) : c;
+91                         \textcolor{keywordflow}{goto} end;
+92                     \}
+93                 \}
+94             \}
+95             e = c;
+96             left = 0;
+97 end:
+98             fprintf(stdout, \textcolor{stringliteral}{"    %d\(\backslash\)n\(\backslash\)n"}, p);
+99         \}
+100     \}
+101 \}
+\end{DoxyCode}
