@@ -1542,7 +1542,7 @@ int main (int argc, char** argv)
          (c) output the unique 19-mers into a file for MPHF */
         
         /// number of the index part
-        uint32_t part = 0;
+        uint16_t part = 0;
         /// starting position given by ftell() where to begin reading the reference sequences
         unsigned long int start_part = 0;
         /// number of bytes of reference sequences to read

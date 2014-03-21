@@ -1755,6 +1755,9 @@ if ( pid_gv )
 	/// (FASTQ/FASTQ) paired-read follows a split read at top of file section
     int32_t offset_pair_from_top = 0;
     
+    /// map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
+    map<string,vector<string> > otu_map;
+    
 
 	/// Loop through all mmap'd read file sections
 	while ( file_s < file_sections )
@@ -3555,14 +3558,10 @@ if ( pid_gv )
 
         
 
-    /// filter the sequences by %id and %query coverage, output them if --best INT 
+    /// filter the sequences by %id and %query coverage, output them if --best INT
     if ( min_lis_gv > -1 )
     {
         if ( samout_gv || blastout_gv ) eprintf("    Writing alignments ... ");
-        
-        /// map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
-        map<string,vector<string> > otu_map;
-        uint32_t otu_map_size = 0;
         
         TIME(s);
         for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
@@ -3763,7 +3762,7 @@ if ( pid_gv )
                                 }
                             }
 
-                            /// create OTU map
+                            /// fill OTU map
                             if ( otumapout_gv )
                             {
                                 /// add new observed reference sequence or a read to an existing reference (alignment must have at least 97% id)
@@ -3783,7 +3782,6 @@ if ( pid_gv )
                                     while ( *read_seq_id_ptr != ' ' ) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
                                     string read_seq_str = read_seq_arr;
                                     
-                                    otu_map_size++; //TESTING
                                     otu_map[ref_seq_str].push_back(read_seq_str);
                                 }
                             }
@@ -3925,43 +3923,6 @@ if ( pid_gv )
         TIME(f);
         if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );
         
-
-        /// output OTU map to file
-        if ( otumapout_gv )
-        {
-            ofstream outfile (acceptedotumap_file,ios::app);
-            
-            map<string,vector<string> >::iterator otu_map_it;
-            
-            for ( otu_map_it = otu_map.begin(); otu_map_it != otu_map.end(); otu_map_it++ )
-            {
-                /// output the ref ID
-                outfile << otu_map_it->first;
-                /// output all reads mapping to ref ID
-                for ( int i = 0; i < otu_map_it->second.size(); i++ ) outfile << "\t" << otu_map_it->second[i];
-                outfile << "\n";
-            }
-            
-            if ( outfile.is_open() ) outfile.close();
-            else
-            {
-                fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedotumap_file);
-                exit(EXIT_FAILURE);
-            }
-            
-            otu_map.clear();
-            
-            /// free memory for OTU mapping file
-            if ( acceptedotumap_file != NULL )
-            {
-                delete [] acceptedotumap_file;
-                acceptedotumap_file = NULL;
-            }
-            
-            cout << "otu_map_size = " << otu_map_size << endl; //TESTING
-            
-        }
-        
     }// if ( (min_lis_gv > -1) || feeling_lucky )
         
     if ( align_cov || align_id )
@@ -4091,6 +4052,40 @@ if ( pid_gv )
         
 
   }//~while ( file_s < file_sections )
+    
+    /// output OTU map to file
+    if ( otumapout_gv )
+    {
+        ofstream outfile (acceptedotumap_file,ios::app);
+        
+        map<string,vector<string> >::iterator otu_map_it;
+        
+        for ( otu_map_it = otu_map.begin(); otu_map_it != otu_map.end(); otu_map_it++ )
+        {
+            /// output the ref ID
+            outfile << otu_map_it->first;
+            /// output all reads mapping to ref ID
+            for ( int i = 0; i < otu_map_it->second.size(); i++ ) outfile << "\t" << otu_map_it->second[i];
+            outfile << "\n";
+        }
+        
+        if ( outfile.is_open() ) outfile.close();
+        else
+        {
+            fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedotumap_file);
+            exit(EXIT_FAILURE);
+        }
+        
+        otu_map.clear();
+        
+        /// free memory for OTU mapping file
+        if ( acceptedotumap_file != NULL )
+        {
+            delete [] acceptedotumap_file;
+            acceptedotumap_file = NULL;
+        }        
+    }
+
     
     /// close the reads file descriptor
     close(fd);

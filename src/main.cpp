@@ -173,11 +173,10 @@ void printlist()
 	printf("       %sor%s (default)\n","\033[31m","\033[0m");
 	printf("     %s--best%s            %sINT%s             report INT best alignments per read reaching E-value           %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         by searching --min_lis INT candidate alignments\n");
-    printf("     %s--min_lis%s         %sINT%s             search all alignments having the first INT best LIS            %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--min_lis%s         %sINT%s             search all alignments having the first INT longest LIS         %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         LIS stands for Longest Increasing Subsequence, it is \n");
     printf("                                         computed using seeds' positions to expand hits into\n");
-    printf("                                         longer matches prior to Smith-Waterman alignment. The\n");
-    printf("                                         best LIS is defined to be the longest one.\n\n\n");
+    printf("                                         longer matches prior to Smith-Waterman alignment. \n\n\n");
 	printf("   <options>:\n");
 #ifdef NOMASK_option
     printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");

@@ -15,17 +15,16 @@ void report_blast (ofstream &fileout,
                 uint32_t readlen,
                 uint32_t bitscore,
                 bool strand, // 1: forward aligned ; 0: reverse complement aligned
-                uint32_t format, // 0: Blast-like human readable, 1: Blast tabular m8
                 double id,
+                double coverage,
                 uint32_t mismatches,
-                uint32_t gaps,
-                bool cigar_out /// optional flag to output CIGAR string in last column of blast m8 output
+                uint32_t gaps
                 )
 {
     char to_char[5] = {'A','C','G','T','N'};
 
-    /// Blast-like human readable alignments
-    if ( format == 0 )
+    /// Blast-like pairwise alignment
+    if ( blast_outfmt == 0 )
     {
         fileout << "Sequence ID: ";
         char* tmp = ref_name;
@@ -126,23 +125,25 @@ void report_blast (ofstream &fileout,
             }
         }
     }
-    /// Blast tabular m8
-    else if ( format == 1 )
+    /// Blast tabular m8 + optional columns for CIGAR and query coverage
+    else if ( blast_outfmt > 0 )
     {
         /// (1) Query
         while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
-        /// (2) Subject
         fileout << "\t";
+        /// (2) Subject
         while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t')) fileout << (char)*ref_name++;
+        fileout << "\t";
         /// (3) %id
-        fileout << id << "\t";
+        fileout.precision(4);
+        fileout << id*100 << "\t";
         /// (4) alignment length
         fileout << (a->read_end1 - a->read_begin1 +1 ) << "\t";
         /// (5) mismatches
         fileout << mismatches << "\t";
         /// (6) gap openings
         fileout << gaps << "\t";
-        /// (7) q.stat
+        /// (7) q.start
         fileout << a->read_begin1+1 << "\t";
         /// (8) q.end
         fileout << a->read_end1+1 << "\t";
@@ -155,7 +156,7 @@ void report_blast (ofstream &fileout,
         /// (12) bit score
         fileout << bitscore;
         /// (13) optional: output CIGAR 
-        if ( cigar_out )
+        if ( blast_outfmt > 1 )
         {
             fileout << "\t";
             /// masked region at beginning of alignment
@@ -169,19 +170,20 @@ void report_blast (ofstream &fileout,
                 else fileout << "D";
             }
             
-            uint32_t end_mask = readlen-(a->read_end1-a->read_begin1)-(a->read_begin1)+1;
+            uint32_t end_mask = readlen-a->read_end1-1;
             /// output the masked region at end of alignment
             if ( end_mask > 0 ) fileout << end_mask << "S";
+        }
+        /// (14) optional: output % query coverage
+        if ( blast_outfmt > 2 )
+        {
+            fileout << "\t";
+            fileout.precision(4);
+            fileout << coverage*100 << "\t";
         }
         fileout << "\n";
 
     }//~blast tabular m8
-    else
-    {
-        fprintf(stderr,"\n  %sERROR%s: format can only be 0 or 1 (internal code error, outputformat.cpp).\n","\033[0;31m","\033[0m");
-        exit(EXIT_FAILURE);
-    }
-    
     
     return ;
 }
@@ -194,9 +196,7 @@ void report_sam (ofstream &fileout,
                 char* read_qual,
                 char* ref_name,
                 char* ref_seq,
-                double evalue,
                 uint32_t readlen,
-                uint32_t bitscore,
                 bool strand, // 1: forward aligned ; 0: reverse complement aligned
                 uint32_t diff )
 {
@@ -226,19 +226,16 @@ void report_sam (ofstream &fileout,
     /// output the masked region at beginning of alignment
     if ( a->read_begin1 != 0 ) fileout << a->read_begin1 << "S";
     
-    /// alignment length
-    uint32_t len_align = 0;
-    
     for (c = 0; c < a->cigarLen; ++c) {
         uint32_t letter = 0xf&*(a->cigar + c);
         uint32_t length = (0xfffffff0&*(a->cigar + c))>>4;
         fileout << length;
-        if (letter == 0) { fileout << "M"; len_align+=length; }
-        else if (letter == 1) { fileout << "I"; len_align+=length; }
+        if (letter == 0) fileout << "M";
+        else if (letter == 1) fileout << "I";
         else fileout << "D";
     }
     
-    uint32_t end_mask = readlen-(a->read_begin1)-len_align;
+    uint32_t end_mask = readlen-a->read_end1-1;
     /// output the masked region at end of alignment
     if ( end_mask > 0 ) fileout << end_mask << "S";
     

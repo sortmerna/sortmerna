@@ -50,17 +50,17 @@ static const bool True = 1;
 */
 
 typedef struct {
-	uint16_t score1;
-	uint32_t part;
-	uint32_t ref_seq;	
+    uint32_t* cigar;
+	uint32_t ref_seq;
  	int32_t ref_begin1;
 	int32_t ref_end1; 
 	int32_t	read_begin1;
 	int32_t read_end1;
-    uint32_t index_num;
     uint32_t readlen;
-    uint32_t* cigar;
-    uint32_t cigarLen;
+	uint16_t score1;
+	uint16_t part;
+    uint16_t index_num;
+    uint16_t cigarLen;
     bool strand;
 } s_align;
 
