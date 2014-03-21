@@ -107,6 +107,9 @@ extern bool fastxout_gv;
 /// output first, best or all alignments
 extern int32_t min_lis_gv;
 
+/// number of best alignments per read to output
+extern int16_t num_best_hits_gv;
+
 /// output first num_alignments_gv alignments
 extern int32_t num_alignments_gv;
 

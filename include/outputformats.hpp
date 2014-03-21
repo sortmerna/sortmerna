@@ -20,11 +20,10 @@ void report_blast (ofstream &fileout,
                    uint32_t readlen,
                    uint32_t bitscore,
                    bool strand,
-                   uint32_t format,
                    double id,
+                   double coverage,
                    uint32_t mismatches,
-                   uint32_t gaps,
-                   bool cigar_out);
+                   uint32_t gaps);
 
 
 void report_sam (ofstream &fileout,
@@ -34,9 +33,7 @@ void report_sam (ofstream &fileout,
                  char* read_qual,
                  char* ref_name,
                  char* ref_seq,
-                 double evalue,
                  uint32_t readlen,
-                 uint32_t bitscore,
                  bool strand,
                  uint32_t diff);
 
