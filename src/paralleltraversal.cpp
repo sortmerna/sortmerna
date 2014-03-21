@@ -3002,8 +3002,8 @@ if ( pid_gv )
                                                                 result->read_end1 += align_que_start;
                                                                 result->readlen = readlen;
                                                             
-                                                                /// update best alignment or add a new one
-                                                                if ( (min_lis_gv > -1) || feeling_lucky_gv )
+                                                                /// update best alignment
+                                                                if ( min_lis_gv > -1 )
                                                                 {
                                                                     result->index_num = index_num;
                                                                     result->ref_seq = max_seq;
@@ -3186,7 +3186,7 @@ if ( pid_gv )
 
                                                                 }
                                                                 /// output the Nth alignment, or all alignments
-                                                                else if ( num_alignments_gv > -1 )
+                                                                else if ( (num_alignments_gv > -1) || feeling_lucky_gv )
                                                                 {
                                                                     /// update number of alignments to output per read
                                                                     if ( num_alignments_gv > 0 ) num_alignments_x[readn]--;
@@ -3555,8 +3555,8 @@ if ( pid_gv )
 
         
 
-    /// filter the sequences by %id and %query coverage, output them if --best INT or --feeling-lucky option was chosen (for FASTA only output)
-    if ( (min_lis_gv > -1) || feeling_lucky_gv )
+    /// filter the sequences by %id and %query coverage, output them if --best INT 
+    if ( min_lis_gv > -1 )
     {
         if ( samout_gv || blastout_gv ) eprintf("    Writing alignments ... ");
         
@@ -3612,6 +3612,20 @@ if ( pid_gv )
                     {
                         /// number of reads which passed the % id and % query coverage thresholds
                         bool read_to_count = true;
+                        /// maximum SW score of all best alignments for a read
+                        int score_is_max = 0;
+                        /// index for array slot of alignments holding maximum score
+                        int index_max_score = 0;
+                        
+                        /// find the alignment slot with maximum SW score
+                        for ( int p = 0; p < num_best_hits_gv; p++ )
+                        {
+                            if ( (ptr_alignment[p].cigar != NULL) && (ptr_alignment[p].score1 > score_is_max) )
+                            {
+                                score_is_max = ptr_alignment[p].score1;
+                                index_max_score = p;
+                            }
+                        }
                         
                         for ( int p = 0; p < num_best_hits_gv; p++ )
                         {
@@ -3748,14 +3762,12 @@ if ( pid_gv )
                                     read_to_count = false;
                                 }
                             }
-                            /// do not output alignment for FASTA/Q (and aligned == false, so neither for SAM or Blast-like)
-                            else read_hits[readn].flip();
 
                             /// create OTU map
-                            if ( otumapout_gv && (p==0) )
+                            if ( otumapout_gv )
                             {
                                 /// add new observed reference sequence or a read to an existing reference (alignment must have at least 97% id)
-                                if ( ((double)id/total_pos >=0.97) && ((double)id/total_pos >=0.97) && passed_filters )
+                                if ( ((double)id/total_pos >= 0.97) && passed_filters && (p==index_max_score) )
                                 {
                                     /// reference sequence identifier for mapped read
                                     char ref_seq_arr[4000] = "";

@@ -177,7 +177,7 @@ void printlist()
     printf("                                         LIS stands for Longest Increasing Subsequence, it is \n");
     printf("                                         computed using seeds' positions to expand hits into\n");
     printf("                                         longer matches prior to Smith-Waterman alignment. The\n");
-    printf("                                         best LIS is the longest one.\n\n\n");
+    printf("                                         best LIS is defined to be the longest one.\n\n\n");
 	printf("   <options>:\n");
 #ifdef NOMASK_option
     printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
