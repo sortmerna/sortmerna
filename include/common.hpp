@@ -79,6 +79,9 @@ extern bool chimeraout_gv;
 /// output overall statistics file
 extern bool logout_gv;
 
+/// output FASTA/FASTQ reads passing E-value threshold but having < %id and < %coverage scores for de novo OTU construction
+extern bool de_novo_otu_gv;
+
 /// forward and reverse strands to search
 extern bool forward_gv;
 extern bool reverse_gv;
