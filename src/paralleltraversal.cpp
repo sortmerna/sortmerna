@@ -1482,6 +1482,7 @@ paralleltraversal ( char* inputreads,
 	char *acceptedstrings_sam = NULL;
 	char *acceptedstrings_blast = NULL;
     char *logoutfile = NULL;
+    char *denovo_otus_file = NULL;
 #ifdef chimera
     char *acceptedchimeras_file = NULL;
 #endif
@@ -1622,6 +1623,27 @@ paralleltraversal ( char* inputreads,
             
             otumap.open ( acceptedotumap_file );
             otumap.close();
+        }
+        if ( de_novo_otu_gv )
+        {
+            ofstream denovo_otu;
+            denovo_otus_file = new char[1000]();
+            if ( denovo_otus_file == NULL )
+            {
+				fprintf(stderr,"  %sERROR%s: could not allocate memory for denovo_otus_file_name (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+				exit(EXIT_FAILURE);
+            }
+            strcpy( denovo_otus_file, ptr_filetype_ar );
+            if ( pid_gv )
+            {
+                strcat( denovo_otus_file, "_");
+                strcat( denovo_otus_file, pidStr);
+            }
+            strcat( denovo_otus_file, "_denovo.");
+			strcat ( denovo_otus_file, suffix);
+            
+            denovo_otu.open ( denovo_otus_file );
+            denovo_otu.close();
         }
 	}//~if ( ptr_filetype_ar != NULL )
 
@@ -2167,6 +2189,8 @@ if ( pid_gv )
         
         /// array of bits to represent all reads, a bit representing an accepted read is set to 1
         vector<bool> read_hits(strs);
+        /// array of bits to represent all reads, a bit representing an accepted read with < %id and < %coverage is set to 1
+        vector<bool> read_hits_denovo(strs);
         
         /// array of uint16_t to represent all reads, if the read was aligned with a maximum SW score, its number of alignments is incremeted by 1
         uint16_t *read_max_SW_score = new uint16_t[strs];
@@ -2329,6 +2353,8 @@ if ( pid_gv )
                         int32_t ambiguous_nt[READLEN] = {0};
                         /// size of ambiguous_nt
                         uint32_t size_ambiguous_nt = 0;
+                        /// flag to count only 1 alignment per read
+                        bool read_to_count = true;
                         
 						/// length of read
 						uint32_t readlen = 0;
@@ -3121,25 +3147,6 @@ if ( pid_gv )
                                                                             free(result);
                                                                             result = NULL;
                                                                         }
-                                                                        
-                                                                        /*
-                                                                        /// new alignment has higher score than the one recorded
-                                                                        if ( (result->score1) > alignment->second.score1 )
-                                                                        {
-                                                                            /// decrement number of reads mapped to database with lower score
-                                                                            reads_matched_per_db[alignment->second.index_num]--;
-                                                                            /// increment number of reads mapped to database with higher score
-                                                                            reads_matched_per_db[index_num]++;
-                                                                            /// free the old cigar
-                                                                            free(alignment->second.cigar);
-                                                                            alignment->second.cigar = NULL;
-                                                                            //memcpy(&(alignment->second),result,sizeof(s_align));
-                                                                            alignment->second = *result;
-                                                                            /// free result, except the cigar (now new cigar)
-                                                                            free(result);
-                                                                            result = NULL;
-                                                                        }
-                                                                        */
                                                                         else
                                                                         {
                                                                             /// new alignment has a lower score, destroy it
@@ -3194,8 +3201,6 @@ if ( pid_gv )
                                                                     /// update number of alignments to output per read
                                                                     if ( num_alignments_gv > 0 ) num_alignments_x[readn]--;
                                                                     
-                                                                    bool passed_filters = false;
-                                                                    
                                                                     /// get the edit distance between reference and read (serves for SAM output and computing %id and %query coverage)
                                                                     double id = 0;
                                                                     char to_char[5] = {'A','C','G','T','N'};
@@ -3226,6 +3231,13 @@ if ( pid_gv )
                                                                     }
                                                                     
                                                                     int32_t align_len = abs(result->read_end1+1 - result->read_begin1);
+                                                                    int32_t total_pos = mismatches+gaps+id;
+                                                                    stringstream ss;
+                                                                    ss.precision(3);
+                                                                    ss << (double)id/total_pos << ' ' << (double)align_len/readlen;
+                                                                    double align_id_round = 0.0;
+                                                                    double align_cov_round = 0.0;
+                                                                    ss >> align_id_round >> align_cov_round;
 //#define debug_id_cov
 #ifdef debug_id_cov
                                                                     cout << "read tag: ";
@@ -3245,112 +3257,113 @@ if ( pid_gv )
                                                                     cout << "%cov = " << (double)align_len/readlen << endl;
                                                                     cout << "align_cov = " << (double)align_cov << endl;
                                                                     cout << "align_id = " << (double)align_id << endl << endl;
+                                                                    cout << "align_id_round = " << (double)align_id_round << endl;
+                                                                    cout << "align_cov_round = " << (double)align_cov_round << endl;
 #endif
                                                                     
-                                                                    /// the alignment passed the %id and %query coverage threshold, output it (all SAM, Blast-like and FASTA/Q)
-                                                                    if ( ((double)id/align_len >= align_id) && ((double)align_len/readlen >= align_cov) )
+                                                                    /// the alignment passed the %id and %query coverage threshold, output it (SAM, BLAST and FASTA/Q)
+                                                                    if ( (align_id_round >= align_id) && (align_cov_round >= align_cov) && read_to_count )
                                                                     {
-                                                                        passed_filters = true;
                                                                         total_reads_mapped_cov++;
+                                                                        read_to_count = false;
                                                                     }
-                                                                    /// do not output alignment for FASTA/Q (and aligned == false, so neither for SAM or Blast-like)
-                                                                    else read_hits[readn].flip();
-                                                                    
-
-                                                                    /// %id and %query coverage filters have been passed (if used)
-                                                                    if ( passed_filters )
+                                                                    else
                                                                     {
-                                                                        int32_t total_pos = gaps+mismatches+id;
-                                                                        
-                                                                        /// quality for FASTQ
-                                                                        char* read_qual = NULL;
-                                                                        if ( filesig == '@' )
+                                                                        /// do not output alignment for FASTA/Q
+                                                                        read_hits[readn].flip();
+                                                                        /// output read for de novo OTU construction (only alignments *not* used to construct OTU-map are output)
+                                                                        read_hits_denovo[readn].flip();
+                                                                    }
+                                                                                                                                        
+                                                                    /// quality for FASTQ
+                                                                    char* read_qual = NULL;
+                                                                    if ( filesig == '@' )
+                                                                    {
+                                                                        /// forward
+                                                                        if ( strand )
                                                                         {
-                                                                            /// forward
-                                                                            if ( strand )
+                                                                            /// if second part of split-read or last read in file
+                                                                            if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
                                                                             {
-                                                                                /// if second part of split-read or last read in file
-                                                                                if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
-                                                                                {
-                                                                                    read_qual = reads[readn];
-                                                                                    int8_t numnewlines = 0;
-                                                                                    while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
-                                                                                }
-                                                                                else read_qual = reads[readn+1]-readlen-1;
+                                                                                read_qual = reads[readn];
+                                                                                int8_t numnewlines = 0;
+                                                                                while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
                                                                             }
-                                                                            /// reverse-complement
-                                                                            else
-                                                                            {
-                                                                                /// if second part of split read or last read in file
-                                                                                if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
-                                                                                {
-                                                                                    read_qual = reads[readn];
-                                                                                    
-                                                                                    /// last file section
-                                                                                    if ( file_s == file_sections-1 )
-                                                                                    {
-    #ifdef debug_mmap
-                                                                                        if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
-    #endif
-                                                                                        while ( *read_qual != '\0' ) read_qual++;
-                                                                                        if ( *(read_qual-3) == '\n') read_qual--;
-                                                                                        read_qual-=2; //account for '\n\0'
-                                                                                    }
-                                                                                    /// file section > 0 and < last file section
-                                                                                    else
-                                                                                    {
-    #ifdef debug_mmap
-                                                                                        if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
-    #endif
-                                                                                        while ( read_qual != finalnt ) read_qual++;
-                                                                                        read_qual--;
-                                                                                    }
-                                                                                    
-                                                                                }
-                                                                                else read_qual = reads[readn+1]-2;
-
-                                                                            }
+                                                                            else read_qual = reads[readn+1]-readlen-1;
                                                                         }
-                                                                    
+                                                                        /// reverse-complement
+                                                                        else
+                                                                        {
+                                                                            /// if second part of split read or last read in file
+                                                                            if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
+                                                                            {
+                                                                                read_qual = reads[readn];
+                                                                                
+                                                                                /// last file section
+                                                                                if ( file_s == file_sections-1 )
+                                                                                {
+#ifdef debug_mmap
+                                                                                    if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
+#endif
+                                                                                    while ( *read_qual != '\0' ) read_qual++;
+                                                                                    if ( *(read_qual-3) == '\n') read_qual--;
+                                                                                    read_qual-=2; //account for '\n\0'
+                                                                                }
+                                                                                /// file section > 0 and < last file section
+                                                                                else
+                                                                                {
+#ifdef debug_mmap
+                                                                                    if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
+#endif
+                                                                                    while ( read_qual != finalnt ) read_qual++;
+                                                                                    read_qual--;
+                                                                                }
+                                                                                
+                                                                            }
+                                                                            else read_qual = reads[readn+1]-2;
+
+                                                                        }
+                                                                    }
                                                                 
-                                                                        if ( blastout_gv )
-                                                                        {
-                                                                            uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(result->score1) - log((gumbel[index_num].second)))/(float)log(2));
-                                                                            double evalue_score = (double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num]*pow(EXP,(-(gumbel[index_num].first)*result->score1));
-                                                                            
-                                                                            report_blast (acceptedblast, //blast output file
-                                                                                result, //SW alignment cigar
-                                                                                reads[readn-1]+1, //read name
-                                                                                &myread[0], //read sequence
-                                                                                read_qual, //read quality
-                                                                                reference_seq[(2*(int)max_seq)]+1, //reference name 
-                                                                                reference_seq[(2*(int)max_seq)+1], //reference sequence
-                                                                                evalue_score, //e-value score (only for blast)
-                                                                                readlen,
-                                                                                bitscore,
-                                                                                strand, //forward or reverse complement
-                                                                                (double)id/total_pos, /// %id
-                                                                                (double)align_len/readlen, /// %query coverage
-                                                                                mismatches, //mismatches
-                                                                                gaps
-                                                                            );
-                                                                        }
+                                                            
+                                                                    if ( blastout_gv )
+                                                                    {
+                                                                        uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(result->score1) - log((gumbel[index_num].second)))/(float)log(2));
+                                                                        double evalue_score = (double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num]*pow(EXP,(-(gumbel[index_num].first)*result->score1));
+                                                                        
+                                                                        report_blast (acceptedblast, //blast output file
+                                                                            result, //SW alignment cigar
+                                                                            reads[readn-1]+1, //read name
+                                                                            &myread[0], //read sequence
+                                                                            read_qual, //read quality
+                                                                            reference_seq[(2*(int)max_seq)]+1, //reference name 
+                                                                            reference_seq[(2*(int)max_seq)+1], //reference sequence
+                                                                            evalue_score, //e-value score (only for blast)
+                                                                            readlen,
+                                                                            bitscore,
+                                                                            strand, //forward or reverse complement
+                                                                            (double)id/total_pos, /// %id
+                                                                            (double)align_len/readlen, /// %query coverage
+                                                                            mismatches, //mismatches
+                                                                            gaps
+                                                                        );
+                                                                    }
 
-                                                                        if ( samout_gv )
-                                                                        {
-                                                                            report_sam (acceptedsam, //sam output file
-                                                                                result, //SW alignment cigar
-                                                                                reads[readn-1]+1, //read name
-                                                                                &myread[0], //read sequence
-                                                                                read_qual, //read quality
-                                                                                reference_seq[(2*(int)max_seq)]+1, //reference name 
-                                                                                reference_seq[(2*(int)max_seq)+1], //reference sequence
-                                                                                readlen,
-                                                                                strand, //forward or reverse complement
-                                                                                mismatches+gaps
-                                                                            );
-                                                                        }
-                                                                    }//~passed_filters
+                                                                    if ( samout_gv )
+                                                                    {
+                                                                        report_sam (acceptedsam, //sam output file
+                                                                            result, //SW alignment cigar
+                                                                            reads[readn-1]+1, //read name
+                                                                            &myread[0], //read sequence
+                                                                            read_qual, //read quality
+                                                                            reference_seq[(2*(int)max_seq)]+1, //reference name 
+                                                                            reference_seq[(2*(int)max_seq)+1], //reference sequence
+                                                                            readlen,
+                                                                            strand, //forward or reverse complement
+                                                                            mismatches+gaps
+                                                                        );
+                                                                    }
+
                                                                 
                                                                     /// free alignment info
                                                                     if ( result != 0 ) align_destroy(&result);
@@ -3597,9 +3610,7 @@ if ( pid_gv )
                 /// run through all the reads, output those which aligned
                 for ( uint32_t readn = 1; readn < strs; readn+=2 )
                 {
-                    //map<uint32_t,s_align>::iterator alignment = read_hits_align_info.find(readn);
                     map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
-                    bool passed_filters = false;
 
                     /// this read does not have any alignment
                     if ( alignment == read_hits_align_info.end() )  continue;
@@ -3609,7 +3620,7 @@ if ( pid_gv )
                     
                     if ( (ptr_alignment->index_num == index_num) && (ptr_alignment->part == part) && (ptr_alignment->score1 > 0 ) )
                     {
-                        /// number of reads which passed the % id and % query coverage thresholds
+                        /// flag to count only 1 alignment per read
                         bool read_to_count = true;
                         /// maximum SW score of all best alignments for a read
                         int score_is_max = 0;
@@ -3728,14 +3739,21 @@ if ( pid_gv )
                             
                             int32_t align_len = abs(ptr_alignment->read_end1+1 - ptr_alignment->read_begin1);
                             int32_t total_pos = mismatches+gaps+id;
+                            stringstream ss;
+                            ss.precision(3);
+                            ss << (double)id/total_pos << ' ' << (double)align_len/readlen;
+                            double align_id_round = 0.0;
+                            double align_cov_round = 0.0;
+                            ss >> align_id_round >> align_cov_round;
+                        
                             
 //#define debug_id_cov
 #ifdef debug_id_cov
-                            /* cout << "read tag: ";
+                            cout << "read tag: ";
                             char* tt = reads[readn-1];
                             while (*tt != '\n' ) cout << (char)*tt++;
                             cout << endl;
-                            
+                            /*
                             cout << "ref tag: ";
                             tt = reference_seq[(2*(int)max_seq)];
                             while (*tt != '\n' ) cout << (char)*tt++;
@@ -3745,28 +3763,26 @@ if ( pid_gv )
                             cout << "total_pos = " << total_pos << endl;
                             cout << "id = " << id << endl;
                             cout << "Score = " << ptr_alignment->score1 << endl;
-                            cout << "%id = " << (double)id/align_len << endl;
+                            cout << "%id = " << (double)id/total_pos << endl;
                             cout << "%cov = " << (double)align_len/readlen << endl;
                             cout << "align_cov = " << (double)align_cov << endl;
-                            cout << "align_id = " << (double)align_id << endl << endl;
+                            cout << "align_id = " << (double)align_id << endl;
+                            cout << "align_id_round = " << (double)align_id_round << endl;
+                            cout << "align_cov_round = " << (double)align_cov_round << endl;
 #endif
                             
-                            /// the alignment passed the %id and %query coverage threshold, output it (all SAM, Blast-like and FASTA/Q)
-                            if ( ((double)id/total_pos >= align_id) && ((double)align_len/readlen >= align_cov) )
+                            /// the alignment passed the %id and %query coverage threshold, add it to OTU-map
+                            if ( (align_id_round >= align_id) && (align_cov_round >= align_cov) )
                             {
-                                passed_filters = true;
+                                /// count read only 1 time per alignment
                                 if ( read_to_count )
                                 {
                                     total_reads_mapped_cov++;
                                     read_to_count = false;
                                 }
-                            }
-
-                            /// fill OTU map
-                            if ( otumapout_gv )
-                            {
-                                /// add new observed reference sequence or a read to an existing reference (alignment must have at least 97% id)
-                                if ( ((double)id/total_pos >= 0.97) && passed_filters && (p==index_max_score) )
+                                
+                                /// fill OTU map with highest-scoring alignment for the read
+                                if ( otumapout_gv && (p==index_max_score) )
                                 {
                                     /// reference sequence identifier for mapped read
                                     char ref_seq_arr[4000] = "";
@@ -3783,12 +3799,33 @@ if ( pid_gv )
                                     string read_seq_str = read_seq_arr;
                                     
                                     otu_map[ref_seq_str].push_back(read_seq_str);
+                                    
+                                    bool declare_novel_otus = false; //TMP
+                                    
+                                    /// cluster reads belonging to novel OTUs (OTU-picking pipeline #2)
+                                    if ( declare_novel_otus )
+                                    {
+                                        /// id < 97% defines new species, keep coverage above threshold align_cov and analyze the maximum score for a read
+                                        if ( ((double)id/total_pos < 0.97) && ((double)align_len/readlen >= align_cov) && (p==index_max_score) )
+                                        {
+                                            ;
+                                            
+                                        }
+                                    }
                                 }
                             }
+                            else
+                            {
+                                /// do not output alignment for FASTA/Q (only alignments used to construct OTU-map are output)
+                                read_hits[readn].flip();
+                                /// output read for de novo OTU construction (only alignments *not* used to construct OTU-map are output)
+                                read_hits_denovo[readn].flip();
+                            }
+                        
                             
                             
                             /// output alignment to SAM or Blast-like formats
-                            if ( (samout_gv || blastout_gv ) && passed_filters )
+                            if ( samout_gv || blastout_gv )
                             {
                                 /// quality for FASTQ
                                 char* read_qual = NULL;
@@ -3928,8 +3965,8 @@ if ( pid_gv )
     if ( align_cov || align_id )
     {
         eprintf("    Total number of reads mapped with");
-        if ( align_id > 0 ) eprintf(" > %.2lf identity,",align_id);
-        if ( align_cov > 0 ) eprintf(" > %.2lf query coverage",align_cov);
+        if ( align_id > 0 ) eprintf(" >= %.2lf identity,",align_id);
+        if ( align_cov > 0 ) eprintf(" >= %.2lf query coverage",align_cov);
         eprintf(" (incl. all reads file sections searched): %u\n",total_reads_mapped_cov);
     }
     
@@ -3991,7 +4028,14 @@ if ( pid_gv )
 #endif
                   );
         
+    /// output aligned and non-aligned reads with < %id and < %coverage to FASTA/FASTQ file for de novo analysis
+    if ( de_novo_otu_gv )
+    {
+        report_denovo(denovo_otus_file,ptr_filetype_or,ptr_filetype_ar,reads,strs,read_hits_denovo,file_s,finalnt);
+    }
+        
     read_hits.clear();
+    read_hits_denovo.clear();
         
 
    	/// free the split_read
@@ -4083,7 +4127,7 @@ if ( pid_gv )
         {
             delete [] acceptedotumap_file;
             acceptedotumap_file = NULL;
-        }        
+        }
     }
 
     

@@ -80,6 +80,7 @@ using namespace std;
 	bool pairedout_gv = false;
     bool chimeraout_gv = false;
     bool logout_gv = false;
+    bool de_novo_otu_gv = false;
 	long unsigned int pagesize_gv = sysconf(_SC_PAGE_SIZE);
 	long unsigned int maxpages_gv = 0;
 	long unsigned int map_size_gv = pagesize_gv;
@@ -155,6 +156,9 @@ void printlist()
   printf("                                         (appropriate extension will be added)\n");
 	printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (for aligned and/or rejected reads)\n");
+  printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         (set using --id) and < %%cov (set using --coverage) but \n");
+    printf("                                          passing the E-value threshold, for de novo OTU construction\n");
   printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (for aligned reads only)\n");
     printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -456,7 +460,7 @@ main(int argc,
 					/// the name of output aligned reads
 					else if ( strcmp ( myoption, "aligned" ) == 0 )
 					{
-						if ( argv[narg+1] == NULL )
+						if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
 						{
 							fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --aligned\n","\033[0;31m","\033[0m");
 							exit(EXIT_FAILURE);
@@ -492,7 +496,7 @@ main(int argc,
 					/// the name of output rejected reads
 					else if ( strcmp ( myoption, "other"  ) == 0 )
 					{
-						if ( argv[narg+1] == NULL )
+						if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
 						{
 							fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --other\n","\033[0;31m","\033[0m");
 							exit(EXIT_FAILURE);	
@@ -536,6 +540,20 @@ main(int argc,
                         else
                         {
                             logout_gv = true;
+                            narg++;
+                        }
+                    }
+                /// output FASTA/FASTQ reads passing E-value threshold but having < %id and < %coverage scores for de novo OTU construction
+                    else if ( strcmp ( myoption, "de_novo_otu" ) == 0 )
+                    {
+                        if ( de_novo_otu_gv )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --de_novo_otu has already been set once.\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        else
+                        {
+                            de_novo_otu_gv = true;
                             narg++;
                         }
                     }

@@ -135,7 +135,7 @@ void report_blast (ofstream &fileout,
         while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t')) fileout << (char)*ref_name++;
         fileout << "\t";
         /// (3) %id
-        fileout.precision(4);
+        fileout.precision(3);
         fileout << id*100 << "\t";
         /// (4) alignment length
         fileout << (a->read_end1 - a->read_begin1 +1 ) << "\t";
@@ -178,7 +178,7 @@ void report_blast (ofstream &fileout,
         if ( blast_outfmt > 2 )
         {
             fileout << "\t";
-            fileout.precision(4);
+            fileout.precision(3);
             fileout << coverage*100 << "\t";
         }
         fileout << "\n";
@@ -584,6 +584,145 @@ void report_fasta (char* acceptedstrings,
         eprintf(" done [%.2f sec]\n", (f-s) );
     }//~if ( ptr_filetype_or != NULL )
  
+    return ;
+}
+
+
+
+
+
+void report_denovo(char *denovo_otus_file,
+              char *ptr_filetype_or,
+              char *ptr_filetype_ar,
+              char **reads,
+              int32_t strs,
+              vector<bool>& read_hits_denovo,
+              uint32_t file_s,
+              char *finalnt )
+{
+    /// for timing different processes
+    double s,f;
+    
+    /// output accepted reads
+    if ( (ptr_filetype_ar != NULL) && (fastxout_gv || chimeraout_gv) )
+    {
+        eprintf("    Writing de novo FASTA/FASTQ ... ");
+        TIME(s);
+        
+        ofstream denovoreads (denovo_otus_file, ios::app);
+
+        /// pair-ended reads
+        if ( pairedin_gv || pairedout_gv )
+        {
+            /// loop through every read, output accepted reads
+            for ( uint32_t i = 1; i < strs; i+=4 )
+            {
+                char* begin_read = reads[i-1];
+                    
+                /// either both reads are accepted, or one is accepted and pairedin_gv
+                if ( (read_hits_denovo[i] || read_hits_denovo[i+1]) && pairedin_gv)
+                {
+                    char* end_read = NULL;
+                    if ( file_s > 0 )
+                    {
+                        /// first read (of split-read + paired-read)
+                        if ( i==1 )
+                        {
+                            end_read = reads[3];
+                            while (*end_read != '\0') end_read++;
+                        }
+                        /// all reads except the last one
+                        else if ( (i+4) < strs ) end_read = reads[i+3];
+                        /// last read
+                        else end_read = finalnt;
+                    }
+                    else
+                    {
+                        /// all reads except the last one
+                        if ( (i+4) < strs ) end_read = reads[i+3];
+                        /// last read
+                        else end_read = finalnt;
+                    }
+                    
+                    /// output aligned read
+                    if ( fastxout_gv )
+                    {
+                        if ( denovoreads.is_open() )
+                        {
+                            while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
+                            if ( *end_read == '\n' ) denovoreads << "\n";
+                        }
+                        else
+                        {
+                            fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                    
+                }//~the read was accepted
+            }//~for all reads
+        }//~if paired-in or paired-out
+        /// regular or pair-ended reads don't need to go into the same file
+        else
+        {
+            /// loop through every read, output accepted (and chimeric) reads
+            for ( uint32_t i = 1; i < strs; i+=2 )
+            {
+                char* begin_read = reads[i-1];
+                
+                /// the read was accepted
+                if ( read_hits_denovo[i] )
+                {
+                    char* end_read = NULL;
+                    /// split-read and paired-read exist at a different location in memory than the mmap
+                    if ( file_s > 0 )
+                    {
+                        /// first read (of split-read + paired-read)
+                        if ( i==1 ) end_read = reads[2];
+                        /// second read (of split-read + paired-read)
+                        else if ( i==3 )
+                        {
+                            end_read = reads[3];
+                            while (*end_read != '\0') end_read++;
+                        }
+                        /// all reads except the last one
+                        else if ( (i+2) < strs ) end_read = reads[i+1];
+                        /// last read
+                        else end_read = finalnt;
+                    }
+                    /// the first (and possibly only) file part, all reads are in mmap
+                    else
+                    {
+                        if ( (i+2) < strs) end_read = reads[i+1];
+                        else end_read = finalnt;
+                    }
+                    
+                    /// output aligned read
+                    if ( fastxout_gv )
+                    {
+                        if ( denovoreads.is_open() )
+                        {
+                            while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
+                            if ( *end_read == '\n' ) denovoreads << "\n";
+                        }
+                        else
+                        {
+                            fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                    
+                } //~if read was accepted
+            }//~for all reads
+        }//~if not paired-in or paired-out
+        
+        if ( denovoreads.is_open() ) denovoreads.close();
+        
+        TIME(f);
+        eprintf(" done [%.2f sec]\n", (f-s) );
+        
+    }//~if ( ptr_filetype_ar != NULL )
+    
     return ;
 }
 

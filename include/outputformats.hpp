@@ -51,4 +51,13 @@ void report_fasta (char* acceptedstrings,
 #endif
                    );
 
+void report_denovo(char *denovo_otus_file,
+              char *ptr_filetype_or,
+              char *ptr_filetype_ar,
+              char **reads,
+              int32_t strs,
+              vector<bool>& read_hits_denovo,
+              uint32_t file_s,
+                   char *finalnt );
+
 void report_biom (char* biomfile);
