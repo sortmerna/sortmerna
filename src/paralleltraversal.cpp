@@ -3706,7 +3706,7 @@ if ( pid_gv )
                                 format_rev(reads[readn],end_read,&myread[0],filesig);
                             }//~reverse-complement read
                             
-
+                            
                             /// get the edit distance between reference and read (serves for SAM output and computing %id and %query coverage)
                             uint32_t ref_seq = ptr_alignment->ref_seq;
                             double id = 0;
@@ -3788,14 +3788,14 @@ if ( pid_gv )
                                     char ref_seq_arr[4000] = "";
                                     char* ref_seq_arr_ptr = ref_seq_arr;
                                     char* ref_seq_id_ptr = reference_seq[(2*ref_seq)]+1;
-                                    while ( *ref_seq_id_ptr != '\n' ) *ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
+                                    while ( (*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') ) *ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
                                     string ref_seq_str = ref_seq_arr;
                                     
                                     /// read identifier
                                     char read_seq_arr[4000] = "";
                                     char* read_seq_arr_ptr = read_seq_arr;
                                     char* read_seq_id_ptr = reads[readn-1]+1;
-                                    while ( *read_seq_id_ptr != ' ' ) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
+                                    while ( (*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') ) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
                                     string read_seq_str = read_seq_arr;
                                     
                                     otu_map[ref_seq_str].push_back(read_seq_str);
