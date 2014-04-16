@@ -1029,7 +1029,7 @@ load_index( char* ptr_dbindex,
 #endif
 					}
 
-					/// build the mini-burst trie
+					/// build the mini-burst trie/Users/jenya/Desktop/sortmerna-dev/sortmerna-dev-git/sortmerna/src/paralleltraversal.cpp
 					while ( !nodes.empty() )
 					{
 						/// ptr to traverse each trie node
@@ -3211,9 +3211,9 @@ if ( pid_gv )
                                                                     uint32_t mismatches = 0;
                                                                     uint32_t gaps = 0;
                                                                     
-                                                                    for (c = 0; c < result->cigarLen; ++c) {
-                                                                        uint32_t letter = 0xf&*(result->cigar + c);
-                                                                        uint32_t length = (0xfffffff0&*(result->cigar + c))>>4;
+                                                                    for (uint32_t c2 = 0; c2 < result->cigarLen; ++c2) {
+                                                                        uint32_t letter = 0xf&*(result->cigar + c2);
+                                                                        uint32_t length = (0xfffffff0&*(result->cigar + c2))>>4;
                                                                         if (letter == 0) {
                                                                             for (int p = 0; p < length; ++p){
                                                                                 if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
@@ -3586,6 +3586,8 @@ if ( pid_gv )
                 uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
                 uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
                 
+                cout << "part = " << part << endl; //TESTING
+                
                 /// block of memory to hold all ids + reference sequences
                 char* buffer = new char[(seq_part_size+1)]();
                 if ( buffer == NULL )
@@ -3718,9 +3720,9 @@ if ( pid_gv )
                             uint32_t mismatches = 0;
                             uint32_t gaps = 0;
                             
-                            for (c = 0; c < ptr_alignment->cigarLen; ++c) {
-                                uint32_t letter = 0xf&*(ptr_alignment->cigar + c);
-                                uint32_t length = (0xfffffff0&*(ptr_alignment->cigar + c))>>4;
+                            for (uint32_t c2 = 0; c2 < ptr_alignment->cigarLen; ++c2) {
+                                uint32_t letter = 0xf&*(ptr_alignment->cigar + c2);
+                                uint32_t length = (0xfffffff0&*(ptr_alignment->cigar + c2))>>4;
                                 if (letter == 0) {
                                     for (int p = 0; p < length; ++p){
                                         if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
@@ -3747,7 +3749,7 @@ if ( pid_gv )
                             ss >> align_id_round >> align_cov_round;
                         
                             
-//#define debug_id_cov
+#define debug_id_cov
 #ifdef debug_id_cov
                             cout << "read tag: ";
                             char* tt = reads[readn-1];
@@ -4031,7 +4033,7 @@ if ( pid_gv )
     /// output aligned and non-aligned reads with < %id and < %coverage to FASTA/FASTQ file for de novo analysis
     if ( de_novo_otu_gv )
     {
-        report_denovo(denovo_otus_file,ptr_filetype_or,ptr_filetype_ar,reads,strs,read_hits_denovo,file_s,finalnt);
+        report_denovo(denovo_otus_file,reads,strs,read_hits_denovo,file_s,finalnt);
     }
         
     read_hits.clear();
