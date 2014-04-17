@@ -43,7 +43,7 @@ To compile on Mac OS:
 gcc --version
 ```
 
-If the compiler is LLVM-GCC (deprecated, see note on http://bioinfo.lifl.fr/RNA/sortmerna/), 
+If the compiler is LLVM-GCC (deprecated, see [Deprecation and Removal Notice](https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/WhatsNewXcode/Articles/xcode_5_0.html), 
 then you must set it to Clang or the original GCC compiler (installable via MacPorts).
 
 (2a) To set your compiler to Clang (check you have it "clang --version", if not then 
