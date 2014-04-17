@@ -60,7 +60,7 @@ versions, 4.8 is one of the latest):
 
 ```bash
 export CC=gcc-mp-4.8
-export CXX=gcc-mp-4.8
+export CXX=g++-mp-4.8
 ```
 
 (3) Compile the code
