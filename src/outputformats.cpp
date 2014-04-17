@@ -592,8 +592,6 @@ void report_fasta (char* acceptedstrings,
 
 
 void report_denovo(char *denovo_otus_file,
-              char *ptr_filetype_or,
-              char *ptr_filetype_ar,
               char **reads,
               int32_t strs,
               vector<bool>& read_hits_denovo,
@@ -603,8 +601,8 @@ void report_denovo(char *denovo_otus_file,
     /// for timing different processes
     double s,f;
     
-    /// output accepted reads
-    if ( (ptr_filetype_ar != NULL) && (fastxout_gv || chimeraout_gv) )
+    /// output reads with < id% alignment (passing E-value) for de novo clustering
+    if ( denovo_otus_file != NULL )
     {
         eprintf("    Writing de novo FASTA/FASTQ ... ");
         TIME(s);
@@ -645,20 +643,16 @@ void report_denovo(char *denovo_otus_file,
                     }
                     
                     /// output aligned read
-                    if ( fastxout_gv )
+                    if ( denovoreads.is_open() )
                     {
-                        if ( denovoreads.is_open() )
-                        {
-                            while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
-                            if ( *end_read == '\n' ) denovoreads << "\n";
-                        }
-                        else
-                        {
-                            fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
+                        while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
+                        if ( *end_read == '\n' ) denovoreads << "\n";
                     }
-                    
+                    else
+                    {
+                        fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
                 }//~the read was accepted
             }//~for all reads
         }//~if paired-in or paired-out
@@ -698,18 +692,15 @@ void report_denovo(char *denovo_otus_file,
                     }
                     
                     /// output aligned read
-                    if ( fastxout_gv )
+                    if ( denovoreads.is_open() )
                     {
-                        if ( denovoreads.is_open() )
-                        {
-                            while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
-                            if ( *end_read == '\n' ) denovoreads << "\n";
-                        }
-                        else
-                        {
-                            fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
+                        while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
+                        if ( *end_read == '\n' ) denovoreads << "\n";
+                    }
+                    else
+                    {
+                        fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
+                        exit(EXIT_FAILURE);
                     }
                     
                 } //~if read was accepted
