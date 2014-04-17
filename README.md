@@ -21,7 +21,9 @@ To compile on Linux OS:
 
 (1) Check your GCC compiler is version 4.0 or higher:
 
->> gcc --version
+```bash
+gcc --version
+```
 
 (2) Compile the code:
 
