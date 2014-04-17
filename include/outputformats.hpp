@@ -52,8 +52,6 @@ void report_fasta (char* acceptedstrings,
                    );
 
 void report_denovo(char *denovo_otus_file,
-              char *ptr_filetype_or,
-              char *ptr_filetype_ar,
               char **reads,
               int32_t strs,
               vector<bool>& read_hits_denovo,
