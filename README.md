@@ -27,8 +27,10 @@ gcc --version
 
 (2) Compile the code:
 
->> ./configure
->> make
+```bash
+./configure
+make
+```
 
 
 
@@ -37,7 +39,9 @@ To compile on Mac OS:
 
 (1) Check the version of your C/C++ compiler:
 
->> gcc --version
+```bash
+gcc --version
+```
 
 If the compiler is LLVM-GCC (deprecated, see note on http://bioinfo.lifl.fr/RNA/sortmerna/), 
 then you must set it to Clang or the original GCC compiler (installable via MacPorts).
@@ -45,20 +49,26 @@ then you must set it to Clang or the original GCC compiler (installable via MacP
 (2a) To set your compiler to Clang (check you have it "clang --version", if not then 
 see "Install Clang for Mac OS" below):
 
->> export CC=clang
->> export CXX=clang++
+```bash
+export CC=clang
+export CXX=clang++
+```
 
 (2b) To set your compiler to the original GCC (check you have it "gcc-mp-4.8 --version", 
 if not then see "Install GCC through MacPorts" below. Note the GCC compiler comes in many 
 versions, 4.8 is one of the latest):
 
->> export CC=gcc-mp-4.8
->> export CXX=gcc-mp-4.8
+```bash
+export CC=gcc-mp-4.8
+export CXX=gcc-mp-4.8
+```
 
 (3) Compile the code
->> ./configure
->> make
 
+```bash
+./configure
+make
+```
 
 Install Clang for Mac OS 
 ------------------------
@@ -79,8 +89,10 @@ Install GCC though MacPorts
 
 Assuming you have MacPorts installed, type:
 
->> sudo port selfupdate
->> sudo port install gcc48
+```bash
+sudo port selfupdate
+sudo port install gcc48
+```
 
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8 .
 
