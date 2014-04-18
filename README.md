@@ -4,7 +4,7 @@ sortmerna
 This is ongoing development of SortMeRNA. For the latest stable release, see http://bioinfo.lifl.fr/RNA/sortmerna/.
 
 
-WARNING: Do not attempt to run _autotools_batch_.sh unless you have Autotools installed. 
+WARNING: Do not attempt to run "_autotools_batch_.sh" unless you have Autotools installed. 
 This script is for producing a distribution version of the code.
 
 NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
