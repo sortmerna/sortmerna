@@ -1,0 +1,269 @@
+\hypertarget{bitvector_8cpp}{\section{bitvector.\-cpp File Reference}
+\label{bitvector_8cpp}\index{bitvector.\-cpp@{bitvector.\-cpp}}
+}
+{\ttfamily \#include $<$iostream$>$}\\*
+{\ttfamily \#include $<$iterator$>$}\\*
+{\ttfamily \#include \char`\"{}../include/bitvector.\-hpp\char`\"{}}\\*
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{bitvector_8cpp_ae329187fe262a80a646448a8d33c6a5d}{init\-\_\-win\-\_\-f} (char $\ast$ptrf, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-000, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-010)
+\item 
+void \hyperlink{bitvector_8cpp_af4bcc2bac4c141e09a0ad653d1a55a1c}{init\-\_\-win\-\_\-r} (char $\ast$ptrr, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-000, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-010)
+\item 
+void \hyperlink{bitvector_8cpp_a92c7276665a2078fe82b6effd94b3aba}{offset\-\_\-win\-\_\-k1} (char $\ast$F\-W2, char $\ast$R\-W1, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-0\-P0, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-100, M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-110)
+\item 
+void \hyperlink{bitvector_8cpp_ae5475ba2be596995742f642d028651a9}{output\-\_\-win\-\_\-k1} (M\-Y\-B\-I\-T\-S\-E\-T $\ast$bittable\-\_\-000, bool w)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+M\-Y\-B\-I\-T\-S\-E\-T \hyperlink{bitvector_8cpp_abd5132090e5b0c29d68d74a44e6bad88}{mask\-\_\-4} = 15
+\item 
+M\-Y\-B\-I\-T\-S\-E\-T \hyperlink{bitvector_8cpp_af31a02e05becb262bcf763608fc759de}{mask\-\_\-3} = 7
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{bitvector_8cpp_ae329187fe262a80a646448a8d33c6a5d}{\index{bitvector.\-cpp@{bitvector.\-cpp}!init\-\_\-win\-\_\-f@{init\-\_\-win\-\_\-f}}
+\index{init\-\_\-win\-\_\-f@{init\-\_\-win\-\_\-f}!bitvector.cpp@{bitvector.\-cpp}}
+\subsubsection[{init\-\_\-win\-\_\-f}]{\setlength{\rightskip}{0pt plus 5cm}void init\-\_\-win\-\_\-f (
+\begin{DoxyParamCaption}
+\item[{char $\ast$}]{ptrf, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-000, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-010}
+\end{DoxyParamCaption}
+)}}\label{bitvector_8cpp_ae329187fe262a80a646448a8d33c6a5d}
+
+\begin{DoxyCode}
+50 \{
+51     \textcolor{comment}{/******* [w\_1] forward *******/}
+52 
+53     MYBITSET *reset  = bittable\_000;
+54 
+55     \textcolor{comment}{/* set manually the bitvectors at position i = 0 of [w\_1] reverse */}
+56     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} bitn = 2; bitn >= 0; bitn-- )
+57     \{
+58         *(reset+*ptrf++) |= (1<<bitn);
+59     \}
+60 
+61 \textcolor{preprocessor}{    #ifdef NEW}
+62 \textcolor{preprocessor}{}    \textcolor{comment}{/* set manually the bitvectors at position 0 of each window */}
+63     *(bittable\_000+*ptrf++) |= 4;
+64     *(bittable\_000+*ptrf++) |= 2;
+65     *(bittable\_000+*ptrf++) |= 1;
+66 \textcolor{preprocessor}{    #endif}
+67 \textcolor{preprocessor}{}
+68     \textcolor{comment}{/* set the bitvectors for positions i > 0 of [w\_2] forward */}
+69     MYBITSET *setbit = bittable\_010;
+70 
+71 \textcolor{preprocessor}{    #ifdef NEW}
+72 \textcolor{preprocessor}{}    \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 1; i <= \hyperlink{paralleltraversal_8cpp_ab9275c2d178b44582254272d1bc88b34}{numbvs\_gv}; i++ )
+73     \{
+74         *bittable\_010 = (*bittable\_000++)<<1;
+75         *bittable\_010++ &= 15;
+76         \textcolor{comment}{/* if i%4 == 0 */}
+77         \textcolor{keywordflow}{if} ( !(i&3) )
+78       \{
+79             \textcolor{comment}{/* set the LSB of candidate nt bitvector to 1 */}
+80             *(setbit+*ptrf++) |= 1;
+81             \textcolor{comment}{/* reset the setbit pointer to subsequent bitvector */}
+82             setbit = bittable\_010;
+83       \} 
+84     \}
+85 \textcolor{preprocessor}{    #endif}
+86 \textcolor{preprocessor}{}
+87     MYBITSET *win\_ptr1 = bittable\_000;
+88     MYBITSET *win\_ptr2 = bittable\_010;
+89 
+90     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 1; i <= \hyperlink{paralleltraversal_8cpp_ab9275c2d178b44582254272d1bc88b34}{numbvs\_gv}; i++ )
+91     \{
+92         *win\_ptr2 = (*win\_ptr1++)<<1;
+93         *win\_ptr2++ &= \hyperlink{bitvector_8cpp_abd5132090e5b0c29d68d74a44e6bad88}{mask\_4};
+94         \textcolor{comment}{/* if i%4 == 0 */}
+95         \textcolor{keywordflow}{if} ( !(i&3) )
+96         \{
+97             \textcolor{comment}{/* set the LSB of candidate nt bitvector to 1 */}
+98             *(setbit+*ptrf++) |= 1;
+99             \textcolor{comment}{/* reset the setbit pointer to subsequent bitvector */}
+100             setbit = win\_ptr2;
+101         \}   
+102     \}
+103 
+104 \}\textcolor{comment}{//~init\_win\_f()}
+\end{DoxyCode}
+\hypertarget{bitvector_8cpp_af4bcc2bac4c141e09a0ad653d1a55a1c}{\index{bitvector.\-cpp@{bitvector.\-cpp}!init\-\_\-win\-\_\-r@{init\-\_\-win\-\_\-r}}
+\index{init\-\_\-win\-\_\-r@{init\-\_\-win\-\_\-r}!bitvector.cpp@{bitvector.\-cpp}}
+\subsubsection[{init\-\_\-win\-\_\-r}]{\setlength{\rightskip}{0pt plus 5cm}void init\-\_\-win\-\_\-r (
+\begin{DoxyParamCaption}
+\item[{char $\ast$}]{ptrr, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-000, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-010}
+\end{DoxyParamCaption}
+)}}\label{bitvector_8cpp_af4bcc2bac4c141e09a0ad653d1a55a1c}
+
+\begin{DoxyCode}
+118 \{
+119     \textcolor{comment}{/******* [w\_1] reverse *******/}
+120 
+121     MYBITSET *reset  = bittable\_000;
+122 
+123     \textcolor{comment}{/* set manually the bitvectors at position i = 0 of [w\_1] reverse */}
+124     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} bitn = 2; bitn >= 0; bitn-- )
+125     \{
+126         *(reset+*ptrr--) |= (1<<bitn);
+127     \}
+128 
+129 \textcolor{preprocessor}{    #ifdef NEW}
+130 \textcolor{preprocessor}{}    \textcolor{comment}{/* set manually the bitvectors at position i = 0 of [w\_1] reverse */}
+131     *(bittable\_000+*ptrr--) |= 4;
+132     *(bittable\_000+*ptrr--) |= 2;
+133     *(bittable\_000+*ptrr--) |= 1;
+134 \textcolor{preprocessor}{    #endif}
+135 \textcolor{preprocessor}{}
+136     \textcolor{comment}{/* set the bitvectors for positions i > 0 of [w\_2] forward }
+137 \textcolor{comment}{        note: mask = 15 = 00001111; this is to keep the bitvectors of length 4 */}
+138 
+139     MYBITSET *setbit = bittable\_010;
+140 
+141 \textcolor{preprocessor}{    #ifdef NEW}
+142 \textcolor{preprocessor}{}    \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 1; i <= \hyperlink{paralleltraversal_8cpp_ab9275c2d178b44582254272d1bc88b34}{numbvs\_gv}; i++ )
+143     \{
+144         *bittable\_010 = (*bittable\_000++)<<1;
+145         *bittable\_010++ &= 15;
+146         \textcolor{keywordflow}{if} ( !(i&3) )
+147       \{
+148             *(setbit+*ptrr--) |= 1;
+149             setbit = bittable\_010;
+150       \}
+151     \}
+152 \textcolor{preprocessor}{    #endif}
+153 \textcolor{preprocessor}{}
+154     MYBITSET *win\_ptr1 = bittable\_000;
+155     MYBITSET *win\_ptr2 = bittable\_010;
+156 
+157     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 1; i <= \hyperlink{paralleltraversal_8cpp_ab9275c2d178b44582254272d1bc88b34}{numbvs\_gv}; i++ )
+158     \{
+159         *win\_ptr2 = (*win\_ptr1++)<<1;
+160         *win\_ptr2++ &= \hyperlink{bitvector_8cpp_abd5132090e5b0c29d68d74a44e6bad88}{mask\_4};
+161         \textcolor{keywordflow}{if} ( !(i&3) )
+162         \{
+163             *(setbit+*ptrr--) |= 1;
+164             setbit = win\_ptr2;
+165         \}
+166     \}
+167 
+168 \}\textcolor{comment}{//~init\_win\_r()}
+\end{DoxyCode}
+\hypertarget{bitvector_8cpp_a92c7276665a2078fe82b6effd94b3aba}{\index{bitvector.\-cpp@{bitvector.\-cpp}!offset\-\_\-win\-\_\-k1@{offset\-\_\-win\-\_\-k1}}
+\index{offset\-\_\-win\-\_\-k1@{offset\-\_\-win\-\_\-k1}!bitvector.cpp@{bitvector.\-cpp}}
+\subsubsection[{offset\-\_\-win\-\_\-k1}]{\setlength{\rightskip}{0pt plus 5cm}void offset\-\_\-win\-\_\-k1 (
+\begin{DoxyParamCaption}
+\item[{char $\ast$}]{F\-W2, }
+\item[{char $\ast$}]{R\-W1, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-0\-P0, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-100, }
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-110}
+\end{DoxyParamCaption}
+)}}\label{bitvector_8cpp_a92c7276665a2078fe82b6effd94b3aba}
+\mbox{[}w\-\_\-1\mbox{]} reverse
+
+\mbox{[}w\-\_\-2\mbox{]} forward 
+\begin{DoxyCode}
+184 \{
+187     \textcolor{comment}{/* 1. compute bitvectors for shifted window from previous window */}
+188     MYBITSET *win\_ptr1 = bittable\_0P0;
+189     MYBITSET *win\_ptr2 = bittable\_100;
+190 
+191     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 0; i < \hyperlink{paralleltraversal_8cpp_ab9275c2d178b44582254272d1bc88b34}{numbvs\_gv}; i++ )
+192     \{
+193         *--win\_ptr2 = *--win\_ptr1;
+194     \}\textcolor{comment}{//for every bitvector in [w\_1] reverse}
+195 
+196     \textcolor{comment}{/* 2. compute bitvectors for depth = 0 */}
+197     MYBITSET *setbit = win\_ptr1;
+198 
+199     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 4; i > 0; --i )
+200     \{
+201         *win\_ptr1++ >>= 1;
+202     \}
+203     *(setbit+*RW1) |= MSB4; \textcolor{comment}{/* set second highest MSB to 1 */}
+204 
+205     \textcolor{comment}{/* 3. set bit for depth = 1 */}
+206     *(win\_ptr2+*RW1) |= MSB8; \textcolor{comment}{/* set MSB to 1 */}
+207 
+208 
+211     \textcolor{comment}{/* 1. offset all bitvectors for [w\_2] forward */}
+212     win\_ptr1 = bittable\_100;
+213     win\_ptr2 = bittable\_110;
+214 
+215     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} j = 0; j < \hyperlink{paralleltraversal_8cpp_ab9275c2d178b44582254272d1bc88b34}{numbvs\_gv}; j++ )
+216     \{
+217         *win\_ptr1++ = *win\_ptr2++;
+218     \}\textcolor{comment}{//~for every bitvector in [w\_2] forward}
+219 
+220     \textcolor{comment}{/* 2. mask the first four bitvectors of substrings $xxx */}
+221     win\_ptr2 = bittable\_100;
+222 
+223     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} j = 4; j > 0; --j )
+224     \{
+225         *win\_ptr2++&=\hyperlink{bitvector_8cpp_af31a02e05becb262bcf763608fc759de}{mask\_3};
+226     \}
+227 
+228     \textcolor{comment}{/* 3. compute the bitvectors for newly added letter from window shift */}
+229     setbit = win\_ptr1;
+230 
+231     \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} j = 4; j > 0; --j )
+232     \{
+233         (*win\_ptr1++<<=1)&=15;
+234     \}
+235     *(setbit+*FW2) |= 1;
+236 
+237 \}\textcolor{comment}{//~offset\_win\_k1()}
+\end{DoxyCode}
+\hypertarget{bitvector_8cpp_ae5475ba2be596995742f642d028651a9}{\index{bitvector.\-cpp@{bitvector.\-cpp}!output\-\_\-win\-\_\-k1@{output\-\_\-win\-\_\-k1}}
+\index{output\-\_\-win\-\_\-k1@{output\-\_\-win\-\_\-k1}!bitvector.cpp@{bitvector.\-cpp}}
+\subsubsection[{output\-\_\-win\-\_\-k1}]{\setlength{\rightskip}{0pt plus 5cm}void output\-\_\-win\-\_\-k1 (
+\begin{DoxyParamCaption}
+\item[{M\-Y\-B\-I\-T\-S\-E\-T $\ast$}]{bittable\-\_\-000, }
+\item[{bool}]{w}
+\end{DoxyParamCaption}
+)}}\label{bitvector_8cpp_ae5475ba2be596995742f642d028651a9}
+
+\begin{DoxyCode}
+248 \{
+249         \textcolor{comment}{/* [w\_2] forward */}
+250         \textcolor{keywordflow}{if} ( w )
+251             cout << \textcolor{stringliteral}{"forward"} << endl;
+252         \textcolor{keywordflow}{else} 
+253             cout << \textcolor{stringliteral}{"reverse"} << endl;
+254 
+255         cout << \textcolor{stringliteral}{"\(\backslash\)n\(\backslash\)t\(\backslash\)t\(\backslash\)tA\(\backslash\)tC\(\backslash\)tG\(\backslash\)tT\(\backslash\)n\(\backslash\)t\(\backslash\)t"};
+256         \textcolor{keywordtype}{int} ceil = \hyperlink{indexdb_8cpp_a8d8e3eca9b6dafc49f6eede2a85138ef}{partialwin\_gv}-2;
+257 
+258         \textcolor{comment}{/* for each nt letter */}
+259         \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} i = 0; i < ceil; i++ )
+260         \{
+261             cout << i << \textcolor{stringliteral}{"\(\backslash\)t"};
+262            
+263             \textcolor{comment}{/* for each depth */}
+264             \textcolor{keywordflow}{for} ( \textcolor{keywordtype}{int} j = 0; j < 4; j++ )
+265             \{
+266                 cout << (int)*(bittable\_000++) << \textcolor{stringliteral}{"\(\backslash\)t"};
+267             \}
+268             cout << \textcolor{stringliteral}{"\(\backslash\)n\(\backslash\)t\(\backslash\)t"};
+269        \}
+270 
+271        cout << endl;
+272 
+273 \}\textcolor{comment}{//~output\_win\_k1()}
+\end{DoxyCode}
+
+
+\subsection{Variable Documentation}
+\hypertarget{bitvector_8cpp_af31a02e05becb262bcf763608fc759de}{\index{bitvector.\-cpp@{bitvector.\-cpp}!mask\-\_\-3@{mask\-\_\-3}}
+\index{mask\-\_\-3@{mask\-\_\-3}!bitvector.cpp@{bitvector.\-cpp}}
+\subsubsection[{mask\-\_\-3}]{\setlength{\rightskip}{0pt plus 5cm}M\-Y\-B\-I\-T\-S\-E\-T mask\-\_\-3 = 7}}\label{bitvector_8cpp_af31a02e05becb262bcf763608fc759de}
+\hypertarget{bitvector_8cpp_abd5132090e5b0c29d68d74a44e6bad88}{\index{bitvector.\-cpp@{bitvector.\-cpp}!mask\-\_\-4@{mask\-\_\-4}}
+\index{mask\-\_\-4@{mask\-\_\-4}!bitvector.cpp@{bitvector.\-cpp}}
+\subsubsection[{mask\-\_\-4}]{\setlength{\rightskip}{0pt plus 5cm}M\-Y\-B\-I\-T\-S\-E\-T mask\-\_\-4 = 15}}\label{bitvector_8cpp_abd5132090e5b0c29d68d74a44e6bad88}
