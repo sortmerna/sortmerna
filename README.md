@@ -114,10 +114,12 @@ when calling "make".
 
 To overcome this error, you can reset the timestamps in their required order using:
 
+```bash
 ./configure
-touch ./aclocal.m4
-touch ./Makefile.in
-touch ./configure
-./make
+touch aclocal.m4
+touch Makefile.in
+touch configure
+make
+```
 
 
