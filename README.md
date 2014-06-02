@@ -101,22 +101,25 @@ After the installation, you should find the compiler installed in /opt/local/bin
 Timestamp issues
 ----------------
 
-When pulling a repository from git, all of the file timestamps are set to the current time and this sometimes
-causes errors such as:
+When pulling a repository from git, all of the file timestamps are set to the current time and this can lead to errors such as:
 
-Prerequisite `configure.ac' is newer than target `aclocal.m4'.
-Must remake target `aclocal.m4'.
+```bash
+Prerequisite configure.ac is newer than target aclocal.m4.
+Must remake target aclocal.m4.
 ..
 WARNING: 'aclocal-1.14' is missing on your system.
+```
 
 when calling "make".
 
 To overcome this error, you can reset the timestamps in their required order using:
 
+```bash
 ./configure
-touch ./aclocal.m4
-touch ./Makefile.in
-touch ./configure
-./make
+touch aclocal.m4
+touch Makefile.in
+touch configure
+make
+```
 
 
