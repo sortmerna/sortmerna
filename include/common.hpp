@@ -142,6 +142,9 @@ extern bool as_percent_gv;
 /// do not mask low-occurring (L/2)-mers for seeds of length L
 extern bool nomask_gv;
 
+/// if true, print all reads in SAM and/or BLAST output (aligned and non-aligned)
+extern bool print_all_reads_gv;
+
 /// output for verbose option
 #define eprintf(format, ...) do { if (verbose) fprintf(stderr, format, ##__VA_ARGS__);} while(0)
 

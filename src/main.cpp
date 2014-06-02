@@ -1,6 +1,8 @@
 /*
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2014 Bonsai Bioinformatics Research Group
+ * Copyright (C) 2014 Bonsai Bioinformatics Research Group;
+ * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
+ * University of Colorado at Boulder
  *
  * This file is part of SortMeRNA.
  *
@@ -36,74 +38,75 @@
 
 const char map_nt[122] = {
 	/* 0,   1,   2,   3,   4,   5,   6,   7,   8,   9   */
-		  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 	/* 10,  11,  12,  13,  14,  15,  16,  17,  18,  19  */
-		  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 	/* 20,  21,  22,  23,  24,  25,  26,  27,  28,  29  */
-		  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 	/* 30,  31,  32,  33,  34,  35,  36,  37,  38,  39  */
-		  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 	/* 40,  41,  42,  43,  44,  45,  46,  47,  48,  49  */
-		  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 	/* 50,  51,  52,  53,  54,  55,  56,  57,  58,  59  */
-		  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 	/* 60,  61,  62,  63,  64,  65,  66,  67,  68,  69  */
-		  0,   0,   0,   0,   0,   0,   1,   1,   1,   0,
+    0,   0,   0,   0,   0,   0,   1,   1,   1,   0,
 	/* 70,  71,  72,  73,  74,  75,  76,  77,  78,  79  */
-		  0,   2,   0,   0,   0,   2,   0,   0,   0,   0,
+    0,   2,   0,   0,   0,   2,   0,   0,   0,   0,
 	/* 80,  81,  82,  83,  84,  85,  86,  87,  88,  89  */
-		  0,   0,   0,   2,   3,   3,   0,   1,   2,   1,
+    0,   0,   0,   2,   3,   3,   0,   1,   2,   1,
 	/* 90,  91,  92,  93,  94,  95,  96,  97,  98,  99  */
-		  0,   0,   0,   0,   0,   0,   0,   0,   1,   1,
+    0,   0,   0,   0,   0,   0,   0,   0,   1,   1,
 	/* 100, 101, 102, 103, 104, 105, 106, 107, 108, 109 */
-		  0,   0,   0,   2,   0,   0,   0,   2,   0,   0,
+    0,   0,   0,   2,   0,   0,   0,   2,   0,   0,
 	/* 110, 111, 112, 113, 114, 115, 116, 117, 118, 119 */
-		  0,   0,   0,   0,   0,   2,   3,   3,   0,   1,
+    0,   0,   0,   0,   0,   2,   3,   3,   0,   1,
 	/* 120, 121 */
-		  2,   1};
+    2,   1};
 
 
 using namespace std;
 
 /// uncommented variables & functions are defined in {paralleltraversal, bitvector}.hpp
-	timeval	t;
-	double evalue = -1.0;
-    double align_id = -1.0;
-    double align_cov = -1.0;
+timeval	t;
+double evalue = -1.0;
+double align_id = -1.0;
+double align_cov = -1.0;
 
 /// defined in common.hpp
-	bool forward_gv = false;
-	bool reverse_gv = false;
-	int	numcpu_gv = -1;
-	bool verbose  = false;
-	bool pairedin_gv = false;
-	bool pairedout_gv = false;
-    bool chimeraout_gv = false;
-    bool logout_gv = false;
-    bool de_novo_otu_gv = false;
-	long unsigned int pagesize_gv = sysconf(_SC_PAGE_SIZE);
-	long unsigned int maxpages_gv = 0;
-	long unsigned int map_size_gv = pagesize_gv;
-	bool map_size_set_gv = false;
-	bool samout_gv = false;
-	bool blastout_gv = false;
-    int32_t blast_outfmt = -1;
-	bool fastxout_gv = false;
-    bool otumapout_gv = false;
-    /// by default min_lis_gv is off (-1), a value of 0 means to search all high scoring reference sequences, a value > 0 means to search min_lis_gv sequences
-	int32_t min_lis_gv = -1;
-    /// by default num_alignments_gv is off (-1), a value of 0 means to output all alignments, a value > 0 means to output num_alignments_gv alignments
-	int32_t num_alignments_gv = -1;
-	int32_t seed_hits_gv = -1;
-	int32_t edges_gv = -1;
-	bool full_search_gv = false;
-    /// change version number here
-	char version_num[] = "1.99 beta, 11/03/2014";
-    bool feeling_lucky_gv = false;
-	bool as_percent_gv = false;
-    bool nomask_gv = false;
-    bool pid_gv = false;
-    int16_t num_best_hits_gv = 0;
+bool forward_gv = false;
+bool reverse_gv = false;
+int	numcpu_gv = -1;
+bool verbose  = false;
+bool pairedin_gv = false;
+bool pairedout_gv = false;
+bool chimeraout_gv = false;
+bool logout_gv = false;
+bool de_novo_otu_gv = false;
+bool print_all_reads_gv = false;
+long unsigned int pagesize_gv = sysconf(_SC_PAGE_SIZE);
+long unsigned int maxpages_gv = 0;
+long unsigned int map_size_gv = pagesize_gv;
+bool map_size_set_gv = false;
+bool samout_gv = false;
+bool blastout_gv = false;
+int32_t blast_outfmt = -1;
+bool fastxout_gv = false;
+bool otumapout_gv = false;
+/// by default min_lis_gv is off (-1), a value of 0 means to search all high scoring reference sequences, a value > 0 means to search min_lis_gv sequences
+int32_t min_lis_gv = -1;
+/// by default num_alignments_gv is off (-1), a value of 0 means to output all alignments, a value > 0 means to output num_alignments_gv alignments
+int32_t num_alignments_gv = -1;
+int32_t seed_hits_gv = -1;
+int32_t edges_gv = -1;
+bool full_search_gv = false;
+/// change version number here
+char version_num[] = "2.0, 01/05/2014";
+bool feeling_lucky_gv = false;
+bool as_percent_gv = false;
+bool nomask_gv = false;
+bool pid_gv = false;
+int16_t num_best_hits_gv = 0;
 
 
 
@@ -116,15 +119,17 @@ using namespace std;
  **************************************************************************************************************/
 void welcome()
 {
-	eprintf("\n  Program:    SortMeRNA version %s\n",version_num );
-	eprintf("  Copyright:  2012-2014 Bonsai Bioinformatics Research Group\n");
-	eprintf("              LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-    eprintf("              SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-    eprintf("              implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-    eprintf("              See the GNU Lesser General Public License for more details.\n");
-	eprintf("  Contact:    Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-	eprintf("              Laurent Noé, laurent.noe@lifl.fr\n");
-	eprintf("              Hélène Touzet, helene.touzet@lifl.fr\n\n");
+	eprintf("\n  Program:     SortMeRNA version %s\n",version_num );
+	eprintf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
+	eprintf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+    eprintf("               OTU-picking extensions developed in the Knight Lab,\n");
+    eprintf("               BioFrontiers Institute, University of Colorado at Boulder\n");
+    eprintf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+    eprintf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+    eprintf("               See the GNU Lesser General Public License for more details.\n");
+	eprintf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
+	eprintf("               Laurent Noé, laurent.noe@lifl.fr\n");
+	eprintf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
 }
 
 
@@ -138,39 +143,38 @@ void welcome()
  **************************************************************************************************************/
 void printlist()
 {
-	printf("\n  usage:   ./sortmerna <input> <output> <options>:\n\n");
-  printf("  -------------------------------------------------------------------------------------------------------------\n");
-  printf("  | parameter          value           description                                                    default |\n");
-  printf("  -------------------------------------------------------------------------------------------------------------\n");
-	printf("   <input>: \n");
-	printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ reads file                                         %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+	printf("\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:\n\n");
+    printf("  -------------------------------------------------------------------------------------------------------------\n");
+    printf("  | parameter          value           description                                                    default |\n");
+    printf("  -------------------------------------------------------------------------------------------------------------\n");
 	printf("     %s--ref%s             %sSTRING,STRING%s   FASTA reference file, index file                               %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
     printf("                                        (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
     printf("                                        If passing multiple reference files, separate \n");
     printf("                                        them using the delimiter ':',\n");
-    printf("                                        (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n\n");
-	printf("   <output>:\n");
-	printf("     %s--aligned%s         %sSTRING%s          aligned reads base file name\n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (appropriate extension will be added)\n");
+    printf("                                        (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
+	printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ reads file                                         %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+	printf("     %s--aligned%s         %sSTRING%s          aligned reads base file name                                   %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+    printf("                                         (appropriate extension will be added)\n\n");
+    printf("   [COMMON OPTIONS]: \n");
 	printf("     %s--other%s           %sSTRING%s          rejected reads base file name\n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (appropriate extension will be added)\n");
+    printf("                                         (appropriate extension will be added)\n");
 	printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (for aligned and/or rejected reads)\n");
-  printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                         (set using --id) and < %%cov (set using --coverage) but \n");
+    printf("                                         (for aligned and/or rejected reads)\n");
     printf("                                          passing the E-value threshold, for de novo OTU construction\n");
-  printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (for aligned reads only)\n");
+    printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         (for aligned reads only)\n");
     printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s--blast%s           %sINT%s             output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("                                        0 - pairwise\n");
-  printf("                                        1 - tabular (Blast -m 8 format)\n");
-  printf("                                        2 - tabular + column for CIGAR \n");
-  printf("                                        3 - tabular + columns for CIGAR and query coverage\n");
-    printf("     %s--log%s             %sFLAG%s            output overall statistics                                      %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("     %s--otu_map%s         %sFLAG%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("   For alignments (with --sam or --blast options):\n\n");
-  printf("     %s--feeling-lucky%s   %sFLAG%s            report the first alignment per read reaching E-value           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--blast%s           %sINT%s             output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
+    printf("                                        0 - pairwise\n");
+    printf("                                        1 - tabular (Blast -m 8 format)\n");
+    printf("                                        2 - tabular + column for CIGAR \n");
+    printf("                                        3 - tabular + columns for CIGAR and query coverage\n");
+    printf("     %s--log%s             %sFLAG%s            output overall statistics                                      %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+#ifdef NOMASK_option
+    printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                       for seeds of length L\n");
+#endif
+    printf("     %s--feeling_lucky%s   %sFLAG%s            report the first alignment per read reaching E-value           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("       %sor%s\n","\033[31m","\033[0m");
 	printf("     %s--num_alignments%s  %sINT%s             report first INT alignments per read reaching E-value          %s-1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                        (--num_alignments 0 signifies all alignments will be output)\n");
@@ -180,15 +184,12 @@ void printlist()
     printf("     %s--min_lis%s         %sINT%s             search all alignments having the first INT longest LIS         %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         LIS stands for Longest Increasing Subsequence, it is \n");
     printf("                                         computed using seeds' positions to expand hits into\n");
-    printf("                                         longer matches prior to Smith-Waterman alignment. \n\n\n");
-	printf("   <options>:\n");
-#ifdef NOMASK_option
-    printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                       for seeds of length L\n");
-#endif
-  printf("     %s--paired_in%s       %sFLAG%s            both paired-end reads go in --aligned fasta/q file             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         longer matches prior to Smith-Waterman alignment. \n");
+    printf("     %s--print_all_reads%s %sFLAG%s            output null alignment strings for non-aligned reads            %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         to SAM and/or BLAST tabular files\n");
+    printf("     %s--paired_in%s       %sFLAG%s            both paired-end reads go in --aligned fasta/q file             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
-  printf("     %s--paired_out%s      %sFLAG%s            both paired-end reads go in --other fasta/q file               %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");\
+    printf("     %s--paired_out%s      %sFLAG%s            both paired-end reads go in --other fasta/q file               %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");\
     printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
 	printf("     %s--match %s          %sINT%s             SW score (positive integer) for a match                        %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s--mismatch%s        %sINT%s             SW score (negative integer) for a mismatch                     %s-3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -199,47 +200,51 @@ void printlist()
 	printf("     %s-R%s                %sFLAG%s            search only the reverse-complementary strand                   %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-a%s                %sINT%s             number of threads to use                                       %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-e%s                %sDOUBLE%s          E-value                                                        %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("     %s--id%s              %sDOUBLE%s          minimum %%id to keep an alignment (the alignment must           %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                         still pass the E-value threshold)\n");
-    printf("     %s--coverage%s        %sDOUBLE%s          minimum %%query coverage to keep an alignment (the              %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                         alignment must still pass the E-value threshold)\n");
     /// RAM cannot support 1GB default
 	if ( 1073741824/pagesize_gv > maxpages_gv/2)
-  printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory               %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
+        printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory               %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
     /// RAM can support at least 1GB default
 	else
-  printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory                   %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
+        printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory                   %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
 	printf("     %s-v%s                %sFLAG%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("   advanced <options>: (see SortMeRNA user manual for more details) \n");
+	printf("   [OTU PICKING OPTIONS]: \n");
+    printf("     %s--id%s              %sDOUBLE%s          OTU map %%id threshold (the alignment must                      %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         still pass the E-value threshold)\n");
+    printf("     %s--coverage%s        %sDOUBLE%s          OTU map %%query coverage threshold (the                         %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         alignment must still pass the E-value threshold)\n");
+    printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         (set using --id) and < %%cov (set using --coverage) but \n");
+    printf("     %s--otu_map%s         %sFLAG%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): \n");
 	printf("    %s--passes%s           %sINT,INT,INT%s     values for seed skip lengths for Pass 1, 2 and 3               %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (L is the seed length set in ./indexdb_rna)\n");
+    printf("                                         (L is the seed length set in ./indexdb_rna)\n");
 	printf("    %s--edges%s            %sINT%s             number (or percent if INT followed by %% sign) of               %s4%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         nucleotides to add to each edge of the read\n");
-  printf("                                         prior to SW local alignment \n");
-  printf("    %s--num_seeds%s        %sINT%s             number of seeds matched before searching                       %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         for candidate LIS \n");
-  printf("    %s--full_search%s      %sFLAG%s            search for all 0-error and 1-error seed                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         matches in the index rather than stopping\n");
-  printf("                                         after finding a 0-error match (<1%% gain in\n");
+    printf("                                         nucleotides to add to each edge of the read\n");
+    printf("                                         prior to SW local alignment \n");
+    printf("    %s--num_seeds%s        %sINT%s             number of seeds matched before searching                       %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         for candidate LIS \n");
+    printf("    %s--full_search%s      %sFLAG%s            search for all 0-error and 1-error seed                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         matches in the index rather than stopping\n");
+    printf("                                         after finding a 0-error match (<1%% gain in\n");
 	printf("                                         sensitivity with up four-fold decrease in speed)\n");
-    printf("    %s--pid%s              %sFLAG%s            add pid to output file names                                   %soff%s\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("   help:\n");
+    printf("    %s--pid%s              %sFLAG%s            add pid to output file names                                   %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("   [HELP]:\n");
 	printf("     %s-h%s                %sFLAG%s            help\n","\033[1m","\033[0m","\033[4m","\033[0m");
-	printf("     %s--version%s         %sFLAG%s            SortMeRNA version number\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
-    printf("   examples:\n");
-    printf("     (1) Only filter rRNA\n");
-    printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
-    printf("     (2) Only filter rRNA against multiple databases\n");
-    printf("         sortmerna --ref bac.fasta,bac_index:euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
-    printf("     (3) Filter rRNA, output first alignment reaching E-value threshold and log file\n");
-    printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --fastx --sam --feeling-lucky --log \n\n");
-    printf("     (4) Report 3 best alignments based on all alignments having the best 2 LIS (longest increasing subsequence)\n");
-    printf("         sortmerna --ref bac.fasta,bac_index --reads reads.fastq --aligned reads_aligned --sam --best 3 --mis_lis 2\n\n");
-    printf("     (5) Report the first 10 alignments reaching E-value threshold\n");
-    printf("         sortmerna --ref euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --sam --num_alignments 10\n\n");
-    printf("     For more examples and user instructions, see the SortMeRNA v1.99 beta User Manual 2014 (distributed with this program)\n\n");
-
+	printf("     %s--version%s         %sFLAG%s            SortMeRNA version number\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
+    //printf("   examples:\n");
+    //printf("     (1) Only filter rRNA\n");
+    //printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
+    //printf("     (2) Only filter rRNA against multiple databases\n");
+    //printf("         sortmerna --ref bac.fasta,bac_index:euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
+    //printf("     (3) Filter rRNA, output first alignment reaching E-value threshold and log file\n");
+    //printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --fastx --sam --feeling_lucky --log \n\n");
+    //printf("     (4) Report 3 best alignments based on all alignments having the best 2 LIS (longest increasing subsequence)\n");
+    //printf("         sortmerna --ref bac.fasta,bac_index --reads reads.fastq --aligned reads_aligned --sam --best 3 --mis_lis 2\n\n");
+    //printf("     (5) Report the first 10 alignments reaching E-value threshold\n");
+    //printf("         sortmerna --ref euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --sam --num_alignments 10\n\n");
+    //printf("     For more examples and user instructions, see the SortMeRNA v1.99 beta User Manual 2014 (distributed with this program)\n\n");
+    
 	exit(EXIT_FAILURE);
 }//~printlist()
 
@@ -247,13 +252,13 @@ void printlist()
 /*
  *
  * FUNCTION 	: main
- * PARAMETERS	: 
- * INPUT	: 
+ * PARAMETERS	:
+ * INPUT	:
  * OUTPUT	: N/A
  *
  **************************************************************************************************************/
-int 
-main(int argc, 
+int
+main(int argc,
      char** argv)
 {
 	/// parse the command line input
@@ -261,7 +266,7 @@ main(int argc,
 	/// reads input file
 	char* readsfile  = NULL;
 	/// aligned reads output file
-	char* ptr_filetype_ar = NULL;	
+	char* ptr_filetype_ar = NULL;
 	/// rejected reads output file
 	char* ptr_filetype_or = NULL;
     /// SW alignment parameters
@@ -287,25 +292,25 @@ main(int argc,
     vector< pair<string,string> > myfiles;
 	/// skip lengths for pass 1, pass 2 and pass 3 in first step of sortmerna pipeline for each reference database searched
     vector< vector<uint32_t> > skiplengths;
-
-  #ifdef __APPLE__
-  int sz[2] = {CTL_HW, HW_MEMSIZE};
-  u_int namelen = sizeof(sz)/sizeof(sz[0]);
-  uint64_t size;
-  size_t len = sizeof(size);
-  if ( sysctl(sz,namelen,&size,&len,NULL,0) < 0 )
+    
+#ifdef __APPLE__
+    int sz[2] = {CTL_HW, HW_MEMSIZE};
+    u_int namelen = sizeof(sz)/sizeof(sz[0]);
+    uint64_t size;
+    size_t len = sizeof(size);
+    if ( sysctl(sz,namelen,&size,&len,NULL,0) < 0 )
 	{
-	  fprintf(stderr,"\n  %sERROR%s: sysctl (main.cpp)\n","\033[0;31m","\033[0m");
-	  exit(EXIT_FAILURE);
+        fprintf(stderr,"\n  %sERROR%s: sysctl (main.cpp)\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
 	}
-  else
-  {
-	  maxpages_gv = size/pagesize_gv;
-  }
-  #else
-  maxpages_gv = sysconf(_SC_PHYS_PAGES);
-  #endif
-
+    else
+    {
+        maxpages_gv = size/pagesize_gv;
+    }
+#else
+    maxpages_gv = sysconf(_SC_PHYS_PAGES);
+#endif
+    
 	if ( argc == 1 )
 	{
 		verbose = true;
@@ -313,761 +318,775 @@ main(int argc,
 		fprintf(stderr,"  For help or more information on usage, type `./sortmerna %s-h%s'\n\n","\033[1m","\033[0m");
 		exit(EXIT_FAILURE);
 	}
-
+    
 	while ( narg < argc )
 	{
 	    switch( argv[narg][1] )
 	    {
-
-            /// options beginning with '--'
+                
+                /// options beginning with '--'
             case '-': {
-					char* myoption = argv[narg];
-					/// skip the '--'
-					myoption+=2;
-
-                    /// FASTA/FASTQ reads sequences
-					if ( strcmp ( myoption, "reads" ) == 0 )
-					{
-						if ( argv[narg+1] == NULL ) 
-						{
-							fprintf(stderr,"\n  %sERROR%s: a path to a reads fasta/fastq file must be given after the option --reads\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							if ( FILE *file = fopen(argv[narg+1], "r") )
-							{
-								readsfile = argv[narg+1];
-								narg+=2;
-								fclose(file);	
-							}
-							else
-							{
-								fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",argv[narg+1],strerror(errno));
-								exit(EXIT_FAILURE);
-							}
-						}
-					}
-					/// FASTA reference sequences
-					else if ( strcmp ( myoption, "ref") == 0 )
-					{
-						if ( argv[narg+1] == NULL ) 
-						{
-							fprintf(stderr,"\n  %sERROR%s: --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-                        /// path exists, check path
-						else
-						{
-                            char *ptr = argv[narg+1];
-                            while ( *ptr != '\0' )
+                char* myoption = argv[narg];
+                /// skip the '--'
+                myoption+=2;
+                
+                /// FASTA/FASTQ reads sequences
+                if ( strcmp ( myoption, "reads" ) == 0 )
+                {
+                    if ( argv[narg+1] == NULL )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: a path to a reads fasta/fastq file must be given after the option --reads\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        if ( FILE *file = fopen(argv[narg+1], "r") )
+                        {
+                            readsfile = argv[narg+1];
+                            narg+=2;
+                            fclose(file);
+                        }
+                        else
+                        {
+                            fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",argv[narg+1],strerror(errno));
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                }
+                /// FASTA reference sequences
+                else if ( strcmp ( myoption, "ref") == 0 )
+                {
+                    if ( argv[narg+1] == NULL )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// path exists, check path
+                    else
+                    {
+                        char *ptr = argv[narg+1];
+                        while ( *ptr != '\0' )
+                        {
+                            /// get the FASTA file path + name
+                            char fastafile[2000];
+                            char *ptr_fastafile = fastafile;
+                            /// the reference database FASTA file
+                            while ( *ptr != ',' && *ptr != '\0' )
                             {
-                                /// get the FASTA file path + name
-                                char fastafile[2000];
-                                char *ptr_fastafile = fastafile;
-                                /// the reference database FASTA file
-                                while ( *ptr != ',' && *ptr != '\0' )
-                                {
-                                    *ptr_fastafile++ = *ptr++;
-                                }
-                                *ptr_fastafile = '\0';
-                                if ( *ptr == '\0' )
-                                {
-                                    fprintf(stderr,"   %sERROR%s: the FASTA reference file name %s must be followed by an index name.\n\n","\033[0;31m","\033[0m",fastafile);
-                                    exit(EXIT_FAILURE);
-                                }
-                                ptr++; //skip the ',' delimiter
-
-                                
-                                /// check FASTA file exists
-                                if ( FILE *file = fopen(fastafile, "r") ) fclose(file);
-                                else
-                                {
-                                    fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));
-                                    exit(EXIT_FAILURE);
-                                }
-                                
-                                
-                                /// get the index path + name
-                                char indexfile[2000];
-                                char *ptr_indexfile = indexfile;
-                                /// the reference database index name
-                                while ( *ptr != ':' && *ptr != '\0') *ptr_indexfile++ = *ptr++;
-                                *ptr_indexfile = '\0';
-                                if ( *ptr != '\0' ) ptr++; //skip the ':' delimiter
-                                
-                                /// check the directory where to write the index exists
-                                char dir[500];
-                                char *ptr_end = strrchr( indexfile, '/');
-                                if ( ptr_end != NULL )
-                                {
-                                    memcpy( dir, indexfile, (ptr_end-indexfile) );
-                                    dir[(int)(ptr_end-indexfile)] = '\0';
-                                }
-                                else
-                                {
-                                    strcpy( dir, "./" );
-                                }
-                                
-                                if ( DIR *dir_p = opendir(dir) ) closedir(dir_p);
-                                else
-                                {
-                                    if ( ptr_end != NULL )
-                                        fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index '%s' could not be opened. The full directory path must be provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",dir,ptr_end+1);
-                                    else
-                                        fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index '%s' could not be opened. The full directory path must be provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",dir,indexfile);
-                                    
-                                    exit(EXIT_FAILURE);
-                                }
-                                
-                                /// check index file names are distinct
-                                for ( int i = 0; i < (int)myfiles.size(); i++ )
-                                {
-                                    if ( (myfiles[i].first).compare(fastafile) == 0 )
-                                    {
-                                        fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered twice in the list. It will be searched twice. \n\n","\033[0;33m","\033[0m",fastafile);
-                                    }
-                                    else if ( (myfiles[i].second).compare(indexfile) == 0 )
-                                    {
-                                        fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered twice in the list. It will be searched twice.\n\n","\033[0;33m","\033[0m",indexfile);
-                                    }
-                                }
-                                
-                                myfiles.push_back(pair<string,string>(fastafile,indexfile));
-                                
-                            }//~while (*ptr != '\0')
+                                *ptr_fastafile++ = *ptr++;
+                            }
+                            *ptr_fastafile = '\0';
+                            if ( *ptr == '\0' )
+                            {
+                                fprintf(stderr,"   %sERROR%s: the FASTA reference file name %s must be followed by an index name.\n\n","\033[0;31m","\033[0m",fastafile);
+                                exit(EXIT_FAILURE);
+                            }
+                            ptr++; //skip the ',' delimiter
                             
-                            narg+=2;
-
-                        }//~else
-					}
+                            
+                            /// check FASTA file exists
+                            if ( FILE *file = fopen(fastafile, "r") ) fclose(file);
+                            else
+                            {
+                                fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            
+                            /// get the index path + name
+                            char indexfile[2000];
+                            char *ptr_indexfile = indexfile;
+                            /// the reference database index name
+                            while ( *ptr != ':' && *ptr != '\0') *ptr_indexfile++ = *ptr++;
+                            *ptr_indexfile = '\0';
+                            if ( *ptr != '\0' ) ptr++; //skip the ':' delimiter
+                            
+                            /// check the directory where to write the index exists
+                            char dir[500];
+                            char *ptr_end = strrchr( indexfile, '/');
+                            if ( ptr_end != NULL )
+                            {
+                                memcpy( dir, indexfile, (ptr_end-indexfile) );
+                                dir[(int)(ptr_end-indexfile)] = '\0';
+                            }
+                            else
+                            {
+                                strcpy( dir, "./" );
+                            }
+                            
+                            if ( DIR *dir_p = opendir(dir) ) closedir(dir_p);
+                            else
+                            {
+                                if ( ptr_end != NULL )
+                                    fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index '%s' could not be opened. The full directory path must be provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",dir,ptr_end+1);
+                                else
+                                    fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index '%s' could not be opened. The full directory path must be provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",dir,indexfile);
+                                
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            /// check index file names are distinct
+                            for ( int i = 0; i < (int)myfiles.size(); i++ )
+                            {
+                                if ( (myfiles[i].first).compare(fastafile) == 0 )
+                                {
+                                    fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered twice in the list. It will be searched twice. \n\n","\033[0;33m","\033[0m",fastafile);
+                                }
+                                else if ( (myfiles[i].second).compare(indexfile) == 0 )
+                                {
+                                    fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered twice in the list. It will be searched twice.\n\n","\033[0;33m","\033[0m",indexfile);
+                                }
+                            }
+                            
+                            myfiles.push_back(pair<string,string>(fastafile,indexfile));
+                            
+                        }//~while (*ptr != '\0')
+                        
+                        narg+=2;
+                        
+                    }//~else
+                }
 #ifdef chimera
-                    /// output chimeric sequences to another file
-                    else if ( strcmp ( myoption, "chimera" ) == 0 )
+                /// output chimeric sequences to another file
+                else if ( strcmp ( myoption, "chimera" ) == 0 )
+                {
+                    if ( chimeraout_gv )
                     {
-                        if ( chimeraout_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --chimera has already been set\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            chimeraout_gv = true;
-                            narg++;
-                        }
+                        fprintf(stderr,"\n  %sERROR%s: --chimera has already been set\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
                     }
+                    else
+                    {
+                        chimeraout_gv = true;
+                        narg++;
+                    }
+                }
 #endif
-					/// the name of output aligned reads
-					else if ( strcmp ( myoption, "aligned" ) == 0 )
-					{
-						if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
-						{
-							fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --aligned\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							/// check if the directory where to write exists
-							char dir[500];
-							char *ptr = strrchr( argv[narg+1], '/');
-							if ( ptr != NULL )
-							{
-								memcpy( dir, argv[narg+1], (ptr-argv[narg+1]) );
-								dir[(int)(ptr-argv[narg+1])] = '\0';
-							}
-							else
-							{
-								strcpy( dir, "./" );
-							}
-
-							if ( DIR *dir_p = opendir(dir) )
-							{
-								ptr_filetype_ar = argv[narg+1];
-								narg+=2;
-								closedir(dir_p);
-							} 
-							else	
-							{
-								fprintf(stderr,"\n  %sERROR%s: the --aligned directory %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",dir,strerror(errno));
-								exit(EXIT_FAILURE);
-							}
-						}
-					}
-					/// the name of output rejected reads
-					else if ( strcmp ( myoption, "other"  ) == 0 )
-					{
-						if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
-						{
-							fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --other\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);	
-						}
-						else
-						{
-                                /// check if the directory where to write exists
-								char dir[500];
-								char *ptr = strrchr( argv[narg+1], '/');
-								if ( ptr != NULL )
-								{
-									memcpy( dir, argv[narg+1], (ptr-argv[narg+1]) );
-									dir[(int)(ptr-argv[narg+1])] = '\0';
-								}
-								else
-								{
-									strcpy( dir, "./" );
-								}
-
-								if ( DIR *dir_p = opendir(dir) )
-								{
-									ptr_filetype_or = argv[narg+1];
-									narg+=2;
-									closedir(dir_p);
-								} 
-								else	
-								{
-									fprintf(stderr,"\n  %sERROR%s: the --other directory %s could not be opened, please check it exists.\n\n","\033[0;31m","\033[0m",dir);
-									exit(EXIT_FAILURE);
-								}
-						}
-					}
-                    /// output overall statistics file
-                    else if ( strcmp ( myoption, "log" ) == 0 )
+                /// the name of output aligned reads
+                else if ( strcmp ( myoption, "aligned" ) == 0 )
+                {
+                    if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
                     {
-                        if ( logout_gv )
+                        fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --aligned [STRING]\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        /// check if the directory where to write exists
+                        char dir[500];
+                        char *ptr = strrchr( argv[narg+1], '/');
+                        if ( ptr != NULL )
                         {
-                            fprintf(stderr,"\n  %sERROR%s: --log has already been set once.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
+                            memcpy( dir, argv[narg+1], (ptr-argv[narg+1]) );
+                            dir[(int)(ptr-argv[narg+1])] = '\0';
                         }
                         else
                         {
-                            logout_gv = true;
-                            narg++;
+                            strcpy( dir, "./" );
+                        }
+                        
+                        if ( DIR *dir_p = opendir(dir) )
+                        {
+                            ptr_filetype_ar = argv[narg+1];
+                            narg+=2;
+                            closedir(dir_p);
+                        }
+                        else
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: the --aligned [STRING] directory %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",dir,strerror(errno));
+                            exit(EXIT_FAILURE);
                         }
                     }
+                }
+                /// the name of output rejected reads
+                else if ( strcmp ( myoption, "other"  ) == 0 )
+                {
+                    if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --other [STRING]\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        /// check if the directory where to write exists
+                        char dir[500];
+                        char *ptr = strrchr( argv[narg+1], '/');
+                        if ( ptr != NULL )
+                        {
+                            memcpy( dir, argv[narg+1], (ptr-argv[narg+1]) );
+                            dir[(int)(ptr-argv[narg+1])] = '\0';
+                        }
+                        else
+                        {
+                            strcpy( dir, "./" );
+                        }
+                        
+                        if ( DIR *dir_p = opendir(dir) )
+                        {
+                            ptr_filetype_or = argv[narg+1];
+                            narg+=2;
+                            closedir(dir_p);
+                        }
+                        else
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: the --other %s directory could not be opened, please check it exists.\n\n","\033[0;31m","\033[0m",dir);
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                }
+                /// output overall statistics file
+                else if ( strcmp ( myoption, "log" ) == 0 )
+                {
+                    if ( logout_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --log has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        logout_gv = true;
+                        narg++;
+                    }
+                }
                 /// output FASTA/FASTQ reads passing E-value threshold but having < %id and < %coverage scores for de novo OTU construction
-                    else if ( strcmp ( myoption, "de_novo_otu" ) == 0 )
+                else if ( strcmp ( myoption, "de_novo_otu" ) == 0 )
+                {
+                    if ( de_novo_otu_gv )
                     {
-                        if ( de_novo_otu_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --de_novo_otu has already been set once.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            de_novo_otu_gv = true;
-                            narg++;
-                        }
+                        fprintf(stderr,"\n  %sERROR%s: --de_novo_otu has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
                     }
-                    /// output OTU map
-                    else if ( strcmp ( myoption, "otu_map" ) == 0 )
+                    else
                     {
-                        if ( otumapout_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --otu_map has already been set once.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            otumapout_gv = true;
-                            narg++;
-                        }
+                        de_novo_otu_gv = true;
+                        narg++;
                     }
-                    /// don't add pid to output files
-                    else if ( strcmp ( myoption, "pid" ) == 0 )
+                }
+                /// output OTU map
+                else if ( strcmp ( myoption, "otu_map" ) == 0 )
+                {
+                    if ( otumapout_gv )
                     {
-                        if ( pid_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --pid has already been set once.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            pid_gv = true;
-                            narg++;
-                        }
+                        fprintf(stderr,"\n  %sERROR%s: --otu_map has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
                     }
-                    /// put both paired reads into --accept reads file
-                    else if ( strcmp ( myoption, "paired_in"  ) == 0 )
+                    else
                     {
-                        if ( pairedin_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --paired_in has already been set once.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else if ( pairedout_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --paired_out has been set, please choose one or the other, or use the default option.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            pairedin_gv = true;
-                            narg++;
-                        }
+                        otumapout_gv = true;
+                        narg++;
                     }
-                    /// put both paired reads into --other reads file
-                    else if ( strcmp ( myoption, "paired_out"  ) == 0 )
+                }
+                /// output non-aligned reads to SAM/BLAST files
+                else if ( strcmp ( myoption, "print_all_reads" ) == 0 )
+                {
+                    if ( print_all_reads_gv )
                     {
-                        if ( pairedout_gv )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --paired_out has already been set once.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else if ( pairedin_gv )
-                        {
-                            fprintf(stderr,"\n %sERROR%s: --paired_in has been set, please choose one or the other, or use the default option.\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            pairedout_gv = true;
-                            narg++;
-                        }
+                        fprintf(stderr,"\n  %sERROR%s: --print_all_reads has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
                     }
-					/// the score for a match
-					else if ( strcmp ( myoption, "match" ) == 0 )
-					{
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --match requires a positive integer as input (ex. --match 2).\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// set match
-						if ( !match_set )
-						{
-							match = atoi(argv[narg+1]);      
-							narg+=2;
-							match_set = true;
-						}
-						else
-						{
-							fprintf(stderr,"\n  %sERROR%s: --match has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-							printlist();
-						} 
-					}
-					/// the score for a mismatch
-					else if ( strcmp ( myoption, "mismatch" ) == 0 )
-					{
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --mismatch requires a negative integer input (ex. --mismatch -2)\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// set mismatch
-						if ( !mismatch_set )
-						{
-							mismatch = atoi(argv[narg+1]);  
-							if ( mismatch > 0 )
-							{
-								fprintf(stderr,"\n  %sERROR%s: --mismatch requires a negative integer input (ex. --mismatch -2)\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}    
-							narg+=2;
-							mismatch_set = true;
-						}
-						else
-						{
-							printf("\n  %sERROR%s: --mismatch has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-							printlist();
-						} 
-					}
-					/// the score for a gap
-					else if ( strcmp ( myoption, "gap_open" ) == 0 )
-					{
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --gap_open requires a positive integer as input (ex. --gap_open 5)\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// set gap open
-						if ( !gap_open_set )
-						{
-							gap_open = atoi(argv[narg+1]); 
-							if ( gap_open < 0 )	
-							{
-								fprintf(stderr,"\n  %sERROR%s: --gap_open requires a positive integer as input (ex. --gap_open 5)\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}     
-							narg+=2;
-							gap_open_set = true;
-						}
-						else
-						{
-							printf("\n  %sERROR%s: --gap_open has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-							printlist();
-						} 
-					}
-					/// the score for a gap extension
-					else if ( strcmp ( myoption, "gap_ext" ) == 0 )
-					{
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --gap_ext requires a positive integer as input (ex. --gap_ext 2)\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// set gap extend
-						if ( !gap_ext_set )
-						{
-							gap_extension = atoi(argv[narg+1]);   
-							if ( gap_extension < 0 )	
-							{
-								fprintf(stderr,"\n  %sERROR%s: --gap_ext requires a positive integer as input (ex. --gap_ext 2)\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}    
-							narg+=2;
-							gap_ext_set = true;
-						}
-						else
-						{
-							fprintf(stderr,"\n  %sERROR%s: --gap_ext has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-							printlist();
-						} 
-					}
-					/// number of seed hits before searching for candidate LCS
-					else if ( strcmp ( myoption, "num_seeds" ) == 0 )
-					{
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --num_seeds requires a positive integer as input (ex. --num_seeds 6)\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// set number of seeds
-						if ( seed_hits_gv < 0 )
-						{
-							char* end = 0;
-							seed_hits_gv = (int)strtol(argv[narg+1],&end,10); /// convert to integer
-							if ( seed_hits_gv <= 0 )	
-							{
-								fprintf(stderr,"\n  %sERROR%s: --num_seeds requires a positive integer (>0) as input (ex. --num_seeds 6)\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}    
-							narg+=2;
-						}
-						else
-						{
-							fprintf(stderr,"\n  %sERROR%s: --num_seeds has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-							printlist();
-						} 
-					}
+                    else
+                    {
+                        print_all_reads_gv = true;
+                        narg++;
+                    }
+                }
+                /// don't add pid to output files
+                else if ( strcmp ( myoption, "pid" ) == 0 )
+                {
+                    if ( pid_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --pid has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        pid_gv = true;
+                        narg++;
+                    }
+                }
+                /// put both paired reads into --accept reads file
+                else if ( strcmp ( myoption, "paired_in"  ) == 0 )
+                {
+                    if ( pairedin_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --paired_in has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else if ( pairedout_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --paired_out has been set, please choose one or the other, or use the default option.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        pairedin_gv = true;
+                        narg++;
+                    }
+                }
+                /// put both paired reads into --other reads file
+                else if ( strcmp ( myoption, "paired_out"  ) == 0 )
+                {
+                    if ( pairedout_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --paired_out has already been set once.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else if ( pairedin_gv )
+                    {
+                        fprintf(stderr,"\n %sERROR%s: --paired_in has been set, please choose one or the other, or use the default option.\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        pairedout_gv = true;
+                        narg++;
+                    }
+                }
+                /// the score for a match
+                else if ( strcmp ( myoption, "match" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --match [INT] requires a positive integer as input (ex. --match 2).\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set match
+                    if ( !match_set )
+                    {
+                        match = atoi(argv[narg+1]);
+                        narg+=2;
+                        match_set = true;
+                    }
+                    else
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --match [INT] has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                }
+                /// the score for a mismatch
+                else if ( strcmp ( myoption, "mismatch" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --mismatch [INT] requires a negative integer input (ex. --mismatch -2)\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set mismatch
+                    if ( !mismatch_set )
+                    {
+                        mismatch = atoi(argv[narg+1]);
+                        if ( mismatch > 0 )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --mismatch [INT] requires a negative integer input (ex. --mismatch -2)\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                        mismatch_set = true;
+                    }
+                    else
+                    {
+                        printf("\n  %sERROR%s: --mismatch [INT] has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                }
+                /// the score for a gap
+                else if ( strcmp ( myoption, "gap_open" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --gap_open [INT] requires a positive integer as input (ex. --gap_open 5)\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set gap open
+                    if ( !gap_open_set )
+                    {
+                        gap_open = atoi(argv[narg+1]);
+                        if ( gap_open < 0 )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --gap_open [INT] requires a positive integer as input (ex. --gap_open 5)\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                        gap_open_set = true;
+                    }
+                    else
+                    {
+                        printf("\n  %sERROR%s: --gap_open [INT] has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                }
+                /// the score for a gap extension
+                else if ( strcmp ( myoption, "gap_ext" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set gap extend
+                    if ( !gap_ext_set )
+                    {
+                        gap_extension = atoi(argv[narg+1]);
+                        if ( gap_extension < 0 )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                        gap_ext_set = true;
+                    }
+                    else
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                }
+                /// number of seed hits before searching for candidate LCS
+                else if ( strcmp ( myoption, "num_seeds" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --num_seeds [INT] requires a positive integer as input (ex. --num_seeds 6)\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set number of seeds
+                    if ( seed_hits_gv < 0 )
+                    {
+                        char* end = 0;
+                        seed_hits_gv = (int)strtol(argv[narg+1],&end,10); /// convert to integer
+                        if ( seed_hits_gv <= 0 )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                    }
+                    else
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --num_seeds [INT] has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                }
 #ifdef NOMASK_option
-                    /// turn off masking of low-occurring L/2-mers for seed of length L
-					else if ( strcmp ( myoption, "no-mask"  ) == 0 )
-					{
-						if ( nomask_gv )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --no-mask has already been set once.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							nomask_gv = true;
-							narg++;
-						}
-					}
+                /// turn off masking of low-occurring L/2-mers for seed of length L
+                else if ( strcmp ( myoption, "no-mask"  ) == 0 )
+                {
+                    if ( nomask_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --no-mask has already been set once.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        nomask_gv = true;
+                        narg++;
+                    }
+                }
 #endif
-					/// output all hits in FASTX format
-					else if ( strcmp ( myoption, "fastx"  ) == 0 )
-					{
-						if ( fastxout_gv )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --fastx has already been set once.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							fastxout_gv = true;
-							narg++;
-						}
-					}
-					/// output all hits in SAM format
-					else if ( strcmp ( myoption, "sam"  ) == 0 )
-					{
-						if ( samout_gv )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --sam has already been set once.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							samout_gv = true;
-							narg++;
-						}
-					}
-					/// output all hits in BLAST format 
-					else if ( strcmp ( myoption, "blast"  ) == 0 )
-					{
-						if ( blastout_gv )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --blast INT has already been set once.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-                            if ( (sscanf(argv[narg+1],"%d",&blast_outfmt) != 1) || (blast_outfmt < 0) || (blast_outfmt > 3))
-                            {
-                                fprintf(stderr,"\n  %sERROR%s: --blast INT must be a positive integer with value 0<=INT<=3.\n\n","\033[0;31m","\033[0m");
-                                exit(EXIT_FAILURE);
-                            }
-                            blastout_gv = true;
-							narg+=2;
-						}
-					}
-					/// output best alignment as predicted by the longest increasing subsequence
-					else if ( strcmp ( myoption, "min_lis" ) == 0 )
-					{	
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] requires an integer (>=0) as input (ex. --min_lis 2) (note: 0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// min_lis_gv has already been set
-						else if ( min_lis_gv_set )
-                        {
- 							fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
-							printlist();
-                        }
-						else
-                        {
-                            if ( (sscanf(argv[narg+1],"%d",&min_lis_gv) != 1) || (min_lis_gv < 0) )
-							{
-								fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] must be >= 0 (0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							} 
-	 						narg+=2;
-                            min_lis_gv_set = true;
-						}
-					}
-                    /// output best alignment as predicted by the longest increasing subsequence
-					else if ( strcmp ( myoption, "best" ) == 0 )
-					{
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --best [INT] requires an integer (> 0) as input (ex. --best 2).\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// best_gv_set has already been set
-						else if ( best_gv_set )
-                        {
- 							fprintf(stderr,"\n  %sERROR%s: --best [INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
-							printlist();
-                        }
-						else
-                        {
-                            if ( (sscanf(argv[narg+1],"%hd",&num_best_hits_gv) != 1) || (num_best_hits_gv <= 0) )
-							{
-								fprintf(stderr,"\n  %sERROR%s: --best [INT] must be > 0.\n\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}
-	 						narg+=2;
-                            best_gv_set = true;
-						}
-					}
-					/// output all alignments
-					else if ( strcmp ( myoption, "num_alignments" ) == 0 )
-					{	
-						
-						if (argv[narg+1] == NULL)
-						{
-							fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] requires an integer (>=0) as input (ex. --num_alignments 2) (note: 0 signifies to output all alignments).\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);						
-						}
-						/// --num_alignments [INT] has already been set
-						else if ( num_alignments_gv_set )
-                        {
- 							fprintf(stderr,"\n  %sERROR%s:--num_alignments [INT] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-                        }
-                        /// set number of alignments to output reaching the E-value
-						else
-                        {
-							num_alignments_gv = atoi(argv[narg+1]);
-                            if ( num_alignments_gv < 0 )
-							{
-								fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] must be >= 0 (0 signifies to output all alignments).\n\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}
-	 						narg+=2;
-                            num_alignments_gv_set = true;
-						}
-					}
-					/// output the first alignment reaching E-value score
-					else if ( strcmp ( myoption, "feeling-lucky" ) == 0 )
-					{	
-						/// --feeling-lucky is already set
-						if ( feeling_lucky_gv )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --feeling-lucky has already been set once.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);						
-						}
-						else
-						{
-							feeling_lucky_gv = true;
-							narg++;
-						} 
-					}
-					/// number of nucleotides to add to each edge of an alignment region before extension
-					else if ( strcmp ( myoption, "edges" ) == 0 )
-					{	
-						/// --edges is already set
-						if ( edges_set )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --edges INT%% has already been set once.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);						
-						}						
-						else 
-						{
-						  char *end = 0;
-							char* test = strpbrk(argv[narg+1], "%"); /// find if % sign exists
-							if ( test != NULL )
-								as_percent_gv = true;
-
-							edges_gv = (int)strtol(argv[narg+1],&end,10); /// convert to integer
-
-							if ( edges_gv < 1 || edges_gv > 10 )
-							{
-								fprintf(stderr,"\n  %sERROR%s: --edges [INT] requires a positive integer between 0-10 as input (ex. --edges 4).\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}
-
-							narg+=2;
-						}
-					}
-					/// execute full index search for 0-error and 1-error seed matches
-					else if ( strcmp ( myoption, "full_search"  ) == 0 )
-					{
-						if ( full_search_set )	
-						{
-							fprintf(stderr,"\n  %sERROR%s: --full_search has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							full_search_set = true;
-							full_search_gv = true;
-							narg++;
-						}
-					}
-                    /// do not output SQ tags in the SAM file
-					else if ( strcmp ( myoption, "SQ"  ) == 0 )
-					{
-						if ( yes_SQ )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --SQ has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						else
-						{
-							yes_SQ = true;
-							narg++;
-						}
-					}
-					/// --passes option
-					else if ( strcmp ( myoption, "passes" ) == 0 )
-					{
-						if ( passes_set )
-						{
-							fprintf(stderr,"\n  %sERROR%s: --passes has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
-							exit(EXIT_FAILURE);
-						}
-						/// set passes
-						else 
-						{
-                            vector<uint32_t> skiplengths_v;
-                            char *end = 0;
-                            int32_t t = (int)strtol(strtok(argv[narg+1], ","),&end,10);
-                            if ( t > 0 ) skiplengths_v.push_back(t);
-                            else
-							{
-								fprintf(stderr,"\n  %sERROR%s: all three integers in --passes INT,INT,INT must contain positive integers where 0<INT<(shortest read length).\n\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}
-                            t = (int)strtol(strtok(NULL, ","),&end,10);
-                            if ( t > 0 ) skiplengths_v.push_back(t);
-                            else
-							{
-								fprintf(stderr,"\n  %sERROR%s: all three integers in --passes INT,INT,INT must contain positive integers where 0<INT<(shortest read length).\n\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}
-                            t = (int)strtol(strtok(NULL, ","),&end,10);
-                            if ( t > 0 ) skiplengths_v.push_back(t);
-                            else
-							{
-								fprintf(stderr,"\n  %sERROR%s: all three integers in --passes INT,INT,INT must contain positive integers where 0<INT<(shortest read length).\n\n","\033[0;31m","\033[0m");
-								exit(EXIT_FAILURE);
-							}
- 
-                            skiplengths.push_back(skiplengths_v);
-							narg+=2;
-							passes_set = true;
-						}
-					}
-                    else if ( strcmp (myoption, "id" ) == 0 )
+                /// output all hits in FASTX format
+                else if ( strcmp ( myoption, "fastx"  ) == 0 )
+                {
+                    if ( fastxout_gv )
                     {
-                        /// % id
-                        if ( align_id < 0 )
+                        fprintf(stderr,"\n  %sERROR%s: --fastx has already been set once.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        fastxout_gv = true;
+                        narg++;
+                    }
+                }
+                /// output all hits in SAM format
+                else if ( strcmp ( myoption, "sam"  ) == 0 )
+                {
+                    if ( samout_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --sam has already been set once.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        samout_gv = true;
+                        narg++;
+                    }
+                }
+                /// output all hits in BLAST format
+                else if ( strcmp ( myoption, "blast"  ) == 0 )
+                {
+                    if ( blastout_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --blast [INT] has already been set once.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        if ( (sscanf(argv[narg+1],"%d",&blast_outfmt) != 1) || (blast_outfmt < 0) || (blast_outfmt > 3))
                         {
-                            if ( (sscanf(argv[narg+1],"%lf",&align_id) != 1) || (align_id < 0) || (align_id > 1))
-                            {
-                                fprintf(stderr,"\n  %sERROR%s: --id must be a positive float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
-                                exit(EXIT_FAILURE);
-                            }
-                            narg+=2;
-                        }
-                        else
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --id has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                            fprintf(stderr,"\n  %sERROR%s: --blast [INT] must be a positive integer with value 0<=INT<=3.\n\n","\033[0;31m","\033[0m");
                             exit(EXIT_FAILURE);
                         }
+                        blastout_gv = true;
+                        narg+=2;
                     }
-                    else if ( strcmp (myoption, "coverage" ) == 0 )
+                }
+                /// output best alignment as predicted by the longest increasing subsequence
+                else if ( strcmp ( myoption, "min_lis" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
                     {
-                        /// % query coverage
-                        if ( align_cov < 0 )
+                        fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] requires an integer (>=0) as input (ex. --min_lis 2) (note: 0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// min_lis_gv has already been set
+                    else if ( min_lis_gv_set )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                    else
+                    {
+                        if ( (sscanf(argv[narg+1],"%d",&min_lis_gv) != 1) || (min_lis_gv < 0) )
                         {
-                            if ( (sscanf(argv[narg+1],"%lf",&align_cov) != 1) || (align_cov<0) || (align_cov>1) )
-                            {
-                                fprintf(stderr,"\n  %sERROR%s: --coverage must be a positive float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
-                                exit(EXIT_FAILURE);
-                            }
-                            narg+=2;
-                        }
-                        else
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --coverage has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                            fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] must be >= 0 (0 signifies to search all high scoring reference sequences).\n\n","\033[0;31m","\033[0m");
                             exit(EXIT_FAILURE);
                         }
+                        narg+=2;
+                        min_lis_gv_set = true;
                     }
-					/// the version number
-					else if ( strcmp ( myoption, "version"  ) == 0 )
-					{
-						fprintf(stderr,"\n  SortMeRNA version %s\n\n",version_num);
-						exit(EXIT_SUCCESS);
-					}
-					else
-					{
-						fprintf(stderr,"\n  %sERROR%s: option --%s is not an option.\n\n","\033[0;31m","\033[0m",myoption);
-						printlist();	
-					}
-			  }
-									break;
-		case 'a': { 
+                }
+                /// output best alignment as predicted by the longest increasing subsequence
+                else if ( strcmp ( myoption, "best" ) == 0 )
+                {
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --best [INT] requires an integer (> 0) as input (ex. --best 2).\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// best_gv_set has already been set
+                    else if ( best_gv_set )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --best [INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
+                        printlist();
+                    }
+                    else
+                    {
+                        if ( (sscanf(argv[narg+1],"%hd",&num_best_hits_gv) != 1) || (num_best_hits_gv <= 0) )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --best [INT] must be > 0.\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                        best_gv_set = true;
+                    }
+                }
+                /// output all alignments
+                else if ( strcmp ( myoption, "num_alignments" ) == 0 )
+                {
+                    
+                    if (argv[narg+1] == NULL)
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] requires an integer (>=0) as input (ex. --num_alignments 2) (note: 0 signifies to output all alignments).\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// --num_alignments [INT] has already been set
+                    else if ( num_alignments_gv_set )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s:--num_alignments [INT] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set number of alignments to output reaching the E-value
+                    else
+                    {
+                        num_alignments_gv = atoi(argv[narg+1]);
+                        if ( num_alignments_gv < 0 )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] must be >= 0 (0 signifies to output all alignments).\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                        num_alignments_gv_set = true;
+                    }
+                }
+                /// output the first alignment reaching E-value score
+                else if ( strcmp ( myoption, "feeling_lucky" ) == 0 )
+                {
+                    /// --feeling_lucky is already set
+                    if ( feeling_lucky_gv )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: flag --feeling_lucky has already been set once.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        feeling_lucky_gv = true;
+                        narg++;
+                    }
+                }
+                /// number of nucleotides to add to each edge of an alignment region before extension
+                else if ( strcmp ( myoption, "edges" ) == 0 )
+                {
+                    /// --edges is already set
+                    if ( edges_set )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --edges [INT]%% has already been set once.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        char *end = 0;
+                        char* test = strpbrk(argv[narg+1], "%"); /// find if % sign exists
+                        if ( test != NULL )
+                            as_percent_gv = true;
+                        
+                        edges_gv = (int)strtol(argv[narg+1],&end,10); /// convert to integer
+                        
+                        if ( edges_gv < 1 || edges_gv > 10 )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --edges [INT]%% requires a positive integer between 0-10 as input (ex. --edges 4).\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        
+                        narg+=2;
+                    }
+                }
+                /// execute full index search for 0-error and 1-error seed matches
+                else if ( strcmp ( myoption, "full_search"  ) == 0 )
+                {
+                    if ( full_search_set )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: flag --full_search has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        full_search_set = true;
+                        full_search_gv = true;
+                        narg++;
+                    }
+                }
+                /// do not output SQ tags in the SAM file
+                else if ( strcmp ( myoption, "SQ"  ) == 0 )
+                {
+                    if ( yes_SQ )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: flag --SQ has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    else
+                    {
+                        yes_SQ = true;
+                        narg++;
+                    }
+                }
+                /// --passes option
+                else if ( strcmp ( myoption, "passes" ) == 0 )
+                {
+                    if ( passes_set )
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --passes [INT,INT,INT] has been set twice, please verify your choice.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                    /// set passes
+                    else
+                    {
+                        vector<uint32_t> skiplengths_v;
+                        char *end = 0;
+                        int32_t t = (int)strtol(strtok(argv[narg+1], ","),&end,10);
+                        if ( t > 0 ) skiplengths_v.push_back(t);
+                        else
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: all three integers in --passes [INT,INT,INT] must contain positive integers where 0<INT<(shortest read length).\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        t = (int)strtol(strtok(NULL, ","),&end,10);
+                        if ( t > 0 ) skiplengths_v.push_back(t);
+                        else
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: all three integers in --passes [INT,INT,INT] must contain positive integers where 0<INT<(shortest read length).\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        t = (int)strtol(strtok(NULL, ","),&end,10);
+                        if ( t > 0 ) skiplengths_v.push_back(t);
+                        else
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: all three integers in --passes [INT,INT,INT] must contain positive integers where 0<INT<(shortest read length).\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        
+                        skiplengths.push_back(skiplengths_v);
+                        narg+=2;
+                        passes_set = true;
+                    }
+                }
+                else if ( strcmp (myoption, "id" ) == 0 )
+                {
+                    /// % id
+                    if ( align_id < 0 )
+                    {
+                        if ( (sscanf(argv[narg+1],"%lf",&align_id) != 1) || (align_id < 0) || (align_id > 1))
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --id [DOUBLE] must be a positive float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                    }
+                    else
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --id [DOUBLE] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                else if ( strcmp (myoption, "coverage" ) == 0 )
+                {
+                    /// % query coverage
+                    if ( align_cov < 0 )
+                    {
+                        if ( (sscanf(argv[narg+1],"%lf",&align_cov) != 1) || (align_cov<0) || (align_cov>1) )
+                        {
+                            fprintf(stderr,"\n  %sERROR%s: --coverage [DOUBLE] must be a positive float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
+                            exit(EXIT_FAILURE);
+                        }
+                        narg+=2;
+                    }
+                    else
+                    {
+                        fprintf(stderr,"\n  %sERROR%s: --coverage [DOUBLE] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                /// the version number
+                else if ( strcmp ( myoption, "version"  ) == 0 )
+                {
+                    fprintf(stderr,"\n  SortMeRNA version %s\n\n",version_num);
+                    exit(EXIT_SUCCESS);
+                }
+                else
+                {
+                    fprintf(stderr,"\n  %sERROR%s: option --%s is not an option.\n\n","\033[0;31m","\033[0m",myoption);
+                    printlist();
+                }
+            }
+                break;
+            case 'a': {
 				/// the number of cpus has been set twice
 				if ( numcpu_gv == -1 )
 				{
-					numcpu_gv = atof(argv[narg+1]);      
+					numcpu_gv = atof(argv[narg+1]);
 					narg+=2;
 				}
 				else
 				{
-					printf("\n  %sERROR%s: -a has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+					printf("\n  %sERROR%s: -a [INT] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
-				} 
-			  }    			
-									break;
-		case 'e': { 
+				}
+            }
+                break;
+            case 'e': {
 				/// E-value
                 if ( argv[narg+1] == NULL )
                 {
-                    fprintf(stderr,"\n  %sERROR%s: -e requires a positive double as input (ex. --e 1e-5)\n","\033[0;31m","\033[0m");
+                    fprintf(stderr,"\n  %sERROR%s: -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)\n","\033[0;31m","\033[0m");
                     exit(EXIT_FAILURE);
                 }
 				if ( evalue < 0 )
@@ -1075,74 +1094,74 @@ main(int argc,
 					sscanf(argv[narg+1],"%lf",&evalue);
                     if ( evalue < 0 )
                     {
-                        fprintf(stderr,"\n  %sERROR%s: -e requires a positive double as input (ex. --e 1e-5)\n","\033[0;31m","\033[0m");
+                        fprintf(stderr,"\n  %sERROR%s: -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)\n","\033[0;31m","\033[0m");
                         exit(EXIT_FAILURE);
                     }
 					narg+=2;
 				}
 				else
 				{
-					fprintf(stderr,"\n  %sERROR%s: -e has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: -e [DOUBLE] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
-				} 
-			  }    			
-									break;
-		case 'F': {
+				}
+            }
+                break;
+            case 'F': {
 				/// only forward strand
 				if ( !forward_gv )
 				{
-					  forward_gv = true; 
-					  narg++;
+                    forward_gv = true;
+                    narg++;
 				}
-				else 
-				{	
-					  fprintf(stderr,"\n  %sERROR%s: flag -F has been set more than once, please check your command parameters.\n","\033[0;31m","\033[0m");
-					  exit(EXIT_FAILURE);
+				else
+				{
+                    fprintf(stderr,"\n  %sERROR%s: flag -F has been set more than once, please check your command parameters.\n","\033[0;31m","\033[0m");
+                    exit(EXIT_FAILURE);
 				}
-				}        	
-								              break;
-		case 'R': {
+            }
+                break;
+            case 'R': {
 				/// only reverse strand
 				if ( !reverse_gv )
 				{
-				   reverse_gv = true; 
-				   narg++;
+                    reverse_gv = true;
+                    narg++;
 				}
-				else 
+				else
 				{
 				    fprintf(stderr,"\n  %sERROR%s: flag -R has been set more than once, please check your command parameters.\n","\033[0;31m","\033[0m");
 				    exit(EXIT_FAILURE);
 				}
-			  }	   			   
-							   		break;
-		case 'h': {	
+            }
+                break;
+            case 'h': {
 				/// help
 				printlist();
-			  }
-									break;
-
-		case 'v': {
+            }
+                break;
+                
+            case 'v': {
                 /// turn on verbose
 				verbose = true;
 				narg++;
-			  }
-									break;
-		case 'N': {
+            }
+                break;
+            case 'N': {
 				/// match ambiguous N's
 				if ( !match_ambiguous_N_gv )
 				{
-                      match_ambiguous_N_gv = true;
-                      score_N = atoi(argv[narg+1]);
-					  narg+=2;
+                    match_ambiguous_N_gv = true;
+                    score_N = atoi(argv[narg+1]);
+                    narg+=2;
 				}
-				else 
-				{	
-					  fprintf(stderr,"\n  %sERROR%s: flag -N has been set more than once, please check your command parameters.\n","\033[0;31m","\033[0m");
-					  exit(EXIT_FAILURE);
+				else
+				{
+                    fprintf(stderr,"\n  %sERROR%s: flag -N has been set more than once, please check your command parameters.\n","\033[0;31m","\033[0m");
+                    exit(EXIT_FAILURE);
 				}
-		}        	
-								   break;
-		case 'm': { 
+            }
+                break;
+            case 'm': {
 				/// set the map_size_gv variable
 				if ( !map_size_set_gv )
 				{
@@ -1154,67 +1173,64 @@ main(int argc,
                     if ( pages_asked > maxpages_gv/2 )
                     {
                         int max_ram = (maxpages_gv*pagesize_gv)/1048576;
-                        fprintf(stderr,"\n  %sERROR%s: -m INT must not exceed %d (Mbyte).\n\n","\033[0;31m","\033[0m",max_ram);
+                        fprintf(stderr,"\n  %sERROR%s: -m [INT] must not exceed %d (Mbyte).\n\n","\033[0;31m","\033[0m",max_ram);
                         exit(EXIT_FAILURE);
                     }
                     /// set RAM limit
 					if ( _m != 0 )
-					{ 
+					{
                         map_size_gv*=pages_asked;
 						narg+=2;
 						map_size_set_gv = true;
 					}
 					else
 					{
-                        fprintf(stderr, "\n  %sERROR%s: -m value must be a positive integer value (in Mbyte).\n\n","\033[0;31m","\033[0m");
+                        fprintf(stderr, "\n  %sERROR%s: -m [INT] must be a positive integer value (in Mbyte).\n\n","\033[0;31m","\033[0m");
                         exit(EXIT_FAILURE);
 					}
 				}
 				else
 				{
-					fprintf(stderr,"\n  %sERROR%s: -m has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: -m [INT] has been set twice, please verify your command parameters.\n\n","\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
-				} 
-			  }    			
-									break;
-
-		default : {
+				}
+            }
+                break;
+                
+            default : {
 				fprintf(stderr,"\n  %sERROR%s: '%c' is not one of the options.\n","\033[0;31m","\033[0m",argv[narg][1]);
 				printlist();
-			  } 
+            }
 	    }//~switch
 	}//~while ( narg < argc )
-
-
-
+    
+    
+    
 	/// ERROR messages *******
-
+    
 	/// check mandatory input
 	if ( (readsfile == NULL) || myfiles.empty() )
 	{
-		fprintf(stderr,"\n  %sERROR%s: a reads file (--reads reads.fasta) and a reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) are mandatory input.\n\n","\033[0;31m","\033[0m");
+		fprintf(stderr,"\n  %sERROR%s: a reads file (--reads file.{fa/fq}) and a reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) are mandatory input.\n\n","\033[0;31m","\033[0m");
 		printlist();
 	}
     
     if ( !fastxout_gv && (pairedin_gv || pairedout_gv) )
     {
-        eprintf("\n  %sERROR%s: options --paired_in and --paired_out must be accompanied by option --fastx.\n","\033[0;31m","\033[0m");
-        eprintf("  These flags are for FASTA and FASTQ output files, for maintaining paired reads together.\n");
+        fprintf(stderr,"\n  %sERROR%s: options --paired_in [FLAG] and --paired_out [FLAG] must be accompanied by option --fastx.\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"  These flags are for FASTA and FASTQ output files, for maintaining paired reads together.\n");
         exit(EXIT_FAILURE);
     }
     
 	/// aligned reads output
 	if ( ptr_filetype_ar == NULL )
 	{
-		if ( fastxout_gv || blastout_gv || samout_gv )
-		{
-			eprintf("\n  %sERROR%s: options --fastx, --blast and --sam must be accompanied by option --aligned STRING.\n\n","\033[0;31m","\033[0m");
-			exit(EXIT_FAILURE);
-		}
+        fprintf(stderr,"\n  %sERROR%s: parameter --aligned [STRING] is mandatory.\n\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
 	}
-	else if ( !fastxout_gv && !blastout_gv && !samout_gv )
+	else if ( !fastxout_gv && !blastout_gv && !samout_gv && !otumapout_gv )
 	{
-		eprintf("\n  %sERROR%s: option --aligned STRING has been set but no output format has been chosen (fastx/sam/blast).\n\n","\033[0;31m","\033[0m");
+		fprintf(stderr,"\n  %sERROR%s: no output format has been chosen (fastx/sam/blast/otu map).\n\n","\033[0;31m","\033[0m");
 		exit(EXIT_FAILURE);
 	}
     
@@ -1223,75 +1239,105 @@ main(int argc,
 	{
 		if ( !fastxout_gv && (blastout_gv || samout_gv) )
 		{
-			eprintf("\n  %sERROR%s: option --other STRING can only be used together with the --fastx option.\n\n","\033[0;31m","\033[0m");
+			fprintf(stderr,"\n  %sERROR%s: option --other [STRING] can only be used together with the --fastx option.\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
 		}
 	}
     
-    /// if feeling-lucky was chosen, check an alignment format has also been chosen
+    /// if feeling_lucky was chosen, check an alignment format has also been chosen
     if ( feeling_lucky_gv && !(blastout_gv || samout_gv) )
     {
-        eprintf("\n  %sERROR%s: '--feeling-lucky' has been set but no alignment format has been chosen ('--blast' or '--sam').\n\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"\n  %sERROR%s: --feeling_lucky [FLAG] has been set but no alignment format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
         exit(EXIT_FAILURE);
     }
     
 	/// if best alignment was chosen, check an alignment format has also been chosen
 	if ( (min_lis_gv > -1) && !(blastout_gv || samout_gv) )
 	{
-        eprintf("\n  %sERROR%s: '--best' has been set but no alignment format has been chosen ('--blast' or '--sam').\n\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"\n  %sERROR%s: --best [INT] has been set but no alignment format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
         exit(EXIT_FAILURE);
 	}
     
 	/// if all alignment was chosen, check an alignment format has also been chosen
 	if ( (num_alignments_gv > 0) && !(blastout_gv || samout_gv) )
 	{
-		eprintf("\n  %sERROR%s: '--num_alignments [INT]' has been set but no alignment format has been chosen ('--blast' or '--sam').\n\n","\033[0;31m","\033[0m");
+		fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] has been set but no alignment format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
         exit(EXIT_FAILURE);
 	}
-
+    
 	/// check gap extend score < gap open score
 	if ( gap_extension > gap_open )
 	{
-		fprintf(stderr,"\n  %sERROR%s: --gap_ext must be less than --gap_open.\n\n","\033[0;31m","\033[0m");
+		fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] must be less than --gap_open [INT].\n\n","\033[0;31m","\033[0m");
 		exit(EXIT_FAILURE);
 	}
     
     if ( feeling_lucky_gv )
     {
-        /// only one alignment (hence reference sequence) can be observed with option --feeling-lucky
+        /// only one alignment (hence reference sequence) can be observed with option --feeling_lucky
         if (min_lis_gv > -1)
         {
-            fprintf(stderr,"\n  %sERROR%s: --feeling-lucky cannot be set with --best [INT].\n\n","\033[0;31m","\033[0m");
+            fprintf(stderr,"\n  %sERROR%s: --feeling_lucky [FLAG] cannot be set with --best [INT].\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
         }
         
-        /// only one alignment can be observed with option --feeling-lucky
+        /// only one alignment can be observed with option --feeling_lucky
         if (num_alignments_gv > -1)
         {
-            fprintf(stderr,"\n  %sERROR%s: --feeling-lucky cannot be set with --num_alignments [INT].\n\n","\033[0;31m","\033[0m");
+            fprintf(stderr,"\n  %sERROR%s: --feeling_lucky [FLAG] cannot be set with --num_alignments [INT].\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
         }
     }
     
+    if ( print_all_reads_gv && blastout_gv && (blast_outfmt < 1) )
+    {
+        fprintf(stderr,"\n  %sERROR%s: --print_all_reads [FLAG] can only be used for BLAST output formats 1,2 and 3 (using --blast INT).\n\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
+    }
+
     /// only one of these options is allowed (--best outputs one alignment, --num_alignments outputs > 1 alignments)
+    if ( best_gv_set && (num_alignments_gv > -1) )
+    {
+        fprintf(stderr,"\n  %sERROR%s: --best [INT] and --num_alignments [INT] cannot be set together. \n","\033[0;31m","\033[0m");
+        fprintf(stderr,"  (--best [INT] will search INT highest scoring reference sequences and output a single best alignment, whereas --num_alignments [INT] will output the first INT alignments).\n\n");
+    }
+    
+    /// option --min_lis [INT] can only accompany --best [INT]
     if ( (min_lis_gv > -1) && (num_alignments_gv > -1) )
     {
-        fprintf(stderr,"\n  %sERROR%s: --best [INT] and --num_alignments [INT] cannot be set together, please choose one.\n","\033[0;31m","\033[0m");
-        fprintf(stderr,"  (--best [INT] will search INT highest scoring reference sequences and output a single best alignment, whereas --num_alignments [INT] will output the first INT alignments).\n\n");
+        fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] and --num_alignments [INT] cannot be set together. \n","\033[0;31m","\033[0m");
+        fprintf(stderr,"  --min_lis [INT] can only be used with --best [INT] (refer to the User manual on this option).\n\n");
         exit(EXIT_FAILURE);
     }
     
     /// option --mis_lis INT accompanies --best INT, cannot be set alone
     if ( !best_gv_set && min_lis_gv_set )
     {
-        fprintf(stderr,"\n  %sERROR%s: --min_lis INT must be set together with --best INT.\n\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] must be set together with --best [INT].\n\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
+    }
+    
+    /// an OTU map can only be constructed with the single best alignment per read
+    if ( otumapout_gv && (num_alignments_gv > -1) )
+    {
+        fprintf(stderr,"\n  %sERROR%s: --otu_map [FLAG] cannot be set together with --num_alignments [INT].\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"  The option --num_alignments [INT] doesn't keep track of the best alignment which is required for constructing an OTU map.\n");
+        fprintf(stderr,"  Use --otu_map [FLAG] with --best [INT] instead.\n\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    /// %id and %coverage can only be used with --otu_map
+    if ( ((align_id > 0) || (align_cov > 0 )) && !otumapout_gv )
+    {
+        fprintf(stderr,"\n  %sERROR%s: --id [INT] and --coverage [INT] can only be used together with --otu_map.\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"  These two options are used for constructing the OTU map by filtering the alignments passing the E-value threshold.\n\n");
         exit(EXIT_FAILURE);
     }
     
     
     if (nomask_gv)
     {
-        eprintf("\n  %sWARNING%s: the option '--no-mask' is not currently available, this flag has no effect on the results (L/2-mers will not be masked).\n","\033[0;31m","\033[0m");
+        eprintf("\n  %sWARNING%s: the option '--no-mask [FLAG]' is not currently available, this flag has no effect on the results (L/2-mers will not be masked).\n","\033[0;31m","\033[0m");
     }
     
     
@@ -1301,7 +1347,7 @@ main(int argc,
     {
         if (ptr_filetype_ar == NULL)
         {
-            fprintf(stderr,"  %sERROR%s: a root filename name (--aligned STRING) for output needs to be provided with --chimera.\n\n","\033[0;31m","\033[0m");
+            fprintf(stderr,"  %sERROR%s: a root filename name (--aligned [STRING]) for output needs to be provided with --chimera [FLAG].\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
         }
         //else if ( !samout_gv )
@@ -1311,16 +1357,16 @@ main(int argc,
         //}
     }
 #endif
-
-
-
-
-
-
+    
+    
+    
+    
+    
+    
 	/// the list of arguments is correct, welcome the user!
 	welcome();
 	
-
+    
 	/// if neither strand was selected for search, search both
 	if ( !forward_gv && !reverse_gv )
 	{
@@ -1328,23 +1374,23 @@ main(int argc,
 		reverse_gv = true;
 	} 
 	if ( numcpu_gv  < 0 ) numcpu_gv = 1;
-
+    
 	/// Gumbel parameters
 	if ( evalue < 0.0 ) evalue = 1;
-
+    
 	/// SW alignment parameters
 	if ( !match_set ) match = 2;
 	if ( !mismatch_set ) mismatch = -3;
 	if ( !gap_open_set ) gap_open = 5;
 	if ( !gap_ext_set ) gap_extension = 2;
     if ( !match_ambiguous_N_gv ) score_N = mismatch;
-
+    
 	if ( !map_size_set_gv )
 	{ 
 		/// the maximum memory allowed for reads is less than 1GB
-	  if ( 1073741824 > maxpages_gv*pagesize_gv/2 ) map_size_gv = maxpages_gv*pagesize_gv/2;
+        if ( 1073741824 > maxpages_gv*pagesize_gv/2 ) map_size_gv = maxpages_gv*pagesize_gv/2;
 		/// we set the memory to 1GB
-      else map_size_gv = 1073741824;
+        else map_size_gv = 1073741824;
 	}
     
     /// output single best alignment from 10 best candidate hits (default)
@@ -1355,16 +1401,16 @@ main(int argc,
     }
     
     if ( best_gv_set && !min_lis_gv_set ) min_lis_gv = 2;
-     
-    /// only FASTA/FASTQ output, run in feeling-lucky mode (filtering mode)
+    
+    /// only FASTA/FASTQ output, run in feeling_lucky mode (filtering mode)
     if ( fastxout_gv && !(blastout_gv || samout_gv) ) feeling_lucky_gv = true;
-
+    
 	/// default number of seed hits before searching for candidate LIS
 	if ( seed_hits_gv < 0 ) seed_hits_gv = 2;
-
+    
 	/// default number of nucleotides to add to each edge of an alignment region before extension
 	if ( edges_gv < 0 ) edges_gv = 4;
-
+    
 	/// activate heuristic for stopping search (of 1-error matches) after finding 0-error match
 	if ( !full_search_set ) full_search_gv = false;
     
@@ -1376,22 +1422,22 @@ main(int argc,
     
     /// 3. For each window, traverse in parallel the Burst trie/reverse and LEV(k), outputting all reads with edit distance <= k between the window.
     paralleltraversal( readsfile,
-                        ptr_filetype_ar,
-                        ptr_filetype_or,
-                        match,
-                        mismatch,
-                        gap_open,
-                        gap_extension,
-                        score_N,
-                        skiplengths,
-                        argc,
-                        argv,
-                        yes_SQ,
-                        myfiles);
-        
-
-
+                      ptr_filetype_ar,
+                      ptr_filetype_or,
+                      match,
+                      mismatch,
+                      gap_open,
+                      gap_extension,
+                      score_N,
+                      skiplengths,
+                      argc,
+                      argv,
+                      yes_SQ,
+                      myfiles);
+    
+    
+    
 	
   	return 0;
-
+    
 }//~main()
