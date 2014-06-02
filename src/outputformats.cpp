@@ -5,25 +5,25 @@ using namespace std;
 
 /// output Blast-like alignments (code modified from SSW-library)
 void report_blast (ofstream &fileout,
-                s_align* a,
-                char* read_name,
-                char* read_seq,
-                char* read_qual,
-                char* ref_name,
-                char* ref_seq,
-                double evalue,
-                uint32_t readlen,
-                uint32_t bitscore,
-                bool strand, // 1: forward aligned ; 0: reverse complement aligned
-                double id,
-                double coverage,
-                uint32_t mismatches,
-                uint32_t gaps
-                )
+                   s_align* a,
+                   char* read_name,
+                   char* read_seq,
+                   char* read_qual,
+                   char* ref_name,
+                   char* ref_seq,
+                   double evalue,
+                   uint32_t readlen,
+                   uint32_t bitscore,
+                   bool strand, // 1: forward aligned ; 0: reverse complement aligned
+                   double id,
+                   double coverage,
+                   uint32_t mismatches,
+                   uint32_t gaps
+                   )
 {
     char to_char[5] = {'A','C','G','T','N'};
-
-    /// Blast-like pairwise alignment
+    
+    /// Blast-like pairwise alignment (only for aligned reads)
     if ( blast_outfmt == 0 )
     {
         fileout << "Sequence ID: ";
@@ -130,6 +130,17 @@ void report_blast (ofstream &fileout,
     {
         /// (1) Query
         while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
+        
+        /// print null alignment for non-aligned read
+        if ( print_all_reads_gv && (a == NULL) )
+        {
+            fileout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+            if ( blast_outfmt > 1 ) fileout << "\t*";
+            else fileout << "\n";
+            if ( blast_outfmt > 2 ) fileout << "\t0\n";
+            return ;
+        }
+        
         fileout << "\t";
         /// (2) Subject
         while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t')) fileout << (char)*ref_name++;
@@ -155,7 +166,7 @@ void report_blast (ofstream &fileout,
         fileout << evalue << "\t";
         /// (12) bit score
         fileout << bitscore;
-        /// (13) optional: output CIGAR 
+        /// (13) optional: output CIGAR
         if ( blast_outfmt > 1 )
         {
             fileout << "\t";
@@ -182,7 +193,7 @@ void report_blast (ofstream &fileout,
             fileout << coverage*100 << "\t";
         }
         fileout << "\n";
-
+        
     }//~blast tabular m8
     
     return ;
@@ -190,23 +201,29 @@ void report_blast (ofstream &fileout,
 
 /// output SAM alignments (code modified from SSW-library)
 void report_sam (ofstream &fileout,
-                s_align* a,
-                char* read_name,
-                char* read_seq,
-                char* read_qual,
-                char* ref_name,
-                char* ref_seq,
-                uint32_t readlen,
-                bool strand, // 1: forward aligned ; 0: reverse complement aligned
-                uint32_t diff )
+                 s_align* a,
+                 char* read_name,
+                 char* read_seq,
+                 char* read_qual,
+                 char* ref_name,
+                 char* ref_seq,
+                 uint32_t readlen,
+                 bool strand, // 1: forward aligned ; 0: reverse complement aligned
+                 uint32_t diff )
 {
     char to_char[5] = {'A','C','G','T','N'};
     
     /// (1) Query
     while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
-    /// set the read name ptr to end of read name
-    while (*read_name != '\n') read_name++;
     
+    /// read did not align, output null string
+    if ( print_all_reads_gv && (a == NULL) )
+    {
+        fileout << "\t4\t*\t0\t255\t*\t*\t0\t0\t*\t*\t*\t*\n";
+        return ;
+    }
+    
+    /// read aligned, output full alignment
     uint32_t c;
     
     /// (2) flag
@@ -253,10 +270,10 @@ void report_sam (ofstream &fileout,
     if (read_qual && !strand)
     {
         while (*read_qual != '\n') fileout << (char)*read_qual--;
-    /// forward strand
+        /// forward strand
     }else if (read_qual){
         while ((*read_qual != '\n') && (*read_qual!='\0')) fileout << (char)*read_qual++;
-    /// FASTA read
+        /// FASTA read
     } else fileout << "*";
     
     
@@ -267,7 +284,7 @@ void report_sam (ofstream &fileout,
     fileout << "\tNM:i:" << diff << "\n";
     
     return ;
-
+    
 }
 
 
@@ -289,7 +306,7 @@ void report_fasta (char* acceptedstrings,
 {
     /// for timing different processes
 	double s,f;
-        
+    
     /// output accepted reads
     if ( (ptr_filetype_ar != NULL) && (fastxout_gv || chimeraout_gv) )
     {
@@ -306,7 +323,7 @@ void report_fasta (char* acceptedstrings,
         if ( pairedin_gv || pairedout_gv )
         {
             /// loop through every read, output accepted reads
-            for ( uint32_t i = 1; i < strs; i+=4 )
+            for ( int32_t i = 1; i < strs; i+=4 )
             {
                 char* begin_read = reads[i-1];
                 
@@ -356,7 +373,7 @@ void report_fasta (char* acceptedstrings,
                             exit(EXIT_FAILURE);
                         }
                     }
-
+                    
                     
 #ifdef chimera
                     /// output read to chimeric file
@@ -385,7 +402,7 @@ void report_fasta (char* acceptedstrings,
         else
         {
             /// loop through every read, output accepted (and chimeric) reads
-            for ( uint32_t i = 1; i < strs; i+=2 )
+            for ( int32_t i = 1; i < strs; i+=2 )
             {
                 char* begin_read = reads[i-1];
                 
@@ -462,7 +479,7 @@ void report_fasta (char* acceptedstrings,
                 } //~if read was accepted
             }//~for all reads
         }//~if not paired-in or paired-out
-            
+        
         if ( acceptedreads.is_open() ) acceptedreads.close();
 #ifdef chimera
         if ( acceptedchimeras.is_open() ) acceptedchimeras.close();
@@ -583,7 +600,7 @@ void report_fasta (char* acceptedstrings,
         TIME(f);
         eprintf(" done [%.2f sec]\n", (f-s) );
     }//~if ( ptr_filetype_or != NULL )
- 
+    
     return ;
 }
 
@@ -592,11 +609,11 @@ void report_fasta (char* acceptedstrings,
 
 
 void report_denovo(char *denovo_otus_file,
-              char **reads,
-              int32_t strs,
-              vector<bool>& read_hits_denovo,
-              uint32_t file_s,
-              char *finalnt )
+                   char **reads,
+                   int32_t strs,
+                   vector<bool>& read_hits_denovo,
+                   uint32_t file_s,
+                   char *finalnt )
 {
     /// for timing different processes
     double s,f;
@@ -608,7 +625,7 @@ void report_denovo(char *denovo_otus_file,
         TIME(s);
         
         ofstream denovoreads (denovo_otus_file, ios::app);
-
+        
         /// pair-ended reads
         if ( pairedin_gv || pairedout_gv )
         {
@@ -616,7 +633,7 @@ void report_denovo(char *denovo_otus_file,
             for ( uint32_t i = 1; i < strs; i+=4 )
             {
                 char* begin_read = reads[i-1];
-                    
+                
                 /// either both reads are accepted, or one is accepted and pairedin_gv
                 if ( (read_hits_denovo[i] || read_hits_denovo[i+1]) && pairedin_gv)
                 {
