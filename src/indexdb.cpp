@@ -100,7 +100,7 @@ uint32_t num_elem[100] = {0};
 
 bool verbose = false;
 
-char version_num[] = "1.99 beta, 11/03/2014"; /// change version number here
+char version_num[] = "2.0, 01/05/2014"; /// change version number here
 
 
 #define ENTRYSIZE (2*sizeof(uint32_t))
@@ -673,7 +673,7 @@ void traversetrie_debug( NodeElement* trie_node, uint32_t depth, uint32_t &total
             }//~for each entry
             
             kmer_keep.pop_back(); //TESTING
-
+            
 		}
         
 		/// the node element is empty, go to next node element
@@ -738,7 +738,7 @@ void load_index( kmer* lookup_table, char* outfile )
             else cout << "\tsizeoftrie r = " << sizeoftrie; //TESTING
 #endif
 		}
- 
+        
 #ifdef see_binary_output
         cout << "\tlookup_tbl[i].count = " << lookup_table[i].count << endl; //TESTING
 #endif
@@ -798,13 +798,13 @@ void load_index( kmer* lookup_table, char* outfile )
                     
 					switch ( trienode->flag )
 					{
-                        /// empty node
+                            /// empty node
 						case 0:
 						{
 							;
 						}
                             break;
-                        /// trie node, add child trie node to queue
+                            /// trie node, add child trie node to queue
 						case 1:
 						{
 							NodeElement *child = trienode->whichnode.trie;
@@ -820,7 +820,7 @@ void load_index( kmer* lookup_table, char* outfile )
 							topop+=4;
 						}
                             break;
-                        /// bucket node, add bucket to output file
+                            /// bucket node, add bucket to output file
 						case 2:
 						{
 							char* bucket = (char*)(trienode->whichnode.bucket);
@@ -840,7 +840,7 @@ void load_index( kmer* lookup_table, char* outfile )
 							btrie.write(reinterpret_cast<const char*>(start), sizeofbucket);
 						}
                             break;
-                        /// ?
+                            /// ?
 						default:
 						{
 							fprintf(stderr, "  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",trienode->flag);
@@ -876,15 +876,17 @@ void load_index( kmer* lookup_table, char* outfile )
  **************************************************************************************************************/
 void welcome()
 {
-	eprintf("\n  Program:    SortMeRNA version %s\n",version_num );
-	eprintf("  Copyright:  2012-2014 Bonsai Bioinformatics Research Group\n");
-	eprintf("              LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-    eprintf("              SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-    eprintf("              implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-    eprintf("              See the GNU Lesser General Public License for more details.\n");
-	eprintf("  Contact:    Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-	eprintf("              Laurent Noé, laurent.noe@lifl.fr\n");
-	eprintf("              Hélène Touzet, helene.touzet@lifl.fr\n\n");
+	printf("\n  Program:     SortMeRNA version %s\n",version_num );
+	printf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
+	printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+    printf("               OTU-picking extensions developed in the Knight Lab,\n");
+    printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
+    printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+    printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+    printf("               See the GNU Lesser General Public License for more details.\n");
+    printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
+	printf("               Laurent Noé, laurent.noe@lifl.fr\n");
+	printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
 }
 
 
@@ -898,17 +900,16 @@ void welcome()
  *******************************************************************/
 void printlist()
 {
-	printf("\n  usage:   ./indexdb_rna <input> <output> <options>:\n\n");
+	printf("\n  usage:   ./indexdb_rna --ref db.fasta,db.idx [OPTIONS]:\n\n");
     printf("  --------------------------------------------------------------------------------------------------------\n");
     printf("  | parameter        value           description                                                 default |\n");
     printf("  --------------------------------------------------------------------------------------------------------\n");
-	printf("   <input>: \n");
 	printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
     printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
     printf("                                       If passing multiple reference sequence files, separate\n");
     printf("                                       them by ':',\n");
     printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-    printf("   <options>:\n");
+    printf("   [OPTIONS]:\n");
     printf("     %s--fast%s          %sFLAG%s            suggested option for aligning ~99%% related species          %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s--sensitive%s     %sFLAG%s            suggested option for aligning ~75-98%% related species       %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n","\033[1m","\033[0m","\033[4m","\033[0m");
@@ -1150,7 +1151,7 @@ int main (int argc, char** argv)
                     {
                         fprintf(stderr,"\n  %sERROR%s: --interval has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
                         printlist();
-                    } 
+                    }
                 }
                 /// maximum positions to store for a unique L-mer
                 else if ( strcmp ( myoption, "max_pos" ) == 0 )
@@ -1273,6 +1274,7 @@ int main (int argc, char** argv)
 			case 'h':
 			{
 				/// help
+                welcome();
 				printlist();
 			}
                 break;
@@ -1363,7 +1365,7 @@ int main (int argc, char** argv)
                 try_further = true;
             }
             else try_further = false;
-
+            
         }
         /// try "/tmp" directory
         if ( try_further )
@@ -1405,16 +1407,16 @@ int main (int argc, char** argv)
     strcat(keys_str,".txt");
     
     /// the list of arguments is correct, welcome the user!
-    welcome();
+    if ( verbose ) welcome();
     
     eprintf("\n  Parameters summary: \n");
     eprintf("    K-mer size: %d\n",lnwin_gv+1);
     eprintf("    K-mer interval: %d\n",interval);
     if ( max_pos == 0 )
-    eprintf("    Maximum positions to store per unique K-mer: all\n");
+        eprintf("    Maximum positions to store per unique K-mer: all\n");
     else
-    eprintf("    Maximum positions to store per unique K-mer: %d\n",max_pos);
-
+        eprintf("    Maximum positions to store per unique K-mer: %d\n",max_pos);
+    
     
     eprintf("\n  Total number of databases to index: %d\n",(int)myfiles.size());
     
@@ -1504,7 +1506,7 @@ int main (int argc, char** argv)
                 {
                     len++;
                     if ( nt != 'N' ) background_freq[(int)map_nt[nt]]++;
-
+                    
                 }
                 nt = fgetc(fp);
             }
@@ -1746,25 +1748,25 @@ int main (int argc, char** argv)
                         
                         /// TESTING
                         /*
-                        uint32_t short_kmer = kmer_key_short_f;
-                        char get_char[4] = {'A','C','G','T'};
-                        string kmer_keep = "";
-                        uint32_t l = 8;
-                        for ( int s = 0; s < partialwin_gv; s++ )
-                        {
-                            kmer_keep.push_back((char)get_char[short_kmer&3]);
-                            short_kmer>>=2;
-                        }
-                        string kmer_keep_rev = "";
-                        for ( std::string::reverse_iterator rit=kmer_keep.rbegin();  rit != kmer_keep.rend(); ++rit )
-                            kmer_keep_rev.push_back(*rit);
-                        
-                        
-                        unsigned char* tgh = kmer_key_short_f_p;
-                        for ( int u = 0 ; u < partialwin_gv+1; u++ ) kmer_keep_rev.push_back((char)get_char[*tgh++]);
-
-                        cout << kmer_keep_rev << endl; //TESTING
-                        */
+                         uint32_t short_kmer = kmer_key_short_f;
+                         char get_char[4] = {'A','C','G','T'};
+                         string kmer_keep = "";
+                         uint32_t l = 8;
+                         for ( int s = 0; s < partialwin_gv; s++ )
+                         {
+                         kmer_keep.push_back((char)get_char[short_kmer&3]);
+                         short_kmer>>=2;
+                         }
+                         string kmer_keep_rev = "";
+                         for ( std::string::reverse_iterator rit=kmer_keep.rbegin();  rit != kmer_keep.rend(); ++rit )
+                         kmer_keep_rev.push_back(*rit);
+                         
+                         
+                         unsigned char* tgh = kmer_key_short_f_p;
+                         for ( int u = 0 ; u < partialwin_gv+1; u++ ) kmer_keep_rev.push_back((char)get_char[*tgh++]);
+                         
+                         cout << kmer_keep_rev << endl; //TESTING
+                         */
                         
                         
                         insert_prefix( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p );
@@ -1777,8 +1779,8 @@ int main (int argc, char** argv)
                         number_elements++;
                         fprintf(keys,"%llu\n",(kmer_key>>2));
                     }
-                        
-
+                    
+                    
                     /// ****** add the reverse 19-mer
                     new_position = true;
                     
@@ -1907,7 +1909,7 @@ int main (int argc, char** argv)
                 while ( nt != '\n')
                 {
                     nt = fgetc(fp);
-                   // if ( nt != '\n' ) cout << (char)nt; //TESTING
+                    // if ( nt != '\n' ) cout << (char)nt; //TESTING
                 }
                 
                 unsigned char* myseq = new unsigned char[maxlen];
@@ -2072,155 +2074,155 @@ int main (int argc, char** argv)
             
             
             /*
-            /// sequence number
-            i = 0;
-            
-            /// reset the file pointer to the beginning of the current part
-            fseek(fp,start_part,SEEK_SET);
-            
-            cout << "number of id's in position table: " << number_elements << endl; //TESTING
-            
-            
-            TIME(s);
-            do
-            {
-                cout << "seq = " << i << endl;
-                
-                long int start_seq = ftell(fp);
-                nt = fgetc(fp);
-                
-                /// scan to end of header name
-                while ( nt != '\n') nt = fgetc(fp);
-                
-                unsigned char* myseq = new unsigned char[maxlen];
-                unsigned char* myseqr = new unsigned char[maxlen];
-                uint32_t _j = 0;
-                len = 0;
-                
-                /// encode each sequence using integer alphabet {0,1,2,3}
-                nt = fgetc(fp);
-                while ( nt != '>' && nt != EOF )
-                {
-                    /// skip line feed, carriage return or empty space in the sequence
-                    if ( nt != '\n' && nt != ' ' )
-                    {
-                        len++;
-                        /// exact character
-                        myseq[_j++] = map_nt[nt];
-                    }
-                    nt = fgetc(fp);
-                }
-                
-                /// put back the >
-                if ( nt != EOF ) ungetc(nt,fp);
-                
-                
-                /// check the addition of this sequence will not overflow the maximum memory
-                double estimated_seq_mem = (len-pread_gv+1)*9.5e-6;
-                
-                /// the sequence alone is too large, it will not fit into maximum memory, skip it
-                if ( estimated_seq_mem > mem ) continue;
-                /// the additional sequence will overflow the maximum index memory, write existing index to disk and start a new index
-                else if ( index_size+estimated_seq_mem > mem )
-                {
-                    /// set the character to something other than EOF
-                    if ( nt == EOF ) nt = 'A';
-                    
-                    /// scan back to start of sequence for next index part
-                    fseek(fp,start_seq,SEEK_SET);
-                    break;
-                }
-                /// add the additional sequence to the index
-                else
-                {
-                    index_size+=estimated_seq_mem;
-                }
-                
-                
-                /// create a reverse sequence using the forward
-                unsigned char* ptr = &myseq[len-1];
-                
-                for ( _j = 0; _j < len; _j++ ) myseqr[_j] = *ptr--;
-                
-                uint32_t kmer_key_short_f = 0;
-                uint32_t kmer_key_short_r = 0;
-                unsigned char* kmer_key_short_f_p = &myseq[0];
-                unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv+1];
-                unsigned char* kmer_key_short_r_rp = &myseqr[len-partialwin_gv-1];
-                
-                unsigned long long int kmer_key = 0;
-                unsigned char* kmer_key_ptr = &myseq[0];
-                
-                /// initialize the 9-mers
-                for ( uint32_t j = 0; j < partialwin_gv; j++ )
-                {
-                    (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
-                    (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
-                }
-                
-                /// initialize the 19-mer
-                for ( uint32_t j = 0; j < pread_gv; j++ ) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
-                
-                uint32_t numwin = (len-pread_gv+interval)/interval; //TESTING
-                uint32_t id = 0;
-                
-                uint32_t index_pos = 0; //TESTING
-                
-                /// for all 19-mers on the sequence
-                for ( uint32_t j = 0; j < numwin; j++ ) //TESTING
-                {
-                    uint32_t id_f = 0;
-                    uint32_t id_r = 0;
-                    
-                    search_for_id( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id_f );
-                    search_for_id( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id_r );
-                    
-                    if (id_f != id_r)
-                    {
-                        cout << "seq = " << i << "\tid_f = " << id_f << "\tid_r = " << id_r << endl;
-                        exit(EXIT_FAILURE);
-                    }
-                    
-                    uint32_t num_entries = positions_tbl[id_f].size;
-                    
-                    bool found = false;
-                    seq_pos* arr = positions_tbl[id_f].arr;
-                    for ( uint32_t p = 0; p < num_entries; p++ )
-                    {
-                        if (( arr->seq == i) && (arr->pos == index_pos) ) found = true;
-                        arr++;
-                    }
-                            
-                    if (!found )
-                    {
-                        cout << "seq = " << i << "\tid_f = " << id_f << "\tid_r = " << id_r << "\tposition not found in list!\n";
-                        exit(EXIT_FAILURE);
-                    }
-                        
-                    /// shift the 19-mer and 9-mers
-                    if ( j != numwin-1 )
-                    {
-                        for ( int shift = 0; shift < interval; shift++ )
-                        {
-                            (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
-                            (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
-                            (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
-                            kmer_key_short_r_rp--;
-                            index_pos++;
-                        }
-                    }
-                }
-                
-                delete [] myseq;
-                delete [] myseqr;
-                
-                /// next sequence
-                i++;
-                
-            } while ( nt != EOF ); /// for all file
-            */
+             /// sequence number
+             i = 0;
+             
+             /// reset the file pointer to the beginning of the current part
+             fseek(fp,start_part,SEEK_SET);
+             
+             cout << "number of id's in position table: " << number_elements << endl; //TESTING
+             
+             
+             TIME(s);
+             do
+             {
+             cout << "seq = " << i << endl;
+             
+             long int start_seq = ftell(fp);
+             nt = fgetc(fp);
+             
+             /// scan to end of header name
+             while ( nt != '\n') nt = fgetc(fp);
+             
+             unsigned char* myseq = new unsigned char[maxlen];
+             unsigned char* myseqr = new unsigned char[maxlen];
+             uint32_t _j = 0;
+             len = 0;
+             
+             /// encode each sequence using integer alphabet {0,1,2,3}
+             nt = fgetc(fp);
+             while ( nt != '>' && nt != EOF )
+             {
+             /// skip line feed, carriage return or empty space in the sequence
+             if ( nt != '\n' && nt != ' ' )
+             {
+             len++;
+             /// exact character
+             myseq[_j++] = map_nt[nt];
+             }
+             nt = fgetc(fp);
+             }
+             
+             /// put back the >
+             if ( nt != EOF ) ungetc(nt,fp);
+             
+             
+             /// check the addition of this sequence will not overflow the maximum memory
+             double estimated_seq_mem = (len-pread_gv+1)*9.5e-6;
+             
+             /// the sequence alone is too large, it will not fit into maximum memory, skip it
+             if ( estimated_seq_mem > mem ) continue;
+             /// the additional sequence will overflow the maximum index memory, write existing index to disk and start a new index
+             else if ( index_size+estimated_seq_mem > mem )
+             {
+             /// set the character to something other than EOF
+             if ( nt == EOF ) nt = 'A';
+             
+             /// scan back to start of sequence for next index part
+             fseek(fp,start_seq,SEEK_SET);
+             break;
+             }
+             /// add the additional sequence to the index
+             else
+             {
+             index_size+=estimated_seq_mem;
+             }
+             
+             
+             /// create a reverse sequence using the forward
+             unsigned char* ptr = &myseq[len-1];
+             
+             for ( _j = 0; _j < len; _j++ ) myseqr[_j] = *ptr--;
+             
+             uint32_t kmer_key_short_f = 0;
+             uint32_t kmer_key_short_r = 0;
+             unsigned char* kmer_key_short_f_p = &myseq[0];
+             unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv+1];
+             unsigned char* kmer_key_short_r_rp = &myseqr[len-partialwin_gv-1];
+             
+             unsigned long long int kmer_key = 0;
+             unsigned char* kmer_key_ptr = &myseq[0];
+             
+             /// initialize the 9-mers
+             for ( uint32_t j = 0; j < partialwin_gv; j++ )
+             {
+             (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
+             (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
+             }
+             
+             /// initialize the 19-mer
+             for ( uint32_t j = 0; j < pread_gv; j++ ) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
+             
+             uint32_t numwin = (len-pread_gv+interval)/interval; //TESTING
+             uint32_t id = 0;
+             
+             uint32_t index_pos = 0; //TESTING
+             
+             /// for all 19-mers on the sequence
+             for ( uint32_t j = 0; j < numwin; j++ ) //TESTING
+             {
+             uint32_t id_f = 0;
+             uint32_t id_r = 0;
+             
+             search_for_id( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id_f );
+             search_for_id( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id_r );
+             
+             if (id_f != id_r)
+             {
+             cout << "seq = " << i << "\tid_f = " << id_f << "\tid_r = " << id_r << endl;
+             exit(EXIT_FAILURE);
+             }
+             
+             uint32_t num_entries = positions_tbl[id_f].size;
+             
+             bool found = false;
+             seq_pos* arr = positions_tbl[id_f].arr;
+             for ( uint32_t p = 0; p < num_entries; p++ )
+             {
+             if (( arr->seq == i) && (arr->pos == index_pos) ) found = true;
+             arr++;
+             }
+             
+             if (!found )
+             {
+             cout << "seq = " << i << "\tid_f = " << id_f << "\tid_r = " << id_r << "\tposition not found in list!\n";
+             exit(EXIT_FAILURE);
+             }
+             
+             /// shift the 19-mer and 9-mers
+             if ( j != numwin-1 )
+             {
+             for ( int shift = 0; shift < interval; shift++ )
+             {
+             (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
+             (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
+             (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
+             kmer_key_short_r_rp--;
+             index_pos++;
+             }
+             }
+             }
+             
+             delete [] myseq;
+             delete [] myseqr;
+             
+             /// next sequence
+             i++;
+             
+             } while ( nt != EOF ); /// for all file
+             */
             ///// ********** DONE Check! **********
-        
+            
             
             
             
@@ -2273,7 +2275,7 @@ int main (int argc, char** argv)
                 ospos.write(reinterpret_cast<const char*>(positions_tbl[j].arr), sizeof(seq_pos)*size);
             }
             ospos.close();
-                        
+            
             
             /// Free malloc'd memory
             /// Table of unique 19-mer positions
@@ -2293,7 +2295,7 @@ int main (int argc, char** argv)
                 if (lookup_table[z].trie_R != NULL )
                 {
                     freebursttrie(lookup_table[z].trie_R);
-                    free(lookup_table[z].trie_R);		
+                    free(lookup_table[z].trie_R);
                 }
             }
             
@@ -2334,7 +2336,7 @@ int main (int argc, char** argv)
             background_freq[3] = background_freq[3]/total_nt;
             
             /// the A/C/G/T percentage distribution
-            stats.write(reinterpret_cast<const char*>(&background_freq), sizeof(double)*4);	
+            stats.write(reinterpret_cast<const char*>(&background_freq), sizeof(double)*4);
             
             /// the length of all sequences in the database
             stats.write(reinterpret_cast<const char*>(&full_len), sizeof(uint64_t));
