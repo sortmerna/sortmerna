@@ -119,17 +119,17 @@ int16_t num_best_hits_gv = 0;
  **************************************************************************************************************/
 void welcome()
 {
-	eprintf("\n  Program:     SortMeRNA version %s\n",version_num );
-	eprintf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
-	eprintf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-    eprintf("               OTU-picking extensions developed in the Knight Lab,\n");
-    eprintf("               BioFrontiers Institute, University of Colorado at Boulder\n");
-    eprintf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-    eprintf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-    eprintf("               See the GNU Lesser General Public License for more details.\n");
-	eprintf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-	eprintf("               Laurent Noé, laurent.noe@lifl.fr\n");
-	eprintf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
+	printf("\n  Program:     SortMeRNA version %s\n",version_num );
+	printf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
+	printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+    printf("               OTU-picking extensions developed in the Knight Lab,\n");
+    printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
+    printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+    printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+    printf("               See the GNU Lesser General Public License for more details.\n");
+	printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
+	printf("               Laurent Noé, laurent.noe@lifl.fr\n");
+	printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
 }
 
 
@@ -1136,6 +1136,7 @@ main(int argc,
                 break;
             case 'h': {
 				/// help
+                welcome();
 				printlist();
             }
                 break;
@@ -1364,7 +1365,7 @@ main(int argc,
     
     
 	/// the list of arguments is correct, welcome the user!
-	welcome();
+	if ( verbose ) welcome();
 	
     
 	/// if neither strand was selected for search, search both
