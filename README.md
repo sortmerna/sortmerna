@@ -103,10 +103,12 @@ Timestamp issues
 
 When pulling a repository from git, all of the file timestamps are set to the current time and this can lead to errors such as:
 
-`Prerequisite configure.ac is newer than target aclocal.m4.
+```bash
+Prerequisite configure.ac is newer than target aclocal.m4.
 Must remake target aclocal.m4.
 ..
-WARNING: 'aclocal-1.14' is missing on your system.`
+WARNING: 'aclocal-1.14' is missing on your system.
+```
 
 when calling "make".
 
