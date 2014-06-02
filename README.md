@@ -101,7 +101,7 @@ After the installation, you should find the compiler installed in /opt/local/bin
 Timestamp issues
 ----------------
 
-When pulling a repository from git, all of the file timestamps are set to the current time and this can lead to errors such as:
+When cloning a repository from git, all of the file timestamps are set to the current time and this can lead to errors such as:
 
 ```bash
 Prerequisite configure.ac is newer than target aclocal.m4.
