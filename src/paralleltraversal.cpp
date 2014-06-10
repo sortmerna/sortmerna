@@ -1772,6 +1772,63 @@ paralleltraversal ( char* inputreads,
         eprintf("    Current process pid = %d\n",getpid());
     }
     
+    // output parameters to log file
+    if ( (ptr_filetype_ar != NULL) && logout_gv )
+    {
+        FILE* bilan = fopen(logoutfile,"w");
+        if ( bilan == NULL )
+        {
+            fprintf(stderr,"  %sERROR%s: could not create file %s \n","\033[0;31m","\033[0m",logoutfile);
+            exit(EXIT_FAILURE);
+        }
+        
+        time_t q = time(0);
+        struct tm * now = localtime(&q);
+        
+        fprintf(bilan," %s\n",asctime(now));
+        fprintf(bilan," SortMeRNA command: ");
+        for ( int j = 0; j < argc; j++ ) fprintf(bilan,"%s ",argv[j]);
+        fprintf(bilan,"\n");
+        /// some info on chosen parameters
+        fprintf(bilan," Process pid = %d\n",getpid());
+        fprintf(bilan," Parameters summary:\n");
+        for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+        {
+            fprintf(bilan,"    Index: %s\n",(char*)(myfiles[index_num].second).c_str());
+            fprintf(bilan,"     Seed length = %d\n",lnwin[index_num]);
+            fprintf(bilan,"     Pass 1 = %d, Pass 2 = %d, Pass 3 = %d\n",skiplengths[index_num][0],skiplengths[index_num][1],skiplengths[index_num][2]);
+            fprintf(bilan,"     Gumbel lambda = %f\n",(gumbel[index_num].first));
+            fprintf(bilan,"     Gumbel K = %f\n",(gumbel[index_num].second));
+            fprintf(bilan,"     Minimal SW score based on E-value = %d\n",minimal_score[index_num]);
+        }
+        fprintf(bilan,"    Number of seeds = %d\n",seed_hits_gv);
+        fprintf(bilan,"    Edges = %d",edges_gv);
+        if (as_percent_gv)
+            fprintf(bilan," (as percent)\n");
+        else
+            fprintf(bilan," (as integer)\n");
+        fprintf(bilan,"    SW match = %d\n",match);
+        fprintf(bilan,"    SW mismatch = %d\n",mismatch);
+        fprintf(bilan,"    SW gap open penalty = %d\n",gap_open);
+        fprintf(bilan,"    SW gap extend penalty = %d\n",gap_extension);
+        fprintf(bilan,"    SW ambiguous nucleotide = %d",score_N);
+        if ( score_N > 0 ) fprintf(bilan," <-- %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
+        else fprintf(bilan,"\n");
+        if ( yes_SQ )
+            fprintf(bilan,"    SQ tags are output\n");
+        else
+            fprintf(bilan,"    SQ tags are not output\n");
+#ifdef _OPENMP
+        fprintf(bilan,"    Number of threads = %d\n",numcpu_gv);
+#else
+        fprintf(bilan,"    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
+#endif
+        fprintf(bilan,"    Reads file = %s\n\n",inputreads);
+        
+        fclose(bilan);
+    }
+
+    
 	/// pointer to the split read (the read which is split between any two file sections)
 	char* split_read = NULL;
     /// pointer to the position in the split read where to attach the connecting part of the split read (and possibly its pair)
@@ -2336,10 +2393,9 @@ paralleltraversal ( char* inputreads,
                         /// for reverse reads
                         if ( !forward_gv )
                         {
-                            /// output only the first alignment (--feeling-lucky option)
-                            if ( feeling_lucky_gv && read_hits[readn] ) continue;
                             /// output the first num_alignments_gv alignments
-                            else if ( num_alignments_gv > 0 )
+                            //else if ( num_alignments_gv > 0 )
+                            if ( num_alignments_gv > 0 )
                             {
                                 /// all num_alignments_gv alignments have been output
                                 if ( num_alignments_x[readn] < 0 ) continue;
@@ -2730,7 +2786,7 @@ paralleltraversal ( char* inputreads,
 											if ( max_occur < (uint32_t)seed_hits_gv ) break;
                                             
 											/// stop after the first alignment (--fastx or --feeling-lucky output only)
-											if ( aligned && feeling_lucky_gv ) break;
+											//if ( aligned && feeling_lucky_gv ) break;
                                             
 											/// update number of reference sequences remaining to check
                                             if ( (min_lis_gv > 0) && aligned && (k > 0) )
@@ -3197,7 +3253,8 @@ paralleltraversal ( char* inputreads,
                                                                         
                                                                     }
                                                                     /// output the Nth alignment (set by --num_alignments [INT] parameter)
-                                                                    else if ( (num_alignments_gv > -1) || feeling_lucky_gv )
+                                                                    //else if ( (num_alignments_gv > -1) || feeling_lucky_gv )
+                                                                    else if ( num_alignments_gv > -1 )
                                                                     {
                                                                         /// update number of alignments to output per read
                                                                         if ( num_alignments_gv > 0 ) num_alignments_x[readn]--;
@@ -3377,7 +3434,7 @@ paralleltraversal ( char* inputreads,
                                                                 if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                                                 
                                                                 /// stop search after the first alignment for --feeling-lucky
-                                                                if ( feeling_lucky_gv ) break;
+                                                                //if ( feeling_lucky_gv ) break;
                                                                 
                                                                 /// stop search after the first num_alignments_gv alignments for this read
                                                                 if ( num_alignments_gv > 0 )
@@ -3474,7 +3531,8 @@ paralleltraversal ( char* inputreads,
                         } while ( search );
                         
                         /// the read didn't align (for --num_alignments [INT] option), output null alignment string
-                        if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && ((num_alignments_gv > -1) || feeling_lucky_gv) )
+                        //if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && ((num_alignments_gv > -1) || feeling_lucky_gv) )
+                        if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && (num_alignments_gv > -1) )
                         {
 #pragma omp critical
                             {
@@ -4196,8 +4254,6 @@ paralleltraversal ( char* inputreads,
             exit(EXIT_FAILURE);
         }
         
-        otu_map.clear();
-        
         /// free memory for OTU mapping file
         if ( acceptedotumap_file != NULL )
         {
@@ -4216,58 +4272,15 @@ paralleltraversal ( char* inputreads,
     
     
     
-    /// create a global bilan
+    /// create a bilan (log file)
     if ( (ptr_filetype_ar != NULL) && logout_gv )
     {
-        FILE* bilan = fopen(logoutfile,"w");
+        FILE* bilan = fopen(logoutfile,"a");
         if ( bilan == NULL )
         {
-            fprintf(stderr,"  %sERROR%s: could not create file %s \n","\033[0;31m","\033[0m",logoutfile);
+            fprintf(stderr,"  %sERROR%s: could not open file %s \n","\033[0;31m","\033[0m",logoutfile);
             exit(EXIT_FAILURE);
         }
-        
-        time_t q = time(0);
-        struct tm * now = localtime(&q);
-        
-        fprintf(bilan," %s\n",asctime(now));
-        fprintf(bilan," SortMeRNA command: ");
-        for ( int j = 0; j < argc; j++ ) fprintf(bilan,"%s ",argv[j]);
-        fprintf(bilan,"\n");
-        /// some info on chosen parameters
-        fprintf(bilan," Process pid = %d\n",getpid());
-        fprintf(bilan," Parameters summary:\n");
-        for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
-        {
-            fprintf(bilan,"    Index: %s\n",(char*)(myfiles[index_num].second).c_str());
-            fprintf(bilan,"     Seed length = %d\n",lnwin[index_num]);
-            fprintf(bilan,"     Pass 1 = %d, Pass 2 = %d, Pass 3 = %d\n",skiplengths[index_num][0],skiplengths[index_num][1],skiplengths[index_num][2]);
-            fprintf(bilan,"     Gumbel lambda = %f\n",(gumbel[index_num].first));
-            fprintf(bilan,"     Gumbel K = %f\n",(gumbel[index_num].second));
-            fprintf(bilan,"     Minimal SW score based on E-value = %d\n",minimal_score[index_num]);
-        }
-        fprintf(bilan,"    Number of seeds = %d\n",seed_hits_gv);
-        fprintf(bilan,"    Edges = %d",edges_gv);
-        if (as_percent_gv)
-            fprintf(bilan," (as percent)\n");
-        else
-            fprintf(bilan," (as integer)\n");
-        fprintf(bilan,"    SW match = %d\n",match);
-        fprintf(bilan,"    SW mismatch = %d\n",mismatch);
-        fprintf(bilan,"    SW gap open penalty = %d\n",gap_open);
-        fprintf(bilan,"    SW gap extend penalty = %d\n",gap_extension);
-        fprintf(bilan,"    SW ambiguous nucleotide = %d",score_N);
-        if ( score_N > 0 ) fprintf(bilan," <-- %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
-        else fprintf(bilan,"\n");
-        if ( yes_SQ )
-            fprintf(bilan,"    SQ tags are output\n");
-        else
-            fprintf(bilan,"    SQ tags are not output\n");
-#ifdef _OPENMP
-        fprintf(bilan,"    Number of threads = %d\n",numcpu_gv);
-#else
-        fprintf(bilan,"    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
-#endif
-        fprintf(bilan,"    Reads file = %s\n\n",inputreads);
         
         /// output total number of reads
         fprintf(bilan," Results:\n");
@@ -4276,7 +4289,7 @@ paralleltraversal ( char* inputreads,
         fprintf(bilan," By database:\n");
         /// output total non-rrna + rrna reads
         fprintf(bilan,"    aligned reads = %u (%.2f%%)\n",total_reads_mapped,(float)((float)total_reads_mapped/(float)number_total_read)*100);
-        fprintf(bilan,"    non-aligned reads = %u\n",number_total_read-total_reads_mapped);
+        fprintf(bilan,"    non-aligned reads = %u (%.2f%%)\n",number_total_read-total_reads_mapped,(1-((float)((float)total_reads_mapped/(float)number_total_read)))*100);
         
         /// output stats by database
         for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
@@ -4284,11 +4297,17 @@ paralleltraversal ( char* inputreads,
             fprintf(bilan,"    %s\t\t%.2f%%\n",(char*)(myfiles[index_num].first).c_str(),(float)((float)reads_matched_per_db[index_num]/(float)number_total_read)*100);
         }
         
+        if ( otumapout_gv )
+        {
+            fprintf(bilan," Total OTUs = %lu\n", otu_map.size());
+        }
+        
         fclose(bilan);
         
         free(logoutfile);
         
     }
+    else if ( otumapout_gv ) otu_map.clear();
     
     
     /// free memory of accepted strings
