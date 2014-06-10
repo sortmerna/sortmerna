@@ -153,10 +153,10 @@ void printlist()
     printf("                                        them using the delimiter ':',\n");
     printf("                                        (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
 	printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ reads file                                         %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
-	printf("     %s--aligned%s         %sSTRING%s          aligned reads base file name                                   %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+	printf("     %s--aligned%s         %sSTRING%s          aligned reads filepath + base file name                        %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
     printf("                                         (appropriate extension will be added)\n\n");
     printf("   [COMMON OPTIONS]: \n");
-	printf("     %s--other%s           %sSTRING%s          rejected reads base file name\n","\033[1m","\033[0m","\033[4m","\033[0m");
+	printf("     %s--other%s           %sSTRING%s          rejected reads filepath + base file name\n","\033[1m","\033[0m","\033[4m","\033[0m");
     printf("                                         (appropriate extension will be added)\n");
 	printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned and/or rejected reads)\n");
@@ -192,14 +192,14 @@ void printlist()
     printf("     %s--paired_out%s      %sFLAG%s            both paired-end reads go in --other fasta/q file               %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");\
     printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
 	printf("     %s--match %s          %sINT%s             SW score (positive integer) for a match                        %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s--mismatch%s        %sINT%s             SW score (negative integer) for a mismatch                     %s-3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s--gap_open%s        %sINT%s             SW score (positive integer) for introducing a gap              %s5%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s--gap_ext%s         %sINT%s             SW score (positive integer) for extending a gap                %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("     %s-N%s                %sINT%s             SW score for ambiguous letters (N's)                           %sscored as --mismatch%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("     %s--mismatch%s        %sINT%s             SW penalty (negative integer) for a mismatch                   %s-3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("     %s--gap_open%s        %sINT%s             SW penalty (positive integer) for introducing a gap            %s5%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("     %s--gap_ext%s         %sINT%s             SW penalty (positive integer) for extending a gap              %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s-N%s                %sINT%s             SW penalty for ambiguous letters (N's)                         %sscored as --mismatch%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-F%s                %sFLAG%s            search only the forward strand                                 %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-R%s                %sFLAG%s            search only the reverse-complementary strand                   %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-a%s                %sINT%s             number of threads to use                                       %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s-e%s                %sDOUBLE%s          E-value                                                        %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("     %s-e%s                %sDOUBLE%s          E-value threshold                                              %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     /// RAM cannot support 1GB default
 	if ( 1073741824/pagesize_gv > maxpages_gv/2)
         printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory               %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
@@ -209,15 +209,15 @@ void printlist()
     printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
 	printf("     %s-v%s                %sFLAG%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("   [OTU PICKING OPTIONS]: \n");
-    printf("     %s--id%s              %sDOUBLE%s          OTU map %%id threshold (the alignment must                      %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         still pass the E-value threshold)\n");
-    printf("     %s--coverage%s        %sDOUBLE%s          OTU map %%query coverage threshold (the                         %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the                                 %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         alignment must still pass the E-value threshold)\n");
     printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (set using --id) and < %%cov (set using --coverage) but \n");
     printf("     %s--otu_map%s         %sFLAG%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): \n");
-	printf("    %s--passes%s           %sINT,INT,INT%s     values for seed skip lengths for Pass 1, 2 and 3               %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+	printf("    %s--passes%s           %sINT,INT,INT%s     three intervals at which to place the seed on the read         %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (L is the seed length set in ./indexdb_rna)\n");
 	printf("    %s--edges%s            %sINT%s             number (or percent if INT followed by %% sign) of               %s4%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         nucleotides to add to each edge of the read\n");
