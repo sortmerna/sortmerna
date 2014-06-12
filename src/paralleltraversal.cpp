@@ -1622,7 +1622,7 @@ paralleltraversal ( char* inputreads,
                 strcat( acceptedotumap_file, "_");
                 strcat( acceptedotumap_file, pidStr);
             }
-			strcat( acceptedotumap_file, "_otumap.txt");
+			strcat( acceptedotumap_file, "_otus.txt");
             
             otumap.open ( acceptedotumap_file );
             otumap.close();

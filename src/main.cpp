@@ -209,9 +209,9 @@ void printlist()
     printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
 	printf("     %s-v%s                %sFLAG%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("   [OTU PICKING OPTIONS]: \n");
-    printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         still pass the E-value threshold)\n");
-    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the                                 %s0%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the                                 %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         alignment must still pass the E-value threshold)\n");
     printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (set using --id) and < %%cov (set using --coverage) but \n");
@@ -232,20 +232,7 @@ void printlist()
 	printf("   [HELP]:\n");
 	printf("     %s-h%s                %sFLAG%s            help\n","\033[1m","\033[0m","\033[4m","\033[0m");
 	printf("     %s--version%s         %sFLAG%s            SortMeRNA version number\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
-    //printf("   examples:\n");
-    //printf("     (1) Only filter rRNA\n");
-    //printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
-    //printf("     (2) Only filter rRNA against multiple databases\n");
-    //printf("         sortmerna --ref bac.fasta,bac_index:euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --other reads_rejected --fastx\n\n");
-    //printf("     (3) Filter rRNA, output first alignment reaching E-value threshold and log file\n");
-    //printf("         sortmerna --ref ref.fasta,ref_index --reads reads.fastq --aligned reads_aligned --fastx --sam --feeling_lucky --log \n\n");
-    //printf("     (4) Report 3 best alignments based on all alignments having the best 2 LIS (longest increasing subsequence)\n");
-    //printf("         sortmerna --ref bac.fasta,bac_index --reads reads.fastq --aligned reads_aligned --sam --best 3 --mis_lis 2\n\n");
-    //printf("     (5) Report the first 10 alignments reaching E-value threshold\n");
-    //printf("         sortmerna --ref euk.fasta,euk_index --reads reads.fastq --aligned reads_aligned --sam --num_alignments 10\n\n");
-    //printf("     For more examples and user instructions, see the SortMeRNA v1.99 beta User Manual 2014 (distributed with this program)\n\n");
-    
-	exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 }//~printlist()
 
 
@@ -1335,7 +1322,6 @@ main(int argc,
         exit(EXIT_FAILURE);
     }
     
-    
     if (nomask_gv)
     {
         eprintf("\n  %sWARNING%s: the option '--no-mask [FLAG]' is not currently available, this flag has no effect on the results (L/2-mers will not be masked).\n","\033[0;31m","\033[0m");
@@ -1416,10 +1402,20 @@ main(int argc,
 	if ( !full_search_set ) full_search_gv = false;
     
     /// default %id to keep alignment
-    if ( align_id < 0 ) align_id = 0;
+    if ( align_id < 0 )
+    {
+        /// if OTU-map is chosen, set default similarity to 0.97
+        if ( otumapout_gv ) align_id = 0.97;
+        else align_id = 0;
+    }
     
     /// default %query coverage to keep alignment
-    if ( align_cov < 0 ) align_cov = 0;
+    if ( align_cov < 0 )
+    {
+        /// if OTU-map is chosen, set default coverage to 0.97
+        if ( otumapout_gv ) align_cov = 0.97;
+        else align_cov = 0;
+    }
     
     /// 3. For each window, traverse in parallel the Burst trie/reverse and LEV(k), outputting all reads with edit distance <= k between the window.
     paralleltraversal( readsfile,
