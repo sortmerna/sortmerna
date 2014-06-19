@@ -1306,14 +1306,15 @@ paralleltraversal ( char* inputreads,
                    int argc,
                    char **argv,
                    bool yes_SQ,
-                   vector< pair<string,string> >& myfiles)
+                   vector< pair<string,string> >& myfiles,
+                   bool exit_early)
 {
     /// the offset from the start of the reads file for mmap
 	off_t offset_map = 0;
 	/// file descriptor to find statistics on the reads file
 	int fd = -1;
 	/// input reads file (fasta or fastq)
-	string fname   = inputreads;
+	string fname = inputreads;
 	/// the size of the full reads file (in bytes)
 	off_t full_file_size = 0;
     /// total number of nucleotides in all reads
@@ -1671,6 +1672,13 @@ paralleltraversal ( char* inputreads,
 			otherreads.close();
 		}
 	}
+
+    /// empty output files created, exit program
+    if ( exit_early )
+    {
+        fprintf(stdout, "  The reads file or reference file is empty, no analysis could be made.\n");
+        exit(EXIT_SUCCESS);
+    }
     
     
     
