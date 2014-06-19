@@ -100,7 +100,7 @@ uint32_t num_elem[100] = {0};
 
 bool verbose = false;
 
-char version_num[] = "2.0, 01/05/2014"; /// change version number here
+char version_num[] = "2.0, 16/07/2014"; /// change version number here
 
 
 #define ENTRYSIZE (2*sizeof(uint32_t))
@@ -995,6 +995,7 @@ int main (int argc, char** argv)
                             /// get the FASTA file path + name
                             char fastafile[2000];
                             char *ptr_fastafile = fastafile;
+
                             /// the reference database FASTA file
                             while ( *ptr != ',' && *ptr != '\0' )
                             {
@@ -1003,8 +1004,44 @@ int main (int argc, char** argv)
                             *ptr_fastafile = '\0';
                             ptr++; //skip the ',' delimiter
                             
-                            /// check FASTA file exists
-                            if ( FILE *file = fopen(fastafile, "r") ) fclose(file);
+                            /// check FASTA file exists & is not empty
+                            if ( FILE *file = fopen(fastafile, "r") )
+                           	{ 
+                           		/// get file size
+                           		fseek(file, 0, SEEK_END);
+                           		size_t filesize = ftell(file);
+                           		/// file size is 0, create empty index file and exit the program
+                           		if ( !filesize ) 
+                           		{
+                           			/// get the index filepath
+                           			char indexfile[2000];
+                           			char *ptr_indexfile = indexfile;
+                           			while ( *ptr != ':' && *ptr != '\0' )
+                           			{
+                           				*ptr_indexfile++ = *ptr++;
+                           			}
+                           			*ptr_indexfile = '\0';
+
+                           			char bases[4][50] = {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"};
+
+                           			/// output empty index files
+                           			for ( int file = 0; file < 4; file++ )
+                           			{
+                           				char str[2000];
+                           				strcpy (str, indexfile);
+                           				strcat (str, bases[file]);
+                           				FILE *t = fopen(str, "w");
+                           				fclose(t);
+                           			}
+                           			
+                           			/// exit
+                           			fprintf(stdout, "  The input file is empty, an index was not built.\n");
+                           			exit(EXIT_SUCCESS);
+                           		}
+                           		/// file size > 0, reset file pointer to start of file
+                           		fseek(file, 0, SEEK_SET);
+                           		fclose(file);
+                           	}
                             else
                             {
                                 fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));

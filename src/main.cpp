@@ -93,15 +93,18 @@ bool blastout_gv = false;
 int32_t blast_outfmt = -1;
 bool fastxout_gv = false;
 bool otumapout_gv = false;
-/// by default min_lis_gv is off (-1), a value of 0 means to search all high scoring reference sequences, a value > 0 means to search min_lis_gv sequences
+/// by default min_lis_gv is off (-1), a value of 0 means to search all 
+/// high scoring reference sequences, a value > 0 means to search min_lis_gv 
+/// sequences
 int32_t min_lis_gv = -1;
-/// by default num_alignments_gv is off (-1), a value of 0 means to output all alignments, a value > 0 means to output num_alignments_gv alignments
+/// by default num_alignments_gv is off (-1), a value of 0 means to output 
+/// all alignments, a value > 0 means to output num_alignments_gv alignments
 int32_t num_alignments_gv = -1;
 int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /// change version number here
-char version_num[] = "2.0, 01/05/2014";
+char version_num[] = "2.0, 16/07/2014";
 bool feeling_lucky_gv = false;
 bool as_percent_gv = false;
 bool nomask_gv = false;
@@ -274,6 +277,9 @@ main(int argc,
     bool min_lis_gv_set = false;
     bool num_alignments_gv_set = false;
     bool best_gv_set = false;
+    /// this flag is set if the reads file or the reference file
+    /// is empty
+    bool exit_early = false;
     
     /// vector of (FASTA file, index name) pairs for loading index
     vector< pair<string,string> > myfiles;
@@ -327,8 +333,20 @@ main(int argc,
                     }
                     else
                     {
+                        /// check the file exists
                         if ( FILE *file = fopen(argv[narg+1], "r") )
                         {
+                            /// get size of file
+                            fseek(file, 0, SEEK_END);
+                            size_t filesize = ftell(file);
+
+                            /// set exit flag to exit program after outputting
+                            /// empty files, sortmerna will not execute after
+                            /// that call (in paralleltraversal.cpp)
+                            if ( !filesize ) exit_early = true;
+                            /// reset file pointer to start of file
+                            fseek(file, 0, SEEK_SET);
+
                             readsfile = argv[narg+1];
                             narg+=2;
                             fclose(file);
@@ -357,6 +375,7 @@ main(int argc,
                             /// get the FASTA file path + name
                             char fastafile[2000];
                             char *ptr_fastafile = fastafile;
+
                             /// the reference database FASTA file
                             while ( *ptr != ',' && *ptr != '\0' )
                             {
@@ -371,8 +390,17 @@ main(int argc,
                             ptr++; //skip the ',' delimiter
                             
                             
-                            /// check FASTA file exists
-                            if ( FILE *file = fopen(fastafile, "r") ) fclose(file);
+                            /// check reference FASTA file exists & is not empty
+                            if ( FILE *file = fopen(fastafile, "r") )
+                            {
+                                /// get file size
+                                fseek(file, 0, SEEK_END);
+                                size_t filesize = ftell(file);
+                                if ( !filesize ) exit_early = true;
+                                /// reset file pointer to start of file
+                                fseek(file, 0, SEEK_SET);
+                                fclose(file);
+                            } 
                             else
                             {
                                 fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));
@@ -1430,7 +1458,8 @@ main(int argc,
                       argc,
                       argv,
                       yes_SQ,
-                      myfiles);
+                      myfiles,
+                      exit_early);
     
     
     
