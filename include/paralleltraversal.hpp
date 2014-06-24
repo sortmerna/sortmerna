@@ -91,7 +91,8 @@ paralleltraversal ( char* inputreads,
                    int argc,
                    char **argv,
                    bool yes_SQ,
-                   vector< pair<string,string> >& myfiles);
+                   vector< pair<string,string> >& myfiles,
+                   bool exit_early);
 
 
 /*
