@@ -217,7 +217,8 @@ void printlist()
     printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the                                 %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         alignment must still pass the E-value threshold)\n");
     printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                         (set using --id) and < %%cov (set using --coverage) but \n");
+    printf("                                         (set using --id) and < %%cov (set using --coverage) \n");
+    printf("                                         (alignment must still pass the E-value threshold)\n");
     printf("     %s--otu_map%s         %sFLAG%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 	printf("   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): \n");
 	printf("    %s--passes%s           %sINT,INT,INT%s     three intervals at which to place the seed on the read         %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
