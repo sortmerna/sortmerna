@@ -3517,12 +3517,16 @@ paralleltraversal ( char* inputreads,
 									/// the read was not accepted at current window skip length, decrease the window skip length
 									if ( search )
 									{
-                                        /// the next interval size equals to the current one, skip it
-                                        while ( (skiplengths[index_num][pass_n] == skiplengths[index_num][pass_n+1]) && (pass_n < 3) ) pass_n++;
                                         /// last (3rd) Pass has been made
-                                        if ( ++pass_n > 2 ) search = false;
-                                        /// set interval skip length for next Pass
-                                        else windowshift = skiplengths[index_num][pass_n];
+                                        if ( pass_n == 2 ) search = false;
+                                        else
+                                        {
+                                            /// the next interval size equals to the current one, skip it
+                                            while ( (pass_n < 3) && (skiplengths[index_num][pass_n] == skiplengths[index_num][pass_n+1]) ) ++pass_n;
+                                            if ( ++pass_n > 2 ) search = false;
+                                            /// set interval skip length for next Pass
+                                            else windowshift = skiplengths[index_num][pass_n];
+                                        }
 									}
                                     
 									/// do not offset final window on read
@@ -4064,14 +4068,17 @@ paralleltraversal ( char* inputreads,
                                 free(ptr_alignment->cigar);
                                 ptr_alignment->cigar = NULL;
                                 
-                                ptr_alignment++;
+                                if ( p+1 < num_best_hits_gv )
+                                {
+                                    ptr_alignment++;
                                 
-                                /// check whether an alignment exists
-                                if ( ptr_alignment->cigar == NULL ) break;
+                                    /// check whether an alignment exists
+                                    if ( ptr_alignment->cigar == NULL ) break;
+                                }
                             }//~for all num_best_hits_gv alignments for this read
                             
                             /// free memory for all alignments of this read
-                            free(alignment->second.second);
+                            delete alignment->second.second;
                             
                         }//~if read hits this index part
                         
