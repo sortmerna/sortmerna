@@ -540,7 +540,7 @@ void preprocess_data(vector< pair<string,string> >& myfiles,
         }
         
         /// number of index parts
-        stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint32_t));
+        stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
         vector<index_parts_stats> hold;
         
         /// information on the location and size of sequences used to build each index part
@@ -1839,10 +1839,11 @@ paralleltraversal ( char* inputreads,
     
 	/// pointer to the split read (the read which is split between any two file sections)
 	char* split_read = NULL;
+
     /// pointer to the position in the split read where to attach the connecting part of the split read (and possibly its pair)
 	char* split_read_ptr = NULL;
     
-	/// (FASTQ/FASTQ) paired-read follows a split read at top of file section
+    /// the number of lines to offset at the top of the current file section
     int32_t offset_pair_from_top = 0;
     
     /// map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
@@ -2010,7 +2011,7 @@ paralleltraversal ( char* inputreads,
                     }
                 }
 #ifdef debug_mmap
-                cout << "reads_offset_f (only split read) = " << reads_offset_f << endl; //TESTING
+                cout << "reads_offset_f (split read + paired-read) = " << reads_offset_f << endl; //TESTING
 #endif
                 /// count the number of lines in the file section
                 for ( uint32_t i = reads_offset_f; i < partial_file_size; i++ ) if ( raw[i] == '\n' ) strs++;
@@ -2044,9 +2045,11 @@ paralleltraversal ( char* inputreads,
 #ifdef debug_mmap
                 cout << "offset_pair_from_top (next file section) = " << offset_pair_from_top << endl; //TESTING
                 cout << "strs (incl. reads_offset_f and reads_offset_e) = " << strs << endl; //TESTING
+                if (raw[partial_file_size-1] == '\n') cout << "file section ends with a newline\n"; //TESTING
 #endif
-                /// count one extra line for the split read cut before the new line
-                if ( (raw[partial_file_size-1] != '\n') && (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
+                /// count one extra newline for the split read at bottom of file
+                if ( (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
+                //if ( (raw[partial_file_size-1] != '\n') && (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
                 
                 /// compute the reads offset length at bottom of file section
                 line = 0;
@@ -2161,7 +2164,9 @@ paralleltraversal ( char* inputreads,
         
 #ifdef debug_mmap
         cout << "*line = " << (char)*line << endl; //TESTING
+        cout << "*(finalnt-1) = " << (char)*(finalnt-1) << endl; //TESTING
         cout << "*finalnt = " << (char)*finalnt << endl; // TESTING
+        cout << "*(finalnt+1) = " << (char)*(finalnt+1) << endl; //TESTING
         cout << "raw[partial_file_size-1] = " << (char)raw[partial_file_size-1] << endl; //TESTING
 #endif
         
@@ -2288,7 +2293,7 @@ paralleltraversal ( char* inputreads,
         }
         
         /// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
-        for ( int index_num = 0; index_num < (int)myfiles.size(); index_num++)
+        for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++)
         {
             /// covert part number into a string
             stringstream prt_str;
@@ -3106,10 +3111,13 @@ paralleltraversal ( char* inputreads,
                                                                         result->part = part;
                                                                         result->strand = strand;
                                                                         
-                                                                        //map<uint32_t, s_align>::iterator alignment = read_hits_align_info.find(readn);
                                                                         map<uint32_t, pair<uint16_t, s_align*> >::iterator alignment = read_hits_align_info.find(readn);
+//#define DEBUG_BEST_N
 #ifdef DEBUG_BEST_N
+                                                                        cout << "readn = " << readn << endl;
                                                                         cout << "\nresult->score1 = " << result->score1 << endl; //TESTING
+                                                                        cout << "index_num = " << result->index_num;
+                                                                        cout << "part = " << result->part;
                                                                         cout << "refseq = ";
                                                                         char* ttp = reference_seq[(2*result->ref_seq)]+1;
                                                                         while ( *ttp != '\n' ) cout << (char)*ttp++;
@@ -3179,7 +3187,6 @@ paralleltraversal ( char* inputreads,
                                                                                 cout << "smallest_alignment->score1 = " << smallest_alignment->score1 << endl; //TESTING
                                                                                 cout << "replace alignment in an existing slot.\n"; //TESTING
 #endif
-                                                                                
                                                                                 /// decrement number of reads mapped to database with lower score
                                                                                 reads_matched_per_db[smallest_alignment->index_num]--;
                                                                                 /// increment number of reads mapped to database with higher score
@@ -3473,7 +3480,7 @@ paralleltraversal ( char* inputreads,
                                                 
                                             pop:
                                                 
-												/* get the next candidate reference position */
+												/// get the next candidate reference position 
 												if ( !vi_read.empty() ) vi_read.pop_front();
                                                 
 												if ( vi_read.empty() )
@@ -3684,6 +3691,12 @@ paralleltraversal ( char* inputreads,
         if ( min_lis_gv > -1 )
         {
             if ( samout_gv || blastout_gv ) eprintf("    Writing alignments ... ");
+
+#ifdef debug_mmap
+            cout << "total index_num = " << myfiles.size() << endl;
+            for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+                cout << "\t parts = " << num_index_parts[index_num] << endl;
+#endif
             
             TIME(s);
             for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
@@ -3720,7 +3733,7 @@ paralleltraversal ( char* inputreads,
                     for ( uint32_t readn = 1; readn < strs; readn+=2 )
                     {
                         map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
-                        
+
                         /// this read does not have any alignment
                         if ( alignment == read_hits_align_info.end() )
                         {
@@ -3764,8 +3777,22 @@ paralleltraversal ( char* inputreads,
                             /// go to next read
                             continue;
                         }
-                        
+ 
+#ifdef debug_mmap
+                        cout << "readn = " << readn << endl;
+#endif
+
                         s_align* ptr_alignment = alignment->second.second;
+                        if ( ptr_alignment == NULL )
+                        {
+                            fprintf(stderr,"  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
+                            exit(EXIT_FAILURE);
+                        }
+#ifdef debug_mmap
+                        cout << "ptr_alignment->index_num = " << (uint16_t)ptr_alignment->index_num << endl; 
+                        cout << "ptr_alignment->score1 = " << (int32_t)ptr_alignment->score1 << endl;                 
+                        cout << "ptr_alignment->part = " << (uint16_t)ptr_alignment->part << endl;
+#endif
                         
                         if ( (ptr_alignment->index_num == index_num) && (ptr_alignment->part == part) && (ptr_alignment->score1 > 0 ) )
                         {
@@ -4064,10 +4091,7 @@ paralleltraversal ( char* inputreads,
                                     }
                                     
                                 }//~if (samout_gv || blastout_gv)
-                                
-                                free(ptr_alignment->cigar);
-                                ptr_alignment->cigar = NULL;
-                                
+                                                                
                                 if ( p+1 < num_best_hits_gv )
                                 {
                                     ptr_alignment++;
@@ -4076,26 +4100,26 @@ paralleltraversal ( char* inputreads,
                                     if ( ptr_alignment->cigar == NULL ) break;
                                 }
                             }//~for all num_best_hits_gv alignments for this read
-                            
-                            /// free memory for all alignments of this read
-                            delete alignment->second.second;
-                            
+                                                        
                         }//~if read hits this index part
                         
                     }//~for all the reads
-                    
+
+                    /// free buffer
                     if ( buffer != NULL )
                     {
                         delete [] buffer;
                         buffer = NULL;
                     }
                     
+                    /// free reference sequences
                     if ( reference_seq != NULL )
                     {
                         delete [] reference_seq;
                         reference_seq = NULL;
                     }
                     
+                    /// free length for all reference sequences
                     if ( reference_seq_len != NULL )
                     {
                         delete [] reference_seq_len;
@@ -4105,6 +4129,35 @@ paralleltraversal ( char* inputreads,
                 }//~for every index part
                 
             }//~for every index
+
+            /// free alignment information for all aligned reads
+            for ( uint32_t readn = 1; readn < strs; readn+=2 )
+            {
+                map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
+
+                /// this read does not have any alignment
+                if ( alignment != read_hits_align_info.end() )
+                {
+                    s_align* ptr_alignment = alignment->second.second;
+                    for ( int p = 0; p < num_best_hits_gv; p++ )
+                    {
+                        free(ptr_alignment->cigar);
+                        ptr_alignment->cigar = NULL;
+
+                        if ( p+1 < num_best_hits_gv )
+                        {
+                            ptr_alignment++;
+                    
+                            /// check whether an alignment exists
+                            if ( ptr_alignment->cigar == NULL ) break;
+                        }
+                    }
+
+                    /// free memory for all alignments of this read
+                    delete [] alignment->second.second;
+                    alignment->second.second = NULL;
+                }
+            }
             
             TIME(f);
             if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );
