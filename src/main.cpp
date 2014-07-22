@@ -1183,7 +1183,9 @@ main(int argc,
 				if ( !map_size_set_gv )
 				{
                     /// RAM limit for mmap'ing reads in megabytes
-					unsigned long long int _m = strtol( argv[narg+1], NULL, 10 );
+                    char *pEnd = NULL;
+					double _m = strtod( argv[narg+1], &pEnd );
+
                     unsigned long long int pages_asked = (unsigned long long int)(_m*1048576)/pagesize_gv;
                     
                     /// RAM limit exceeds available resources
