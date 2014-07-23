@@ -43,34 +43,37 @@
 /// see "heuristic 1" below
 //#define HEURISTIC1_OFF
 
-/// the size of an entry in a burst trie bucket (1 int for string, 1 int for positions look up id)
+//! defined constant
+/*! the size of an entry in a burst trie bucket 
+(1 int for string, 1 int for positions look up id) */ 
 #define ENTRYSIZE (2*sizeof(uint32_t))
-/// Euler's constant
+
+//! Euler's constant
 #define EXP 2.71828182845904523536
 
 
-
-/*! The universal Levenshtein automaton for d=1.
+/*! \brief The universal Levenshtein automaton for d=1.
+ *
  * The maximum length of a characteristic bitvector for d=1 is 2d+2=4.
  * The number of states of the this automaton is 15, these are numbered
  * as 0-14 and correspond to the following symbolic setup:
  *
  * integer state  symbolic state
- * 0              {I^0}
- * 1              {(I-1)^1}
- * 2              {I^1}
- * 3              {(I-1)^1, I^1}}
- * 4              {(I+1)^1}
- * 5              {(I-1)^1, (I+1)^1}
- * 6              {I^1, (I+1)^1}
- * 7              {}
- * 8
- * 9
- * 10
- * 11
- * 12
- * 13
- * 14             NULL
+ * 0              {I^0}                     [non-accepting state]
+ * 1              {(I-1)^1}                 [non-accepting state]
+ * 2              {I^1}                     [non-accepting state]
+ * 3              {(I-1)^1, I^1}}           [non-accepting state]
+ * 4              {(I+1)^1}                 [non-accepting state]
+ * 5              {(I-1)^1, (I+1)^1}        [non-accepting state]
+ * 6              {I^1, (I+1)^1}            [non-accepting state]
+ * 7              {(I-1)^1, I^1, (I+1)^1}   [non-accepting state]
+ * 8              {(M-1)^0}                 [accepting state]
+ * 9              {M^0}                     [accepting state]
+ * 10             {M^1}                     [accepting state]
+ * 11             {(M-2)^1, M^1}            [accepting state]
+ * 12             {(M-1)^1, M^1}            [accepting state]
+ * 13             {(M-2)^1, (M-1)^1, M^1}   [accepting state]
+ * 14             NULL                      [failure state]
  */
 uint32_t table[4][16][14] =
 {{{3, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14},
@@ -128,7 +131,7 @@ bool compare (const mypair &a, const mypair &b)
 	else return (a.first < b.first);
 }
 
-/// order positions from smallest to highest for computing the longest common subsequence
+/// order positions from highest to smallest for computing the longest common subsequence
 bool descending_s (const mypair &a, const mypair &b)
 {
     if ( a.first == b.first ) return (a.second > b.second);
