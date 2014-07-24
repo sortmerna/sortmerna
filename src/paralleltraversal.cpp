@@ -2801,9 +2801,6 @@ paralleltraversal ( char* inputreads,
                                             /// not enough window hits, try to collect more hits or go to next read
 											if ( max_occur < (uint32_t)seed_hits_gv ) break;
                                             
-											/// stop after the first alignment (--fastx or --feeling-lucky output only)
-											//if ( aligned && feeling_lucky_gv ) break;
-                                            
 											/// update number of reference sequences remaining to check
                                             if ( (min_lis_gv > 0) && aligned && (k > 0) )
                                             {
@@ -3271,7 +3268,6 @@ paralleltraversal ( char* inputreads,
                                                                         
                                                                     }
                                                                     /// output the Nth alignment (set by --num_alignments [INT] parameter)
-                                                                    //else if ( (num_alignments_gv > -1) || feeling_lucky_gv )
                                                                     else if ( num_alignments_gv > -1 )
                                                                     {
                                                                         /// update number of alignments to output per read
@@ -3451,9 +3447,6 @@ paralleltraversal ( char* inputreads,
                                                                 /// maximum score possible for the read has been reached, stop searching for further matches
                                                                 if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                                                 
-                                                                /// stop search after the first alignment for --feeling-lucky
-                                                                //if ( feeling_lucky_gv ) break;
-                                                                
                                                                 /// stop search after the first num_alignments_gv alignments for this read
                                                                 if ( num_alignments_gv > 0 )
                                                                 {
@@ -3553,7 +3546,6 @@ paralleltraversal ( char* inputreads,
                         } while ( search );
                         
                         /// the read didn't align (for --num_alignments [INT] option), output null alignment string
-                        //if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && ((num_alignments_gv > -1) || feeling_lucky_gv) )
                         if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && (num_alignments_gv > -1) )
                         {
 #pragma omp critical
@@ -4165,7 +4157,7 @@ paralleltraversal ( char* inputreads,
             TIME(f);
             if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );
             
-        }// if ( (min_lis_gv > -1) || feeling_lucky )
+        }// if (min_lis_gv > -1)
         
         if ( align_cov || align_id )
         {

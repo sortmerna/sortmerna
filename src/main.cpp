@@ -104,8 +104,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /// change version number here
-char version_num[] = "2.0, 16/07/2014";
-bool feeling_lucky_gv = false;
+char version_num[] = "2.0, development";
 bool as_percent_gv = false;
 bool nomask_gv = false;
 bool pid_gv = false;
@@ -163,7 +162,6 @@ void printlist()
     printf("                                         (appropriate extension will be added)\n");
 	printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned and/or rejected reads)\n");
-    printf("                                          passing the E-value threshold, for de novo OTU construction\n");
     printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned reads only)\n");
     printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -177,8 +175,6 @@ void printlist()
     printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                       for seeds of length L\n");
 #endif
-    printf("     %s--feeling_lucky%s   %sFLAG%s            report the first alignment per read reaching E-value           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("       %sor%s\n","\033[31m","\033[0m");
 	printf("     %s--num_alignments%s  %sINT%s             report first INT alignments per read reaching E-value          %s-1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                        (--num_alignments 0 signifies all alignments will be output)\n");
 	printf("       %sor%s (default)\n","\033[31m","\033[0m");
@@ -214,8 +210,8 @@ void printlist()
 	printf("   [OTU PICKING OPTIONS]: \n");
     printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         still pass the E-value threshold)\n");
-    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the                                 %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                         alignment must still pass the E-value threshold)\n");
+    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the alignment must                  %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         still pass the E-value threshold)\n");
     printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (set using --id) and < %%cov (set using --coverage) \n");
     printf("                                         (alignment must still pass the E-value threshold)\n");
@@ -924,21 +920,6 @@ main(int argc,
                         num_alignments_gv_set = true;
                     }
                 }
-                /// output the first alignment reaching E-value score
-                else if ( strcmp ( myoption, "feeling_lucky" ) == 0 )
-                {
-                    /// --feeling_lucky is already set
-                    if ( feeling_lucky_gv )
-                    {
-                        fprintf(stderr,"\n  %sERROR%s: flag --feeling_lucky has already been set once.\n\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    else
-                    {
-                        feeling_lucky_gv = true;
-                        narg++;
-                    }
-                }
                 /// number of nucleotides to add to each edge of an alignment region before extension
                 else if ( strcmp ( myoption, "edges" ) == 0 )
                 {
@@ -1262,14 +1243,7 @@ main(int argc,
             exit(EXIT_FAILURE);
 		}
 	}
-    
-    /// if feeling_lucky was chosen, check an alignment format has also been chosen
-    if ( feeling_lucky_gv && !(blastout_gv || samout_gv) )
-    {
-        fprintf(stderr,"\n  %sERROR%s: --feeling_lucky [FLAG] has been set but no alignment format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
-        exit(EXIT_FAILURE);
-    }
-    
+        
 	/// if best alignment was chosen, check an alignment format has also been chosen
 	if ( (min_lis_gv > -1) && !(blastout_gv || samout_gv) )
 	{
@@ -1290,24 +1264,7 @@ main(int argc,
 		fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] must be less than --gap_open [INT].\n\n","\033[0;31m","\033[0m");
 		exit(EXIT_FAILURE);
 	}
-    
-    if ( feeling_lucky_gv )
-    {
-        /// only one alignment (hence reference sequence) can be observed with option --feeling_lucky
-        if (min_lis_gv > -1)
-        {
-            fprintf(stderr,"\n  %sERROR%s: --feeling_lucky [FLAG] cannot be set with --best [INT].\n\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-        }
         
-        /// only one alignment can be observed with option --feeling_lucky
-        if (num_alignments_gv > -1)
-        {
-            fprintf(stderr,"\n  %sERROR%s: --feeling_lucky [FLAG] cannot be set with --num_alignments [INT].\n\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-        }
-    }
-    
     if ( print_all_reads_gv && blastout_gv && (blast_outfmt < 1) )
     {
         fprintf(stderr,"\n  %sERROR%s: --print_all_reads [FLAG] can only be used for BLAST output formats 1,2 and 3 (using --blast INT).\n\n","\033[0;31m","\033[0m");
@@ -1411,8 +1368,8 @@ main(int argc,
         else map_size_gv = 1073741824;
 	}
     
-    /// output single best alignment from 10 best candidate hits (default)
-    if ( !best_gv_set && !num_alignments_gv_set && !feeling_lucky_gv )
+    /// output single best alignment from best candidate hits (default)
+    if ( !best_gv_set && !num_alignments_gv_set )
     {
         num_best_hits_gv = 1;
         min_lis_gv = 2;
@@ -1420,8 +1377,8 @@ main(int argc,
     
     if ( best_gv_set && !min_lis_gv_set ) min_lis_gv = 2;
     
-    /// only FASTA/FASTQ output, run in feeling_lucky mode (filtering mode)
-    if ( fastxout_gv && !(blastout_gv || samout_gv) ) feeling_lucky_gv = true;
+    /// only FASTA/FASTQ output, stop searching for alignments after the first match
+    if ( fastxout_gv && !(blastout_gv || samout_gv) ) num_alignments_gv = 1;
     
 	/// default number of seed hits before searching for candidate LIS
 	if ( seed_hits_gv < 0 ) seed_hits_gv = 2;
