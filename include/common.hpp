@@ -125,8 +125,6 @@ extern int32_t edges_gv;
 /// flag to turn off heuristic for stopping index search after finding a 0-error match, instead collect all 0-error and 1-error matches
 extern bool full_search_gv;
 
-extern bool feeling_lucky_gv;
-
 /// E-value threshold
 extern double evalue;
 
