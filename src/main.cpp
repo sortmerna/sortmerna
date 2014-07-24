@@ -104,7 +104,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /// change version number here
-char version_num[] = "2.0, 16/07/2014";
+char version_num[] = "2.0, development";
 bool feeling_lucky_gv = false;
 bool as_percent_gv = false;
 bool nomask_gv = false;
@@ -163,7 +163,6 @@ void printlist()
     printf("                                         (appropriate extension will be added)\n");
 	printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned and/or rejected reads)\n");
-    printf("                                          passing the E-value threshold, for de novo OTU construction\n");
     printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned reads only)\n");
     printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -177,8 +176,6 @@ void printlist()
     printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                       for seeds of length L\n");
 #endif
-    printf("     %s--feeling_lucky%s   %sFLAG%s            report the first alignment per read reaching E-value           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("       %sor%s\n","\033[31m","\033[0m");
 	printf("     %s--num_alignments%s  %sINT%s             report first INT alignments per read reaching E-value          %s-1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                        (--num_alignments 0 signifies all alignments will be output)\n");
 	printf("       %sor%s (default)\n","\033[31m","\033[0m");
@@ -214,8 +211,8 @@ void printlist()
 	printf("   [OTU PICKING OPTIONS]: \n");
     printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         still pass the E-value threshold)\n");
-    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the                                 %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                         alignment must still pass the E-value threshold)\n");
+    printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the alignment must                  %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("                                         still pass the E-value threshold)\n");
     printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (set using --id) and < %%cov (set using --coverage) \n");
     printf("                                         (alignment must still pass the E-value threshold)\n");
