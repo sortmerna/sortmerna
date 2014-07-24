@@ -2387,10 +2387,10 @@ int main (int argc, char** argv)
             stats.write(reinterpret_cast<const char*>(&numseq_gv), sizeof(uint32_t));
             
             /// number of index parts
-            stats.write(reinterpret_cast<const char*>(&part), sizeof(uint32_t));
+            stats.write(reinterpret_cast<const char*>(&part), sizeof(uint16_t));
             
             /// information on the location and size of sequences used to build each index part
-            for ( uint32_t j = 0; j < part; j++ )
+            for ( uint16_t j = 0; j < part; j++ )
             {
                 stats.write(reinterpret_cast<const char*>(&index_parts_stats_vec[j]), sizeof(index_parts_stats));
             }
