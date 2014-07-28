@@ -2,6 +2,7 @@
 
 using namespace std;
 
+/** @file */
 
 /// output Blast-like alignments (code modified from SSW-library)
 void report_blast (ofstream &fileout,

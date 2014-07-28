@@ -1,6 +1,9 @@
 /*
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2014 Bonsai Bioinformatics Research Group
+ * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
+ *
+ * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
+ * University of Colorado at Boulder, Boulder, CO
  *
  * This file is part of SortMeRNA.
  *
@@ -17,20 +20,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  *
- * file: bitvector.hpp
  * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
  *
  */
 
+ /** @file btivector.hpp */
+
 #ifndef BITVECTOR_H
 #define BITVECTOR_H
 
-#include "common.hpp"
 #include "indexdb.hpp" 				 /* for map matrix */
-
-#include <math.h>
-#include <fstream>
-
 
 #define MYBITSET unsigned char     /* a bitvector of 1 byte */
 
