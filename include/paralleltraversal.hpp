@@ -1,6 +1,9 @@
 /*
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2014 Bonsai Bioinformatics Research Group
+ * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
+ *
+ * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
+ * University of Colorado at Boulder, Boulder, CO
  *
  * This file is part of SortMeRNA.
  *
@@ -17,43 +20,51 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  *
- * file: paralleltraversal.hpp
  * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
  *
  */
 
+ /** @file paralleltraversal.hpp */
+
 #ifndef PARALLELTRAVERSAL_H
 #define PARALLELTRAVERSAL_H
 
+#include "bitvector.hpp"
+#include "outputformats.hpp"
+//! ALP program for computing the Gumbel parameters
+#include "../alp/sls_alp_data.hpp"
+#include "../alp/sls_alp_sim.hpp"
+#include "../alp/gumbel_params.hpp"
+
 #include <iomanip>
-#include <fstream>
 #include <map>
 #include <algorithm>
 #include <queue>
-#include "common.hpp"
-#include "bitvector.hpp"
-#include "indexdb.hpp"
-#include <errno.h>
-
+#include <deque> 
 
 
 using namespace std;
 
 
-extern timeval t;
+//extern timeval t;
 
 /* for each 18-mer hit on the read, we store the 
    key to find the positions and the window number
    on the read at which the 18-mer occurs   */
 struct id_win
 {
-	/// key value to find index positions
+	// key value to find index positions
 	uint32_t id;
-	/// the associated window number on the read 
+	// the associated window number on the read 
 	uint32_t win;
 };
 
 
+/*! @brief Type mypair
+
+    A data structure holding two variables
+    of type uint32_t.
+*/
 typedef pair<uint32_t,uint32_t> mypair;
 
 

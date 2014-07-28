@@ -22,6 +22,8 @@
  *
  */
 
+/** @file */ 
+
 #include <time.h>
 #include <string.h>
 #include <dirent.h>
@@ -38,8 +40,16 @@
 
 
 
+//! burst trie nucleotide map
+/*! the trie nodes consist of an array holding four 
+    NodeElement structs, they are traversed by their
+    index ranging from 0-4. 
 
-
+    Use ascii decimal value of a letter as an offset in this array such that:
+	A/a -> 0, C/c -> 1, G/g -> 2, T/t -> 3, U/u -> 3
+	R/r -> 0, Y/y -> 1, S/s -> 2, W/w -> 1, K/k -> 2
+	M/m -> 0, B/b -> 1, D/d -> 0, H/h -> 0, V/v -> 0
+	N/n -> 0	 */
 const char map_nt[122] = {
 	/* 0,   1,   2,   3,   4,   5,   6,   7,   8,   9   */
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -103,12 +113,6 @@ bool verbose = false;
 char version_num[] = "2.0, 16/07/2014"; /// change version number here
 
 
-#define ENTRYSIZE (2*sizeof(uint32_t))
-
-
-
-
-
 
 /*
  *
@@ -128,38 +132,36 @@ inline void insert_prefix( NodeElement* trie_node,
 	uint32_t depth = 0;
 	uint32_t sig = 0;
     
-	/// find a terminal trie node
+	// get the trie node from which to start traversal (A,C,G or T)
 	NodeElement *node_elem = (NodeElement*)(trie_node + *prefix++);
 	depth++;
     
+    // find the terminal trie node
 	while ( node_elem->flag == 1 )
 	{
 		trie_node = node_elem->whichnode.trie;
 		node_elem = (NodeElement*)(trie_node + *prefix++);
 		depth++;
 	}
-    
-	/// length of entry to add to bucket
-	int s = partialwin_gv+1-depth;
-    
-	/// a bucket does not exist, create one
+        
+	// a bucket does not exist, create one
 	if ( node_elem->flag == 0 )
 	{
-	 	/// set the baseptr to the beginning of the new bucket
+	 	// set the baseptr to the beginning of the new bucket
 		node_elem->whichnode.bucket = (void*)malloc(ENTRYSIZE);
 		if ( node_elem->whichnode.bucket == NULL )
 		{
             fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket (insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
 			exit(EXIT_FAILURE);
 		}
-		/// initialize bucket memory to 0
+		// initialize bucket memory to 0
 		memset(node_elem->whichnode.bucket, 0, ENTRYSIZE);
-		/// set flag to signify the existence of a bucket
+		// set flag to signify the existence of a bucket
 		node_elem->flag = 2;
 		node_elem->size = 0;
 	}
     
-	/// a bucket does exist, allocate memory for 1 more entry
+	// a bucket does exist, allocate memory for 1 more entry
 	else
 	{
 		uint32_t node_elem_size = node_elem->size;
@@ -178,10 +180,13 @@ inline void insert_prefix( NodeElement* trie_node,
 		free(src);
 	}
     
-	/// add tail to bucket
+	// add tail to bucket
 	uint32_t* entry = (uint32_t*)((unsigned char*)node_elem->whichnode.bucket + node_elem->size);
+
+	// length of entry to add to bucket
+	int s = partialwin_gv+1-depth;
     
-	/// add the tail to the bucket
+	// add the tail to the bucket
 	uint32_t encode = 0;
 	for ( int i = 0; i < s; i++ )
 	{
@@ -190,10 +195,10 @@ inline void insert_prefix( NodeElement* trie_node,
     
 	*entry++ = encode;
     
-	/// add the signature of the prefix following the tail
+	// add the signature of the prefix following the tail
 	*entry = sig;
     
-	/// record the new size of bucket
+	// record the new size of bucket
 	(node_elem->size)+=ENTRYSIZE;
 	
 #define BURST
