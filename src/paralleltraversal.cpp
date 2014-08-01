@@ -130,7 +130,9 @@ char complement[4] = {3,2,1,0};
              the first being the position a k-mer occurs 
              on the reference sequence and the second
              being the position a k-mer occurs on the
-             query sequence. 
+             query sequence. This function takes two
+             mypair data structures and returns the 
+
     @param const pair<uint32_t,uint32_t> &a
     @param const pair<uint32_t,uint32_t> &b
     @return smallest integer of a and b, or a if a == b
@@ -4240,10 +4242,17 @@ paralleltraversal ( char* inputreads,
 #endif
                       );
         
-        // output aligned and non-aligned reads with < %id and < %coverage to FASTA/FASTQ file for de novo analysis
+        // output aligned and non-aligned reads with < %id and
+        // < %coverage to FASTA/FASTQ file for de novo analysis
         if ( de_novo_otu_gv )
         {
-            report_denovo(denovo_otus_file,reads,strs,read_hits_denovo,file_s,finalnt);
+          report_denovo(denovo_otus_file,reads,strs,read_hits_denovo,file_s,finalnt);
+            
+          if ( denovo_otus_file != NULL )
+          {
+            delete [] denovo_otus_file;
+            denovo_otus_file = NULL;
+          }
         }
         
         read_hits.clear();
@@ -4253,8 +4262,8 @@ paralleltraversal ( char* inputreads,
         // free the split_read
         if ( split_read != NULL )
         {
-      delete [] split_read;
-      split_read = NULL;
+          delete [] split_read;
+          split_read = NULL;
         }
         
         // record the start of the split_read if it exists

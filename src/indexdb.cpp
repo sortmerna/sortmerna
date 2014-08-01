@@ -1402,12 +1402,11 @@ int main (int argc, char** argv)
             FILE *tmp = fopen(try_str, "w+");
             if ( tmp == NULL )
             {
-                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory %s: %s\n","\033[0;33m","\033[0m",ptr_tmpdir,strerror(errno));
-                fprintf(stderr,"  will try /tmp.\n\n");
+                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory %s: %s\n","\033[0;33m","\033[0m",tmpdir_env,strerror(errno));
+                fprintf(stderr,"  will try /tmp/.\n\n");
                 try_further = true;
             }
             else try_further = false;
-            
         }
         /// try "/tmp" directory
         if ( try_further )
@@ -1415,8 +1414,8 @@ int main (int argc, char** argv)
             FILE *tmp = fopen("/tmp/test.txt", "w+");
             if ( tmp == NULL )
             {
-                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory %s: %s\n","\033[0;33m","\033[0m",ptr_tmpdir,strerror(errno));
-                fprintf(stderr,"  will try /tmp.\n\n");
+                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory /tmp/: %s\n","\033[0;33m","\033[0m",strerror(errno));
+                fprintf(stderr,"  will try local directory.\n\n");
                 try_further = true;
             }
             else
@@ -1432,8 +1431,8 @@ int main (int argc, char** argv)
             FILE *tmp = fopen("./test.txt", "w+");
             if ( tmp == NULL )
             {
-                fprintf(stderr,"\n  %sERROR%s: no write permissions in directory %s: %s\n","\033[0;31m","\033[0m",ptr_tmpdir,strerror(errno));
-                fprintf(stderr,"  Please set --tmpdir to a writable directory, or change the write permissions in $TMPDIR, /tmp or current directory.\n\n");
+                fprintf(stderr,"\n  %sERROR%s: no write permissions in current directory: %s\n","\033[0;31m","\033[0m",strerror(errno));
+                fprintf(stderr,"  Please set --tmpdir to a writable directory, or change the write permissions in $TMPDIR, /tmp/ or current directory.\n\n");
                 exit(EXIT_FAILURE);
             }
             else
