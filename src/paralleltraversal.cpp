@@ -4184,9 +4184,6 @@ paralleltraversal ( char* inputreads,
             eprintf(" (incl. all reads file sections searched): %u\n",total_reads_mapped_cov);
         }
         
-        
-        
-        
         if ( blastout_gv )
         {
             if ( acceptedblast.is_open() ) acceptedblast.close();
