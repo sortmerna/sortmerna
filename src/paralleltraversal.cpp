@@ -4353,9 +4353,6 @@ paralleltraversal ( char* inputreads,
     free(mat);
     mat = NULL;
     
-    
-    
-    
     // create a bilan (log file)
     if ( (ptr_filetype_ar != NULL) && logout_gv )
     {
@@ -4388,7 +4385,12 @@ paralleltraversal ( char* inputreads,
         
         fclose(bilan);
         
-        free(logoutfile);
+        // free memory of accepted strings
+        if ( logoutfile != NULL )
+        {
+          delete [] logoutfile;
+          logoutfile = NULL;
+        }
         
     }
     else if ( otumapout_gv ) otu_map.clear();
