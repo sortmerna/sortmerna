@@ -53,7 +53,7 @@ extern timeval t;
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
 /*! @brief Print function for verbose mode */
-#define eprintf(format, ...) do { if (verbose) fprintf(stderr, format, ##__VA_ARGS__);} while(0)
+#define eprintf(format, ...) do { if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
 
 // detect chimeric reads (under development) 
 //#define chimera
@@ -68,6 +68,9 @@ extern timeval t;
 // alignment using the LIS 
 // (output piped to stdout)
 //#define debug_align
+
+// DEBUG: writing alignments to files
+//#define debug_output
 
 // DEBUG: binary burst trie
 // output the writing of mini-burst tries into binary
