@@ -3711,14 +3711,25 @@ paralleltraversal ( char* inputreads,
 #endif
             
             TIME(s);
+            // loop through all databases
             for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
             {
-                // run through all the index parts per index, output aligned reads
+#ifdef debug_output
+              cout << "index_num = " << index_num << endl;
+#endif
+                // loop through each section of a database
                 for ( uint16_t part = 0; part < num_index_parts[index_num]; part++ )
                 {
                     uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
                     uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
                     uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
+
+#ifdef debug_output
+                    cout << "part = " << part << endl;
+                    cout << "seq_part_size = " << seq_part_size << endl;
+                    cout << "numseq_part = " << numseq_part << endl;
+                    cout << "start_part = " << start_part << endl;
+#endif
                     
                     // block of memory to hold all ids + reference sequences
                     char* buffer = new char[(seq_part_size+1)]();
@@ -3790,7 +3801,7 @@ paralleltraversal ( char* inputreads,
                             continue;
                         }
  
-#ifdef debug_mmap
+#ifdef debug_output
                         cout << "readn = " << readn << endl;
 #endif
 
@@ -3800,7 +3811,7 @@ paralleltraversal ( char* inputreads,
                             fprintf(stderr,"  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
                             exit(EXIT_FAILURE);
                         }
-#ifdef debug_mmap
+#ifdef debug_output
                         cout << "ptr_alignment->index_num = " << (uint16_t)ptr_alignment->index_num << endl; 
                         cout << "ptr_alignment->score1 = " << (int32_t)ptr_alignment->score1 << endl;                 
                         cout << "ptr_alignment->part = " << (uint16_t)ptr_alignment->part << endl;
@@ -3827,6 +3838,9 @@ paralleltraversal ( char* inputreads,
                             
                             for ( int p = 0; p < num_best_hits_gv; p++ )
                             {
+#ifdef debug_output
+                                cout << "best_hit = " << p << endl;
+#endif
                                 // format read & get read length
                                 char myread[READLEN];
                                 uint32_t readlen = ptr_alignment->readlen;
@@ -3849,7 +3863,7 @@ paralleltraversal ( char* inputreads,
                                         //   section of reads
                                         if ((readn < 4) && (file_s > 0) )
                                         {
-#ifdef debug_mmap
+#ifdef debug_output
                                             cout << "process split-read" << endl; //TESTING
 #endif
                                             end_read = reads[readn];
@@ -3865,7 +3879,7 @@ paralleltraversal ( char* inputreads,
                                             // if processing last file section, the final read will end with '\0'
                                             if ( file_s == file_sections-1 )
                                             {
-#ifdef debug_mmap
+#ifdef debug_output
                                                 cout << "process last read in final file section .." << endl; //TESTING
 #endif
                                                 while ( *end_read++ != '\0' );
@@ -3877,7 +3891,7 @@ paralleltraversal ( char* inputreads,
                                             // if processing a file section > 0 and < last file section, the final read will end with '>' (beginning of split-read)
                                             else
                                             {
-#ifdef debug_mmap
+#ifdef debug_output
                                                 cout << "process last read in file section > 0 and < final file section .." << endl; //TESTING
 #endif
                                                 while ( *end_read++ != '>' );
@@ -4022,7 +4036,7 @@ paralleltraversal ( char* inputreads,
                                             // if second part of split read or last read in file
                                             if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
                                             {
-#ifdef debug_mmap
+#ifdef debug_output
                                                 if (readn >= (strs-2)) cout << "get quality for last (forward) read in file section\n"; //TESTING
 #endif
                                                 read_qual = reads[readn];
@@ -4042,7 +4056,7 @@ paralleltraversal ( char* inputreads,
                                                 // last file section
                                                 if ( file_s == file_sections-1 )
                                                 {
-#ifdef debug_mmap
+#ifdef debug_output
                                                     if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
 #endif
                                                     while ( *read_qual != '\0' ) read_qual++;
@@ -4053,7 +4067,7 @@ paralleltraversal ( char* inputreads,
                                                 // file section > 0 and < last file section
                                                 else
                                                 {
-#ifdef debug_mmap
+#ifdef debug_output
                                                     if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
 #endif
                                                     while ( read_qual != finalnt ) read_qual++;

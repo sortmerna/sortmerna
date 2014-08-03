@@ -69,6 +69,9 @@ extern timeval t;
 // (output piped to stdout)
 //#define debug_align
 
+// DEBUG: writing alignments to files
+#define debug_output
+
 // DEBUG: binary burst trie
 // output the writing of mini-burst tries into binary
 // during indexdb_rna and also for reading from binary
