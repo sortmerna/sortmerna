@@ -1,6 +1,6 @@
 /**
  * @file paralleltraversal.cpp
- * @brief File containting functions for index traversal.
+ * @brief File containing functions for index traversal.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
  * @copyright Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group, LIFL and 
@@ -1277,42 +1277,7 @@ void find_lis( deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b, uint32_
 }
 
 
-
-
-
-/**
- *
- * @function paralleltraversal: this function is the main function of SortMeRNA with the following methods:
- * (1) divide large read files into mmap'd regions, taking into account the read (and its pair) which may
- * be split between two file sections;
- * (2) load the index, compute the gumbel parameters (lamda and K) using ALP
- * (3) using 3 intervals, scan over the read and collect all L-mers on the read which match to the
- * reference index with at most 1 error. This is done using parallel traversal between the index and the
- * Levenshtein automaton;
- * (4) if enough L-mers were collected, extend them into longer matches using the Longest Increasing
- * subsequence (LIS) of positions where the L-mers matched on the read and the associated reference sequences;
- * (5) if the LIS is long enough, use the starting positions of the LIS to estimate the starting position
- * of an alignment and pass this reference segment and read to SSW
- * (6) if the alignment score is at least the minimum score corresponding to the E-value threshold, keep the read,
- * otherwise continue searching for other LIS or more L-mers using smaller intervals
- *
- * @param char* inputreads
- * @param *ptr_filetype_ar
- * @param *ptr_filetype_or
- * @param int32_t match
- * @param int32_t mismatch
- * @param int32_t gap_open
- * @param int32_t gap_extension
- * @param int32_t score_N
- * @param vector< vector<uint32_t> >& skiplengths
- * @param int argc
- * @param char **argv
- * @param bool yes_SQ
- * @param vector< pair<string,string> >& myfiles
- * @return void
- * @version 1.0 Jan 14, 2013
- *
- **************************************************************************************************************/
+/*! @fn paralleltraversal() */
 void
 paralleltraversal ( char* inputreads,
                    char* ptr_filetype_ar,
@@ -1329,7 +1294,7 @@ paralleltraversal ( char* inputreads,
                    vector< pair<string,string> >& myfiles,
                    bool exit_early)
 {
-    // the offset from the start of the reads file for mmap
+  // the offset from the start of the reads file for mmap
   off_t offset_map = 0;
   // file descriptor to find statistics on the reads file
   int fd = -1;
@@ -1345,6 +1310,8 @@ paralleltraversal ( char* inputreads,
   uint32_t total_reads_mapped = 0;
   // total number of reads mapped passing E-value threshold & %id and/or %query coverage thresholds
   uint32_t total_reads_mapped_cov = 0;
+  // total number of reads for de novo clustering
+  uint32_t total_reads_denovo_clustering = 0;
   // the minimum occurrences of a (L/2)-mer required to allow search for a seed of length L in the burst tries
   uint32_t minoccur = 0;
   // for timing different processes
@@ -1387,9 +1354,9 @@ paralleltraversal ( char* inputreads,
     exit(EXIT_FAILURE);
   }
     
-    eprintf("\n  Computing read file statistics ...");
-    TIME(s);
-    // find the total length of all the reads for computing the E-value
+  eprintf("\n  Computing read file statistics ...");
+  TIME(s);
+  // find the total length of all the reads for computing the E-value
   char ch;
   FILE *fp = fopen(inputreads,"r");
   if (fp==NULL)
@@ -1448,19 +1415,19 @@ paralleltraversal ( char* inputreads,
   // find the size of the total file
   if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
   {
-      fprintf(stderr,"  %sERROR%s: Could not seek the reads file!\n\n","\033[0;31m","\033[0m");
-        exit(EXIT_FAILURE);
+    fprintf(stderr,"  %sERROR%s: Could not seek the reads file!\n\n","\033[0;31m","\033[0m");
+    exit(EXIT_FAILURE);
   }
   if (lseek(fd, 0L, SEEK_SET) == -1)
   {
     fprintf(stderr,"  %sERROR%s: Could not seek set the reads file!\n\n","\033[0;31m","\033[0m");
-      exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
   }
     
   // the size of the sliding window on the full file, ~1GB
   off_t partial_file_size = full_file_size;
     
-    // size of the remainder of the file (last window) which is less than pow(2,30) bytes
+  // size of the remainder of the file (last window) which is less than pow(2,30) bytes
   off_t last_part_size = full_file_size%map_size_gv;
     
   // number of file sections to mmap
@@ -1468,9 +1435,9 @@ paralleltraversal ( char* inputreads,
     
   // if the full_file_size is bigger than m*PAGE_SIZE, mmap the file by 'windows' of size partial_file_size, otherwise keep the full_file_size
   if ( ( file_sections = ceil( (double)full_file_size/(double)(map_size_gv) ) ) > 1 ) partial_file_size = map_size_gv;
-    TIME(f);
+  TIME(f);
     
-    eprintf(" done [%.2f sec]\n", (f-s));
+  eprintf(" done [%.2f sec]\n", (f-s));
   eprintf("  size of reads file: %lu bytes\n", (unsigned long int)full_file_size );
   eprintf("  partial section(s) to be executed: %d of size %lu bytes \n", file_sections,(unsigned long int)partial_file_size );
     
@@ -1699,8 +1666,8 @@ paralleltraversal ( char* inputreads,
   // set the same skiplengths for all reference files (if the user uses option --passes)
   if ( skiplengths.empty() )
   {
-      vector<uint32_t> skiplengths_v(3,0);
-      skiplengths.push_back(skiplengths_v);
+    vector<uint32_t> skiplengths_v(3,0);
+    skiplengths.push_back(skiplengths_v);
   }
   for (int32_t i = 0; i < myfiles.size()-1; i++) skiplengths.push_back(skiplengths[0]);
     
@@ -3272,7 +3239,8 @@ paralleltraversal ( char* inputreads,
                                       total_reads_mapped_cov++;
                                       read_to_count = false;
 
-                                      // do not output read for de novo OTU construction
+                                      // do not output read for de novo OTU clustering
+                                      // (it passed the %id/coverage thersholds)
                                       if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
                                     }
                                                                         
@@ -3464,44 +3432,52 @@ paralleltraversal ( char* inputreads,
             } while ( search );
                         
             // the read didn't align (for --num_alignments [INT] option), output null alignment string
-            if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && (num_alignments_gv > -1) )
+            if ( !read_hits[readn] && !forward_gv && (num_alignments_gv > -1) )
             {
-#pragma omp critical
+              // do not output read for de novo OTU clustering
+              // (it did not pass the E-value threshold)
+              if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
+
+              // output null alignment string
+              if ( print_all_reads_gv )
               {
-                s_align* null_alignment = NULL;
-                if ( blastout_gv && (blast_outfmt > 0) )
+#pragma omp critical
                 {
-                  report_blast (acceptedblast, // blast output file
+                  s_align* null_alignment = NULL;
+                  if ( blastout_gv && (blast_outfmt > 0) )
+                  {
+                    report_blast (acceptedblast, // blast output file
+                                  null_alignment, // SW alignment cigar
+                                  reads[readn-1]+1, //read name
+                                  0, // read sequence (in integer format)
+                                  0, // read quality
+                                  0, // reference name
+                                  0, // reference sequence
+                                  0, // e-value score
+                                  0, // read length (to compute the masked regions)
+                                  0, // bitscore
+                                  0, // forward or reverse strand
+                                  0, // %id
+                                  0, // %query coverage
+                                  0, // number of mismatches
+                                  0); // number of gaps
+                  }
+                  if ( samout_gv )
+                  {
+                    report_sam (acceptedsam, // sam output file
                                 null_alignment, // SW alignment cigar
-                                reads[readn-1]+1, //read name
+                                reads[readn-1]+1, // read name
                                 0, // read sequence (in integer format)
                                 0, // read quality
                                 0, // reference name
                                 0, // reference sequence
-                                0, // e-value score
                                 0, // read length (to compute the masked regions)
-                                0, // bitscore
                                 0, // forward or reverse strand
-                                0, // %id
-                                0, // %query coverage
-                                0, // number of mismatches
-                                0); // number of gaps
-                }
-                if ( samout_gv )
-                {
-                  report_sam (acceptedsam, // sam output file
-                              null_alignment, // SW alignment cigar
-                              reads[readn-1]+1, // read name
-                              0, // read sequence (in integer format)
-                              0, // read quality
-                              0, // reference name
-                              0, // reference sequence
-                              0, // read length (to compute the masked regions)
-                              0, // forward or reverse strand
-                              0); // edit distance
-                }
+                                0); // edit distance
+                  }
+                }//~if print_all_reads_gv
               }// allow writing to file 1 thread at a time
-            }                  
+            }//~if read didn't align                  
           }//~pragma omp for (each read)
 #pragma omp barrier
                     
@@ -3652,6 +3628,10 @@ paralleltraversal ( char* inputreads,
             // this read does not have any alignment
             if ( alignment == read_hits_align_info.end() )
             {
+              // do not output this read for de novo clustering
+              // (it did not pass the E-value threshold)
+              if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
+
               // output null string for read alignment
               if ( print_all_reads_gv )
               {
@@ -3877,8 +3857,7 @@ paralleltraversal ( char* inputreads,
                 cout << "align_id = " << (double)align_id << endl;
                 cout << "align_id_round = " << (double)align_id_round << endl;
                 cout << "align_cov_round = " << (double)align_cov_round << endl;
-#endif
-                                
+#endif                              
                 // alignment with the highest SW score passed
                 // %id and %coverage thresholds
                 if ( ( p == index_max_score ) &&
@@ -3892,7 +3871,8 @@ paralleltraversal ( char* inputreads,
                   total_reads_mapped_cov++;
 
                   // do not output read for de novo OTU construction
-                  read_hits_denovo[readn].flip();
+                  // (it passed the %id/coverage thresholds)
+                  if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
                   
                   // fill OTU map with highest-scoring alignment for the read
                   if ( otumapout_gv )
@@ -4110,7 +4090,16 @@ paralleltraversal ( char* inputreads,
     // < %coverage to FASTA/FASTQ file for de novo analysis
     if ( de_novo_otu_gv )
     {
-      report_denovo(denovo_otus_file,reads,strs,read_hits_denovo,file_s,finalnt);
+      // count number of reads output for de novo clustering
+      for ( int d = 1; d < strs; d+=2 )
+        if ( read_hits_denovo[d] ) total_reads_denovo_clustering++;
+
+      report_denovo(denovo_otus_file,
+                    reads,
+                    strs,
+                    read_hits_denovo,
+                    file_s,
+                    finalnt);
         
       if ( denovo_otus_file != NULL )
       {
@@ -4210,7 +4199,6 @@ paralleltraversal ( char* inputreads,
     }
   }
     
-    
   // close the reads file descriptor
   close(fd);
     
@@ -4230,11 +4218,17 @@ paralleltraversal ( char* inputreads,
     // output total number of reads
     fprintf(bilan," Results:\n");
     fprintf(bilan,"    Total reads = %u\n", number_total_read);
+    fprintf(bilan,"    Total reads passing %%id and %%coverage thresholds = %u\n", total_reads_mapped_cov);
+    if ( de_novo_otu_gv )
+    {
+
+      fprintf(bilan,"    Total reads for de novo clustering = %u\n",total_reads_denovo_clustering);
+    }
     
     fprintf(bilan," By database:\n");
     // output total non-rrna + rrna reads
-    fprintf(bilan,"    aligned reads = %u (%.2f%%)\n",total_reads_mapped,(float)((float)total_reads_mapped/(float)number_total_read)*100);
-    fprintf(bilan,"    non-aligned reads = %u (%.2f%%)\n",number_total_read-total_reads_mapped,(1-((float)((float)total_reads_mapped/(float)number_total_read)))*100);
+    fprintf(bilan,"    Total reads passing E-value threshold = %u (%.2f%%)\n",total_reads_mapped,(float)((float)total_reads_mapped/(float)number_total_read)*100);
+    fprintf(bilan,"    Total reads failing E-value threshold = %u (%.2f%%)\n",number_total_read-total_reads_mapped,(1-((float)((float)total_reads_mapped/(float)number_total_read)))*100);
     
     // output stats by database
     for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
