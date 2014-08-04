@@ -52,11 +52,10 @@ extern timeval t;
 /*! @brief Macro for timing */
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
+extern bool verbose;
+
 /*! @brief Print function for verbose mode */
 #define eprintf(format, ...) do { if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
-
-// detect chimeric reads (under development) 
-//#define chimera
 
 // DEBUG: memory map
 // output information during the splitting of 
@@ -108,12 +107,6 @@ extern bool pairedin_gv;
 	then put both reads into --other file
 */
 extern bool pairedout_gv;
-
-/*! @brief Output chimeric reads
-
-	This option is not yet available.
-*/
-extern bool chimeraout_gv;
 
 /*! @brief Output log file */
 extern bool logout_gv;

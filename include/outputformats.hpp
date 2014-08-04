@@ -1,6 +1,6 @@
 /*
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2014 Bonsai Bioinformatics Research Group
+ * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
  *
  * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
  * University of Colorado at Boulder, Boulder, CO
@@ -72,19 +72,14 @@ void report_fasta (char* acceptedstrings,
                    int32_t strs,
                    vector<bool>& read_hits,
                    uint32_t file_s,
-                   char* finalnt
-#ifdef chimera
-                   ,vector<bool>& chimeric_reads,
-                   char* acceptedchimeras_file
-#endif
-                   );
+                   char* finalnt);
 
 void report_denovo(char *denovo_otus_file,
-              char **reads,
-              int32_t strs,
-              vector<bool>& read_hits_denovo,
-              uint32_t file_s,
-                   char *finalnt );
+                   char **reads,
+                   int32_t strs,
+                   vector<bool>& read_hits_denovo,
+                   uint32_t file_s,
+                   char *finalnt);
 
 void report_biom (char* biomfile);
 

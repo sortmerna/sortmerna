@@ -48,7 +48,6 @@ int numcpu_gv = -1;
 bool verbose  = false;
 bool pairedin_gv = false;
 bool pairedout_gv = false;
-bool chimeraout_gv = false;
 bool logout_gv = false;
 bool de_novo_otu_gv = false;
 bool print_all_reads_gv = false;
@@ -431,22 +430,6 @@ main(int argc,
                       
           }//~else
         }
-#ifdef chimera
-        // output chimeric sequences to another file
-        else if ( strcmp ( myoption, "chimera" ) == 0 )
-        {
-          if ( chimeraout_gv )
-          {
-            fprintf(stderr,"\n  %sERROR%s: --chimera has already been set\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-          }
-          else
-          {
-            chimeraout_gv = true;
-            narg++;
-          }
-        }
-#endif
         // the name of output aligned reads
         else if ( strcmp ( myoption, "aligned" ) == 0 )
         {
@@ -1330,7 +1313,7 @@ main(int argc,
   }
     
   // if all alignment was chosen, check an alignment format has also been chosen
-  if ( (num_alignments_gv > 0) && !(blastout_gv || samout_gv) )
+  if ( (num_alignments_gv > 0) && !(blastout_gv || samout_gv || otumapout_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] has been set but no alignment "
             "format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
@@ -1409,21 +1392,6 @@ main(int argc,
             "\033[0;31m","\033[0m");
   }
     
-    
-#ifdef chimera
-  // TEMPORARY for chimera
-  if ( chimeraout_gv )
-  {
-    if (ptr_filetype_ar == NULL)
-    {
-      fprintf(stderr,"  %sERROR%s: a root filename name (--aligned [STRING]) for "
-              "output needs to be provided with --chimera [FLAG].\n\n",
-              "\033[0;31m","\033[0m");
-      exit(EXIT_FAILURE);
-    }
-  }
-#endif
-    
   // the list of arguments is correct, welcome the user!
   if ( verbose ) welcome();
   
@@ -1465,7 +1433,7 @@ main(int argc,
   
   // only FASTA/FASTQ output, stop searching for alignments after the
   // first match
-  if ( fastxout_gv && !(blastout_gv || samout_gv) ) num_alignments_gv = 1;
+  if ( fastxout_gv && !(blastout_gv || samout_gv || best_gv_set) ) num_alignments_gv = 1;
     
   // default number of seed hits before searching for candidate LIS
   if ( seed_hits_gv < 0 ) seed_hits_gv = 2;
