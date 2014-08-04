@@ -1337,32 +1337,26 @@ paralleltraversal ( char* inputreads,
   string fname = inputreads;
   // the size of the full reads file (in bytes)
   off_t full_file_size = 0;
-    // total number of nucleotides in all reads
-    size_t full_read_main = 0;
-    // total number of reads
-    uint32_t number_total_read = 0;
-    // total number of reads mapped passing E-value threshold
-    uint32_t total_reads_mapped = 0;
-    // total number of reads mapped passing E-value threshold & %id and/or %query coverage thresholds
-    uint32_t total_reads_mapped_cov = 0;
-    
-    
-    // the minimum occurrences of a (L/2)-mer required to allow search for a seed of length L in the burst tries
-    uint32_t minoccur = 0;
-    
+  // total number of nucleotides in all reads
+  size_t full_read_main = 0;
+  // total number of reads
+  uint32_t number_total_read = 0;
+  // total number of reads mapped passing E-value threshold
+  uint32_t total_reads_mapped = 0;
+  // total number of reads mapped passing E-value threshold & %id and/or %query coverage thresholds
+  uint32_t total_reads_mapped_cov = 0;
+  // the minimum occurrences of a (L/2)-mer required to allow search for a seed of length L in the burst tries
+  uint32_t minoccur = 0;
   // for timing different processes
   double s,f;
-    
   // the comparing character used in parsing the reads file
   char filesig;
     
-    
-    
-    // check file for mmap
+  // check file for mmap
   if ((fd = open(fname.c_str(), O_RDONLY)) == -1)
   {
-      fprintf(stderr,"  %sERROR%s: Could not open the reads file!\n\n","\033[0;31m","\033[0m");
-      exit(EXIT_FAILURE);
+    fprintf(stderr,"  %sERROR%s: Could not open the reads file!\n\n","\033[0;31m","\033[0m");
+    exit(EXIT_FAILURE);
   }
     
   // check which file format to parse: fasta or fastq
@@ -1371,8 +1365,8 @@ paralleltraversal ( char* inputreads,
     
   if ((rb = read(fd, &c, 1)) == -1)
   {
-      fprintf(stderr,"  %sERROR%s: Could not read the first character of the reads file!\n\n","\033[0;31m","\033[0m");
-      exit(EXIT_FAILURE);
+    fprintf(stderr,"  %sERROR%s: Could not read the first character of the reads file!\n\n","\033[0;31m","\033[0m");
+    exit(EXIT_FAILURE);
   }
     
   // set the appropriate settings for the file format
@@ -1485,11 +1479,8 @@ paralleltraversal ( char* inputreads,
     
   // output streams for accepted reads (FASTA/FASTQ, SAM and BLAST-like)
   ofstream acceptedreads;
-    ofstream acceptedsam;
-    ofstream acceptedblast;
-#ifdef chimera
-    ofstream acceptedchimeras;
-#endif
+  ofstream acceptedsam;
+  ofstream acceptedblast;
     
   // determine the suffix (fasta,fastq..) of accepted strings
   char suffix[20] = "out";
@@ -1505,25 +1496,22 @@ paralleltraversal ( char* inputreads,
   char *acceptedstrings = NULL;
   char *acceptedstrings_sam = NULL;
   char *acceptedstrings_blast = NULL;
-    char *logoutfile = NULL;
-    char *denovo_otus_file = NULL;
-#ifdef chimera
-    char *acceptedchimeras_file = NULL;
-#endif
-    char *acceptedotumap_file = NULL;
-    
-    // attach pid to output files
-    char pidStr[4000];
-    if ( pid_gv )
-    {
-        int32_t pid = getpid();
-        sprintf(pidStr,"%d",pid);
-    }
+  char *logoutfile = NULL;
+  char *denovo_otus_file = NULL;
+  char *acceptedotumap_file = NULL;
+  
+  // attach pid to output files
+  char pidStr[4000];
+  if ( pid_gv )
+  {
+    int32_t pid = getpid();
+    sprintf(pidStr,"%d",pid);
+  }
     
   // associate the streams with reference sequence file names
   if ( ptr_filetype_ar != NULL )
   {
-        if ( fastxout_gv )
+    if ( fastxout_gv )
     {
       // fasta/fastq output
       acceptedstrings = new char[1000]();
@@ -1533,11 +1521,11 @@ paralleltraversal ( char* inputreads,
         exit(EXIT_FAILURE);
       }
       strcpy ( acceptedstrings, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat ( acceptedstrings, "_");
-                strcat ( acceptedstrings, pidStr);
-            }
+      if ( pid_gv )
+      {
+        strcat ( acceptedstrings, "_");
+        strcat ( acceptedstrings, pidStr);
+      }
       strcat ( acceptedstrings, ".");
       strcat ( acceptedstrings, suffix);
             
@@ -1554,15 +1542,14 @@ paralleltraversal ( char* inputreads,
         exit(EXIT_FAILURE);
       }
       strcpy( acceptedstrings_sam, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat( acceptedstrings_sam, "_");
-                strcat( acceptedstrings_sam, pidStr);
-            }
-      strcat( acceptedstrings_sam, ".sam");
-            
-            acceptedsam.open ( acceptedstrings_sam );
-            acceptedsam.close();
+      if ( pid_gv )
+      {
+        strcat( acceptedstrings_sam, "_");
+        strcat( acceptedstrings_sam, pidStr);
+      }
+      strcat( acceptedstrings_sam, ".sam");            
+      acceptedsam.open ( acceptedstrings_sam );
+      acceptedsam.close();
     }
     if ( blastout_gv )
     {
@@ -1574,20 +1561,19 @@ paralleltraversal ( char* inputreads,
         exit(EXIT_FAILURE);
       }
       strcpy( acceptedstrings_blast, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat( acceptedstrings_blast, "_");
-                strcat( acceptedstrings_blast, pidStr);
-            }
-      strcat( acceptedstrings_blast, ".blast");
-            
-            acceptedblast.open ( acceptedstrings_blast );
-            acceptedblast.close();
+      if ( pid_gv )
+      {
+        strcat( acceptedstrings_blast, "_");
+        strcat( acceptedstrings_blast, pidStr);
+      }
+      strcat( acceptedstrings_blast, ".blast");            
+      acceptedblast.open ( acceptedstrings_blast );
+      acceptedblast.close();
     }
     if ( logout_gv )
     {
       // statistics file output
-            ofstream logstream;
+      ofstream logstream;
       logoutfile = new char[1000]();
       if ( logoutfile == NULL )
       {
@@ -1595,95 +1581,72 @@ paralleltraversal ( char* inputreads,
         exit(EXIT_FAILURE);
       }
       strcpy( logoutfile, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat( logoutfile, "_");
-                strcat( logoutfile, pidStr);
-            }
+      if ( pid_gv )
+      {
+        strcat( logoutfile, "_");
+        strcat( logoutfile, pidStr);
+      }
       strcat( logoutfile, ".log");
             
-            logstream.open ( logoutfile );
-            logstream.close();
+      logstream.open ( logoutfile );
+      logstream.close();
     }
-#ifdef chimera
-        if ( chimeraout_gv )
-        {
-            // chimera output
-            acceptedchimeras_file = new char[1000]();
-            if ( acceptedchimeras_file == NULL )
-            {
-        fprintf(stderr,"  %sERROR%s: could not allocate memory for acceptedchimeras (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
-        exit(EXIT_FAILURE);
-            }
-      strcpy( acceptedchimeras_file, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat( acceptedchimeras_file, "_");
-                strcat( acceptedchimeras_file, pidStr);
-            }
-      strcat( acceptedchimeras_file, ".chimera");
-            
-            acceptedchimeras.open ( acceptedchimeras_file );
-            acceptedchimeras.close();
-        }
-#endif
-        if ( otumapout_gv )
-        {
-            // OTU map output file
-            ofstream otumap;
-            acceptedotumap_file = new char[1000]();
-            if ( acceptedotumap_file == NULL )
-            {
+    if ( otumapout_gv )
+    {
+      // OTU map output file
+      ofstream otumap;
+      acceptedotumap_file = new char[1000]();
+      if ( acceptedotumap_file == NULL )
+      {
         fprintf(stderr,"  %sERROR%s: could not allocate memory for acceptedotumap (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
         exit(EXIT_FAILURE);
-            }
+      }
       strcpy( acceptedotumap_file, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat( acceptedotumap_file, "_");
-                strcat( acceptedotumap_file, pidStr);
-            }
-      strcat( acceptedotumap_file, "_otus.txt");
-            
-            otumap.open ( acceptedotumap_file );
-            otumap.close();
-        }
-        if ( de_novo_otu_gv )
-        {
-            ofstream denovo_otu;
-            denovo_otus_file = new char[1000]();
-            if ( denovo_otus_file == NULL )
-            {
+      if ( pid_gv )
+      {
+        strcat( acceptedotumap_file, "_");
+        strcat( acceptedotumap_file, pidStr);
+      }
+      strcat( acceptedotumap_file, "_otus.txt");        
+      otumap.open ( acceptedotumap_file );
+      otumap.close();
+    }
+    if ( de_novo_otu_gv )
+    {
+      ofstream denovo_otu;
+      denovo_otus_file = new char[1000]();
+      if ( denovo_otus_file == NULL )
+      {
         fprintf(stderr,"  %sERROR%s: could not allocate memory for denovo_otus_file_name (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
         exit(EXIT_FAILURE);
-            }
-            strcpy( denovo_otus_file, ptr_filetype_ar );
-            if ( pid_gv )
-            {
-                strcat( denovo_otus_file, "_");
-                strcat( denovo_otus_file, pidStr);
-            }
-            strcat( denovo_otus_file, "_denovo.");
+      }
+      strcpy( denovo_otus_file, ptr_filetype_ar );
+      if ( pid_gv )
+      {
+        strcat( denovo_otus_file, "_");
+        strcat( denovo_otus_file, pidStr);
+      }
+      strcat( denovo_otus_file, "_denovo.");
       strcat ( denovo_otus_file, suffix);
-            
-            denovo_otu.open ( denovo_otus_file );
-            denovo_otu.close();
-        }
+        
+      denovo_otu.open ( denovo_otus_file );
+      denovo_otu.close();
+    }
   }//~if ( ptr_filetype_ar != NULL )
     
   if ( ptr_filetype_or != NULL )
   {
     if ( fastxout_gv )
     {
-            // output stream for other reads
-            ofstream otherreads;
+      // output stream for other reads
+      ofstream otherreads;
             
       // add suffix database name to accepted reads file
-            if ( pid_gv )
-            {
-                strcat( ptr_filetype_or, "_");
-                strcat( ptr_filetype_or, pidStr);
-            }
+      if ( pid_gv )
+      {
+        strcat( ptr_filetype_or, "_");
+        strcat( ptr_filetype_or, pidStr);
+      }
       strcat ( ptr_filetype_or, "." );
       strcat ( ptr_filetype_or, suffix );
             
@@ -1693,536 +1656,519 @@ paralleltraversal ( char* inputreads,
     }
   }
 
-    // empty output files created, exit program
-    if ( exit_early )
+  // empty output files created, exit program
+  if ( exit_early )
+  {
+    fprintf(stdout, "  The reads file or reference file is empty, no analysis could be made.\n");
+    exit(EXIT_SUCCESS);
+  }
+    
+  int8_t* mat = (int8_t*)calloc(25, sizeof(int8_t));
+    
+  {
+    int32_t l,k,m;
+    // initialize Smith-Waterman scoring matrix for genome sequences
+    for (l = k = 0; l < 4; ++l)
     {
-        fprintf(stdout, "  The reads file or reference file is empty, no analysis could be made.\n");
-        exit(EXIT_SUCCESS);
+      for (m = 0; m < 4; ++m)
+        mat[k++] = l == m ? match : mismatch; // weight_match : weight_mismatch (must be negative)
+      mat[k++] = score_N; // ambiguous base
+    }
+    for ( m = 0; m < 5; ++m ) mat[k++] = score_N; // ambiguous base
+  }
+       
+  // the number of parts an index was divided into to fit into specified memory, for each reference database searched
+  vector<uint16_t> num_index_parts(myfiles.size(),0);
+  vector<uint64_t> full_ref(myfiles.size(),0);
+  vector<uint64_t> full_read(myfiles.size(),full_read_main);
+  vector<uint32_t> lnwin(myfiles.size(),0);
+  vector<uint32_t> partialwin(myfiles.size(),0);
+  // Minimal SW score in order to reach threshold E-value
+  vector<uint32_t> minimal_score(myfiles.size(),0);
+  // array of structs storing information on which sequences from the original FASTA file were added to each index part
+  vector<vector<index_parts_stats> > index_parts_stats_vec;
+  // Gumbel parameters lambda and K, respectively
+  vector<pair<double,double> > gumbel(myfiles.size(),pair<double,double>(-1.0,-1.0));
+  // total number of full bitvectors in [w_1] reverse and [w_2] forward
+  vector<uint32_t> numbvs(myfiles.size(),0);
+  // total number of reads matched for each database in list --ref
+  vector<uint32_t> reads_matched_per_db(myfiles.size(),0);
+  // number of reference sequences in each index FASTA file
+  vector<uint32_t> numseq(myfiles.size(),0);
+        
+  // set the same skiplengths for all reference files (if the user uses option --passes)
+  if ( skiplengths.empty() )
+  {
+      vector<uint32_t> skiplengths_v(3,0);
+      skiplengths.push_back(skiplengths_v);
+  }
+  for (int32_t i = 0; i < myfiles.size()-1; i++) skiplengths.push_back(skiplengths[0]);
+    
+  // add header lines to SAM output file
+  preprocess_data( myfiles,
+                  argv,
+                  argc,
+                  yes_SQ,
+                  acceptedstrings_sam,
+                  match,
+                  mismatch,
+                  gap_open,
+                  gap_extension,
+                  skiplengths,
+                  num_index_parts,
+                  index_parts_stats_vec,
+                  full_ref,
+                  full_read,
+                  lnwin,
+                  partialwin,
+                  minimal_score,
+                  number_total_read,
+                  gumbel,
+                  numbvs,
+                  numseq);
+    
+  // some info on chosen parameters
+  eprintf("  Parameters summary:\n");
+  eprintf("    Number of seeds = %d\n",seed_hits_gv);
+  eprintf("    Edges = %d",edges_gv);
+  if (as_percent_gv)
+      eprintf(" (as percent)\n");
+  else
+      eprintf(" (as integer)\n");
+  eprintf("    SW match = %d\n",match);
+  eprintf("    SW mismatch = %d\n",mismatch);
+  eprintf("    SW gap open penalty = %d\n",gap_open);
+  eprintf("    SW gap extend penalty = %d\n",gap_extension);
+  eprintf("    SW ambiguous nucleotide = %d",score_N);
+  if ( score_N > 0 ) eprintf(" %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
+  else eprintf("\n");
+  if ( yes_SQ )
+      eprintf("    SQ tags are output\n");
+  else
+      eprintf("    SQ tags are not output\n");
+#ifdef _OPENMP
+  eprintf("    Number of threads = %d\n",numcpu_gv);
+#else
+  eprintf("    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
+#endif
+  if ( pid_gv )
+  {
+    eprintf("    Current process pid = %d\n",getpid());
+  }
+    
+  // output parameters to log file
+  if ( (ptr_filetype_ar != NULL) && logout_gv )
+  {
+    FILE* bilan = fopen(logoutfile,"w");
+    if ( bilan == NULL )
+    {
+      fprintf(stderr,"  %sERROR%s: could not create file %s \n","\033[0;31m","\033[0m",logoutfile);
+      exit(EXIT_FAILURE);
     }
     
+    time_t q = time(0);
+    struct tm * now = localtime(&q);
     
-    
-    
-    
-    int8_t* mat = (int8_t*)calloc(25, sizeof(int8_t));
-    
-    {
-        int32_t l,k,m;
-        // initialize Smith-Waterman scoring matrix for genome sequences
-        for (l = k = 0; l < 4; ++l)
-        {
-            for (m = 0; m < 4; ++m)
-                mat[k++] = l == m ? match : mismatch; // weight_match : weight_mismatch (must be negative)
-            mat[k++] = score_N; // ambiguous base
-        }
-        for ( m = 0; m < 5; ++m ) mat[k++] = score_N; // ambiguous base
-    }
-    
-    
-    
-    // the number of parts an index was divided into to fit into specified memory, for each reference database searched
-    vector<uint16_t> num_index_parts(myfiles.size(),0);
-    vector<uint64_t> full_ref(myfiles.size(),0);
-    vector<uint64_t> full_read(myfiles.size(),full_read_main);
-    vector<uint32_t> lnwin(myfiles.size(),0);
-    vector<uint32_t> partialwin(myfiles.size(),0);
-    // Minimal SW score in order to reach threshold E-value
-    vector<uint32_t> minimal_score(myfiles.size(),0);
-    // array of structs storing information on which sequences from the original FASTA file were added to each index part
-    vector<vector<index_parts_stats> > index_parts_stats_vec;
-    // Gumbel parameters lambda and K, respectively
-    vector<pair<double,double> > gumbel(myfiles.size(),pair<double,double>(-1.0,-1.0));
-    // total number of full bitvectors in [w_1] reverse and [w_2] forward
-    vector<uint32_t> numbvs(myfiles.size(),0);
-    // total number of reads matched for each database in list --ref
-    vector<uint32_t> reads_matched_per_db(myfiles.size(),0);
-    // number of reference sequences in each index FASTA file
-    vector<uint32_t> numseq(myfiles.size(),0);
-    
-    
-    // set the same skiplengths for all reference files (if the user uses option --passes)
-    if ( skiplengths.empty() )
-    {
-        vector<uint32_t> skiplengths_v(3,0);
-        skiplengths.push_back(skiplengths_v);
-    }
-    for (int32_t i = 0; i < myfiles.size()-1; i++) skiplengths.push_back(skiplengths[0]);
-    
-    // add header lines to SAM output file
-    preprocess_data( myfiles,
-                    argv,
-                    argc,
-                    yes_SQ,
-                    acceptedstrings_sam,
-                    match,
-                    mismatch,
-                    gap_open,
-                    gap_extension,
-                    skiplengths,
-                    num_index_parts,
-                    index_parts_stats_vec,
-                    full_ref,
-                    full_read,
-                    lnwin,
-                    partialwin,
-                    minimal_score,
-                    number_total_read,
-                    gumbel,
-                    numbvs,
-                    numseq);
-    
+    fprintf(bilan," %s\n",asctime(now));
+    fprintf(bilan," SortMeRNA command: ");
+    for ( int j = 0; j < argc; j++ ) fprintf(bilan,"%s ",argv[j]);
+    fprintf(bilan,"\n");
     // some info on chosen parameters
-    eprintf("  Parameters summary:\n");
-    eprintf("    Number of seeds = %d\n",seed_hits_gv);
-    eprintf("    Edges = %d",edges_gv);
+    fprintf(bilan," Process pid = %d\n",getpid());
+    fprintf(bilan," Parameters summary:\n");
+    for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+    {
+      fprintf(bilan,"    Index: %s\n",(char*)(myfiles[index_num].second).c_str());
+      fprintf(bilan,"     Seed length = %d\n",lnwin[index_num]);
+      fprintf(bilan,"     Pass 1 = %d, Pass 2 = %d, Pass 3 = %d\n",skiplengths[index_num][0],skiplengths[index_num][1],skiplengths[index_num][2]);
+      fprintf(bilan,"     Gumbel lambda = %f\n",(gumbel[index_num].first));
+      fprintf(bilan,"     Gumbel K = %f\n",(gumbel[index_num].second));
+      fprintf(bilan,"     Minimal SW score based on E-value = %d\n",minimal_score[index_num]);
+    }
+    fprintf(bilan,"    Number of seeds = %d\n",seed_hits_gv);
+    fprintf(bilan,"    Edges = %d",edges_gv);
     if (as_percent_gv)
-        eprintf(" (as percent)\n");
+      fprintf(bilan," (as percent)\n");
     else
-        eprintf(" (as integer)\n");
-    eprintf("    SW match = %d\n",match);
-    eprintf("    SW mismatch = %d\n",mismatch);
-    eprintf("    SW gap open penalty = %d\n",gap_open);
-    eprintf("    SW gap extend penalty = %d\n",gap_extension);
-    eprintf("    SW ambiguous nucleotide = %d",score_N);
-    if ( score_N > 0 ) eprintf(" %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
-    else eprintf("\n");
+      fprintf(bilan," (as integer)\n");
+    fprintf(bilan,"    SW match = %d\n",match);
+    fprintf(bilan,"    SW mismatch = %d\n",mismatch);
+    fprintf(bilan,"    SW gap open penalty = %d\n",gap_open);
+    fprintf(bilan,"    SW gap extend penalty = %d\n",gap_extension);
+    fprintf(bilan,"    SW ambiguous nucleotide = %d",score_N);
+    if ( score_N > 0 ) fprintf(bilan," <-- %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
+    else fprintf(bilan,"\n");
     if ( yes_SQ )
-        eprintf("    SQ tags are output\n");
+      fprintf(bilan,"    SQ tags are output\n");
     else
-        eprintf("    SQ tags are not output\n");
+      fprintf(bilan,"    SQ tags are not output\n");
 #ifdef _OPENMP
-    eprintf("    Number of threads = %d\n",numcpu_gv);
+    fprintf(bilan,"    Number of threads = %d\n",numcpu_gv);
 #else
-    eprintf("    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
+    fprintf(bilan,"    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
 #endif
-    if ( pid_gv )
-    {
-        eprintf("    Current process pid = %d\n",getpid());
-    }
-    
-    // output parameters to log file
-    if ( (ptr_filetype_ar != NULL) && logout_gv )
-    {
-        FILE* bilan = fopen(logoutfile,"w");
-        if ( bilan == NULL )
-        {
-            fprintf(stderr,"  %sERROR%s: could not create file %s \n","\033[0;31m","\033[0m",logoutfile);
-            exit(EXIT_FAILURE);
-        }
+    fprintf(bilan,"    Reads file = %s\n\n",inputreads);
         
-        time_t q = time(0);
-        struct tm * now = localtime(&q);
-        
-        fprintf(bilan," %s\n",asctime(now));
-        fprintf(bilan," SortMeRNA command: ");
-        for ( int j = 0; j < argc; j++ ) fprintf(bilan,"%s ",argv[j]);
-        fprintf(bilan,"\n");
-        // some info on chosen parameters
-        fprintf(bilan," Process pid = %d\n",getpid());
-        fprintf(bilan," Parameters summary:\n");
-        for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
-        {
-            fprintf(bilan,"    Index: %s\n",(char*)(myfiles[index_num].second).c_str());
-            fprintf(bilan,"     Seed length = %d\n",lnwin[index_num]);
-            fprintf(bilan,"     Pass 1 = %d, Pass 2 = %d, Pass 3 = %d\n",skiplengths[index_num][0],skiplengths[index_num][1],skiplengths[index_num][2]);
-            fprintf(bilan,"     Gumbel lambda = %f\n",(gumbel[index_num].first));
-            fprintf(bilan,"     Gumbel K = %f\n",(gumbel[index_num].second));
-            fprintf(bilan,"     Minimal SW score based on E-value = %d\n",minimal_score[index_num]);
-        }
-        fprintf(bilan,"    Number of seeds = %d\n",seed_hits_gv);
-        fprintf(bilan,"    Edges = %d",edges_gv);
-        if (as_percent_gv)
-            fprintf(bilan," (as percent)\n");
-        else
-            fprintf(bilan," (as integer)\n");
-        fprintf(bilan,"    SW match = %d\n",match);
-        fprintf(bilan,"    SW mismatch = %d\n",mismatch);
-        fprintf(bilan,"    SW gap open penalty = %d\n",gap_open);
-        fprintf(bilan,"    SW gap extend penalty = %d\n",gap_extension);
-        fprintf(bilan,"    SW ambiguous nucleotide = %d",score_N);
-        if ( score_N > 0 ) fprintf(bilan," <-- %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
-        else fprintf(bilan,"\n");
-        if ( yes_SQ )
-            fprintf(bilan,"    SQ tags are output\n");
-        else
-            fprintf(bilan,"    SQ tags are not output\n");
-#ifdef _OPENMP
-        fprintf(bilan,"    Number of threads = %d\n",numcpu_gv);
-#else
-        fprintf(bilan,"    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
-#endif
-        fprintf(bilan,"    Reads file = %s\n\n",inputreads);
-        
-        fclose(bilan);
-    }
+    fclose(bilan);
+  }
 
-    
-  // pointer to the split read (the read which is split between any two file sections)
+  // pointer to the split read
+  // (the read which is split between any two file sections)
   char* split_read = NULL;
 
-    // pointer to the position in the split read where to attach the connecting part of the split read (and possibly its pair)
+  // pointer to the position in the split read where to attach
+  // the connecting part of the split read (and possibly its pair)
   char* split_read_ptr = NULL;
     
-    // the number of lines to offset at the top of the current file section
-    int32_t offset_pair_from_top = 0;
+  // the number of lines to offset at the top of the current
+  // file section
+  int32_t offset_pair_from_top = 0;
     
-    // map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
-    map<string,vector<string> > otu_map;
-    
+  // map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
+  map<string,vector<string> > otu_map;
     
   // Loop through all mmap'd read file sections
   while ( file_s < file_sections )
   {
-        if ( samout_gv )
-        {
-            acceptedsam.open(acceptedstrings_sam, ios::app);
-            if (!acceptedsam.good())
-            {
-                fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing: %s.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
-                exit(EXIT_FAILURE);
-            }
-        }
-        if ( blastout_gv )
-        {
-            acceptedblast.open(acceptedstrings_blast, ios::app);
-            if (!acceptedblast.good())
-            {
-                fprintf(stderr,"  %sERROR%s: could not open BLAST output file for writing: %s.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
-                exit(EXIT_FAILURE);
-            }
-        }
+    if ( samout_gv )
+    {
+      acceptedsam.open(acceptedstrings_sam, ios::app);
+      if (!acceptedsam.good())
+      {
+        fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing: %s.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
+        exit(EXIT_FAILURE);
+      }
+    }
+    if ( blastout_gv )
+    {
+      acceptedblast.open(acceptedstrings_blast, ios::app);
+      if (!acceptedblast.good())
+      {
+        fprintf(stderr,"  %sERROR%s: could not open BLAST output file for writing: %s.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
+        exit(EXIT_FAILURE);
+      }
+    }
         
     eprintf("\n  %sBegin mmap reads section # %d%s:\n","\033[4m",file_s+1,"\033[0m");
         
     // begin file memory map
     TIME(s);
         
-        // mmap the reads file into memory
-        char* raw = (char*)mmap ( 0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map );
-        if ( raw == MAP_FAILED )
-        {
+    // mmap the reads file into memory
+    char* raw = (char*)mmap ( 0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map );
+    if ( raw == MAP_FAILED )
+    {
       close(fd);
       fprintf(stderr,"  %sERROR%s: cannot mmap file: %s\n\n","\033[0;31m","\033[0m",strerror(errno));
       exit(EXIT_FAILURE);
-        }
-        // pointer to last character in mmap'd region
-        char* end_of_mmap = &raw[partial_file_size-1];
+    }
+    // pointer to last character in mmap'd region
+    char* end_of_mmap = &raw[partial_file_size-1];
+    
+    int32_t strs = 0;
+    
+    // the length of the split read in file part i+1 (from beginning of file part)
+    int32_t reads_offset_f = 0;
+    // the length of the split read in file part i (from end of file part)
+    int32_t reads_offset_e = 0;
         
-        int32_t strs = 0;
+    {
+      // (FASTA) count the number of strings in a file section
+      if ( filesig == '>' )
+      {
+        // beginning of file section
+        char *start = &raw[0];
         
-        // the length of the split read in file part i+1 (from beginning of file part)
-        int32_t reads_offset_f = 0;
-        // the length of the split read in file part i (from end of file part)
-        int32_t reads_offset_e = 0;
-        
+        // end of file section
+        char *end = &raw[partial_file_size-1];
+#ifdef debug_mmap
+        cout << "partial_file_size = " << partial_file_size << endl; //TESTING
+#endif
+        // compute the reads offset length at top of file section (if the first char is '>', then reads_offset_f = 0)
+        while ( (*start != '>') && (start != end_of_mmap) ) { start++; reads_offset_f++; }
+        if (start == end_of_mmap) reads_offset_f++;
+#ifdef debug_mmap
+        cout << "reads_offset_f (only split read) = " << reads_offset_f << endl; //TESTING
+#endif
+        // compute the reads offset length at bottom of file section (always assume the read is split, except for the last file section)
+        if ( file_s != file_sections-1 )
+            while ( (*end != '>') && (end != start) ) { end--; reads_offset_e++; }
+#ifdef debug_mmap
+        cout << "reads_offset_r (only split read) = " << reads_offset_e << endl; //TESTING
+#endif
+        // only the split read exists in the file section
+        if ( partial_file_size-reads_offset_e-2 < 0 )
         {
-            // (FASTA) count the number of strings in a file section
-            if ( filesig == '>' )
-            {
-                // beginning of file section
-                char *start = &raw[0];
-                
-                // end of file section
-                char *end = &raw[partial_file_size-1];
-#ifdef debug_mmap
-                cout << "partial_file_size = " << partial_file_size << endl; //TESTING
-#endif
-                // compute the reads offset length at top of file section (if the first char is '>', then reads_offset_f = 0)
-                while ( (*start != '>') && (start != end_of_mmap) ) { start++; reads_offset_f++; }
-                if (start == end_of_mmap) reads_offset_f++;
-#ifdef debug_mmap
-                cout << "reads_offset_f (only split read) = " << reads_offset_f << endl; //TESTING
-#endif
-                // compute the reads offset length at bottom of file section (always assume the read is split, except for the last file section)
-                if ( file_s != file_sections-1 )
-                    while ( (*end != '>') && (end != start) ) { end--; reads_offset_e++; }
-#ifdef debug_mmap
-                cout << "reads_offset_r (only split read) = " << reads_offset_e << endl; //TESTING
-#endif
-                // only the split read exists in the file section
-                if ( partial_file_size-reads_offset_e-2 < 0 )
-                {
-                    // 0 strings can only exist in the last file section
-                    if ( file_s != file_sections-1 )
-                    {
-                        fprintf(stderr,"   %sERROR%s: 0 sequences mapped in the current file section.\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    reads_offset_f = 0;
-                    reads_offset_e = 0;
-                    
-                    // split-read + associated paired-read
-                    if ( offset_pair_from_top ) strs+=2;
-                    // only split-read
-                    else strs++;
-                }
-                // >0 strings have been counted in the current file section
-                else
-                {
-                    // count the number of strings in the file section
-                    for ( uint32_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
-                    
-                    // the paired-read follows the split read at the top of current file section
-                    if ( offset_pair_from_top )
-                    {
-                        // go forwards one character past '>'
-                        start++;
-                        reads_offset_f++;
-                        
-                        // increase the read's offset for the top of the file to enclose the paired-read
-                        while ( *start != '>' ) { start++; reads_offset_f++; }
-                        strs--;
-                    }
-                    
-                    // the paired-read comes before the split read at the bottom of current file section
-                    if ( (strs%2 == 1) && (file_s != file_sections-1) )
-                    {
-                        // go backwards one character past '>'
-                        end--;
-                        reads_offset_e++;
-                        
-                        // increase the read's offset for the bottom of the file to enclose the paired-read
-                        while ( *end != '>' ) { end--; reads_offset_e++; }
-                        strs--;
-                        // the paired-read will not follow the split read at top of the following file section
-                        offset_pair_from_top = false;
-                    }
-                    // the paired-read follows the split read at top of the following file section
-                    else offset_pair_from_top = true;
-                    
-                }
-                
-                // account for the split read and its paired-read from the previous file section to be searched in current file section
-                if ( file_s > 0 ) strs+=2;
-#ifdef debug_mmap
-                cout << "reads_offset_f (incl. paired-read) = " << reads_offset_f << endl; //TESTING
-                cout << "reads_offset_r (incl. paired-read) = " << reads_offset_e << endl; //TESTING
-                cout << "strs = " << strs << endl; //TESTING
-#endif
-                
-                // one pointer for the read tag, second pointer for the read itself
-                strs*=2;
-                
-                
-            } //~(FASTA)
+          // 0 strings can only exist in the last file section
+          if ( file_s != file_sections-1 )
+          {
+            fprintf(stderr,"   %sERROR%s: 0 sequences mapped in the current file section.\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
+          reads_offset_f = 0;
+          reads_offset_e = 0;
+          
+          // split-read + associated paired-read
+          if ( offset_pair_from_top ) strs+=2;
+          // only split-read
+          else strs++;
+        }
+        // >0 strings have been counted in the current file section
+        else
+        {
+          // count the number of strings in the file section
+          for ( uint32_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
+          
+          // the paired-read follows the split read at the top of current file section
+          if ( offset_pair_from_top )
+          {
+            // go forwards one character past '>'
+            start++;
+            reads_offset_f++;
             
-            // (FASTQ) count the number of strings in a file section
-            else
-            {
-                // beginning of file section
-                char *start = &raw[0];
-                
-                // end of file section
-                char *end = &raw[partial_file_size-1];
-#ifdef debug_mmap
-                cout << "partial_file_size = " << partial_file_size << endl; //TESTING
-                cout << "offset_pair_from_top (this file section) = " << offset_pair_from_top << endl; //TESTING
-#endif
-                // compute the reads offset length at top of file section
-                int line = 0;
-                
-                // compute number of bytes covering split-read at top of file section and the paired-read (if it exists)
-                if ( offset_pair_from_top > 0 )
-                {
-                    while ( line < offset_pair_from_top )
-                    {
-                        reads_offset_f++;
-                        if ( *start++ == '\n' ) line++;
-                    }
-                }
-#ifdef debug_mmap
-                cout << "reads_offset_f (split read + paired-read) = " << reads_offset_f << endl; //TESTING
-#endif
-                // count the number of lines in the file section
-                for ( uint32_t i = reads_offset_f; i < partial_file_size; i++ ) if ( raw[i] == '\n' ) strs++;
-#ifdef debug_mmap
-                cout << "strs (not counting reads_offset_f) = " << strs << endl; //TESTING
-#endif
-                // check FASTQ file has multiple of 4 lines
-                if ( (strs%4 != 0) && (file_s == file_sections-1) )
-                {
-                    // odd number of lines, but due to one extra new line at bottom of file
-                    if ( (strs%4 == 1) && (raw[partial_file_size-1] == '\n') && (raw[partial_file_size-2] == '\n') ) strs--;
-                    else
-                    {
-                        fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %u\n","\033[0;31m","\033[0m",strs);
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                
-                int offset_pair_from_bottom = 0;
-                
-                // count the number of lines belonging to a split read at bottom of file + a possible paired-read,
-                // if there are only 8 strs in the file or we are on the last file, this doesn't apply
-                if ( (strs > 8) && (file_s != file_sections-1) ) offset_pair_from_bottom = strs%8;
-                
-                strs-=offset_pair_from_bottom;
-#ifdef debug_mmap
-                cout << "offset_pair_from_bottom (this file section) = " << offset_pair_from_bottom << endl; //TESTING
-#endif
-                // set the number of lines to offset at the top of the next file section
-                offset_pair_from_top = 8-offset_pair_from_bottom;
-#ifdef debug_mmap
-                cout << "offset_pair_from_top (next file section) = " << offset_pair_from_top << endl; //TESTING
-                cout << "strs (incl. reads_offset_f and reads_offset_e) = " << strs << endl; //TESTING
-                if (raw[partial_file_size-1] == '\n') cout << "file section ends with a newline\n"; //TESTING
-#endif
-                // count one extra newline for the split read at bottom of file
-                if ( (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
-                //if ( (raw[partial_file_size-1] != '\n') && (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
-                
-                // compute the reads offset length at bottom of file section
-                line = 0;
-                if ( offset_pair_from_bottom > 0 )
-                {
-                    while ( line < offset_pair_from_bottom )
-                    {
-                        reads_offset_e++;
-                        if ( *end-- == '\n' ) line++;
-                    }
-                    // backtrack to start of read symbol
-                    reads_offset_e-=2;
-                }
-#ifdef debug_mmap
-                cout << "reads_offset_r (split read + possible paired-read) = " << reads_offset_e << endl; //TESTING
-#endif
-                
-                // account for the split read if exists
-                if ( file_s > 0 ) strs+=8;
-                
-#ifdef debug_mmap
-                cout << "strs (incl. split read and paired-read) = " << strs << endl; //TESTING
-#endif
-                
-                // one pointer for the read tag, second pointer for the read itself
-                strs/=2;
-#ifdef debug_mmap
-                cout << "strs/=2 = " << strs << endl; //TESTING
-#endif
-                
-            }//~FASTQ split read
+            // increase the read's offset for the top of the file to enclose the paired-read
+            while ( *start != '>' ) { start++; reads_offset_f++; }
+            strs--;
+          }
+          
+          // the paired-read comes before the split read at the bottom of current file section
+          if ( (strs%2 == 1) && (file_s != file_sections-1) )
+          {
+            // go backwards one character past '>'
+            end--;
+            reads_offset_e++;
             
+            // increase the read's offset for the bottom of the file to enclose the paired-read
+            while ( *end != '>' ) { end--; reads_offset_e++; }
+            strs--;
+            // the paired-read will not follow the split read at top of the following file section
+            offset_pair_from_top = false;
+          }
+          // the paired-read follows the split read at top of the following file section
+          else offset_pair_from_top = true;         
+        }
+                  
+        // account for the split read and its paired-read from the previous file section to be searched in current file section
+        if ( file_s > 0 ) strs+=2;
+#ifdef debug_mmap
+        cout << "reads_offset_f (incl. paired-read) = " << reads_offset_f << endl; //TESTING
+        cout << "reads_offset_r (incl. paired-read) = " << reads_offset_e << endl; //TESTING
+        cout << "strs = " << strs << endl; //TESTING
+#endif
+        
+        // one pointer for the read tag, second pointer for the read itself
+        strs*=2;            
+      } //~(FASTA)            
+      // (FASTQ) count the number of strings in a file section
+      else
+      {
+        // beginning of file section
+        char *start = &raw[0];
+        
+        // end of file section
+        char *end = &raw[partial_file_size-1];
+#ifdef debug_mmap
+        cout << "partial_file_size = " << partial_file_size << endl; //TESTING
+        cout << "offset_pair_from_top (this file section) = " << offset_pair_from_top << endl; //TESTING
+#endif
+        // compute the reads offset length at top of file section
+        int line = 0;
+        
+        // compute number of bytes covering split-read at top of file section and the paired-read (if it exists)
+        if ( offset_pair_from_top > 0 )
+        {
+          while ( line < offset_pair_from_top )
+          {
+            reads_offset_f++;
+            if ( *start++ == '\n' ) line++;
+          }
+        }
+#ifdef debug_mmap
+        cout << "reads_offset_f (split read + paired-read) = " << reads_offset_f << endl; //TESTING
+#endif
+        // count the number of lines in the file section
+        for ( uint32_t i = reads_offset_f; i < partial_file_size; i++ ) if ( raw[i] == '\n' ) strs++;
+#ifdef debug_mmap
+        cout << "strs (not counting reads_offset_f) = " << strs << endl; //TESTING
+#endif
+        // check FASTQ file has multiple of 4 lines
+        if ( (strs%4 != 0) && (file_s == file_sections-1) )
+        {
+          // odd number of lines, but due to one extra new line at bottom of file
+          if ( (strs%4 == 1) && (raw[partial_file_size-1] == '\n') && (raw[partial_file_size-2] == '\n') ) strs--;
+          else
+          {
+            fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %u\n","\033[0;31m","\033[0m",strs);
+            exit(EXIT_FAILURE);
+          }
+        }
+                  
+        int offset_pair_from_bottom = 0;
+        
+        // count the number of lines belonging to a split read at bottom of file + a possible paired-read,
+        // if there are only 8 strs in the file or we are on the last file, this doesn't apply
+        if ( (strs > 8) && (file_s != file_sections-1) ) offset_pair_from_bottom = strs%8;
+        
+        strs-=offset_pair_from_bottom;
+#ifdef debug_mmap
+        cout << "offset_pair_from_bottom (this file section) = " << offset_pair_from_bottom << endl; //TESTING
+#endif
+        // set the number of lines to offset at the top of the next file section
+        offset_pair_from_top = 8-offset_pair_from_bottom;
+    #ifdef debug_mmap
+        cout << "offset_pair_from_top (next file section) = " << offset_pair_from_top << endl; //TESTING
+        cout << "strs (incl. reads_offset_f and reads_offset_e) = " << strs << endl; //TESTING
+        if (raw[partial_file_size-1] == '\n') cout << "file section ends with a newline\n"; //TESTING
+    #endif
+        // count one extra newline for the split read at bottom of file
+        if ( (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
+        //if ( (raw[partial_file_size-1] != '\n') && (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
+        
+        // compute the reads offset length at bottom of file section
+        line = 0;
+        if ( offset_pair_from_bottom > 0 )
+        {
+          while ( line < offset_pair_from_bottom )
+          {
+            reads_offset_e++;
+            if ( *end-- == '\n' ) line++;
+          }
+          // backtrack to start of read symbol
+          reads_offset_e-=2;
+        }
+#ifdef debug_mmap
+        cout << "reads_offset_r (split read + possible paired-read) = " << reads_offset_e << endl; //TESTING
+#endif
+        
+        // account for the split read if exists
+        if ( file_s > 0 ) strs+=8;
+        
+#ifdef debug_mmap
+        cout << "strs (incl. split read and paired-read) = " << strs << endl; //TESTING
+#endif
+        
+        // one pointer for the read tag, second pointer for the read itself
+        strs/=2;
+#ifdef debug_mmap
+        cout << "strs/=2 = " << strs << endl; //TESTING
+#endif
+      }//~FASTQ split read          
     }//~range of *start and *end pointers
         
-        // create a char* array for pointers to each string in mmap
+    // create a char* array for pointers to each string in mmap
     char** reads = new char*[strs]();
-        if ( reads == NULL )
+    if ( reads == NULL )
     {
       fprintf(stderr,"\n  %sERROR%s: cannot allocate memory for reads\n\n","\033[0;31m","\033[0m");
       exit(EXIT_FAILURE);
     }
         
-        // record the end of the split read
-        if ( file_s > 0 )
-        {
-            char *start = &raw[0];
-            char *end = &raw[reads_offset_f];
+    // record the end of the split read
+    if ( file_s > 0 )
+    {
+      char *start = &raw[0];
+      char *end = &raw[reads_offset_f];
 #ifdef debug_mmap
-            cout << "split read end: \n"; //TESTING
+      cout << "split read end: \n"; //TESTING
 #endif
-            
-            while ( start != end )
-            {
+        
+      while ( start != end )
+      {
+  #ifdef debug_mmap
+        cout << (char)*start; //TESTING
+  #endif
+        *split_read_ptr++ = *start++;
+      }
 #ifdef debug_mmap
-                cout << (char)*start; //TESTING
+      cout << ".STOP." <<endl; //TESTING
 #endif
-                *split_read_ptr++ = *start++;
-            }
-#ifdef debug_mmap
-            cout << ".STOP." <<endl; //TESTING
-#endif
-            // signify end of split_read
-            *split_read_ptr = '\0';
-            
-            // add the split read and associated paired-read to the start of reads to be filtered
-            start = split_read;
-            
-#ifdef debug_mmap
-            cout << "full split read: \n"; //TESTING
-            char *tt = start;
-            while ( *tt != '\0' ) cout << (char)*tt++;
-            cout << ".STOP." << endl; //TESTING
-#endif
-            
-            // split-read or paired-read
-            reads[0] = start;
-            while ( *start++ != '\n' );
-            reads[1] = start;
-            int line = 0;
-            if ( filesig == '@' )
-            {
-                // go to second read in fastq format
-                while ( line < 3 ) { if ( *start++ == '\n' ) line++; }
-            }
-            else
-            {
-                // go to second read in fasta format
-                while ( *start != '>') start++;
-            }
-            
-            // split-read or paired-read
-            reads[2] = start;
-            while ( *start++ != '\n' );
-            reads[3] = start;
+      // signify end of split_read
+      *split_read_ptr = '\0';
+      
+      // add the split read and associated paired-read to the start of reads to be filtered
+      start = split_read;
             
 #ifdef debug_mmap
-            cout << "*reads[0] = " << (char)*reads[0] << endl; //TESTING
-            cout << "*reads[1] = " << (char)*reads[1] << endl; //TESTING
-            cout << "*reads[2] = " << (char)*reads[2] << endl; //TESTING
-            cout << "*reads[3] = " << (char)*reads[3] << endl; //TESTING
+      cout << "full split read: \n"; //TESTING
+      char *tt = start;
+      while ( *tt != '\0' ) cout << (char)*tt++;
+      cout << ".STOP." << endl; //TESTING
 #endif
             
+      // split-read or paired-read
+      reads[0] = start;
+      while ( *start++ != '\n' );
+      reads[1] = start;
+      int line = 0;
+      if ( filesig == '@' )
+      {
+          // go to second read in fastq format
+          while ( line < 3 ) { if ( *start++ == '\n' ) line++; }
+      }
+      else
+      {
+          // go to second read in fasta format
+          while ( *start != '>') start++;
+      }
+      
+      // split-read or paired-read
+      reads[2] = start;
+      while ( *start++ != '\n' );
+      reads[3] = start;
             
+#ifdef debug_mmap
+      cout << "*reads[0] = " << (char)*reads[0] << endl; //TESTING
+      cout << "*reads[1] = " << (char)*reads[1] << endl; //TESTING
+      cout << "*reads[2] = " << (char)*reads[2] << endl; //TESTING
+      cout << "*reads[3] = " << (char)*reads[3] << endl; //TESTING
+#endif         
     }//~if ( file_s > 0 )
         
-        // a pointer is added to each header and the directly following read, hence the number of pointers for a fasta or fastq file is the same
-        char* line = &raw[reads_offset_f];
-        char* finalnt = &raw[partial_file_size-reads_offset_e-1];
-        
+    // a pointer is added to each header and the directly following read, hence the number of pointers for a fasta or fastq file is the same
+    char* line = &raw[reads_offset_f];
+    char* finalnt = &raw[partial_file_size-reads_offset_e-1];
     int minlenread = 1000000;
     int readlen = 0;
         
 #ifdef debug_mmap
-        cout << "*line = " << (char)*line << endl; //TESTING
-        cout << "*(finalnt-1) = " << (char)*(finalnt-1) << endl; //TESTING
-        cout << "*finalnt = " << (char)*finalnt << endl; // TESTING
-        cout << "*(finalnt+1) = " << (char)*(finalnt+1) << endl; //TESTING
-        cout << "raw[partial_file_size-1] = " << (char)raw[partial_file_size-1] << endl; //TESTING
+    cout << "*line = " << (char)*line << endl; //TESTING
+    cout << "*(finalnt-1) = " << (char)*(finalnt-1) << endl; //TESTING
+    cout << "*finalnt = " << (char)*finalnt << endl; // TESTING
+    cout << "*(finalnt+1) = " << (char)*(finalnt+1) << endl; //TESTING
+    cout << "raw[partial_file_size-1] = " << (char)raw[partial_file_size-1] << endl; //TESTING
 #endif
         
-        int index = 0;
-        if ( file_s > 0 ) index = 4;
-        else index = 0;
+    int index = 0;
+    if ( file_s > 0 ) index = 4;
+    else index = 0;
         
         // (FASTA)
     if ( filesig == '>' )
     {
-            while ( line != finalnt )
-            {
-          if ( *line == '>' )
-          {
-                    // the read tag
-                    reads[index++] = line;
-                    while ( *line++ != '\n' );
-                    
-                    // the read
-                    reads[index++] = line;
-          }
+      while ( line != finalnt )
+      {
+        if ( *line == '>' )
+        {
+          // the read tag
+          reads[index++] = line;
+          while ( *line++ != '\n' );
+          
+          // the read
+          reads[index++] = line;
+        }
                 
-          readlen = 0;
+        readlen = 0;
                 
-          while ( (line != finalnt) && (*line != '>') )
-          {
-                    if ( *line != '\n' ) readlen++;
-                    line++;
-          }
+        while ( (line != finalnt) && (*line != '>') )
+        {
+          if ( *line != '\n' ) readlen++;
+          line++;
+        }
                 
-          // compute the minimum length read
-                if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread;
-      }
-      
+        // compute the minimum length read
+        if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread;
+      }  
     }//~if ( filesig == '>' )
-        
     // (FASTQ)
     else
     {
@@ -2230,16 +2176,16 @@ paralleltraversal ( char* inputreads,
       int count = 0;
             
 #ifdef debug_mmap
-            cout << "index (to set up pointers) = " << index << endl; //TESTING
+      cout << "index (to set up pointers) = " << index << endl; //TESTING
 #endif
             
       while ( line != finalnt )
       {
-                if ( count%4 == 0 )
-                {
+        if ( count%4 == 0 )
+        {
           // the read tag
           reads[index++] = line;
-                    while ( *line++ != '\n' );
+          while ( *line++ != '\n' );
                     
           // the read
           reads[index++] = line;
@@ -2248,25 +2194,23 @@ paralleltraversal ( char* inputreads,
           while ( *line++ != '\n' ) readlen++;
           if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread;
                     
-          readlen = 0;
-                    
+          readlen = 0;     
           count+=2;
                     
           // skip the quality ..
-                }
+        }
                 
-                if ( *line++ == '\n' ) count++;
-                
+        if ( *line++ == '\n' ) count++;        
       }
             
 #ifdef debug_mmap
-            cout << "number lines indexed = " << count << endl; //TESTING
-            cout << "index size = " << index-1 << endl; //TESTING
+      cout << "number lines indexed = " << count << endl; //TESTING
+      cout << "index size = " << index-1 << endl; //TESTING
 #endif
             
-        }//~if ( filesig == '@' )
+    }//~if ( filesig == '@' )
         
-        // debug_mmap
+    // debug_mmap
     if ( minlenread == 1000000 )
     {
       fprintf(stderr,"   %sERROR%s: All reads are too short (<22nt) for further analysis.\n\n","\033[0;31m","\033[0m");
@@ -2275,65 +2219,65 @@ paralleltraversal ( char* inputreads,
         
     TIME(f);
         
-        eprintf("  Time to mmap reads and set up pointers [%.2f sec]\n", (f-s) );
+    eprintf("  Time to mmap reads and set up pointers [%.2f sec]\n", (f-s) );
+                
+    // array of bits to represent all reads
+    // a bit representing an accepted read is set to 1
+    vector<bool> read_hits(strs, false);
+    // array of bits to represent all reads
+    // a bit representing an accepted read with < %id 
+    // and < %coverage is set to 0
+    vector<bool> read_hits_denovo(strs, true);
+    
+    // array of uint16_t to represent all reads, if the read was aligned with a maximum SW score, its number of alignments is incremeted by 1
+    uint16_t *read_max_SW_score = new uint16_t[strs];
+    memset(read_max_SW_score, 0, sizeof(uint16_t)*strs);
+    
+    // map accessed by read number, storing a pair <index for smallest SSW score, pointer to array of num_best_hits_gv>
+    map<uint32_t, pair<uint16_t, s_align*> > read_hits_align_info;
+    
+    // number of alignments to output per read
+    int32_t *num_alignments_x = NULL;
         
+    // output num_alignments_gv alignments per read
+    if ( num_alignments_gv > 0 )
+    {
+      num_alignments_x = new int32_t[strs];
+      for ( int32_t s = 0; s < strs; s++ ) num_alignments_x[s] = num_alignments_gv;
+    }
+    
+    // number of reference sequences to search alignments for before choosing the best one
+    int32_t *best_x = NULL;
+    
+    // search min_lis_gv reference sequences for alignments
+    if ( min_lis_gv > 0 )
+    {
+      best_x = new int32_t[strs];
+      for ( int32_t s = 0; s < strs; s++ ) best_x[s] = min_lis_gv;
+    }
         
-        
-        
-        // array of bits to represent all reads, a bit representing an accepted read is set to 1
-        vector<bool> read_hits(strs);
-        // array of bits to represent all reads, a bit representing an accepted read with < %id and < %coverage is set to 1
-        vector<bool> read_hits_denovo(strs);
-        
-        // array of uint16_t to represent all reads, if the read was aligned with a maximum SW score, its number of alignments is incremeted by 1
-        uint16_t *read_max_SW_score = new uint16_t[strs];
-        memset(read_max_SW_score, 0, sizeof(uint16_t)*strs);
-        
-        // map accessed by read number, storing a pair <index for smallest SSW score, pointer to array of num_best_hits_gv>
-        map<uint32_t, pair<uint16_t, s_align*> > read_hits_align_info;
-        
-        // number of alignments to output per read
-        int32_t *num_alignments_x = NULL;
-        
-        // output num_alignments_gv alignments per read
-        if ( num_alignments_gv > 0 )
-        {
-            num_alignments_x = new int32_t[strs];
-            for ( int32_t s = 0; s < strs; s++ ) num_alignments_x[s] = num_alignments_gv;
-        }
-        
-        // number of reference sequences to search alignments for before choosing the best one
-        int32_t *best_x = NULL;
-        
-        // search min_lis_gv reference sequences for alignments
-        if ( min_lis_gv > 0 )
-        {
-            best_x = new int32_t[strs];
-            for ( int32_t s = 0; s < strs; s++ ) best_x[s] = min_lis_gv;
-        }
-        
-        // loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
-        for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++)
-        {
-            // covert part number into a string
-            stringstream prt_str;
-            uint16_t part = 0;
-            prt_str << part;
-            string part_str = prt_str.str();
-            
-            eprintf("\n  Begin analysis of: %s%s%s\n","\033[0;34m",(char*)(myfiles[index_num].first).c_str(),"\033[0m");
-            if ( file_s == 0 )
-            {
-                eprintf("    Seed length = %d\n",lnwin[index_num]);
-                eprintf("    Pass 1 = %d, Pass 2 = %d, Pass 3 = %d\n",skiplengths[index_num][0],skiplengths[index_num][1],skiplengths[index_num][2]);
-                eprintf("    Gumbel lambda = %f\n",gumbel[index_num].first);
-                eprintf("    Gumbel K = %f\n",gumbel[index_num].second);
-                eprintf("    Minimal SW score based on E-value = %d\n",minimal_score[index_num]);
-            }
-            
-            // for each partial file of burst trie index (part_0 .. part_x)
-            for ( part = 0; part < num_index_parts[index_num]; part++ )
-            {
+    // loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
+    for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++)
+    {
+      // covert part number into a string
+      stringstream prt_str;
+      uint16_t part = 0;
+      prt_str << part;
+      string part_str = prt_str.str();
+      
+      eprintf("\n  Begin analysis of: %s%s%s\n","\033[0;34m",(char*)(myfiles[index_num].first).c_str(),"\033[0m");
+      if ( file_s == 0 )
+      {
+        eprintf("    Seed length = %d\n",lnwin[index_num]);
+        eprintf("    Pass 1 = %d, Pass 2 = %d, Pass 3 = %d\n",skiplengths[index_num][0],skiplengths[index_num][1],skiplengths[index_num][2]);
+        eprintf("    Gumbel lambda = %f\n",gumbel[index_num].first);
+        eprintf("    Gumbel K = %f\n",gumbel[index_num].second);
+        eprintf("    Minimal SW score based on E-value = %d\n",minimal_score[index_num]);
+      }
+      
+      // for each partial file of burst trie index (part_0 .. part_x)
+      for ( part = 0; part < num_index_parts[index_num]; part++ )
+      {
         eprintf("    Loading index part %d/%u ... ",part+1,num_index_parts[index_num] );
                 
         TIME(s);
@@ -2351,9 +2295,9 @@ paralleltraversal ( char* inputreads,
         // number of elements in the table
         uint32_t number_elements = 0;
                 
-                uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
-                uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
-                uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
+        uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
+        uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
+        uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
                 
                 
 #pragma omp master
@@ -2393,10 +2337,7 @@ paralleltraversal ( char* inputreads,
         eprintf(" done [%.2f sec]\n",(f-s) );
                 
         eprintf("    Begin index search ... ");
-                
-                
-                
-                
+                      
         // begin the parallel traversal
         TIME(s);
                 
@@ -2415,93 +2356,93 @@ paralleltraversal ( char* inputreads,
         // search the forward and/or reverse strands
         for ( int32_t strand = 0; strand < max; strand++ )
         {
-                    /* loop through all of the reads in the file */
+          // loop through all of the reads in the file 
 #pragma omp parallel for num_threads(numcpu_gv) shared(lookup_tbl,positions_tbl,buffer,reference_seq,reference_seq_len,read_hits_align_info,read_hits,read_max_SW_score) schedule(dynamic,256)
           for ( int32_t readn = 1; readn < strs; readn+=2 )
           {
 #ifdef debug_align
-                        cout << "readn = " << readn << endl; //TESTING
-#endif
+            cout << "readn = " << readn << endl; //TESTING
+#endif                   
+            // for reverse reads
+            if ( !forward_gv )
+            {
+              // output the first num_alignments_gv alignments
+              //else if ( num_alignments_gv > 0 )
+              if ( num_alignments_gv > 0 )
+              {
+                // all num_alignments_gv alignments have been output
+                if ( num_alignments_x[readn] < 0 ) continue;
+              }
+              // the maximum scoring alignment has been found, go to next read
+              else if ( read_max_SW_score[readn] == num_best_hits_gv ) continue;
+            }
                         
-                        // for reverse reads
-                        if ( !forward_gv )
-                        {
-                            // output the first num_alignments_gv alignments
-                            //else if ( num_alignments_gv > 0 )
-                            if ( num_alignments_gv > 0 )
-                            {
-                                // all num_alignments_gv alignments have been output
-                                if ( num_alignments_x[readn] < 0 ) continue;
-                            }
-                            // the maximum scoring alignment has been found, go to next read
-                            else if ( read_max_SW_score[readn] == num_best_hits_gv ) continue;
-                        }
-                        
-                        // read on integer alphabet {0,1,2,3}
+            // read on integer alphabet {0,1,2,3}
             char myread[READLEN] = "";
             char* str = reads[readn];
             char* _myread = &myread[0];
-                        // keep record of what position on the read an ambiguous char exists, the char at this position will be changed to '4' during sequence alignment
-                        int32_t ambiguous_nt[READLEN] = {0};
-                        // size of ambiguous_nt
-                        uint32_t size_ambiguous_nt = 0;
-                        // flag to count only 1 alignment per read
-                        bool read_to_count = true;
-                        
+            // keep record of what position on the read an ambiguous char exists, the char at this position will be changed to '4' during sequence alignment
+            int32_t ambiguous_nt[READLEN] = {0};
+            // size of ambiguous_nt
+            uint32_t size_ambiguous_nt = 0;
+            // flag to count only 1 alignment per read
+            bool read_to_count = true;         
             // length of read
             uint32_t readlen = 0;
                         
             // change the read into an integer alphabet -- FASTA
             if ( filesig == '>' )
             {
-                            // str != finalnt (finalnt marks the end of mmap'd region)
-                            // str != '>' ('>' marks the start of the next read)
-                            // str != '\0' ('\0' marks the end of split-read, which must be terminated by '\0')
-                            while ( (str != finalnt) && (*str != '>') && (*str != '\0'))
-                            {
+              // str != finalnt (finalnt marks the end of mmap'd region)
+              // str != '>' ('>' marks the start of the next read)
+              // str != '\0' ('\0' marks the end of split-read, which must be terminated by '\0')
+              while ( (str != finalnt) && (*str != '>') && (*str != '\0'))
+              {
                 if ( *str != '\n' )
                 {
-                                    *_myread = nt_table[(int)*str];
-                                    if ( *_myread == 4 )
-                                    {
-                                        *_myread = 0;
-                                        ambiguous_nt[size_ambiguous_nt++] = readlen;
-                                    }
-                                    _myread++;
-                                    readlen++;
+                  *_myread = nt_table[(int)*str];
+                  if ( *_myread == 4 )
+                  {
+                    *_myread = 0;
+                    ambiguous_nt[size_ambiguous_nt++] = readlen;
+                  }
+                  _myread++;
+                  readlen++;
                   if ( readlen > READLEN )
                   {
                     fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n","\033[0;31m","\033[0m",READLEN);
-                                        fprintf(stderr,"  Please check your reads or contact the authors.\n");
+                    fprintf(stderr,"  Please check your reads or contact the authors.\n");
                     exit(EXIT_FAILURE);
                   }
                 }
                 str++;
-                            }
-                            *_myread = '\n';
+              }
+              *_myread = '\n';
             }
             // change the read into an integer alphabet -- FASTQ
             else
             {
-                            while ( *str != '\n' )
-                            {
-                                *_myread = nt_table[(int)*str++];
-                                if ( *_myread == 4 )
-                                {
-                                    // searching the read using the universal levenshtein automaton can only be done on 0-3 alphabet as burst trie is built on 0-3 alphabet
-                                    *_myread = 0;
-                                    ambiguous_nt[size_ambiguous_nt++] = readlen;
-                                }
-                                _myread++;
-                                readlen++;
+              while ( *str != '\n' )
+              {
+                *_myread = nt_table[(int)*str++];
+                if ( *_myread == 4 )
+                {
+                  // searching the read using the universal levenshtein automaton
+                  // can only be done on 0-3 alphabet as burst trie is built 
+                  // on 0-3 alphabet
+                  *_myread = 0;
+                  ambiguous_nt[size_ambiguous_nt++] = readlen;
+                }
+                _myread++;
+                readlen++;
                 if ( readlen > READLEN )
                 {
                   fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n","\033[0;31m","\033[0m",READLEN);
                   fprintf(stderr,"  Please check your reads or contact the authors.\n");
                   exit(EXIT_FAILURE);
                 }
-                            }
-                            *_myread = '\n';
+              }
+              *_myread = '\n';
             }
                         
             // the read length is too short
@@ -2513,26 +2454,26 @@ paralleltraversal ( char* inputreads,
             }
                         
             // create the reverse strand
-            //if ( reverse_gv && !forward_gv )
-                        if ( !forward_gv )
+            if ( !forward_gv )
             {
-                            // faster than xor algorithm
-                            char myread_rc[READLEN] = "";
+              // faster than xor algorithm
+              char myread_rc[READLEN] = "";
               char* revcomp = &myread[readlen-1];
                             
-              for ( uint32_t j = 0; j < readlen; j++ ) myread_rc[j] = complement[(int)*revcomp--];
-                            myread_rc[readlen] = '\n';
+              for ( uint32_t j = 0; j < readlen; j++ )
+                myread_rc[j] = complement[(int)*revcomp--];
+              myread_rc[readlen] = '\n';
                             
               memcpy(&myread[0],&myread_rc[0],READLEN);
                             
 #ifdef debug_align
-                            cout << "read (before subst. 4's for N's): " << endl;
-                            char *cp = myread;
-                            while ( *cp != '\n' ) cout << (int)*cp++;
-                            cout << endl;
+              cout << "read (before subst. 4's for N's): " << endl;
+              char *cp = myread;
+              while ( *cp != '\n' ) cout << (int)*cp++;
+              cout << endl;
 #endif
                             
-                        }//~if (REVERSE)
+            }//~if (REVERSE)
                         
             // array of positions of window hits on the reference sequence
             vector< id_win > id_win_hits;
@@ -2540,38 +2481,36 @@ paralleltraversal ( char* inputreads,
             uint32_t readhit = 0;
             uint32_t windowshift = skiplengths[index_num][0];
                         
-                        // keep track of windows which have been already traversed in the burst trie
-                        vector<bool> read_index_hits(readlen);
-                        
-                        // Pass number (possible value 0,1,2)
-                        uint32_t pass_n = 0;
-                        
-                        // the maximum SW score attainable for this read
-                        uint32_t max_SW_score = readlen*match;
-                        
+            // keep track of windows which have been already traversed in the burst trie
+            vector<bool> read_index_hits(readlen);
+            
+            // Pass number (possible value 0,1,2)
+            uint32_t pass_n = 0;
+            
+            // the maximum SW score attainable for this read
+            uint32_t max_SW_score = readlen*match;             
                         
             // loop for each new Pass to granulate seed search intervals
             bool search = true;
             do
             {
 #ifdef debug_align
-                            cout << "\tpass = " << pass_n << endl; //TESTING
-#endif
-                            
+              cout << "\tpass = " << pass_n << endl; //TESTING
+#endif          
               uint32_t numwin = (readlen-lnwin[index_num]+windowshift)/windowshift;
               uint32_t read_index = 0;
                             
               // iterate over windows of the template string
               for ( uint32_t win_num = 0; win_num < numwin; win_num++ )
               {
-                                // skip position, seed at this position has already been searched for in a previous Pass
-                                if ( read_index_hits[read_index] ) goto check_score;
-                                // search position, set search bit to true
-                                else read_index_hits[read_index].flip();
-                                
+                // skip position, seed at this position has already been searched for in a previous Pass
+                if ( read_index_hits[read_index] ) goto check_score;
+                // search position, set search bit to true
+                else read_index_hits[read_index].flip();                                
                                 
                 {
-                                    // this flag it set to true if a match is found during subsearch 1(a), to skip subsearch 1(b)
+                  // this flag it set to true if a match is found during
+                  // subsearch 1(a), to skip subsearch 1(b)
                   bool accept_zero_kmer = false;
                   // ids for k-mers that hit the database
                   vector< id_win > id_hits;
@@ -2581,63 +2520,56 @@ paralleltraversal ( char* inputreads,
                                     
                   // build the first bitvector window
                   init_win_f( &myread[read_index+partialwin[index_num]],
-                                               // [w_1] forward k = 1
-                                               // bitwindows[0][0][0]
-                                               &bitwindowsf[0],
-                                               // bitwindows[0][1][0]
-                                               &bitwindowsf[4],
-                                               numbvs[index_num]
-                                               );
+                              // [w_1] forward k = 1
+                              // bitwindows[0][0][0]
+                              &bitwindowsf[0],
+                              // bitwindows[0][1][0]
+                              &bitwindowsf[4],
+                              numbvs[index_num]);
                                     
                   uint32_t keyf = 0;
                   char *keyf_ptr = &myread[read_index];
                                     
                   // build hash for first half windows (foward and reverse)
                   for ( uint32_t g = 0; g < partialwin[index_num]; g++ )
-                                    {
                     (keyf <<= 2) |= (uint32_t)*keyf_ptr++;
-                                    }
-                                    
+                
                   // do traversal if the exact half window exists in the burst trie
                   if ( (lookup_tbl[keyf].count > minoccur) && (lookup_tbl[keyf].trie_F != NULL) )
                   {
                     /* subsearch (1)(a) d([p_1],[w_1]) = 0 and d([p_2],[w_2]) <= 1;
-                                         *
-                                         *  w = |------ [w_1] ------|------ [w_2] ------|
-                                         *  p = |------ [p_1] ------|------ [p_2] ----| (0/1 deletion in [p_2])
-                                         *              or
-                                         *    = |------ [p_1] ------|------ [p_2] ------| (0/1 match/substitution in [p_2])
-                                         *        or
-                                         *    = |------ [p_1] ------|------ [p_2] --------| (0/1 insertion in [p_2])
-                                         *
-                                         */
+                     *
+                     *  w = |------ [w_1] ------|------ [w_2] ------|
+                     *  p = |------ [p_1] ------|------ [p_2] ----| (0/1 deletion in [p_2])
+                     *              or
+                     *    = |------ [p_1] ------|------ [p_2] ------| (0/1 match/substitution in [p_2])
+                     *        or
+                     *    = |------ [p_1] ------|------ [p_2] --------| (0/1 insertion in [p_2])
+                     *
+                     */
                                         
 #ifdef debug_align
-                                        cout << "\tsearch forward mini-burst trie..\n"; //TESTING
+                    cout << "\tsearch forward mini-burst trie..\n"; //TESTING
 #endif
                                         
                     traversetrie_align ( lookup_tbl[keyf].trie_F,
-                                                            0,
-                                                            0,
-                                                            // win2f_k1_ptr
-                                                            &bitwindowsf[0],
-                                                            // win2f_k1_full
-                                                            &bitwindowsf[offset],
-                                                            accept_zero_kmer,
-                                                            id_hits,
-                                                            readn,
-                                                            read_index,
-                                                            partialwin[index_num]
-                                                            );
+                                         0,
+                                         0,
+                                         // win2f_k1_ptr
+                                         &bitwindowsf[0],
+                                         // win2f_k1_full
+                                         &bitwindowsf[offset],
+                                         accept_zero_kmer,
+                                         id_hits,
+                                         readn,
+                                         read_index,
+                                         partialwin[index_num]);
                                         
 #ifdef debug_align
                                         cout << "\tdone!\n"; //TESTING
 #endif
                                         
                   }//~if exact half window exists in the burst trie
-                                    
-                                    
-                                    
                                     
                   // only search if an exact match has not been found
                   if ( !accept_zero_kmer )
@@ -2647,64 +2579,57 @@ paralleltraversal ( char* inputreads,
                                         
                     // build the first bitvector window
                     init_win_r( &myread[read_index+partialwin[index_num]-1],
-                                                   // [w_1] reverse k = 1
-                                                   // bitwindows[0][0][0]
-                                                   &bitwindowsr[0],
-                                                   // bitwindows[0][1][0]
-                                                   &bitwindowsr[4],
-                                                   numbvs[index_num]
-                                                   );
+                                // [w_1] reverse k = 1
+                                // bitwindows[0][0][0]
+                                &bitwindowsr[0],
+                                // bitwindows[0][1][0]
+                                &bitwindowsr[4],
+                                numbvs[index_num]);
                                         
                     uint32_t keyr = 0;
                     char *keyr_ptr = &myread[read_index+partialwin[index_num]];
                                         
                     // build hash for first half windows (foward and reverse)
                     for ( uint32_t g = 0; g < partialwin[index_num]; g++ )
-                                        {
                       (keyr <<= 2) |= (uint32_t)*keyr_ptr++;
-                                        }
                                         
                     // continue subsearch (1)(b)
                     if ( (lookup_tbl[keyr].count > minoccur) && (lookup_tbl[keyr].trie_R != NULL) )
                     {
-                                            /* subsearch (1)(b) d([p_1],[w_1]) = 1 and d([p_2],[w_2]) = 0;
-                                             *
-                                             *  w =    |------ [w_1] ------|------ [w_2] -------|
-                                             *  p =      |------- [p_1] ---|--------- [p_2] ----| (1 deletion in [p_1])
-                                             *              or
-                                             *    =    |------ [p_1] ------|------ [p_2] -------| (1 match/substitution in [p_1])
-                                             *        or
-                                             *    = |------- [p_1] --------|---- [p_2] ---------| (1 insertion in [p_1])
-                                             *
-                                             */
+                      /* subsearch (1)(b) d([p_1],[w_1]) = 1 and d([p_2],[w_2]) = 0;
+                       *
+                       *  w =    |------ [w_1] ------|------ [w_2] -------|
+                       *  p =      |------- [p_1] ---|--------- [p_2] ----| (1 deletion in [p_1])
+                       *              or
+                       *    =    |------ [p_1] ------|------ [p_2] -------| (1 match/substitution in [p_1])
+                       *        or
+                       *    = |------- [p_1] --------|---- [p_2] ---------| (1 insertion in [p_1])
+                       *
+                       */
                                             
 #ifdef debug_align
-                                            cout << "\tsearch reverse mini-burst trie..\n"; //TESTING
+                       cout << "\tsearch reverse mini-burst trie..\n"; //TESTING
 #endif
                                             
-                      traversetrie_align ( lookup_tbl[keyr].trie_R,
-                                                                0,
-                                                                0,
-                                                                /* win1r_k1_ptr */
-                                                                &bitwindowsr[0],
-                                                                /* win1r_k1_full */
-                                                                &bitwindowsr[offset],
-                                                                accept_zero_kmer,
-                                                                id_hits,
-                                                                readn,
-                                                                read_index,
-                                                                partialwin[index_num]
-                                                                );
+                       traversetrie_align ( lookup_tbl[keyr].trie_R,
+                                            0,
+                                            0,
+                                            /* win1r_k1_ptr */
+                                            &bitwindowsr[0],
+                                            /* win1r_k1_full */
+                                            &bitwindowsr[offset],
+                                            accept_zero_kmer,
+                                            id_hits,
+                                            readn,
+                                            read_index,
+                                            partialwin[index_num]);
                                             
 #ifdef debug_align
-                                            cout << "\tdone!\n"; //TESTING
-#endif
-                                            
-                    }//~if exact half window exists in the reverse burst trie
-                                        
+                      cout << "\tdone!\n"; //TESTING
+#endif                        
+                    }//~if exact half window exists in the reverse burst trie                    
                   }//~if (!accept_zero_kmer)
-                                    
-                                    
+                                             
                   // associate the ids with the read window number
                   if ( !id_hits.empty() )
                   {
@@ -2714,135 +2639,128 @@ paralleltraversal ( char* inputreads,
                     }
                                         
                     readhit++;
-                  }
-                                    
+                  }                  
                 }
                                 
-                            check_score:
-                // boolean set to true if SW alignment succeeded between the read and a candidate reference sequence
+                check_score:
+                // boolean set to true if SW alignment succeeded between
+                // the read and a candidate reference sequence
                 bool aligned = false;
-                                
-                                
+                          
                 // output read if matched at more than RATIO windows
                 if ( win_num == numwin-1 )
                 {
-                                    // flag to check whether read was formatted to 0-4 alphabet for >alignment< allowing N's
-                                    bool read_edited = false;
-                                    
+                  // flag to check whether read was formatted to 0-4 alphabet
+                  // for alignment allowing N's
+                  bool read_edited = false;       
 #ifdef debug_align
-                                    cout << "\t\t\treadhit = " << readhit << endl; //TESTING
-                                    cout << "\t\t\tseed_hits_gv = " << seed_hits_gv << endl; //TESTING
-                                    cout << "\t\t\tnum_best_hits_gv = " << num_best_hits_gv << endl; //TESTING
-#endif
-                                    
-                  // STEP 1: the number of matching windows on the read to the reference database is greater than the threshold, continue analysis of read
+                  cout << "\t\t\treadhit = " << readhit << endl; //TESTING
+                  cout << "\t\t\tseed_hits_gv = " << seed_hits_gv << endl; //TESTING
+                  cout << "\t\t\tnum_best_hits_gv = " << num_best_hits_gv << endl; //TESTING
+#endif                              
+                  // STEP 1: the number of matching windows on the read to the
+                  // reference database is greater than the threshold,
+                  // continue analysis of read
                   if ( readhit >= (uint32_t)seed_hits_gv )
                   {
-                                        // map<seq, number of occurrences> most_frequent_seq_t
-                                        map<uint32_t,uint32_t> most_frequent_seq_t;
-                                        map<uint32_t,uint32_t>::iterator map_it;
+                    // map<seq, number of occurrences> most_frequent_seq_t
+                    map<uint32_t,uint32_t> most_frequent_seq_t;
+                    map<uint32_t,uint32_t>::iterator map_it;
                                         
                     uint32_t max_seq = 0;
                     uint32_t max_occur = 0;
                                         
-                    // STEP 2: for every reference sequence, compute the number of window hits belonging to it
+                    // STEP 2: for every reference sequence, compute the number of
+                    // window hits belonging to it
                     for ( uint32_t i = 0; i < id_win_hits.size(); i++ )
                     {
                       uint32_t _id = id_win_hits[i].id;
-                                            
-                                            //cout << "_id = " << _id << endl; //TESTING
-                                            
-                                            // number of entries in the positions table for this id
+                                                                                        
+                      // number of entries in the positions table for this id
                       uint32_t num_hits = positions_tbl[_id].size;
                                             
-                                            // pointer to the seq_pos array in the positions table for this id
-                                            seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;
+                      // pointer to the seq_pos array in the positions table for this id
+                      seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;
                                             
                       // loop through every position of id
                       for ( uint32_t j = 0; j < num_hits; j++ )
                       {
-                                                uint32_t seq = positions_tbl_ptr++->seq;
-                                                
-                                                // sequence already exists in the map, increment it's value
-                                                if ( (map_it=most_frequent_seq_t.find(seq)) != most_frequent_seq_t.end() ) map_it->second++;
-                                                // sequence doesn't exist, add it
-                                                else most_frequent_seq_t[seq] = 1;
+                        uint32_t seq = positions_tbl_ptr++->seq;
+                        
+                        // sequence already exists in the map, increment it's value
+                        if ( (map_it=most_frequent_seq_t.find(seq)) != most_frequent_seq_t.end() )
+                          map_it->second++;
+                        // sequence doesn't exist, add it
+                        else most_frequent_seq_t[seq] = 1;
                       }
                     }
-                                        
-                                        
+                                                          
                     // <mypair> = <number of occurrences of a sequence, index of sequence>
                     vector<mypair> most_frequent_seq;
                                         
-                                        // copy list of occurrences from map to vector for sorting
-                                        for ( map_it = most_frequent_seq_t.begin(); map_it != most_frequent_seq_t.end(); map_it++ )
-                                        {
-                                            // pass candidate reference sequences for further analyses only if they have enough seed hits
-                                            if ( map_it->second >= (uint32_t)seed_hits_gv ) most_frequent_seq.push_back(mypair(map_it->second,map_it->first));
-                                        }
-                                        
-                                        most_frequent_seq_t.clear();
+                    // copy list of occurrences from map to vector for sorting
+                    for ( map_it = most_frequent_seq_t.begin(); map_it != most_frequent_seq_t.end(); map_it++ )
+                    {
+                      // pass candidate reference sequences for further analyses
+                      // only if they have enough seed hits
+                      if ( map_it->second >= (uint32_t)seed_hits_gv )
+                        most_frequent_seq.push_back(mypair(map_it->second,map_it->first));
+                    }
+                    
+                    most_frequent_seq_t.clear();
                                         
                     // sort the highest scoring sequences to the head of the array
-                                        sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
-                                        
-                                        
-                                        
-                                        /*cout << "hits\t reference index\t reference\t total size"; //TESTING
-                                         for ( int f = 0; f < most_frequent_seq.size(); f++ )
-                                         {
-                                         cout << most_frequent_seq[f].first << "\t" << (2*(int)most_frequent_seq[f].second) << "\t"; //TESTING
-                                         char *tt = reference_seq[(2*(int)most_frequent_seq[f].second)];
-                                         while (*tt != '\n' ) cout << (char)*tt++;
-                                         cout << endl;
-                                         }
-                                         */
-                                        
-                                        
-                    // STEP 3: for each reference sequence candidate (starting from highest scoring)
+                    sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
+                                                                                
+                    // STEP 3: for each reference sequence candidate
+                    // (starting from highest scoring)
                     for ( uint32_t k = 0; k < most_frequent_seq.size(); k++ )
                     {
-                                            // the maximum scoring alignment has been found, do not search for anymore alignments
-                                            if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
+                      // the maximum scoring alignment has been found,
+                      // do not search for anymore alignments
+                      if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                             
                       max_occur = most_frequent_seq[k].first;
                       max_seq = most_frequent_seq[k].second;
                                             
 #ifdef debug_align
-                                            cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
-                                            cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
-                                            cout << "\t\t\t\tnumseq_part = " << numseq_part << endl; //TESTING
-                                            cout << "\t\t\t\tindex size for reference_seq = " << (numseq_part<<1) << endl; //TESTING
+                      cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
+                      cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
+                      cout << "\t\t\t\tnumseq_part = " << numseq_part << endl; //TESTING
+                      cout << "\t\t\t\tindex size for reference_seq = " << (numseq_part<<1) << endl; //TESTING
 #endif
                                             
-                                            // not enough window hits, try to collect more hits or go to next read
+                      // not enough window hits, try to collect more hits or go to next read
                       if ( max_occur < (uint32_t)seed_hits_gv ) break;
                                             
                       // update number of reference sequences remaining to check
-                                            if ( (min_lis_gv > 0) && aligned && (k > 0) )
-                                            {
-                                                // only decrement best_x if the next ref sequence to check has a lower seed count than the previous one
-                                                if ( max_occur < most_frequent_seq[k-1].first )
-                                                {
+                      if ( (min_lis_gv > 0) && aligned && (k > 0) )
+                      {
+                        // only decrement best_x if the next ref sequence to check
+                        // has a lower seed count than the previous one
+                        if ( max_occur < most_frequent_seq[k-1].first )
+                        {
 #pragma omp critical
-                                                    {
-                                                        best_x[readn]--;
-                                                    }
-                                                    if ( best_x[readn] < 1 ) break;
-                                                }
-                                            }
-                                            
-                                            // check if the maximum number of alignments per read (--num_alignments INT) have been output
-                                            if ( num_alignments_gv > 0 )
-                                            {
-                                                if ( num_alignments_x[readn] <= 0 ) break;
-                                            }
-                                            
+                          {
+                            best_x[readn]--;
+                          }
+                          if ( best_x[readn] < 1 ) break;
+                        }
+                      }
+                      
+                      // check if the maximum number of alignments per read
+                      // (--num_alignments INT) have been output
+                      if ( num_alignments_gv > 0 )
+                      {
+                        if ( num_alignments_x[readn] <= 0 ) break;
+                      }                        
 #ifdef debug_align
-                                            cout << "\t\t\t\tpassed all checks for ref sequence search.. " << endl; //TESTING
+                      cout << "\t\t\t\tpassed all checks for ref sequence search.. " << endl; //TESTING
 #endif
                                             
-                      // STEP 4: collect all the genome positions belonging to the reference candidate from the table of positions computed during indexing
+                      // STEP 4: collect all the genome positions belonging to the
+                      // reference candidate from the table of positions computed
+                      // during indexing
                       vector<mypair> hits_on_genome;
                       uint32_t count = 0;
                                             
@@ -2850,43 +2768,39 @@ paralleltraversal ( char* inputreads,
                       {
                         uint32_t _id = id_win_hits[i].id;
                         uint32_t num_hits = positions_tbl[_id].size;
-                                                seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;
+                        seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;
                                                 
                         // loop through every position of id
                         for ( uint32_t j = 0; j < num_hits; j++ )
                         {
-                          //if ( positions_tbl[_id].arr[j].seq == max_seq )
-                                                    if ( positions_tbl_ptr->seq == max_seq )
+                          if ( positions_tbl_ptr->seq == max_seq )
                           {
                             count++;
-                                                        
-                            //hits_on_genome.push_back( mypair(positions_tbl[_id].arr[j].pos, id_win_hits[i].win) );
-                                                        hits_on_genome.push_back(mypair(positions_tbl_ptr->pos,id_win_hits[i].win));
+                            hits_on_genome.push_back(mypair(positions_tbl_ptr->pos,id_win_hits[i].win));
                           }
-                                                    positions_tbl_ptr++;
+                          positions_tbl_ptr++;
                         }
                       }
-                                            
-                                            
+                                                      
                       // sort the positions on genome in ascending order
-                      sort(hits_on_genome.begin(), hits_on_genome.end(), smallest);
+                      sort(hits_on_genome.begin(), hits_on_genome.end(), smallest);      
                                             
-                                            
-                      // iterate over the set of hits, output windows of length == read which have at least ratio hits
+                      // iterate over the set of hits, output windows of
+                      // length == read which have at least ratio hits
                       vector<mypair>::iterator it3 = hits_on_genome.begin();
                       deque<mypair> vi_read;
                       deque<mypair>::iterator deq;
                                             
-                      // STEP 5: run a sliding window of read's length across the genome, and search for windows with enough 18-mer hits
+                      // STEP 5: run a sliding window of read's length across
+                      // the genome, and search for windows with enough
+                      // k-mer hits
                       uint32_t lcs_ref_start = 0;
-                      uint32_t lcs_que_start = 0;
-                                            
+                      uint32_t lcs_que_start = 0;                
                       uint32_t begin = it3->first;
                                             
 #ifdef debug_align
-                                            cout << "\t\t\t\tnumber of seed hits for this ref seq = " << hits_on_genome.size() << endl; //TESTING
-#endif
-                                            
+                      cout << "\t\t\t\tnumber of seed hits for this ref seq = " << hits_on_genome.size() << endl; //TESTING
+#endif                                
                       while ( it3 != hits_on_genome.end() )
                       {
                         uint32_t stop = begin + readlen - lnwin[index_num] + 1;
@@ -2899,599 +2813,593 @@ paralleltraversal ( char* inputreads,
                           it3++;
                         }
                         // heuristic 1: a new window hit was not pushed back, pop queue until new window can be pushed back
-                                                // this heuristic significantly speeds up the algorithm because we don't perform alignments for
-                                                // every sub-LIS of a window if an alignment reaching threshold has already been made. It assumes
-                                                // that every sub-LIS yields the same alignment score, which is true for 99.99% of cases.
+                        // this heuristic significantly speeds up the algorithm because we don't perform alignments for
+                        // every sub-LIS of a window if an alignment reaching threshold has already been made. It assumes
+                        // that every sub-LIS yields the same alignment score, which is true for 99.99% of cases.
 #ifndef HEURISTIC1_OFF
-                        if ( !push && aligned )
-                        {
-                          goto pop;
-                        }
+                        if ( !push && aligned ) goto pop;
                         else aligned = false;
 #endif
 #ifdef HEURISTIC1_OFF
-                                                aligned = false;
+                        aligned = false;
 #endif
                                                 
                         // enough windows at this position on genome to search for LIS
                         if ( vi_read.size() >= (uint32_t)seed_hits_gv )
                         {
                           vector<uint32_t> list;
-                          find_lis(vi_read, list, readn);
-                                                    
-                                                    
+                          find_lis(vi_read, list, readn);                                
 #ifdef HEURISTIC1_OFF
-                                                    uint32_t list_n = 0;
+                          uint32_t list_n = 0;
                                                     
-                                                    do
-                                                    {
-#endif
-                                                        
-                                                        // LIS long enough to perform Smith-Waterman alignment
-                                                        if ( list.size() >= (uint32_t)seed_hits_gv )
-                                                        {
+                          do
+                          {
+#endif                                      
+                            // LIS long enough to perform Smith-Waterman alignment
+                            if ( list.size() >= (uint32_t)seed_hits_gv )
+                            {
 #ifdef debug_align
-                                                            cout << "\t\t\t\tLIS = " << list.size() << endl; //TESTING
-                                                            for ( int p = 0; p < list.size(); p++ )
-                                                                cout << "\t\t\t\tref: " << vi_read[list[p]].first << "\tread: " << vi_read[list[p]].second << endl;
-                                                            
+                              cout << "\t\t\t\tLIS = " << list.size() << endl; //TESTING
+                              for ( int p = 0; p < list.size(); p++ )
+                                  cout << "\t\t\t\tref: " << vi_read[list[p]].first << "\tread: " << vi_read[list[p]].second << endl;   
 #endif
 #ifdef HEURISTIC1_OFF
-                                                            lcs_ref_start = vi_read[list[list_n]].first;
-                                                            lcs_que_start = vi_read[list[list_n]].second;
+                              lcs_ref_start = vi_read[list[list_n]].first;
+                              lcs_que_start = vi_read[list[list_n]].second;
 #endif
 #ifndef HEURISTIC1_OFF
-                                                            lcs_ref_start = vi_read[list[0]].first;
-                                                            lcs_que_start = vi_read[list[0]].second;
+                              lcs_ref_start = vi_read[list[0]].first;
+                              lcs_que_start = vi_read[list[0]].second;
 #endif
                                                             
-                                                            // reference string
-                                                            uint32_t head = 0;
-                                                            uint32_t tail = 0;
-                                                            uint32_t align_ref_start = 0;
-                                                            uint32_t align_que_start = 0;
-                                                            uint32_t align_length = 0;
-                                                            uint32_t reflen = reference_seq_len[max_seq];
-                                                            uint32_t edges = 0;
-                                                            if ( as_percent_gv )
-                                                                edges = (((double)edges_gv/100.0)*readlen);
-                                                            else
-                                                                edges = edges_gv;
-                                                            
-                                                            // part of the read hangs off (or matches exactly) the beginning of the reference seq
-                                                            //            ref |-----------------------------------|
-                                                            // que |-------------------|
-                                                            //             LIS |-----|
-                                                            //
-                                                            if ( lcs_ref_start < lcs_que_start )
-                                                            {
-                                                                align_ref_start = 0;
-                                                                align_que_start = lcs_que_start - lcs_ref_start;
-                                                                head = 0;
-                                                                // the read is longer than the reference sequence
-                                                                //            ref |--------------|
-                                                                // que |----------------------------|
-                                                                //                LIS |-----|
-                                                                //
-                                                                if ( reflen < readlen )
-                                                                {
-                                                                    tail = 0;
-                                                                    align_length = reflen;
-                                                                }
-                                                                else
-                                                                {
-                                                                    tail = reflen - align_ref_start - readlen;
-                                                                    tail > (edges-1) ? tail = edges : tail;
-                                                                    align_length = readlen+head+tail-align_que_start;
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                align_ref_start = lcs_ref_start - lcs_que_start;
-                                                                align_que_start = 0;
-                                                                align_ref_start > (edges-1) ? head = edges : head;
-                                                                
-                                                                // part of the read hangs off the end of the reference seq
-                                                                // ref |-----------------------------------|
-                                                                //                          que |-------------------|
-                                                                //                            LIS |-----|
-                                                                //
-                                                                if ( align_ref_start+readlen > reflen )
-                                                                {
-                                                                    tail = 0;
-                                                                    align_length = reflen-align_ref_start-head;
-                                                                }
-                                                                // the reference seq fully covers the read
-                                                                // ref |-----------------------------------|
-                                                                //    que |-------------------|
-                                                                //          LIS |-----|
-                                                                //
-                                                                else
-                                                                {
-                                                                    tail = reflen - align_ref_start - readlen;
-                                                                    tail > (edges-1) ? tail = edges : tail;
-                                                                    align_length = readlen+head+tail;
-                                                                }
-                                                            }
-                                                            
-                                                            
-                                                            // edit read in numeric alphabet to include ambiguous characters in alignment
-                                                            if ( (size_ambiguous_nt != 0) && !read_edited )
-                                                            {
-                                                                read_edited = true;
-                                                                
-                                                                if ( !forward_gv )
-                                                                {
-                                                                    for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
-                                                                    {
-                                                                        myread[(readlen-ambiguous_nt[p]-1)] = 4;
-                                                                    }
-                                                                }
-                                                                else
-                                                                {
-                                                                    for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
-                                                                    {
-                                                                        myread[ambiguous_nt[p]] = 4;
-                                                                    }
-                                                                }
-                                                            }
+                              // reference string
+                              uint32_t head = 0;
+                              uint32_t tail = 0;
+                              uint32_t align_ref_start = 0;
+                              uint32_t align_que_start = 0;
+                              uint32_t align_length = 0;
+                              uint32_t reflen = reference_seq_len[max_seq];
+                              uint32_t edges = 0;
+                              if ( as_percent_gv )
+                                edges = (((double)edges_gv/100.0)*readlen);
+                              else
+                                edges = edges_gv;
+                              
+                              // part of the read hangs off (or matches exactly) the beginning of the reference seq
+                              //            ref |-----------------------------------|
+                              // que |-------------------|
+                              //             LIS |-----|
+                              //
+                              if ( lcs_ref_start < lcs_que_start )
+                              {
+                                align_ref_start = 0;
+                                align_que_start = lcs_que_start - lcs_ref_start;
+                                head = 0;
+                                // the read is longer than the reference sequence
+                                //            ref |--------------|
+                                // que |----------------------------|
+                                //                LIS |-----|
+                                //
+                                if ( reflen < readlen )
+                                {
+                                  tail = 0;
+                                  align_length = reflen;
+                                }
+                                else
+                                {
+                                  tail = reflen - align_ref_start - readlen;
+                                  tail > (edges-1) ? tail = edges : tail;
+                                  align_length = readlen+head+tail-align_que_start;
+                                }
+                              }
+                              else
+                              {
+                                align_ref_start = lcs_ref_start - lcs_que_start;
+                                align_que_start = 0;
+                                align_ref_start > (edges-1) ? head = edges : head;
+                                
+                                // part of the read hangs off the end of the reference seq
+                                // ref |-----------------------------------|
+                                //                          que |-------------------|
+                                //                            LIS |-----|
+                                //
+                                if ( align_ref_start+readlen > reflen )
+                                {
+                                  tail = 0;
+                                  align_length = reflen-align_ref_start-head;
+                                }
+                                // the reference seq fully covers the read
+                                // ref |-----------------------------------|
+                                //    que |-------------------|
+                                //          LIS |-----|
+                                //
+                                else
+                                {
+                                  tail = reflen - align_ref_start - readlen;
+                                  tail > (edges-1) ? tail = edges : tail;
+                                  align_length = readlen+head+tail;
+                                }
+                              }
+                                                                                                                
+                              // edit read in numeric alphabet to include ambiguous characters in alignment
+                              if ( (size_ambiguous_nt != 0) && !read_edited )
+                              {
+                                read_edited = true;
+                                
+                                if ( !forward_gv )
+                                {
+                                  for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
+                                  {
+                                    myread[(readlen-ambiguous_nt[p]-1)] = 4;
+                                  }
+                                }
+                                else
+                                {
+                                  for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
+                                  {
+                                    myread[ambiguous_nt[p]] = 4;
+                                  }
+                                }
+                              }
                                                             
 #ifdef debug_align
-                                                            //if ( forward_gv ) //TESTING
-                                                            //{
-                                                            cout << "\n\t\t\t\t\treadlen = " << readlen << endl;
-                                                            cout << "\t\t\t\t\treflen = " << reflen << endl;
-                                                            cout << "\t\t\t\t\tlcs_que_start = " << lcs_que_start << endl;
-                                                            cout << "\t\t\t\t\tlcs_ref_start = " << lcs_ref_start << endl;
-                                                            cout << "\t\t\t\t\talign_que_start = " << align_que_start << endl;
-                                                            cout << "\t\t\t\t\talign_ref_start = " << align_ref_start << endl;
-                                                            cout << "\t\t\t\t\thead = " << head << "; tail = " << tail << endl;
-                                                            cout << "\t\t\t\t\talign_length = " << align_length << endl;
-                                                            cout << "read tag: ";
-                                                            char* tt = reads[readn-1];
-                                                            while (*tt != '\n' ) cout << (char)*tt++;
-                                                            cout << endl;
-                                                            cout << "read (starting from align_que_start): ";
-                                                            tt = myread+align_que_start;
-                                                            while ( *tt != '\n' ) cout << (int)*tt++;
-                                                            cout << endl;
-                                                            
-                                                            
-                                                            cout << "ref tag: ";
-                                                            tt = reference_seq[(2*(int)max_seq)];
-                                                            while (*tt != '\n' ) cout << (char)*tt++;
-                                                            cout << endl;
-                                                            cout << "ref (starting from align_ref_start-head): ";
-                                                            tt = reference_seq[(2*(int)max_seq)+1]+align_ref_start-head;
-                                                            while (*tt != '\n' ) cout << (int)*tt++;
-                                                            cout << endl;
-                                                            cout << "align_length-head-tail = " << (align_length-head-tail) << endl;
-                                                            //}
+                              //if ( forward_gv ) //TESTING
+                              //{
+                              cout << "\n\t\t\t\t\treadlen = " << readlen << endl;
+                              cout << "\t\t\t\t\treflen = " << reflen << endl;
+                              cout << "\t\t\t\t\tlcs_que_start = " << lcs_que_start << endl;
+                              cout << "\t\t\t\t\tlcs_ref_start = " << lcs_ref_start << endl;
+                              cout << "\t\t\t\t\talign_que_start = " << align_que_start << endl;
+                              cout << "\t\t\t\t\talign_ref_start = " << align_ref_start << endl;
+                              cout << "\t\t\t\t\thead = " << head << "; tail = " << tail << endl;
+                              cout << "\t\t\t\t\talign_length = " << align_length << endl;
+                              cout << "read tag: ";
+                              char* tt = reads[readn-1];
+                              while (*tt != '\n' ) cout << (char)*tt++;
+                              cout << endl;
+                              cout << "read (starting from align_que_start): ";
+                              tt = myread+align_que_start;
+                              while ( *tt != '\n' ) cout << (int)*tt++;
+                              cout << endl;
+                              
+                              
+                              cout << "ref tag: ";
+                              tt = reference_seq[(2*(int)max_seq)];
+                              while (*tt != '\n' ) cout << (char)*tt++;
+                              cout << endl;
+                              cout << "ref (starting from align_ref_start-head): ";
+                              tt = reference_seq[(2*(int)max_seq)+1]+align_ref_start-head;
+                              while (*tt != '\n' ) cout << (int)*tt++;
+                              cout << endl;
+                              cout << "align_length-head-tail = " << (align_length-head-tail) << endl;
+                              //}
 #endif
                                                             
-                                                            // create profile for read
-                                                            s_profile* profile = 0;
-                                                            profile = ssw_init((int8_t*)(myread+align_que_start), (align_length-head-tail), mat, 5, 2);
-                                                            
-                                                            s_align* result = 0;
-                                                            //uint16_t filters = 0;
-                                                            
-                                                            result = ssw_align( profile, (int8_t*)reference_seq[(2*(int)max_seq)+1]+align_ref_start-head,align_length, gap_open, gap_extension, 2, minimal_score[index_num], 0, 0);
-                                                            //result = ssw_align( profile, (int8_t*)reference_seq[(2*(int)max_seq)+1]+align_ref_start-head,align_length, gap_open, gap_extension, 1, 0, 0, 0);
-                                                            
-                                                            // deallocate memory for profile, no longer needed
-                                                            if ( profile != 0 ) init_destroy(&profile);
-                                                            
-                                                            
+                              // create profile for read
+                              s_profile* profile = 0;
+                              profile = ssw_init((int8_t*)(myread+align_que_start), (align_length-head-tail), mat, 5, 2);
+                              
+                              s_align* result = 0;
+                              //uint16_t filters = 0;
+                              
+                              result = ssw_align( profile,
+                                                 (int8_t*)reference_seq[(2*(int)max_seq)+1]+align_ref_start-head,align_length,
+                                                 gap_open,
+                                                 gap_extension,
+                                                 2,
+                                                 minimal_score[index_num],
+                                                 0,
+                                                 0);
+                              
+                              // deallocate memory for profile, no longer needed
+                              if ( profile != 0 ) init_destroy(&profile);                                         
 #ifdef debug_align
-                                                            cout << "\t\t\t\t\talign done.\n"; //TESTING
+                              cout << "\t\t\t\t\talign done.\n"; //TESTING
 #endif
-                                                            // check alignment satisfies all thresholds
-                                                            if ( result != 0 )
-                                                            {
-                                                                if ( result->score1 > minimal_score[index_num] ) aligned = true;
-                                                            }
-                                                            
-                                                            // STEP 8: alignment succeeded, output (--all) or store (--best) the alignment and go to next alignment
-                                                            if ( aligned )
-                                                            {
+                              // check alignment satisfies all thresholds
+                              if ( result != 0 )
+                              {
+                                if ( result->score1 > minimal_score[index_num] ) aligned = true;
+                              }
+                              
+                              // STEP 8: alignment succeeded, output (--all) or store (--best)
+                              // the alignment and go to next alignment
+                              if ( aligned )
+                              {
 #ifdef debug_align
-                                                                cout << "\t\t\t\t\taligned!\n"; //TESTING
+                                cout << "\t\t\t\t\taligned!\n"; //TESTING
 #endif
 #pragma omp critical
-                                                                {
-                                                                    // read has not been yet mapped, set bit to true for this read (this is the _only_ place where read_hits must be modified)
-                                                                    if ( !read_hits[readn] )
-                                                                    {
-                                                                        read_hits[readn].flip();
-                                                                        total_reads_mapped++;
-                                                                        reads_matched_per_db[index_num]++;
-                                                                    }
+                                {
+                                  // read has not been yet mapped, set bit to true for this read
+                                  // (this is the _only_ place where read_hits must be modified)
+                                  if ( !read_hits[readn] )
+                                  {
+                                    read_hits[readn].flip();
+                                    total_reads_mapped++;
+                                    reads_matched_per_db[index_num]++;
+                                  }
+                                  
+                                  // output (sam or blast-like) or update alignment information
+                                  bool strand = false;
+                                  if ( forward_gv ) strand = true;
+                                  else strand = false;
+                                  
+                                  // add the offset calculated by the LCS (from the beginning of the sequence)
+                                  // to the offset computed by SW alignment
+                                  result->ref_begin1 += (align_ref_start-head);
+                                  result->ref_end1 += (align_ref_start-head);
+                                  result->read_begin1 += align_que_start;
+                                  result->read_end1 += align_que_start;
+                                  result->readlen = readlen;
                                                                     
-                                                                    // output (sam or blast-like) or update alignment information
-                                                                    bool strand = false;
-                                                                    if ( forward_gv ) strand = true;
-                                                                    else strand = false;
-                                                                    
-                                                                    // add the offset calculated by the LCS (from the beginning of the sequence) to the offset computed by SW alignment
-                                                                    result->ref_begin1 += (align_ref_start-head);
-                                                                    result->ref_end1 += (align_ref_start-head);
-                                                                    result->read_begin1 += align_que_start;
-                                                                    result->read_end1 += align_que_start;
-                                                                    result->readlen = readlen;
-                                                                    
-                                                                    // update best alignment
-                                                                    if ( min_lis_gv > -1 )
-                                                                    {
-                                                                        result->index_num = index_num;
-                                                                        result->ref_seq = max_seq;
-                                                                        result->part = part;
-                                                                        result->strand = strand;
-                                                                        
-                                                                        map<uint32_t, pair<uint16_t, s_align*> >::iterator alignment = read_hits_align_info.find(readn);
+                                  // update best alignment
+                                  if ( min_lis_gv > -1 )
+                                  {
+                                    result->index_num = index_num;
+                                    result->ref_seq = max_seq;
+                                    result->part = part;
+                                    result->strand = strand;
+                                    
+                                    map<uint32_t, pair<uint16_t, s_align*> >::iterator alignment = read_hits_align_info.find(readn);
 //#define DEBUG_BEST_N
 #ifdef DEBUG_BEST_N
-                                                                        cout << "readn = " << readn << endl;
-                                                                        cout << "\nresult->score1 = " << result->score1 << endl; //TESTING
-                                                                        cout << "index_num = " << result->index_num;
-                                                                        cout << "part = " << result->part;
-                                                                        cout << "refseq = ";
-                                                                        char* ttp = reference_seq[(2*result->ref_seq)]+1;
-                                                                        while ( *ttp != '\n' ) cout << (char)*ttp++;
-                                                                        cout << endl;
+                                    cout << "readn = " << readn << endl;
+                                    cout << "\nresult->score1 = " << result->score1 << endl; //TESTING
+                                    cout << "index_num = " << result->index_num;
+                                    cout << "part = " << result->part;
+                                    cout << "refseq = ";
+                                    char* ttp = reference_seq[(2*result->ref_seq)]+1;
+                                    while ( *ttp != '\n' ) cout << (char)*ttp++;
+                                    cout << endl;
 #endif
-                                                                        
-                                                                        // an alignment for this read already exists
-                                                                        if ( alignment != read_hits_align_info.end() )
-                                                                        {
+                                    // an alignment for this read already exists
+                                    if ( alignment != read_hits_align_info.end() )
+                                    {
 #ifdef DEBUG_BEST_N
-                                                                            cout << "alignment already exists.\n"; //TESTING
+                                      cout << "alignment already exists.\n"; //TESTING
+#endif                        
+                                      uint16_t smallest_score_index = alignment->second.first;
+                                      // get the alignment with the smallest score
+                                      s_align *smallest_alignment = (alignment->second.second)+smallest_score_index;
+#ifdef DEBUG_BEST_N
+                                      cout << "smallest_score_index = " << smallest_score_index << "\tnum_best_hits_gv = " << num_best_hits_gv << endl; //TESTING
+#endif                                                                       
+                                      // the number of alignments stored per read < num_best_hits_gv, 
+                                      // simply add new alignment to array
+                                      if ( smallest_alignment->cigar == NULL )
+                                      {
+#ifdef DEBUG_BEST_N
+                                        cout << "add new alignment to empty slot.\n"; //TESTING
 #endif
+                                        *smallest_alignment = *result;
+                                        // not all slots are filled, simply increment the
+                                        // smallest_score_index to next slot in array
+                                        if ( smallest_score_index < num_best_hits_gv-1 ) alignment->second.first = smallest_score_index+1;
+                                        // all slots have been filled, find slot with smallest
+                                        // alignment score and set the smallest_score_index
+                                        else
+                                        {
+#ifdef DEBUG_BEST_N
+                                          cout << "find new smallest_score_index of " << num_best_hits_gv << " slots.\n"; //TESTING
+#endif
+                                          uint16_t smallest_score = 10000;
+                                          s_align *this_alignment = alignment->second.second;
+                                          for ( int p = 0 ; p < num_best_hits_gv; p++ )
+                                          {
+                                            if ( this_alignment[p].score1 < smallest_score )
+                                            {
+                                              smallest_score = this_alignment[p].score1;
+                                              smallest_score_index = p;
+                                            }
+                                          }
+#ifdef DEBUG_BEST_N
+                                          cout << "smallest_score_index = " << smallest_score_index << endl; //TESTING
+#endif
+                                          alignment->second.first = smallest_score_index;
+                                        }
+#ifdef DEBUG_BEST_N
+                                        cout << "free result.\n"; //TESTING
+#endif                                                         
+                                        // the maximum possible score for this read has been found
+                                        if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
+                                        
+                                        // free result
+                                        free(result);
+                                        result = NULL;                                          
+                                      }
+                                      // all num_best_hits_gv slots have been filled,
+                                      // replace the alignment with the lowest score
+                                      else if ( (result->score1) > smallest_alignment->score1 )
+                                      {
+#ifdef DEBUG_BEST_N
+                                        cout << "smallest_alignment->score1 = " << smallest_alignment->score1 << endl; //TESTING
+                                        cout << "replace alignment in an existing slot.\n"; //TESTING
+#endif
+                                        // decrement number of reads mapped to database
+                                        // with lower score
+                                        reads_matched_per_db[smallest_alignment->index_num]--;
+                                        // increment number of reads mapped to database
+                                        // with higher score
+                                        reads_matched_per_db[index_num]++;
+                                        // free the old cigar
+                                        free(smallest_alignment->cigar);
+                                        smallest_alignment->cigar = NULL;
+                                        *smallest_alignment = *result;
+                                        
+                                        // find the new smallest_score_index
+                                        uint16_t smallest_score = 10000;
+                                        s_align *this_alignment = alignment->second.second;
+                                        for ( int p = 0 ; p < num_best_hits_gv; p++ )
+                                        {
+                                          if ( this_alignment[p].score1 < smallest_score )
+                                          {
+                                            smallest_score = this_alignment[p].score1;
+                                            smallest_score_index = p;
+                                          }
+                                        }
+                                                                                
+#ifdef DEBUG_BEST_N
+                                        cout << "new smallest_score_index = " << smallest_score_index << endl; //TESTING
+#endif                                 
+                                        alignment->second.first = smallest_score_index;
+                                        
+                                        // the maximum possible score for this read has been found
+                                        if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
+                                        
+                                        // free result, except the cigar (now new cigar)
+                                        free(result);
+                                        result = NULL;
+                                      }
+                                      else
+                                      {
+                                        // new alignment has a lower score, destroy it
+                                        if (result != NULL) align_destroy(&result);
+                                      }
+                                    }
+                                    // an alignment for this read doesn't exist, add the first alignment
+                                    else
+                                    {
+#ifdef DEBUG_BEST_N
+                                      cout << "add first alignment.\n"; //TESTING
+#endif                          
+                                      uint16_t smallest_score_index = 0;
+                                      // create new instance of alignments
+                                      s_align *new_alignment = new s_align[num_best_hits_gv]();
+                                      if ( new_alignment == NULL )
+                                      {
+                                        fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment storage (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+                                        exit(EXIT_FAILURE);
+                                      }
+                                      else
+                                      {
+                                        new_alignment[0] = *result;
+                                        // set cigar pointer to NULL to signify empty slot
+                                        for ( int p = 1; p < num_best_hits_gv; p++ ) new_alignment[p].cigar = NULL;
+                                        // as only 1 alignment exists from a possible num_best_hits_gv, we set the smallest score at new_alignment[1]
+                                        if ( num_best_hits_gv > 1 ) smallest_score_index = 1;
+                                        pair<uint16_t,s_align*> tmp (smallest_score_index,new_alignment);
+                                        read_hits_align_info.insert( pair<uint32_t, pair<uint16_t,s_align*> > (readn,tmp) );
+                                      }
                                                                             
-                                                                            uint16_t smallest_score_index = alignment->second.first;
-                                                                            // get the alignment with the smallest score
-                                                                            s_align *smallest_alignment = (alignment->second.second)+smallest_score_index;
+                                      // the maximum possible score for this read has been found
+                                      if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
+                                      
+                                      // free result, except the cigar
+                                      free(result);
+                                      result = NULL;                
 #ifdef DEBUG_BEST_N
-                                                                            cout << "smallest_score_index = " << smallest_score_index << "\tnum_best_hits_gv = " << num_best_hits_gv << endl; //TESTING
+                                      cout << "added.\n"; //TESTING
 #endif
-                                                                            
-                                                                            // the number of alignments stored per read < num_best_hits_gv, simply add new alignment to array
-                                                                            if ( smallest_alignment->cigar == NULL )
-                                                                            {
-#ifdef DEBUG_BEST_N
-                                                                                cout << "add new alignment to empty slot.\n"; //TESTING
-#endif
-                                                                                *smallest_alignment = *result;
-                                                                                // not all slots are filled, simply increment the smallest_score_index to next slot in array
-                                                                                if ( smallest_score_index < num_best_hits_gv-1 ) alignment->second.first = smallest_score_index+1;
-                                                                                // all slots have been filled, find slot with smallest alignment score and set the smallest_score_index
-                                                                                else
-                                                                                {
-#ifdef DEBUG_BEST_N
-                                                                                    cout << "find new smallest_score_index of " << num_best_hits_gv << " slots.\n"; //TESTING
-#endif
-                                                                                    uint16_t smallest_score = 10000;
-                                                                                    s_align *this_alignment = alignment->second.second;
-                                                                                    for ( int p = 0 ; p < num_best_hits_gv; p++ )
-                                                                                    {
-                                                                                        if ( this_alignment[p].score1 < smallest_score )
-                                                                                        {
-                                                                                            smallest_score = this_alignment[p].score1;
-                                                                                            smallest_score_index = p;
-                                                                                        }
-                                                                                    }
-#ifdef DEBUG_BEST_N
-                                                                                    cout << "smallest_score_index = " << smallest_score_index << endl; //TESTING
-#endif
-                                                                                    alignment->second.first = smallest_score_index;
-                                                                                }
-#ifdef DEBUG_BEST_N
-                                                                                cout << "free result.\n"; //TESTING
-#endif
-                                                                                
-                                                                                // the maximum possible score for this read has been found
-                                                                                if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
-                                                                                
-                                                                                // free result
-                                                                                free(result);
-                                                                                result = NULL;
-                                                                                
-                                                                            }
-                                                                            // all num_best_hits_gv slots have been filled, replace the alignment with the lowest score
-                                                                            else if ( (result->score1) > smallest_alignment->score1 )
-                                                                            {
-#ifdef DEBUG_BEST_N
-                                                                                cout << "smallest_alignment->score1 = " << smallest_alignment->score1 << endl; //TESTING
-                                                                                cout << "replace alignment in an existing slot.\n"; //TESTING
-#endif
-                                                                                // decrement number of reads mapped to database with lower score
-                                                                                reads_matched_per_db[smallest_alignment->index_num]--;
-                                                                                // increment number of reads mapped to database with higher score
-                                                                                reads_matched_per_db[index_num]++;
-                                                                                // free the old cigar
-                                                                                free(smallest_alignment->cigar);
-                                                                                smallest_alignment->cigar = NULL;
-                                                                                *smallest_alignment = *result;
-                                                                                
-                                                                                // find the new smallest_score_index
-                                                                                uint16_t smallest_score = 10000;
-                                                                                s_align *this_alignment = alignment->second.second;
-                                                                                for ( int p = 0 ; p < num_best_hits_gv; p++ )
-                                                                                {
-                                                                                    if ( this_alignment[p].score1 < smallest_score )
-                                                                                    {
-                                                                                        smallest_score = this_alignment[p].score1;
-                                                                                        smallest_score_index = p;
-                                                                                    }
-                                                                                }
-                                                                                
-#ifdef DEBUG_BEST_N
-                                                                                cout << "new smallest_score_index = " << smallest_score_index << endl; //TESTING
-#endif
-                                                                                
-                                                                                alignment->second.first = smallest_score_index;
-                                                                                
-                                                                                // the maximum possible score for this read has been found
-                                                                                if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
-                                                                                
-                                                                                // free result, except the cigar (now new cigar)
-                                                                                free(result);
-                                                                                result = NULL;
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                                // new alignment has a lower score, destroy it
-                                                                                if (result != NULL) align_destroy(&result);
-                                                                            }
-                                                                        }
-                                                                        // an alignment for this read doesn't exist, add the first alignment
-                                                                        else
-                                                                        {
-#ifdef DEBUG_BEST_N
-                                                                            cout << "add first alignment.\n"; //TESTING
-#endif
-                                                                            
-                                                                            uint16_t smallest_score_index = 0;
-                                                                            // create new instance of alignments
-                                                                            s_align *new_alignment = new s_align[num_best_hits_gv]();
-                                                                            if ( new_alignment == NULL )
-                                                                            {
-                                                                                fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment storage (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
-                                                                                exit(EXIT_FAILURE);
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                                new_alignment[0] = *result;
-                                                                                // set cigar pointer to NULL to signify empty slot
-                                                                                for ( int p = 1; p < num_best_hits_gv; p++ ) new_alignment[p].cigar = NULL;
-                                                                                // as only 1 alignment exists from a possible num_best_hits_gv, we set the smallest score at new_alignment[1]
-                                                                                if ( num_best_hits_gv > 1 ) smallest_score_index = 1;
-                                                                                pair<uint16_t,s_align*> tmp (smallest_score_index,new_alignment);
-                                                                                read_hits_align_info.insert( pair<uint32_t, pair<uint16_t,s_align*> > (readn,tmp) );
-                                                                            }
-                                                                            
-                                                                            // the maximum possible score for this read has been found
-                                                                            if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
-                                                                            
-                                                                            // free result, except the cigar
-                                                                            free(result);
-                                                                            result = NULL;
-                                                                            
-#ifdef DEBUG_BEST_N
-                                                                            cout << "added.\n"; //TESTING
-#endif
-                                                                        }
+                                    }                                      
+                                  }
+                                  // output the Nth alignment (set by --num_alignments [INT] parameter)
+                                  else if ( num_alignments_gv > -1 )
+                                  {
+                                    // update number of alignments to output per read
+                                    if ( num_alignments_gv > 0 ) num_alignments_x[readn]--;
+                                    
+                                    // get the edit distance between reference and read (serves for SAM output and computing %id and %query coverage)
+                                    double id = 0;
+                                    char to_char[5] = {'A','C','G','T','N'};
+                                    char* ref_seq_ptr = reference_seq[(2*(int)max_seq)+1];
+                                    char* read_seq_ptr = myread;
+                                    int32_t qb = result->ref_begin1;
+                                    int32_t pb = result->read_begin1;
+                                    uint32_t mismatches = 0;
+                                    uint32_t gaps = 0;
+                                    
+                                    for (uint32_t c2 = 0; c2 < result->cigarLen; ++c2) 
+                                    {
+                                      uint32_t letter = 0xf&*(result->cigar + c2);
+                                      uint32_t length = (0xfffffff0&*(result->cigar + c2))>>4;
+                                      if (letter == 0) 
+                                      {
+                                        for (int p = 0; p < length; ++p)
+                                        {
+                                          if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
+                                          else ++id;
+                                          ++qb;
+                                          ++pb;
+                                        }
+                                      } else if (letter == 1) 
+                                      {
+                                        pb += length;
+                                        gaps += length;
+                                      } else 
+                                      {
+                                        qb += length;
+                                        gaps += length;
+                                      }
+                                    }
                                                                         
-                                                                        
-                                                                    }
-                                                                    // output the Nth alignment (set by --num_alignments [INT] parameter)
-                                                                    else if ( num_alignments_gv > -1 )
-                                                                    {
-                                                                        // update number of alignments to output per read
-                                                                        if ( num_alignments_gv > 0 ) num_alignments_x[readn]--;
-                                                                        
-                                                                        // get the edit distance between reference and read (serves for SAM output and computing %id and %query coverage)
-                                                                        double id = 0;
-                                                                        char to_char[5] = {'A','C','G','T','N'};
-                                                                        char* ref_seq_ptr = reference_seq[(2*(int)max_seq)+1];
-                                                                        char* read_seq_ptr = myread;
-                                                                        int32_t qb = result->ref_begin1;
-                                                                        int32_t pb = result->read_begin1;
-                                                                        uint32_t mismatches = 0;
-                                                                        uint32_t gaps = 0;
-                                                                        
-                                                                        for (uint32_t c2 = 0; c2 < result->cigarLen; ++c2) {
-                                                                            uint32_t letter = 0xf&*(result->cigar + c2);
-                                                                            uint32_t length = (0xfffffff0&*(result->cigar + c2))>>4;
-                                                                            if (letter == 0) {
-                                                                                for (int p = 0; p < length; ++p){
-                                                                                    if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
-                                                                                    else ++id;
-                                                                                    ++qb;
-                                                                                    ++pb;
-                                                                                }
-                                                                            } else if (letter == 1) {
-                                                                                pb += length;
-                                                                                gaps += length;
-                                                                            } else {
-                                                                                qb += length;
-                                                                                gaps += length;
-                                                                            }
-                                                                        }
-                                                                        
-                                                                        int32_t align_len = abs(result->read_end1+1 - result->read_begin1);
-                                                                        int32_t total_pos = mismatches+gaps+id;
-                                                                        stringstream ss;
-                                                                        ss.precision(3);
-                                                                        ss << (double)id/total_pos << ' ' << (double)align_len/readlen;
-                                                                        double align_id_round = 0.0;
-                                                                        double align_cov_round = 0.0;
-                                                                        ss >> align_id_round >> align_cov_round;
-                                                                        //#define debug_id_cov
+                                    int32_t align_len = abs(result->read_end1+1 - result->read_begin1);
+                                    int32_t total_pos = mismatches+gaps+id;
+                                    stringstream ss;
+                                    ss.precision(3);
+                                    ss << (double)id/total_pos << ' ' << (double)align_len/readlen;
+                                    double align_id_round = 0.0;
+                                    double align_cov_round = 0.0;
+                                    ss >> align_id_round >> align_cov_round;
+//#define debug_id_cov
 #ifdef debug_id_cov
-                                                                        cout << "read tag: ";
-                                                                        char* tt = reads[readn-1];
-                                                                        while (*tt != '\n' ) cout << (char)*tt++;
-                                                                        cout << endl;
+                                    cout << "read tag: ";
+                                    char* tt = reads[readn-1];
+                                    while (*tt != '\n' ) cout << (char)*tt++;
+                                    cout << endl;
+                                    
+                                    cout << "ref tag: ";
+                                    tt = reference_seq[(2*(int)max_seq)];
+                                    while (*tt != '\n' ) cout << (char)*tt++;
+                                    cout << endl;
+                                    
+                                    cout << "align_len = " << align_len << endl;
+                                    cout << "id = " << id << endl;
+                                    cout << "Score = " << result->score1 << endl;
+                                    cout << "%id = " << (double)id/align_len << endl;
+                                    cout << "%cov = " << (double)align_len/readlen << endl;
+                                    cout << "align_cov = " << (double)align_cov << endl;
+                                    cout << "align_id = " << (double)align_id << endl << endl;
+                                    cout << "align_id_round = " << (double)align_id_round << endl;
+                                    cout << "align_cov_round = " << (double)align_cov_round << endl;
+#endif                                                        
+                                    // the alignment passed the %id and %query coverage threshold
+                                    // output it (SAM, BLAST and FASTA/Q)
+                                    if ( ( align_id_round >= align_id ) &&
+                                         ( align_cov_round >= align_cov ) &&
+                                          read_to_count )
+                                    {
+                                      total_reads_mapped_cov++;
+                                      read_to_count = false;
+
+                                      // do not output read for de novo OTU construction
+                                      if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
+                                    }
                                                                         
-                                                                        cout << "ref tag: ";
-                                                                        tt = reference_seq[(2*(int)max_seq)];
-                                                                        while (*tt != '\n' ) cout << (char)*tt++;
-                                                                        cout << endl;
-                                                                        
-                                                                        cout << "align_len = " << align_len << endl;
-                                                                        cout << "id = " << id << endl;
-                                                                        cout << "Score = " << result->score1 << endl;
-                                                                        cout << "%id = " << (double)id/align_len << endl;
-                                                                        cout << "%cov = " << (double)align_len/readlen << endl;
-                                                                        cout << "align_cov = " << (double)align_cov << endl;
-                                                                        cout << "align_id = " << (double)align_id << endl << endl;
-                                                                        cout << "align_id_round = " << (double)align_id_round << endl;
-                                                                        cout << "align_cov_round = " << (double)align_cov_round << endl;
-#endif
-                                                                        
-                                                                        // the alignment passed the %id and %query coverage threshold, output it (SAM, BLAST and FASTA/Q)
-                                                                        if ( (align_id_round >= align_id) && (align_cov_round >= align_cov) && read_to_count )
-                                                                        {
-                                                                            total_reads_mapped_cov++;
-                                                                            read_to_count = false;
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            // output read for de novo OTU construction (only alignments *not* used to construct OTU-map are output)
-                                                                            if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
-                                                                        }
-                                                                        
-                                                                        // quality for FASTQ
-                                                                        char* read_qual = NULL;
-                                                                        if ( filesig == '@' )
-                                                                        {
-                                                                            // forward
-                                                                            if ( strand )
-                                                                            {
-                                                                                // if second part of split-read or last read in file
-                                                                                if ( ((readn == 3) && (file_s > 0)) || (readn >= (strs-2)) )
-                                                                                {
-                                                                                    read_qual = reads[readn];
-                                                                                    int8_t numnewlines = 0;
-                                                                                    while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
-                                                                                }
-                                                                                else read_qual = reads[readn+1]-readlen-1;
-                                                                            }
-                                                                            // reverse-complement
-                                                                            else
-                                                                            {
-                                                                                // if second part of split read or last read in file
-                                                                                if ( ((readn == 3) && (file_s > 0)) || (readn >= (strs-2)) )
-                                                                                {
-                                                                                    read_qual = reads[readn];
-                                                                                    
-                                                                                    // last file section
-                                                                                    if ( file_s == file_sections-1 )
-                                                                                    {
+                                    // quality for FASTQ
+                                    char* read_qual = NULL;
+                                    if ( filesig == '@' )
+                                    {
+                                      // forward
+                                      if ( strand )
+                                      {
+                                        // if second part of split-read or last read in file
+                                        if ( ((readn == 3) && (file_s > 0)) || (readn >= (strs-2)) )
+                                        {
+                                          read_qual = reads[readn];
+                                          int8_t numnewlines = 0;
+                                          while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
+                                        }
+                                        else read_qual = reads[readn+1]-readlen-1;
+                                      }
+                                      // reverse-complement
+                                      else
+                                      {
+                                        // if second part of split read or last read in file
+                                        if ( ((readn == 3) && (file_s > 0)) || (readn >= (strs-2)) )
+                                        {
+                                          read_qual = reads[readn];
+                                          
+                                          // last file section
+                                          if ( file_s == file_sections-1 )
+                                          {
 #ifdef debug_mmap
-                                                                                        if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
+                                            if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
 #endif
-                                                                                        while ( *read_qual != '\0' ) read_qual++;
-                                                                                        if ( *(read_qual-3) == '\n') read_qual--;
-                                                                                        read_qual-=2; //account for '\n\0'
-                                                                                    }
-                                                                                    // file section > 0 and < last file section
-                                                                                    else
-                                                                                    {
+                                            while ( *read_qual != '\0' ) read_qual++;
+                                            if ( *(read_qual-3) == '\n') read_qual--;
+                                            read_qual-=2; //account for '\n\0'
+                                          }
+                                          // file section > 0 and < last file section
+                                          else
+                                          {
 #ifdef debug_mmap
-                                                                                        if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
+                                            if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
 #endif
-                                                                                        while ( read_qual != finalnt ) read_qual++;
-                                                                                        read_qual--;
-                                                                                    }
-                                                                                    
-                                                                                }
-                                                                                else read_qual = reads[readn+1]-2;
-                                                                                
-                                                                            }
-                                                                        }
+                                            while ( read_qual != finalnt ) read_qual++;
+                                            read_qual--;
+                                          }
+                                        }
+                                        else read_qual = reads[readn+1]-2;
+                                      }
+                                    }
+                                                             
+                                    if ( blastout_gv )
+                                    {
+                                        uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(result->score1) - log((gumbel[index_num].second)))/(float)log(2));
+                                        double evalue_score = (double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num]*pow(EXP,(-(gumbel[index_num].first)*result->score1));
+                                        
+                                        report_blast (acceptedblast, //blast output file
+                                                      result, //SW alignment cigar
+                                                      reads[readn-1]+1, //read name
+                                                      &myread[0], //read sequence
+                                                      read_qual, //read quality
+                                                      reference_seq[(2*(int)max_seq)]+1, //reference name
+                                                      reference_seq[(2*(int)max_seq)+1], //reference sequence
+                                                      evalue_score, //e-value score (only for blast)
+                                                      readlen,
+                                                      bitscore,
+                                                      strand, //forward or reverse complement
+                                                      (double)id/total_pos, // %id
+                                                      (double)align_len/readlen, // %query coverage
+                                                      mismatches, //mismatches
+                                                      gaps);
+                                    }
+                                                                        
+                                    if ( samout_gv )
+                                    {
+                                        report_sam (acceptedsam, //sam output file
+                                                    result, //SW alignment cigar
+                                                    reads[readn-1]+1, //read name
+                                                    &myread[0], //read sequence
+                                                    read_qual, //read quality
+                                                    reference_seq[(2*(int)max_seq)]+1, //reference name
+                                                    reference_seq[(2*(int)max_seq)+1], //reference sequence
+                                                    readlen,
+                                                    strand, //forward or reverse complement
+                                                    mismatches+gaps
+                                                    );
+                                    }
                                                                         
                                                                         
-                                                                        if ( blastout_gv )
-                                                                        {
-                                                                            uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(result->score1) - log((gumbel[index_num].second)))/(float)log(2));
-                                                                            double evalue_score = (double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num]*pow(EXP,(-(gumbel[index_num].first)*result->score1));
-                                                                            
-                                                                            report_blast (acceptedblast, //blast output file
-                                                                                          result, //SW alignment cigar
-                                                                                          reads[readn-1]+1, //read name
-                                                                                          &myread[0], //read sequence
-                                                                                          read_qual, //read quality
-                                                                                          reference_seq[(2*(int)max_seq)]+1, //reference name
-                                                                                          reference_seq[(2*(int)max_seq)+1], //reference sequence
-                                                                                          evalue_score, //e-value score (only for blast)
-                                                                                          readlen,
-                                                                                          bitscore,
-                                                                                          strand, //forward or reverse complement
-                                                                                          (double)id/total_pos, // %id
-                                                                                          (double)align_len/readlen, // %query coverage
-                                                                                          mismatches, //mismatches
-                                                                                          gaps
-                                                                                          );
-                                                                        }
-                                                                        
-                                                                        if ( samout_gv )
-                                                                        {
-                                                                            report_sam (acceptedsam, //sam output file
-                                                                                        result, //SW alignment cigar
-                                                                                        reads[readn-1]+1, //read name
-                                                                                        &myread[0], //read sequence
-                                                                                        read_qual, //read quality
-                                                                                        reference_seq[(2*(int)max_seq)]+1, //reference name
-                                                                                        reference_seq[(2*(int)max_seq)+1], //reference sequence
-                                                                                        readlen,
-                                                                                        strand, //forward or reverse complement
-                                                                                        mismatches+gaps
-                                                                                        );
-                                                                        }
-                                                                        
-                                                                        
-                                                                        // free alignment info
-                                                                        if ( result != 0 ) align_destroy(&result);
-                                                                    }//~if output all alignments
+                                    // free alignment info
+                                    if ( result != 0 ) align_destroy(&result);
+                                  }//~if output all alignments
                                                                     
-                                                                    // continue to next read (do not need to collect more seeds using another pass)
-                                                                    search = false;
+                                  // continue to next read (do not need to collect more seeds using another pass)
+                                  search = false;
                                                                     
-                                                                }//~pragma omp critical
-                                                                
-                                                                // maximum score possible for the read has been reached, stop searching for further matches
-                                                                if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
-                                                                
-                                                                // stop search after the first num_alignments_gv alignments for this read
-                                                                if ( num_alignments_gv > 0 )
-                                                                {
-                                                                    // go to next read (do not search for further alignments)
-                                                                    if ( num_alignments_x[readn] <= 0 ) break;
-                                                                }
-                                                                
-                                                            }//~if read aligned
-                                                            // the read did not align, free alignment info
-                                                            else
-                                                            {
+                                }//~pragma omp critical
+                                
+                                // maximum score possible for the read has been reached,
+                                // stop searching for further matches
+                                if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
+                                
+                                // stop search after the first num_alignments_gv alignments
+                                // for this read
+                                if ( num_alignments_gv > 0 )
+                                {
+                                  // go to next read (do not search for further alignments)
+                                  if ( num_alignments_x[readn] <= 0 ) break;
+                                }                                                         
+                              }//~if read aligned
+                              // the read did not align, free alignment info
+                              else
+                              {
 #ifdef debug_align
-                                                                cout << "\t\t\t\tnot aligned \n"; //TESTING
-#endif
-                                                                
-                                                                if ( result != 0 ) align_destroy(&result);
-                                                                
-                                                            }
-                                                            
-                                                        }//~if LIS long enough
+                                  cout << "\t\t\t\tnot aligned \n"; //TESTING
+#endif         
+                                  if ( result != 0 ) align_destroy(&result);                            
+                              }
+                              
+                            }//~if LIS long enough
                                                         
 #ifdef HEURISTIC1_OFF
-                                                    } while ( (it3 == hits_on_genome.end()) && (++list_n < list.size()) );
-#endif
-                                                    
+                          } while ( (it3 == hits_on_genome.end()) && (++list_n < list.size()) );
+#endif                                              
                         }//~if enough window hits
                                                 
-                                            pop:
+                        pop:
                                                 
                         // get the next candidate reference position 
                         if ( !vi_read.empty() ) vi_read.pop_front();
@@ -3505,932 +3413,870 @@ paralleltraversal ( char* inputreads,
                         else
                         {
                           begin = (vi_read.front()).first;
-                        }
-                                                
-                                                
-                      }//~for all reference sequence length
-                                            
+                        }                      
+                      }//~for all reference sequence length                   
                     }//~for all of the reference sequence candidates
-                                        
                   }//if ( readhitf || readhitr > ratio )
                                     
                                     
-                                    // edit the read back onto 0-3 alphabet to search for seeds (seed search cannot proceed on 0-4 alphabet)
-                                    if ( (size_ambiguous_nt!=0) && read_edited )
-                                    {
-                                        if ( !forward_gv )
-                                        {
-                                            for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
-                                            {
-                                                myread[(readlen-ambiguous_nt[p])-1] = 0;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
-                                            {
-                                                myread[ambiguous_nt[p]] = 0;
-                                            }
-                                        }
-                                    }
+                  // edit the read back onto 0-3 alphabet to search for seeds (seed search cannot proceed on 0-4 alphabet)
+                  if ( (size_ambiguous_nt!=0) && read_edited )
+                  {
+                    if ( !forward_gv )
+                    {
+                      for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
+                      {
+                        myread[(readlen-ambiguous_nt[p])-1] = 0;
+                      }
+                    }
+                    else
+                    {
+                      for ( uint32_t p = 0; p < size_ambiguous_nt; p++ )
+                      {
+                        myread[ambiguous_nt[p]] = 0;
+                      }
+                    }
+                  }
                                     
-                  // the read was not accepted at current window skip length, decrease the window skip length
+                  // the read was not accepted at current window skip length,
+                  // decrease the window skip length
                   if ( search )
                   {
-                                        // last (3rd) Pass has been made
-                                        if ( pass_n == 2 ) search = false;
-                                        else
-                                        {
-                                            // the next interval size equals to the current one, skip it
-                                            while ( (pass_n < 3) && (skiplengths[index_num][pass_n] == skiplengths[index_num][pass_n+1]) ) ++pass_n;
-                                            if ( ++pass_n > 2 ) search = false;
-                                            // set interval skip length for next Pass
-                                            else windowshift = skiplengths[index_num][pass_n];
-                                        }
+                    // last (3rd) Pass has been made
+                    if ( pass_n == 2 ) search = false;
+                    else
+                    {
+                      // the next interval size equals to the current one, skip it
+                      while ( (pass_n < 3) && (skiplengths[index_num][pass_n] == skiplengths[index_num][pass_n+1]) ) ++pass_n;
+                      if ( ++pass_n > 2 ) search = false;
+                      // set interval skip length for next Pass
+                      else windowshift = skiplengths[index_num][pass_n];
+                    }
                   }
                                     
                   // do not offset final window on read
                   break;
                 }//~( win_num == NUMWIN-1 )
                                 
-                read_index+=windowshift;
-                                
-                                
-              }//~for (each window)
-                            
-                            
-                            //~while all three window skip lengths have not been tested, or a match has not been found
-                        } while ( search );
+                read_index+=windowshift;               
+              }//~for (each window)                
+            //~while all three window skip lengths have not been tested, or a match has not been found
+            } while ( search );
                         
-                        // the read didn't align (for --num_alignments [INT] option), output null alignment string
-                        if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && (num_alignments_gv > -1) )
-                        {
+            // the read didn't align (for --num_alignments [INT] option), output null alignment string
+            if ( !read_hits[readn] && !forward_gv && print_all_reads_gv && (num_alignments_gv > -1) )
+            {
 #pragma omp critical
-                            {
-                                s_align* null_alignment = NULL;
-                                if ( blastout_gv && (blast_outfmt > 0) )
-                                {
-                                    report_blast (acceptedblast, // blast output file
-                                                  null_alignment, // SW alignment cigar
-                                                  reads[readn-1]+1, //read name
-                                                  0, // read sequence (in integer format)
-                                                  0, // read quality
-                                                  0, // reference name
-                                                  0, // reference sequence
-                                                  0, // e-value score
-                                                  0, // read length (to compute the masked regions)
-                                                  0, // bitscore
-                                                  0, // forward or reverse strand
-                                                  0, // %id
-                                                  0, // %query coverage
-                                                  0, // number of mismatches
-                                                  0); // number of gaps
-                                }
-                                if ( samout_gv )
-                                {
-                                    report_sam (acceptedsam, // sam output file
-                                                null_alignment, // SW alignment cigar
-                                                reads[readn-1]+1, // read name
-                                                0, // read sequence (in integer format)
-                                                0, // read quality
-                                                0, // reference name
-                                                0, // reference sequence
-                                                0, // read length (to compute the masked regions)
-                                                0, // forward or reverse strand
-                                                0); // edit distance
-                                }
-                            }// allow writing to file 1 thread at a time
-                        }
-                        
+              {
+                s_align* null_alignment = NULL;
+                if ( blastout_gv && (blast_outfmt > 0) )
+                {
+                  report_blast (acceptedblast, // blast output file
+                                null_alignment, // SW alignment cigar
+                                reads[readn-1]+1, //read name
+                                0, // read sequence (in integer format)
+                                0, // read quality
+                                0, // reference name
+                                0, // reference sequence
+                                0, // e-value score
+                                0, // read length (to compute the masked regions)
+                                0, // bitscore
+                                0, // forward or reverse strand
+                                0, // %id
+                                0, // %query coverage
+                                0, // number of mismatches
+                                0); // number of gaps
+                }
+                if ( samout_gv )
+                {
+                  report_sam (acceptedsam, // sam output file
+                              null_alignment, // SW alignment cigar
+                              reads[readn-1]+1, // read name
+                              0, // read sequence (in integer format)
+                              0, // read quality
+                              0, // reference name
+                              0, // reference sequence
+                              0, // read length (to compute the masked regions)
+                              0, // forward or reverse strand
+                              0); // edit distance
+                }
+              }// allow writing to file 1 thread at a time
+            }                  
           }//~pragma omp for (each read)
 #pragma omp barrier
                     
-                    // search the reverse strand (default)
-                    forward_gv = false;
-                    
-                }//for forward and/or reverse strands
-                TIME(f);
-                eprintf(" done [%.2f sec]\n", (f-s) );
-                
-                eprintf("    Freeing index ... ");
-                
-                
-                TIME(s);
+          // search the reverse strand (default)
+          forward_gv = false;
+          
+        }//for forward and/or reverse strands
+        TIME(f);
+        eprintf(" done [%.2f sec]\n", (f-s) );
+        
+        eprintf("    Freeing index ... ");
+        
+        
+        TIME(s);
 #pragma omp master
-                {
-                    // free the positions table
-                    if ( positions_tbl != NULL )
-                    {
-                        for ( uint32_t i = 0; i < number_elements; i++ )
-                        {
-                            if ( positions_tbl[i].arr != NULL )
-                            {
-                                delete [] positions_tbl[i].arr;
-                                positions_tbl[i].arr = NULL;
-                            }
-                        }
-                        delete [] positions_tbl;
-                        positions_tbl = NULL;
-                    }
-                    
-                    // free reference sequences loaded into memory
-                    if ( buffer != NULL )
-                    {
-                        delete [] buffer;
-                        buffer = NULL;
-                    }
-                    if ( reference_seq != NULL )
-                    {
-                        delete [] reference_seq;
-                        reference_seq = NULL;
-                    }
-                    if ( reference_seq_len != NULL )
-                    {
-                        delete [] reference_seq_len;
-                        reference_seq_len = NULL;
-                    }
-                    
-                    // free 9-mer look-up tables and mini-burst tries
-                    if ( lookup_tbl != NULL )
-                    {
-                        for ( uint32_t i = 0; i < (1<<lnwin[index_num]); i++ )
-                        {
-                            if (lookup_tbl[i].trie_F != NULL )
-                            {
-                                delete [] lookup_tbl[i].trie_F;
-                                lookup_tbl[i].trie_F = NULL;
-                                lookup_tbl[i].trie_R = NULL;
-                            }
-                            if ( lookup_tbl[i].trie_R != NULL )
-                            {
-                                delete [] lookup_tbl[i].trie_R;
-                                lookup_tbl[i].trie_R = NULL;
-                            }
-                        }
-                        delete [] lookup_tbl;
-                        lookup_tbl = NULL;
-                    }
-                }
-                TIME(f);
-                
-                eprintf(" done [%.2f sec]\n", (f-s));
-                
-                // increment the index part to next file
-                prt_str.str("");
-                prt_str << (part+1);
-                part_str = prt_str.str();
-                
-            }//~for all parts of the index
-            
-        }//~for all indexes (provided as a list using option --ref)
-        
-        // clear array holding number of alignments output for each read
-        if ( num_alignments_x != NULL ) delete [] num_alignments_x;
-        
-        // clear array holding number of reference sequences to search per read prior to choosing best alignment
-        if ( best_x != NULL ) delete [] best_x;
-        
-        delete [] read_max_SW_score;
-        
-        eprintf("    Total number of reads mapped (incl. all reads file sections searched): %u\n",total_reads_mapped);
-        
-        // filter the sequences by %id and %query coverage, output them if --best INT
-        if ( min_lis_gv > -1 )
         {
-          if ( samout_gv || blastout_gv ) eprintf("    Writing alignments ... ");
+          // free the positions table
+          if ( positions_tbl != NULL )
+          {
+            for ( uint32_t i = 0; i < number_elements; i++ )
+            {
+                if ( positions_tbl[i].arr != NULL )
+                {
+                  delete [] positions_tbl[i].arr;
+                  positions_tbl[i].arr = NULL;
+                }
+            }
+            delete [] positions_tbl;
+            positions_tbl = NULL;
+          }
+          
+          // free reference sequences loaded into memory
+          if ( buffer != NULL )
+          {
+            delete [] buffer;
+            buffer = NULL;
+          }
+          if ( reference_seq != NULL )
+          {
+            delete [] reference_seq;
+            reference_seq = NULL;
+          }
+          if ( reference_seq_len != NULL )
+          {
+            delete [] reference_seq_len;
+            reference_seq_len = NULL;
+          }
+                    
+          // free 9-mer look-up tables and mini-burst tries
+          if ( lookup_tbl != NULL )
+          {
+            for ( uint32_t i = 0; i < (1<<lnwin[index_num]); i++ )
+            {
+              if (lookup_tbl[i].trie_F != NULL )
+              {
+                delete [] lookup_tbl[i].trie_F;
+                lookup_tbl[i].trie_F = NULL;
+                lookup_tbl[i].trie_R = NULL;
+              }
+              if ( lookup_tbl[i].trie_R != NULL )
+              {
+                delete [] lookup_tbl[i].trie_R;
+                lookup_tbl[i].trie_R = NULL;
+              }
+            }
+            delete [] lookup_tbl;
+            lookup_tbl = NULL;
+          }
+        }
+        TIME(f);
+        
+        eprintf(" done [%.2f sec]\n", (f-s));
+        
+        // increment the index part to next file
+        prt_str.str("");
+        prt_str << (part+1);
+        part_str = prt_str.str();
+                
+      }//~for all parts of the index            
+    }//~for all indexes (provided as a list using option --ref)
+        
+    // clear array holding number of alignments output for each read
+    if ( num_alignments_x != NULL ) delete [] num_alignments_x;
+    
+    // clear array holding number of reference sequences to
+    // search per read prior to choosing best alignment
+    if ( best_x != NULL ) delete [] best_x;
+    
+    delete [] read_max_SW_score;
+    
+    eprintf("    Total number of reads mapped (incl. all reads file sections searched): %u\n",total_reads_mapped);
+        
+    // filter the sequences by %id and %query coverage, output them if --best INT
+    if ( min_lis_gv > -1 )
+    {
+      if ( samout_gv || blastout_gv ) eprintf("    Writing alignments ... ");
 
 #ifdef debug_mmap
-          cout << "total index_num = " << myfiles.size() << endl;
-          for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
-              cout << "\t parts = " << num_index_parts[index_num] << endl;
+      cout << "total index_num = " << myfiles.size() << endl;
+      for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+          cout << "\t parts = " << num_index_parts[index_num] << endl;
+#endif            
+      TIME(s);
+      // loop through all databases
+      for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+      {
+#ifdef debug_output
+        cout << "index_num = " << index_num << endl;
 #endif
-            
-          TIME(s);
-          // loop through all databases
-          for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+        // loop through each section of a database
+        for ( uint16_t part = 0; part < num_index_parts[index_num]; part++ )
+        {
+          uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
+          uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
+          uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
+#ifdef debug_output
+          cout << "part = " << part << endl;
+          cout << "seq_part_size = " << seq_part_size << endl;
+          cout << "numseq_part = " << numseq_part << endl;
+          cout << "start_part = " << start_part << endl;
+#endif                    
+          // block of memory to hold all ids + reference sequences
+          char* buffer = new char[(seq_part_size+1)]();
+          if ( buffer == NULL )
           {
-#ifdef debug_output
-            cout << "index_num = " << index_num << endl;
-#endif
-            // loop through each section of a database
-            for ( uint16_t part = 0; part < num_index_parts[index_num]; part++ )
-            {
-              uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
-              uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
-              uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
-
-#ifdef debug_output
-              cout << "part = " << part << endl;
-              cout << "seq_part_size = " << seq_part_size << endl;
-              cout << "numseq_part = " << numseq_part << endl;
-              cout << "start_part = " << start_part << endl;
-#endif
-                    
-              // block of memory to hold all ids + reference sequences
-              char* buffer = new char[(seq_part_size+1)]();
-              if ( buffer == NULL )
-              {
-                fprintf(stderr,"  %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
-                exit(EXIT_FAILURE);
-              }
+            fprintf(stderr,"  %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
               
-              // pointer to the start of every sequence in the buffer
-              char** reference_seq = new char*[(numseq_part<<1)]();
-              if ( reference_seq == NULL )
-              {
-                fprintf(stderr,"  %sERROR%s: could not allocate memory for reference_seq (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
-                exit(EXIT_FAILURE);
-              }
+          // pointer to the start of every sequence in the buffer
+          char** reference_seq = new char*[(numseq_part<<1)]();
+          if ( reference_seq == NULL )
+          {
+            fprintf(stderr,"  %sERROR%s: could not allocate memory for reference_seq (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
                     
-              // length of every sequence in the buffer (is not required here)
-              uint32_t* reference_seq_len = NULL;
-              
-              load_ref((char*)(myfiles[index_num].first).c_str(),buffer,reference_seq,reference_seq_len,seq_part_size,numseq_part,start_part,0);
-                    
-              // run through all the reads, output those which aligned
-              for ( uint32_t readn = 1; readn < strs; readn+=2 )
-              {
-                map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
-
-                // this read does not have any alignment
-                if ( alignment == read_hits_align_info.end() )
-                {
-                  // output null string for read alignment
-                  if ( print_all_reads_gv )
-                  {
-                    s_align* null_alignment = NULL;
-                    if ( blastout_gv && (blast_outfmt > 0) )
-                    {
-                      report_blast (acceptedblast, // blast output file
-                                    null_alignment, // SW alignment cigar
-                                    reads[readn-1]+1, //read name
-                                    0, // read sequence (in integer format)
-                                    0, // read quality
-                                    0, // reference name
-                                    0, // reference sequence
-                                    0, // e-value score
-                                    0, // read length (to compute the masked regions)
-                                    0, // bitscore
-                                    0, // forward or reverse strand
-                                    0, // %id
-                                    0, // %query coverage
-                                    0, // number of mismatches
-                                    0); // number of gaps
-                    }
-                                
-                    if ( samout_gv )
-                    {
-                      report_sam (acceptedsam, // sam output file
-                                  null_alignment, // SW alignment cigar
-                                  reads[readn-1]+1, // read name
-                                  0, // read sequence (in integer format)
-                                  0, // read quality
-                                  0, // reference name
-                                  0, // reference sequence
-                                  0, // read length (to compute the masked regions)
-                                  0, // forward or reverse strand
-                                  0); // edit distance
-                    }
-                  }
-                  // go to next read
-                  continue;
-                }
- 
-#ifdef debug_output
-                cout << "readn = " << readn << endl;
-#endif
-                // get all alignments for this read
-                s_align* ptr_alignment = alignment->second.second;
-                if ( ptr_alignment == NULL )
-                {
-                  fprintf(stderr,"  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
-                  exit(EXIT_FAILURE);
-                }
-#ifdef debug_output
-                cout << "ptr_alignment->index_num = " << (uint16_t)ptr_alignment->index_num << endl; 
-                cout << "ptr_alignment->score1 = " << (int32_t)ptr_alignment->score1 << endl;                 
-                cout << "ptr_alignment->part = " << (uint16_t)ptr_alignment->part << endl;
-#endif
-
-                // OTU-map: maximum SW score of all best alignments
-                int score_is_max = 0;
-                // OTU-map: index of alignment holding maximum SW score
-                int index_max_score = 0;
-                // OTU-map: database
-                uint16_t index_num_max_score = 0;
-                // OTU-map: section in database
-                uint16_t part_num_max_score = 0;
+          // length of every sequence in the buffer (is not required here)
+          uint32_t* reference_seq_len = NULL;
+          
+          load_ref((char*)(myfiles[index_num].first).c_str(),buffer,reference_seq,reference_seq_len,seq_part_size,numseq_part,start_part,0);
                 
-                // find the alignment slot with maximum SW score
-                for ( int p = 0; p < num_best_hits_gv; p++ )
-                {
-                  if ( (ptr_alignment[p].cigar != NULL) && (ptr_alignment[p].score1 > score_is_max) )
-                  {
-                    score_is_max = ptr_alignment[p].score1;
-                    index_max_score = p;
-                    index_num_max_score = ptr_alignment[p].index_num;
-                    part_num_max_score = ptr_alignment[p].part;
-                  }
-                }
-
-                // loop through all of the best alignments for this read
-                for ( int p = 0; p < num_best_hits_gv; p++ )
-                {
-#ifdef debug_output
-                  cout << "best_hit = " << p << endl;
-#endif
-                  // continue loop if the reference sequence in this alignment
-                  // belongs to the database section currently loaded into RAM
-                  if ( (ptr_alignment->index_num == index_num) && (ptr_alignment->part == part) )
-                  {
-                    // format read & get read length
-                    char myread[READLEN];
-                    uint32_t readlen = ptr_alignment->readlen;
-                    
-                    // format forward read from char to int
-                    if ( ptr_alignment->strand )
-                    {
-                      format_forward(reads[readn],&myread[0],filesig);
-                    }
-                    // format reverse-complement read from char to int
-                    else
-                    {
-                      char* end_read = NULL;
-                      // FASTA
-                      if ( filesig == '>' )
-                      {
-                        // if split-read (for file_s > 0)
-                        // note: the split-read contains two reads (a pair, in case reads are paired) that
-                        //   are located at another address space than the contiguous memory mapped
-                        //   section of reads
-                        if ((readn < 4) && (file_s > 0) )
-                        {
-#ifdef debug_output
-                          cout << "process split-read" << endl; //TESTING
-#endif
-                          end_read = reads[readn];
-                          while (*end_read != '\0') end_read++;
-                          if ( *end_read == '\0' ) end_read--; //account for '\0'
-                          if ( *end_read == '\n' ) end_read--; //account for '\n'
-                        }
-                        // last read in the partial file section
-                        else if ( readn >= (strs-2) )
-                        {
-                          end_read = reads[readn];
-                          
-                          // if processing last file section, the final read will end with '\0'
-                          if ( file_s == file_sections-1 )
-                          {
-#ifdef debug_output
-                            cout << "process last read in final file section .." << endl; //TESTING
-#endif
-                            while ( *end_read++ != '\0' );
-                            // back-track 3 nucleotides (\n\0_)
-                            if ( *(end_read-2) == '\n' ) end_read--;
-                            // back-track 2 nucleotides (\0_)
-                            end_read-=2;
-                          }
-                          // if processing a file section > 0 and < last file section, the final read will end with '>' (beginning of split-read)
-                          else
-                          {
-#ifdef debug_output
-                            cout << "process last read in file section > 0 and < final file section .." << endl; //TESTING
-#endif
-                            while ( *end_read++ != '>' );
-                            // back-track 3 nucleotides (\n>_)
-                            end_read-=3;
-                          }
-                        }
-                        // all other reads
-                        else end_read = reads[readn+1]-2;
-                      }
-                      // FASTQ
-                      else end_read = reads[readn]+readlen-1;
-                      
-                      format_rev(reads[readn],end_read,&myread[0],filesig);
-                    }//~reverse-complement read
-                                
-                                
-                    // get the edit distance between reference and read
-                    uint32_t ref_seq = ptr_alignment->ref_seq;
-                    double id = 0;
-                    char to_char[5] = {'A','C','G','T','N'};
-                    char* ref_seq_ptr = reference_seq[(2*ref_seq)+1];
-                    char* read_seq_ptr = myread;
-                    int32_t qb = ptr_alignment->ref_begin1;
-                    int32_t pb = ptr_alignment->read_begin1;
-                    uint32_t mismatches = 0;
-                    uint32_t gaps = 0;
-
-#ifdef debug_output
-                    cout << "ref_seq = " << ref_seq << endl;
-                    cout << "ptr_alignment->ref_begin1 = " << ptr_alignment->ref_begin1 << endl;
-                    cout << "ptr_alignment->read_begin1 = " << ptr_alignment->read_begin1 << endl;
-#endif
-                                
-                    for (uint32_t c2 = 0; c2 < ptr_alignment->cigarLen; ++c2)
-                    {
-                      uint32_t letter = 0xf&*(ptr_alignment->cigar + c2);
-                      uint32_t length = (0xfffffff0&*(ptr_alignment->cigar + c2))>>4;
-                      if (letter == 0) 
-                      {
-                        for (int p = 0; p < length; ++p)
-                        {
-                          if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
-                          else ++id;
-                          ++qb;
-                          ++pb;
-                        }
-                      } 
-                      else if (letter == 1) 
-                      {
-                        pb += length;
-                        gaps += length;
-                      } 
-                      else
-                      {
-                        qb += length;
-                        gaps += length;
-                      }
-                    }
-                                
-                    int32_t align_len = abs(ptr_alignment->read_end1+1 - ptr_alignment->read_begin1);
-                    int32_t total_pos = mismatches+gaps+id;
-                    stringstream ss;
-                    ss.precision(3);
-                    ss << (double)id/total_pos << ' ' << (double)align_len/readlen;
-                    double align_id_round = 0.0;
-                    double align_cov_round = 0.0;
-                    ss >> align_id_round >> align_cov_round;
-                                     
-//#define debug_id_cov
-#ifdef debug_id_cov
-                    cout << "read tag: ";
-                    char* tt = reads[readn-1];
-                    while (*tt != '\n' ) cout << (char)*tt++;
-                    cout << endl;
-                    /*
-                     cout << "ref tag: ";
-                     tt = reference_seq[(2*(int)max_seq)];
-                     while (*tt != '\n' ) cout << (char)*tt++;
-                     cout << endl; */
-                              
-                    cout << "align_len = " << align_len << endl;
-                    cout << "total_pos = " << total_pos << endl;
-                    cout << "id = " << id << endl;
-                    cout << "Score = " << ptr_alignment->score1 << endl;
-                    cout << "%id = " << (double)id/total_pos << endl;
-                    cout << "%cov = " << (double)align_len/readlen << endl;
-                    cout << "align_cov = " << (double)align_cov << endl;
-                    cout << "align_id = " << (double)align_id << endl;
-                    cout << "align_id_round = " << (double)align_id_round << endl;
-                    cout << "align_cov_round = " << (double)align_cov_round << endl;
-#endif
-                                
-                    // alignment with the highest SW score passed %id and %coverage
-                    // thresholds
-                    if ( ( p == index_max_score ) &&
-                         ( align_id_round >= align_id ) && 
-                         ( align_cov_round >= align_cov ) && 
-                         ( index_num == index_num_max_score ) &&
-                         ( part == part_num_max_score ) )
-                    {
-                      // increment number of reads passing identity
-                      // and coverage threshold
-                      total_reads_mapped_cov++;
-                      
-                      // fill OTU map with highest-scoring alignment for the read
-                      if ( otumapout_gv )
-                      {
-                        // reference sequence identifier for mapped read
-                        char ref_seq_arr[4000] = "";
-                        char* ref_seq_arr_ptr = ref_seq_arr;
-                        char* ref_seq_id_ptr = reference_seq[(2*ref_seq)]+1;
-                        while ( (*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') ) *ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
-                        string ref_seq_str = ref_seq_arr;
-                        
-                        // read identifier
-                        char read_seq_arr[4000] = "";
-                        char* read_seq_arr_ptr = read_seq_arr;
-                        char* read_seq_id_ptr = reads[readn-1]+1;
-                        while ( (*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') ) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
-                        string read_seq_str = read_seq_arr;
-                        
-                        otu_map[ref_seq_str].push_back(read_seq_str);
-                      }
-                    }
-                    else
-                    {
-                      // output read for de novo OTU construction
-                      read_hits_denovo[readn].flip();
-                    }
-                                              
-                    // output alignment to SAM or Blast-like formats
-                    if ( samout_gv || blastout_gv )
-                    {
-                      // quality for FASTQ
-                      char* read_qual = NULL;
-                      if ( filesig == '@' )
-                      {
-                        // forward
-                        if ( ptr_alignment->strand )
-                        {
-                          // if second part of split read or last read in file
-                          if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
-                          {
-#ifdef debug_output
-                            if (readn >= (strs-2)) cout << "get quality for last (forward) read in file section\n"; //TESTING
-#endif
-                            read_qual = reads[readn];
-                            int8_t numnewlines = 0;
-                            while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
-                          }
-                          else read_qual = reads[readn+1]-readlen-1;
-                        }
-                        // reverse-complement
-                        else
-                        {
-                          // if second part of split read or last read in file
-                          if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
-                          {
-                            read_qual = reads[readn];
-                              
-                            // last file section
-                            if ( file_s == file_sections-1 )
-                            {
-#ifdef debug_output
-                              if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
-#endif
-                              while ( *read_qual != '\0' ) read_qual++;
-                              if ( *(read_qual-3) == '\n') read_qual--;
-                              // account for '\n\0'
-                              read_qual-=2;
-                            }
-                            // file section > 0 and < last file section
-                            else
-                            {
-#ifdef debug_output
-                              if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
-#endif
-                              while ( read_qual != finalnt ) read_qual++;
-                              read_qual--;
-                            }          
-                          }
-                          else read_qual = reads[readn+1]-2;
-                        }
-                      }//~if filesig == '@'
-                            
-                      if ( blastout_gv )
-                      {
-                        uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(ptr_alignment->score1) - log(gumbel[index_num].second))/(float)log(2));
-                        double evalue_score = (double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num]*pow(EXP,(-(gumbel[index_num].first)*ptr_alignment->score1));
-                            
-                        report_blast (acceptedblast, //blast output file
-                                      ptr_alignment, //SW alignment cigar
-                                      reads[readn-1]+1, //read name
-                                      myread, //read sequence (in integer format)
-                                      read_qual, //read quality
-                                      reference_seq[(2*ref_seq)]+1, //reference name
-                                      reference_seq[(2*ref_seq)+1], //reference sequence
-                                      evalue_score, //e-value score
-                                      readlen, //read length (to compute the masked regions)
-                                      bitscore,
-                                      ptr_alignment->strand,
-                                      (double)id/total_pos, // %id
-                                      (double)align_len/readlen, // %query coverage
-                                      mismatches,
-                                      gaps
-                                      );
-                      }
-                            
-                      if ( samout_gv )
-                      {
-                        report_sam (acceptedsam, //sam output file
-                                    ptr_alignment, //SW alignment cigar
-                                    reads[readn-1]+1, //read name
-                                    myread,//read sequence (in integer format)
-                                    read_qual, //read quality
-                                    reference_seq[(2*ref_seq)]+1, //reference name
-                                    reference_seq[(2*ref_seq)+1], //reference sequence
-                                    readlen, //read length (to compute the masked regions)
-                                    ptr_alignment->strand,
-                                    mismatches+gaps); //edit distance
-                      }         
-                    }//~if (samout_gv || blastout_gv)
-                  }//~if alignment at current database and index part loaded in RAM
-                  // increment pointer to next best alignment, or
-                  // exit loop if at final alignment                          
-                  if ( p+1 < num_best_hits_gv )
-                  {
-                    ptr_alignment++;
-                  
-                    // break if an alignment doesn't exist
-                    if ( ptr_alignment->cigar == NULL ) break;
-                  }
-                }//~for all best alignments
-              }//~for all reads
-                        
-              // free buffer
-              if ( buffer != NULL )
-              {
-                delete [] buffer;
-                buffer = NULL;
-              }
-              
-              // free pointers to reference sequences
-              if ( reference_seq != NULL )
-              {
-                delete [] reference_seq;
-                reference_seq = NULL;
-              }                  
-            }//~for every database section
-          }//~for every database
-
-          // free alignment information for all aligned reads
+          // run through all the reads, output those which aligned
           for ( uint32_t readn = 1; readn < strs; readn+=2 )
           {
             map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
 
             // this read does not have any alignment
-            if ( alignment != read_hits_align_info.end() )
+            if ( alignment == read_hits_align_info.end() )
             {
-              s_align* ptr_alignment = alignment->second.second;
-              for ( int p = 0; p < num_best_hits_gv; p++ )
+              // output null string for read alignment
+              if ( print_all_reads_gv )
               {
-                free(ptr_alignment->cigar);
-                ptr_alignment->cigar = NULL;
-
-                if ( p+1 < num_best_hits_gv )
+                s_align* null_alignment = NULL;
+                if ( blastout_gv && (blast_outfmt > 0) )
                 {
-                  ptr_alignment++;
-          
-                  // check whether an alignment exists
-                  if ( ptr_alignment->cigar == NULL ) break;
+                  report_blast (acceptedblast, // blast output file
+                                null_alignment, // SW alignment cigar
+                                reads[readn-1]+1, //read name
+                                0, // read sequence (in integer format)
+                                0, // read quality
+                                0, // reference name
+                                0, // reference sequence
+                                0, // e-value score
+                                0, // read length (to compute the masked regions)
+                                0, // bitscore
+                                0, // forward or reverse strand
+                                0, // %id
+                                0, // %query coverage
+                                0, // number of mismatches
+                                0); // number of gaps
+                }                                
+                if ( samout_gv )
+                {
+                  report_sam (acceptedsam, // sam output file
+                              null_alignment, // SW alignment cigar
+                              reads[readn-1]+1, // read name
+                              0, // read sequence (in integer format)
+                              0, // read quality
+                              0, // reference name
+                              0, // reference sequence
+                              0, // read length (to compute the masked regions)
+                              0, // forward or reverse strand
+                              0); // edit distance
                 }
               }
+              // go to next read
+              continue;
+            }
+#ifdef debug_output
+            cout << "readn = " << readn << endl;
+#endif
+            // get all alignments for this read
+            s_align* ptr_alignment = alignment->second.second;
+            if ( ptr_alignment == NULL )
+            {
+              fprintf(stderr,"  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
+              exit(EXIT_FAILURE);
+            }
+#ifdef debug_output
+            cout << "ptr_alignment->index_num = " << (uint16_t)ptr_alignment->index_num << endl; 
+            cout << "ptr_alignment->score1 = " << (int32_t)ptr_alignment->score1 << endl;                 
+            cout << "ptr_alignment->part = " << (uint16_t)ptr_alignment->part << endl;
+#endif
+            // OTU-map: maximum SW score of all best alignments
+            int score_is_max = 0;
+            // OTU-map: index of alignment holding maximum SW score
+            int index_max_score = 0;
+            // OTU-map: database
+            uint16_t index_num_max_score = 0;
+            // OTU-map: section in database
+            uint16_t part_num_max_score = 0;
+            
+            // find the alignment slot with maximum SW score
+            for ( int p = 0; p < num_best_hits_gv; p++ )
+            {
+              if ( (ptr_alignment[p].cigar != NULL) && (ptr_alignment[p].score1 > score_is_max) )
+              {
+                score_is_max = ptr_alignment[p].score1;
+                index_max_score = p;
+                index_num_max_score = ptr_alignment[p].index_num;
+                part_num_max_score = ptr_alignment[p].part;
+              }
+            }
 
-              // free memory for all alignments of this read
-              delete [] alignment->second.second;
-              alignment->second.second = NULL;
-            }
-          }
-            
-          TIME(f);
-          if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );
-            
-        }// if (min_lis_gv > -1)
-        
-        if ( align_cov || align_id )
-        {
-          eprintf("    Total number of reads mapped with");
-          if ( align_id > 0 ) eprintf(" >= %.2lf identity,",align_id);
-          if ( align_cov > 0 ) eprintf(" >= %.2lf query coverage",align_cov);
-          eprintf(" (incl. all reads file sections searched): %u\n",total_reads_mapped_cov);
-        }
-        
-        if ( blastout_gv )
-        {
-          if ( acceptedblast.is_open() ) acceptedblast.close();
-          else
-          {
-              fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
-              exit(EXIT_FAILURE);
-          }
-        }
-        if ( samout_gv )
-        {
-          if ( acceptedsam.is_open() ) acceptedsam.close();
-          else
-          {
-              fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
-              exit(EXIT_FAILURE);
-          }
-        }
-        
-#ifdef chimera
-        // move the alignment into into a vector & sort by reference sequence + position
-        vector<pair<uint32_t,s_align> > read_hits_align_info_vec;
-        map<uint32_t,s_align>::iterator alignment;
-        int countt = 0;
-        for ( alignment = read_hits_align_info.begin(); alignment != read_hits_align_info.end(); alignment++ )
-        {
-          if ( countt++ < 15 )
-          {
-              cout << "alignment->first = " << alignment->first << "\t" << !alignment->second.strand << "\t" << alignment->second.ref_seq << "\t" << alignment->second.ref_begin1 << endl;
-          }
-          read_hits_align_info_vec.push_back(pair<uint32_t,s_align>(alignment->first,alignment->second));
-        }
-        
-        
-        // free memory for original map containing alignments
-        read_hits_align_info.clear();
-        
-        sort(read_hits_align_info_vec.begin(),read_hits_align_info_vec.end(),sort_by_ref);
-        
-        for ( uint32_t readn = 0; readn < 30; readn++ )
-        {
-          cout << read_hits_align_info_vec[readn].first << "\t" 
-               << read_hits_align_info_vec[readn].second.strand 
-               << "\t" << read_hits_align_info_vec[readn].second.ref_seq 
-               << "\t" << read_hits_align_info_vec[readn].second.ref_begin1 << endl;
-        }
-        
-        vector<bool> chimeric_reads;
-        
-#endif
-        
-        // output aligned and non-aligned reads to FASTA/FASTQ file
-        report_fasta (acceptedstrings,ptr_filetype_or,ptr_filetype_ar,reads,strs,read_hits,file_s,finalnt
-#ifdef chimera
-                      ,chimeric_reads,acceptedchimeras_file
-#endif
-                      );
-        
-        // output aligned and non-aligned reads with < %id and
-        // < %coverage to FASTA/FASTQ file for de novo analysis
-        if ( de_novo_otu_gv )
-        {
-          report_denovo(denovo_otus_file,reads,strs,read_hits_denovo,file_s,finalnt);
-            
-          if ( denovo_otus_file != NULL )
-          {
-            delete [] denovo_otus_file;
-            denovo_otus_file = NULL;
-          }
-        }
-        
-        read_hits.clear();
-        read_hits_denovo.clear();
-        
-        
-        // free the split_read
-        if ( split_read != NULL )
-        {
-          delete [] split_read;
-          split_read = NULL;
-        }
-        
-        // record the start of the split_read if it exists
-        if ( file_s < file_sections-1 )
-        {
-            split_read = new char[(READLEN*2)];
-            
-            if ( split_read == NULL )
+            // loop through all of the best alignments for this read
+            for ( int p = 0; p < num_best_hits_gv; p++ )
             {
-                fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
-                exit(EXIT_FAILURE);
-            }
-            
-            // compute the first half of the split_read
-            char *start = &raw[partial_file_size]-reads_offset_e-1;
-            char *end = &raw[partial_file_size];
-            
-            split_read_ptr = split_read;
-            
-#ifdef debug_mmap
-            cout << "split read start: "; //TESTING
+#ifdef debug_output
+              cout << "best_hit = " << p << endl;
 #endif
-            
-            while ( start != end )
-            {
-#ifdef debug_mmap
-                cout << (char)*start; //TESTING
+              // continue loop if the reference sequence in this alignment
+              // belongs to the database section currently loaded into RAM
+              if ( (ptr_alignment->index_num == index_num) && (ptr_alignment->part == part) )
+              {
+                // format read & get read length
+                char myread[READLEN];
+                uint32_t readlen = ptr_alignment->readlen;
+                
+                // format forward read from char to int
+                if ( ptr_alignment->strand )
+                {
+                  format_forward(reads[readn],&myread[0],filesig);
+                }
+                // format reverse-complement read from char to int
+                else
+                {
+                  char* end_read = NULL;
+                  // FASTA
+                  if ( filesig == '>' )
+                  {
+                    // if split-read (for file_s > 0)
+                    // note: the split-read contains two reads (a pair, in case reads are paired) that
+                    //   are located at another address space than the contiguous memory mapped
+                    //   section of reads
+                    if ((readn < 4) && (file_s > 0) )
+                    {
+#ifdef debug_output
+                      cout << "process split-read" << endl; //TESTING
 #endif
-                *split_read_ptr++ = *start++;
-            }
-#ifdef debug_mmap
-            cout << ".STOP." <<endl; //TESTING
+                      end_read = reads[readn];
+                      while (*end_read != '\0') end_read++;
+                      if ( *end_read == '\0' ) end_read--; //account for '\0'
+                      if ( *end_read == '\n' ) end_read--; //account for '\n'
+                    }
+                    // last read in the partial file section
+                    else if ( readn >= (strs-2) )
+                    {
+                      end_read = reads[readn];
+                      
+                      // if processing last file section, the final read will end with '\0'
+                      if ( file_s == file_sections-1 )
+                      {
+#ifdef debug_output
+                        cout << "process last read in final file section .." << endl; //TESTING
 #endif
-            
-        }// (s < file_sections - 1)
-        
-        // free the mmap'd file section
-        if ( munmap(raw, partial_file_size ) == -1 )
+                        while ( *end_read++ != '\0' );
+                        // back-track 3 nucleotides (\n\0_)
+                        if ( *(end_read-2) == '\n' ) end_read--;
+                        // back-track 2 nucleotides (\0_)
+                        end_read-=2;
+                      }
+                      // if processing a file section > 0 and < last file section, the final read will end with '>' (beginning of split-read)
+                      else
+                      {
+#ifdef debug_output
+                        cout << "process last read in file section > 0 and < final file section .." << endl; //TESTING
+#endif
+                        while ( *end_read++ != '>' );
+                        // back-track 3 nucleotides (\n>_)
+                        end_read-=3;
+                      }
+                    }
+                    // all other reads
+                    else end_read = reads[readn+1]-2;
+                  }
+                  // FASTQ
+                  else end_read = reads[readn]+readlen-1;
+                  
+                  format_rev(reads[readn],end_read,&myread[0],filesig);
+                }//~reverse-complement read
+                            
+                                
+                // get the edit distance between reference and read
+                uint32_t ref_seq = ptr_alignment->ref_seq;
+                double id = 0;
+                char to_char[5] = {'A','C','G','T','N'};
+                char* ref_seq_ptr = reference_seq[(2*ref_seq)+1];
+                char* read_seq_ptr = myread;
+                int32_t qb = ptr_alignment->ref_begin1;
+                int32_t pb = ptr_alignment->read_begin1;
+                uint32_t mismatches = 0;
+                uint32_t gaps = 0;
+#ifdef debug_output
+                cout << "ref_seq = " << ref_seq << endl;
+                cout << "ptr_alignment->ref_begin1 = " << ptr_alignment->ref_begin1 << endl;
+                cout << "ptr_alignment->read_begin1 = " << ptr_alignment->read_begin1 << endl;
+#endif                           
+                for (uint32_t c2 = 0; c2 < ptr_alignment->cigarLen; ++c2)
+                {
+                  uint32_t letter = 0xf&*(ptr_alignment->cigar + c2);
+                  uint32_t length = (0xfffffff0&*(ptr_alignment->cigar + c2))>>4;
+                  if (letter == 0) 
+                  {
+                    for (int p = 0; p < length; ++p)
+                    {
+                      if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
+                      else ++id;
+                      ++qb;
+                      ++pb;
+                    }
+                  } 
+                  else if (letter == 1) 
+                  {
+                    pb += length;
+                    gaps += length;
+                  } 
+                  else
+                  {
+                    qb += length;
+                    gaps += length;
+                  }
+                }
+                                
+                int32_t align_len = abs(ptr_alignment->read_end1+1 - ptr_alignment->read_begin1);
+                int32_t total_pos = mismatches+gaps+id;
+                stringstream ss;
+                ss.precision(3);
+                ss << (double)id/total_pos << ' ' << (double)align_len/readlen;
+                double align_id_round = 0.0;
+                double align_cov_round = 0.0;
+                ss >> align_id_round >> align_cov_round;
+                                     
+//#define debug_id_cov
+#ifdef debug_id_cov
+                cout << "read tag: ";
+                char* tt = reads[readn-1];
+                while (*tt != '\n' ) cout << (char)*tt++;
+                cout << endl;
+                /*
+                 cout << "ref tag: ";
+                 tt = reference_seq[(2*(int)max_seq)];
+                 while (*tt != '\n' ) cout << (char)*tt++;
+                 cout << endl; */
+                          
+                cout << "align_len = " << align_len << endl;
+                cout << "total_pos = " << total_pos << endl;
+                cout << "id = " << id << endl;
+                cout << "Score = " << ptr_alignment->score1 << endl;
+                cout << "%id = " << (double)id/total_pos << endl;
+                cout << "%cov = " << (double)align_len/readlen << endl;
+                cout << "align_cov = " << (double)align_cov << endl;
+                cout << "align_id = " << (double)align_id << endl;
+                cout << "align_id_round = " << (double)align_id_round << endl;
+                cout << "align_cov_round = " << (double)align_cov_round << endl;
+#endif
+                                
+                // alignment with the highest SW score passed
+                // %id and %coverage thresholds
+                if ( ( p == index_max_score ) &&
+                     ( align_id_round >= align_id ) && 
+                     ( align_cov_round >= align_cov ) && 
+                     ( index_num == index_num_max_score ) &&
+                     ( part == part_num_max_score ) )
+                {
+                  // increment number of reads passing identity
+                  // and coverage threshold
+                  total_reads_mapped_cov++;
+
+                  // do not output read for de novo OTU construction
+                  read_hits_denovo[readn].flip();
+                  
+                  // fill OTU map with highest-scoring alignment for the read
+                  if ( otumapout_gv )
+                  {
+                    // reference sequence identifier for mapped read
+                    char ref_seq_arr[4000] = "";
+                    char* ref_seq_arr_ptr = ref_seq_arr;
+                    char* ref_seq_id_ptr = reference_seq[(2*ref_seq)]+1;
+                    while ( (*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') ) *ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
+                    string ref_seq_str = ref_seq_arr;
+                    
+                    // read identifier
+                    char read_seq_arr[4000] = "";
+                    char* read_seq_arr_ptr = read_seq_arr;
+                    char* read_seq_id_ptr = reads[readn-1]+1;
+                    while ( (*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') ) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
+                    string read_seq_str = read_seq_arr;
+                    
+                    otu_map[ref_seq_str].push_back(read_seq_str);
+                  }
+                }
+                                              
+                // output alignment to SAM or Blast-like formats
+                if ( samout_gv || blastout_gv )
+                {
+                  // quality for FASTQ
+                  char* read_qual = NULL;
+                  if ( filesig == '@' )
+                  {
+                    // forward
+                    if ( ptr_alignment->strand )
+                    {
+                      // if second part of split read or last read in file
+                      if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
+                      {
+#ifdef debug_output
+                        if (readn >= (strs-2)) cout << "get quality for last (forward) read in file section\n"; //TESTING
+#endif
+                        read_qual = reads[readn];
+                        int8_t numnewlines = 0;
+                        while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
+                      }
+                      else read_qual = reads[readn+1]-readlen-1;
+                    }
+                    // reverse-complement
+                    else
+                    {
+                      // if second part of split read or last read in file
+                      if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
+                      {
+                        read_qual = reads[readn];
+                          
+                        // last file section
+                        if ( file_s == file_sections-1 )
+                        {
+#ifdef debug_output
+                          if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
+#endif
+                          while ( *read_qual != '\0' ) read_qual++;
+                          if ( *(read_qual-3) == '\n') read_qual--;
+                          // account for '\n\0'
+                          read_qual-=2;
+                        }
+                        // file section > 0 and < last file section
+                        else
+                        {
+#ifdef debug_output
+                          if (readn >= (strs-2)) cout << "get quality for last (reverse) read in (not last) file section\n"; //TESTING
+#endif
+                          while ( read_qual != finalnt ) read_qual++;
+                          read_qual--;
+                        }          
+                      }
+                      else read_qual = reads[readn+1]-2;
+                    }
+                  }//~if filesig == '@'
+                        
+                  if ( blastout_gv )
+                  {
+                    uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(ptr_alignment->score1) - log(gumbel[index_num].second))/(float)log(2));
+                    double evalue_score = (double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num]*pow(EXP,(-(gumbel[index_num].first)*ptr_alignment->score1));
+                        
+                    report_blast (acceptedblast, //blast output file
+                                  ptr_alignment, //SW alignment cigar
+                                  reads[readn-1]+1, //read name
+                                  myread, //read sequence (in integer format)
+                                  read_qual, //read quality
+                                  reference_seq[(2*ref_seq)]+1, //reference name
+                                  reference_seq[(2*ref_seq)+1], //reference sequence
+                                  evalue_score, //e-value score
+                                  readlen, //read length (to compute the masked regions)
+                                  bitscore,
+                                  ptr_alignment->strand,
+                                  (double)id/total_pos, // %id
+                                  (double)align_len/readlen, // %query coverage
+                                  mismatches,
+                                  gaps
+                                  );
+                  }
+                        
+                  if ( samout_gv )
+                  {
+                    report_sam (acceptedsam, //sam output file
+                                ptr_alignment, //SW alignment cigar
+                                reads[readn-1]+1, //read name
+                                myread,//read sequence (in integer format)
+                                read_qual, //read quality
+                                reference_seq[(2*ref_seq)]+1, //reference name
+                                reference_seq[(2*ref_seq)+1], //reference sequence
+                                readlen, //read length (to compute the masked regions)
+                                ptr_alignment->strand,
+                                mismatches+gaps); //edit distance
+                  }         
+                }//~if (samout_gv || blastout_gv)
+              }//~if alignment at current database and index part loaded in RAM
+              // increment pointer to next best alignment, or
+              // exit loop if at final alignment                          
+              if ( p+1 < num_best_hits_gv )
+              {
+                ptr_alignment++;
+              
+                // break if an alignment doesn't exist
+                if ( ptr_alignment->cigar == NULL ) break;
+              }
+            }//~for all best alignments
+          }//~for all reads
+                        
+          // free buffer
+          if ( buffer != NULL )
+          {
+            delete [] buffer;
+            buffer = NULL;
+          }
+          
+          // free pointers to reference sequences
+          if ( reference_seq != NULL )
+          {
+            delete [] reference_seq;
+            reference_seq = NULL;
+          }                  
+        }//~for every database section
+      }//~for every database
+
+      // free alignment information for all aligned reads
+      for ( uint32_t readn = 1; readn < strs; readn+=2 )
+      {
+        map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
+
+        // this read does not have any alignment
+        if ( alignment != read_hits_align_info.end() )
         {
-            fprintf(stderr,"  %sERROR%s: Could not munmap file!\n","\033[0;31m","\033[0m");
+          s_align* ptr_alignment = alignment->second.second;
+          for ( int p = 0; p < num_best_hits_gv; p++ )
+          {
+            free(ptr_alignment->cigar);
+            ptr_alignment->cigar = NULL;
+
+            if ( p+1 < num_best_hits_gv )
+            {
+              ptr_alignment++;
+      
+              // check whether an alignment exists
+              if ( ptr_alignment->cigar == NULL ) break;
+            }
+          }
+
+          // free memory for all alignments of this read
+          delete [] alignment->second.second;
+          alignment->second.second = NULL;
+        }
+      }
+            
+      TIME(f);
+      if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );
+        
+    }// if (min_lis_gv > -1)
+        
+    if ( align_cov || align_id )
+    {
+      eprintf("    Total number of reads mapped with");
+      if ( align_id > 0 ) eprintf(" >= %.2lf identity,",align_id);
+      if ( align_cov > 0 ) eprintf(" >= %.2lf query coverage",align_cov);
+      eprintf(" (incl. all reads file sections searched): %u\n",total_reads_mapped_cov);
+    }
+        
+    if ( blastout_gv )
+    {
+      if ( acceptedblast.is_open() ) acceptedblast.close();
+      else
+      {
+          fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
+          exit(EXIT_FAILURE);
+      }
+    }
+    if ( samout_gv )
+    {
+      if ( acceptedsam.is_open() ) acceptedsam.close();
+      else
+      {
+          fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
+          exit(EXIT_FAILURE);
+      }
+    }
+                
+    // output aligned and non-aligned reads to FASTA/FASTQ file
+    report_fasta (acceptedstrings,
+                  ptr_filetype_or,
+                  ptr_filetype_ar,
+                  reads,strs,
+                  read_hits,
+                  file_s,
+                  finalnt);
+    
+    // output aligned and non-aligned reads with < %id and
+    // < %coverage to FASTA/FASTQ file for de novo analysis
+    if ( de_novo_otu_gv )
+    {
+      report_denovo(denovo_otus_file,reads,strs,read_hits_denovo,file_s,finalnt);
+        
+      if ( denovo_otus_file != NULL )
+      {
+        delete [] denovo_otus_file;
+        denovo_otus_file = NULL;
+      }
+    }
+        
+    read_hits.clear();
+    read_hits_denovo.clear();
+    
+    // free the split_read
+    if ( split_read != NULL )
+    {
+      delete [] split_read;
+      split_read = NULL;
+    }
+        
+    // record the start of the split_read if it exists
+    if ( file_s < file_sections-1 )
+    {
+        split_read = new char[(READLEN*2)];
+        
+        if ( split_read == NULL )
+        {
+            fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
         }
         
-        offset_map+=map_size_gv;
+        // compute the first half of the split_read
+        char *start = &raw[partial_file_size]-reads_offset_e-1;
+        char *end = &raw[partial_file_size];
         
-        // last section of the full file, count strings until EOF is reached
-        if ( ++file_s == file_sections - 1 ) partial_file_size = last_part_size;
+        split_read_ptr = split_read;
         
-        delete [] reads;
-        reads = NULL;
+#ifdef debug_mmap
+        cout << "split read start: "; //TESTING
+#endif
         
-    }//~while ( file_s < file_sections )
+        while ( start != end )
+        {
+#ifdef debug_mmap
+            cout << (char)*start; //TESTING
+#endif
+            *split_read_ptr++ = *start++;
+        }
+#ifdef debug_mmap
+        cout << ".STOP." <<endl; //TESTING
+#endif
+        
+    }// (s < file_sections - 1)
     
-    // output OTU map to file
+    // free the mmap'd file section
+    if ( munmap(raw, partial_file_size ) == -1 )
+    {
+        fprintf(stderr,"  %sERROR%s: Could not munmap file!\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
+    }
+    
+    offset_map+=map_size_gv;
+    
+    // last section of the full file, count strings until EOF is reached
+    if ( ++file_s == file_sections - 1 ) partial_file_size = last_part_size;
+    
+    delete [] reads;
+    reads = NULL;  
+  }//~while ( file_s < file_sections )
+    
+  // output OTU map to file
+  if ( otumapout_gv )
+  {
+    ofstream outfile (acceptedotumap_file,ios::app);
+    
+    map<string,vector<string> >::iterator otu_map_it;
+    
+    for ( otu_map_it = otu_map.begin(); otu_map_it != otu_map.end(); otu_map_it++ )
+    {
+      // output the ref ID
+      outfile << otu_map_it->first;
+      // output all reads mapping to ref ID
+      for ( int i = 0; i < otu_map_it->second.size(); i++ ) outfile << "\t" << otu_map_it->second[i];
+      outfile << "\n";
+    }
+    
+    if ( outfile.is_open() ) outfile.close();
+    else
+    {
+      fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedotumap_file);
+      exit(EXIT_FAILURE);
+    }
+    
+    // free memory for OTU mapping file
+    if ( acceptedotumap_file != NULL )
+    {
+      delete [] acceptedotumap_file;
+      acceptedotumap_file = NULL;
+    }
+  }
+    
+    
+  // close the reads file descriptor
+  close(fd);
+    
+  free(mat);
+  mat = NULL;
+    
+  // create a bilan (log file)
+  if ( (ptr_filetype_ar != NULL) && logout_gv )
+  {
+    FILE* bilan = fopen(logoutfile,"a");
+    if ( bilan == NULL )
+    {
+      fprintf(stderr,"  %sERROR%s: could not open file %s \n","\033[0;31m","\033[0m",logoutfile);
+      exit(EXIT_FAILURE);
+    }
+    
+    // output total number of reads
+    fprintf(bilan," Results:\n");
+    fprintf(bilan,"    Total reads = %u\n", number_total_read);
+    
+    fprintf(bilan," By database:\n");
+    // output total non-rrna + rrna reads
+    fprintf(bilan,"    aligned reads = %u (%.2f%%)\n",total_reads_mapped,(float)((float)total_reads_mapped/(float)number_total_read)*100);
+    fprintf(bilan,"    non-aligned reads = %u (%.2f%%)\n",number_total_read-total_reads_mapped,(1-((float)((float)total_reads_mapped/(float)number_total_read)))*100);
+    
+    // output stats by database
+    for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+    {
+      fprintf(bilan,"    %s\t\t%.2f%%\n",(char*)(myfiles[index_num].first).c_str(),(float)((float)reads_matched_per_db[index_num]/(float)number_total_read)*100);
+    }
+    
     if ( otumapout_gv )
     {
-        ofstream outfile (acceptedotumap_file,ios::app);
-        
-        map<string,vector<string> >::iterator otu_map_it;
-        
-        for ( otu_map_it = otu_map.begin(); otu_map_it != otu_map.end(); otu_map_it++ )
-        {
-            // output the ref ID
-            outfile << otu_map_it->first;
-            // output all reads mapping to ref ID
-            for ( int i = 0; i < otu_map_it->second.size(); i++ ) outfile << "\t" << otu_map_it->second[i];
-            outfile << "\n";
-        }
-        
-        if ( outfile.is_open() ) outfile.close();
-        else
-        {
-            fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedotumap_file);
-            exit(EXIT_FAILURE);
-        }
-        
-        // free memory for OTU mapping file
-        if ( acceptedotumap_file != NULL )
-        {
-            delete [] acceptedotumap_file;
-            acceptedotumap_file = NULL;
-        }
+      fprintf(bilan," Total OTUs = %lu\n", otu_map.size());
     }
     
-    
-    // close the reads file descriptor
-    close(fd);
-    
-    free(mat);
-    mat = NULL;
-    
-    // create a bilan (log file)
-    if ( (ptr_filetype_ar != NULL) && logout_gv )
-    {
-        FILE* bilan = fopen(logoutfile,"a");
-        if ( bilan == NULL )
-        {
-            fprintf(stderr,"  %sERROR%s: could not open file %s \n","\033[0;31m","\033[0m",logoutfile);
-            exit(EXIT_FAILURE);
-        }
-        
-        // output total number of reads
-        fprintf(bilan," Results:\n");
-        fprintf(bilan,"    Total reads = %u\n", number_total_read);
-        
-        fprintf(bilan," By database:\n");
-        // output total non-rrna + rrna reads
-        fprintf(bilan,"    aligned reads = %u (%.2f%%)\n",total_reads_mapped,(float)((float)total_reads_mapped/(float)number_total_read)*100);
-        fprintf(bilan,"    non-aligned reads = %u (%.2f%%)\n",number_total_read-total_reads_mapped,(1-((float)((float)total_reads_mapped/(float)number_total_read)))*100);
-        
-        // output stats by database
-        for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
-        {
-            fprintf(bilan,"    %s\t\t%.2f%%\n",(char*)(myfiles[index_num].first).c_str(),(float)((float)reads_matched_per_db[index_num]/(float)number_total_read)*100);
-        }
-        
-        if ( otumapout_gv )
-        {
-            fprintf(bilan," Total OTUs = %lu\n", otu_map.size());
-        }
-        
-        fclose(bilan);
-        
-        // free memory of accepted strings
-        if ( logoutfile != NULL )
-        {
-          delete [] logoutfile;
-          logoutfile = NULL;
-        }
-        
-    }
-    else if ( otumapout_gv ) otu_map.clear();
-    
+    fclose(bilan);
     
     // free memory of accepted strings
-    if ( acceptedstrings != NULL )
+    if ( logoutfile != NULL )
     {
-        delete [] acceptedstrings;
-        acceptedstrings = NULL;
+      delete [] logoutfile;
+      logoutfile = NULL;
     }
+  }
+  else if ( otumapout_gv ) otu_map.clear();
+  
+  // free memory of accepted strings
+  if ( acceptedstrings != NULL )
+  {
+      delete [] acceptedstrings;
+      acceptedstrings = NULL;
+  }
+  
+  if ( acceptedstrings_sam != NULL )  
+  {
+      delete [] acceptedstrings_sam;
+      acceptedstrings_sam = NULL;
+  }
+  
+  if ( acceptedstrings_blast != NULL )
+  {
+      delete [] acceptedstrings_blast;
+      acceptedstrings_blast = NULL;
+  }
     
-    if ( acceptedstrings_sam != NULL )  
-    {
-        delete [] acceptedstrings_sam;
-        acceptedstrings_sam = NULL;
-    }
-    
-    if ( acceptedstrings_blast != NULL )
-    {
-        delete [] acceptedstrings_blast;
-        acceptedstrings_blast = NULL;
-    }
-#ifdef chimera
-    if ( acceptedchimeras_file != NULL )
-    {
-        delete [] acceptedchimeras_file;
-        acceptedchimeras_file = NULL;
-    }
-#endif
-    
-    
-    
-    return ;
-    
+  return ;  
 }//~paralleltraversal()
 
