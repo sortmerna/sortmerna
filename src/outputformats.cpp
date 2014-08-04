@@ -299,27 +299,20 @@ void report_fasta (char* acceptedstrings,
                    vector<bool>& read_hits,
                    uint32_t file_s,
                    char* finalnt
-#ifdef chimera
-                   ,vector<bool>& chimeric_reads,
-                   char* acceptedchimeras_file
-#endif
 )
 {
     /// for timing different processes
 	double s,f;
     
     /// output accepted reads
-    if ( (ptr_filetype_ar != NULL) && (fastxout_gv || chimeraout_gv) )
+    if ( (ptr_filetype_ar != NULL) && fastxout_gv )
     {
         eprintf("    Writing aligned FASTA/FASTQ ... ");
         TIME(s);
         
         ofstream acceptedreads;
         if ( fastxout_gv ) acceptedreads.open(acceptedstrings, ios::app);
-#ifdef chimera
-        ofstream acceptedchimeras;
-        if ( chimeraout_gv ) acceptedchimeras.open(acceptedchimeras_file, ios::app);
-#endif
+
         /// pair-ended reads
         if ( pairedin_gv || pairedout_gv )
         {
@@ -358,15 +351,8 @@ void report_fasta (char* acceptedstrings,
                     {
                         if ( acceptedreads.is_open() )
                         {
-#ifdef chimera
-                            if ( !(chimeraout_gv && chimeric_reads[i]) )
-                            {
-#endif
-                                while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
-                                if ( *end_read == '\n' ) acceptedreads << "\n";
-#ifdef chimera
-                            }
-#endif
+                            while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
+                            if ( *end_read == '\n' ) acceptedreads << "\n";
                         }
                         else
                         {
@@ -374,35 +360,13 @@ void report_fasta (char* acceptedstrings,
                             exit(EXIT_FAILURE);
                         }
                     }
-                    
-                    
-#ifdef chimera
-                    /// output read to chimeric file
-                    if ( chimeraout_gv )
-                    {
-                        if ( acceptedchimeras.is_open() )
-                        {
-                            if ( chimeric_reads[i] )
-                            {
-                                while ( begin_read != end_read ) acceptedchimeras << (char)*begin_read++;
-                                if ( *end_read == '\n' ) acceptedchimeras << "\n";
-                            }
-                        }
-                        else
-                        {
-                            fprintf(stderr,"  %sERROR%s: file %s (acceptedchimeras) could not be opened for writing.\n\n","\033[0;31m",acceptedchimeras_file,"\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-#endif
-                    
                 }//~the read was accepted
             }//~for all reads
         }//~if paired-in or paired-out
         /// regular or pair-ended reads don't need to go into the same file
         else
         {
-            /// loop through every read, output accepted (and chimeric) reads
+            /// loop through every read, output accepted reads
             for ( int32_t i = 1; i < strs; i+=2 )
             {
                 char* begin_read = reads[i-1];
@@ -439,15 +403,8 @@ void report_fasta (char* acceptedstrings,
                     {
                         if ( acceptedreads.is_open() )
                         {
-#ifdef chimera
-                            if ( !(chimeraout_gv && chimeric_reads[i]) )
-                            {
-#endif
-                                while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
-                                if ( *end_read == '\n' ) acceptedreads << "\n";
-#ifdef chimera
-                            }
-#endif
+                            while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
+                            if ( *end_read == '\n' ) acceptedreads << "\n";
                         }
                         else
                         {
@@ -455,36 +412,11 @@ void report_fasta (char* acceptedstrings,
                             exit(EXIT_FAILURE);
                         }
                     }
-                    
-                    
-                    
-#ifdef chimera
-                    /// output read to chimeric file
-                    if ( chimeraout_gv )
-                    {
-                        if ( acceptedchimeras.is_open() )
-                        {
-                            if ( chimeric_reads[i] )
-                            {
-                                while ( begin_read != end_read ) acceptedchimeras << (char)*begin_read++;
-                                if ( *end_read == '\n' ) acceptedchimeras << "\n";
-                            }
-                        }
-                        else
-                        {
-                            fprintf(stderr,"  %sERROR%s: file %s (acceptedchimeras) could not be opened for writing.\n\n","\033[0;31m",acceptedchimeras_file,"\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-#endif
                 } //~if read was accepted
             }//~for all reads
         }//~if not paired-in or paired-out
         
         if ( acceptedreads.is_open() ) acceptedreads.close();
-#ifdef chimera
-        if ( acceptedchimeras.is_open() ) acceptedchimeras.close();
-#endif
         
         TIME(f);
         eprintf(" done [%.2f sec]\n", (f-s) );
@@ -677,7 +609,7 @@ void report_denovo(char *denovo_otus_file,
         /// regular or pair-ended reads don't need to go into the same file
         else
         {
-            /// loop through every read, output accepted (and chimeric) reads
+            /// loop through every read, output accepted reads
             for ( uint32_t i = 1; i < strs; i+=2 )
             {
                 char* begin_read = reads[i-1];

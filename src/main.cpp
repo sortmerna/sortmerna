@@ -48,7 +48,6 @@ int numcpu_gv = -1;
 bool verbose  = false;
 bool pairedin_gv = false;
 bool pairedout_gv = false;
-bool chimeraout_gv = false;
 bool logout_gv = false;
 bool de_novo_otu_gv = false;
 bool print_all_reads_gv = false;
@@ -431,22 +430,6 @@ main(int argc,
                       
           }//~else
         }
-#ifdef chimera
-        // output chimeric sequences to another file
-        else if ( strcmp ( myoption, "chimera" ) == 0 )
-        {
-          if ( chimeraout_gv )
-          {
-            fprintf(stderr,"\n  %sERROR%s: --chimera has already been set\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-          }
-          else
-          {
-            chimeraout_gv = true;
-            narg++;
-          }
-        }
-#endif
         // the name of output aligned reads
         else if ( strcmp ( myoption, "aligned" ) == 0 )
         {
@@ -1408,21 +1391,6 @@ main(int argc,
             "this flag has no effect on the results (L/2-mers will not be masked).\n",
             "\033[0;31m","\033[0m");
   }
-    
-    
-#ifdef chimera
-  // TEMPORARY for chimera
-  if ( chimeraout_gv )
-  {
-    if (ptr_filetype_ar == NULL)
-    {
-      fprintf(stderr,"  %sERROR%s: a root filename name (--aligned [STRING]) for "
-              "output needs to be provided with --chimera [FLAG].\n\n",
-              "\033[0;31m","\033[0m");
-      exit(EXIT_FAILURE);
-    }
-  }
-#endif
     
   // the list of arguments is correct, welcome the user!
   if ( verbose ) welcome();

@@ -48,12 +48,6 @@ using namespace std;
 // maximum number of bytes in a bucket prior to bursting, should be <= L1 cache size and a power of 2 for efficiency
 #define THRESHOLD 128
 
-extern bool verbose;
-
-// output for verbose option
-#define eprintf(format, ...) do { if (verbose) fprintf(stderr, format, ##__VA_ARGS__);} while(0)
-
-
 struct NodeElement
 {
 	// a pointer to a bucket or another trie node
