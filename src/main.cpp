@@ -1313,7 +1313,7 @@ main(int argc,
   }
     
   // if all alignment was chosen, check an alignment format has also been chosen
-  if ( (num_alignments_gv > 0) && !(blastout_gv || samout_gv) )
+  if ( (num_alignments_gv > 0) && !(blastout_gv || samout_gv || otumapout_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] has been set but no alignment "
             "format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
@@ -1433,7 +1433,7 @@ main(int argc,
   
   // only FASTA/FASTQ output, stop searching for alignments after the
   // first match
-  if ( fastxout_gv && !(blastout_gv || samout_gv) ) num_alignments_gv = 1;
+  if ( fastxout_gv && !(blastout_gv || samout_gv || best_gv_set) ) num_alignments_gv = 1;
     
   // default number of seed hits before searching for candidate LIS
   if ( seed_hits_gv < 0 ) seed_hits_gv = 2;

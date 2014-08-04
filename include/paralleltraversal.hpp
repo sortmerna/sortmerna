@@ -1,11 +1,12 @@
-/*
+/**
+ * @file paralleltraversal.hpp
+ * @brief Function and variable definitions for paralleltraversal.cpp
+ * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
- *
+ * @copyright Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group, LIFL and 
+ * INRIA Nord-Europe, France
  * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
  * University of Colorado at Boulder, Boulder, CO
- *
- * This file is part of SortMeRNA.
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,9 +20,9 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * @endparblock
  *
- * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
- *
+ * @authors jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
  */
 
  /** @file paralleltraversal.hpp */
@@ -70,25 +71,52 @@ typedef pair<uint32_t,uint32_t> mypair;
 
 
 	
-/*
- *
- * FUNCTION	: paralleltraversal 
- *
- * PARAMETERS	: char* inputreads			- reads input file
- *		  		  	char* ptr_filetype_ar	- accepted reads output file
- *		  		  	char* ptr_filetype_or	- rejected reads output file
- *		  		  	long int match				- reward for a match (Smith-Waterman) (must be positive)
- *				  		long int mismatch			- penalty for a mismatch (Smith-Waterman) (must be negative)
- *				  		long int gap_open			- penalty for a gap (Smith-Waterman) (must be positive, will be used as negative)
- *							long int gap_extenstion	- penalty for extending a gap (Smith-Waterman) (must be positive, will be used as negative)
- *							string &root					- reference database filename without extension (prefix used in indexdb)
- *							string &path					- path to sortmedna index directory
- *							int argc							- number of arguments in command used to launch sortmedna (for SAM file)
- *							char** argv						- command used to launch sortmedna (for SAM file)
- *
- * OUTPUT	 : none
- * 
- **************************************************************************************************************/
+/*! @fn paralleltraversal()
+    @brief traverse the query input and indexed database and output
+           alignments passing the E-value threshold
+    @detail The main function of SortMeRNA with the following methods:
+    <ol> 
+      <li> divide large read files into mmap'd regions,
+           taking into account the read (and its pair) which may
+           be split between two file sections </li>
+      <li> load the index, compute the gumbel parameters
+           (lamda and K) using ALP </li>
+      <li> using 3 intervals, scan over the read and collect all
+           L-mers on the read which match to the
+           reference index with at most 1 error. This is done 
+           using parallel traversal between the index and the
+           Levenshtein automaton </li>
+      <li> if enough L-mers were collected, extend them into
+           longer matches using the Longest Increasing
+           subsequence (LIS) of positions where the L-mers
+           matched on the read and the associated reference
+           sequences </li>
+      <li> if the LIS is long enough, use the starting positions
+           of the LIS to estimate the starting position
+           of an alignment and pass this reference segment and
+           read to SSW </li>
+      <li> if the alignment score is at least the minimum score
+           corresponding to the E-value threshold, keep the read,
+           otherwise continue searching for other LIS or more
+           L-mers using smaller intervals </li>
+    </ol>
+
+    @param char* inputreads
+    @param *ptr_filetype_ar
+    @param *ptr_filetype_or
+    @param int32_t match
+    @param int32_t mismatch
+    @param int32_t gap_open
+    @param int32_t gap_extension
+    @param int32_t score_N
+    @param vector< vector<uint32_t> >& skiplengths
+    @param int argc
+    @param char **argv
+    @param bool yes_SQ
+    @param vector< pair<string,string> >& myfiles
+    @return void
+    @version 1.0 Jan 14, 2013 
+*/
 void
 paralleltraversal ( char* inputreads,
                    char* ptr_filetype_ar,
