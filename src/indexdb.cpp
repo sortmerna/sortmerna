@@ -300,21 +300,18 @@ inline void add_kmer_to_table( kmer_origin* positions_tbl,
 {
 	uint32_t size = positions_tbl->size;
     
-	/// create an entry for the new unique k-mer occurrence
+	// create an entry for the new unique k-mer occurrence
 	if ( size == 0 )
 	{
 		positions_tbl->arr = (seq_pos*)malloc(sizeof(seq_pos));
 		memset(positions_tbl->arr,0,sizeof(seq_pos));
 	}
-	/// add a position for an existing k-mer occurrence
+	// add a position for an existing k-mer occurrence
 	else
 	{
-        /// max_pos == 0 means to store all occurrences (default), otherwise
-        /// stop storing occurrences when size == max_pos
-		if ( (max_pos > 0) && (size == max_pos) )
-        {
-			return ;
-        }
+    // max_pos == 0 means to store all occurrences (default), otherwise
+    // stop storing occurrences when size == max_pos
+		if ( (max_pos > 0) && (size == max_pos) ) return ;
         
 		seq_pos* src = positions_tbl->arr;
 		positions_tbl->arr = (seq_pos*)malloc((size+1)*sizeof(seq_pos));

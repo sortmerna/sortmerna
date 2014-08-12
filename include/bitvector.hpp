@@ -24,7 +24,7 @@
  *
  */
 
- /** @file btivector.hpp */
+ /** @file bitvector.hpp */
 
 #ifndef BITVECTOR_H
 #define BITVECTOR_H
