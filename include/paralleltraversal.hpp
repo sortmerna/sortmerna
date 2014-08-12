@@ -72,19 +72,20 @@ typedef pair<uint32_t,uint32_t> mypair;
 
 	
 /*! @fn paralleltraversal()
-    @brief traverse the query input and indexed database and output
+    @brief Traverse the query input and indexed database and output
            alignments passing the E-value threshold
-    @detail The main function of SortMeRNA with the following methods:
+    @detail The following methods will be executed:
     <ol> 
       <li> divide large read files into mmap'd regions,
            taking into account the read (and its pair) which may
            be split between two file sections </li>
-      <li> load the index, compute the gumbel parameters
-           (lamda and K) using ALP </li>
+      <li> compute the gumbel parameters (lamda and K) using ALP,
+           load the index fully or in parts (depending on how
+           it was built) </li>
       <li> using 3 intervals, scan over the read and collect all
-           L-mers on the read which match to the
-           reference index with at most 1 error. This is done 
-           using parallel traversal between the index and the
+           L-mers on the read which match to the reference
+           index with at most 1 error. This is done using
+           parallel traversal between the index and the
            Levenshtein automaton </li>
       <li> if enough L-mers were collected, extend them into
            longer matches using the Longest Increasing
@@ -101,99 +102,96 @@ typedef pair<uint32_t,uint32_t> mypair;
            L-mers using smaller intervals </li>
     </ol>
 
-    @param char* inputreads
-    @param *ptr_filetype_ar
-    @param *ptr_filetype_or
-    @param int32_t match
-    @param int32_t mismatch
-    @param int32_t gap_open
-    @param int32_t gap_extension
-    @param int32_t score_N
-    @param vector< vector<uint32_t> >& skiplengths
-    @param int argc
-    @param char **argv
-    @param bool yes_SQ
-    @param vector< pair<string,string> >& myfiles
+    @param char* inputreads, pointer to query reads file
+    @param *ptr_filetype_ar, pointer to string for aligned seqeunces filepath
+    @param *ptr_filetype_or, pointer to string for rejected sequences filepath
+    @param int32_t match, SW match reward score (positive)
+    @param int32_t mismatch, SW mismatch penalty score (negative)
+    @param int32_t gap_open, SW gap open penalty score (positive)
+    @param int32_t gap_extension, SW gap extend penalty score (positive)
+    @param int32_t score_N, SW penalty for ambiguous nucleotide (negative)
+    @param vector< vector<uint32_t> >& skiplengths, 
+    @param int argc, number of arguments passed to sortmerna
+    @param char **argv, argument string passed to sortmerna
+    @param bool yes_SQ, boolean to include @SQ tags in SAM output
+    @param vector< pair<string,string> >& myfiles, 
     @return void
     @version 1.0 Jan 14, 2013 
 */
 void
 paralleltraversal ( char* inputreads,
-                   char* ptr_filetype_ar,
-                   char* ptr_filetype_or,
-                   int32_t match,
-                   int32_t mismatch,
-                   int32_t gap_open,
-                   int32_t gap_extension,
-                   int32_t score_N,
-                   vector< vector<uint32_t> >& skiplengths,
-                   int argc,
-                   char **argv,
-                   bool yes_SQ,
-                   vector< pair<string,string> >& myfiles,
-                   bool exit_early);
+                    char* ptr_filetype_ar,
+                    char* ptr_filetype_or,
+                    int32_t match,
+                    int32_t mismatch,
+                    int32_t gap_open,
+                    int32_t gap_extension,
+                    int32_t score_N,
+                    vector< vector<uint32_t> >& skiplengths,
+                    int argc,
+                    char **argv,
+                    bool yes_SQ,
+                    vector< pair<string,string> >& myfiles,
+                    bool exit_early );
 
 
-/*
- *
- * FUNCTION	: traversetrie_align()
- *		  exact matching of [p_1] in [w_1] is completed fully in the trie nodes, continue parallel 
- *		  traversal of BTRIE beginning at [w_2]
- *                  
- *		  	w = |------ [w_1] ------|------ [w_2] ------|
- *		  	p = |------ [p_1] ------|------ [p_2] --....--|	 
- *		  	    |------ trie ------x|----- tail ----....--| 
- *
- * PARAMETERS   : NodeElement* curr		- the last trie node 'x' of exact matching 
- *		  unsigned short int root_l	- initial levenshtein state, root_l = 0
- *		  unsigned char depth			- the depth 'x' in the BTRIE
- *
- * OUTPUT	: none
- *
- * NOTES	: final accepting states for k = 1 are [8,13]
- *					     k = 2 are [50,89]
- *					     k = 3 are [322,601]
- */
+/*! @fn traversetrie_align()
+    @brief 
+    @detail Exact matching of [p_1] in [s_1] is completed fully
+    in the trie nodes, continue parallel traversal of the trie
+    beginning at [s_2]:<br/>
+                   
+	  	seed =    |------ [s_1] ------|------ [s_2] ------|<br/>
+	  	pattern = |------ [p_1] ------|------ [p_2] --....--|<br/>
+	  	          |------ trie -------|----- tail ----....--|<br/>
+ 
+    @param NodeElement* trie_t, root node 
+    @param uint32_t lev_t, initial levenshtein state
+    @param unsigned char depth, trie node depth
+    @param MYBITSET *win_k1_ptr,
+    @param MYBITSET *win_k1_full,
+    @param bool &accept_zero_kmer,
+    @param vector< id_win > &id_hits,
+    @param uint32_t readn,
+    @param uint32_t win_num,
+    @param uint32_t partialwin
+    @return none
+*/
 
 inline void
 traversetrie_align ( NodeElement *trie_t,
-                    uint32_t lev_t,
-                    unsigned char depth,
-                    MYBITSET *win_k1_ptr,
-                    MYBITSET *win_k1_full,
-                    bool &accept_zero_kmer,
-                    vector< id_win > &id_hits,
-                    uint32_t readn,
-                    uint32_t win_num,
-                    uint32_t partialwin
-                    );
-
+                     uint32_t lev_t,
+                     unsigned char depth,
+                     MYBITSET *win_k1_ptr,
+                     MYBITSET *win_k1_full,
+                     bool &accept_zero_kmer,
+                     vector< id_win > &id_hits,
+                     uint32_t readn,
+                     uint32_t win_num,
+                     uint32_t partialwin );
 
 void 
-traverse_btrie ( NodeElement* trie_node, unsigned int &hash_id, unsigned char depth );
-
-
-void preprocess_data(vector< pair<string,string> >& myfiles,
-                     char** argv,
-                     int argc,
-                     bool yes_SQ,
-                     char* acceptedstrings_sam,
-                     int32_t _match,
-                     int32_t _mismatch,
-                     int32_t _gap_open,
-                     int32_t _gap_extension,
-                     vector<vector<uint32_t> >& skiplengths,
-                     vector<uint16_t>& num_index_parts,
-                     vector<vector<index_parts_stats> >& index_parts_stats_vec,
-                     vector<uint64_t>& full_ref,
-                     vector<uint64_t>& full_read,
-                     vector<uint32_t>& lnwin,
-                     vector<uint32_t>& partialwin,
-                     vector<uint32_t>& minimal_score,
-                     uint32_t number_total_read,
-                     vector<pair<double, double> >& gumbel,
-                     vector<uint32_t>& numbvs,
-                     vector<uint32_t>& numseq);
+preprocess_data( vector< pair<string,string> >& myfiles,
+                 char** argv,
+                 int argc,
+                 bool yes_SQ,
+                 char* acceptedstrings_sam,
+                 int32_t _match,
+                 int32_t _mismatch,
+                 int32_t _gap_open,
+                 int32_t _gap_extension,
+                 vector<vector<uint32_t> >& skiplengths,
+                 vector<uint16_t>& num_index_parts,
+                 vector<vector<index_parts_stats> >& index_parts_stats_vec,
+                 vector<uint64_t>& full_ref,
+                 vector<uint64_t>& full_read,
+                 vector<uint32_t>& lnwin,
+                 vector<uint32_t>& partialwin,
+                 vector<uint32_t>& minimal_score,
+                 uint32_t number_total_read,
+                 vector<pair<double, double> >& gumbel,
+                 vector<uint32_t>& numbvs,
+                 vector<uint32_t>& numseq );
 
 void
 load_index( char* ptr_dbindex,

@@ -155,46 +155,31 @@ bool largest ( const mypair &a, const mypair &b )
   else return ( a.first > b.first );
 }
 
-// sort the observed otus in order of frequency
-bool sort_otus (const pair<string,int> &a, const pair<string,int> &b )
-{
-    return ( a.second > b.second );
-}
-
-// sort alignments by reference sequence, or if same reference sequence, by position mapped
-bool sort_by_ref (const pair<uint32_t,s_align> &a, const pair<uint32_t,s_align> &b)
-{
-    if ( a.second.ref_seq == b.second.ref_seq ) return (a.second.ref_begin1 < b.second.ref_begin1);
-    else return ( a.second.ref_seq < b.second.ref_seq );
-}
-
-
-
-/* @function get_forward()
+/* @function format_forward()
  * format the forward read into a string on same alphabet without '\n'
  *
  * */
 void format_forward(char* read_seq,char* myread,char filesig)
 {
-    // FASTA
-    if ( filesig == '>' )
+  // FASTA
+  if ( filesig == '>' )
+  {
+    while ( (*read_seq != '\0') && (*read_seq != '>') )
     {
-        while ( (*read_seq != '\0') && (*read_seq != '>') )
-        {
-            if (*read_seq != '\n') *myread++ = nt_table[(int)*read_seq];
-            read_seq++;
-        }
-        *myread='\n'; // end of read marked by newline
+      if (*read_seq != '\n') *myread++ = nt_table[(int)*read_seq];
+      read_seq++;
     }
-    // FASTQ
-    else
-    {
-        while ( *read_seq != '\n' ) { *myread++ = nt_table[(int)*read_seq++]; }
-        *myread='\n'; //end of read marked by newline
-    }
+    *myread='\n'; // end of read marked by newline
+  }
+  // FASTQ
+  else
+  {
+    while ( *read_seq != '\n' ) { *myread++ = nt_table[(int)*read_seq++]; }
+    *myread='\n'; //end of read marked by newline
+  }
 }
 
-/* @function get_reversec()
+/* @function format_rev()
  * format the reverse-complement read into a string without '\n'
  *
  * */
@@ -211,34 +196,27 @@ void format_rev(char* start_read,char* end_read,char* myread,char filesig)
     4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
   };
     
-    // FASTA
-    if ( filesig == '>' )
+  // FASTA
+  if ( filesig == '>' )
+  {
+    while ( end_read != start_read )
     {
-        while ( end_read != start_read )
-        {
-            if (*end_read != '\n') *myread++ = rc_table[(int)*end_read];
-            end_read--;
-        }
-        *myread++ = rc_table[(int)*end_read];
-        *myread='\n';
+      if (*end_read != '\n') *myread++ = rc_table[(int)*end_read];
+      end_read--;
     }
-    // FASTQ
-    else
-    {
-        while ( *end_read != '\n' ) { *myread++ = rc_table[(int)*end_read--]; }
-        *myread='\n';
-    }
+    *myread++ = rc_table[(int)*end_read];
+    *myread='\n';
+  }
+  // FASTQ
+  else
+  {
+    while ( *end_read != '\n' ) { *myread++ = rc_table[(int)*end_read--]; }
+    *myread='\n';
+  }
 }
 
 
-
-
-/*
- *
- * FUNCTION : traversetrie_align()
- *      (see paralleltraversal.hpp for a description)
- *
- **************************************************************************************************************/
+/*! @fn traversetrie_align() */
 inline void
 traversetrie_align ( NodeElement *trie_t,
                     uint32_t lev_t,
@@ -261,22 +239,22 @@ traversetrie_align ( NodeElement *trie_t,
     value = trie_t->flag;
         
     // this node element is empty, go to next node element in trie node
-        if ( value == 0 )
-        {
+    if ( value == 0 )
+    {
       lev_t = lev_t_trie_pivot;
       trie_t++;
-        }
+    }
         
-        // this node element points to a trie node or a bucket, continue traversing
-        else
-        {
+    // this node element points to a trie node or a bucket, continue traversing
+    else
+    {
       if ( depth < partialwin-2 )
       {
         // send bv to LEV(1)
         lev_t = table[0][(int)*(win_k1_ptr + (depth<<2) + node_element)][(int)(lev_t)];
       }
-            else
-            {
+      else
+      {
         lev_t = table[3-partialwin+depth][(int)(*(win_k1_full+node_element) & ((2<<(partialwin-depth))-1))][(int)(lev_t)];
       }
             
@@ -313,15 +291,14 @@ traversetrie_align ( NodeElement *trie_t,
           // go to the next trie node element
           lev_t = lev_t_trie_pivot;
           trie_t++;
-        }//~ if (child node a trie node)
-                
-                // (2) the node element points to a bucket
-                else
-                {
-                    // this pivot remembers the target levenshtein state of the terminal trie node, from
-                    //  which exists a bucket; every element in the bucket takes this lev_t state as an
-                    //  initial input state
-                    uint32_t lev_t_bucket_pivot = lev_t;
+        }//~ if (child node a trie node)                
+        // (2) the node element points to a bucket
+        else
+        {
+          // this pivot remembers the target levenshtein state of the terminal trie node, from
+          //  which exists a bucket; every element in the bucket takes this lev_t state as an
+          //  initial input state
+          uint32_t lev_t_bucket_pivot = lev_t;
                     
           // number of characters per entry
           uint32_t s = partialwin-depth;
@@ -339,11 +316,11 @@ traversetrie_align ( NodeElement *trie_t,
             exit(EXIT_FAILURE);
           }
                     
-                    // traverse the bucket
-                    while ( start_bucket != end_bucket )
-                    {
+          // traverse the bucket
+          while ( start_bucket != end_bucket )
+          {
             uint32_t depth_b = depth;
-                        lev_t = lev_t_bucket_pivot;
+            lev_t = lev_t_bucket_pivot;
             bool local_accept_kmer = false;
             uint32_t entry_str = *((uint32_t*)start_bucket);
                         
@@ -354,10 +331,10 @@ traversetrie_align ( NodeElement *trie_t,
                             
               depth_b++;
                             
-                            // get bitvector for letter
+              // get bitvector for letter
               if ( depth_b < partialwin-2 )
               {
-                                // send bv to LEV(_k)
+                // send bv to LEV(_k)
                 lev_t = table[0][(int)*(win_k1_ptr + (depth_b<<2) + nt)][(int)(lev_t)];
               }
               else
@@ -365,8 +342,8 @@ traversetrie_align ( NodeElement *trie_t,
                 lev_t = table[3-partialwin+depth_b][(int)(*(win_k1_full + nt) & ((2<<(partialwin-depth_b))-1) )][(int)(lev_t)];
               }
                             
-                            // if the target lev_t state is a failure state, go to the next bucket element (tail)
-                            if ( lev_t == 14 ) break;
+              // if the target lev_t state is a failure state, go to the next bucket element (tail)
+              if ( lev_t == 14 ) break;
                             
               // approaching end of tail
               if ( depth_b >= partialwin-2 )
@@ -389,8 +366,8 @@ traversetrie_align ( NodeElement *trie_t,
                 }
               }//~last 3 characters in entry
                             
-                            if ( local_accept_kmer )
-                            {
+              if ( local_accept_kmer )
+              {
                 id_win entry = {0,0};
                 entry.id = *((uint32_t*)start_bucket + 1);
                 entry.win = win_num;
@@ -406,23 +383,22 @@ traversetrie_align ( NodeElement *trie_t,
                                 
                 // exact match not found, do not include duplicates of 1-error match (for the same window on read)
                 if ( !id_hits.empty() )
-                                {
-                                    bool found = false;
-                                    for ( int f = 0; f < id_hits.size(); f++ )
-                                    {
-                                        if ( id_hits[f].id == entry.id )
-                                        {
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if ( found ) break;
-                                }
+                {
+                  bool found = false;
+                  for ( int f = 0; f < id_hits.size(); f++ )
+                  {
+                    if ( id_hits[f].id == entry.id )
+                    {
+                      found = true;
+                      break;
+                    }
+                  }
+                  if ( found ) break;
+                }
                                 
                 id_hits.push_back(entry);
                                 
-              }
-                            
+              }                         
               entry_str>>=2;
             }//~for each 2 bits
                         
@@ -431,15 +407,14 @@ traversetrie_align ( NodeElement *trie_t,
           }//~for each entry
                     
           lev_t = lev_t_trie_pivot;
-                    trie_t++;
+          trie_t++;
                     
-                }//~else the node element points to a bucket
-            }//~else LEV(1) is not in a null state, continue parallel traversal
+        }//~else the node element points to a bucket
+      }//~else LEV(1) is not in a null state, continue parallel traversal
     }//~else this node element points to a trie node or a bucket, continue traversing
   }//~for all trie nodes
     
   return ;
-    
 }//~traversetrie_align()
 
 
@@ -474,231 +449,226 @@ void preprocess_data(vector< pair<string,string> >& myfiles,
                      vector<uint32_t>& numbvs,
                      vector<uint32_t>& numseq)
 {
-    ofstream acceptedsam;
-    
-    if ( samout_gv )
+  ofstream acceptedsam;
+  
+  if ( samout_gv )
+  {
+    acceptedsam.open (acceptedstrings_sam);
+    if (!acceptedsam.good())
     {
-        acceptedsam.open (acceptedstrings_sam);
-        if (!acceptedsam.good())
-        {
-            fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing.\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-        }
-        // @HD header
-        else acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
+      fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing.\n","\033[0;31m","\033[0m");
+      exit(EXIT_FAILURE);
     }
+    // @HD header
+    else acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
+  }
     
-    
-    
-    // loop through the .seqs index files for each database
-    for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++ )
-    {
-        ifstream stats( (char*)(myfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary );
-        if ( !stats.good() )
+  // loop through the .seqs index files for each database
+  for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++ )
+  {
+      ifstream stats( (char*)(myfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary );
+      if ( !stats.good() )
+      {
+        fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
+        fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
+        exit(EXIT_FAILURE);
+      }
+      
+      // read the file size for file used to build the index
+      size_t filesize = 0;
+      stats.read(reinterpret_cast<char*>(&filesize), sizeof(size_t));
+      
+      // read the fasta file name used to build the index
+      uint32_t fastafile_len = 0;
+      stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(uint32_t));
+      
+      char fastafile_name[2000];
+      stats.read(reinterpret_cast<char*>(fastafile_name), sizeof(char)*fastafile_len);
+      
+      // compute reference database file size for this index
+      FILE *fastafile = fopen ((char*)(myfiles[index_num].first).c_str(),"r");
+      if ( fastafile == NULL )
+      {
+        fprintf(stderr,"    %sERROR%s: could not open FASTA reference file: %s .\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
+        exit(EXIT_FAILURE);
+      }
+      fseek(fastafile,0L,SEEK_END);
+      size_t sz = ftell(fastafile);
+      fclose(fastafile);
+        
+      if ( sz != filesize )
+      {
+        fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
+        fprintf(stderr,"    does not appear to be the same FASTA file (%s) used to build the index %s.\n",fastafile_name,(char*)(myfiles[index_num].second).c_str());
+        fprintf(stderr,"    Check your --ref list of files and corresponding indexes.\n\n");
+        exit(EXIT_FAILURE);
+      }
+      
+      // A,C,G,T background frequencies to compute the Gumbel parameters lambda and K
+      double background_freq_gv[4] = {0};
+      
+      // A/C/G/T distribution frequencies
+      stats.read(reinterpret_cast<char*>(&background_freq_gv), sizeof(double)*4);
+      
+      // total length of sequences in the complete database
+      stats.read(reinterpret_cast<char*>(&full_ref[index_num]), sizeof(uint64_t));
+      
+      // sliding window length lnwin & initialize
+      stats.read(reinterpret_cast<char*>(&lnwin[index_num]), sizeof(uint32_t));
+      
+      // total number of reference sequences in one complete reference database
+      stats.read(reinterpret_cast<char*>(&numseq[index_num]), sizeof(uint32_t));
+      
+      partialwin[index_num] = lnwin[index_num]/2;
+        
+      // number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward
+      numbvs[index_num] = 4*(partialwin[index_num]-3);
+      
+      // set the window shift for different seed lengths (if not set by user, or one of the lengths is <= 0)
+      if ( (skiplengths[index_num][0] == 0) || (skiplengths[index_num][1] == 0) || (skiplengths[index_num][2] == 0) )
+      {
+        skiplengths[index_num][0] = lnwin[index_num];
+        skiplengths[index_num][1] = partialwin[index_num];
+        skiplengths[index_num][2] = 3;
+      }
+      
+      // number of index parts
+      stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
+      vector<index_parts_stats> hold;
+      
+      // information on the location and size of sequences used to build each index part
+      for ( uint16_t j = 0; j < num_index_parts[index_num]; j++ )
+      {
+        index_parts_stats stats_hold;
+        stats.read(reinterpret_cast<char*>(&stats_hold), sizeof(index_parts_stats));
+        hold.push_back(stats_hold);
+      }
+        
+      index_parts_stats_vec.push_back(hold);
+      
+      // compute Gumbel parameters
+      long int rand_ = 182345345;
+      //string randout_= "./alp/random_param.txt";
+      string randout_= "";
+      
+      int gapopen_ = _gap_open;
+      int gapopen1_ = _gap_open;
+      int gapopen2_ = _gap_open;
+      
+      int gapextend_ = _gap_extension;
+      int gapextend1_ = _gap_extension;
+      int gapextend2_ = _gap_extension;
+      
+      int match = _match;
+      int mismatch = _mismatch;
+      double A_ = background_freq_gv[0];
+      double C_ = background_freq_gv[1];
+      double G_ = background_freq_gv[2];
+      double T_ = background_freq_gv[3];
+      
+      string scoremat_file_name_ ="";
+      string freqs1_file_name_ ="";
+      string freqs2_file_name_ ="";
+      double max_time_=1;
+      double max_mem_=500;
+      double eps_lambda_gv_=0.001;
+      double eps_K_gv_=0.005;
+      string gumbelparout_file_name_ ="";
+      bool gapped_ = true;
+      bool insertions_after_deletions_=false;
+      
+      Sls::set_of_parameters gumbel_params;
+        
+      CGumbelParamsCalc::Params_Run2(
+                                     rand_,//randomization number
+                                     randout_,//if true, then the program outputs complete randomization information into a file
+                                     
+                                     gapopen_,//gap opening penalty
+                                     gapopen1_,//gap opening penalty for a gap in the sequence #1
+                                     gapopen2_,//gap opening penalty for a gap in the sequence #2
+                                     
+                                     gapextend_,//gap extension penalty
+                                     gapextend1_,//gap extension penalty for a gap in the sequence #1
+                                     gapextend2_,//gap extension penalty for a gap in the sequence #2
+                                     
+                                     scoremat_file_name_,//scoring matrix file name
+                                     freqs1_file_name_,//probabilities1 file name
+                                     freqs2_file_name_,//probabilities1 file name
+                                     max_time_,//maximum allowed calculation time in seconds
+                                     max_mem_,//maximum allowed memory usage in MB
+                                     eps_lambda_gv_,//relative error for lambda_gv calculation
+                                     eps_K_gv_,//relative error for K_gv calculation
+                                     gumbelparout_file_name_,
+                                     gapped_,
+                                     insertions_after_deletions_,//if true, then insertions after deletions are allowed
+                                     gumbel_params,
+                                     match,//NEW - SW score for a match,
+                                     mismatch,//NEW - SW score for a mismatch,
+                                     A_,//NEW - background frequency for A
+                                     C_,//NEW - background frequency for C
+                                     G_,//NEW - background frequency for G
+                                     T_,//NEW- background frequency for T
+                                     (gumbel[index_num].first), //lambda
+                                     (gumbel[index_num].second) // K
+                                     );
+        
+        
+      // Shannon's entropy for reference sequence nucleotide distribution
+      double entropy_H_gv = -(background_freq_gv[0]*(log(background_freq_gv[0])/log(2)) +
+                              background_freq_gv[1]*(log(background_freq_gv[1])/log(2)) +
+                              background_freq_gv[2]*(log(background_freq_gv[2])/log(2)) +
+                              background_freq_gv[3]*(log(background_freq_gv[3])/log(2)));
+      
+      // Length correction for Smith-Waterman alignment score
+      uint64_t expect_L = log((gumbel[index_num].second)*full_read[index_num]*full_ref[index_num])/entropy_H_gv;
+      
+      // correct the reads & databases sizes for e-value calculation
+      if ( full_ref[index_num] > (expect_L*numseq[index_num]) ) full_ref[index_num]-=(expect_L*numseq[index_num]);
+      full_read[index_num]-=(expect_L*number_total_read);
+      
+      // minimum score required to reach E-value
+      minimal_score[index_num] = (log(evalue/((double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num])))/-(gumbel[index_num].first);
+        
+      // SAM @SQ data
+      if ( samout_gv )
+      {
+        // number of nucleotide sequences in the reference file
+        uint32_t num_sq = 0;
+        stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
+        
+        // loop through each @SQ
+        for ( uint32_t j = 0; j < num_sq; j++ )
         {
-            fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
-            fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
-            exit(EXIT_FAILURE);
+          // length of the sequence id
+          uint32_t len_id = 0;
+          stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
+          
+          // the sequence id string
+          char s[len_id+1];
+          memset(s,0,len_id+1);
+          stats.read(reinterpret_cast<char*>(&s), sizeof(char)*len_id);
+          
+          // the length of the sequence itself
+          uint32_t len_seq = 0;
+          stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
+          
+          // @SQ header
+          if ( yes_SQ ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
         }
+      }
         
-        // read the file size for file used to build the index
-        size_t filesize = 0;
-        stats.read(reinterpret_cast<char*>(&filesize), sizeof(size_t));
-        
-        // read the fasta file name used to build the index
-        uint32_t fastafile_len = 0;
-        stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(uint32_t));
-        
-        char fastafile_name[2000];
-        stats.read(reinterpret_cast<char*>(fastafile_name), sizeof(char)*fastafile_len);
-        
-        // compute reference database file size for this index
-        FILE *fastafile = fopen ((char*)(myfiles[index_num].first).c_str(),"r");
-        if ( fastafile == NULL )
-        {
-            fprintf(stderr,"    %sERROR%s: could not open FASTA reference file: %s .\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
-            exit(EXIT_FAILURE);
-        }
-        fseek(fastafile,0L,SEEK_END);
-        size_t sz = ftell(fastafile);
-        fclose(fastafile);
-        
-        if ( sz != filesize )
-        {
-            fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
-            fprintf(stderr,"    does not appear to be the same FASTA file (%s) used to build the index %s.\n",fastafile_name,(char*)(myfiles[index_num].second).c_str());
-            fprintf(stderr,"    Check your --ref list of files and corresponding indexes.\n\n");
-            exit(EXIT_FAILURE);
-        }
-        
-        // A,C,G,T background frequencies to compute the Gumbel parameters lambda and K
-        double background_freq_gv[4] = {0};
-        
-        // A/C/G/T distribution frequencies
-        stats.read(reinterpret_cast<char*>(&background_freq_gv), sizeof(double)*4);
-        
-        // total length of sequences in the complete database
-        stats.read(reinterpret_cast<char*>(&full_ref[index_num]), sizeof(uint64_t));
-        
-        // sliding window length lnwin & initialize
-        stats.read(reinterpret_cast<char*>(&lnwin[index_num]), sizeof(uint32_t));
-        
-        // total number of reference sequences in one complete reference database
-        stats.read(reinterpret_cast<char*>(&numseq[index_num]), sizeof(uint32_t));
-        
-        partialwin[index_num] = lnwin[index_num]/2;
-        
-        // number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward
-        numbvs[index_num] = 4*(partialwin[index_num]-3);
-        
-        // set the window shift for different seed lengths (if not set by user, or one of the lengths is <= 0)
-        if ( (skiplengths[index_num][0] == 0) || (skiplengths[index_num][1] == 0) || (skiplengths[index_num][2] == 0) )
-        {
-            skiplengths[index_num][0] = lnwin[index_num];
-            skiplengths[index_num][1] = partialwin[index_num];
-            skiplengths[index_num][2] = 3;
-        }
-        
-        // number of index parts
-        stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
-        vector<index_parts_stats> hold;
-        
-        // information on the location and size of sequences used to build each index part
-        for ( uint16_t j = 0; j < num_index_parts[index_num]; j++ )
-        {
-            index_parts_stats stats_hold;
-            stats.read(reinterpret_cast<char*>(&stats_hold), sizeof(index_parts_stats));
-            hold.push_back(stats_hold);
-        }
-        
-        index_parts_stats_vec.push_back(hold);
-        
-        
-        // compute Gumbel parameters
-        long int rand_ = 182345345;
-        //string randout_= "./alp/random_param.txt";
-        string randout_= "";
-        
-        int gapopen_ = _gap_open;
-        int gapopen1_ = _gap_open;
-        int gapopen2_ = _gap_open;
-        
-        int gapextend_ = _gap_extension;
-        int gapextend1_ = _gap_extension;
-        int gapextend2_ = _gap_extension;
-        
-        int match = _match;
-        int mismatch = _mismatch;
-        double A_ = background_freq_gv[0];
-        double C_ = background_freq_gv[1];
-        double G_ = background_freq_gv[2];
-        double T_ = background_freq_gv[3];
-        
-        string scoremat_file_name_ ="";
-        string freqs1_file_name_ ="";
-        string freqs2_file_name_ ="";
-        double max_time_=1;
-        double max_mem_=500;
-        double eps_lambda_gv_=0.001;
-        double eps_K_gv_=0.005;
-        string gumbelparout_file_name_ ="";
-        bool gapped_ = true;
-        bool insertions_after_deletions_=false;
-        
-        Sls::set_of_parameters gumbel_params;
-        
-        CGumbelParamsCalc::Params_Run2(
-                                       rand_,//randomization number
-                                       randout_,//if true, then the program outputs complete randomization information into a file
-                                       
-                                       gapopen_,//gap opening penalty
-                                       gapopen1_,//gap opening penalty for a gap in the sequence #1
-                                       gapopen2_,//gap opening penalty for a gap in the sequence #2
-                                       
-                                       gapextend_,//gap extension penalty
-                                       gapextend1_,//gap extension penalty for a gap in the sequence #1
-                                       gapextend2_,//gap extension penalty for a gap in the sequence #2
-                                       
-                                       scoremat_file_name_,//scoring matrix file name
-                                       freqs1_file_name_,//probabilities1 file name
-                                       freqs2_file_name_,//probabilities1 file name
-                                       max_time_,//maximum allowed calculation time in seconds
-                                       max_mem_,//maximum allowed memory usage in MB
-                                       eps_lambda_gv_,//relative error for lambda_gv calculation
-                                       eps_K_gv_,//relative error for K_gv calculation
-                                       gumbelparout_file_name_,
-                                       gapped_,
-                                       insertions_after_deletions_,//if true, then insertions after deletions are allowed
-                                       gumbel_params,
-                                       match,//NEW - SW score for a match,
-                                       mismatch,//NEW - SW score for a mismatch,
-                                       A_,//NEW - background frequency for A
-                                       C_,//NEW - background frequency for C
-                                       G_,//NEW - background frequency for G
-                                       T_,//NEW- background frequency for T
-                                       (gumbel[index_num].first), //lambda
-                                       (gumbel[index_num].second) // K
-                                       );
-        
-        
-        // Shannon's entropy for reference sequence nucleotide distribution
-        double entropy_H_gv = -(background_freq_gv[0]*(log(background_freq_gv[0])/log(2)) +
-                                background_freq_gv[1]*(log(background_freq_gv[1])/log(2)) +
-                                background_freq_gv[2]*(log(background_freq_gv[2])/log(2)) +
-                                background_freq_gv[3]*(log(background_freq_gv[3])/log(2)));
-        
-        // Length correction for Smith-Waterman alignment score
-        uint64_t expect_L = log((gumbel[index_num].second)*full_read[index_num]*full_ref[index_num])/entropy_H_gv;
-        
-        // correct the reads & databases sizes for e-value calculation
-        if ( full_ref[index_num] > (expect_L*numseq[index_num]) ) full_ref[index_num]-=(expect_L*numseq[index_num]);
-        full_read[index_num]-=(expect_L*number_total_read);
-        
-        // minimum score required to reach E-value
-        minimal_score[index_num] = (log(evalue/((double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num])))/-(gumbel[index_num].first);
-        
-        // SAM @SQ data
-        if ( samout_gv )
-        {
-            // number of nucleotide sequences in the reference file
-            uint32_t num_sq = 0;
-            stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
-            
-            // loop through each @SQ
-            for ( uint32_t j = 0; j < num_sq; j++ )
-            {
-                // length of the sequence id
-                uint32_t len_id = 0;
-                stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
-                
-                // the sequence id string
-                char s[len_id+1];
-                memset(s,0,len_id+1);
-                stats.read(reinterpret_cast<char*>(&s), sizeof(char)*len_id);
-                
-                // the length of the sequence itself
-                uint32_t len_seq = 0;
-                stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
-                
-                // @SQ header
-                if ( yes_SQ ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
-            }
-        }
-        
-        stats.close();
+      stats.close();
     }//~for all indexes
     
     if ( samout_gv )
     {
-        // @PG to sam file
-        acceptedsam << "@PG\tID:sortmerna\tVN:1.0\tCL:";
-        for ( int j = 0; j < argc; j++ ) acceptedsam << argv[j] << " ";
-        acceptedsam << endl;
-        
-        acceptedsam.close();
+      // @PG to sam file
+      acceptedsam << "@PG\tID:sortmerna\tVN:1.0\tCL:";
+      for ( int j = 0; j < argc; j++ ) acceptedsam << argv[j] << " ";
+      acceptedsam << endl;
+      
+      acceptedsam.close();
     }//~if samout_gv
-    
-    
 }//~preprocess_data()
 
 
@@ -745,84 +715,85 @@ load_ref(char* ptr_dbfile,
   int i = 0;
   int j = 0;
   char c = fgetc(fp);
-    if ( load_for_search )
+  if ( load_for_search )
+  {
+    do
     {
-        do
+      // the tag
+      reference_seq[i++] = s;
+      while ( c != '\n' )
+      {
+        *s++ = c;
+        c = fgetc(fp);
+      }
+      // new line
+      *s++ = c;
+      
+      if ( *s == '\n' )
+      {
+        fprintf(stderr,"  %sERROR%s: your reference sequences are not in FASTA format "
+                       "(there is an extra new line).","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
+      }
+      
+      // the sequence
+      reference_seq[i++] = s;
+      c = fgetc(fp);
+      do
+      {
+        if ( c != '\n' && c != ' ' )
         {
-            // the tag
-            reference_seq[i++] = s;
-            while ( c != '\n' )
-            {
-                *s++ = c;
-                c = fgetc(fp);
-            }
-            // new line
-            *s++ = c;
-            
-            if ( *s == '\n' )
-            {
-                fprintf(stderr,"  %sERROR%s: your reference sequences are not in FASTA format (there is an extra new line).","\033[0;31m","\033[0m");
-                exit(EXIT_FAILURE);
-            }
-            
-            // the sequence
-            reference_seq[i++] = s;
-            c = fgetc(fp);
-            do
-            {
-                if ( c != '\n' && c != ' ' )
-                {
-                    // keep record of ambiguous character for alignment
-                    *s++ = nt_table[(int)c];
-                    
-                    // record the sequence length as we read it
-                    reference_seq_len[j]++;
-                }
-                c = fgetc(fp);
-            } while ( (c != '>') && (c != EOF) );
-            
-            *s++ = '\n';
-            j++;
-            
-            num_seq_read++;
-            
-        } while ( (num_seq_read != numseq_part) && (c != EOF) );
-    }
-    else
+          // keep record of ambiguous character for alignment
+          *s++ = nt_table[(int)c];
+          
+          // record the sequence length as we read it
+          reference_seq_len[j]++;
+        }
+        c = fgetc(fp);
+      } while ( (c != '>') && (c != EOF) );
+      
+      *s++ = '\n';
+      j++;
+      
+      num_seq_read++;
+        
+    } while ( (num_seq_read != numseq_part) && (c != EOF) );
+  }
+  else
+  {
+    do
     {
-        do
+      // the tag
+      reference_seq[i++] = s;
+      while ( c != '\n' )
+      {
+        *s++ = c;
+        c = fgetc(fp);
+      }
+      
+      // new line
+      *s++ = c;
+      
+      // the sequence
+      reference_seq[i++] = s;
+      c = fgetc(fp);
+      do
+      {
+        if ( c != '\n' && c != ' ' )
         {
-            // the tag
-            reference_seq[i++] = s;
-            while ( c != '\n' )
-            {
-                *s++ = c;
-                c = fgetc(fp);
-            }
-            
-            // new line
-            *s++ = c;
-            
-            // the sequence
-            reference_seq[i++] = s;
-            c = fgetc(fp);
-            do
-            {
-                if ( c != '\n' && c != ' ' )
-                {
-                    // keep record of ambiguous character for alignment
-                    *s++ = nt_table[(int)c];
-                }
-                c = fgetc(fp);
-            } while ( (c != '>') && (c != EOF) );
-            
-            *s++ = '\n';
-            j++;
-            
-            num_seq_read++;
-            
-        } while ( (num_seq_read != numseq_part) && (c != EOF) );
-    }
+            // keep record of ambiguous character for alignment
+            *s++ = nt_table[(int)c];
+        }
+        c = fgetc(fp);
+      } while ( (c != '>') && (c != EOF) );
+      
+      *s++ = '\n';
+      j++;
+      
+      num_seq_read++;
+        
+    } while ( (num_seq_read != numseq_part) && (c != EOF) );
+  }
     
   fclose(fp);
 }//~load_ref
@@ -1318,6 +1289,12 @@ paralleltraversal ( char* inputreads,
   double s,f;
   // the comparing character used in parsing the reads file
   char filesig;
+  // minimum read length for log statistics
+  uint32_t min_read_len = READLEN;
+  // maximum read length for log statistics
+  uint32_t max_read_len = 0;
+  // mean read length for log statistics
+  uint32_t mean_read_len = 0;
     
   // check file for mmap
   if ((fd = open(fname.c_str(), O_RDONLY)) == -1)
@@ -1350,7 +1327,7 @@ paralleltraversal ( char* inputreads,
   else
   {
     // incorrect format
-    fprintf(stderr,"\n  %sERROR%s: The reads file must begin with '>' or '@'\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: The reads file must begin with '>' or '@', is your file empty?\n\n","\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
     
@@ -1359,7 +1336,7 @@ paralleltraversal ( char* inputreads,
   // find the total length of all the reads for computing the E-value
   char ch;
   FILE *fp = fopen(inputreads,"r");
-  if (fp==NULL)
+  if ( fp == NULL )
   {
     fprintf(stderr,"  %sERROR%s: could not open reads file - %s\n\n","\033[0;31m","\033[0m",strerror(errno));
     exit(EXIT_FAILURE);
@@ -1367,20 +1344,22 @@ paralleltraversal ( char* inputreads,
   // FASTA
   if ( filesig == '>' )
   {
-    while ( (ch=getc(fp)) != EOF )
+    while ( (ch = getc(fp)) != EOF )
     {
+      // sequence label
       if ( ch == '>' )
       {
         number_total_read++;
-        while ( (ch=getc(fp)) != '\n' );
+        while ( (ch = getc(fp)) != '\n' );
       }
             
-      ch=getc(fp);
-            
+      ch = getc(fp);
+      
+      // nucleotide sequence    
       while ( (ch != EOF) && (ch != '>') )
       {
         if ( (ch != '\n') && (ch != ' ') ) full_read_main++;
-        ch=getc(fp);
+        ch = getc(fp);
       }
       ungetc(ch,fp);
     }
@@ -1390,7 +1369,7 @@ paralleltraversal ( char* inputreads,
   {
     int nc = 0;
         
-    while ( (ch=getc(fp)) != EOF )
+    while ( (ch = getc(fp)) != EOF )
     {
       if ( ch == '\n' ) nc++;
       if ( ((nc-1)%4 == 0) && (ch != '\n')) full_read_main++;
@@ -1398,6 +1377,9 @@ paralleltraversal ( char* inputreads,
         
     number_total_read=nc/4;
   }
+
+  // find the mean sequence length
+  mean_read_len = full_read_main/number_total_read;
     
   fclose(fp);
     
@@ -2109,7 +2091,7 @@ paralleltraversal ( char* inputreads,
     if ( file_s > 0 ) index = 4;
     else index = 0;
         
-        // (FASTA)
+    // (FASTA)
     if ( filesig == '>' )
     {
       while ( line != finalnt )
@@ -2411,6 +2393,12 @@ paralleltraversal ( char* inputreads,
               }
               *_myread = '\n';
             }
+
+            // find the minimum sequence length
+            readlen < min_read_len ? min_read_len = readlen : min_read_len;
+
+            // find the maximum sequence length
+            readlen > max_read_len ? max_read_len = readlen : max_read_len;
                         
             // the read length is too short
             if ( readlen < lnwin[index_num] )
@@ -4046,8 +4034,7 @@ paralleltraversal ( char* inputreads,
       }
             
       TIME(f);
-      if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );
-        
+      if ( samout_gv || blastout_gv ) eprintf(" done [%.2f sec]\n", (f-s) );      
     }// if (min_lis_gv > -1)
         
     if ( align_cov || align_id )
@@ -4121,33 +4108,33 @@ paralleltraversal ( char* inputreads,
     // record the start of the split_read if it exists
     if ( file_s < file_sections-1 )
     {
-        split_read = new char[(READLEN*2)];
-        
-        if ( split_read == NULL )
-        {
-            fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-        }
-        
-        // compute the first half of the split_read
-        char *start = &raw[partial_file_size]-reads_offset_e-1;
-        char *end = &raw[partial_file_size];
-        
-        split_read_ptr = split_read;
+      split_read = new char[(READLEN*2)];
+      
+      if ( split_read == NULL )
+      {
+          fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
+          exit(EXIT_FAILURE);
+      }
+      
+      // compute the first half of the split_read
+      char *start = &raw[partial_file_size]-reads_offset_e-1;
+      char *end = &raw[partial_file_size];
+      
+      split_read_ptr = split_read;
         
 #ifdef debug_mmap
-        cout << "split read start: "; //TESTING
+      cout << "split read start: "; //TESTING
 #endif
         
-        while ( start != end )
-        {
+      while ( start != end )
+      {
 #ifdef debug_mmap
-            cout << (char)*start; //TESTING
+        cout << (char)*start; //TESTING
 #endif
-            *split_read_ptr++ = *start++;
-        }
+        *split_read_ptr++ = *start++;
+      }
 #ifdef debug_mmap
-        cout << ".STOP." <<endl; //TESTING
+      cout << ".STOP." <<endl; //TESTING
 #endif
         
     }// (s < file_sections - 1)
@@ -4155,8 +4142,8 @@ paralleltraversal ( char* inputreads,
     // free the mmap'd file section
     if ( munmap(raw, partial_file_size ) == -1 )
     {
-        fprintf(stderr,"  %sERROR%s: Could not munmap file!\n","\033[0;31m","\033[0m");
-        exit(EXIT_FAILURE);
+      fprintf(stderr,"  %sERROR%s: Could not munmap file!\n","\033[0;31m","\033[0m");
+      exit(EXIT_FAILURE);
     }
     
     offset_map+=map_size_gv;
@@ -4224,12 +4211,14 @@ paralleltraversal ( char* inputreads,
 
       fprintf(bilan,"    Total reads for de novo clustering = %u\n",total_reads_denovo_clustering);
     }
-    
-    fprintf(bilan," By database:\n");
     // output total non-rrna + rrna reads
     fprintf(bilan,"    Total reads passing E-value threshold = %u (%.2f%%)\n",total_reads_mapped,(float)((float)total_reads_mapped/(float)number_total_read)*100);
     fprintf(bilan,"    Total reads failing E-value threshold = %u (%.2f%%)\n",number_total_read-total_reads_mapped,(1-((float)((float)total_reads_mapped/(float)number_total_read)))*100);
+    fprintf(bilan,"    Minimum read length = %u\n", min_read_len);
+    fprintf(bilan,"    Maximum read length = %u\n", max_read_len);
+    fprintf(bilan,"    Mean read length = %u\n", mean_read_len);
     
+    fprintf(bilan," By database:\n");    
     // output stats by database
     for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
     {
@@ -4255,22 +4244,21 @@ paralleltraversal ( char* inputreads,
   // free memory of accepted strings
   if ( acceptedstrings != NULL )
   {
-      delete [] acceptedstrings;
-      acceptedstrings = NULL;
+    delete [] acceptedstrings;
+    acceptedstrings = NULL;
   }
   
   if ( acceptedstrings_sam != NULL )  
   {
-      delete [] acceptedstrings_sam;
-      acceptedstrings_sam = NULL;
+    delete [] acceptedstrings_sam;
+    acceptedstrings_sam = NULL;
   }
   
   if ( acceptedstrings_blast != NULL )
   {
-      delete [] acceptedstrings_blast;
-      acceptedstrings_blast = NULL;
+    delete [] acceptedstrings_blast;
+    acceptedstrings_blast = NULL;
   }
     
   return ;  
 }//~paralleltraversal()
-

@@ -123,3 +123,11 @@ make
 ```
 
 
+Citation
+--------
+
+If you use SortMeRNA, please cite:
+Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data", Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.
+
+
+
