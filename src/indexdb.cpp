@@ -920,7 +920,7 @@ void printlist()
 #ifdef interval
     printf("     %s--interval%s      %sINT%s             index every INT L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 #endif
-    printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s250%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                      (setting --max_pos 0 will store all positions)\n");
 	printf("     %s-v%s              %sFLAG%s            verbose\n","\033[1m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-h%s              %sFLAG%s            help	\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
@@ -947,17 +947,17 @@ int main (int argc, char** argv)
 	/// memory of index
 	double mem = 0;
 	bool mem_is_set = false;
-    bool fast_set = false;
+  bool fast_set = false;
 	bool sensitive_set = false;
-    bool lnwin_set = false;
-    bool interval_set = false;
-    bool max_pos_set = false;
-    /// vector of (FASTA file, index name) pairs for constructing index
-    vector< pair<string,string> > myfiles;
-    /// pointer to temporary directory
-    char* ptr_tmpdir = NULL;
-    uint32_t interval = 0;
-    uint32_t max_pos = 0;
+  bool lnwin_set = false;
+  bool interval_set = false;
+  bool max_pos_set = false;
+  /// vector of (FASTA file, index name) pairs for constructing index
+  vector< pair<string,string> > myfiles;
+  /// pointer to temporary directory
+  char* ptr_tmpdir = NULL;
+  uint32_t interval = 0;
+  uint32_t max_pos = 0;
     
 	timeval t;
     
@@ -1282,12 +1282,15 @@ int main (int argc, char** argv)
 				/// set memory for index (in Mbytes)
 				if ( !mem_is_set )
 				{
-					mem = atof(argv[narg+1]);
-					if ( mem < 1 )
-					{
-						printf("\n   %sERROR%s: -m %e is too little memory to construct an index. Make sure -m INT is in Mbytes.\n","\033[0;31m","\033[0m",mem);
-						exit(EXIT_FAILURE);
-					}
+          // RAM limit for mmap'ing reads in megabytes
+          char *pEnd = NULL;
+          mem = strtod( argv[narg+1], &pEnd );
+          if ( !mem )
+          {
+            fprintf(stderr, "\n  %sERROR%s: -m [INT] must be a positive integer "
+                            "value (in Mbyte).\n\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
 					narg+=2;
 					mem_is_set = true;
 				}
@@ -1297,8 +1300,7 @@ int main (int argc, char** argv)
 					exit(EXIT_FAILURE);
 				}
 			}
-                break;
-                
+      break;      
 			case 'v':
 			{
 				/// verbose
@@ -1308,16 +1310,14 @@ int main (int argc, char** argv)
 					narg++;
 				}
 			}
-                break;
-                
+      break;
 			case 'h':
 			{
 				/// help
                 welcome();
 				printlist();
 			}
-                break;
-                
+      break;
 			default :
 			{
 				printf("\n  %sERROR%s: '%c' is not one of the options\n\n", "\033[0;31m","\033[0m",argv[narg][1]);
@@ -1325,8 +1325,7 @@ int main (int argc, char** argv)
 			}
 		}//~switch
 	}//~while ( narg < argc )
-    
-    
+
 	/// check that the database file has been provided
     if ( myfiles.empty() )
     {
@@ -1336,128 +1335,123 @@ int main (int argc, char** argv)
     
 	/// set the default value for seed length
 	if ( !lnwin_set ) lnwin_gv = 18;
-    /// set the default interval length
-    if ( !interval_set ) interval = 1;
-    /// set the default max_pos, store maximum 250 positions for each L-mer
-    if ( !max_pos_set ) max_pos = 250;
+  /// set the default interval length
+  if ( !interval_set ) interval = 1;
+  /// set the default max_pos, store maximum 10000 positions for each L-mer
+  if ( !max_pos_set ) max_pos = 10000;
     
 	pread_gv = lnwin_gv+1;
 	partialwin_gv = lnwin_gv/2;
     
 	/// default memory for building index (3072 Mbytes)
-	if ( mem == 0 ) mem = 3072;
+	if ( !mem_is_set ) mem = 3072;
     
 	mask32 = (1<<lnwin_gv)-1;
 	mask64 = (2ULL<<((pread_gv*2)-1))-1;
     
+  /// temporary file to store keys for building the CMPH
+  int32_t pid = getpid();
+  char pidStr[4000];
+  sprintf(pidStr,"%d",pid);
+  char keys_str[2000] = "";
+  char* tmpdir_env = NULL;
     
+  /// tmpdir provided
+  if ( ptr_tmpdir != NULL )
+  {
+    strcat(keys_str,ptr_tmpdir);
+    char* ptr_tmpdir_t = ptr_tmpdir;
+    while (*ptr_tmpdir_t++ != '\0');
+    if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
     
-    /// temporary file to store keys for building the CMPH
-    int32_t pid = getpid();
-    char pidStr[4000];
-    sprintf(pidStr,"%d",pid);
-    char keys_str[2000] = "";
-    char* tmpdir_env = NULL;
+    char try_str[4000] = "";
+    strcat(try_str,keys_str);
+    strcat(try_str,"test.txt");
     
-    /// tmpdir provided
-    if ( ptr_tmpdir != NULL )
+    FILE *tmp = fopen(try_str, "w+");
+    if ( tmp == NULL )
     {
-        strcat(keys_str,ptr_tmpdir);
-        char* ptr_tmpdir_t = ptr_tmpdir;
-        while (*ptr_tmpdir_t++ != '\0');
-        if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
-        
-        char try_str[4000] = "";
-        strcat(try_str,keys_str);
-        strcat(try_str,"test.txt");
-        
-        FILE *tmp = fopen(try_str, "w+");
-        if ( tmp == NULL )
-        {
-            fprintf(stderr,"\n  %sERROR%s: cannot access directory %s: %s\n\n","\033[0;31m","\033[0m",ptr_tmpdir,strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+      fprintf(stderr,"\n  %sERROR%s: cannot access directory %s: %s\n\n","\033[0;31m","\033[0m",ptr_tmpdir,strerror(errno));
+      exit(EXIT_FAILURE);
     }
-    /// tmpdir not provided, try $TMPDIR, /tmp and local directories
-    else
+  }
+  /// tmpdir not provided, try $TMPDIR, /tmp and local directories
+  else
+  {
+    bool try_further = true;
+    
+    /// try TMPDIR
+    tmpdir_env = getenv("TMPDIR");
+    if ( (tmpdir_env != NULL) && (strcmp(tmpdir_env,"")!=0) )
     {
-        bool try_further = true;
-        
-        /// try TMPDIR
-        tmpdir_env = getenv("TMPDIR");
-        if ( (tmpdir_env != NULL) && (strcmp(tmpdir_env,"")!=0) )
-        {
-            strcat(keys_str,tmpdir_env);
-            char* ptr_tmpdir_t = tmpdir_env;
-            while (*ptr_tmpdir_t++ != '\0');
-            if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
-            
-            char try_str[4000] = "";
-            strcat(try_str,keys_str);
-            strcat(try_str,"test.txt");
-            
-            FILE *tmp = fopen(try_str, "w+");
-            if ( tmp == NULL )
-            {
-                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory %s: %s\n","\033[0;33m","\033[0m",tmpdir_env,strerror(errno));
-                fprintf(stderr,"  will try /tmp/.\n\n");
-                try_further = true;
-            }
-            else try_further = false;
-        }
-        /// try "/tmp" directory
-        if ( try_further )
-        {
-            FILE *tmp = fopen("/tmp/test.txt", "w+");
-            if ( tmp == NULL )
-            {
-                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory /tmp/: %s\n","\033[0;33m","\033[0m",strerror(errno));
-                fprintf(stderr,"  will try local directory.\n\n");
-                try_further = true;
-            }
-            else
-            {
-                strcat(keys_str,"/tmp/");
-                try_further = false;
-            }
-            
-        }
-        /// try the local directory
-        if ( try_further )
-        {
-            FILE *tmp = fopen("./test.txt", "w+");
-            if ( tmp == NULL )
-            {
-                fprintf(stderr,"\n  %sERROR%s: no write permissions in current directory: %s\n","\033[0;31m","\033[0m",strerror(errno));
-                fprintf(stderr,"  Please set --tmpdir to a writable directory, or change the write permissions in $TMPDIR, /tmp/ or current directory.\n\n");
-                exit(EXIT_FAILURE);
-            }
-            else
-            {
-                strcat(keys_str,"./");
-                try_further = false;
-            }
-        }
+      strcat(keys_str,tmpdir_env);
+      char* ptr_tmpdir_t = tmpdir_env;
+      while (*ptr_tmpdir_t++ != '\0');
+      if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
+      
+      char try_str[4000] = "";
+      strcat(try_str,keys_str);
+      strcat(try_str,"test.txt");
+      
+      FILE *tmp = fopen(try_str, "w+");
+      if ( tmp == NULL )
+      {
+        fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory %s: %s\n","\033[0;33m","\033[0m",tmpdir_env,strerror(errno));
+        fprintf(stderr,"  will try /tmp/.\n\n");
+        try_further = true;
+      }
+      else try_further = false;
     }
+    /// try "/tmp" directory
+    if ( try_further )
+    {
+      FILE *tmp = fopen("/tmp/test.txt", "w+");
+      if ( tmp == NULL )
+      {
+        fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory /tmp/: %s\n","\033[0;33m","\033[0m",strerror(errno));
+        fprintf(stderr,"  will try local directory.\n\n");
+        try_further = true;
+      }
+      else
+      {
+        strcat(keys_str,"/tmp/");
+        try_further = false;
+      } 
+    }
+    /// try the local directory
+    if ( try_further )
+    {
+      FILE *tmp = fopen("./test.txt", "w+");
+      if ( tmp == NULL )
+      {
+        fprintf(stderr,"\n  %sERROR%s: no write permissions in current directory: %s\n","\033[0;31m","\033[0m",strerror(errno));
+        fprintf(stderr,"  Please set --tmpdir to a writable directory, or change the write permissions in $TMPDIR, /tmp/ or current directory.\n\n");
+        exit(EXIT_FAILURE);
+      }
+      else
+      {
+        strcat(keys_str,"./");
+        try_further = false;
+      }
+    }
+  }
     
-    strcat(keys_str, "sortmerna_keys_");
-    strcat(keys_str,pidStr);
-    strcat(keys_str,".txt");
-    
-    /// the list of arguments is correct, welcome the user!
-    if ( verbose ) welcome();
-    
-    eprintf("\n  Parameters summary: \n");
-    eprintf("    K-mer size: %d\n",lnwin_gv+1);
-    eprintf("    K-mer interval: %d\n",interval);
-    if ( max_pos == 0 )
-        eprintf("    Maximum positions to store per unique K-mer: all\n");
-    else
-        eprintf("    Maximum positions to store per unique K-mer: %d\n",max_pos);
-    
-    
-    eprintf("\n  Total number of databases to index: %d\n",(int)myfiles.size());
-    
+  strcat(keys_str, "sortmerna_keys_");
+  strcat(keys_str,pidStr);
+  strcat(keys_str,".txt");
+  
+  /// the list of arguments is correct, welcome the user!
+  if ( verbose ) welcome();
+  
+  eprintf("\n  Parameters summary: \n");
+  eprintf("    K-mer size: %d\n",lnwin_gv+1);
+  eprintf("    K-mer interval: %d\n",interval);
+  if ( max_pos == 0 )
+    eprintf("    Maximum positions to store per unique K-mer: all\n");
+  else
+    eprintf("    Maximum positions to store per unique K-mer: %d\n", max_pos);
+  
+  eprintf("\n  Total number of databases to index: %d\n", (int)myfiles.size());
     
     /// build index for each pair in --ref list
     for ( int newindex = 0; newindex < (int)myfiles.size(); newindex++ )
@@ -1687,11 +1681,11 @@ int main (int argc, char** argv)
                     int c = 0;
                     do
                     {
-                        c = fgetc(fp);
-                        fprintf(stderr,"%c",(char)c);
+                      c = fgetc(fp);
+                      fprintf(stderr,"%c",(char)c);
                     } while ( c != '\n' );
                     
-                    fprintf(stderr,"` will not fit into %e bytes memory, it will be skipped.",mem);
+                    fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.",mem);
                     fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.",estimated_seq_mem);
                     fseek(fp,end_seq,SEEK_SET);
                     continue;

@@ -1709,7 +1709,7 @@ paralleltraversal ( char* inputreads,
     struct tm * now = localtime(&q);
     
     fprintf(bilan," %s\n",asctime(now));
-    fprintf(bilan," SortMeRNA command: ");
+    fprintf(bilan," Command: ");
     for ( int j = 0; j < argc; j++ ) fprintf(bilan,"%s ",argv[j]);
     fprintf(bilan,"\n");
     // some info on chosen parameters
