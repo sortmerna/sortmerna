@@ -1213,6 +1213,7 @@ main(int argc,
           // RAM limit for mmap'ing reads in megabytes
           char *pEnd = NULL;
           double _m = strtod( argv[narg+1], &pEnd );
+          // note 1 Mb = 1024^2 = 1048576 bytes
           unsigned long long int pages_asked =\
             (unsigned long long int)(_m*1048576)/pagesize_gv;
                     

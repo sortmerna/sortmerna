@@ -920,7 +920,7 @@ void printlist()
 #ifdef interval
     printf("     %s--interval%s      %sINT%s             index every INT L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 #endif
-    printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s250%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                      (setting --max_pos 0 will store all positions)\n");
 	printf("     %s-v%s              %sFLAG%s            verbose\n","\033[1m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-h%s              %sFLAG%s            help	\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
@@ -947,20 +947,19 @@ int main (int argc, char** argv)
 	/// memory of index
 	double mem = 0;
 	bool mem_is_set = false;
-    bool fast_set = false;
+  bool fast_set = false;
 	bool sensitive_set = false;
-    bool lnwin_set = false;
-    bool interval_set = false;
-    bool max_pos_set = false;
-    /// vector of (FASTA file, index name) pairs for constructing index
-    vector< pair<string,string> > myfiles;
-    /// pointer to temporary directory
-    char* ptr_tmpdir = NULL;
-    uint32_t interval = 0;
-    uint32_t max_pos = 0;
+  bool lnwin_set = false;
+  bool interval_set = false;
+  bool max_pos_set = false;
+  /// vector of (FASTA file, index name) pairs for constructing index
+  vector< pair<string,string> > myfiles;
+  /// pointer to temporary directory
+  char* ptr_tmpdir = NULL;
+  uint32_t interval = 0;
+  uint32_t max_pos = 0;
     
 	timeval t;
-    
     
 	if ( argc == 1 )
 	{
@@ -977,156 +976,166 @@ int main (int argc, char** argv)
 			case '-':
 			{
 				char* myoption = argv[narg];
-				/// skip the '--'
+				// skip the '--'
 				myoption+=2;
                 
-				/// path to reference sequence file
+				// path to reference sequence file
 				if ( strcmp ( myoption, "ref") == 0 )
 				{
-                    /// no files are given
+          // no files are given
 					if ( argv[narg+1] == NULL )
 					{
 						fprintf(stderr,"\n  %sERROR%s: --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n","\033[0;31m","\033[0m");
 						exit(EXIT_FAILURE);
 					}
-                    else
-                    {
-                        char *ptr = argv[narg+1];
-                        while ( *ptr != '\0' )
-                        {
-                            /// get the FASTA file path + name
-                            char fastafile[2000];
-                            char *ptr_fastafile = fastafile;
+          else
+          {
+            char *ptr = argv[narg+1];
+            while ( *ptr != '\0' )
+            {
+              // get the FASTA file path + name
+              char fastafile[2000];
+              char *ptr_fastafile = fastafile;
 
-                            /// the reference database FASTA file
-                            while ( *ptr != ',' && *ptr != '\0' )
-                            {
-                                *ptr_fastafile++ = *ptr++;
-                            }
-                            *ptr_fastafile = '\0';
-                            ptr++; //skip the ',' delimiter
-                            
-                            /// check FASTA file exists & is not empty
-                            if ( FILE *file = fopen(fastafile, "r") )
-                           	{ 
-                           		/// get file size
-                           		fseek(file, 0, SEEK_END);
-                           		size_t filesize = ftell(file);
-                           		/// file size is 0, create empty index file and exit the program
-                           		if ( !filesize ) 
-                           		{
-                           			/// get the index filepath
-                           			char indexfile[2000];
-                           			char *ptr_indexfile = indexfile;
-                           			while ( *ptr != ':' && *ptr != '\0' )
-                           			{
-                           				*ptr_indexfile++ = *ptr++;
-                           			}
-                           			*ptr_indexfile = '\0';
+              // the reference database FASTA file
+              while ( *ptr != ',' && *ptr != '\0' )
+              {
+                *ptr_fastafile++ = *ptr++;
+              }
+              *ptr_fastafile = '\0';
+              ptr++; //skip the ',' delimiter
+                
+              // check FASTA file exists & is not empty
+              if ( FILE *file = fopen(fastafile, "r") )
+             	{ 
+             		// get file size
+             		fseek(file, 0, SEEK_END);
+             		size_t filesize = ftell(file);
+             		// file size is 0, create empty index file and exit the program
+             		if ( !filesize ) 
+             		{
+             			// get the index filepath
+             			char indexfile[2000];
+             			char *ptr_indexfile = indexfile;
+             			while ( *ptr != ':' && *ptr != '\0' )
+             			{
+             				*ptr_indexfile++ = *ptr++;
+             			}
+             			*ptr_indexfile = '\0';
 
-                           			char bases[4][50] = {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"};
+             			char bases[4][50] = {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"};
 
-                           			/// output empty index files
-                           			for ( int file = 0; file < 4; file++ )
-                           			{
-                           				char str[2000];
-                           				strcpy (str, indexfile);
-                           				strcat (str, bases[file]);
-                           				FILE *t = fopen(str, "w");
-                           				fclose(t);
-                           			}
-                           			
-                           			/// exit
-                           			fprintf(stdout, "  The input file is empty, an index was not built.\n");
-                           			exit(EXIT_SUCCESS);
-                           		}
-                           		/// file size > 0, reset file pointer to start of file
-                           		fseek(file, 0, SEEK_SET);
-                           		fclose(file);
-                           	}
-                            else
-                            {
-                                fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));
-                                exit(EXIT_FAILURE);
-                            }
-                            
-                            
-                            
-                            /// get the index path + name
-                            char indexfile[2000];
-                            char *ptr_indexfile = indexfile;
-                            /// the reference database index name
-                            while ( *ptr != ':' && *ptr != '\0')
-                            {
-                                *ptr_indexfile++ = *ptr++;
-                            }
-                            *ptr_indexfile = '\0';
-                            if ( *ptr != '\0' ) ptr++; //skip the ':' delimiter
-                            
-                            /// check the directory where to write the index exists
-                            char dir[500];
-                            char *ptr_end = strrchr( indexfile, '/');
-                            if ( ptr_end != NULL )
-                            {
-                                memcpy( dir, indexfile, (ptr_end-indexfile) );
-                                dir[(int)(ptr_end-indexfile)] = '\0';
-                            }
-                            else
-                            {
-                                strcpy( dir, "./" );
-                            }
-                            
-                            if ( DIR *dir_p = opendir(dir) ) closedir(dir_p);
-                            else
-                            {
-                                if ( ptr_end != NULL )
-                                    fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index '%s' could not be opened. The full directory path must be provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",dir,ptr_end+1);
-                                else
-                                    fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index '%s' could not be opened. The full directory path must be provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",dir,indexfile);
-                                
-                                exit(EXIT_FAILURE);
-                            }
-                            
-                            /// check index file names are distinct
-                            for ( int i = 0; i < (int)myfiles.size(); i++ )
-                            {
-                                if ( (myfiles[i].first).compare(fastafile) == 0 )
-                                {
-                                    fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered twice in the list. It will be indexed twice. \n\n","\033[0;33m","\033[0m",fastafile);
-                                }
-                                else if ( (myfiles[i].second).compare(indexfile) == 0 )
-                                {
-                                    fprintf(stderr, "\n  %sERROR%s: the index name %s has been entered twice in the list. Index names must be unique.\n\n","\033[0;31m","\033[0m",indexfile);
-                                    exit(EXIT_FAILURE);
-                                }
-                            }
-                            
-                            myfiles.push_back(pair<string,string>(fastafile,indexfile));
-                            
-                        }
-                        
-                        narg+=2;
-                    }
-				}
-                /// the tmpdir
-                else if ( strcmp ( myoption, "tmpdir" ) == 0 )
+             			// output empty index files
+             			for ( int file = 0; file < 4; file++ )
+             			{
+             				char str[2000];
+             				strcpy (str, indexfile);
+             				strcat (str, bases[file]);
+             				FILE *t = fopen(str, "w");
+             				fclose(t);
+             			}
+             			// exit
+             			fprintf(stdout, "  The input file is empty, an index was not built.\n");
+             			exit(EXIT_SUCCESS);
+             		}
+             		// file size > 0, reset file pointer to start of file
+             		fseek(file, 0, SEEK_SET);
+             		fclose(file);
+             	}
+              else
+              {
+                fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));
+                exit(EXIT_FAILURE);
+              }
+                             
+              // get the index path + name
+              char indexfile[2000];
+              char *ptr_indexfile = indexfile;
+              ///the reference database index name
+              while ( *ptr != ':' && *ptr != '\0')
+              {
+                *ptr_indexfile++ = *ptr++;
+              }
+              *ptr_indexfile = '\0';
+              if ( *ptr != '\0' ) ptr++; //skip the ':' delimiter
+              
+              // check the directory where to write the index exists
+              char dir[500];
+              char *ptr_end = strrchr( indexfile, '/');
+              if ( ptr_end != NULL )
+              {
+                memcpy( dir, indexfile, (ptr_end-indexfile) );
+                dir[(int)(ptr_end-indexfile)] = '\0';
+              }
+              else
+              {
+                strcpy( dir, "./" );
+              }
+              
+              if ( DIR *dir_p = opendir(dir) ) closedir(dir_p);
+              else
+              {
+                if ( ptr_end != NULL )
+                  fprintf(stderr,"\n  %sERROR%s: the directory %s for writing "
+                                 "index '%s' could not be opened. The full directory "
+                                 "path must be provided (ex. no '~'). \n\n",
+                                 "\033[0;31m","\033[0m",dir,ptr_end+1);
+                else
+                  fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index "
+                                 "'%s' could not be opened. The full directory path must "
+                                 "be provided (ex. no '~'). \n\n","\033[0;31m",
+                                  "\033[0m",dir,indexfile);
+                
+                exit(EXIT_FAILURE);
+              }
+                
+              /// check index file names are distinct
+              for ( int i = 0; i < (int)myfiles.size(); i++ )
+              {
+                if ( (myfiles[i].first).compare(fastafile) == 0 )
                 {
-                    if ( argv[narg+1] == NULL )
-                    {
-                        fprintf(stderr,"\n  %sERROR%s: a directory path must follow the option --tmpdir (ex. /path/to/dir ) \n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    else
-                    {
-                        ptr_tmpdir = argv[narg+1];
-                        narg+=2;
-                    }
+                  fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has "
+                                  "been entered twice in the list. It will "
+                                  "be indexed twice. \n\n","\033[0;33m",
+                                  "\033[0m",fastafile);
                 }
+                else if ( (myfiles[i].second).compare(indexfile) == 0 )
+                {
+                  fprintf(stderr, "\n  %sERROR%s: the index name %s has "
+                                  "been entered twice in the list. Index names "
+                                  "must be unique.\n\n","\033[0;31m",
+                                  "\033[0m",indexfile);
+                  exit(EXIT_FAILURE);
+                }
+              }
+              myfiles.push_back(pair<string,string>(fastafile,indexfile));    
+            }
+            narg+=2;
+          }
+				}
+        // the tmpdir
+        else if ( strcmp ( myoption, "tmpdir" ) == 0 )
+        {
+          if ( argv[narg+1] == NULL )
+          {
+            fprintf(stderr,"\n  %sERROR%s: a directory path must "
+                           "follow the option --tmpdir (ex. /path/to/dir ) \n",
+                           "\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
+          else
+          {
+              ptr_tmpdir = argv[narg+1];
+              narg+=2;
+          }
+        }
 				else if ( strcmp ( myoption, "fast") == 0 )
 				{
 					if ( lnwin_gv > 0 )
 					{
-						fprintf(stderr,"\n  %sERROR%s: option -L INT cannot be used with --fast or --sensitive (these options set default values for L).\n\n","\033[0;31m","\033[0m");
+						fprintf(stderr,"\n  %sERROR%s: option -L INT cannot be used with "
+                           "--fast or --sensitive (these options set default values "
+                           "for L).\n\n","\033[0;31m","\033[0m");
 						exit(EXIT_FAILURE);
 					}
 					else if ( !fast_set )
@@ -1135,8 +1144,9 @@ int main (int argc, char** argv)
 					}
 					else
 					{
-                        fprintf(stderr,"\n  %sERROR%s: --fast has already been set once.\n\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
+            fprintf(stderr,"\n  %sERROR%s: --fast has already been set "
+                           "once.\n\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
 					}
 					fast_set = true;
 					narg++;
@@ -1145,160 +1155,187 @@ int main (int argc, char** argv)
 				{
 					if ( lnwin_gv > 0 )
 					{
-						fprintf(stderr,"\n  %sERROR%s: option -L INT cannot be used with --sensitive or --fast (these options set default values for L).\n\n","\033[0;31m","\033[0m");
+						fprintf(stderr,"\n  %sERROR%s: option -L INT cannot be used "
+                           "with --sensitive or --fast (these options set "
+                           "default values for L).\n\n","\033[0;31m","\033[0m");
 						exit(EXIT_FAILURE);
 					}
 					else if ( !sensitive_set )
 						lnwin_gv = 18;
 					else
 					{
-                        fprintf(stderr,"\n  %sERROR%s: --sensitive has already been set once.\n\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
+            fprintf(stderr,"\n  %sERROR%s: --sensitive has already been "
+                           "set once.\n\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
 					}
 					sensitive_set = true;
 					narg++;
 				}
-                /// Interval for constructing index on every INT words
-                else if ( strcmp ( myoption, "interval" ) == 0 )
-                {
-                    if (argv[narg+1] == NULL)
-                    {
-                        fprintf(stderr,"\n  %sERROR%s: --interval requires a positive integer as input (ex. --interval 2).\n\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    /// set interval
-                    if ( !interval_set )
-                    {
-                        if ( argv[narg+1][0] == '-' )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --interval requires a positive integer as input (ex. --interval 2).\n\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else if (isdigit(argv[narg+1][0]))
-                        {
-                            interval = atoi(argv[narg+1]);
-                            narg+=2;
-                            interval_set = true;
-                        }
-                        else
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --interval requires a positive integer as input (ex. --interval 2).\n\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                    {
-                        fprintf(stderr,"\n  %sERROR%s: --interval has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-                        printlist();
-                    }
-                }
-                /// maximum positions to store for a unique L-mer
-                else if ( strcmp ( myoption, "max_pos" ) == 0 )
-                {
-                    if (argv[narg+1] == NULL)
-                    {
-                        fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive integer as input (ex. --max_pos 250).\n\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    /// set max_pos
-                    if ( !max_pos_set )
-                    {
-                        if ( argv[narg+1][0] == '-' )
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive integer as input (ex. --max_pos 250).\n\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                        else if (isdigit(argv[narg+1][0]))
-                        {
-                            max_pos = atoi(argv[narg+1]);
-                            narg+=2;
-                            max_pos_set = true;
-                        }
-                        else
-                        {
-                            fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive integer as input (ex. --max_pos 250).\n\n","\033[0;31m","\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                    {
-                        fprintf(stderr,"\n  %sERROR%s: --max_pos has been set twice, please verify your choice\n\n","\033[0;31m","\033[0m");
-                        printlist();
-                    }
-                }
+        /// Interval for constructing index on every INT words
+        else if ( strcmp ( myoption, "interval" ) == 0 )
+        {
+          if (argv[narg+1] == NULL)
+          {
+            fprintf(stderr,"\n  %sERROR%s: --interval requires a positive "
+                           "integer as input (ex. --interval 2).\n\n",
+                           "\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
+          /// set interval
+          if ( !interval_set )
+          {
+            if ( argv[narg+1][0] == '-' )
+            {
+              fprintf(stderr,"\n  %sERROR%s: --interval requires a "
+                             "positive integer as input (ex. --interval 2).\n\n",
+                             "\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+            }
+            else if (isdigit(argv[narg+1][0]))
+            {
+              interval = atoi(argv[narg+1]);
+              narg+=2;
+              interval_set = true;
+            }
+            else
+            {
+              fprintf(stderr,"\n  %sERROR%s: --interval requires a positive "
+                             "integer as input (ex. --interval 2).\n\n",
+                             "\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+            }
+          }
+          else
+          {
+            fprintf(stderr,"\n  %sERROR%s: --interval has been set "
+                           "twice, please verify your choice\n\n",
+                           "\033[0;31m","\033[0m");
+            printlist();
+          }
+        }
+        /// maximum positions to store for a unique L-mer
+        else if ( strcmp ( myoption, "max_pos" ) == 0 )
+        {
+          if (argv[narg+1] == NULL)
+          {
+            fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive "
+                           "integer as input (ex. --max_pos 250).\n\n",
+                           "\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
+          /// set max_pos
+          if ( !max_pos_set )
+          {
+            if ( argv[narg+1][0] == '-' )
+            {
+              fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive "
+                             "integer as input (ex. --max_pos 250).\n\n",
+                             "\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+            }
+            else if (isdigit(argv[narg+1][0]))
+            {
+              max_pos = atoi(argv[narg+1]);
+              narg+=2;
+              max_pos_set = true;
+            }
+            else
+            {
+              fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive "
+                             "integer as input (ex. --max_pos 250).\n\n",
+                             "\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+            }
+          }
+          else
+          {
+            fprintf(stderr,"\n  %sERROR%s: --max_pos has been set twice, "
+                           "please verify your choice\n\n","\033[0;31m",
+                           "\033[0m");
+            printlist();
+          }
+        }
 				else
 				{
-					printf("\n  %sERROR%s: unknown option --%s.\n\n","\033[0;31m","\033[0m",myoption);
+					fprintf(stderr,"\n  %sERROR%s: unknown option --%s.\n\n",
+                         "\033[0;31m","\033[0m",myoption);
 					printlist();
 					exit(EXIT_FAILURE);
 				}
 			}
-                break;
-                
+      break;         
 			case 'L':
 			{
 				if ( fast_set || sensitive_set )
 				{
-					printf("\n  %sERROR%s: -L INT cannot not be set when --fast or --sensitive options are used (these options set default values for L).\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: -L INT cannot not be set when --fast "
+                         "or --sensitive options are used (these options set default "
+                         "values for L).\n\n","\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
 				}
                 
 				if ( lnwin_set )
 				{
-					printf("\n  %sERROR%s: option -L can only be set once.\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: option -L can only be set once.\n\n",
+                         "\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
 				}
                 
 				int lnwin_t = atoi(argv[narg+1]);
-                lnwin_set = true;
+        lnwin_set = true;
                 
 				if ( lnwin_t <= 0 )
 				{
-					printf("\n  %sERROR%s: -L must be a positive integer (10, 12, 14, .. , 20).\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: -L must be a positive integer "
+                         "(10, 12, 14, .. , 20).\n\n","\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
 				}
 				else if ( lnwin_t%2 == 1 )
 				{
-					printf("\n  %sERROR%s: -L must be an even integer (10, 12, 14, .. , 20).\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: -L must be an even integer (10, 12, "
+                         "14, .. , 20).\n\n","\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
 				}
 				else if ( (lnwin_t < 8) || (lnwin_t > 26) )
 				{
-					printf("\n  %sERROR%s: -L must be between 8 and 26, inclusive.\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: -L must be between 8 and 26, inclusive.\n\n",
+                         "\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
 				}
 				else
 				{
-                    lnwin_gv = lnwin_t;
+          lnwin_gv = lnwin_t;
 					pread_gv = lnwin_gv+1;
 					partialwin_gv = lnwin_gv/2;
 					narg+=2;
 				}
 			}
-                break;
-                
+      break;          
 			case 'm':
 			{
 				/// set memory for index (in Mbytes)
 				if ( !mem_is_set )
 				{
-					mem = atof(argv[narg+1]);
-					if ( mem < 1 )
-					{
-						printf("\n   %sERROR%s: -m %e is too little memory to construct an index. Make sure -m INT is in Mbytes.\n","\033[0;31m","\033[0m",mem);
-						exit(EXIT_FAILURE);
-					}
+          // RAM limit for mmap'ing reads in megabytes
+          char *pEnd = NULL;
+          mem = strtod( argv[narg+1], &pEnd );
+          if ( !mem )
+          {
+            fprintf(stderr, "\n  %sERROR%s: -m [INT] must be a positive integer "
+                            "value (in Mbyte).\n\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
 					narg+=2;
 					mem_is_set = true;
 				}
 				else
 				{
-					printf("\n  %sERROR%s: option -m can only be set once,\n\n","\033[0;31m","\033[0m");
+					fprintf(stderr,"\n  %sERROR%s: option -m can only be set once,\n\n",
+                         "\033[0;31m","\033[0m");
 					exit(EXIT_FAILURE);
 				}
 			}
-                break;
-                
+      break;      
 			case 'v':
 			{
 				/// verbose
@@ -1308,195 +1345,203 @@ int main (int argc, char** argv)
 					narg++;
 				}
 			}
-                break;
-                
+      break;
 			case 'h':
 			{
 				/// help
-                welcome();
+        welcome();
 				printlist();
 			}
-                break;
-                
+      break;
 			default :
 			{
-				printf("\n  %sERROR%s: '%c' is not one of the options\n\n", "\033[0;31m","\033[0m",argv[narg][1]);
+				fprintf(stderr,"\n  %sERROR%s: '%c' is not one of the options\n\n",
+                       "\033[0;31m","\033[0m",argv[narg][1]);
 				exit(EXIT_FAILURE);
 			}
 		}//~switch
 	}//~while ( narg < argc )
-    
-    
+
 	/// check that the database file has been provided
-    if ( myfiles.empty() )
-    {
-		printf("\n  %sERROR%s: a FASTA reference database & index name (--ref /path/to/file1.fasta,/path/to/index1) is mandatory input.\n\n","\033[0;31m","\033[0m");
+  if ( myfiles.empty() )
+  {
+		fprintf(stderr,"\n  %sERROR%s: a FASTA reference database & index name "
+                   "(--ref /path/to/file1.fasta,/path/to/index1) is mandatory "
+                   "input.\n\n","\033[0;31m","\033[0m");
 		exit(EXIT_FAILURE);
 	}
     
 	/// set the default value for seed length
 	if ( !lnwin_set ) lnwin_gv = 18;
-    /// set the default interval length
-    if ( !interval_set ) interval = 1;
-    /// set the default max_pos, store maximum 250 positions for each L-mer
-    if ( !max_pos_set ) max_pos = 250;
+  /// set the default interval length
+  if ( !interval_set ) interval = 1;
+  /// set the default max_pos, store maximum 10000 positions for each L-mer
+  if ( !max_pos_set ) max_pos = 10000;
     
 	pread_gv = lnwin_gv+1;
 	partialwin_gv = lnwin_gv/2;
     
 	/// default memory for building index (3072 Mbytes)
-	if ( mem == 0 ) mem = 3072;
+	if ( !mem_is_set ) mem = 3072;
     
 	mask32 = (1<<lnwin_gv)-1;
 	mask64 = (2ULL<<((pread_gv*2)-1))-1;
     
+  /// temporary file to store keys for building the CMPH
+  int32_t pid = getpid();
+  char pidStr[4000];
+  sprintf(pidStr,"%d",pid);
+  char keys_str[2000] = "";
+  char* tmpdir_env = NULL;
     
+  /// tmpdir provided
+  if ( ptr_tmpdir != NULL )
+  {
+    strcat(keys_str,ptr_tmpdir);
+    char* ptr_tmpdir_t = ptr_tmpdir;
+    while (*ptr_tmpdir_t++ != '\0');
+    if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
     
-    /// temporary file to store keys for building the CMPH
-    int32_t pid = getpid();
-    char pidStr[4000];
-    sprintf(pidStr,"%d",pid);
-    char keys_str[2000] = "";
-    char* tmpdir_env = NULL;
+    char try_str[4000] = "";
+    strcat(try_str,keys_str);
+    strcat(try_str,"test.txt");
     
-    /// tmpdir provided
-    if ( ptr_tmpdir != NULL )
+    FILE *tmp = fopen(try_str, "w+");
+    if ( tmp == NULL )
     {
-        strcat(keys_str,ptr_tmpdir);
-        char* ptr_tmpdir_t = ptr_tmpdir;
-        while (*ptr_tmpdir_t++ != '\0');
-        if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
-        
-        char try_str[4000] = "";
-        strcat(try_str,keys_str);
-        strcat(try_str,"test.txt");
-        
-        FILE *tmp = fopen(try_str, "w+");
-        if ( tmp == NULL )
-        {
-            fprintf(stderr,"\n  %sERROR%s: cannot access directory %s: %s\n\n","\033[0;31m","\033[0m",ptr_tmpdir,strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+      fprintf(stderr,"\n  %sERROR%s: cannot access directory %s: "
+                     "%s\n\n","\033[0;31m","\033[0m",ptr_tmpdir,
+                     strerror(errno));
+      exit(EXIT_FAILURE);
     }
-    /// tmpdir not provided, try $TMPDIR, /tmp and local directories
-    else
+  }
+  /// tmpdir not provided, try $TMPDIR, /tmp and local directories
+  else
+  {
+    bool try_further = true;
+    
+    /// try TMPDIR
+    tmpdir_env = getenv("TMPDIR");
+    if ( (tmpdir_env != NULL) && (strcmp(tmpdir_env,"")!=0) )
     {
-        bool try_further = true;
-        
-        /// try TMPDIR
-        tmpdir_env = getenv("TMPDIR");
-        if ( (tmpdir_env != NULL) && (strcmp(tmpdir_env,"")!=0) )
-        {
-            strcat(keys_str,tmpdir_env);
-            char* ptr_tmpdir_t = tmpdir_env;
-            while (*ptr_tmpdir_t++ != '\0');
-            if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
-            
-            char try_str[4000] = "";
-            strcat(try_str,keys_str);
-            strcat(try_str,"test.txt");
-            
-            FILE *tmp = fopen(try_str, "w+");
-            if ( tmp == NULL )
-            {
-                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory %s: %s\n","\033[0;33m","\033[0m",tmpdir_env,strerror(errno));
-                fprintf(stderr,"  will try /tmp/.\n\n");
-                try_further = true;
-            }
-            else try_further = false;
-        }
-        /// try "/tmp" directory
-        if ( try_further )
-        {
-            FILE *tmp = fopen("/tmp/test.txt", "w+");
-            if ( tmp == NULL )
-            {
-                fprintf(stderr,"\n  %sWARNING%s: no write permissions in directory /tmp/: %s\n","\033[0;33m","\033[0m",strerror(errno));
-                fprintf(stderr,"  will try local directory.\n\n");
-                try_further = true;
-            }
-            else
-            {
-                strcat(keys_str,"/tmp/");
-                try_further = false;
-            }
-            
-        }
-        /// try the local directory
-        if ( try_further )
-        {
-            FILE *tmp = fopen("./test.txt", "w+");
-            if ( tmp == NULL )
-            {
-                fprintf(stderr,"\n  %sERROR%s: no write permissions in current directory: %s\n","\033[0;31m","\033[0m",strerror(errno));
-                fprintf(stderr,"  Please set --tmpdir to a writable directory, or change the write permissions in $TMPDIR, /tmp/ or current directory.\n\n");
-                exit(EXIT_FAILURE);
-            }
-            else
-            {
-                strcat(keys_str,"./");
-                try_further = false;
-            }
-        }
+      strcat(keys_str,tmpdir_env);
+      char* ptr_tmpdir_t = tmpdir_env;
+      while (*ptr_tmpdir_t++ != '\0');
+      if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
+      
+      char try_str[4000] = "";
+      strcat(try_str,keys_str);
+      strcat(try_str,"test.txt");
+      
+      FILE *tmp = fopen(try_str, "w+");
+      if ( tmp == NULL )
+      {
+        fprintf(stderr,"\n  %sWARNING%s: no write permissions in "
+                       "directory %s: %s\n","\033[0;33m","\033[0m",
+                       tmpdir_env,strerror(errno));
+        fprintf(stderr,"  will try /tmp/.\n\n");
+        try_further = true;
+      }
+      else try_further = false;
     }
+    /// try "/tmp" directory
+    if ( try_further )
+    {
+      FILE *tmp = fopen("/tmp/test.txt", "w+");
+      if ( tmp == NULL )
+      {
+        fprintf(stderr,"\n  %sWARNING%s: no write permissions in "
+                       "directory /tmp/: %s\n","\033[0;33m","\033[0m",
+                       strerror(errno));
+        fprintf(stderr,"  will try local directory.\n\n");
+        try_further = true;
+      }
+      else
+      {
+        strcat(keys_str,"/tmp/");
+        try_further = false;
+      } 
+    }
+    /// try the local directory
+    if ( try_further )
+    {
+      FILE *tmp = fopen("./test.txt", "w+");
+      if ( tmp == NULL )
+      {
+        fprintf(stderr,"\n  %sERROR%s: no write permissions in current "
+                       "directory: %s\n","\033[0;31m","\033[0m",
+                       strerror(errno));
+        fprintf(stderr,"  Please set --tmpdir to a writable directory, "
+                       "or change the write permissions in $TMPDIR, /tmp/ "
+                       "or current directory.\n\n");
+        exit(EXIT_FAILURE);
+      }
+      else
+      {
+        strcat(keys_str,"./");
+        try_further = false;
+      }
+    }
+  }
     
-    strcat(keys_str, "sortmerna_keys_");
-    strcat(keys_str,pidStr);
-    strcat(keys_str,".txt");
+  strcat(keys_str, "sortmerna_keys_");
+  strcat(keys_str,pidStr);
+  strcat(keys_str,".txt");
+  
+  /// the list of arguments is correct, welcome the user!
+  if ( verbose ) welcome();
+  
+  eprintf("\n  Parameters summary: \n");
+  eprintf("    K-mer size: %d\n",lnwin_gv+1);
+  eprintf("    K-mer interval: %d\n",interval);
+  if ( max_pos == 0 )
+    eprintf("    Maximum positions to store per unique K-mer: all\n");
+  else
+    eprintf("    Maximum positions to store per unique K-mer: %d\n", max_pos);
+  
+  eprintf("\n  Total number of databases to index: %d\n", (int)myfiles.size());
     
-    /// the list of arguments is correct, welcome the user!
-    if ( verbose ) welcome();
-    
-    eprintf("\n  Parameters summary: \n");
-    eprintf("    K-mer size: %d\n",lnwin_gv+1);
-    eprintf("    K-mer interval: %d\n",interval);
-    if ( max_pos == 0 )
-        eprintf("    Maximum positions to store per unique K-mer: all\n");
-    else
-        eprintf("    Maximum positions to store per unique K-mer: %d\n",max_pos);
-    
-    
-    eprintf("\n  Total number of databases to index: %d\n",(int)myfiles.size());
-    
-    
-    /// build index for each pair in --ref list
+    // build index for each pair in --ref list
     for ( int newindex = 0; newindex < (int)myfiles.size(); newindex++ )
     {
         vector< pair<string,uint32_t> > sam_sq_header;
-        /// vector of structs storing information on which sequences from the original FASTA file were added to each index part
+        // vector of structs storing information on which sequences from 
+        // the original FASTA file were added to each index part
         vector<index_parts_stats> index_parts_stats_vec;
         
-        /// FASTA reference sequences input file
+        // FASTA reference sequences input file
         FILE *fp = fopen((char*)(myfiles[newindex].first).c_str(),"r");
         if ( fp == NULL )
         {
-            fprintf(stderr,"  %sERROR%s: could not open file %s\n","\033[0;31m","\033[0m",(char*)(myfiles[newindex].first).c_str());
-            exit(EXIT_FAILURE);
+          fprintf(stderr,"  %sERROR%s: could not open file %s\n",
+                         "\033[0;31m","\033[0m",(char*)(myfiles[newindex].first).c_str());
+          exit(EXIT_FAILURE);
         }
         
-        eprintf("\n  Begin indexing file %s%s%s under index name %s%s%s: \n","\033[0;34m",(char*)(myfiles[newindex].first).c_str(),"\033[0m","\033[0;34m",(char*)(myfiles[newindex].second).c_str(),"\033[0m");
+        eprintf("\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
+                "\033[0;34m",(char*)(myfiles[newindex].first).c_str(),
+                "\033[0m","\033[0;34m",(char*)(myfiles[newindex].second).c_str(),
+                "\033[0m");
         
-        /// get full file size
+        // get full file size
         fseek(fp,0L,SEEK_END);
         size_t filesize = ftell(fp);
-        fseek(fp,0L,SEEK_SET);
+        fseek(fp,0L,SEEK_SET);   
         
+        // STEP 1 ************************************************************
+        // For file part_0, (a) compute the nucleotide background frequencies;
+        // (b) length of total reference sequences (for Gumbel parameters);
+        // (c) number of total sequences (for SW alignment)
         
-        /// STEP 1 *******************************************************************************
-        /// For file part_0, (a) compute the nucleotide background frequencies;
-        /// (b) length of total reference sequences (for Gumbel parameters);
-        /// (c) number of total sequences (for SW alignment)
-        
-        
-        /// total number of reference sequences
+        // total number of reference sequences
         size_t strs = 0;
-        /// length of longest single sequence
+        // length of longest single sequence
         uint32_t maxlen = 0;
-        /// length of single sequence
+        // length of single sequence
         int32_t len = 0;
-        /// the percentage of each A/C/G/T in the database
+        // the percentage of each A/C/G/T in the database
         double background_freq[4] = {0.0,0.0,0.0,0.0};
-        /// total length of reference sequences
+        // total length of reference sequences
         int64_t full_len = 0;
         int nt = 0;
         
@@ -1505,60 +1550,59 @@ int main (int argc, char** argv)
         TIME(s);
         do
         {
+          nt = fgetc(fp);
+          
+          // name of sequence for SAM format @SQ
+          char read_header[2000];
+          char *pt_h = read_header;
+          
+          // start of read header
+          if ( nt == '>' ) strs+=2;
+          else
+          {
+            fprintf(stderr,"\n%sERROR%s: each read header of the database fasta "
+                           "file must begin with '>';","\033[0;31m","\033[0m");
+            fprintf(stderr,"\n  check sequence # %ld\n\n",strs);
+            exit(EXIT_FAILURE);
+          }
+          
+          // scan to end of header name
+          bool stop = false;
+          while ( nt != '\n' )
+          {
             nt = fgetc(fp);
-            
-            /// name of sequence for SAM format @SQ
-            char read_header[2000];
-            char *pt_h = read_header;
-            
-            /// start of read header
-            if ( nt == '>' ) strs+=2;
+            if (nt != '\n' && nt != ' ' && nt != '\t' && !stop)
+              *pt_h++ = nt;
             else
+              stop = true;
+          }
+            
+          *pt_h = '\0';          
+          len = 0;
+          
+          // scan through the sequence, count its length
+          nt = fgetc(fp);
+          while ( nt != '>' && nt != EOF )
+          {
+            // skip line feed, carriage return or empty space in the sequence
+            if ( nt != '\n' && nt != ' ' )
             {
-                fprintf(stderr,"\n%sERROR%s: each read header of the database fasta file must begin with '>';","\033[0;31m","\033[0m");
-                fprintf(stderr,"\n  check sequence # %ld\n\n",strs);
-                exit(EXIT_FAILURE);
+              len++;
+              if ( nt != 'N' ) background_freq[(int)map_nt[nt]]++;
             }
-            
-            /// scan to end of header name
-            bool stop = false;
-            while ( nt != '\n' )
-            {
-                nt = fgetc(fp);
-                if (nt != '\n' && nt != ' ' && nt != '\t' && !stop)
-                    *pt_h++ = nt;
-                else
-                    stop = true;
-            }
-            
-            *pt_h = '\0';
-            
-            len = 0;
-            
-            /// scan through the sequence, count its length
             nt = fgetc(fp);
-            while ( nt != '>' && nt != EOF )
-            {
-                /// skip line feed, carriage return or empty space in the sequence
-                if ( nt != '\n' && nt != ' ' )
-                {
-                    len++;
-                    if ( nt != 'N' ) background_freq[(int)map_nt[nt]]++;
-                    
-                }
-                nt = fgetc(fp);
-            }
+          }
             
-            /// add sequence name and length to sam_header_
-            string s(read_header);
-            sam_sq_header.push_back(pair<string,uint32_t>(s,len));
-            
-            if ( nt != EOF ) ungetc(nt,fp);
-            
-            full_len+=len;
-            
-            /// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
-            len > maxlen ? maxlen = len : maxlen;
+          // add sequence name and length to sam_header_
+          string s(read_header);
+          sam_sq_header.push_back(pair<string,uint32_t>(s,len));
+          
+          if ( nt != EOF ) ungetc(nt,fp);
+          
+          full_len+=len;
+          
+          /// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
+          len > maxlen ? maxlen = len : maxlen;
             
         } while ( nt != EOF ); /// read until end of file
         TIME(f);
@@ -1569,80 +1613,81 @@ int main (int argc, char** argv)
         eprintf("  done  [%f sec]\n", (f-s));
         
         
-        /* STEP 1 END ****************************************************************************/
+        /* STEP 1 END ***************************************************************************/
         
-        
-        
-        
-        
-        
+
         /* STEP 2 *******************************************************************************/
         /* For every part of total index, (a) build the burst trie and set all 19-mer ids to 0
          (b) count the number of unique 19-mers in the database
          (c) output the unique 19-mers into a file for MPHF */
         
-        /// number of the index part
+        // number of the index part
         uint16_t part = 0;
-        /// starting position given by ftell() where to begin reading the reference sequences
+        // starting position given by ftell() where to
+        // begin reading the reference sequences
         unsigned long int start_part = 0;
-        /// number of bytes of reference sequences to read
+        // number of bytes of reference sequences to read
         unsigned long int seq_part_size = 0;
-        /// total size of index so far in bytes
+        // total size of index so far in bytes
         double index_size = 0;
         
-        /// for each index part of the reference sequences
+        // for each index part of the reference sequences
         do
         {
-            /// number of sequences in part size
-            uint32_t numseq_part = 0;
+          // number of sequences in part size
+          uint32_t numseq_part = 0;
+          
+          // set the file pointer to the beginning of the current part
+          start_part = ftell(fp);
+          
+          // output file storing all s-mer (19-mer) words in the reference
+          // sequences, required for CMPH to build minimal perfect
+          // hash functions
+          FILE *keys = fopen(keys_str, "w+");
+          if ( keys == NULL )
+          {
+            fprintf(stderr,"  %sERROR%s: could not open %s file for writing\n",
+                           "\033[0;31m","\033[0m",keys_str);
+            exit(EXIT_FAILURE);
+          }
             
-            /// set the file pointer to the beginning of the current part
-            start_part = ftell(fp);
+          // count of unique 19-mers in database
+          uint32_t number_elements = 0;
+          
+          // table storing occurrence of each 9-mer and pointers to
+          // the forward and reverse burst tries
+          kmer *lookup_table = (kmer*)malloc((1<<lnwin_gv)*sizeof(kmer));
+          if ( lookup_table == NULL )
+          {
+            fprintf(stderr,"  %sERROR%s: could not allocate memory for "
+                           "9-mer look-up table (indexdb.cpp)\n",
+                           "\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
             
-            /// output file storing all s-mer (19-mer) words in the reference sequences, required for CMPH to build minimal perfect hash functions
-            FILE *keys = fopen(keys_str, "w+");
-            if ( keys == NULL )
-            {
-                fprintf(stderr,"  %sERROR%s: could not open %s file for writing\n","\033[0;31m","\033[0m",keys_str);
-                exit(EXIT_FAILURE);
-            }
-            
-            /// count of unique 19-mers in database
-            uint32_t number_elements = 0;
-            
-            /// table storing occurrence of each 9-mer and pointers to the forward and reverse burst tries
-            kmer *lookup_table = (kmer*)malloc((1<<lnwin_gv)*sizeof(kmer));
-            if ( lookup_table == NULL )
-            {
-                fprintf(stderr,"  %sERROR%s: could not allocate memory for 9-mer look-up table (indexdb.cpp)\n","\033[0;31m","\033[0m");
-                exit(EXIT_FAILURE);
-            }
-            
-            memset(lookup_table, 0, (1<<lnwin_gv)*sizeof(kmer));
-            
-            /// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
-            vector<bool> incremented_by_forward((1<<lnwin_gv));
-            
-            /// total size of index so far in bytes
-            index_size = 0;
-            
-            eprintf("\n  start index part # %d: \n",part);
-            
-            eprintf("    (1/3) building burst tries ..");
-            
-            //uint32_t i_i = 0; //sequence count, TESTING
-            
-            TIME(s);
-            /// for the number of sequences for which the index is less than maximum (set by -m)
-            /// indexing the 19-mers will be done in the following manner:
-            ///
-            ///  000000000011111111112222222222333333333344444
-            ///  012345678901234567890123456789012345678901234
-            ///  ACTACTATCTAGTGTGCTAGCTAGTCATCGCTAGCTAGCTAGTCG
-            ///
-            ///  --------- ---------
-            /// we store all unique 18-mer positions (not 19-mer) because if an 18-mer on a read matches exactly to the prefix
-            /// or suffix of a 19-mer in the mini-burst trie, we need to recover all of the 18-mer occurrences in the database
+          memset(lookup_table, 0, (1<<lnwin_gv)*sizeof(kmer));
+          
+          /// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
+          vector<bool> incremented_by_forward((1<<lnwin_gv));
+          
+          /// total size of index so far in bytes
+          index_size = 0;
+          
+          eprintf("\n  start index part # %d: \n",part);
+          
+          eprintf("    (1/3) building burst tries ..");
+                        
+          TIME(s);
+          // for the number of sequences for which the index is less than maximum (set by -m)
+          // indexing the 19-mers will be done in the following manner:
+          //
+          //  000000000011111111112222222222333333333344444
+          //  012345678901234567890123456789012345678901234
+          //  ACTACTATCTAGTGTGCTAGCTAGTCATCGCTAGCTAGCTAGTCG
+          //
+          //  --------- ---------
+          // we store all unique 18-mer positions (not 19-mer) because if an 18-mer on a read matches exactly to the prefix
+          // or suffix of a 19-mer in the mini-burst trie, we need to recover all of the 18-mer occurrences in the database
             do
             {
                 /// start of current sequence in file
@@ -1687,11 +1732,11 @@ int main (int argc, char** argv)
                     int c = 0;
                     do
                     {
-                        c = fgetc(fp);
-                        fprintf(stderr,"%c",(char)c);
+                      c = fgetc(fp);
+                      fprintf(stderr,"%c",(char)c);
                     } while ( c != '\n' );
                     
-                    fprintf(stderr,"` will not fit into %e bytes memory, it will be skipped.",mem);
+                    fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.",mem);
                     fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.",estimated_seq_mem);
                     fseek(fp,end_seq,SEEK_SET);
                     continue;
