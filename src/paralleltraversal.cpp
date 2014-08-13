@@ -933,7 +933,6 @@ load_index( char* ptr_dbindex,
     
   inkmer.close();
     
-    
   // STEP 2: load the burst tries ( bursttrief.dat, bursttrier.dat )
   ifstream btrie( (char*)(ptr_dbindex_str + ".bursttrie_" + part_str + ".dat").c_str(), ios::in | ios::binary );
     
@@ -943,7 +942,6 @@ load_index( char* ptr_dbindex,
     fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
     exit(EXIT_FAILURE);
   }
-    
     
   // loop through all 9-mers
   for ( uint32_t i = 0; i < (uint32_t)(1<<lnwin); i++ )
@@ -990,10 +988,9 @@ load_index( char* ptr_dbindex,
         if ( sizeoftries[j] != 0 )
         {
 #ifdef see_binary_output
-                    if ( j == 0 ) cout << "forward burst-trie \n"; //TESTING
-                    if ( j == 1 ) cout << "reverse burst-trie \n"; //TESTING
-#endif
-                    
+          if ( j == 0 ) cout << "forward burst-trie \n"; //TESTING
+          if ( j == 1 ) cout << "reverse burst-trie \n"; //TESTING
+#endif            
           // create a root trie node
           NodeElement newnode[4];
                     
@@ -1037,7 +1034,7 @@ load_index( char* ptr_dbindex,
               // what does the node element point to
               switch( flag )
               {
-                                    // set values to 0
+                // set values to 0
                 case 0:
                 {
                   node->flag = 0;
@@ -1045,7 +1042,7 @@ load_index( char* ptr_dbindex,
                   node->whichnode.trie = NULL;
                 }
                   break;
-                                    // trie node
+                // trie node
                 case 1:
                 {
                   // read the trie node
@@ -1054,7 +1051,7 @@ load_index( char* ptr_dbindex,
                     char tmp;
                     btrie.read(reinterpret_cast<char*>(&tmp), sizeof(char));
 #ifdef see_binary_output
-                                        cout << " " << (int)tmp; //TESTING
+                    cout << " " << (int)tmp; //TESTING
 #endif
                     flags.push_back(tmp);
                   }
@@ -1069,7 +1066,7 @@ load_index( char* ptr_dbindex,
                                     
                 }
                   break;
-                                    // bucket
+                // bucket
                 case 2:
                 {
                   uint32_t sizeofbucket = 0;
@@ -1078,9 +1075,8 @@ load_index( char* ptr_dbindex,
                   btrie.read(reinterpret_cast<char*>(&sizeofbucket), sizeof(uint32_t));
                                     
 #ifdef see_binary_output
-                                    cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
-#endif
-                                    
+                  cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
+#endif                      
                   char* bucket = new char[sizeofbucket]();
                   if ( bucket == NULL )
                   {
@@ -1104,24 +1100,22 @@ load_index( char* ptr_dbindex,
                   
                 }
                   break;
-                                    // ?
+                // ?
                 default:
-                                {
-                                    fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",flag);
-                                    exit(EXIT_FAILURE);
-                                }
+                {
+                  fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",flag);
+                  exit(EXIT_FAILURE);
+                }
                   break;
               }
                             
               flags.pop_front();
-              node++;
-                            
+              node++;               
             }//~loop through 4 node elements in a trie node
                         
 #ifdef see_binary_output
-                        cout << "\n"; //TESTING
-#endif
-                        
+            cout << "\n"; //TESTING
+#endif            
             nodes.pop_front();
                         
           }//~while !nodes.empty()
@@ -1141,7 +1135,6 @@ load_index( char* ptr_dbindex,
   }//~for all 9-mers in the look-up table
     
   btrie.close();
-    
     
   // STEP 3: load the position reference tables (pos.dat)
   ifstream inreff( (char*)(ptr_dbindex_str + ".pos_" + part_str + ".dat").c_str(), ios::in | ios::binary );
@@ -1163,7 +1156,6 @@ load_index( char* ptr_dbindex,
     exit(EXIT_FAILURE);
   }
     
-    
   for ( uint32_t i = 0; i < number_elements; i++ )
   {
     /* the number of positions */
@@ -1183,8 +1175,6 @@ load_index( char* ptr_dbindex,
   }
     
   inreff.close();
-    
-    
     
   return ;
     
@@ -1216,7 +1206,7 @@ void find_lis( deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b, uint32_
     
   for (uint32_t i = 1; i < a.size(); i++)
   {
-        // If next element a[i] is greater than last element of current longest subsequence a[b.back()], just push it at back of "b" and continue
+    // If next element a[i] is greater than last element of current longest subsequence a[b.back()], just push it at back of "b" and continue
     if (a[b.back()].second < a[i].second)
     {
       p[i] = b.back();
@@ -4205,10 +4195,8 @@ paralleltraversal ( char* inputreads,
     // output total number of reads
     fprintf(bilan," Results:\n");
     fprintf(bilan,"    Total reads = %u\n", number_total_read);
-    fprintf(bilan,"    Total reads passing %%id and %%coverage thresholds = %u\n", total_reads_mapped_cov);
     if ( de_novo_otu_gv )
     {
-
       fprintf(bilan,"    Total reads for de novo clustering = %u\n",total_reads_denovo_clustering);
     }
     // output total non-rrna + rrna reads
@@ -4227,6 +4215,7 @@ paralleltraversal ( char* inputreads,
     
     if ( otumapout_gv )
     {
+      fprintf(bilan," Total reads passing %%id and %%coverage thresholds = %u\n", total_reads_mapped_cov);
       fprintf(bilan," Total OTUs = %lu\n", otu_map.size());
     }
     
