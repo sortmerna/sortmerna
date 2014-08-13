@@ -120,9 +120,9 @@ void printlist()
     printf("                                         (appropriate extension will be added)\n");
   printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned and/or rejected reads)\n");
-    printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                         %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("                                         (for aligned reads only)\n");
-    printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                  %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
     printf("     %s--blast%s           %sINT%s             output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
     printf("                                        0 - pairwise\n");
     printf("                                        1 - tabular (Blast -m 8 format)\n");
