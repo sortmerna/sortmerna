@@ -537,10 +537,6 @@ void report_fasta (char* acceptedstrings,
     return ;
 }
 
-
-
-
-
 void report_denovo(char *denovo_otus_file,
                    char **reads,
                    int32_t strs,
@@ -609,52 +605,51 @@ void report_denovo(char *denovo_otus_file,
         /// regular or pair-ended reads don't need to go into the same file
         else
         {
-            /// loop through every read, output accepted reads
-            for ( uint32_t i = 1; i < strs; i+=2 )
+          /// loop through every read, output accepted reads
+          for ( uint32_t i = 1; i < strs; i+=2 )
+          {
+            char* begin_read = reads[i-1];
+            
+            /// the read was accepted
+            if ( read_hits_denovo[i] )
             {
-                char* begin_read = reads[i-1];
-                
-                /// the read was accepted
-                if ( read_hits_denovo[i] )
+                char* end_read = NULL;
+                /// split-read and paired-read exist at a different location in memory than the mmap
+                if ( file_s > 0 )
                 {
-                    char* end_read = NULL;
-                    /// split-read and paired-read exist at a different location in memory than the mmap
-                    if ( file_s > 0 )
-                    {
-                        /// first read (of split-read + paired-read)
-                        if ( i==1 ) end_read = reads[2];
-                        /// second read (of split-read + paired-read)
-                        else if ( i==3 )
-                        {
-                            end_read = reads[3];
-                            while (*end_read != '\0') end_read++;
-                        }
-                        /// all reads except the last one
-                        else if ( (i+2) < strs ) end_read = reads[i+1];
-                        /// last read
-                        else end_read = finalnt;
-                    }
-                    /// the first (and possibly only) file part, all reads are in mmap
-                    else
-                    {
-                        if ( (i+2) < strs) end_read = reads[i+1];
-                        else end_read = finalnt;
-                    }
-                    
-                    /// output aligned read
-                    if ( denovoreads.is_open() )
-                    {
-                        while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
-                        if ( *end_read == '\n' ) denovoreads << "\n";
-                    }
-                    else
-                    {
-                        fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    
-                } //~if read was accepted
-            }//~for all reads
+                  /// first read (of split-read + paired-read)
+                  if ( i==1 ) end_read = reads[2];
+                  /// second read (of split-read + paired-read)
+                  else if ( i==3 )
+                  {
+                      end_read = reads[3];
+                      while (*end_read != '\0') end_read++;
+                  }
+                  /// all reads except the last one
+                  else if ( (i+2) < strs ) end_read = reads[i+1];
+                  /// last read
+                  else end_read = finalnt;
+                }
+                /// the first (and possibly only) file part, all reads are in mmap
+                else
+                {
+                  if ( (i+2) < strs) end_read = reads[i+1];
+                  else end_read = finalnt;
+                }
+                
+                /// output aligned read
+                if ( denovoreads.is_open() )
+                {
+                  while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
+                  if ( *end_read == '\n' ) denovoreads << "\n";
+                }
+                else
+                {
+                    fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
+                    exit(EXIT_FAILURE);
+                }              
+              } //~if read was accepted
+          }//~for all reads
         }//~if not paired-in or paired-out
         
         if ( denovoreads.is_open() ) denovoreads.close();
