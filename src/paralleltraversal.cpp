@@ -2013,9 +2013,9 @@ paralleltraversal ( char* inputreads,
         
       while ( start != end )
       {
-  #ifdef debug_mmap
+#ifdef debug_mmap
         cout << (char)*start; //TESTING
-  #endif
+#endif
         *split_read_ptr++ = *start++;
       }
 #ifdef debug_mmap
@@ -2320,7 +2320,9 @@ paralleltraversal ( char* inputreads,
             char myread[READLEN] = "";
             char* str = reads[readn];
             char* _myread = &myread[0];
-            // keep record of what position on the read an ambiguous char exists, the char at this position will be changed to '4' during sequence alignment
+            // keep record of what position on the read an ambiguous char exists,
+            // the char at this position will be changed to '4' during
+            // sequence alignment
             int32_t ambiguous_nt[READLEN] = {0};
             // size of ambiguous_nt
             uint32_t size_ambiguous_nt = 0;
@@ -2334,7 +2336,8 @@ paralleltraversal ( char* inputreads,
             {
               // str != finalnt (finalnt marks the end of mmap'd region)
               // str != '>' ('>' marks the start of the next read)
-              // str != '\0' ('\0' marks the end of split-read, which must be terminated by '\0')
+              // str != '\0' ('\0' marks the end of split-read, which
+              // must be terminated by '\0')
               while ( (str != finalnt) && (*str != '>') && (*str != '\0'))
               {
                 if ( *str != '\n' )
@@ -2349,7 +2352,8 @@ paralleltraversal ( char* inputreads,
                   readlen++;
                   if ( readlen > READLEN )
                   {
-                    fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n","\033[0;31m","\033[0m",READLEN);
+                    fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n",
+                                   "\033[0;31m","\033[0m",READLEN);
                     fprintf(stderr,"  Please check your reads or contact the authors.\n");
                     exit(EXIT_FAILURE);
                   }
@@ -2376,7 +2380,8 @@ paralleltraversal ( char* inputreads,
                 readlen++;
                 if ( readlen > READLEN )
                 {
-                  fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n","\033[0;31m","\033[0m",READLEN);
+                  fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n",
+                                 "\033[0;31m","\033[0m",READLEN);
                   fprintf(stderr,"  Please check your reads or contact the authors.\n");
                   exit(EXIT_FAILURE);
                 }
@@ -2393,7 +2398,9 @@ paralleltraversal ( char* inputreads,
             // the read length is too short
             if ( readlen < lnwin[index_num] )
             {
-              fprintf(stderr,"\n  %sWARNING%s: At least one of the reads is shorter than %u nucleotides, ","\033[0;33m","\033[0m",lnwin[index_num]);
+              fprintf(stderr,"\n  %sWARNING%s: At least one of the reads is shorter "
+                             "than %u nucleotides, ","\033[0;33m","\033[0m",
+                             lnwin[index_num]);
               fprintf(stderr,"by default it will not be searched\n ");
               continue;
             }
@@ -2666,8 +2673,7 @@ paralleltraversal ( char* inputreads,
                       if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                             
                       max_occur = most_frequent_seq[k].first;
-                      max_seq = most_frequent_seq[k].second;
-                                            
+                      max_seq = most_frequent_seq[k].second;                                  
 #ifdef debug_align
                       cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
                       cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
@@ -2701,8 +2707,7 @@ paralleltraversal ( char* inputreads,
                       }                        
 #ifdef debug_align
                       cout << "\t\t\t\tpassed all checks for ref sequence search.. " << endl; //TESTING
-#endif
-                                            
+#endif                                      
                       // STEP 4: collect all the genome positions belonging to the
                       // reference candidate from the table of positions computed
                       // during indexing
@@ -2741,8 +2746,7 @@ paralleltraversal ( char* inputreads,
                       // k-mer hits
                       uint32_t lcs_ref_start = 0;
                       uint32_t lcs_que_start = 0;                
-                      uint32_t begin = it3->first;
-                                            
+                      uint32_t begin = it3->first;                                      
 #ifdef debug_align
                       cout << "\t\t\t\tnumber of seed hits for this ref seq = " << hits_on_genome.size() << endl; //TESTING
 #endif                                
@@ -2767,8 +2771,7 @@ paralleltraversal ( char* inputreads,
 #endif
 #ifdef HEURISTIC1_OFF
                         aligned = false;
-#endif
-                                                
+#endif                              
                         // enough windows at this position on genome to search for LIS
                         if ( vi_read.size() >= (uint32_t)seed_hits_gv )
                         {
@@ -2795,8 +2798,7 @@ paralleltraversal ( char* inputreads,
 #ifndef HEURISTIC1_OFF
                               lcs_ref_start = vi_read[list[0]].first;
                               lcs_que_start = vi_read[list[0]].second;
-#endif
-                                                            
+#endif                                    
                               // reference string
                               uint32_t head = 0;
                               uint32_t tail = 0;
@@ -2918,8 +2920,7 @@ paralleltraversal ( char* inputreads,
                               cout << endl;
                               cout << "align_length-head-tail = " << (align_length-head-tail) << endl;
                               //}
-#endif
-                                                            
+#endif                                                     
                               // create profile for read
                               s_profile* profile = 0;
                               profile = ssw_init((int8_t*)(myread+align_que_start), (align_length-head-tail), mat, 5, 2);
@@ -3365,7 +3366,8 @@ paralleltraversal ( char* inputreads,
                   }//if ( readhitf || readhitr > ratio )
                                     
                                     
-                  // edit the read back onto 0-3 alphabet to search for seeds (seed search cannot proceed on 0-4 alphabet)
+                  // edit the read back onto 0-3 alphabet to search for seeds 
+                  // (seed search cannot proceed on 0-4 alphabet)
                   if ( (size_ambiguous_nt!=0) && read_edited )
                   {
                     if ( !forward_gv )
@@ -3393,7 +3395,8 @@ paralleltraversal ( char* inputreads,
                     else
                     {
                       // the next interval size equals to the current one, skip it
-                      while ( (pass_n < 3) && (skiplengths[index_num][pass_n] == skiplengths[index_num][pass_n+1]) ) ++pass_n;
+                      while ( (pass_n < 3) && 
+                              (skiplengths[index_num][pass_n] == skiplengths[index_num][pass_n+1]) ) ++pass_n;
                       if ( ++pass_n > 2 ) search = false;
                       // set interval skip length for next Pass
                       else windowshift = skiplengths[index_num][pass_n];
@@ -3409,7 +3412,8 @@ paralleltraversal ( char* inputreads,
             //~while all three window skip lengths have not been tested, or a match has not been found
             } while ( search );
                         
-            // the read didn't align (for --num_alignments [INT] option), output null alignment string
+            // the read didn't align (for --num_alignments [INT] option),
+            // output null alignment string
             if ( !read_hits[readn] && !forward_gv && (num_alignments_gv > -1) )
             {
               // do not output read for de novo OTU clustering
@@ -3761,8 +3765,7 @@ paralleltraversal ( char* inputreads,
                   
                   format_rev(reads[readn],end_read,&myread[0],filesig);
                 }//~reverse-complement read
-                            
-                                
+                                           
                 // get the edit distance between reference and read
                 uint32_t ref_seq = ptr_alignment->ref_seq;
                 double id = 0;
@@ -3818,13 +3821,7 @@ paralleltraversal ( char* inputreads,
                 cout << "read tag: ";
                 char* tt = reads[readn-1];
                 while (*tt != '\n' ) cout << (char)*tt++;
-                cout << endl;
-                /*
-                 cout << "ref tag: ";
-                 tt = reference_seq[(2*(int)max_seq)];
-                 while (*tt != '\n' ) cout << (char)*tt++;
-                 cout << endl; */
-                          
+                cout << endl;                          
                 cout << "align_len = " << align_len << endl;
                 cout << "total_pos = " << total_pos << endl;
                 cout << "id = " << id << endl;
@@ -4040,8 +4037,8 @@ paralleltraversal ( char* inputreads,
       if ( acceptedblast.is_open() ) acceptedblast.close();
       else
       {
-          fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
-          exit(EXIT_FAILURE);
+        fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
+        exit(EXIT_FAILURE);
       }
     }
     if ( samout_gv )
@@ -4049,8 +4046,8 @@ paralleltraversal ( char* inputreads,
       if ( acceptedsam.is_open() ) acceptedsam.close();
       else
       {
-          fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
-          exit(EXIT_FAILURE);
+        fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
+        exit(EXIT_FAILURE);
       }
     }
                 
@@ -4077,12 +4074,6 @@ paralleltraversal ( char* inputreads,
                     read_hits_denovo,
                     file_s,
                     finalnt);
-        
-      if ( denovo_otus_file != NULL )
-      {
-        delete [] denovo_otus_file;
-        denovo_otus_file = NULL;
-      }
     }
         
     read_hits.clear();
@@ -4102,8 +4093,8 @@ paralleltraversal ( char* inputreads,
       
       if ( split_read == NULL )
       {
-          fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
-          exit(EXIT_FAILURE);
+        fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
+        exit(EXIT_FAILURE);
       }
       
       // compute the first half of the split_read
@@ -4247,6 +4238,12 @@ paralleltraversal ( char* inputreads,
   {
     delete [] acceptedstrings_blast;
     acceptedstrings_blast = NULL;
+  }
+
+  if ( denovo_otus_file != NULL )
+  {
+    delete [] denovo_otus_file;
+    denovo_otus_file = NULL;
   }
     
   return ;  

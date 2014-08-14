@@ -95,7 +95,7 @@ uint32_t total_num_trie_nodes = 0;
 uint32_t size_of_all_buckets = 0;
 uint32_t sizeoftrie = 0;
 
-/// STATISTICS
+// STATISTICS
 uint32_t total_num_buckets = 0;
 uint32_t largest_bucket_size = 0;
 uint32_t high_num_elem_in_bucket = 0;
@@ -107,10 +107,10 @@ uint32_t all_elem_in_buckets = 0;
 uint32_t avg_len[11] = {0};
 uint32_t num_elem[100] = {0};
 
-
 bool verbose = false;
 
-char version_num[] = "2.0, 16/07/2014"; /// change version number here
+// change version number here
+char version_num[] = "2.0, 16/07/2014";
 
 
 
@@ -136,7 +136,7 @@ inline void insert_prefix( NodeElement* trie_node,
 	NodeElement *node_elem = (NodeElement*)(trie_node + *prefix++);
 	depth++;
     
-    // find the terminal trie node
+  // find the terminal trie node
 	while ( node_elem->flag == 1 )
 	{
 		trie_node = node_elem->whichnode.trie;
@@ -151,7 +151,8 @@ inline void insert_prefix( NodeElement* trie_node,
 		node_elem->whichnode.bucket = (void*)malloc(ENTRYSIZE);
 		if ( node_elem->whichnode.bucket == NULL )
 		{
-            fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket (insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
+      fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket "
+                     "(insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
 			exit(EXIT_FAILURE);
 		}
 		// initialize bucket memory to 0
@@ -170,7 +171,9 @@ inline void insert_prefix( NodeElement* trie_node,
 		node_elem->whichnode.bucket = (void*)malloc(node_elem_size+ENTRYSIZE);
 		if ( node_elem->whichnode.bucket == NULL )
 		{
-			fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket resize (insert_prefix() in indexdb.cpp): %s\n","\033[0;31m","\033[0m",strerror(errno));
+			fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket "
+                     "resize (insert_prefix() in indexdb.cpp): %s\n","\033[0;31m",
+                     "\033[0m",strerror(errno));
 			exit(EXIT_FAILURE);
 		}
         
@@ -203,17 +206,18 @@ inline void insert_prefix( NodeElement* trie_node,
 	
 #define BURST
 #ifdef BURST
-	/// (-3 = -2*k-1) smallest bucket must have at least 3-character strings
+	// (-3 = -2*k-1) smallest bucket must have at least 3-character strings
 	if ( depth < (pread_gv-partialwin_gv-3) )
 	{
-		/// burst if next string will exceed bucket limit
+		// burst if next string will exceed bucket limit
 		if ( node_elem->size > THRESHOLD )
 		{
-			/// create a new trie node
+			// create a new trie node
 			NodeElement* child_node = (NodeElement*)malloc(4*sizeof(NodeElement));
 			if ( child_node == NULL )
 			{
-                fprintf(stderr,"  %sERROR%s: could not allocate memory for child_node (insert_prefix())\n","\033[0;31m","\033[0m");
+        fprintf(stderr,"  %sERROR%s: could not allocate memory for child_node "
+                       "(insert_prefix())\n","\033[0;31m","\033[0m");
 				exit(EXIT_FAILURE);
 			}
 			memset(child_node, 0, 4*sizeof(NodeElement));
@@ -221,59 +225,62 @@ inline void insert_prefix( NodeElement* trie_node,
 			unsigned char* start_bucket_to_burst = (unsigned char*)node_elem->whichnode.bucket;
 			unsigned char* end_bucket_to_burst = (unsigned char*)node_elem->whichnode.bucket + node_elem->size;
             
-			/// read every entry in the bucket to burst
+			// read every entry in the bucket to burst
 			while ( start_bucket_to_burst != end_bucket_to_burst )
 			{
-                NodeElement* node_elem_child = (NodeElement*)(child_node + ((*start_bucket_to_burst)&3));
-                
-                /// create a new child bucket
-                if ( node_elem_child->flag == 0 )
-                {
-                    node_elem_child->whichnode.bucket = (void*)malloc(ENTRYSIZE);
-                    if (node_elem_child->whichnode.bucket == NULL)
-                    {
-                        fprintf(stderr,"  %sERROR%s: could not allocate memory for child bucket (insert_prefix())\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    memset(node_elem_child->whichnode.bucket, 0, ENTRYSIZE);
-                    node_elem_child->flag = 2;
-                    node_elem_child->size = 0;
-                }
-                /// flag == 2, resize the existing bucket to add an extra element
-                else
-                {
-                    uint32_t child_bucket_size = node_elem_child->size;
-                    void* src = node_elem_child->whichnode.bucket;
-                    node_elem_child->whichnode.bucket = (void*)malloc(child_bucket_size+ENTRYSIZE);
-                    if ( node_elem_child->whichnode.bucket == NULL )
-                    {
-                        fprintf(stderr,"  %sERROR%s: could not allocate memory for child bucket resize (insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                    memset(node_elem_child->whichnode.bucket, 0, child_bucket_size+ENTRYSIZE);
-                    memcpy(node_elem_child->whichnode.bucket, src, child_bucket_size);
-                    free(src);
-                }
-                
-                /// shift all bits in an entry to make up for the removed nucleotide
-                *((uint32_t*)start_bucket_to_burst)>>=2;
-                
-                /// add an element to the bucket
-                memcpy( (unsigned char*)node_elem_child->whichnode.bucket + node_elem_child->size, start_bucket_to_burst, ENTRYSIZE);
-                
-                (node_elem_child->size)+=ENTRYSIZE;
-                
-                /// each entry is 2 uint32_ts
-                start_bucket_to_burst+=ENTRYSIZE;
+        NodeElement* node_elem_child = (NodeElement*)(child_node + ((*start_bucket_to_burst)&3));
+        
+        // create a new child bucket
+        if ( node_elem_child->flag == 0 )
+        {
+          node_elem_child->whichnode.bucket = (void*)malloc(ENTRYSIZE);
+          if (node_elem_child->whichnode.bucket == NULL)
+          {
+              fprintf(stderr,"  %sERROR%s: could not allocate memory for child bucket "
+                             "(insert_prefix())\n","\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+          }
+          memset(node_elem_child->whichnode.bucket, 0, ENTRYSIZE);
+          node_elem_child->flag = 2;
+          node_elem_child->size = 0;
+        }
+        // flag == 2, resize the existing bucket to add an extra element
+        else
+        {
+          uint32_t child_bucket_size = node_elem_child->size;
+          void* src = node_elem_child->whichnode.bucket;
+          node_elem_child->whichnode.bucket = (void*)malloc(child_bucket_size+ENTRYSIZE);
+          if ( node_elem_child->whichnode.bucket == NULL )
+          {
+              fprintf(stderr,"  %sERROR%s: could not allocate memory for child bucket resize "
+                             "(insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+          }
+          memset(node_elem_child->whichnode.bucket, 0, child_bucket_size+ENTRYSIZE);
+          memcpy(node_elem_child->whichnode.bucket, src, child_bucket_size);
+          free(src);
+        }
+        
+        // shift all bits in an entry to make up for the removed nucleotide
+        *((uint32_t*)start_bucket_to_burst)>>=2;
+        
+        // add an element to the bucket
+        memcpy( (unsigned char*)node_elem_child->whichnode.bucket + node_elem_child->size, start_bucket_to_burst, ENTRYSIZE);
+        
+        (node_elem_child->size)+=ENTRYSIZE;
+        
+        // each entry is 2 uint32_ts
+        start_bucket_to_burst+=ENTRYSIZE;
 			}
 			
-			/// reset the flag and size of the parent node
+			// reset the flag and size of the parent node
 			free(node_elem->whichnode.bucket);
 			node_elem->whichnode.trie = child_node;
-			node_elem->flag = 1; /// now points to the child node
-			node_elem->size = 0; /// size of bucket = 0
-            
-            
+      // now points to the child node
+			node_elem->flag = 1;
+      // size of bucket = 0
+			node_elem->size = 0;
+
 		}//~burst bucket
 	}//~depth < pread_gv-2k-1
 #endif
@@ -383,7 +390,7 @@ bool search_burst_trie( NodeElement* trie_node, unsigned char* kmer_short_key, b
 {
 	uint32_t depth = 0;
     
-	/// find a terminal trie node
+	// find a terminal trie node
 	NodeElement *node_elem = (NodeElement*)(trie_node + *kmer_short_key++);
 	depth++;
     
@@ -396,7 +403,7 @@ bool search_burst_trie( NodeElement* trie_node, unsigned char* kmer_short_key, b
     
 	if ( node_elem->flag == 0 ) return false;
     
-	/// encode the remaining part of kmer_short_key using 4 nt per byte
+	// encode the remaining part of kmer_short_key using 4 nt per byte
 	int s = partialwin_gv+1-depth;
     
 	uint32_t encode = 0;
@@ -405,27 +412,27 @@ bool search_burst_trie( NodeElement* trie_node, unsigned char* kmer_short_key, b
 		encode |= ((uint32_t)*kmer_short_key++)<<(2*i);
 	}
     
-	/// size of entry in a bucket
+	// size of entry in a bucket
 	unsigned char* start_bucket = (unsigned char*)node_elem->whichnode.bucket;
 	unsigned char* end_bucket = start_bucket + node_elem->size;
     
-	/// to mask the last nucleotide of 19-mer
+	// to mask the last nucleotide of 19-mer
 	uint32_t msk = (1<<(2*(s-1)))-1;
     
-	/// compare the 1 int representation of kmer_id_short_F with all elements in the bucket
+	// compare the 1 int representation of kmer_id_short_F with all elements in the bucket
 	while ( start_bucket != end_bucket )
 	{
-		/// 18-mer found
+		// 18-mer found
 		if ( (encode&msk) == (*((uint32_t*)start_bucket)&msk ) )
 		{
 			new_position = false;
-			/// 19-mer found
+			// 19-mer found
 			if ( encode == *((uint32_t*)start_bucket) ) return true;
 		}
 		start_bucket+=ENTRYSIZE;
 	}
     
-	/// end of bucket reached, 19-mer not found
+	// end of bucket reached, 19-mer not found
 	return false;
 	
 }//~search_burst_trie()
@@ -451,7 +458,7 @@ void add_id_to_burst_trie( NodeElement* trie_node, unsigned char* kmer_id_short_
 {
 	uint32_t depth = 0;
     
-	/// find a terminal trie node
+	// find a terminal trie node
 	NodeElement *node_elem = (NodeElement*)(trie_node + *kmer_id_short_F_ptr++);
 	depth++;
     
@@ -462,7 +469,7 @@ void add_id_to_burst_trie( NodeElement* trie_node, unsigned char* kmer_id_short_
 		depth++;
 	}
     
-	/// encode the remaining part of kmer_id_short_F using 4 nt per byte
+	// encode the remaining part of kmer_id_short_F using 4 nt per byte
 	int s = partialwin_gv+1-depth;
     
 	uint32_t encode = 0;
@@ -474,11 +481,11 @@ void add_id_to_burst_trie( NodeElement* trie_node, unsigned char* kmer_id_short_
 	unsigned char* start_bucket = (unsigned char*)node_elem->whichnode.bucket;
 	unsigned char* end_bucket = start_bucket + node_elem->size;
     
-	/// compare the 1 byte representation of kmer_id_short_F with all elements in the bucket
+	// compare the 1 byte representation of kmer_id_short_F with all elements in the bucket
 	while ( start_bucket != end_bucket )
 	{
-		/// set the id
-        if ( encode == *((uint32_t*)start_bucket ) )
+		// set the id
+    if ( encode == *((uint32_t*)start_bucket ) )
 		{
 			*((uint32_t*)(start_bucket+sizeof(uint32_t))) = id;
 		}
@@ -493,7 +500,7 @@ void search_for_id( NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, 
 {
 	uint32_t depth = 0;
     
-	/// find a terminal trie node
+	// find a terminal trie node
 	NodeElement *node_elem = (NodeElement*)(trie_node + *kmer_id_short_F_ptr++);
 	depth++;
     
@@ -504,7 +511,7 @@ void search_for_id( NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, 
 		depth++;
 	}
     
-	/// encode the remaining part of kmer_id_short_F using 4 nt per byte
+	// encode the remaining part of kmer_id_short_F using 4 nt per byte
 	int s = partialwin_gv+1-depth;
     
 	uint32_t encode = 0;
@@ -516,13 +523,13 @@ void search_for_id( NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, 
 	unsigned char* start_bucket = (unsigned char*)node_elem->whichnode.bucket;
 	unsigned char* end_bucket = start_bucket + node_elem->size;
     
-	/// compare the 1 byte representation of kmer_id_short_F with all elements in the bucket
+	// compare the 1 byte representation of kmer_id_short_F with all elements in the bucket
 	while ( start_bucket != end_bucket )
 	{
-		/// set the id
-        if ( encode == *((uint32_t*)start_bucket ) )
+		// set the id
+    if ( encode == *((uint32_t*)start_bucket ) )
 		{
-            id = *((uint32_t*)(start_bucket+sizeof(uint32_t)));
+      id = *((uint32_t*)(start_bucket+sizeof(uint32_t)));
 		}
 		start_bucket+=ENTRYSIZE;
 	}
@@ -546,29 +553,29 @@ void traversetrie( NodeElement* trie_node, uint32_t depth )
 {
 	total_num_trie_nodes++;
     
-	/// traverse through the node elements in a trie node
+	// traverse through the node elements in a trie node
 	for ( int i = 0; i < 4; i++ )
 	{
 		unsigned char value = trie_node->flag;
         
-		/// the node element holds a pointer to another trie node
+		// the node element holds a pointer to another trie node
 		if ( value == 1 )
 		{
 			traversetrie( trie_node->whichnode.trie, ++depth );
 			--depth;
 		}
         
-		/// the node element points to a bucket
+		// the node element points to a bucket
 		else if ( value == 2 )
 		{
-			/// pad to alignment length (16-byte line)
-			//int padding = 16-((trie_node->size)%16);
-			//size_of_all_buckets+=(trie_node->size + padding);
+			// pad to alignment length (16-byte line)
+			// int padding = 16-((trie_node->size)%16);
+			// size_of_all_buckets+=(trie_node->size + padding);
 			size_of_all_buckets+=trie_node->size;
             
-            if ( largest_bucket_size < trie_node->size ) largest_bucket_size = trie_node->size;
+      if ( largest_bucket_size < trie_node->size ) largest_bucket_size = trie_node->size;
             
-			/// for STATISTICS
+			// for STATISTICS
 			total_num_buckets++;
 			uint32_t s = partialwin_gv-depth;
             
@@ -589,11 +596,11 @@ void traversetrie( NodeElement* trie_node, uint32_t depth )
 			num_elem[numelem]++;
 		}
         
-		/// the node element is empty, go to next node element
+		// the node element is empty, go to next node element
 		else if ( value == 0 )
-        {
-            ;
-        }
+    {
+      ;
+    }
         
 		trie_node++;
         
@@ -617,64 +624,63 @@ void traversetrie( NodeElement* trie_node, uint32_t depth )
  *******************************************************************/
 void traversetrie_debug( NodeElement* trie_node, uint32_t depth, uint32_t &total_entries, string &kmer_keep )
 {
-    char get_char[4] = {'A','C','G','T'};
+  char get_char[4] = {'A','C','G','T'};
     
-	/// traverse through the node elements in a trie node
+	// traverse through the node elements in a trie node
 	for ( int i = 0; i < 4; i++ )
 	{
 		unsigned char value = trie_node->flag;
         
-		/// the node element holds a pointer to another trie node
+		// the node element holds a pointer to another trie node
 		if ( value == 1 )
 		{
-            kmer_keep.push_back((char)get_char[i]); //TESTING
+      kmer_keep.push_back((char)get_char[i]); //TESTING
 			traversetrie_debug( trie_node->whichnode.trie, ++depth, total_entries, kmer_keep );
-            kmer_keep.pop_back();
+      kmer_keep.pop_back();
 			--depth;
 		}
         
-		/// the node element points to a bucket
+		// the node element points to a bucket
 		else if ( value == 2 )
 		{
-            kmer_keep.push_back((char)get_char[i]); //TESTING
-            
-            unsigned char* start_bucket = (unsigned char*)trie_node->whichnode.bucket;
-            if ( start_bucket == NULL )
-            {
-                fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");
-                exit(EXIT_FAILURE);
-            }
-            unsigned char* end_bucket = start_bucket + trie_node->size;
-            if ( end_bucket == NULL )
-            {
-                fprintf(stderr, "  ERROR: pointer end_bucket == NULL (paralleltraversal.cpp)\n");
-                exit(EXIT_FAILURE);
-            }
-            
-            /// traverse the bucket
-            while ( start_bucket != end_bucket )
-            {
-                uint32_t entry_str = *((uint32_t*)start_bucket);
-                uint32_t s = partialwin_gv-depth;
-                total_entries++;
-                
-                /// for each nt in the string
-                for ( uint32_t j = 0; j < s; j++ )
-                {
-                    kmer_keep.push_back((char)get_char[entry_str&3]); //TESTING
-                    entry_str>>=2;
-                }
-                
-                cout << kmer_keep << endl; //TESTING
-                
-                for ( uint32_t j = 0; j < s; j++ ) kmer_keep.pop_back(); //TESTING
-                
-                
-                /// next entry
-                start_bucket+=ENTRYSIZE;
-            }//~for each entry
-            
-            kmer_keep.pop_back(); //TESTING
+      kmer_keep.push_back((char)get_char[i]); //TESTING
+      
+      unsigned char* start_bucket = (unsigned char*)trie_node->whichnode.bucket;
+      if ( start_bucket == NULL )
+      {
+        fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");
+        exit(EXIT_FAILURE);
+      }
+      unsigned char* end_bucket = start_bucket + trie_node->size;
+      if ( end_bucket == NULL )
+      {
+        fprintf(stderr, "  ERROR: pointer end_bucket == NULL (paralleltraversal.cpp)\n");
+        exit(EXIT_FAILURE);
+      }
+      
+      // traverse the bucket
+      while ( start_bucket != end_bucket )
+      {
+        uint32_t entry_str = *((uint32_t*)start_bucket);
+        uint32_t s = partialwin_gv-depth;
+        total_entries++;
+        
+        // for each nt in the string
+        for ( uint32_t j = 0; j < s; j++ )
+        {
+            kmer_keep.push_back((char)get_char[entry_str&3]); //TESTING
+            entry_str>>=2;
+        }
+        
+        cout << kmer_keep << endl; //TESTING
+        
+        for ( uint32_t j = 0; j < s; j++ ) kmer_keep.pop_back(); //TESTING
+        
+        // next entry
+        start_bucket+=ENTRYSIZE;
+      }//~for each entry
+      
+      kmer_keep.pop_back(); //TESTING
             
 		}
         
@@ -704,30 +710,29 @@ void traversetrie_debug( NodeElement* trie_node, uint32_t depth, uint32_t &total
  *******************************************************************/
 void load_index( kmer* lookup_table, char* outfile )
 {
-	/// output the mini-burst tries
+	// output the mini-burst tries
 	ofstream btrie ( outfile, ofstream::binary );
     
 	uint32_t sizeoftries[2] = {0};
     
-	/// loop through all 9-mers
+	// loop through all 9-mers
 	for ( uint32_t i = 0; i < (uint32_t)(1<<lnwin_gv); i++ )
 	{
 		NodeElement* trienode = NULL;
         
 #ifdef see_binary_output
-        cout << "9-mer = " << i; //TESTING
+    cout << "9-mer = " << i; //TESTING
 #endif
         
-		/// 1. output size for the two mini-burst tries for each 9-mer
+		// 1. output size for the two mini-burst tries for each 9-mer
 		for ( int j = 0; j < 2; j++ )
 		{
 			total_num_trie_nodes = 0;
 			size_of_all_buckets = 0;
 			if ( j == 0 ) trienode = lookup_table[i].trie_F;
 			else trienode = lookup_table[i].trie_R;
-            
-			//if ( trienode != NULL ) traversetrie ( trienode++, 0 );
-            if ( trienode != NULL ) traversetrie (trienode, 0 );
+
+      if ( trienode != NULL ) traversetrie (trienode, 0 );
             
 			sizeoftrie = total_num_trie_nodes*sizeof(NodeElement)*4 + size_of_all_buckets*sizeof(char);
             
@@ -736,46 +741,46 @@ void load_index( kmer* lookup_table, char* outfile )
 			btrie.write(reinterpret_cast<const char*>(&sizeoftrie), sizeof(uint32_t));
             
 #ifdef see_binary_output
-            if ( j == 0 ) cout << "\tsizeoftrie f = " << sizeoftrie; //TESTING
-            else cout << "\tsizeoftrie r = " << sizeoftrie; //TESTING
+      if ( j == 0 ) cout << "\tsizeoftrie f = " << sizeoftrie; //TESTING
+      else cout << "\tsizeoftrie r = " << sizeoftrie; //TESTING
 #endif
 		}
         
 #ifdef see_binary_output
-        cout << "\tlookup_tbl[i].count = " << lookup_table[i].count << endl; //TESTING
+    cout << "\tlookup_tbl[i].count = " << lookup_table[i].count << endl; //TESTING
 #endif
         
-		/// 2. output both mini-burst tries into binary file
+		// 2. output both mini-burst tries into binary file
 		for ( int j = 0; j < 2; j++ )
 		{
-			/// the mini-burst trie exists, load into memory
+			// the mini-burst trie exists, load into memory
 			if ( sizeoftries[j] != 0 )
 			{
 				if ( j == 0 )
-                {
-                    trienode = lookup_table[i].trie_F;
+        {
+          trienode = lookup_table[i].trie_F;
 #ifdef see_binary_output
-                    cout << "forward burst-trie \n"; //TESTING
+          cout << "forward burst-trie \n"; //TESTING
 #endif
-                }
+        }
 				else
-                {
-                    trienode = lookup_table[i].trie_R;
+        {
+          trienode = lookup_table[i].trie_R;
 #ifdef see_binary_output
-                    cout << "reverse burst-trie \n"; //TESTING
+          cout << "reverse burst-trie \n"; //TESTING
 #endif
-                }
+        }
                 
-				/// queue of node elements for breadth-first traversal
+				// queue of node elements for breadth-first traversal
 				deque<NodeElement*> nodes;
                 
-				/// load first set of NodeElements into the queue & write to file
+				// load first set of NodeElements into the queue & write to file
 				for ( int i = 0; i < 4; i++ )
 				{
 					nodes.push_back( trienode );
 					btrie.write(reinterpret_cast<const char*>(&(trienode->flag)), sizeof(char));
 #ifdef see_binary_output
-                    cout << " " << (int)trienode->flag; //TESTING
+          cout << " " << (int)trienode->flag; //TESTING
 #endif
 					trienode++;
 				}
@@ -787,7 +792,7 @@ void load_index( kmer* lookup_table, char* outfile )
                 
 				while ( !nodes.empty() )
 				{
-					/// increment depth of burst trie
+					// increment depth of burst trie
 					if ( numpops == poplimit )
 					{
 						depth++;
@@ -800,13 +805,13 @@ void load_index( kmer* lookup_table, char* outfile )
                     
 					switch ( trienode->flag )
 					{
-                            /// empty node
+            // empty node
 						case 0:
 						{
 							;
 						}
-                            break;
-                            /// trie node, add child trie node to queue
+            break;
+            // trie node, add child trie node to queue
 						case 1:
 						{
 							NodeElement *child = trienode->whichnode.trie;
@@ -815,49 +820,47 @@ void load_index( kmer* lookup_table, char* outfile )
 								nodes.push_back( child );
 								btrie.write(reinterpret_cast<const char*>(&(child->flag)), sizeof(char));
 #ifdef see_binary_output
-                                cout << " " << (int)child->flag; //TESTING
+                cout << " " << (int)child->flag; //TESTING
 #endif
 								child++;
 							}
 							topop+=4;
 						}
-                            break;
-                            /// bucket node, add bucket to output file
+            break;
+            // bucket node, add bucket to output file
 						case 2:
 						{
 							char* bucket = (char*)(trienode->whichnode.bucket);
                             
-							/// bucket information
+							// bucket information
 							uint32_t sizeofbucket = trienode->size;
                             
 #ifdef see_binary_output
-                            cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
-#endif
-                            
+              cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
+#endif                 
 							btrie.write(reinterpret_cast<const char*>(&sizeofbucket), sizeof(uint32_t));
                             
-							/// bucket content
+							// bucket content
 							char* start = (char*)bucket;
                             
 							btrie.write(reinterpret_cast<const char*>(start), sizeofbucket);
 						}
-                            break;
-                            /// ?
+            break;
+            // ?
 						default:
 						{
 							fprintf(stderr, "  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",trienode->flag);
 							exit(EXIT_FAILURE);
 						}
-                            break;
+            break;
 					}
                     
 					nodes.pop_front();
 					numpops++;
                     
 #ifdef see_binary_output
-                    if ( numpops%4 == 0) cout << "\n"; //TESTING
-#endif
-                    
+          if ( numpops%4 == 0) cout << "\n"; //TESTING
+#endif             
 				}//~while the queue is not empty
 			}//~if mini-burst trie exists
 		}//~for each mini-burst trie in the 9-mer
@@ -881,12 +884,12 @@ void welcome()
 	printf("\n  Program:     SortMeRNA version %s\n",version_num );
 	printf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
 	printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-    printf("               OTU-picking extensions developed in the Knight Lab,\n");
-    printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
-    printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-    printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-    printf("               See the GNU Lesser General Public License for more details.\n");
-    printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
+  printf("               OTU-picking extensions developed in the Knight Lab,\n");
+  printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
+  printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+  printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+  printf("               See the GNU Lesser General Public License for more details.\n");
+  printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
 	printf("               Laurent Noé, laurent.noe@lifl.fr\n");
 	printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
 }
@@ -903,25 +906,25 @@ void welcome()
 void printlist()
 {
 	printf("\n  usage:   ./indexdb_rna --ref db.fasta,db.idx [OPTIONS]:\n\n");
-    printf("  --------------------------------------------------------------------------------------------------------\n");
-    printf("  | parameter        value           description                                                 default |\n");
-    printf("  --------------------------------------------------------------------------------------------------------\n");
-	printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
-    printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
-    printf("                                       If passing multiple reference sequence files, separate\n");
-    printf("                                       them by ':',\n");
-    printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-    printf("   [OPTIONS]:\n");
-    printf("     %s--fast%s          %sFLAG%s            suggested option for aligning ~99%% related species          %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s--sensitive%s     %sFLAG%s            suggested option for aligning ~75-98%% related species       %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n","\033[1m","\033[0m","\033[4m","\033[0m");
-    printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-	printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-#ifdef interval
-    printf("     %s--interval%s      %sINT%s             index every INT L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-#endif
-    printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-    printf("                                      (setting --max_pos 0 will store all positions)\n");
+  printf("  --------------------------------------------------------------------------------------------------------\n");
+  printf("  | parameter        value           description                                                 default |\n");
+  printf("  --------------------------------------------------------------------------------------------------------\n");
+  printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+  printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
+  printf("                                       If passing multiple reference sequence files, separate\n");
+  printf("                                       them by ':',\n");
+  printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
+  printf("   [OPTIONS]:\n");
+  printf("     %s--fast%s          %sFLAG%s            suggested option for aligning ~99%% related species          %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--sensitive%s     %sFLAG%s            suggested option for aligning ~75-98%% related species       %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n","\033[1m","\033[0m","\033[4m","\033[0m");
+  printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  #ifdef interval
+  printf("     %s--interval%s      %sINT%s             index every INT L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  #endif
+  printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("                                      (setting --max_pos 0 will store all positions)\n");
 	printf("     %s-v%s              %sFLAG%s            verbose\n","\033[1m","\033[0m","\033[4m","\033[0m");
 	printf("     %s-h%s              %sFLAG%s            help	\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
 	exit(EXIT_FAILURE);
@@ -941,10 +944,10 @@ void printlist()
 int main (int argc, char** argv)
 {
 	int narg = 1;
-	/// time
+	// time
 	double	s = 0.0;
 	double  f = 0.0;
-	/// memory of index
+	// memory of index
 	double mem = 0;
 	bool mem_is_set = false;
   bool fast_set = false;
@@ -952,9 +955,9 @@ int main (int argc, char** argv)
   bool lnwin_set = false;
   bool interval_set = false;
   bool max_pos_set = false;
-  /// vector of (FASTA file, index name) pairs for constructing index
+  // vector of (FASTA file, index name) pairs for constructing index
   vector< pair<string,string> > myfiles;
-  /// pointer to temporary directory
+  // pointer to temporary directory
   char* ptr_tmpdir = NULL;
   uint32_t interval = 0;
   uint32_t max_pos = 0;
@@ -1667,10 +1670,10 @@ int main (int argc, char** argv)
             
           memset(lookup_table, 0, (1<<lnwin_gv)*sizeof(kmer));
           
-          /// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
+          // bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
           vector<bool> incremented_by_forward((1<<lnwin_gv));
           
-          /// total size of index so far in bytes
+          // total size of index so far in bytes
           index_size = 0;
           
           eprintf("\n  start index part # %d: \n",part);
@@ -1690,238 +1693,238 @@ int main (int argc, char** argv)
           // or suffix of a 19-mer in the mini-burst trie, we need to recover all of the 18-mer occurrences in the database
             do
             {
-                /// start of current sequence in file
-                long int start_seq = ftell(fp);
+              // start of current sequence in file
+              long int start_seq = ftell(fp);
+              nt = fgetc(fp);
+              
+              // scan to end of header name
+              while ( nt != '\n' ) nt = fgetc(fp);
+              
+              unsigned char* myseq = new unsigned char[maxlen];
+              unsigned char* myseqr = new unsigned char[maxlen];
+              uint32_t _j = 0;
+              len = 0;
+              
+              nt = fgetc(fp);
+              // encode each sequence using integer alphabet {0,1,2,3}
+              while ( nt != '>' && nt != EOF )
+              {
+                // skip line feed, carriage return or empty space in the sequence
+                if ( nt != '\n' && nt != ' ' )
+                {
+                  len++;
+                  // exact character
+                  myseq[_j++] = map_nt[nt];
+                }
                 nt = fgetc(fp);
+              }
                 
-                /// scan to end of header name
-                while ( nt != '\n' ) nt = fgetc(fp);
-                
-                unsigned char* myseq = new unsigned char[maxlen];
-                unsigned char* myseqr = new unsigned char[maxlen];
-                uint32_t _j = 0;
-                len = 0;
-                
-                nt = fgetc(fp);
-                /// encode each sequence using integer alphabet {0,1,2,3}
-                while ( nt != '>' && nt != EOF )
+              // end of current sequence in file
+              if ( nt != EOF ) ungetc(nt,fp);
+              
+              long int end_seq = ftell(fp);
+              
+              // check the addition of this sequence will not overflow the
+              // maximum memory (estimated memory 10 bytes per L-mer)
+              double estimated_seq_mem = (len-pread_gv+1)*9.5e-6;
+              
+              // the sequence alone is too large, it will not fit into maximum
+              // memory, skip it
+              if ( estimated_seq_mem > mem )
+              {
+                fseek(fp,start_seq,SEEK_SET);
+                fprintf(stderr,"\n  %sWARNING%s: the index for sequence `","\033[0;33m","\033[0m");
+                int c = 0;
+                do
                 {
-                    /// skip line feed, carriage return or empty space in the sequence
-                    if ( nt != '\n' && nt != ' ' )
+                  c = fgetc(fp);
+                  fprintf(stderr,"%c",(char)c);
+                } while ( c != '\n' );
+                
+                fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.",mem);
+                fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.",estimated_seq_mem);
+                fseek(fp,end_seq,SEEK_SET);
+                continue;
+              }
+              // the additional sequence will overflow the maximum index memory,
+              // write existing index to disk and start a new index
+              else if ( index_size+estimated_seq_mem > mem )
+              {
+                // set the character to something other than EOF
+                if ( nt == EOF ) nt = 'A';
+                
+                // reset the file pointer to the beginning of current sequence
+                // (which will be added to the next index part)
+                fseek(fp,start_seq,SEEK_SET);
+                
+                break;
+              }
+              // add the additional sequence to the index
+              else
+              {
+                index_size+=estimated_seq_mem;
+                
+                // record the number of bytes of raw reference sequences added to this part
+                seq_part_size = ftell(fp) - start_part;
+                // record the number of sequences in this part
+                numseq_part++;
+              }
+                           
+              // create a reverse sequence using the forward
+              unsigned char* ptr = &myseq[len-1];
+              
+              for ( _j = 0; _j < len; _j++ ) myseqr[_j] = *ptr--;
+              // 9-mer prefix of 19-mer
+              uint32_t kmer_key_short_f = 0;
+              // 9-mer suffix of 19-mer
+              uint32_t kmer_key_short_r = 0;
+              // pointer to next letter to add to 9-mer prefix
+              unsigned char* kmer_key_short_f_p = &myseq[0];
+              // pointer to next letter to add to 9-mer suffix
+              unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv+1];
+              // pointer to 10-mer of reverse 19-mer to insert
+              // into the mini-burst trie
+              unsigned char* kmer_key_short_r_rp = &myseqr[len-partialwin_gv-1];
+              // 19-mer
+              unsigned long long int kmer_key = 0;
+              // pointer to 19-mer
+              unsigned char* kmer_key_ptr = &myseq[0];
+                
+              // initialize the prefix and suffix 9-mers
+              for ( uint32_t j = 0; j < partialwin_gv; j++ )
+              {
+                  (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
+                  (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
+              }
+              
+              // initialize the 19-mer
+              for ( uint32_t j = 0; j < pread_gv; j++ ) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
+              
+              uint32_t numwin = (len-pread_gv+interval)/interval; //TESTING
+              uint32_t index_pos = 0;
+ 
+              // for all 19-mers on the sequence
+              for ( uint32_t j = 0; j < numwin; j++ ) //TESTING
+              {
+                lookup_table[kmer_key_short_f].count++;
+                incremented_by_forward[kmer_key_short_f] = true;
+                // increment 9-mer count only if it wasn't already
+                // incremented by kmer_key_short_f before
+                if ( !incremented_by_forward[kmer_key_short_r] ) lookup_table[kmer_key_short_r].count++;
+                
+                // ****** add the forward 19-mer
+                
+                // new position for 18-mer in positions_tbl
+                bool new_position = true;
+                
+                // forward 19-mer does not exist in the burst trie (duplicates not allowed)
+                if ( lookup_table[kmer_key_short_f].trie_F == NULL ||
+                    ( (lookup_table[kmer_key_short_f].trie_F != NULL) && !search_burst_trie( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, new_position ) ) )
+                {
+                  // create a trie node if it doesn't exist
+                  if ( lookup_table[kmer_key_short_f].trie_F == NULL )
+                  {
+                    lookup_table[kmer_key_short_f].trie_F = (NodeElement*)malloc(4*sizeof(NodeElement));
+                    if ( lookup_table[kmer_key_short_f].trie_F == NULL )
                     {
-                        len++;
-                        /// exact character
-                        myseq[_j++] = map_nt[nt];
+                      fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n","\033[0;31m","\033[0m");
+                      exit(EXIT_FAILURE);
                     }
-                    nt = fgetc(fp);
+                    memset(lookup_table[kmer_key_short_f].trie_F, 0, 4*sizeof(NodeElement));
+                  }
+                        
+                  // TESTING
+                  /*
+                   uint32_t short_kmer = kmer_key_short_f;
+                   char get_char[4] = {'A','C','G','T'};
+                   string kmer_keep = "";
+                   uint32_t l = 8;
+                   for ( int s = 0; s < partialwin_gv; s++ )
+                   {
+                   kmer_keep.push_back((char)get_char[short_kmer&3]);
+                   short_kmer>>=2;
+                   }
+                   string kmer_keep_rev = "";
+                   for ( std::string::reverse_iterator rit=kmer_keep.rbegin();  rit != kmer_keep.rend(); ++rit )
+                   kmer_keep_rev.push_back(*rit);
+                   
+                   
+                   unsigned char* tgh = kmer_key_short_f_p;
+                   for ( int u = 0 ; u < partialwin_gv+1; u++ ) kmer_keep_rev.push_back((char)get_char[*tgh++]);
+                   
+                   cout << kmer_keep_rev << endl; //TESTING
+                   */
+                  insert_prefix( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p );
                 }
-                
-                /// end of current sequence in file
-                if ( nt != EOF ) ungetc(nt,fp);
-                
-                long int end_seq = ftell(fp);
-                
-                /// check the addition of this sequence will not overflow the maximum memory (estimated memory 10 bytes per L-mer)
-                double estimated_seq_mem = (len-pread_gv+1)*9.5e-6;
-                
-                /// the sequence alone is too large, it will not fit into maximum memory, skip it
-                if ( estimated_seq_mem > mem )
+                    
+                // 18-mer doesn't exist in the burst trie, add it to keys file
+                if ( new_position )
                 {
-                    fseek(fp,start_seq,SEEK_SET);
-                    fprintf(stderr,"\n  %sWARNING%s: the index for sequence `","\033[0;33m","\033[0m");
-                    int c = 0;
-                    do
+                  // increment number of unique 18-mers
+                  number_elements++;
+                  fprintf(keys,"%llu\n",(kmer_key>>2));
+                }
+        
+                // ****** add the reverse 19-mer
+                new_position = true;
+                
+                // reverse 19-mer does not exist in the burst trie
+                if ( lookup_table[kmer_key_short_r].trie_R == NULL ||
+                    ( (lookup_table[kmer_key_short_r].trie_R != NULL) && !search_burst_trie( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, new_position ) ) )
+                {
+                  // create a trie node if it doesn't exist
+                  if ( lookup_table[kmer_key_short_r].trie_R == NULL )
+                  {
+                    lookup_table[kmer_key_short_r].trie_R = (NodeElement*)malloc(4*sizeof(NodeElement));
+                    if ( lookup_table[kmer_key_short_r].trie_R == NULL )
                     {
-                      c = fgetc(fp);
-                      fprintf(stderr,"%c",(char)c);
-                    } while ( c != '\n' );
-                    
-                    fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.",mem);
-                    fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.",estimated_seq_mem);
-                    fseek(fp,end_seq,SEEK_SET);
-                    continue;
-                }
-                /// the additional sequence will overflow the maximum index memory, write existing index to disk and start a new index
-                else if ( index_size+estimated_seq_mem > mem )
-                {
-                    /// set the character to something other than EOF
-                    if ( nt == EOF ) nt = 'A';
-                    
-                    /// reset the file pointer to the beginning of current sequence (which will be added to the next index part)
-                    fseek(fp,start_seq,SEEK_SET);
-                    
-                    break;
-                }
-                /// add the additional sequence to the index
-                else
-                {
-                    index_size+=estimated_seq_mem;
-                    
-                    /// record the number of bytes of raw reference sequences added to this part
-                    seq_part_size = ftell(fp) - start_part;
-                    /// record the number of sequences in this part
-                    numseq_part++;
-                }
-                
-                
-                
-                /// create a reverse sequence using the forward
-                unsigned char* ptr = &myseq[len-1];
-                
-                for ( _j = 0; _j < len; _j++ ) myseqr[_j] = *ptr--;
-                /// 9-mer prefix of 19-mer
-                uint32_t kmer_key_short_f = 0;
-                /// 9-mer suffix of 19-mer
-                uint32_t kmer_key_short_r = 0;
-                /// pointer to next letter to add to 9-mer prefix
-                unsigned char* kmer_key_short_f_p = &myseq[0];
-                /// pointer to next letter to add to 9-mer suffix
-                unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv+1];
-                /// pointer to 10-mer of reverse 19-mer to insert into the mini-burst trie
-                unsigned char* kmer_key_short_r_rp = &myseqr[len-partialwin_gv-1];
-                /// 19-mer
-                unsigned long long int kmer_key = 0;
-                /// pointer to 19-mer
-                unsigned char* kmer_key_ptr = &myseq[0];
-                
-                /// initialize the prefix and suffix 9-mers
-                for ( uint32_t j = 0; j < partialwin_gv; j++ )
-                {
-                    (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
-                    (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
-                }
-                
-                /// initialize the 19-mer
-                for ( uint32_t j = 0; j < pread_gv; j++ ) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
-                
-                uint32_t numwin = (len-pread_gv+interval)/interval; //TESTING
-                uint32_t index_pos = 0;
-                
-                
-                /// for all 19-mers on the sequence
-                for ( uint32_t j = 0; j < numwin; j++ ) //TESTING
-                {
-                    lookup_table[kmer_key_short_f].count++;
-                    incremented_by_forward[kmer_key_short_f] = true;
-                    /// increment 9-mer count only if it wasn't already incremented by kmer_key_short_f before
-                    if ( !incremented_by_forward[kmer_key_short_r] ) lookup_table[kmer_key_short_r].count++;
-                    
-                    
-                    /// ****** add the forward 19-mer
-                    
-                    /// new position for 18-mer in positions_tbl
-                    bool new_position = true;
-                    
-                    /// forward 19-mer does not exist in the burst trie (duplicates not allowed)
-                    if ( lookup_table[kmer_key_short_f].trie_F == NULL ||
-                        ( (lookup_table[kmer_key_short_f].trie_F != NULL) && !search_burst_trie( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, new_position ) ) )
-                    {
-                        /// create a trie node if it doesn't exist
-                        if ( lookup_table[kmer_key_short_f].trie_F == NULL )
-                        {
-                            lookup_table[kmer_key_short_f].trie_F = (NodeElement*)malloc(4*sizeof(NodeElement));
-                            if ( lookup_table[kmer_key_short_f].trie_F == NULL )
-                            {
-                                fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n","\033[0;31m","\033[0m");
-                                exit(EXIT_FAILURE);
-                            }
-                            memset(lookup_table[kmer_key_short_f].trie_F, 0, 4*sizeof(NodeElement));
-                        }
-                        
-                        
-                        /// TESTING
-                        /*
-                         uint32_t short_kmer = kmer_key_short_f;
-                         char get_char[4] = {'A','C','G','T'};
-                         string kmer_keep = "";
-                         uint32_t l = 8;
-                         for ( int s = 0; s < partialwin_gv; s++ )
-                         {
-                         kmer_keep.push_back((char)get_char[short_kmer&3]);
-                         short_kmer>>=2;
-                         }
-                         string kmer_keep_rev = "";
-                         for ( std::string::reverse_iterator rit=kmer_keep.rbegin();  rit != kmer_keep.rend(); ++rit )
-                         kmer_keep_rev.push_back(*rit);
-                         
-                         
-                         unsigned char* tgh = kmer_key_short_f_p;
-                         for ( int u = 0 ; u < partialwin_gv+1; u++ ) kmer_keep_rev.push_back((char)get_char[*tgh++]);
-                         
-                         cout << kmer_keep_rev << endl; //TESTING
-                         */
-                        
-                        
-                        insert_prefix( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p );
+                      fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n","\033[0;31m","\033[0m");
+                      exit(EXIT_FAILURE);
                     }
+                    memset(lookup_table[kmer_key_short_r].trie_R, 0, 4*sizeof(NodeElement));
+                  }
+                  
+                  insert_prefix( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp );
+                }
                     
-                    /// 18-mer doesn't exist in the burst trie, add it to keys file
-                    if ( new_position )
-                    {
-                        /// increment number of unique 18-mers
-                        number_elements++;
-                        fprintf(keys,"%llu\n",(kmer_key>>2));
-                    }
+                // shift 19-mer window and both 9-mers
+                if ( j != numwin-1 )
+                {
+                  for ( int shift = 0; shift < interval; shift++ )
+                  {
+                    (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
+                    (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
+                    (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
+                    kmer_key_short_r_rp--;
+                    index_pos++;
+                  }
+                }
                     
-                    
-                    /// ****** add the reverse 19-mer
-                    new_position = true;
-                    
-                    /// reverse 19-mer does not exist in the burst trie
-                    if ( lookup_table[kmer_key_short_r].trie_R == NULL ||
-                        ( (lookup_table[kmer_key_short_r].trie_R != NULL) && !search_burst_trie( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, new_position ) ) )
-                    {
-                        /// create a trie node if it doesn't exist
-                        if ( lookup_table[kmer_key_short_r].trie_R == NULL )
-                        {
-                            lookup_table[kmer_key_short_r].trie_R = (NodeElement*)malloc(4*sizeof(NodeElement));
-                            if ( lookup_table[kmer_key_short_r].trie_R == NULL )
-                            {
-                                fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n","\033[0;31m","\033[0m");
-                                exit(EXIT_FAILURE);
-                            }
-                            memset(lookup_table[kmer_key_short_r].trie_R, 0, 4*sizeof(NodeElement));
-                        }
-                        
-                        insert_prefix( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp );
-                    }
-                    
-                    /// shift 19-mer window and both 9-mers
-                    if ( j != numwin-1 )
-                    {
-                        for ( int shift = 0; shift < interval; shift++ )
-                        {
-                            (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
-                            (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
-                            (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
-                            kmer_key_short_r_rp--;
-                            index_pos++;
-                        }
-                    }
-                    
-                }//~for all 19-mers on the sequence
+              }//~for all 19-mers on the sequence
                 
-                delete [] myseq;
-                delete [] myseqr;
+              delete [] myseq;
+              delete [] myseqr;
                 
             } while ( nt != EOF ); /// all file
             
             TIME(f);
             
-            /// no index can be created, all reference sequences are too large to fit alone into maximum memory
+            // no index can be created, all reference sequences are too large to fit alone into maximum memory
             if ( index_size == 0 )
             {
-                eprintf("\n  %sERROR%s: no index was created, all of your sequences are too large to be indexed with the current memory limit of %e Mbytes.\n", "\033[0;31m","\033[0m",mem);
-                break;
+              eprintf("\n  %sERROR%s: no index was created, all of your sequences are "
+                      "too large to be indexed with the current memory limit of %e Mbytes.\n",
+                      "\033[0;31m","\033[0m",mem);
+              break;
             }
-            /// continue to build hash and positions tables
+            // continue to build hash and positions tables
             else index_size = 0;
             
             rewind(keys);
             
             eprintf(" done  [%f sec]\n", (f-s));
             
-            /// 4. build MPHF on the unique 18-mers
+            // 4. build MPHF on the unique 18-mers
             eprintf("    (2/3) building CMPH hash ..");
             TIME(s);
             cmph_t *hash = NULL;
@@ -1929,8 +1932,8 @@ int main (int argc, char** argv)
             FILE * keys_fd = keys;
             if (keys_fd == NULL)
             {
-                fprintf(stderr, "File \"%s\" not found\n",keys_str);
-                exit(EXIT_FAILURE);
+              fprintf(stderr, "File \"%s\" not found\n",keys_str);
+              exit(EXIT_FAILURE);
             }
             cmph_io_adapter_t *source = cmph_io_nlfile_adapter(keys_fd);
             
@@ -1939,7 +1942,7 @@ int main (int argc, char** argv)
             hash = cmph_new(config);
             cmph_config_destroy(config);
             
-            /// Destroy file adapter
+            // Destroy file adapter
             cmph_io_nlfile_adapter_destroy(source);
             fclose(keys_fd);
             
@@ -1947,16 +1950,15 @@ int main (int argc, char** argv)
             
             eprintf(" done  [%f sec]\n", (f-s));
             
-            //int ret = system("rm keys.txt");
             int ret = remove(keys_str);
             if ( ret != 0 )
             {
-                fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n","\033[0;33m",keys_str,"\033[0m");
+              fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n",
+                              "\033[0;33m",keys_str,"\033[0m");
             }
-            
-            
-            /// 5. add ids to burst trie
-            /// 6. build the positions lookup table using MPHF
+              
+            // 5. add ids to burst trie
+            // 6. build the positions lookup table using MPHF
             
             eprintf("    (3/3) building position lookup tables ..");
             
@@ -2311,15 +2313,14 @@ int main (int argc, char** argv)
             
             
             
-            /// Load constructed index part to binary file
+            // Load constructed index part to binary file
             
-            /// covert part number into a string
+            // covert part number into a string
             stringstream prt_str;
             prt_str << part;
             string part_str = prt_str.str();
-            
-            
-            /// 1. load the kmer 'count' variable /index/kmer.dat
+   
+            // 1. load the kmer 'count' variable /index/kmer.dat
             ofstream oskmer ( (char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), ios::binary );
             eprintf("      writing kmer data to %s\n",(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str());
             
@@ -2329,64 +2330,68 @@ int main (int argc, char** argv)
             thispart.numseq_part = numseq_part;
             index_parts_stats_vec.push_back(thispart);
             
-            /// the 9-mer look up tables
+            // the 9-mer look up tables
             for ( uint32_t j = 0; j < (uint32_t)(1<<lnwin_gv); j++ )
             {
-                oskmer.write(reinterpret_cast<const char*>(&(lookup_table[j].count)), sizeof(uint32_t));
+              oskmer.write(reinterpret_cast<const char*>(&(lookup_table[j].count)),
+                           sizeof(uint32_t));
             }
             
             oskmer.close();
             
-            /// 2. mini-burst tries
+            // 2. mini-burst tries
             
-            /// load 9-mer look-up table and mini-burst tries to /index/bursttrief.dat
-            eprintf("      writing burst tries to %s\n",(myfiles[newindex].second + ".bursttrie_" + part_str + ".dat").c_str());
-            load_index( lookup_table, (char*)(myfiles[newindex].second + ".bursttrie_" + part_str + ".dat").c_str() );
+            // load 9-mer look-up table and mini-burst tries to /index/bursttrief.dat
+            eprintf("      writing burst tries to %s\n",
+                    (myfiles[newindex].second + ".bursttrie_" + part_str + ".dat").c_str());
+            load_index( lookup_table, (char*)(myfiles[newindex].second + ".bursttrie_" + 
+                        part_str + ".dat").c_str() );
             
-            /// 3. 19-mer position look up tables
-            ofstream ospos ( (char*)(myfiles[newindex].second + ".pos_" + part_str + ".dat").c_str(), ios::binary );
-            eprintf("      writing position lookup table to %s\n",(myfiles[newindex].second + ".pos_" + part_str + ".dat").c_str());
+            // 3. 19-mer position look up tables
+            ofstream ospos ( (char*)(myfiles[newindex].second + ".pos_" +
+                             part_str + ".dat").c_str(), ios::binary );
+            eprintf("      writing position lookup table to %s\n",
+                    (myfiles[newindex].second + ".pos_" + part_str + ".dat").c_str());
             
-            /// number of unique 19-mers
+            // number of unique 19-mers
             ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));
             
-            /// the positions
+            // the positions
             for ( uint32_t j = 0; j < number_elements; j++ )
             {
-                uint32_t size = positions_tbl[j].size;
-                ospos.write(reinterpret_cast<const char*>(&size), sizeof(uint32_t));
-                ospos.write(reinterpret_cast<const char*>(positions_tbl[j].arr), sizeof(seq_pos)*size);
+              uint32_t size = positions_tbl[j].size;
+              ospos.write(reinterpret_cast<const char*>(&size), sizeof(uint32_t));
+              ospos.write(reinterpret_cast<const char*>(positions_tbl[j].arr), sizeof(seq_pos)*size);
             }
             ospos.close();
             
             
-            /// Free malloc'd memory
-            /// Table of unique 19-mer positions
+            // Free malloc'd memory
+            // Table of unique 19-mer positions
             for ( uint32_t z = 0; z < number_elements; z++ )
                 free(positions_tbl[z].arr);
             free(positions_tbl);
-            
-            
-            /// 9-mer look-up table and mini-burst tries
+  
+            // 9-mer look-up table and mini-burst tries
             for ( uint32_t z = 0; z < (uint32_t)(1<<lnwin_gv); z++ )
             {
-                if (lookup_table[z].trie_F != NULL )
-                {
-                    freebursttrie(lookup_table[z].trie_F);
-                    free(lookup_table[z].trie_F);
-                }
-                if (lookup_table[z].trie_R != NULL )
-                {
-                    freebursttrie(lookup_table[z].trie_R);
-                    free(lookup_table[z].trie_R);
-                }
+              if (lookup_table[z].trie_F != NULL )
+              {
+                freebursttrie(lookup_table[z].trie_F);
+                free(lookup_table[z].trie_F);
+              }
+              if (lookup_table[z].trie_R != NULL )
+              {
+                freebursttrie(lookup_table[z].trie_R);
+                free(lookup_table[z].trie_R);
+              }
             }
             
             free(lookup_table);
             
             part++;
             
-        } while ( nt != EOF ); /// for all index parts
+        } while ( nt != EOF ); // for all index parts
         
         if ( index_size != 0 )
         {
@@ -2394,66 +2399,69 @@ int main (int argc, char** argv)
             ofstream stats ( (char*)(myfiles[newindex].second + ".stats").c_str(), ios::binary );
             if ( !stats.good() )
             {
-                fprintf(stderr,"\n  %sERROR%s: The file '%s' cannot be created: %s\n\n","\033[0;31m","\033[0m",(char*)(myfiles[newindex].second + ".stats").c_str(),strerror(errno));
-                exit(EXIT_FAILURE);
+              fprintf(stderr,"\n  %sERROR%s: The file '%s' cannot be created: %s\n\n",
+                             "\033[0;31m","\033[0m",(char*)(myfiles[newindex].second + ".stats").c_str(),
+                             strerror(errno));
+              exit(EXIT_FAILURE);
             }
             
-            /// file size for file used to build the index
+            // file size for file used to build the index
             stats.write(reinterpret_cast<const char*>(&filesize), sizeof(size_t));
             
-            /// length of fasta file name (incl. path)
+            // length of fasta file name (incl. path)
             uint32_t fasta_len = (myfiles[newindex].first).length()+1;
             stats.write(reinterpret_cast<const char*>(&fasta_len), sizeof(uint32_t));
             
-            /// the fasta file name (incl. path)
+            // the fasta file name (incl. path)
             stats.write(reinterpret_cast<const char*>((myfiles[newindex].first).c_str()), sizeof(char)*fasta_len);
             
-            /// number of sequences in the reference file
+            // number of sequences in the reference file
             uint32_t num_sq = sam_sq_header.size();
             
-            /// background frequencies, size of the database, window length and number of reference sequences in a separate stats file
+            // background frequencies, size of the database, window length
+            // and number of reference sequences in a separate stats file
             double total_nt = background_freq[0] + background_freq[1] + background_freq[2] + background_freq[3];
             background_freq[0] = background_freq[0]/total_nt;
             background_freq[1] = background_freq[1]/total_nt;
             background_freq[2] = background_freq[2]/total_nt;
             background_freq[3] = background_freq[3]/total_nt;
             
-            /// the A/C/G/T percentage distribution
+            // the A/C/G/T percentage distribution
             stats.write(reinterpret_cast<const char*>(&background_freq), sizeof(double)*4);
             
-            /// the length of all sequences in the database
+            // the length of all sequences in the database
             stats.write(reinterpret_cast<const char*>(&full_len), sizeof(uint64_t));
             
-            /// sliding window length
+            // sliding window length
             stats.write(reinterpret_cast<const char*>(&lnwin_gv), sizeof(uint32_t));
             
             numseq_gv = (int)strs/2;
             
-            /// number of reference sequences in the database
+            // number of reference sequences in the database
             stats.write(reinterpret_cast<const char*>(&numseq_gv), sizeof(uint32_t));
             
-            /// number of index parts
+            // number of index parts
             stats.write(reinterpret_cast<const char*>(&part), sizeof(uint16_t));
             
-            /// information on the location and size of sequences used to build each index part
+            // information on the location and size of sequences used to build each index part
             for ( uint16_t j = 0; j < part; j++ )
             {
-                stats.write(reinterpret_cast<const char*>(&index_parts_stats_vec[j]), sizeof(index_parts_stats));
+              stats.write(reinterpret_cast<const char*>(&index_parts_stats_vec[j]), sizeof(index_parts_stats));
             }
             
             stats.write(reinterpret_cast<const char*>(&num_sq), sizeof(uint32_t));
             
             for ( uint32_t j = 0; j < sam_sq_header.size(); j++ )
             {
-                /// length of the sequence id
-                uint32_t len_id = sam_sq_header[j].first.length();
-                stats.write(reinterpret_cast<const char*>(&len_id), sizeof(uint32_t));
-                
-                /// the sequence id
-                stats.write(reinterpret_cast<const char*>(&(sam_sq_header[j].first[0])), sizeof(char)*len_id);
-                
-                /// the length of the sequence itself
-                stats.write(reinterpret_cast<const char*>(&(sam_sq_header[j].second)), sizeof(uint32_t));
+              // length of the sequence id
+              uint32_t len_id = sam_sq_header[j].first.length();
+              stats.write(reinterpret_cast<const char*>(&len_id), sizeof(uint32_t));
+              
+              // the sequence id
+              stats.write(reinterpret_cast<const char*>(&(sam_sq_header[j].first[0])), sizeof(char)*len_id);
+              
+              // the length of the sequence itself
+              stats.write(reinterpret_cast<const char*>(&(sam_sq_header[j].second)), sizeof(uint32_t));
             }
             
             stats.close();
