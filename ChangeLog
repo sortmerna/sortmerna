@@ -1,0 +1,2 @@
+14 August 2014
+	- fixed the bug regarding --paired_in and --paired_out output, tests added
