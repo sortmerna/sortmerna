@@ -32,7 +32,7 @@ bash ./build.sh
 ```
 
 Note: `make install` is not called in this script. However, any arguments given
-to `build.sh` will pass to the configure script. If you plan on calling `make install`
+to `build.sh` will be passed to the configure script. If you plan on calling `make install`
 afterwards, then you can set your installation directory using
 `build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
 binaries `sortmerna` and `indexdb_rna` to your installation directory after
@@ -76,7 +76,7 @@ bash ./build.sh
 ```
 
 Note: `make install` is not called in this script. However, any arguments given
-to `build.sh` will pass to the configure script. If you plan on calling `make install`
+to `build.sh` will be passed to the configure script. If you plan on calling `make install`
 afterwards, then you can set your installation directory using
 `build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
 binaries `sortmerna` and `indexdb_rna` to your installation directory after
