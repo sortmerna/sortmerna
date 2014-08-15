@@ -4,7 +4,7 @@ sortmerna
 This is ongoing development of SortMeRNA. For the latest stable release, see http://bioinfo.lifl.fr/RNA/sortmerna/.
 
 
-WARNING: Do not attempt to run "_autotools_batch_.sh" unless you have Autotools installed. 
+WARNING: Do not attempt to run `_autotools_batch_.sh` unless you have Autotools installed. 
 This script is for producing a distribution version of the code.
 
 NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
@@ -25,12 +25,17 @@ To compile on Linux OS:
 gcc --version
 ```
 
-(2) Compile the code:
+(2) Run configure and make scripts:
 
-```bash
-./configure
-make
+```bash ./build.sh
 ```
+
+Note: `make install` is not called in this script. However, any arguments given
+to `build.sh` will pass to the configure script. If you plan on calling `make install`
+afterwards, then you can set your installation directory using
+`build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
+binaries `sortmerna` and `indexdb_rna` to your installation directory after
+calling `build.sh`.
 
 
 
@@ -63,11 +68,17 @@ export CC=gcc-mp-4.8
 export CXX=g++-mp-4.8
 ```
 
-(3) Compile the code
+(3) Run configure and make scripts:
 
-```bash
-./configure
-make
+```bash ./build.sh
+```
+
+Note: `make install` is not called in this script. However, any arguments given
+to `build.sh` will pass to the configure script. If you plan on calling `make install`
+afterwards, then you can set your installation directory using
+`build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
+binaries `sortmerna` and `indexdb_rna` to your installation directory after
+calling `build.sh`.
 ```
 
 Install Clang for Mac OS 
@@ -96,31 +107,6 @@ sudo port install gcc48
 
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8 .
 
-
-
-Timestamp issues
-----------------
-
-When cloning a repository from git, all of the file timestamps are set to the current time and this can lead to errors such as:
-
-```bash
-Prerequisite configure.ac is newer than target aclocal.m4.
-Must remake target aclocal.m4.
-..
-WARNING: 'aclocal-1.14' is missing on your system.
-```
-
-when calling "make".
-
-To overcome this error, you can reset the timestamps in their required order using:
-
-```bash
-./configure
-touch aclocal.m4
-touch Makefile.in
-touch configure
-make
-```
 
 
 Citation
