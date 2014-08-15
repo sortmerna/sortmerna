@@ -27,7 +27,8 @@ gcc --version
 
 (2) Run configure and make scripts:
 
-```bash ./build.sh
+```bash
+bash ./build.sh
 ```
 
 Note: `make install` is not called in this script. However, any arguments given
@@ -70,7 +71,8 @@ export CXX=g++-mp-4.8
 
 (3) Run configure and make scripts:
 
-```bash ./build.sh
+```bash
+bash ./build.sh
 ```
 
 Note: `make install` is not called in this script. However, any arguments given
