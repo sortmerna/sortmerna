@@ -81,7 +81,8 @@ afterwards, then you can set your installation directory using
 `build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
 binaries `sortmerna` and `indexdb_rna` to your installation directory after
 calling `build.sh`.
-```
+
+
 
 Install Clang for Mac OS 
 ------------------------

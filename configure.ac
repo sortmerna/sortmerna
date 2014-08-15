@@ -28,6 +28,3 @@ AC_SUBST(CFLAGS)
 AC_SUBST(LIBS)
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
-touch aclocal.m4
-touch Makefile.in
-touch configure
