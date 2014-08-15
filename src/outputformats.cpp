@@ -290,7 +290,7 @@ void report_sam (ofstream &fileout,
 
 
 
-/// output aligned and non-aligned reads in FASTA/FASTQ format
+// output aligned and non-aligned reads in FASTA/FASTQ format
 void report_fasta (char* acceptedstrings,
                    char* ptr_filetype_or,
                    char* ptr_filetype_ar,
@@ -301,237 +301,240 @@ void report_fasta (char* acceptedstrings,
                    char* finalnt
 )
 {
-    /// for timing different processes
+  // for timing different processes
 	double s,f;
     
-    /// output accepted reads
-    if ( (ptr_filetype_ar != NULL) && fastxout_gv )
-    {
-        eprintf("    Writing aligned FASTA/FASTQ ... ");
-        TIME(s);
-        
-        ofstream acceptedreads;
-        if ( fastxout_gv ) acceptedreads.open(acceptedstrings, ios::app);
+  // output accepted reads
+  if ( (ptr_filetype_ar != NULL) && fastxout_gv )
+  {
+    eprintf("    Writing aligned FASTA/FASTQ ... ");
+    TIME(s);
+      
+    ofstream acceptedreads;
+    if ( fastxout_gv ) acceptedreads.open(acceptedstrings, ios::app);
 
-        /// pair-ended reads
-        if ( pairedin_gv || pairedout_gv )
+    // pair-ended reads
+    if ( pairedin_gv || pairedout_gv )
+    {
+      // loop through every read, output accepted reads
+      for ( int32_t i = 1; i < strs; i+=4 )
+      {
+        char* begin_read = reads[i-1];
+          
+        // either both reads are accepted, or one is accepted and pairedin_gv
+        if ( (read_hits[i] && read_hits[i+2]) ||
+             ((read_hits[i] || read_hits[i+2]) && pairedin_gv) )
         {
-            /// loop through every read, output accepted reads
-            for ( int32_t i = 1; i < strs; i+=4 )
+          char* end_read = NULL;
+          if ( file_s > 0 )
+          {
+            // first read (of split-read + paired-read)
+            if ( i==1 )
             {
-                char* begin_read = reads[i-1];
-                
-                /// either both reads are accepted, or one is accepted and pairedin_gv
-                if ( (read_hits[i] || read_hits[i+1]) && pairedin_gv)
-                {
-                    char* end_read = NULL;
-                    if ( file_s > 0 )
-                    {
-                        /// first read (of split-read + paired-read)
-                        if ( i==1 )
-                        {
-                            end_read = reads[3];
-                            while (*end_read != '\0') end_read++;
-                        }
-                        /// all reads except the last one
-                        else if ( (i+4) < strs ) end_read = reads[i+3];
-                        /// last read
-                        else end_read = finalnt;
-                    }
-                    else
-                    {
-                        /// all reads except the last one
-                        if ( (i+4) < strs ) end_read = reads[i+3];
-                        /// last read
-                        else end_read = finalnt;
-                    }
+                end_read = reads[3];
+                while (*end_read != '\0') end_read++;
+            }
+            // all reads except the last one
+            else if ( (i+4) < strs ) end_read = reads[i+3];
+            // last read
+            else end_read = finalnt;
+          }
+          else
+          {
+            // all reads except the last one
+            if ( (i+4) < strs ) end_read = reads[i+3];
+            // last read
+            else end_read = finalnt;
+          }
                     
-                    /// output aligned read
-                    if ( fastxout_gv )
-                    {
-                        if ( acceptedreads.is_open() )
-                        {
-                            while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
-                            if ( *end_read == '\n' ) acceptedreads << "\n";
-                        }
-                        else
-                        {
-                            fprintf(stderr,"  %sERROR%s: file %s (acceptedstrings) could not be opened for writing.\n\n","\033[0;31m",acceptedstrings,"\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                }//~the read was accepted
-            }//~for all reads
-        }//~if paired-in or paired-out
-        /// regular or pair-ended reads don't need to go into the same file
-        else
+          // output aligned read
+          if ( fastxout_gv )
+          {
+            if ( acceptedreads.is_open() )
+            {
+              while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
+              if ( *end_read == '\n' ) acceptedreads << "\n";
+            }
+            else
+            {
+              fprintf(stderr,"  %sERROR%s: file %s (acceptedstrings) could not be opened for writing.\n\n","\033[0;31m",acceptedstrings,"\033[0m");
+              exit(EXIT_FAILURE);
+            }
+          }
+        }//~the read was accepted
+      }//~for all reads
+    }//~if paired-in or paired-out
+    // regular or pair-ended reads don't need to go into the same file
+    else
+    {
+      // loop through every read, output accepted reads
+      for ( int32_t i = 1; i < strs; i+=2 )
+      {
+        char* begin_read = reads[i-1];
+        
+        // the read was accepted
+        if ( read_hits[i] )
         {
-            /// loop through every read, output accepted reads
-            for ( int32_t i = 1; i < strs; i+=2 )
+          char* end_read = NULL;
+          // split-read and paired-read exist at a different location in memory than the mmap
+          if ( file_s > 0 )
+          {
+            // first read (of split-read + paired-read)
+            if ( i==1 ) end_read = reads[2];
+            // second read (of split-read + paired-read)
+            else if ( i==3 )
             {
-                char* begin_read = reads[i-1];
-                
-                /// the read was accepted
-                if ( read_hits[i] )
-                {
-                    char* end_read = NULL;
-                    /// split-read and paired-read exist at a different location in memory than the mmap
-                    if ( file_s > 0 )
-                    {
-                        /// first read (of split-read + paired-read)
-                        if ( i==1 ) end_read = reads[2];
-                        /// second read (of split-read + paired-read)
-                        else if ( i==3 )
-                        {
-                            end_read = reads[3];
-                            while (*end_read != '\0') end_read++;
-                        }
-                        /// all reads except the last one
-                        else if ( (i+2) < strs ) end_read = reads[i+1];
-                        /// last read
-                        else end_read = finalnt;
-                    }
-                    /// the first (and possibly only) file part, all reads are in mmap
-                    else
-                    {
-                        if ( (i+2) < strs) end_read = reads[i+1];
-                        else end_read = finalnt;
-                    }
-                    
-                    /// output aligned read
-                    if ( fastxout_gv )
-                    {
-                        if ( acceptedreads.is_open() )
-                        {
-                            while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
-                            if ( *end_read == '\n' ) acceptedreads << "\n";
-                        }
-                        else
-                        {
-                            fprintf(stderr,"  %sERROR%s: file %s (acceptedstrings) could not be opened for writing.\n\n","\033[0;31m",acceptedstrings,"\033[0m");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                } //~if read was accepted
-            }//~for all reads
-        }//~if not paired-in or paired-out
+              end_read = reads[3];
+              while (*end_read != '\0') end_read++;
+            }
+            // all reads except the last one
+            else if ( (i+2) < strs ) end_read = reads[i+1];
+            // last read
+            else end_read = finalnt;
+          }
+          // the first (and possibly only) file part, all reads are in mmap
+          else
+          {
+            if ( (i+2) < strs) end_read = reads[i+1];
+            else end_read = finalnt;
+          }
+          
+          // output aligned read
+          if ( fastxout_gv )
+          {
+            if ( acceptedreads.is_open() )
+            {
+              while ( begin_read != end_read ) acceptedreads << (char)*begin_read++;
+              if ( *end_read == '\n' ) acceptedreads << "\n";
+            }
+            else
+            {
+              fprintf(stderr,"  %sERROR%s: file %s (acceptedstrings) could not be "
+                             "opened for writing.\n\n","\033[0;31m",acceptedstrings,"\033[0m");
+              exit(EXIT_FAILURE);
+            }
+          }
+        } //~if read was accepted
+      }//~for all reads
+    }//~if not paired-in or paired-out
         
-        if ( acceptedreads.is_open() ) acceptedreads.close();
-        
-        TIME(f);
-        eprintf(" done [%.2f sec]\n", (f-s) );
+    if ( acceptedreads.is_open() ) acceptedreads.close();
+    
+    TIME(f);
+    eprintf(" done [%.2f sec]\n", (f-s) );
         
     }//~if ( ptr_filetype_ar != NULL )
     
     
-    /// output other reads
+    // output other reads
     if ( (ptr_filetype_or != NULL) && fastxout_gv )
     {
-        eprintf("    Writing not-aligned FASTA/FASTQ ... ");
-        TIME(s);
-        ofstream otherreads ( ptr_filetype_or, ios::app );
-        
-        /// pair-ended reads
-        if ( pairedin_gv || pairedout_gv )
+      eprintf("    Writing not-aligned FASTA/FASTQ ... ");
+      TIME(s);
+      ofstream otherreads ( ptr_filetype_or, ios::app );
+      
+      // pair-ended reads
+      if ( pairedin_gv || pairedout_gv )
+      {
+        // loop through every read, output accepted reads
+        for ( uint32_t i = 1; i < strs; i+=4 )
         {
-            /// loop through every read, output accepted reads
-            for ( uint32_t i = 1; i < strs; i+=4 )
+          char* begin_read = reads[i-1];
+          
+          // neither of the reads were accepted, or exactly one was accepted and pairedout_gv
+          if ( (!read_hits[i] && !read_hits[i+2]) || 
+               ((read_hits[i] ^ (read_hits[i+2]) && pairedout_gv)) )
+          {
+            if ( otherreads.is_open() )
             {
-                char* begin_read = reads[i-1];
-                
-                /// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
-                if ( (!read_hits[i] && !read_hits[i+1]) || ((read_hits[i] ^ (read_hits[i+1]) && pairedout_gv)) )
+              char* end_read = NULL;
+              if ( file_s > 0 )
+              {
+                // first read (of split-read + paired-read)
+                if ( i==1 )
                 {
-                    if ( otherreads.is_open() )
-                    {
-                        char* end_read = NULL;
-                        if ( file_s > 0 )
-                        {
-                            /// first read (of split-read + paired-read)
-                            if ( i==1 )
-                            {
-                                end_read = reads[3];
-                                while (*end_read != '\0') end_read++;
-                            }
-                            /// all reads except the last one
-                            else if ( (i+4) < strs ) end_read = reads[i+3];
-                            /// last read
-                            else end_read = finalnt;
-                        }
-                        else
-                        {
-                            /// all reads except the last one
-                            if ( (i+4) < strs ) end_read = reads[i+3];
-                            /// last read
-                            else end_read = finalnt;
-                        }
-                        
-                        while ( begin_read != end_read ) otherreads << (char)*begin_read++;
-                        if ( *end_read == '\n' ) otherreads << "\n";
-                    }
-                    else
-                    {
-                        fprintf(stderr,"  %sERROR%s: file %s could not be opened for writing.\n\n","\033[0;31m",ptr_filetype_or,"\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                }//~the read was accepted
-            }//~for all reads
-        }//~if (pairedin_gv || pairedout_gv)
-        
-        /// output reads single
-        else
-        {
-            /// loop through every read, output non-accepted reads
-            for ( uint32_t i = 1; i < strs; i+=2 )
-            {
-                char* begin_read = reads[i-1];
-                
-                /// the read was accepted
-                if ( !read_hits[i] )
-                {
-                    /// accepted reads file output
-                    if ( otherreads.is_open() )
-                    {
-                        char* end_read = NULL;
-                        /// split-read and paired-read exist at a different location in memory than the mmap
-                        if ( file_s > 0 )
-                        {
-                            /// first read (of split-read + paired-read)
-                            if ( i==1 ) end_read = reads[2];
-                            /// second read (of split-read + paired-read)
-                            else if ( i==3 )
-                            {
-                                end_read = reads[3];
-                                while (*end_read != '\0') end_read++;
-                            }
-                            /// all reads except the last one
-                            else if ( (i+2) < strs ) end_read = reads[i+1];
-                            /// last read
-                            else end_read = finalnt;
-                        }
-                        /// the first (and possibly only) file part, all reads are in mmap
-                        else
-                        {
-                            if ( (i+2) < strs) end_read = reads[i+1];
-                            else end_read = finalnt;
-                        }
-                        
-                        while ( begin_read != end_read ) otherreads << (char)*begin_read++;
-                        if ( *end_read == '\n' ) otherreads << "\n";
-                    }
-                    else
-                    {
-                        fprintf(stderr,"  %sERROR%s: file %s could not be opened for writing.\n\n","\033[0;31m",ptr_filetype_or,"\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
+                  end_read = reads[3];
+                  while (*end_read != '\0') end_read++;
                 }
-            }//~for all reads
-        }/// if (pairedin_gv || pairedout_gv)
+                // all reads except the last one
+                else if ( (i+4) < strs ) end_read = reads[i+3];
+                // last read
+                else end_read = finalnt;
+              }
+              else
+              {
+                // all reads except the last one
+                if ( (i+4) < strs ) end_read = reads[i+3];
+                // last read
+                else end_read = finalnt;
+              }
+              
+              while ( begin_read != end_read ) otherreads << (char)*begin_read++;
+              if ( *end_read == '\n' ) otherreads << "\n";
+            }
+            else
+            {
+                fprintf(stderr,"  %sERROR%s: file %s could not be opened for writing.\n\n","\033[0;31m",ptr_filetype_or,"\033[0m");
+                exit(EXIT_FAILURE);
+            }
+          }//~the read was accepted
+        }//~for all reads
+      }//~if (pairedin_gv || pairedout_gv)
         
-        if ( otherreads.is_open() ) otherreads.close();
+      // output reads single
+      else
+      {
+        // loop through every read, output non-accepted reads
+        for ( uint32_t i = 1; i < strs; i+=2 )
+        {
+          char* begin_read = reads[i-1];
+          
+          // the read was accepted
+          if ( !read_hits[i] )
+          {
+            // accepted reads file output
+            if ( otherreads.is_open() )
+            {
+              char* end_read = NULL;
+              // split-read and paired-read exist at a different location in memory than the mmap
+              if ( file_s > 0 )
+              {
+                // first read (of split-read + paired-read)
+                if ( i==1 ) end_read = reads[2];
+                // second read (of split-read + paired-read)
+                else if ( i==3 )
+                {
+                  end_read = reads[3];
+                  while (*end_read != '\0') end_read++;
+                }
+                // all reads except the last one
+                else if ( (i+2) < strs ) end_read = reads[i+1];
+                // last read
+                else end_read = finalnt;
+              }
+              // the first (and possibly only) file part, all reads are in mmap
+              else
+              {
+                if ( (i+2) < strs) end_read = reads[i+1];
+                else end_read = finalnt;
+              }
+              
+              while ( begin_read != end_read ) otherreads << (char)*begin_read++;
+              if ( *end_read == '\n' ) otherreads << "\n";
+            }
+            else
+            {
+              fprintf(stderr,"  %sERROR%s: file %s could not be opened for writing.\n\n","\033[0;31m",ptr_filetype_or,"\033[0m");
+              exit(EXIT_FAILURE);
+            }
+          }
+        }//~for all reads
+      }/// if (pairedin_gv || pairedout_gv)
         
-        TIME(f);
-        eprintf(" done [%.2f sec]\n", (f-s) );
+      if ( otherreads.is_open() ) otherreads.close();
+      
+      TIME(f);
+      eprintf(" done [%.2f sec]\n", (f-s) );
     }//~if ( ptr_filetype_or != NULL )
     
     return ;
@@ -544,64 +547,64 @@ void report_denovo(char *denovo_otus_file,
                    uint32_t file_s,
                    char *finalnt )
 {
-    /// for timing different processes
+    // for timing different processes
     double s,f;
     
-    /// output reads with < id% alignment (passing E-value) for de novo clustering
+    // output reads with < id% alignment (passing E-value) for de novo clustering
     if ( denovo_otus_file != NULL )
     {
-        eprintf("    Writing de novo FASTA/FASTQ ... ");
-        TIME(s);
-        
-        ofstream denovoreads (denovo_otus_file, ios::app);
-        
-        /// pair-ended reads
-        if ( pairedin_gv || pairedout_gv )
+      eprintf("    Writing de novo FASTA/FASTQ ... ");
+      TIME(s);
+      
+      ofstream denovoreads (denovo_otus_file, ios::app);
+      
+      // pair-ended reads
+      if ( pairedin_gv || pairedout_gv )
+      {
+        // loop through every read, output accepted reads
+        for ( uint32_t i = 1; i < strs; i+=4 )
         {
-            /// loop through every read, output accepted reads
-            for ( uint32_t i = 1; i < strs; i+=4 )
+          char* begin_read = reads[i-1];
+          
+          // either both reads are accepted, or one is accepted and pairedin_gv
+          if ( (read_hits_denovo[i] || read_hits_denovo[i+1]) && pairedin_gv)
+          {
+            char* end_read = NULL;
+            if ( file_s > 0 )
             {
-                char* begin_read = reads[i-1];
-                
-                /// either both reads are accepted, or one is accepted and pairedin_gv
-                if ( (read_hits_denovo[i] || read_hits_denovo[i+1]) && pairedin_gv)
-                {
-                    char* end_read = NULL;
-                    if ( file_s > 0 )
-                    {
-                        /// first read (of split-read + paired-read)
-                        if ( i==1 )
-                        {
-                            end_read = reads[3];
-                            while (*end_read != '\0') end_read++;
-                        }
-                        /// all reads except the last one
-                        else if ( (i+4) < strs ) end_read = reads[i+3];
-                        /// last read
-                        else end_read = finalnt;
-                    }
-                    else
-                    {
-                        /// all reads except the last one
-                        if ( (i+4) < strs ) end_read = reads[i+3];
-                        /// last read
-                        else end_read = finalnt;
-                    }
-                    
-                    /// output aligned read
-                    if ( denovoreads.is_open() )
-                    {
-                        while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
-                        if ( *end_read == '\n' ) denovoreads << "\n";
-                    }
-                    else
-                    {
-                        fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
-                        exit(EXIT_FAILURE);
-                    }
-                }//~the read was accepted
-            }//~for all reads
-        }//~if paired-in or paired-out
+              // first read (of split-read + paired-read)
+              if ( i==1 )
+              {
+                  end_read = reads[3];
+                  while (*end_read != '\0') end_read++;
+              }
+              // all reads except the last one
+              else if ( (i+4) < strs ) end_read = reads[i+3];
+              // last read
+              else end_read = finalnt;
+            }
+            else
+            {
+              // all reads except the last one
+              if ( (i+4) < strs ) end_read = reads[i+3];
+              // last read
+              else end_read = finalnt;
+            }
+            
+            // output aligned read
+            if ( denovoreads.is_open() )
+            {
+              while ( begin_read != end_read ) denovoreads << (char)*begin_read++;
+              if ( *end_read == '\n' ) denovoreads << "\n";
+            }
+            else
+            {
+                fprintf(stderr,"  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n","\033[0;31m",denovo_otus_file,"\033[0m");
+                exit(EXIT_FAILURE);
+            }
+          }//~the read was accepted
+        }//~for all reads
+      }//~if paired-in or paired-out
         /// regular or pair-ended reads don't need to go into the same file
         else
         {
