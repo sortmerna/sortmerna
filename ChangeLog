@@ -1,2 +1,4 @@
 14 August 2014
 	- fixed the bug regarding --paired_in and --paired_out output, tests added
+15 August 2014
+	- added script `build.sh` to call configure, touch commands and make in order to avoid timestamp issues when cloning this repository
