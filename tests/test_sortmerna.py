@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Unit tests for the SortMeRNA version 2.0
-========================================
+Software tests for the SortMeRNA
+================================
 """
 
 
@@ -28,7 +28,7 @@ from skbio.parse.sequences import parse_fasta
 
 # Test class and cases
 class SortmernaV2Tests(TestCase):
-    """ Tests for SortMeRNA version 2.0 functionality """
+    """ Tests for SortMeRNA functionality """
 
     def setUp(self):
         self.output_dir = mkdtemp()
