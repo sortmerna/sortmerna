@@ -700,12 +700,11 @@ load_ref(char* ptr_dbfile,
     exit(EXIT_FAILURE);
   }
     
-    
   // set the file pointer to the first sequence added to the index for this index file section
   if ( fseek(fp,start_part,SEEK_SET) != 0 )
     {
-        fprintf(stderr,"  %sERROR%s: could not locate the sequences used to construct the index (paralleltraversal.cpp).\n","\033[0;31m","\033[0m");
-        fprintf(stderr,"  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",ptr_dbfile);
+      fprintf(stderr,"  %sERROR%s: could not locate the sequences used to construct the index (paralleltraversal.cpp).\n","\033[0;31m","\033[0m");
+      fprintf(stderr,"  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",ptr_dbfile);
     }
     
   // load references sequences into memory, skipping the new lines & spaces in the fasta format
@@ -811,7 +810,7 @@ load_ref(char* ptr_dbfile,
  *******************************************************************/
 void traversetrie_debug( NodeElement* trie_node, uint32_t depth, uint32_t &total_entries, string &kmer_keep, uint32_t partialwin )
 {
-    char get_char[4] = {'A','C','G','T'};
+  char get_char[4] = {'A','C','G','T'};
     
   // traverse through the node elements in a trie node
   for ( int i = 0; i < 4; i++ )
@@ -821,65 +820,64 @@ void traversetrie_debug( NodeElement* trie_node, uint32_t depth, uint32_t &total
     // the node element holds a pointer to another trie node
     if ( value == 1 )
     {
-            kmer_keep.push_back((char)get_char[i]); //TESTING
+      kmer_keep.push_back((char)get_char[i]); //TESTING
       traversetrie_debug( trie_node->whichnode.trie, ++depth, total_entries, kmer_keep, partialwin );
-            kmer_keep.pop_back();
+      kmer_keep.pop_back();
       --depth;
     }
         
     // the node element points to a bucket
     else if ( value == 2 )
     {
-            kmer_keep.push_back((char)get_char[i]); //TESTING
+      kmer_keep.push_back((char)get_char[i]); //TESTING
+      
+      unsigned char* start_bucket = (unsigned char*)trie_node->whichnode.bucket;
+      if ( start_bucket == NULL )
+      {
+        fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");
+        exit(EXIT_FAILURE);
+      }
+      unsigned char* end_bucket = start_bucket + trie_node->size;
+      if ( end_bucket == NULL )
+      {
+        fprintf(stderr, "  ERROR: pointer end_bucket == NULL (paralleltraversal.cpp)\n");
+        exit(EXIT_FAILURE);
+      }
+      
+      cout << "size of bucket = " << trie_node->size << endl; //TESTING
+      cout << "end_bucket-start_bucket = " << (end_bucket-start_bucket) << endl; //TESTING
             
-            unsigned char* start_bucket = (unsigned char*)trie_node->whichnode.bucket;
-            if ( start_bucket == NULL )
-            {
-                fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");
-                exit(EXIT_FAILURE);
-            }
-            unsigned char* end_bucket = start_bucket + trie_node->size;
-            if ( end_bucket == NULL )
-            {
-                fprintf(stderr, "  ERROR: pointer end_bucket == NULL (paralleltraversal.cpp)\n");
-                exit(EXIT_FAILURE);
-            }
-            
-            cout << "size of bucket = " << trie_node->size << endl; //TESTING
-            cout << "end_bucket-start_bucket = " << (end_bucket-start_bucket) << endl; //TESTING
-            
-            // traverse the bucket
-            while ( start_bucket != end_bucket )
-            {
-                uint32_t entry_str = *((uint32_t*)start_bucket);
-                uint32_t s = partialwin-depth;
-                total_entries++;
-                
-                // for each nt in the string
-                for ( uint32_t j = 0; j < s; j++ )
-                {
-                    kmer_keep.push_back((char)get_char[entry_str&3]); //TESTING
-                    entry_str>>=2;
-                }
-                
-                cout << kmer_keep << endl; //TESTING
-                
-                for ( uint32_t j = 0; j < s; j++ ) kmer_keep.pop_back(); //TESTING
-                
-                
-                // next entry
-                start_bucket+=ENTRYSIZE;
-            }//~for each entry
-            
-            kmer_keep.pop_back(); //TESTING
+      // traverse the bucket
+      while ( start_bucket != end_bucket )
+      {
+        uint32_t entry_str = *((uint32_t*)start_bucket);
+        uint32_t s = partialwin-depth;
+        total_entries++;
+        
+        // for each nt in the string
+        for ( uint32_t j = 0; j < s; j++ )
+        {
+          kmer_keep.push_back((char)get_char[entry_str&3]); //TESTING
+          entry_str>>=2;
+        }
+        
+        cout << kmer_keep << endl; //TESTING
+        
+        for ( uint32_t j = 0; j < s; j++ ) kmer_keep.pop_back(); //TESTING
+        
+        // next entry
+        start_bucket+=ENTRYSIZE;
+      }//~for each entry
+      
+      kmer_keep.pop_back(); //TESTING
             
     }
         
     // the node element is empty, go to next node element
     else if ( value == 0 )
-        {
-            ;
-        }
+    {
+      ;
+    }
         
     trie_node++;
         
@@ -1020,7 +1018,7 @@ load_index( char* ptr_dbindex,
 #endif
           }
                     
-          // build the mini-burst trie/Users/jenya/Desktop/sortmerna-dev/sortmerna-dev-git/sortmerna/src/paralleltraversal.cpp
+          // build the mini-burst trie
           while ( !nodes.empty() )
           {
             // ptr to traverse each trie node
@@ -1096,8 +1094,7 @@ load_index( char* ptr_dbindex,
                   node->flag = flag;
                   node->whichnode.bucket = dst;
                   node->size = sizeofbucket;
-                  dst = ((char *)dst)+sizeofbucket;
-                  
+                  dst = ((char *)dst)+sizeofbucket;        
                 }
                   break;
                 // ?
@@ -1108,7 +1105,7 @@ load_index( char* ptr_dbindex,
                 }
                   break;
               }
-                            
+
               flags.pop_front();
               node++;               
             }//~loop through 4 node elements in a trie node
@@ -1228,8 +1225,8 @@ void find_lis( deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b, uint32_
     // Update b if new value is smaller then previously referenced value
     if (a[i].second < a[b[u]].second)
     {
-            if (u > 0) p[i] = b[u-1];
-            b[u] = i;
+      if (u > 0) p[i] = b[u-1];
+      b[u] = i;
     }
   }
     
@@ -1285,11 +1282,21 @@ paralleltraversal ( char* inputreads,
   uint32_t max_read_len = 0;
   // mean read length for log statistics
   uint32_t mean_read_len = 0;
+  // the size of the sliding window on the full file, ~1GB
+  off_t partial_file_size = 0;
+  // size of the remainder of the file (last window) which
+  // is less than pow(2,30) bytes
+  off_t last_part_size = 0;
+  // number of file sections to mmap
+  uint32_t file_sections = 0;
+  // index for file_sections
+  uint32_t file_s = 0;
     
   // check file for mmap
   if ((fd = open(fname.c_str(), O_RDONLY)) == -1)
   {
-    fprintf(stderr,"  %sERROR%s: Could not open the reads file!\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"  %sERROR%s: Could not open the reads file!\n\n",
+                   "\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
     
@@ -1299,7 +1306,8 @@ paralleltraversal ( char* inputreads,
     
   if ((rb = read(fd, &c, 1)) == -1)
   {
-    fprintf(stderr,"  %sERROR%s: Could not read the first character of the reads file!\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"  %sERROR%s: Could not read the first character of the "
+                   "reads file!\n\n","\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
     
@@ -1314,107 +1322,99 @@ paralleltraversal ( char* inputreads,
     // fastq format
     filesig = '@';
   }
-  else
-  {
-    // incorrect format
-    fprintf(stderr,"\n  %sERROR%s: The reads file must begin with '>' or '@', is your file empty?\n\n","\033[0;31m","\033[0m");
-    exit(EXIT_FAILURE);
-  }
+  else exit_early = true;
     
-  eprintf("\n  Computing read file statistics ...");
-  TIME(s);
-  // find the total length of all the reads for computing the E-value
-  char ch;
-  FILE *fp = fopen(inputreads,"r");
-  if ( fp == NULL )
+  if ( !exit_early )
   {
-    fprintf(stderr,"  %sERROR%s: could not open reads file - %s\n\n","\033[0;31m","\033[0m",strerror(errno));
-    exit(EXIT_FAILURE);
-  }
-  // FASTA
-  if ( filesig == '>' )
-  {
-    while ( (ch = getc(fp)) != EOF )
+    eprintf("\n  Computing read file statistics ...");
+    TIME(s);
+    // find the total length of all the reads for computing the E-value
+    char ch;
+    FILE *fp = fopen(inputreads,"r");
+    if ( fp == NULL )
     {
-      // sequence label
-      if ( ch == '>' )
+      fprintf(stderr,"  %sERROR%s: could not open reads file - %s\n\n",
+                     "\033[0;31m","\033[0m",strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+    // FASTA
+    if ( filesig == '>' )
+    {
+      while ( (ch = getc(fp)) != EOF )
       {
-        number_total_read++;
-        while ( (ch = getc(fp)) != '\n' );
-      }
-            
-      ch = getc(fp);
-      
-      // nucleotide sequence    
-      while ( (ch != EOF) && (ch != '>') )
-      {
-        if ( (ch != '\n') && (ch != ' ') ) full_read_main++;
+        // sequence label
+        if ( ch == '>' )
+        {
+          number_total_read++;
+          while ( (ch = getc(fp)) != '\n' );
+        }
+              
         ch = getc(fp);
+        
+        // nucleotide sequence    
+        while ( (ch != EOF) && (ch != '>') )
+        {
+          if ( (ch != '\n') && (ch != ' ') ) full_read_main++;
+          ch = getc(fp);
+        }
+        ungetc(ch,fp);
       }
-      ungetc(ch,fp);
     }
-  }
-  // FASTQ
-  else
-  {
-    int nc = 0;
-        
-    while ( (ch = getc(fp)) != EOF )
+    // FASTQ
+    else
     {
-      if ( ch == '\n' ) nc++;
-      if ( ((nc-1)%4 == 0) && (ch != '\n')) full_read_main++;
+      int nc = 0;
+          
+      while ( (ch = getc(fp)) != EOF )
+      {
+        if ( ch == '\n' ) nc++;
+        if ( ((nc-1)%4 == 0) && (ch != '\n')) full_read_main++;
+      }
+          
+      number_total_read=nc/4;
     }
-        
-    number_total_read=nc/4;
-  }
 
-  // find the mean sequence length
-  mean_read_len = full_read_main/number_total_read;
+    // find the mean sequence length
+    mean_read_len = full_read_main/number_total_read;
+      
+    fclose(fp);
     
-  fclose(fp);
-    
-    // check there are an even number of reads for --paired-in and --paired-out options to work
+    // check there are an even number of reads for --paired-in
+    // and --paired-out options to work
     if ( (number_total_read%2 != 0) && (pairedin_gv || pairedout_gv) )
     {
-        fprintf(stderr,"\n    %sWARNING%s: for --paired-in and --paired-out options, the number of reads must be even.\n","\033[0;33m","\033[0m");
-        fprintf(stderr,"    There are %d reads in your file.\n",number_total_read);
-        fprintf(stderr,"    Reads will still be processed and output, but paired-reads may be split.\n\n");
-        pairedin_gv = false;
-        pairedout_gv = false;
+      fprintf(stderr,"\n    %sWARNING%s: for --paired-in and --paired-out options, the number of reads must be even.\n","\033[0;33m","\033[0m");
+      fprintf(stderr,"    There are %d reads in your file.\n",number_total_read);
+      fprintf(stderr,"    Reads will still be processed and output, but paired-reads may be split.\n\n");
+      pairedin_gv = false;
+      pairedout_gv = false;
     }
+
+    // find the size of the total file
+    if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
+    {
+      fprintf(stderr,"  %sERROR%s: Could not seek the reads file!\n\n","\033[0;31m","\033[0m");
+      exit(EXIT_FAILURE);
+    }
+    if (lseek(fd, 0L, SEEK_SET) == -1)
+    {
+      fprintf(stderr,"  %sERROR%s: Could not seek set the reads file!\n\n","\033[0;31m","\033[0m");
+      exit(EXIT_FAILURE);
+    }
+
+    partial_file_size = full_file_size;
+    last_part_size = full_file_size%map_size_gv;
     
-    
-  // find the size of the total file
-  if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
-  {
-    fprintf(stderr,"  %sERROR%s: Could not seek the reads file!\n\n","\033[0;31m","\033[0m");
-    exit(EXIT_FAILURE);
-  }
-  if (lseek(fd, 0L, SEEK_SET) == -1)
-  {
-    fprintf(stderr,"  %sERROR%s: Could not seek set the reads file!\n\n","\033[0;31m","\033[0m");
-    exit(EXIT_FAILURE);
-  }
-    
-  // the size of the sliding window on the full file, ~1GB
-  off_t partial_file_size = full_file_size;
-    
-  // size of the remainder of the file (last window) which is less than pow(2,30) bytes
-  off_t last_part_size = full_file_size%map_size_gv;
-    
-  // number of file sections to mmap
-  uint32_t file_sections = 0;
-    
-  // if the full_file_size is bigger than m*PAGE_SIZE, mmap the file by 'windows' of size partial_file_size, otherwise keep the full_file_size
-  if ( ( file_sections = ceil( (double)full_file_size/(double)(map_size_gv) ) ) > 1 ) partial_file_size = map_size_gv;
-  TIME(f);
-    
-  eprintf(" done [%.2f sec]\n", (f-s));
-  eprintf("  size of reads file: %lu bytes\n", (unsigned long int)full_file_size );
-  eprintf("  partial section(s) to be executed: %d of size %lu bytes \n", file_sections,(unsigned long int)partial_file_size );
-    
-  // index for file_sections
-  uint32_t file_s = 0;
+    // if the full_file_size is bigger than m*PAGE_SIZE, mmap
+    // the file by 'windows' of size partial_file_size,
+    // otherwise keep the full_file_size
+    if ( ( file_sections = ceil( (double)full_file_size/(double)(map_size_gv) ) ) > 1 ) partial_file_size = map_size_gv;
+    TIME(f);
+      
+    eprintf(" done [%.2f sec]\n", (f-s));
+    eprintf("  size of reads file: %lu bytes\n", (unsigned long int)full_file_size );
+    eprintf("  partial section(s) to be executed: %d of size %lu bytes \n", file_sections,(unsigned long int)partial_file_size );
+  }//~if (!exit_early)
     
   // output streams for accepted reads (FASTA/FASTQ, SAM and BLAST-like)
   ofstream acceptedreads;
@@ -1598,7 +1598,23 @@ paralleltraversal ( char* inputreads,
   // empty output files created, exit program
   if ( exit_early )
   {
-    fprintf(stdout, "  The reads file or reference file is empty, no analysis could be made.\n");
+    fprintf(stderr, "  The input reads file or reference file is empty, "
+                    "or the reads file is not in FASTA or FASTQ format, "
+                    "no analysis could be made.\n");
+    // output parameters to log file
+    if ( (ptr_filetype_ar != NULL) && logout_gv )
+    {
+      FILE* bilan = fopen(logoutfile,"w");
+      if ( bilan == NULL )
+      {
+        fprintf(stderr,"  %sERROR%s: could not open file %s \n","\033[0;31m","\033[0m",logoutfile);
+        exit(EXIT_FAILURE);
+      }
+      fprintf(bilan, "  The input reads file or reference file is empty, "
+                     "or the reads file is not in FASTA or FASTQ format, "
+                     "no analysis could be made.\n");
+      fclose(bilan);
+    }
     exit(EXIT_SUCCESS);
   }
     
@@ -1701,7 +1717,7 @@ paralleltraversal ( char* inputreads,
     FILE* bilan = fopen(logoutfile,"w");
     if ( bilan == NULL )
     {
-      fprintf(stderr,"  %sERROR%s: could not create file %s \n","\033[0;31m","\033[0m",logoutfile);
+      fprintf(stderr,"  %sERROR%s: could not open file %s \n","\033[0;31m","\033[0m",logoutfile);
       exit(EXIT_FAILURE);
     }
     
@@ -2032,8 +2048,7 @@ paralleltraversal ( char* inputreads,
       char *tt = start;
       while ( *tt != '\0' ) cout << (char)*tt++;
       cout << ".STOP." << endl; //TESTING
-#endif
-            
+#endif     
       // split-read or paired-read
       reads[0] = start;
       while ( *start++ != '\n' );
@@ -2041,13 +2056,13 @@ paralleltraversal ( char* inputreads,
       int line = 0;
       if ( filesig == '@' )
       {
-          // go to second read in fastq format
-          while ( line < 3 ) { if ( *start++ == '\n' ) line++; }
+        // go to second read in fastq format
+        while ( line < 3 ) { if ( *start++ == '\n' ) line++; }
       }
       else
       {
-          // go to second read in fasta format
-          while ( *start != '>') start++;
+        // go to second read in fasta format
+        while ( *start != '>') start++;
       }
       
       // split-read or paired-read
