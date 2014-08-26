@@ -714,6 +714,7 @@ load_ref(char* ptr_dbfile,
   int i = 0;
   int j = 0;
   char c = fgetc(fp);
+
   if ( load_for_search )
   {
     do
@@ -2188,7 +2189,7 @@ paralleltraversal ( char* inputreads,
     memset(read_max_SW_score, 0, sizeof(uint16_t)*strs);
     
     // map accessed by read number, storing a pair <index for smallest SSW score, pointer to array of num_best_hits_gv>
-    map<uint32_t, pair<uint16_t, s_align*> > read_hits_align_info;
+    map<uint32_t, triple_s > read_hits_align_info;
     
     // number of alignments to output per read
     int32_t *num_alignments_x = NULL;
@@ -2200,16 +2201,6 @@ paralleltraversal ( char* inputreads,
       for ( int32_t s = 0; s < strs; s++ ) num_alignments_x[s] = num_alignments_gv;
     }
     
-    // number of reference sequences to search alignments for before choosing the best one
-    int32_t *best_x = NULL;
-    
-    // search min_lis_gv reference sequences for alignments
-    if ( min_lis_gv > 0 )
-    {
-      best_x = new int32_t[strs];
-      for ( int32_t s = 0; s < strs; s++ ) best_x[s] = min_lis_gv;
-    }
-        
     // loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
     for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++)
     {
@@ -2235,6 +2226,17 @@ paralleltraversal ( char* inputreads,
         eprintf("    Loading index part %d/%u ... ",part+1,num_index_parts[index_num] );
                 
         TIME(s);
+
+        // number of reference sequences to search alignments for before choosing the best one
+        int32_t *best_x = NULL;
+        
+        // search min_lis_gv reference sequences for alignments
+        if ( min_lis_gv > 0 )
+        {
+          best_x = new int32_t[strs];
+          for ( int32_t s = 0; s < strs; s++ )
+            best_x[s] = min_lis_gv;
+        }
                 
         // memory buffer to store the reference sequence database
         char* buffer = NULL;
@@ -2252,7 +2254,6 @@ paralleltraversal ( char* inputreads,
         uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
         uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
         uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
-                
                 
 #pragma omp master
         {
@@ -2688,14 +2689,14 @@ paralleltraversal ( char* inputreads,
                       if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
                                             
                       max_occur = most_frequent_seq[k].first;
-                      max_seq = most_frequent_seq[k].second;                                  
+                      max_seq = most_frequent_seq[k].second; 
 #ifdef debug_align
                       cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
                       cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
                       cout << "\t\t\t\tnumseq_part = " << numseq_part << endl; //TESTING
                       cout << "\t\t\t\tindex size for reference_seq = " << (numseq_part<<1) << endl; //TESTING
-#endif
-                                            
+                      cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
+#endif                             
                       // not enough window hits, try to collect more hits or go to next read
                       if ( max_occur < (uint32_t)seed_hits_gv ) break;
                                             
@@ -2706,10 +2707,11 @@ paralleltraversal ( char* inputreads,
                         // has a lower seed count than the previous one
                         if ( max_occur < most_frequent_seq[k-1].first )
                         {
-#pragma omp critical
+                          #pragma omp critical
                           {
                             best_x[readn]--;
                           }
+
                           if ( best_x[readn] < 1 ) break;
                         }
                       }
@@ -2719,7 +2721,7 @@ paralleltraversal ( char* inputreads,
                       if ( num_alignments_gv > 0 )
                       {
                         if ( num_alignments_x[readn] <= 0 ) break;
-                      }                        
+                      }  
 #ifdef debug_align
                       cout << "\t\t\t\tpassed all checks for ref sequence search.. " << endl; //TESTING
 #endif                                      
@@ -3001,15 +3003,19 @@ paralleltraversal ( char* inputreads,
                                     result->ref_seq = max_seq;
                                     result->part = part;
                                     result->strand = strand;
-                                    
-                                    map<uint32_t, pair<uint16_t, s_align*> >::iterator alignment = read_hits_align_info.find(readn);
-//#define DEBUG_BEST_N
+
+                                    map<uint32_t, triple_s>::iterator alignment = read_hits_align_info.find(readn);
 #ifdef DEBUG_BEST_N
-                                    cout << "readn = " << readn << endl;
-                                    cout << "\nresult->score1 = " << result->score1 << endl; //TESTING
-                                    cout << "index_num = " << result->index_num;
-                                    cout << "part = " << result->part;
-                                    cout << "refseq = ";
+                                    cout << "\nreadn = " << readn << endl;
+                                    cout << "max_seq = " << (2*max_seq) << endl;
+                                    cout << "result->score1 = " << result->score1 << endl;
+                                    cout << "index_num = " << result->index_num << endl;
+                                    cout << " part = " << result->part << endl;
+                                    cout << " read = ";
+                                    char* ttc = reads[readn-1];
+                                    while ( *ttc != '\n' ) cout << (char)*ttc++;
+                                    cout << endl;
+                                    cout << " refseq = ";
                                     char* ttp = reference_seq[(2*result->ref_seq)]+1;
                                     while ( *ttp != '\n' ) cout << (char)*ttp++;
                                     cout << endl;
@@ -3018,34 +3024,42 @@ paralleltraversal ( char* inputreads,
                                     if ( alignment != read_hits_align_info.end() )
                                     {
 #ifdef DEBUG_BEST_N
-                                      cout << "alignment already exists.\n"; //TESTING
-#endif                        
-                                      uint16_t smallest_score_index = alignment->second.first;
+                                      cout << "alignment already exists.\n";
+#endif
+                                      uint16_t smallest_score_index = alignment->second.min_index;
+                                      uint16_t highest_score_index = alignment->second.max_index;
+
+                                      // update max_index to the position of the first occurrence
+                                      // of the highest scoring alignment
+                                      if ( result->score1 > ((alignment->second.ptr)+highest_score_index)->score1 )
+                                        alignment->second.max_index = smallest_score_index;
+
                                       // get the alignment with the smallest score
-                                      s_align *smallest_alignment = (alignment->second.second)+smallest_score_index;
+                                      s_align *smallest_alignment = (alignment->second.ptr)+smallest_score_index;
 #ifdef DEBUG_BEST_N
-                                      cout << "smallest_score_index = " << smallest_score_index << "\tnum_best_hits_gv = " << num_best_hits_gv << endl; //TESTING
-#endif                                                                       
+                                      cout << "smallest_score_index = " << smallest_score_index << "\tnum_best_hits_gv = " << num_best_hits_gv << endl;
+                                      cout << "highest_score_index = " << highest_score_index << endl;
+#endif
                                       // the number of alignments stored per read < num_best_hits_gv, 
                                       // simply add new alignment to array
                                       if ( smallest_alignment->cigar == NULL )
                                       {
 #ifdef DEBUG_BEST_N
-                                        cout << "add new alignment to empty slot.\n"; //TESTING
+                                        cout << "add new alignment to empty slot.\n";
 #endif
                                         *smallest_alignment = *result;
                                         // not all slots are filled, simply increment the
                                         // smallest_score_index to next slot in array
-                                        if ( smallest_score_index < num_best_hits_gv-1 ) alignment->second.first = smallest_score_index+1;
+                                        if ( smallest_score_index < num_best_hits_gv-1 ) alignment->second.min_index = smallest_score_index+1;
                                         // all slots have been filled, find slot with smallest
                                         // alignment score and set the smallest_score_index
                                         else
                                         {
 #ifdef DEBUG_BEST_N
-                                          cout << "find new smallest_score_index of " << num_best_hits_gv << " slots.\n"; //TESTING
+                                          cout << "find new smallest_score_index of " << num_best_hits_gv << " slots.\n";
 #endif
-                                          uint16_t smallest_score = 10000;
-                                          s_align *this_alignment = alignment->second.second;
+                                          uint32_t smallest_score = 1000000;
+                                          s_align *this_alignment = alignment->second.ptr;
                                           for ( int p = 0 ; p < num_best_hits_gv; p++ )
                                           {
                                             if ( this_alignment[p].score1 < smallest_score )
@@ -3055,12 +3069,12 @@ paralleltraversal ( char* inputreads,
                                             }
                                           }
 #ifdef DEBUG_BEST_N
-                                          cout << "smallest_score_index = " << smallest_score_index << endl; //TESTING
+                                          cout << "smallest_score_index = " << smallest_score_index << endl;
 #endif
-                                          alignment->second.first = smallest_score_index;
+                                          alignment->second.min_index = smallest_score_index;
                                         }
 #ifdef DEBUG_BEST_N
-                                        cout << "free result.\n"; //TESTING
+                                        cout << "free result.\n";
 #endif                                                         
                                         // the maximum possible score for this read has been found
                                         if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
@@ -3070,12 +3084,13 @@ paralleltraversal ( char* inputreads,
                                         result = NULL;                                          
                                       }
                                       // all num_best_hits_gv slots have been filled,
-                                      // replace the alignment with the lowest score
-                                      else if ( (result->score1) > smallest_alignment->score1 )
+                                      // replace the alignment having the lowest score
+                                      else if ( result->score1 > smallest_alignment->score1 )
                                       {
 #ifdef DEBUG_BEST_N
-                                        cout << "smallest_alignment->score1 = " << smallest_alignment->score1 << endl; //TESTING
-                                        cout << "replace alignment in an existing slot.\n"; //TESTING
+                                        cout << "replace alignment with higher score" << endl;
+                                        cout << "smallest_alignment->score1 = " << smallest_alignment->score1 << endl;
+                                        cout << "replace alignment in an existing slot.\n";
 #endif
                                         // decrement number of reads mapped to database
                                         // with lower score
@@ -3089,8 +3104,8 @@ paralleltraversal ( char* inputreads,
                                         *smallest_alignment = *result;
                                         
                                         // find the new smallest_score_index
-                                        uint16_t smallest_score = 10000;
-                                        s_align *this_alignment = alignment->second.second;
+                                        uint32_t smallest_score = 1000000;
+                                        s_align *this_alignment = alignment->second.ptr;
                                         for ( int p = 0 ; p < num_best_hits_gv; p++ )
                                         {
                                           if ( this_alignment[p].score1 < smallest_score )
@@ -3098,12 +3113,11 @@ paralleltraversal ( char* inputreads,
                                             smallest_score = this_alignment[p].score1;
                                             smallest_score_index = p;
                                           }
-                                        }
-                                                                                
+                                        }                                                               
 #ifdef DEBUG_BEST_N
-                                        cout << "new smallest_score_index = " << smallest_score_index << endl; //TESTING
+                                        cout << "new smallest_score_index = " << smallest_score_index << endl;
 #endif                                 
-                                        alignment->second.first = smallest_score_index;
+                                        alignment->second.min_index = smallest_score_index;
                                         
                                         // the maximum possible score for this read has been found
                                         if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
@@ -3122,14 +3136,15 @@ paralleltraversal ( char* inputreads,
                                     else
                                     {
 #ifdef DEBUG_BEST_N
-                                      cout << "add first alignment.\n"; //TESTING
+                                      cout << "add first alignment.\n";
 #endif                          
                                       uint16_t smallest_score_index = 0;
                                       // create new instance of alignments
                                       s_align *new_alignment = new s_align[num_best_hits_gv]();
                                       if ( new_alignment == NULL )
                                       {
-                                        fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment storage (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+                                        fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment "
+                                                       "storage (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
                                         exit(EXIT_FAILURE);
                                       }
                                       else
@@ -3137,10 +3152,11 @@ paralleltraversal ( char* inputreads,
                                         new_alignment[0] = *result;
                                         // set cigar pointer to NULL to signify empty slot
                                         for ( int p = 1; p < num_best_hits_gv; p++ ) new_alignment[p].cigar = NULL;
-                                        // as only 1 alignment exists from a possible num_best_hits_gv, we set the smallest score at new_alignment[1]
+                                        // as only 1 alignment exists from a possible num_best_hits_gv,
+                                        // we set the smallest score at new_alignment[1]
                                         if ( num_best_hits_gv > 1 ) smallest_score_index = 1;
-                                        pair<uint16_t,s_align*> tmp (smallest_score_index,new_alignment);
-                                        read_hits_align_info.insert( pair<uint32_t, pair<uint16_t,s_align*> > (readn,tmp) );
+                                        triple_s tmp (smallest_score_index,0,new_alignment);
+                                        read_hits_align_info.insert( pair<uint32_t, triple_s > (readn,tmp) );
                                       }
                                                                             
                                       // the maximum possible score for this read has been found
@@ -3150,7 +3166,7 @@ paralleltraversal ( char* inputreads,
                                       free(result);
                                       result = NULL;                
 #ifdef DEBUG_BEST_N
-                                      cout << "added.\n"; //TESTING
+                                      cout << "added.\n";
 #endif
                                     }                                      
                                   }
@@ -3160,7 +3176,8 @@ paralleltraversal ( char* inputreads,
                                     // update number of alignments to output per read
                                     if ( num_alignments_gv > 0 ) num_alignments_x[readn]--;
                                     
-                                    // get the edit distance between reference and read (serves for SAM output and computing %id and %query coverage)
+                                    // get the edit distance between reference and read (serves for
+                                    // SAM output and computing %id and %query coverage)
                                     double id = 0;
                                     char to_char[5] = {'A','C','G','T','N'};
                                     char* ref_seq_ptr = reference_seq[(2*(int)max_seq)+1];
@@ -3433,7 +3450,7 @@ paralleltraversal ( char* inputreads,
             {
               // do not output read for de novo OTU clustering
               // (it did not pass the E-value threshold)
-              if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
+              if ( de_novo_otu_gv && read_hits_denovo[readn] ) read_hits_denovo[readn].flip();
 
               // output null alignment string
               if ( print_all_reads_gv )
@@ -3552,17 +3569,17 @@ paralleltraversal ( char* inputreads,
         prt_str.str("");
         prt_str << (part+1);
         part_str = prt_str.str();
+
+        // clear array holding number of reference sequences to
+        // search per read prior to choosing best alignment
+        if ( best_x != NULL ) delete [] best_x;
                 
       }//~for all parts of the index            
     }//~for all indexes (provided as a list using option --ref)
         
     // clear array holding number of alignments output for each read
     if ( num_alignments_x != NULL ) delete [] num_alignments_x;
-    
-    // clear array holding number of reference sequences to
-    // search per read prior to choosing best alignment
-    if ( best_x != NULL ) delete [] best_x;
-    
+
     delete [] read_max_SW_score;
     
     eprintf("    Total number of reads mapped (incl. all reads file sections searched): %u\n",total_reads_mapped);
@@ -3620,14 +3637,15 @@ paralleltraversal ( char* inputreads,
           // run through all the reads, output those which aligned
           for ( uint32_t readn = 1; readn < strs; readn+=2 )
           {
-            map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
+            map<uint32_t, triple_s >::iterator alignment = read_hits_align_info.find(readn);
 
             // this read does not have any alignment
-            if ( alignment == read_hits_align_info.end() )
+            // (output NULL alignment only once)
+            if ( alignment == read_hits_align_info.end() && (index_num == 0) && (part == 0))
             {
               // do not output this read for de novo clustering
               // (it did not pass the E-value threshold)
-              if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
+              if ( de_novo_otu_gv && read_hits_denovo[readn] ) read_hits_denovo[readn].flip();
 
               // output null string for read alignment
               if ( print_all_reads_gv )
@@ -3672,7 +3690,8 @@ paralleltraversal ( char* inputreads,
             cout << "readn = " << readn << endl;
 #endif
             // get all alignments for this read
-            s_align* ptr_alignment = alignment->second.second;
+            //s_align* ptr_alignment = alignment->second.second;
+            s_align* ptr_alignment = alignment->second.ptr;
             if ( ptr_alignment == NULL )
             {
               fprintf(stderr,"  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
@@ -3683,26 +3702,8 @@ paralleltraversal ( char* inputreads,
             cout << "ptr_alignment->score1 = " << (int32_t)ptr_alignment->score1 << endl;                 
             cout << "ptr_alignment->part = " << (uint16_t)ptr_alignment->part << endl;
 #endif
-            // OTU-map: maximum SW score of all best alignments
-            int score_is_max = 0;
             // OTU-map: index of alignment holding maximum SW score
-            int index_max_score = 0;
-            // OTU-map: database
-            uint16_t index_num_max_score = 0;
-            // OTU-map: section in database
-            uint16_t part_num_max_score = 0;
-            
-            // find the alignment slot with maximum SW score
-            for ( int p = 0; p < num_best_hits_gv; p++ )
-            {
-              if ( (ptr_alignment[p].cigar != NULL) && (ptr_alignment[p].score1 > score_is_max) )
-              {
-                score_is_max = ptr_alignment[p].score1;
-                index_max_score = p;
-                index_num_max_score = ptr_alignment[p].index_num;
-                part_num_max_score = ptr_alignment[p].part;
-              }
-            }
+            int index_max_score = alignment->second.max_index;
 
             // loop through all of the best alignments for this read
             for ( int p = 0; p < num_best_hits_gv; p++ )
@@ -3852,9 +3853,7 @@ paralleltraversal ( char* inputreads,
                 // %id and %coverage thresholds
                 if ( ( p == index_max_score ) &&
                      ( align_id_round >= align_id ) && 
-                     ( align_cov_round >= align_cov ) && 
-                     ( index_num == index_num_max_score ) &&
-                     ( part == part_num_max_score ) )
+                     ( align_cov_round >= align_cov ) ) 
                 {
                   // increment number of reads passing identity
                   // and coverage threshold
@@ -3862,7 +3861,7 @@ paralleltraversal ( char* inputreads,
 
                   // do not output read for de novo OTU construction
                   // (it passed the %id/coverage thresholds)
-                  if ( de_novo_otu_gv ) read_hits_denovo[readn].flip();
+                  if ( de_novo_otu_gv && read_hits_denovo[readn] ) read_hits_denovo[readn].flip();
                   
                   // fill OTU map with highest-scoring alignment for the read
                   if ( otumapout_gv )
@@ -3896,7 +3895,7 @@ paralleltraversal ( char* inputreads,
                     if ( ptr_alignment->strand )
                     {
                       // if second part of split read or last read in file
-                      if ( ((readn == 3)&&(file_s > 0)) || (readn >= (strs-2)) )
+                      if ( ((readn == 3) && (file_s > 0)) || (readn >= (strs-2)) )
                       {
 #ifdef debug_output
                         if (readn >= (strs-2)) cout << "get quality for last (forward) read in file section\n"; //TESTING
@@ -4009,12 +4008,13 @@ paralleltraversal ( char* inputreads,
       // free alignment information for all aligned reads
       for ( uint32_t readn = 1; readn < strs; readn+=2 )
       {
-        map<uint32_t,pair<uint16_t,s_align*> >::iterator alignment = read_hits_align_info.find(readn);
+        map<uint32_t, triple_s >::iterator alignment = read_hits_align_info.find(readn);
 
         // this read does not have any alignment
         if ( alignment != read_hits_align_info.end() )
         {
-          s_align* ptr_alignment = alignment->second.second;
+          //s_align* ptr_alignment = alignment->second.second;
+          s_align* ptr_alignment = alignment->second.ptr;
           for ( int p = 0; p < num_best_hits_gv; p++ )
           {
             free(ptr_alignment->cigar);
@@ -4030,8 +4030,8 @@ paralleltraversal ( char* inputreads,
           }
 
           // free memory for all alignments of this read
-          delete [] alignment->second.second;
-          alignment->second.second = NULL;
+          delete [] alignment->second.ptr;
+          alignment->second.ptr = NULL;
         }
       }
             

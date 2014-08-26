@@ -1962,7 +1962,8 @@ int main (int argc, char** argv)
             
             eprintf("    (3/3) building position lookup tables ..");
             
-            /// positions_tbl[kmer_id] will return a pointer to an array of pairs, each pair stores the sequence number and index on the sequence of the kmer_id 19-mer
+            // positions_tbl[kmer_id] will return a pointer to an array of pairs, each pair
+            // stores the sequence number and index on the sequence of the kmer_id 19-mer
             kmer_origin* positions_tbl = NULL;
             
             positions_tbl = (kmer_origin*)malloc(number_elements*sizeof(kmer_origin));
@@ -1972,15 +1973,13 @@ int main (int argc, char** argv)
                 exit(EXIT_FAILURE);
             }
             
-            memset(positions_tbl, 0, number_elements*sizeof(kmer_origin));
+            memset(positions_tbl, 0, number_elements*sizeof(kmer_origin));     
             
-            
-            /// sequence number
+            // sequence number
             uint32_t i = 0;
             
-            /// reset the file pointer to the beginning of the current part
-            fseek(fp,start_part,SEEK_SET);
-            
+            // reset the file pointer to the beginning of the current part
+            fseek(fp,start_part,SEEK_SET);          
             
             TIME(s);
             do
@@ -1990,11 +1989,11 @@ int main (int argc, char** argv)
                 
                 //cout << ">"; //TESTING2
                 
-                /// scan to end of header name
+                // scan to end of header name
                 while ( nt != '\n')
                 {
-                    nt = fgetc(fp);
-                    // if ( nt != '\n' ) cout << (char)nt; //TESTING
+                  nt = fgetc(fp);
+                  // if ( nt != '\n' ) cout << (char)nt; //TESTING
                 }
                 
                 unsigned char* myseq = new unsigned char[maxlen];
@@ -2002,47 +2001,46 @@ int main (int argc, char** argv)
                 uint32_t _j = 0;
                 len = 0;
                 
-                /// encode each sequence using integer alphabet {0,1,2,3}
+                // encode each sequence using integer alphabet {0,1,2,3}
                 nt = fgetc(fp);
                 while ( nt != '>' && nt != EOF )
                 {
-                    /// skip line feed, carriage return or empty space in the sequence
-                    if ( nt != '\n' && nt != ' ' )
-                    {
-                        len++;
-                        /// exact character
-                        myseq[_j++] = map_nt[nt];
-                    }
-                    nt = fgetc(fp);
+                  // skip line feed, carriage return or empty space in the sequence
+                  if ( nt != '\n' && nt != ' ' )
+                  {
+                    len++;
+                    // exact character
+                    myseq[_j++] = map_nt[nt];
+                  }
+                  nt = fgetc(fp);
                 }
                 
-                /// put back the >
+                // put back the >
                 if ( nt != EOF ) ungetc(nt,fp);
                 
-                
-                /// check the addition of this sequence will not overflow the maximum memory
+                // check the addition of this sequence will not overflow the maximum memory
                 double estimated_seq_mem = (len-pread_gv+1)*9.5e-6;
                 
-                /// the sequence alone is too large, it will not fit into maximum memory, skip it
+                // the sequence alone is too large, it will not fit into maximum memory, skip it
                 if ( estimated_seq_mem > mem ) continue;
-                /// the additional sequence will overflow the maximum index memory, write existing index to disk and start a new index
+                // the additional sequence will overflow the maximum index memory,
+                // write existing index to disk and start a new index
                 else if ( index_size+estimated_seq_mem > mem )
                 {
-                    /// set the character to something other than EOF
-                    if ( nt == EOF ) nt = 'A';
-                    
-                    /// scan back to start of sequence for next index part
-                    fseek(fp,start_seq,SEEK_SET);
-                    break;
+                  // set the character to something other than EOF
+                  if ( nt == EOF ) nt = 'A';
+                  
+                  // scan back to start of sequence for next index part
+                  fseek(fp,start_seq,SEEK_SET);
+                  break;
                 }
-                /// add the additional sequence to the index
+                // add the additional sequence to the index
                 else
                 {
                     index_size+=estimated_seq_mem;
                 }
                 
-                
-                /// create a reverse sequence using the forward
+                // create a reverse sequence using the forward
                 unsigned char* ptr = &myseq[len-1];
                 
                 for ( _j = 0; _j < len; _j++ ) myseqr[_j] = *ptr--;
@@ -2059,8 +2057,8 @@ int main (int argc, char** argv)
                 /// initialize the 9-mers
                 for ( uint32_t j = 0; j < partialwin_gv; j++ )
                 {
-                    (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
-                    (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
+                  (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
+                  (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
                 }
                 
                 /// initialize the 19-mer
@@ -2071,43 +2069,42 @@ int main (int argc, char** argv)
                 
                 uint32_t index_pos = 0; //TESTING
                 
-                /// for all 19-mers on the sequence
+                // for all 19-mers on the sequence
                 for ( uint32_t j = 0; j < numwin; j++ ) //TESTING
                 {
-                    /// character array to hold an unsigned long long integer for CMPH
-                    char a[38] = {0};
-                    sprintf(a,"%llu",(kmer_key>>2));
-                    const char *key = a;
-                    id = cmph_search(hash, key, (cmph_uint32)strlen(key));
-                    
-                    //cout << "\t" << id << "=" << (kmer_key>>2); //TESTING
-                    
-                    add_id_to_burst_trie( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id );
-                    add_id_to_burst_trie( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id );
-                    
-                    add_kmer_to_table( positions_tbl+id, i, index_pos, max_pos);
-                    
-                    /// shift the 19-mer and 9-mers
-                    if ( j != numwin-1 )
+                  // character array to hold an unsigned long long integer for CMPH
+                  char a[38] = {0};
+                  sprintf(a,"%llu",(kmer_key>>2));
+                  const char *key = a;
+                  id = cmph_search(hash, key, (cmph_uint32)strlen(key));
+                  
+                  //cout << "\t" << id << "=" << (kmer_key>>2); //TESTING
+                  
+                  add_id_to_burst_trie( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id );
+                  add_id_to_burst_trie( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id );
+                  
+                  add_kmer_to_table( positions_tbl+id, i, index_pos, max_pos);
+                  
+                  // shift the 19-mer and 9-mers
+                  if ( j != numwin-1 )
+                  {
+                    for ( int shift = 0; shift < interval; shift++ )
                     {
-                        for ( int shift = 0; shift < interval; shift++ )
-                        {
-                            (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
-                            (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
-                            (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
-                            kmer_key_short_r_rp--;
-                            index_pos++;
-                        }
+                        (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
+                        (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
+                        (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
+                        kmer_key_short_r_rp--;
+                        index_pos++;
                     }
+                  }
                 }
                 
-                //cout << endl; //TESTING
-                
+                //cout << endl; //TESTING       
                 
                 delete [] myseq;
                 delete [] myseqr;
                 
-                /// next sequence
+                // next sequence
                 i++;
                 
             } while ( nt != EOF ); /// for all file

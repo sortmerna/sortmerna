@@ -60,6 +60,17 @@ struct id_win
 	uint32_t win;
 };
 
+/* holds the index of the minimum and maximum scoring
+   alignments in an array of alignments pointed to by
+   s_align* ptr */
+struct triple_s
+{
+  uint16_t min_index;
+  uint16_t max_index;
+  s_align* ptr;
+  triple_s(uint16_t min, uint16_t max, s_align* p) : min_index(min), max_index(max), ptr(p) {}
+};
+
 
 /*! @brief Type mypair
 
