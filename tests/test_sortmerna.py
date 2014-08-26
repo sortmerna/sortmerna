@@ -32,18 +32,17 @@ class SortmernaV2Tests(TestCase):
 
     def setUp(self):
         self.output_dir = mkdtemp()
-        self.root_ref = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
-        self.root_reads = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
+        self.root = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
 
         # reference databases
-        self.db_bac16s = join(self.root_ref, "silva-bac-16s-database-id85.fasta")
-        self.db_gg_13_8 = join(self.root_ref, "gg_13_8_ref_set.fasta")
+        self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
+        self.db_gg_13_8 = join(self.root, "gg_13_8_ref_set.fasta")
 
         # reads
-        self.set2 = join(self.root_reads, "set2_environmental_study_550_amplicon.fasta")
-        self.set3 = join(self.root_reads, "empty_file.fasta")
-        self.set4 = join(self.root_reads, "set4_mate_pairs_metatranscriptomics.fastq")
-        self.set5 = join(self.root_reads, "set5_simulated_amplicon_silva_bac_16s.fasta")
+        self.set2 = join(self.root, "set2_environmental_study_550_amplicon.fasta")
+        self.set3 = join(self.root, "empty_file.fasta")
+        self.set4 = join(self.root, "set4_mate_pairs_metatranscriptomics.fastq")
+        self.set5 = join(self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
 
     def tearDown(self):
         rmtree(self.output_dir)
@@ -81,7 +80,7 @@ class SortmernaV2Tests(TestCase):
 
     def test_indexdb_split_databases(self):
         """ Test indexing a database using SortMeRNA
-            with m = 0.05
+            with m = 0.05, that is 7 parts
         """
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
@@ -133,7 +132,7 @@ class SortmernaV2Tests(TestCase):
         for fp in expected_db_files:
             self.assertTrue(exists(fp))
 
-    def test_simulated_amplicon_1_part(self):
+    def test_simulated_amplicon_1_part_map(self):
         """ Test sortmerna on simulated data,
             10000 reads with 1% error (--aligned),
             10000 reads with 10% error (de novo),
@@ -161,6 +160,7 @@ class SortmernaV2Tests(TestCase):
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
 
+        # best 1
         sortmerna_command = ["sortmerna",
                              "--ref", index_path,
                              "--aligned", aligned_basename,
@@ -258,8 +258,115 @@ class SortmernaV2Tests(TestCase):
         self.assertEqual(num_clusters_log, str(num_clusters_file))
         self.assertEqual(num_pass_id_cov_log, str(num_reads_in_clusters_file))
 
+        # Clean up before next call
+        remove(aligned_basename + ".log")
+        remove(aligned_basename + ".fasta")
+        remove(aligned_basename + "_otus.txt")
+        remove(aligned_basename + "_denovo.fasta")
+        remove(aligned_basename + ".blast")
+        remove(other_basename + ".fasta")
 
-    def test_simulated_amplicon_6_part(self):
+        # best 5
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--other", other_basename,
+                             "--reads", self.set5,
+                             "--id", "0.97",
+                             "--coverage", "0.97",
+                             "--log",
+                             "--otu_map",
+                             "--de_novo_otu",
+                             "--blast", "3",
+                             "--fastx",
+                             "--best", "5",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        print stderr
+
+        f_log = open(aligned_basename + ".log", "U")
+        f_log_str = f_log.read()
+        self.assertTrue("Total reads passing E-value threshold" in f_log_str)
+        self.assertTrue("Total reads for de novo clustering" in f_log_str)
+        self.assertTrue("Total OTUs" in f_log_str)
+        f_log.seek(0)
+
+        for line in f_log:
+            if line.startswith("    Total reads = "):
+                total_reads_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith("    Total reads for de novo clustering"):
+                num_denovo_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith("    Total reads passing E-value threshold"):
+                num_hits_log = (re.split(' = | \(', line)[1]).strip()
+            elif line.startswith("    Total reads failing E-value threshold"):
+                num_fails_log = (re.split(' = | \(', line)[1]).strip()
+            elif line.startswith(" Total reads passing %id and %coverage thresholds"):
+                num_pass_id_cov_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith(" Total OTUs"):
+                num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
+        f_log.close()
+
+        # Correct number of reads
+        self.assertEqual("30000", total_reads_log)
+
+        # Correct number of de novo reads
+        self.assertEqual("10262", num_denovo_log)
+        num_denovo_file = 0
+        with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
+            for label, seq in parse_fasta(f_denovo):
+                num_denovo_file +=1
+        self.assertEqual(num_denovo_log, str(num_denovo_file))
+
+        # Correct number of reads mapped
+        self.assertEqual("19995", num_hits_log)
+        num_hits_file = 0
+        with open(aligned_basename + ".fasta", 'U') as f_mapped:
+            for label, seq in parse_fasta(f_mapped):
+                num_hits_file +=1
+        self.assertEqual(num_hits_log, str(num_hits_file))
+
+        # Correct number of reads not mapped
+        self.assertEqual("10005", num_fails_log)
+        num_fails_file = 0
+        with open(other_basename + ".fasta", 'U') as f_not_mapped:
+            for label, seq in parse_fasta(f_not_mapped):
+                num_fails_file +=1
+        self.assertEqual(num_fails_log, str(num_fails_file))
+
+        # Correct number of reads passing %id and %coverage threshold
+        self.assertEqual("9733", num_pass_id_cov_log)
+        num_pass_id_cov_file = 0
+        with open(aligned_basename + ".blast", 'U') as f_blast:
+            for line in f_blast:
+                f_id = float(line.strip().split('\t')[2])
+                f_cov = float(line.strip().split('\t')[13])
+                if (f_id >= 97.0 and f_cov >= 97.0):
+                    num_pass_id_cov_file +=1
+        self.assertEqual(num_pass_id_cov_log, str(num_pass_id_cov_log))
+
+        # Correct number of clusters recorded
+        self.assertEqual("4341", num_clusters_log)
+        num_clusters_file = 0
+        num_reads_in_clusters_file = 0
+        with open(aligned_basename + "_otus.txt", 'U') as f_otus:
+            for line in f_otus:
+                num_clusters_file +=1
+                num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
+                
+        self.assertEqual(num_clusters_log, str(num_clusters_file))
+        self.assertEqual(num_pass_id_cov_log, str(num_reads_in_clusters_file))
+
+
+    def test_simulated_amplicon_6_part_map(self):
         """ Test sortmerna on simulated data,
             10000 reads with 1% error (--aligned),
             10000 reads with 10% error (de novo),
@@ -375,6 +482,132 @@ class SortmernaV2Tests(TestCase):
 
         # Correct number of clusters recorded
         self.assertEqual("4341", num_clusters_log)
+        num_clusters_file = 0
+        num_reads_in_clusters_file = 0
+        with open(aligned_basename + "_otus.txt", 'U') as f_otus:
+            for line in f_otus:
+                num_clusters_file +=1
+                num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
+                
+        self.assertEqual(num_clusters_log, str(num_clusters_file))
+        self.assertEqual(num_pass_id_cov_log, str(num_reads_in_clusters_file))
+
+    def test_simulated_amplicon_12_part_index(self):
+        """ Test sortmerna on simulated data,
+            10000 reads with 1% error (--aligned),
+            10000 reads with 10% error (de novo),
+            10000 reads random (--other)
+
+            Conditions: reference index processed
+            as 12 parts and input query FASTA file
+            in 1 section.
+        """
+        index_db = join(self.output_dir, "db_bac16s")
+        index_path = "%s,%s" % (self.db_bac16s, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v",
+                           "-m", "10"]
+
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+        other_basename = join(self.output_dir, "other")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--other", other_basename,
+                             "--reads", self.set5,
+                             "--id", "0.97",
+                             "--coverage", "0.97",
+                             "--log",
+                             "--otu_map",
+                             "--de_novo_otu",
+                             "--blast", "3",
+                             "--fastx",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        print stderr
+
+        f_log = open(aligned_basename + ".log", "U")
+        f_log_str = f_log.read()
+        self.assertTrue("Total reads passing E-value threshold" in f_log_str)
+        self.assertTrue("Total reads for de novo clustering" in f_log_str)
+        self.assertTrue("Total OTUs" in f_log_str)
+        f_log.seek(0)
+
+        for line in f_log:
+            if line.startswith("    Total reads = "):
+                total_reads_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith("    Total reads for de novo clustering"):
+                num_denovo_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith("    Total reads passing E-value threshold"):
+                num_hits_log = (re.split(' = | \(', line)[1]).strip()
+            elif line.startswith("    Total reads failing E-value threshold"):
+                num_fails_log = (re.split(' = | \(', line)[1]).strip()
+            elif line.startswith(" Total reads passing %id and %coverage thresholds"):
+                num_pass_id_cov_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith(" Total OTUs"):
+                num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
+        f_log.close()
+
+        # Correct number of reads
+        self.assertEqual("30000", total_reads_log)
+
+        # Correct number of de novo reads
+        self.assertEqual("10262", num_denovo_log)
+        num_denovo_file = 0
+        with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
+            for label, seq in parse_fasta(f_denovo):
+                num_denovo_file +=1
+        self.assertEqual(num_denovo_log, str(num_denovo_file))
+
+        # Correct number of reads mapped
+        self.assertEqual("19995", num_hits_log)
+        num_hits_file = 0
+        with open(aligned_basename + ".fasta", 'U') as f_mapped:
+            for label, seq in parse_fasta(f_mapped):
+                num_hits_file +=1
+        self.assertEqual(num_hits_log, str(num_hits_file))
+
+        # Correct number of reads not mapped
+        self.assertEqual("10005", num_fails_log)
+        num_fails_file = 0
+        with open(other_basename + ".fasta", 'U') as f_not_mapped:
+            for label, seq in parse_fasta(f_not_mapped):
+                num_fails_file +=1
+        self.assertEqual(num_fails_log, str(num_fails_file))
+
+        # Correct number of reads passing %id and %coverage threshold
+        self.assertEqual("9733", num_pass_id_cov_log)
+        num_pass_id_cov_file = 0
+        with open(aligned_basename + ".blast", 'U') as f_blast:
+            for line in f_blast:
+                f_id = float(line.strip().split('\t')[2])
+                f_cov = float(line.strip().split('\t')[13])
+                if (f_id >= 97.0 and f_cov >= 97.0):
+                    num_pass_id_cov_file +=1
+        self.assertEqual(num_pass_id_cov_log, str(num_pass_id_cov_log))
+
+        # Correct number of clusters recorded
+        self.assertEqual("4343", num_clusters_log)
         num_clusters_file = 0
         num_reads_in_clusters_file = 0
         with open(aligned_basename + "_otus.txt", 'U') as f_otus:
