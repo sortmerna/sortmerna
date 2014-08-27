@@ -81,6 +81,9 @@ extern bool verbose;
 // (piped to stdout)
 //#define see_binary_output
 
+// DEBUG: code to store the --best INT alignments
+//#define DEBUG_BEST_N
+
 /*! @brief Maximum length of input reads
 	(not limited to this length algorithmically)
 */
@@ -254,11 +257,6 @@ extern double align_id;
 
 /*! @brief OTU-picking option: minimum %%coverage to keep alignment */
 extern double align_cov;
-
-/*! @brief If true, do not mask low-occurring (L/2)-mers for 
-	seeds of length L 
-*/
-extern bool nomask_gv;
 
 /*! @brief If true, print all reads in SAM and/or BLAST 
 	output (aligned and non-aligned)

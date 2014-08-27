@@ -1,4 +1,34 @@
 14 August 2014
-	- fixed the bug regarding --paired_in and --paired_out output, tests added
+	- [affects FASTQ paired reads] fixed the bug regarding --paired_in and --paired_out output, tests added
 15 August 2014
-	- added script `build.sh` to call configure, touch commands and make in order to avoid timestamp issues when cloning this repository
+	- [affects Installation] added script `build.sh` to call configure, touch commands and make in order to avoid timestamp issues when cloning this repository
+21 August 2014
+	- [affects OTU-picking using "--otu_map --best INT" where INT > 1] changed the read_hits_align_info structure from map<uint32_t,pair<uint16_t,s_align*> > to map<uint32_t, triple_s > where the structure triple_s holds two uint16_t variables and an s_align* variable. This allows to store an additional integer for giving the index in s_align array of the highest scoring alignment. This is necessary if —otu_map and —best [INT] options are used where INT > 1 since different OTU ids can be used in the OTU-map when multiple alignments score equally as well. To illustrate an example,
+
+	(a) —best 1, the s_align array is size 1 and only the single best alignment is stored, being the first encountered alignment if multiple alignments of equal score are found.
+	(b) —best 4, the s_align array is size 4. Assume the first 2 alignments score 144 (occupying the first 2 slots on s_align array) and the next 3 alignments score 197 (2 of these alignments will occupy the final 2 slots, where the 3rd alignment will overwrite the first slot holding 144). We will have a situation like: 197, 144, 197, 197. In order to follow the same principle of (a) where the first encountered alignment of the highest score is output, we need to know that this alignment was in slot 3 (not slot 1).
+26 August 2014
+	- [affects multiple split databases] moved the declaration + initialization/deletion of int32_t *best_x from outside of "for each index_num loop" to inside the "for each index_part loop". This is required to maintain similar results when using 1 index part (all database indexed as one part) vs. multiple index parts. The difference occurs because of the following situation:
+
+	(a) Database indexed as 1 part:
+
+		part 1:
+		candidate sequence	#seed hits
+		ref1				10
+		ref3				9           [correct reference]
+		ref2				8
+		ref4				8
+
+	(b) Database indexed as 2 parts:
+
+		part 1:
+		candidate sequence	#seed hits
+		ref1				10
+		ref2				8
+
+		part 2:
+		candidate sequence	#seed hits
+		ref3				9           [correct reference]
+		ref4				8
+
+	If min_lis_gv = 2 (best_x[readn] = 2), then ref1 and ref3 will be analyzed in (a) before best_x[readn] = 0 and we stop analysis. However, in (b), if min_lis_gv = 2 outside of "for each index_num loop", only ref1 and ref2 will be analyzed in part 1 at which point best_x[readn] = 0 and sequences in part 2 will not be analyzed. By initializing best_x[readn] = 2 at the start of each index_part, then ref1/ref2 in part1 will be analyzed and ref3/ref4 in part 2, where the correct reference sequence ref3 will be analyzed.
