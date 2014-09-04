@@ -3481,7 +3481,7 @@ paralleltraversal ( char* inputreads,
                     report_sam (acceptedsam, // sam output file
                                 null_alignment, // SW alignment cigar
                                 reads[readn-1]+1, // read name
-                                0, // read sequence (in integer format)
+                                &myread[0], // read sequence (in integer format)
                                 0, // read quality
                                 0, // reference name
                                 0, // reference sequence
@@ -3674,7 +3674,7 @@ paralleltraversal ( char* inputreads,
                   report_sam (acceptedsam, // sam output file
                               null_alignment, // SW alignment cigar
                               reads[readn-1]+1, // read name
-                              0, // read sequence (in integer format)
+                              &myread[0], // read sequence (in integer format)
                               0, // read quality
                               0, // reference name
                               0, // reference sequence
