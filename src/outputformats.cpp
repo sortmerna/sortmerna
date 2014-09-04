@@ -233,11 +233,7 @@ void report_sam (ofstream &fileout,
     // read did not align, output null string
     if ( print_all_reads_gv && (a == NULL) )
     {
-        fileout << "\t4\t*\t0\t0\t*\t*\t0\t0\t";
-        // (10) SEQ
-        char* ptr_read_seq = read_seq;
-        while (*ptr_read_seq != '\n') fileout << (char)to_char[(int)*ptr_read_seq++];
-        fileout << "\t*\n";
+        fileout << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\n";
         return ;
     }
     
