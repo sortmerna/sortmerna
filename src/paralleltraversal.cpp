@@ -3640,47 +3640,50 @@ paralleltraversal ( char* inputreads,
             map<uint32_t, triple_s >::iterator alignment = read_hits_align_info.find(readn);
 
             // this read does not have any alignment
-            // (output NULL alignment only once)
-            if ( alignment == read_hits_align_info.end() && (index_num == 0) && (part == 0))
+            if ( alignment == read_hits_align_info.end() )
             {
-              // do not output this read for de novo clustering
-              // (it did not pass the E-value threshold)
-              if ( de_novo_otu_gv && read_hits_denovo[readn] ) read_hits_denovo[readn].flip();
-
-              // output null string for read alignment
-              if ( print_all_reads_gv )
+              // (output NULL alignment only once)
+              if ( (index_num == 0) && (part == 0) )
               {
-                s_align* null_alignment = NULL;
-                if ( blastout_gv && (blast_outfmt > 0) )
+                // do not output this read for de novo clustering
+                // (it did not pass the E-value threshold)
+                if ( de_novo_otu_gv && read_hits_denovo[readn] ) read_hits_denovo[readn].flip();
+
+                // output null string for read alignment
+                if ( print_all_reads_gv )
                 {
-                  report_blast (acceptedblast, // blast output file
+                  s_align* null_alignment = NULL;
+                  if ( blastout_gv && (blast_outfmt > 0) )
+                  {
+                    report_blast (acceptedblast, // blast output file
+                                  null_alignment, // SW alignment cigar
+                                  reads[readn-1]+1, //read name
+                                  0, // read sequence (in integer format)
+                                  0, // read quality
+                                  0, // reference name
+                                  0, // reference sequence
+                                  0, // e-value score
+                                  0, // read length (to compute the masked regions)
+                                  0, // bitscore
+                                  0, // forward or reverse strand
+                                  0, // %id
+                                  0, // %query coverage
+                                  0, // number of mismatches
+                                  0); // number of gaps
+                  }                                
+                  if ( samout_gv )
+                  {
+                    report_sam (acceptedsam, // sam output file
                                 null_alignment, // SW alignment cigar
-                                reads[readn-1]+1, //read name
+                                reads[readn-1]+1, // read name
                                 0, // read sequence (in integer format)
                                 0, // read quality
                                 0, // reference name
                                 0, // reference sequence
-                                0, // e-value score
                                 0, // read length (to compute the masked regions)
-                                0, // bitscore
                                 0, // forward or reverse strand
-                                0, // %id
-                                0, // %query coverage
-                                0, // number of mismatches
-                                0); // number of gaps
-                }                                
-                if ( samout_gv )
-                {
-                  report_sam (acceptedsam, // sam output file
-                              null_alignment, // SW alignment cigar
-                              reads[readn-1]+1, // read name
-                              0, // read sequence (in integer format)
-                              0, // read quality
-                              0, // reference name
-                              0, // reference sequence
-                              0, // read length (to compute the masked regions)
-                              0, // forward or reverse strand
-                              0); // edit distance
+                                0); // edit distance
+                  }
                 }
               }
               // go to next read
