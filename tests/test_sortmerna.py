@@ -13,7 +13,6 @@ from os.path import abspath, exists, getsize, join, dirname
 from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
 
-from skbio.util.misc import remove_files
 from skbio.parse.sequences import parse_fasta
 
 
@@ -36,6 +35,7 @@ class SortmernaV2Tests(TestCase):
 
         # reference databases
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
+        self.db_arc16s = join(self.root, "silva-arc-16s-database-id95.fasta")
         self.db_gg_13_8 = join(self.root, "gg_13_8_ref_set.fasta")
 
         # reads
@@ -43,6 +43,7 @@ class SortmernaV2Tests(TestCase):
         self.set3 = join(self.root, "empty_file.fasta")
         self.set4 = join(self.root, "set4_mate_pairs_metatranscriptomics.fastq")
         self.set5 = join(self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
+        self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
 
     def tearDown(self):
         rmtree(self.output_dir)
@@ -131,6 +132,72 @@ class SortmernaV2Tests(TestCase):
         # Make sure all db_files exist
         for fp in expected_db_files:
             self.assertTrue(exists(fp))
+
+    def test_multiple_databases_search(self):
+        """ Test sortmerna on 6 reads against
+            arc-16s and bac-16s databases.
+            4/6 reads match both arc-16s and
+            bac-16s and 2/6 are random reads.
+        """
+        index_path = "%s,%s:%s,%s" % (self.db_bac16s, join(self.output_dir, "db_bac16s"), self.db_arc16s, join(self.output_dir, "db_arc16s"))
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.set7,
+                             "--log",
+                             "--fastx"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        print stderr
+
+        f_log = open(aligned_basename + ".log", "U")
+        f_log_str = f_log.read()
+        self.assertTrue("Total reads passing E-value threshold" in f_log_str)
+        self.assertTrue("Total reads failing E-value threshold" in f_log_str)
+        f_log.seek(0)
+
+        for line in f_log:
+            if line.startswith("    Total reads = "):
+                total_reads_log = (re.split(' = ', line)[1]).strip()
+            elif line.startswith("    Total reads passing E-value threshold"):
+                num_hits_log = (re.split(' = | \(', line)[1]).strip()
+            elif line.startswith("    Total reads failing E-value threshold"):
+                num_fails_log = (re.split(' = | \(', line)[1]).strip()
+        f_log.close()
+
+        # Correct number of reads
+        self.assertEqual("6", total_reads_log)
+
+        # Correct number of reads mapped
+        self.assertEqual("4", num_hits_log)
+        num_hits_file = 0
+        with open(aligned_basename + ".fasta", 'U') as f_mapped:
+            for label, seq in parse_fasta(f_mapped):
+                num_hits_file +=1
+        self.assertEqual(num_hits_log, str(num_hits_file))
 
     def test_simulated_amplicon_1_part_map(self):
         """ Test sortmerna on simulated data,
