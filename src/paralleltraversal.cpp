@@ -1976,9 +1976,13 @@ paralleltraversal ( char* inputreads,
         cout << "strs (incl. reads_offset_f and reads_offset_e) = " << strs << endl; //TESTING
         if (raw[partial_file_size-1] == '\n') cout << "file section ends with a newline\n"; //TESTING
     #endif
-        // count one extra newline for the split read at bottom of file
-        if ( (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
-        //if ( (raw[partial_file_size-1] != '\n') && (file_s != file_sections-1) && (strs != 0) ) offset_pair_from_bottom++;
+        // count one extra newline for the split read at bottom of file                                                                                                                                                                                                           
+        // in order to facilitate reads_offset_e count                                                                                                                                                                                                                            
+        // conditions: 1. file section cannot be the last one                                                                                                                                                                                                                     
+        //             2. file section must contain more than 0 reads                                                                                                                                                                                                             
+        //             3. file section must not end in a new line while containing                                                                                                                                                                                                
+        //                an exact number of paired-reads                                                                                                                                                                                                                         
+        if ( (file_s != file_sections-1) && (strs != 0) && !((raw[partial_file_size-1] == '\n') && (offset_pair_from_bottom == 0)) ) offset_pair_from_bottom++;
         
         // compute the reads offset length at bottom of file section
         line = 0;
@@ -2089,7 +2093,8 @@ paralleltraversal ( char* inputreads,
     cout << "*line = " << (char)*line << endl; //TESTING
     cout << "*(finalnt-1) = " << (char)*(finalnt-1) << endl; //TESTING
     cout << "*finalnt = " << (char)*finalnt << endl; // TESTING
-    cout << "*(finalnt+1) = " << (char)*(finalnt+1) << endl; //TESTING
+    if ( *finalnt != '\n' )
+      cout << "*(finalnt+1) = " << (char)*(finalnt+1) << endl; //TESTING
     cout << "raw[partial_file_size-1] = " << (char)raw[partial_file_size-1] << endl; //TESTING
 #endif
         
