@@ -66,7 +66,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /*! @brief Version number */
-char version_num[] = "development";
+char version_num[] = "2.0, 29/11/2014";
 bool as_percent_gv = false;
 bool pid_gv = false;
 int16_t num_best_hits_gv = 0;
@@ -81,9 +81,9 @@ int16_t num_best_hits_gv = 0;
 void welcome()
 {
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
-  printf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
+  printf("  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:\n");
   printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               OTU-picking extensions developed in the Knight Lab,\n");
+  printf("               OTU-picking extensions and continuing support developed in the Knight Lab,\n");
   printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
   printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
@@ -117,19 +117,19 @@ void printlist()
   printf("   [COMMON OPTIONS]: \n");
   printf("     %s--other%s           %sSTRING%s          rejected reads filepath + base file name\n","\033[1m","\033[0m","\033[4m","\033[0m");
   printf("                                         (appropriate extension will be added)\n");
-  printf("     %s--fastx%s           %sFLAG%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--fastx%s           %sBOOL%s            output FASTA/FASTQ file                                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (for aligned and/or rejected reads)\n");
-  printf("     %s--sam%s             %sFLAG%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--sam%s             %sBOOL%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (for aligned reads only)\n");
-  printf("     %s--SQ%s              %sFLAG%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--SQ%s              %sBOOL%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--blast%s           %sINT%s             output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
   printf("                                        0 - pairwise\n");
   printf("                                        1 - tabular (Blast -m 8 format)\n");
   printf("                                        2 - tabular + column for CIGAR \n");
   printf("                                        3 - tabular + columns for CIGAR and query coverage\n");
-  printf("     %s--log%s             %sFLAG%s            output overall statistics                                      %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--log%s             %sBOOL%s            output overall statistics                                      %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 #ifdef NOMASK_option
-  printf("     %s--no-mask%s         %sFLAG%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--no-mask%s         %sBOOL%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                       for seeds of length L\n");
 #endif
   printf("     %s--num_alignments%s  %sINT%s             report first INT alignments per read reaching E-value          %s-1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -142,19 +142,19 @@ void printlist()
   printf("                                         LIS stands for Longest Increasing Subsequence, it is \n");
   printf("                                         computed using seeds' positions to expand hits into\n");
   printf("                                         longer matches prior to Smith-Waterman alignment. \n");
-  printf("     %s--print_all_reads%s %sFLAG%s            output null alignment strings for non-aligned reads            %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--print_all_reads%s %sBOOL%s            output null alignment strings for non-aligned reads            %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         to SAM and/or BLAST tabular files\n");
-  printf("     %s--paired_in%s       %sFLAG%s            both paired-end reads go in --aligned fasta/q file             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--paired_in%s       %sBOOL%s            both paired-end reads go in --aligned fasta/q file             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
-  printf("     %s--paired_out%s      %sFLAG%s            both paired-end reads go in --other fasta/q file               %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");\
+  printf("     %s--paired_out%s      %sBOOL%s            both paired-end reads go in --other fasta/q file               %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");\
   printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
   printf("     %s--match %s          %sINT%s             SW score (positive integer) for a match                        %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--mismatch%s        %sINT%s             SW penalty (negative integer) for a mismatch                   %s-3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--gap_open%s        %sINT%s             SW penalty (positive integer) for introducing a gap            %s5%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--gap_ext%s         %sINT%s             SW penalty (positive integer) for extending a gap              %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s-N%s                %sINT%s             SW penalty for ambiguous letters (N's)                         %sscored as --mismatch%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s-F%s                %sFLAG%s            search only the forward strand                                 %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s-R%s                %sFLAG%s            search only the reverse-complementary strand                   %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s-F%s                %sBOOL%s            search only the forward strand                                 %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s-R%s                %sBOOL%s            search only the reverse-complementary strand                   %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s-a%s                %sINT%s             number of threads to use                                       %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s-e%s                %sDOUBLE%s          E-value threshold                                              %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   // RAM cannot support 1GB default
@@ -164,16 +164,16 @@ void printlist()
   else
     printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory                   %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
-  printf("     %s-v%s                %sFLAG%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s-v%s                %sBOOL%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("   [OTU PICKING OPTIONS]: \n");
   printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         still pass the E-value threshold)\n");
   printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the alignment must                  %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         still pass the E-value threshold)\n");
-  printf("     %s--de_novo_otu%s     %sFLAG%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--de_novo_otu%s     %sBOOL%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (set using --id) and < %%cov (set using --coverage) \n");
   printf("                                         (alignment must still pass the E-value threshold)\n");
-  printf("     %s--otu_map%s         %sFLAG%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--otu_map%s         %sBOOL%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): \n");
   printf("    %s--passes%s           %sINT,INT,INT%s     three intervals at which to place the seed on the read         %sL,L/2,3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (L is the seed length set in ./indexdb_rna)\n");
@@ -182,14 +182,14 @@ void printlist()
   printf("                                         prior to SW local alignment \n");
   printf("    %s--num_seeds%s        %sINT%s             number of seeds matched before searching                       %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         for candidate LIS \n");
-  printf("    %s--full_search%s      %sFLAG%s            search for all 0-error and 1-error seed                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("    %s--full_search%s      %sBOOL%s            search for all 0-error and 1-error seed                        %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         matches in the index rather than stopping\n");
   printf("                                         after finding a 0-error match (<1%% gain in\n");
   printf("                                         sensitivity with up four-fold decrease in speed)\n");
-  printf("    %s--pid%s              %sFLAG%s            add pid to output file names                                   %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("    %s--pid%s              %sBOOL%s            add pid to output file names                                   %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("   [HELP]:\n");
-  printf("     %s-h%s                %sFLAG%s            help\n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("     %s--version%s         %sFLAG%s            SortMeRNA version number\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
+  printf("     %s-h%s                %sBOOL%s            help\n","\033[1m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--version%s         %sBOOL%s            SortMeRNA version number\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
   exit(EXIT_FAILURE);
 }//~printlist()
 
@@ -231,7 +231,7 @@ main(int argc,
   bool min_lis_gv_set = false;
   bool num_alignments_gv_set = false;
   bool best_gv_set = false;
-  // this flag is set if the reads file or the reference file
+  // this BOOL is set if the reads file or the reference file
   // is empty
   bool exit_early = false;
   // vector of (FASTA file, index name) pairs for loading index
@@ -296,7 +296,7 @@ main(int argc,
               fseek(file, 0, SEEK_END);
               size_t filesize = ftell(file);
 
-              // set exit flag to exit program after outputting
+              // set exit BOOL to exit program after outputting
               // empty files, sortmerna will not execute after
               // that call (in paralleltraversal.cpp)
               if ( !filesize ) exit_early = true;
@@ -943,7 +943,7 @@ main(int argc,
         {
           if ( full_search_set )
           {
-            fprintf(stderr,"\n  %sERROR%s: flag --full_search has been set twice, please "
+            fprintf(stderr,"\n  %sERROR%s: BOOL --full_search has been set twice, please "
                     "verify your choice.\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
@@ -959,7 +959,7 @@ main(int argc,
         {
           if ( yes_SQ )
           {
-            fprintf(stderr,"\n  %sERROR%s: flag --SQ has been set twice, please verify "
+            fprintf(stderr,"\n  %sERROR%s: BOOL --SQ has been set twice, please verify "
                     "your choice.\n\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
@@ -1129,7 +1129,7 @@ main(int argc,
         }
         else
         {
-          fprintf(stderr,"\n  %sERROR%s: flag -F has been set more than once, please check "
+          fprintf(stderr,"\n  %sERROR%s: BOOL -F has been set more than once, please check "
                   "your command parameters.\n","\033[0;31m","\033[0m");
           exit(EXIT_FAILURE);
         }
@@ -1146,7 +1146,7 @@ main(int argc,
         }
         else
         {
-          fprintf(stderr,"\n  %sERROR%s: flag -R has been set more than once, please check "
+          fprintf(stderr,"\n  %sERROR%s: BOOL -R has been set more than once, please check "
                   "your command parameters.\n","\033[0;31m","\033[0m");
           exit(EXIT_FAILURE);
         }
@@ -1180,7 +1180,7 @@ main(int argc,
         }
         else
         {
-          fprintf(stderr,"\n  %sERROR%s: flag -N has been set more than once, please "
+          fprintf(stderr,"\n  %sERROR%s: BOOL -N has been set more than once, please "
                   "check your command parameters.\n","\033[0;31m","\033[0m");
           exit(EXIT_FAILURE);
         }
@@ -1273,7 +1273,7 @@ main(int argc,
   {
     fprintf(stderr,"\n  %sERROR%s: options --paired_in and --paired_out "
             "must be accompanied by option --fastx.\n","\033[0;31m","\033[0m");
-    fprintf(stderr,"  These flags are for FASTA and FASTQ output files, for "
+    fprintf(stderr,"  These BOOLs are for FASTA and FASTQ output files, for "
             "maintaining paired reads together.\n");
     exit(EXIT_FAILURE);
   }
@@ -1327,7 +1327,7 @@ main(int argc,
   // Option --print_all_reads can only be used with Blast-like tabular formats (not pairwise)
   if ( print_all_reads_gv && blastout_gv && (blast_outfmt < 1) )
   {
-    fprintf(stderr,"\n  %sERROR%s: --print_all_reads [FLAG] can only be used for BLAST "
+    fprintf(stderr,"\n  %sERROR%s: --print_all_reads [BOOL] can only be used for BLAST "
             "output formats 1,2 and 3 (using --blast INT).\n\n","\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
