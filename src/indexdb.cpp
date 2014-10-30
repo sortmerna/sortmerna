@@ -110,7 +110,7 @@ uint32_t num_elem[100] = {0};
 bool verbose = false;
 
 // change version number here
-char version_num[] = "2.0, 16/07/2014";
+char version_num[] = "2.0, 29/11/2014";
 
 
 
@@ -881,17 +881,17 @@ void load_index( kmer* lookup_table, char* outfile )
  **************************************************************************************************************/
 void welcome()
 {
-	printf("\n  Program:     SortMeRNA version %s\n",version_num );
-	printf("  Copyright:   2012-2014 Bonsai Bioinformatics Research Group:\n");
-	printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               OTU-picking extensions developed in the Knight Lab,\n");
+  printf("\n  Program:     SortMeRNA version %s\n",version_num );
+  printf("  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:\n");
+  printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+  printf("               OTU-picking extensions and continuing support developed in the Knight Lab,\n");
   printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
   printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
   printf("               See the GNU Lesser General Public License for more details.\n");
   printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-	printf("               Laurent Noé, laurent.noe@lifl.fr\n");
-	printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
+  printf("               Laurent Noé, laurent.noe@lifl.fr\n");
+  printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
 }
 
 
@@ -915,18 +915,18 @@ void printlist()
   printf("                                       them by ':',\n");
   printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
   printf("   [OPTIONS]:\n");
-  printf("     %s--fast%s          %sFLAG%s            suggested option for aligning ~99%% related species          %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s--sensitive%s     %sFLAG%s            suggested option for aligning ~75-98%% related species       %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--fast%s          %sBOOL%s            suggested option for aligning ~99%% related species          %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--sensitive%s     %sBOOL%s            suggested option for aligning ~75-98%% related species       %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n","\033[1m","\033[0m","\033[4m","\033[0m");
   printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   #ifdef interval
-  printf("     %s--interval%s      %sINT%s             index every INT L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+  printf("     %s--interval%s      %sINT%s             index every INTth L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   #endif
   printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                      (setting --max_pos 0 will store all positions)\n");
-	printf("     %s-v%s              %sFLAG%s            verbose\n","\033[1m","\033[0m","\033[4m","\033[0m");
-	printf("     %s-h%s              %sFLAG%s            help	\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
+	printf("     %s-v%s              %sBOOL%s            verbose\n","\033[1m","\033[0m","\033[4m","\033[0m");
+	printf("     %s-h%s              %sBOOL%s            help	\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
 	exit(EXIT_FAILURE);
 }//~printlist()
 
