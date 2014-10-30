@@ -20,15 +20,15 @@ sortmerna_DATA     =  index/.tobuild
 
 indexdir       =  $(prefix)/@PACKAGE@/rRNA_databases
 index_DATA     =  rRNA_databases/rfam-5.8s-database-id98.fasta rRNA_databases/rfam-5s-database-id98.fasta \
-											rRNA_databases/silva-arc-23s-database-id98.fasta rRNA_databases/silva-euk-28s-database-id98.fasta \
-             					rRNA_databases/silva-arc-16s-database-id95.fasta rRNA_databases/silva-bac-16s-database-id85.fasta \
-             					rRNA_databases/silva-bac-23s-database-id98.fasta rRNA_databases/silva-euk-18s-database-id95.fasta 
+											rRNA_databases/silva-arc-23s-id98.fasta rRNA_databases/silva-euk-28s-id98.fasta \
+             					rRNA_databases/silva-arc-16s-id95.fasta rRNA_databases/silva-bac-16s-id90.fasta \
+             					rRNA_databases/silva-bac-23s-id98.fasta rRNA_databases/silva-euk-18s-id95.fasta 
 
-EXTRA_DIST = rRNA_databases/rfam-5.8s-database-id98.fasta rRNA_databases/rfam-5s-database-id98.fasta rRNA_databases/silva-arc-23s-database-id98.fasta \
-             rRNA_databases/silva-arc-16s-database-id95.fasta rRNA_databases/silva-bac-16s-database-id85.fasta \
-             rRNA_databases/silva-bac-23s-database-id98.fasta rRNA_databases/silva-euk-18s-database-id95.fasta \
-             rRNA_databases/silva-euk-28s-database-id98.fasta index/.tobuild scripts/merge-paired-reads.sh scripts/unmerge-paired-reads.sh \
-						 SortMeRNA-user-manual-v1.99-beta.pdf 
+EXTRA_DIST = rRNA_databases/rfam-5.8s-database-id98.fasta rRNA_databases/rfam-5s-database-id98.fasta rRNA_databases/silva-arc-23s-id98.fasta \
+		rRNA_databases/silva-arc-16s-id95.fasta rRNA_databases/silva-bac-16s-id90.fasta \
+		rRNA_databases/silva-bac-23s-id98.fasta rRNA_databases/silva-euk-18s-id95.fasta \
+		rRNA_databases/README.txt rRNA_databases/scripts/edit_U_to_T_rna.py rRNA_databases/scripts/generate_databases.sh rRNA_databases/scripts/hmmer_clean.sh
+		rRNA_databases/silva-euk-28s-id98.fasta scripts/merge-paired-reads.sh scripts/unmerge-paired-reads.sh SortMeRNA-User-Manual-2.0.pdf 
 
 uninstall: uninstall-am
 	cd $(prefix)/@PACKAGE@/index && rm *
