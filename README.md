@@ -113,7 +113,7 @@ After the installation, you should find the compiler installed in /opt/local/bin
 Galaxy wrapper
 --------------
 
-Currently a Galaxy wrapper exists for SortMeRNA v1.99 beta (thanks to Björn Grüning),
+Currently a Galaxy wrapper exists for SortMeRNA v1.9 (thanks to Björn Grüning),
 please visit "https://github.com/bgruening/galaxytools/tree/master/rna_tools/sortmerna" for more information.
 
 A wrapper for version 2.0 is under development in the Bonsai Lab, LIFL, France.

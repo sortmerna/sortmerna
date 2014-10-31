@@ -1,5 +1,7 @@
+31 Oct 2014
+	- representative SILVA databases updated to version 119 (for filtering rRNA from metatranscriptomic data)
 14 October 2014
-        - [affects FASTQ paired reads] edited code for splitting FASTQ file
+    - [affects FASTQ paired reads] edited code for splitting FASTQ file
 14 August 2014
 	- [affects FASTQ paired reads] fixed the bug regarding --paired_in and --paired_out output, tests added
 15 August 2014
