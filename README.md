@@ -1,10 +1,10 @@
 sortmerna
 =========
 
-This is ongoing development of SortMeRNA. For the latest stable release, see http://bioinfo.lifl.fr/RNA/sortmerna/.
+This is ongoing development of SortMeRNA. See 'release' on this page for
+releases or visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
-
-WARNING: Do not attempt to run `_autotools_batch_.sh` unless you have Autotools installed. 
+WARNING: Do not run `_autotools_batch_.sh` unless you have Autotools installed. 
 This script is for producing a distribution version of the code.
 
 NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
@@ -110,7 +110,13 @@ sudo port install gcc48
 
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8 .
 
+Galaxy wrapper
+--------------
 
+Currently a Galaxy wrapper exists for SortMeRNA v1.9 (thanks to Björn Grüning),
+please visit "https://github.com/bgruening/galaxytools/tree/master/rna_tools/sortmerna" for more information.
+
+A wrapper for version 2.0 is under development in the Bonsai Lab, LIFL, France.
 
 Citation
 --------
