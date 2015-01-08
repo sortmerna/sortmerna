@@ -66,7 +66,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /*! @brief Version number */
-char version_num[] = "2.0, 29/11/2014";
+char version_num[] = "2.0-dev, 29/11/2014";
 bool as_percent_gv = false;
 bool pid_gv = false;
 int16_t num_best_hits_gv = 0;
