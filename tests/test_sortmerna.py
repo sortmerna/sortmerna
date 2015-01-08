@@ -31,12 +31,13 @@ class SortmernaV2Tests(TestCase):
 
     def setUp(self):
         self.output_dir = mkdtemp()
-        self.root = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
+        self.root = "/Users/evko1434/sortmerna/tests/data"
 
         # reference databases
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
         self.db_arc16s = join(self.root, "silva-arc-16s-database-id95.fasta")
         self.db_gg_13_8 = join(self.root, "gg_13_8_ref_set.fasta")
+        self.db_GQ099317 = join(self.root, "ref_GQ099317_forward_and_rc.fasta")
 
         # reads
         self.set2 = join(self.root, "set2_environmental_study_550_amplicon.fasta")
@@ -44,6 +45,7 @@ class SortmernaV2Tests(TestCase):
         self.set4 = join(self.root, "set4_mate_pairs_metatranscriptomics.fastq")
         self.set5 = join(self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
         self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
+        self.read_GQ099317 = join(self.root, "illumina_GQ099317.fasta")
 
     def tearDown(self):
         rmtree(self.output_dir)
@@ -1030,6 +1032,87 @@ class SortmernaV2Tests(TestCase):
 
         self.assertEqual(8000, num_nonaligned_reads/4)
 
+    def test_output_all_alignments_f_rc(self):
+        """ Test SortMeRNA's option '--num_alignments 0' which should
+            search both forward and reverse-complement query for
+            alignments
+        """
+        index_db = join(self.output_dir, "ref_GQ099317")
+        index_path = "%s,%s" % (self.db_GQ099317, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+ 
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+        
+        # num_alignments 0
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.read_GQ099317,
+                             "--num_alignments", "0",
+                             "--sam",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        print stderr
+
+        sam_alignments_expected = [['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                                    '0',
+                                    'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                                    '1',
+                                    '255',
+                                    '101M',
+                                    '*',
+                                    '0',
+                                    '0',
+                                    'GCTGGCACGGAGTTAGCCGGGGCTTATAAATGGTACCGTCATTGATTCTTCCCATTCTTTCGAAGTTTACATCCCGAGGGACTTCATCCTTCACGCGGCGT',
+                                    '*',
+                                    'AS:i:202',
+                                    'NM:i:0'],
+                                   ['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                                    '16',
+                                    'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                                    '102',
+                                    '255',
+                                    '101M',
+                                    '*',
+                                    '0',
+                                    '0',
+                                    'ACGCCGCGTGAAGGATGAAGTCCCTCGGGATGTAAACTTCGAAAGAATGGGAAGAATCAATGACGGTACCATTTATAAGCCCCGGCTAACTCCGTGCCAGC',
+                                    '*',
+                                    'AS:i:202',
+                                    'NM:i:0']]
+        sam_alignments = []
+        with open("%s.sam" % aligned_basename, 'U') as aligned_f:
+            for line in aligned_f:
+                if line.startswith('@'):
+                    continue
+                alignment = line.strip().split("\t")
+                sam_alignments.append(alignment)
+
+        self.assertEqual(len(sam_alignments_expected), len(sam_alignments))
+        for alignment in sam_alignments_expected:
+            self.assertTrue(alignment in sam_alignments)
+
+        
 
 if __name__ == '__main__':
     main()
