@@ -110,7 +110,7 @@ uint32_t num_elem[100] = {0};
 bool verbose = false;
 
 // change version number here
-char version_num[] = "2.0, 29/11/2014";
+char version_num[] = "2.0-dev, 29/11/2014";
 
 
 
@@ -915,8 +915,6 @@ void printlist()
   printf("                                       them by ':',\n");
   printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
   printf("   [OPTIONS]:\n");
-  printf("     %s--fast%s          %sBOOL%s            suggested option for aligning ~99%% related species          %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s--sensitive%s     %sBOOL%s            suggested option for aligning ~75-98%% related species       %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n","\033[1m","\033[0m","\033[4m","\033[0m");
   printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -950,8 +948,6 @@ int main (int argc, char** argv)
 	// memory of index
 	double mem = 0;
 	bool mem_is_set = false;
-  bool fast_set = false;
-	bool sensitive_set = false;
   bool lnwin_set = false;
   bool interval_set = false;
   bool max_pos_set = false;
@@ -1132,49 +1128,7 @@ int main (int argc, char** argv)
               narg+=2;
           }
         }
-				else if ( strcmp ( myoption, "fast") == 0 )
-				{
-					if ( lnwin_gv > 0 )
-					{
-						fprintf(stderr,"\n  %sERROR%s: option -L INT cannot be used with "
-                           "--fast or --sensitive (these options set default values "
-                           "for L).\n\n","\033[0;31m","\033[0m");
-						exit(EXIT_FAILURE);
-					}
-					else if ( !fast_set )
-					{
-						lnwin_gv = 24;
-					}
-					else
-					{
-            fprintf(stderr,"\n  %sERROR%s: --fast has already been set "
-                           "once.\n\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-					}
-					fast_set = true;
-					narg++;
-				}
-				else if ( strcmp ( myoption, "sensitive") == 0 )
-				{
-					if ( lnwin_gv > 0 )
-					{
-						fprintf(stderr,"\n  %sERROR%s: option -L INT cannot be used "
-                           "with --sensitive or --fast (these options set "
-                           "default values for L).\n\n","\033[0;31m","\033[0m");
-						exit(EXIT_FAILURE);
-					}
-					else if ( !sensitive_set )
-						lnwin_gv = 18;
-					else
-					{
-            fprintf(stderr,"\n  %sERROR%s: --sensitive has already been "
-                           "set once.\n\n","\033[0;31m","\033[0m");
-            exit(EXIT_FAILURE);
-					}
-					sensitive_set = true;
-					narg++;
-				}
-        /// Interval for constructing index on every INT words
+        // Interval for constructing index on every INT words
         else if ( strcmp ( myoption, "interval" ) == 0 )
         {
           if (argv[narg+1] == NULL)
@@ -1184,7 +1138,7 @@ int main (int argc, char** argv)
                            "\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
-          /// set interval
+          // set interval
           if ( !interval_set )
           {
             if ( argv[narg+1][0] == '-' )
@@ -1269,14 +1223,6 @@ int main (int argc, char** argv)
       break;         
 			case 'L':
 			{
-				if ( fast_set || sensitive_set )
-				{
-					fprintf(stderr,"\n  %sERROR%s: -L INT cannot not be set when --fast "
-                         "or --sensitive options are used (these options set default "
-                         "values for L).\n\n","\033[0;31m","\033[0m");
-					exit(EXIT_FAILURE);
-				}
-                
 				if ( lnwin_set )
 				{
 					fprintf(stderr,"\n  %sERROR%s: option -L can only be set once.\n\n",
