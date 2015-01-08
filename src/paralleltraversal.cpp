@@ -2327,14 +2327,14 @@ paralleltraversal ( char* inputreads,
             if ( !forward_gv )
             {
               // output the first num_alignments_gv alignments
-              //else if ( num_alignments_gv > 0 )
               if ( num_alignments_gv > 0 )
               {
                 // all num_alignments_gv alignments have been output
                 if ( num_alignments_x[readn] < 0 ) continue;
               }
               // the maximum scoring alignment has been found, go to next read
-              else if ( read_max_SW_score[readn] == num_best_hits_gv ) continue;
+	      // (unless all alignments are being output)
+              else if ( (min_lis_gv > 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) continue;
             }
                         
             // read on integer alphabet {0,1,2,3}
