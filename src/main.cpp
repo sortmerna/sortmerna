@@ -1301,10 +1301,10 @@ main(int argc,
   }
     
   // If --num_alignments output was chosen, check an alignment format has also been chosen
-  if ( num_alignments_gv_set && !(blastout_gv || samout_gv) )
+  if ( num_alignments_gv_set && !(blastout_gv || samout_gv || fastxout_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] has been set but no output "
-            "format has been chosen (--blast or --sam).\n\n","\033[0;31m","\033[0m");
+            "format has been chosen (--blast, --sam or --fastx).\n\n","\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
 
@@ -1324,7 +1324,8 @@ main(int argc,
     exit(EXIT_FAILURE);
   }
         
-  // Option --print_all_reads can only be used with Blast-like tabular formats (not pairwise)
+  // Option --print_all_reads can only be used with Blast-like tabular
+  // and SAM formats (not pairwise)
   if ( print_all_reads_gv && blastout_gv && (blast_outfmt < 1) )
   {
     fprintf(stderr,"\n  %sERROR%s: --print_all_reads [BOOL] can only be used for BLAST "
@@ -1367,7 +1368,7 @@ main(int argc,
     fprintf(stderr,"\n  %sERROR%s: --id [INT] and --coverage [INT] can only be used "
             "together with --otu_map.\n","\033[0;31m","\033[0m");
     fprintf(stderr,"  These two options are used for constructing the OTU map by "
-            "filtering the alignments passing the E-value threshold.\n\n");
+            "filtering alignments passing the E-value threshold.\n\n");
     exit(EXIT_FAILURE);
   }
       
