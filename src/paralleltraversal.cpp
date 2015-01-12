@@ -1300,7 +1300,7 @@ paralleltraversal ( char* inputreads,
                    "\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
-    
+
   // check which file format to parse: fasta or fastq
   char c;
   int32_t rb = -1;

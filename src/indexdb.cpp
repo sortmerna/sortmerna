@@ -1170,7 +1170,7 @@ int main (int argc, char** argv)
             printlist();
           }
         }
-        /// maximum positions to store for a unique L-mer
+        // maximum positions to store for a unique L-mer
         else if ( strcmp ( myoption, "max_pos" ) == 0 )
         {
           if (argv[narg+1] == NULL)
@@ -1180,7 +1180,7 @@ int main (int argc, char** argv)
                            "\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
-          /// set max_pos
+          // set max_pos
           if ( !max_pos_set )
           {
             if ( argv[narg+1][0] == '-' )
@@ -1262,7 +1262,7 @@ int main (int argc, char** argv)
       break;          
 			case 'm':
 			{
-				/// set memory for index (in Mbytes)
+				// set memory for index (in Mbytes)
 				if ( !mem_is_set )
 				{
           // RAM limit for mmap'ing reads in megabytes
@@ -1287,7 +1287,7 @@ int main (int argc, char** argv)
       break;      
 			case 'v':
 			{
-				/// verbose
+				// verbose
 				if ( !verbose )
 				{
 					verbose = true;
@@ -1297,7 +1297,7 @@ int main (int argc, char** argv)
       break;
 			case 'h':
 			{
-				/// help
+				// help
         welcome();
 				printlist();
 			}
@@ -1311,7 +1311,7 @@ int main (int argc, char** argv)
 		}//~switch
 	}//~while ( narg < argc )
 
-	/// check that the database file has been provided
+	// check that the database file has been provided
   if ( myfiles.empty() )
   {
 		fprintf(stderr,"\n  %sERROR%s: a FASTA reference database & index name "
@@ -1320,42 +1320,46 @@ int main (int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
     
-	/// set the default value for seed length
+	// set the default value for seed length
 	if ( !lnwin_set ) lnwin_gv = 18;
-  /// set the default interval length
+  // set the default interval length
   if ( !interval_set ) interval = 1;
-  /// set the default max_pos, store maximum 10000 positions for each L-mer
+  // set the default max_pos, store maximum 10000 positions for each L-mer
   if ( !max_pos_set ) max_pos = 10000;
     
 	pread_gv = lnwin_gv+1;
 	partialwin_gv = lnwin_gv/2;
     
-	/// default memory for building index (3072 Mbytes)
+	// default memory for building index (3072 Mbytes)
 	if ( !mem_is_set ) mem = 3072;
     
 	mask32 = (1<<lnwin_gv)-1;
 	mask64 = (2ULL<<((pread_gv*2)-1))-1;
     
-  /// temporary file to store keys for building the CMPH
+  // temporary file to store keys for building the CMPH
   int32_t pid = getpid();
   char pidStr[4000];
   sprintf(pidStr,"%d",pid);
-  char keys_str[2000] = "";
+  char keys_str[4000] = "";
   char* tmpdir_env = NULL;
     
-  /// tmpdir provided
+  // tmpdir provided
   if ( ptr_tmpdir != NULL )
   {
-    strcat(keys_str,ptr_tmpdir);
+    char tmp_str[4000] = "";
+    strcat(tmp_str,ptr_tmpdir);
     char* ptr_tmpdir_t = ptr_tmpdir;
     while (*ptr_tmpdir_t++ != '\0');
-    if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
+    if (*(ptr_tmpdir_t-2) != '/') strcat(tmp_str,"/");
     
-    char try_str[4000] = "";
-    strcat(try_str,keys_str);
-    strcat(try_str,"test.txt");
-    
-    FILE *tmp = fopen(try_str, "w+");
+    // test_pid.txt
+    char tmp_str_test[4100] = "";
+    strcat(tmp_str_test, tmp_str);
+    strcat(tmp_str_test, "test_");
+    strcat(tmp_str_test, pidStr);
+    strcat(tmp_str_test, ".txt");
+
+    FILE *tmp = fopen(tmp_str_test, "w+");
     if ( tmp == NULL )
     {
       fprintf(stderr,"\n  %sERROR%s: cannot access directory %s: "
@@ -1363,58 +1367,94 @@ int main (int argc, char** argv)
                      strerror(errno));
       exit(EXIT_FAILURE);
     }
+    else 
+    {
+      // remove temporary test file
+      if ( remove(tmp_str_test) != 0 )
+	fprintf(stderr, "%sWARNING%s: could not delete temporary file %s\n", "\033[0;33m", "\033[0m", tmp_str_test);
+
+      // set the working directory
+      memcpy(keys_str, tmp_str, 4000);
+    }
   }
-  /// tmpdir not provided, try $TMPDIR, /tmp and local directories
+  // tmpdir not provided, try $TMPDIR, /tmp and local directories
   else
   {
     bool try_further = true;
     
-    /// try TMPDIR
+    // try TMPDIR
     tmpdir_env = getenv("TMPDIR");
     if ( (tmpdir_env != NULL) && (strcmp(tmpdir_env,"")!=0) )
     {
-      strcat(keys_str,tmpdir_env);
+      char tmp_str[4000] = "";
+      strcat(tmp_str,tmpdir_env);
       char* ptr_tmpdir_t = tmpdir_env;
       while (*ptr_tmpdir_t++ != '\0');
-      if (*(ptr_tmpdir_t-2) != '/') strcat(keys_str,"/");
+      if (*(ptr_tmpdir_t-2) != '/') strcat(tmp_str,"/");
       
-      char try_str[4000] = "";
-      strcat(try_str,keys_str);
-      strcat(try_str,"test.txt");
+      char tmp_str_test[4100] = "";
+      strcat(tmp_str_test,tmp_str);
+      strcat(tmp_str_test,"test_");
+      strcat(tmp_str_test,pidStr);
+      strcat(tmp_str_test,".txt");
       
-      FILE *tmp = fopen(try_str, "w+");
+      FILE *tmp = fopen(tmp_str_test, "w+");
       if ( tmp == NULL )
       {
         fprintf(stderr,"\n  %sWARNING%s: no write permissions in "
                        "directory %s: %s\n","\033[0;33m","\033[0m",
                        tmpdir_env,strerror(errno));
         fprintf(stderr,"  will try /tmp/.\n\n");
-        try_further = true;
       }
-      else try_further = false;
+      else
+      {
+	// remove the temporary test file
+	if ( remove(tmp_str_test) !=0 )
+	  fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", "\033[0;33m","\033[0m", tmp_str_test);
+	
+	// set working directory
+	memcpy(keys_str, tmp_str, 4000);
+
+	try_further = false;
+      }
     }
-    /// try "/tmp" directory
+    // try "/tmp" directory
     if ( try_further )
     {
-      FILE *tmp = fopen("/tmp/test.txt", "w+");
+      char tmp_str[4000] = "";
+      strcat(tmp_str, "/tmp/test_");
+      strcat(tmp_str, pidStr);
+      strcat(tmp_str, ".txt");
+
+      FILE *tmp = fopen(tmp_str, "w+");
       if ( tmp == NULL )
       {
         fprintf(stderr,"\n  %sWARNING%s: no write permissions in "
                        "directory /tmp/: %s\n","\033[0;33m","\033[0m",
                        strerror(errno));
         fprintf(stderr,"  will try local directory.\n\n");
-        try_further = true;
       }
       else
       {
+	// remove the temporary test file
+	if ( remove(tmp_str) != 0 )
+	  fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", "\033[0;33m","\033[0m", tmp_str);
+	
+	// set working directory
         strcat(keys_str,"/tmp/");
+
         try_further = false;
       } 
     }
-    /// try the local directory
+    // try the local directory
     if ( try_further )
     {
-      FILE *tmp = fopen("./test.txt", "w+");
+      char tmp_str[4000] = "";
+      strcat(tmp_str, "./test_");
+      strcat(tmp_str, pidStr);
+      strcat(tmp_str, ".txt");
+
+      FILE *tmp = fopen(tmp_str, "w+");
       if ( tmp == NULL )
       {
         fprintf(stderr,"\n  %sERROR%s: no write permissions in current "
@@ -1427,17 +1467,22 @@ int main (int argc, char** argv)
       }
       else
       {
-        strcat(keys_str,"./");
+	// remove the temporary test file
+	if ( remove(tmp_str) != 0 )
+	  fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", "\033[0;33m","\033[0m", tmp_str);
+
+	// set working directory
+        strcat(keys_str, "./");
         try_further = false;
       }
     }
   }
-    
+
   strcat(keys_str, "sortmerna_keys_");
   strcat(keys_str,pidStr);
   strcat(keys_str,".txt");
   
-  /// the list of arguments is correct, welcome the user!
+  // the list of arguments is correct, welcome the user!
   if ( verbose ) welcome();
   
   eprintf("\n  Parameters summary: \n");
@@ -1550,13 +1595,13 @@ int main (int argc, char** argv)
           
           full_len+=len;
           
-          /// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
+          // if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
           len > maxlen ? maxlen = len : maxlen;
             
-        } while ( nt != EOF ); /// read until end of file
+        } while ( nt != EOF ); // read until end of file
         TIME(f);
         
-        /// set file pointer back to the beginning of file
+        // set file pointer back to the beginning of file
         rewind(fp);
         
         eprintf("  done  [%f sec]\n", (f-s));
@@ -2262,6 +2307,8 @@ int main (int argc, char** argv)
             stringstream prt_str;
             prt_str << part;
             string part_str = prt_str.str();
+
+	    eprintf("      temporary file was here: %s\n", keys_str);
    
             // 1. load the kmer 'count' variable /index/kmer.dat
             ofstream oskmer ( (char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), ios::binary );
