@@ -1170,7 +1170,7 @@ int main (int argc, char** argv)
             printlist();
           }
         }
-        /// maximum positions to store for a unique L-mer
+        // maximum positions to store for a unique L-mer
         else if ( strcmp ( myoption, "max_pos" ) == 0 )
         {
           if (argv[narg+1] == NULL)
@@ -1180,7 +1180,7 @@ int main (int argc, char** argv)
                            "\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
-          /// set max_pos
+          // set max_pos
           if ( !max_pos_set )
           {
             if ( argv[narg+1][0] == '-' )
@@ -1262,7 +1262,7 @@ int main (int argc, char** argv)
       break;          
 			case 'm':
 			{
-				/// set memory for index (in Mbytes)
+				// set memory for index (in Mbytes)
 				if ( !mem_is_set )
 				{
           // RAM limit for mmap'ing reads in megabytes
@@ -1287,7 +1287,7 @@ int main (int argc, char** argv)
       break;      
 			case 'v':
 			{
-				/// verbose
+				// verbose
 				if ( !verbose )
 				{
 					verbose = true;
@@ -1297,7 +1297,7 @@ int main (int argc, char** argv)
       break;
 			case 'h':
 			{
-				/// help
+				// help
         welcome();
 				printlist();
 			}
@@ -1311,7 +1311,7 @@ int main (int argc, char** argv)
 		}//~switch
 	}//~while ( narg < argc )
 
-	/// check that the database file has been provided
+	// check that the database file has been provided
   if ( myfiles.empty() )
   {
 		fprintf(stderr,"\n  %sERROR%s: a FASTA reference database & index name "
@@ -1320,11 +1320,11 @@ int main (int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
     
-	/// set the default value for seed length
+	// set the default value for seed length
 	if ( !lnwin_set ) lnwin_gv = 18;
-  /// set the default interval length
+  // set the default interval length
   if ( !interval_set ) interval = 1;
-  /// set the default max_pos, store maximum 10000 positions for each L-mer
+  // set the default max_pos, store maximum 10000 positions for each L-mer
   if ( !max_pos_set ) max_pos = 10000;
     
 	pread_gv = lnwin_gv+1;
@@ -1595,13 +1595,13 @@ int main (int argc, char** argv)
           
           full_len+=len;
           
-          /// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
+          // if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
           len > maxlen ? maxlen = len : maxlen;
             
-        } while ( nt != EOF ); /// read until end of file
+        } while ( nt != EOF ); // read until end of file
         TIME(f);
         
-        /// set file pointer back to the beginning of file
+        // set file pointer back to the beginning of file
         rewind(fp);
         
         eprintf("  done  [%f sec]\n", (f-s));
@@ -2307,6 +2307,8 @@ int main (int argc, char** argv)
             stringstream prt_str;
             prt_str << part;
             string part_str = prt_str.str();
+
+	    eprintf("      temporary file was here: %s\n", keys_str);
    
             // 1. load the kmer 'count' variable /index/kmer.dat
             ofstream oskmer ( (char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), ios::binary );

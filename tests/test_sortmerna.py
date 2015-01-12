@@ -8,7 +8,7 @@ Software tests for the SortMeRNA
 from unittest import TestCase, main
 import re
 from subprocess import Popen, PIPE
-from os import close, walk, remove
+from os import close, walk, remove, environ
 from os.path import abspath, exists, getsize, join, dirname
 from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
@@ -50,9 +50,127 @@ class SortmernaV2Tests(TestCase):
     def tearDown(self):
         rmtree(self.output_dir)
 
-    def test_indexdb_rna_TMPDIR_env(self):
-        """ Test writing to the TMPDIR folder
+    def test_indexdb_rna_tmpdir_arg(self):
+        """ Test writing to --tmpdir
         """
+        tmpdir = mkdtemp()
+        index_db = join(self.output_dir, "GQ099317")
+        index_path = "%s,%s" % (self.db_GQ099317, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "--tmpdir",
+                           tmpdir,
+                           "-v"]
+
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        self.assertTrue(stdout)
+        self.assertFalse(stderr)
+
+        expected_db_files = set(index_db + ext
+                                for ext in ['.bursttrie_0.dat', '.kmer_0.dat',
+                                            '.pos_0.dat', '.stats'])
+        for fp in expected_db_files:
+            self.assertTrue(exists(fp))
+
+        # check temporary folder was that set by --tmpdir
+        query = re.compile('temporary file was here: (.*?)\n')
+        m = query.search(stdout)
+        if m:
+            tmp_dir = dirname(m.group(1))
+        self.assertEqual(tmpdir, tmp_dir)
+
+        rmtree(tmpdir)
+
+
+    def test_indexdb_rna_TMPDIR_env(self):
+        """ Test writing to TMPDIR env variable
+        """
+        tmpdir = mkdtemp()
+        environ["TMPDIR"] = tmpdir
+        
+        index_db = join(self.output_dir, "GQ099317")
+        index_path = "%s,%s" % (self.db_GQ099317, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        self.assertTrue(stdout)
+        self.assertFalse(stderr)
+
+        expected_db_files = set(index_db + ext
+                                for ext in ['.bursttrie_0.dat', '.kmer_0.dat',
+                                            '.pos_0.dat', '.stats'])
+        for fp in expected_db_files:
+            self.assertTrue(exists(fp))
+
+        # check temporary folder was that set by --tmpdir
+        query = re.compile('temporary file was here: (.*?)\n')
+        m = query.search(stdout)
+        if m:
+            tmp_dir = dirname(m.group(1))
+        self.assertEqual(tmpdir, tmp_dir)
+
+        rmtree(tmpdir)
+
+
+    def test_indexdb_rna_tmp_dir_system(self):
+        """ Test writing to /tmp folder
+        """
+        environ["TMPDIR"] = ""
+        index_db = join(self.output_dir, "GQ099317")
+        index_path = "%s,%s" % (self.db_GQ099317, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+
+        self.assertTrue(stdout)
+        self.assertFalse(stderr)
+
+        expected_db_files = set(index_db + ext
+                                for ext in ['.bursttrie_0.dat', '.kmer_0.dat',
+                                            '.pos_0.dat', '.stats'])
+        for fp in expected_db_files:
+            self.assertTrue(exists(fp))
+
+        # check temporary folder was that set by --tmpdir
+        query = re.compile('temporary file was here: (.*?)\n')
+        m = query.search(stdout)
+        if m:
+            tmp_dir = dirname(m.group(1))
+        self.assertEqual("/tmp", tmp_dir)
+
 
     def test_indexdb_default_param(self):
     	""" Test indexing a database using SortMeRNA
