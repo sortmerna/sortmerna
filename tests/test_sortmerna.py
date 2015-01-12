@@ -50,6 +50,10 @@ class SortmernaV2Tests(TestCase):
     def tearDown(self):
         rmtree(self.output_dir)
 
+    def test_indexdb_rna_TMPDIR_env(self):
+        """ Test writing to the TMPDIR folder
+        """
+
     def test_indexdb_default_param(self):
     	""" Test indexing a database using SortMeRNA
         """
