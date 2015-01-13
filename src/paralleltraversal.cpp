@@ -4232,6 +4232,11 @@ paralleltraversal ( char* inputreads,
       fprintf(bilan," Total reads passing %%id and %%coverage thresholds = %u\n", total_reads_mapped_cov);
       fprintf(bilan," Total OTUs = %lu\n", otu_map.size());
     }
+
+    time_t q = time(0);
+    struct tm * now = localtime(&q);
+    
+    fprintf(bilan,"\n %s\n",asctime(now));
     
     fclose(bilan);
     
