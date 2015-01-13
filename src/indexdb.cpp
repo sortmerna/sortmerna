@@ -1579,6 +1579,15 @@ int main (int argc, char** argv)
           
       full_len+=len;
           
+      if ( len < pread_gv )
+      {
+	fprintf(stderr, "\n  %sERROR%s: at least one of your reads is shorter "
+                        "than the seed length %d, please filter out all reads "
+		        "shorter than %d to continue index construction.\n\n",
+		        "\033[0;31m","\033[0m", pread_gv, pread_gv );
+	exit(EXIT_FAILURE);
+      }
+
       // if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
       len > maxlen ? maxlen = len : maxlen;
             
