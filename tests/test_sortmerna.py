@@ -38,6 +38,7 @@ class SortmernaV2Tests(TestCase):
         self.db_arc16s = join(self.root, "silva-arc-16s-database-id95.fasta")
         self.db_gg_13_8 = join(self.root, "gg_13_8_ref_set.fasta")
         self.db_GQ099317 = join(self.root, "ref_GQ099317_forward_and_rc.fasta")
+        self.db_short = join(self.root, "ref_short_seqs.fasta")
 
         # reads
         self.set2 = join(self.root, "set2_environmental_study_550_amplicon.fasta")
@@ -47,8 +48,38 @@ class SortmernaV2Tests(TestCase):
         self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
         self.read_GQ099317 = join(self.root, "illumina_GQ099317.fasta")
 
+
     def tearDown(self):
         rmtree(self.output_dir)
+
+
+    def test_ref_shorter_than_seed(self):
+        """ Test building a database where at least
+            one reference sequence is shorter than the
+            seed length
+        """
+        index_db = join(self.output_dir, "ref_short_seqs.fasta")
+        index_path = "%s,%s" % (self.db_short, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path]
+
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+        proc.wait()
+        stdout, stderr = proc.communicate()
+
+        self.assertTrue(stderr)
+
+        error_msg = """\n  ERROR: at least one of your reads is shorter
+                    than the seed length 19, please filter out all
+                    reads shorter than 19 to continue index construction.\n"""
+
+        self.assertTrue(error_msg, stderr)
+
 
     def test_indexdb_rna_tmpdir_arg(self):
         """ Test writing to --tmpdir
