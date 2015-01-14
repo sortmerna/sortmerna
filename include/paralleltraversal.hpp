@@ -46,29 +46,33 @@
 
 using namespace std;
 
-
-//extern timeval t;
+/*! @brief Number of slots by which to dynamically
+           increment the array storing all alignments
+           per read*/
+#define BEST_HITS_INCREMENT 5
 
 /* for each 18-mer hit on the read, we store the 
    key to find the positions and the window number
    on the read at which the 18-mer occurs   */
 struct id_win
 {
-	// key value to find index positions
-	uint32_t id;
-	// the associated window number on the read 
-	uint32_t win;
+  // key value to find index positions
+  uint32_t id;
+  // the associated window number on the read 
+  uint32_t win;
 };
 
 /* holds the index of the minimum and maximum scoring
    alignments in an array of alignments pointed to by
    s_align* ptr */
-struct triple_s
+struct alignment_struct
 {
-  uint16_t min_index;
-  uint16_t max_index;
+  uint32_t max_size;
+  uint32_t size;
+  uint32_t min_index;
+  uint32_t max_index;
   s_align* ptr;
-  triple_s(uint16_t min, uint16_t max, s_align* p) : min_index(min), max_index(max), ptr(p) {}
+  alignment_struct(uint32_t max_size, uint32_t size, uint32_t min, uint32_t max, s_align* p) : max_size(max_size), size(size), min_index(min), max_index(max), ptr(p) {}
 };
 
 

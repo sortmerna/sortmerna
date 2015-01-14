@@ -82,7 +82,7 @@ extern bool verbose;
 //#define see_binary_output
 
 // DEBUG: code to store the --best INT alignments
-//#define DEBUG_BEST_N
+#define DEBUG_BEST_N
 
 /*! @brief Maximum length of input reads
 	(not limited to this length algorithmically)
@@ -205,7 +205,7 @@ extern bool fastxout_gv;
 extern int32_t min_lis_gv;
 
 /*! @brief Number of best alignments per read to output */
-extern int16_t num_best_hits_gv;
+extern int32_t num_best_hits_gv;
 
 /*! @brief Number of alignments to output
 
