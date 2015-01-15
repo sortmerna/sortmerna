@@ -3036,19 +3036,17 @@ paralleltraversal ( char* inputreads,
 				      uint32_t array_size = alignment->second.size;
 				      uint32_t array_max_size = alignment->second.max_size;
 #ifdef DEBUG_BEST_N
-                                      cout << "smallest_score_index = " << smallest_score_index 
-					   << "\tnum_best_hits_gv = " << num_best_hits_gv << endl;
+                                      cout << "smallest_score_index = " << smallest_score_index << endl; 
                                       cout << "highest_score_index = " << highest_score_index << endl;
+				      cout << "array_size = " << array_size << endl;
+				      cout << "array_max_size = " << array_max_size << endl;
+				      cout << "num_best_hits_gv = " << num_best_hits_gv << endl;
 #endif
                                       // number of alignments stored per read < num_best_hits_gv, 
                                       // add alignment to array without comparison to other members
 				      // of array
 				      if ( array_size < num_best_hits_gv )
 				      {
-#ifdef DEBUG_BEST_N
-					cout << "array_size = " << array_size << endl;
-					cout << "num_best_hits_gv = " << num_best_hits_gv << endl;
-#endif
 					// number of alignments stored per read == maximum number of 
 					// alignments allowed, resize array by another BEST_HITS_INCREMENT slots 
 					if ( array_size == array_max_size )
@@ -3059,8 +3057,8 @@ paralleltraversal ( char* inputreads,
 					  else
 					    new_array_max_size = num_best_hits_gv;
 #ifdef DEBUG_BEST_N
-                                          cout << "max_size = " << array_max_size << endl;
-                                          cout << "increment number of array slots to " << new_array_max_size << endl;
+					  cout << "\t\tresize array.\n";
+                                          cout << "\t\tnew_array_max_size =  " << new_array_max_size << endl;
 #endif
 					  s_align* bigger_alignment_array = new s_align[new_array_max_size]();
 					  if ( bigger_alignment_array == NULL )
@@ -3072,7 +3070,7 @@ paralleltraversal ( char* inputreads,
 					  }
 
 					  // copy smaller array to larger memory slot
-					  memcpy(alignment->second.ptr, bigger_alignment_array, sizeof(s_align)*array_max_size);
+					  memcpy(bigger_alignment_array, alignment->second.ptr, sizeof(s_align)*array_max_size);
 					  // delete smaller array memory
 					  delete [] alignment->second.ptr;
 					  // set pointer to new larger array
@@ -3083,8 +3081,8 @@ paralleltraversal ( char* inputreads,
 					  array_max_size = alignment->second.max_size;
 					}
 #ifdef DEBUG_BEST_N
-                                        cout << "add new alignment to empty slot.\n";
-					cout << "array_max_size = " << array_max_size << endl;
+                                        cout << "\tadd new alignment to empty array slot.\n";
+					cout << "\tarray_max_size = " << array_max_size << endl;
 #endif
 					s_align *smallest_alignment = alignment->second.ptr + array_size;
                                         *smallest_alignment = *result;
@@ -3097,7 +3095,7 @@ paralleltraversal ( char* inputreads,
                                         if ( array_size == num_best_hits_gv )
                                         {
 #ifdef DEBUG_BEST_N
-                                          cout << "find new smallest_score_index of " << num_best_hits_gv << " slots.\n";
+                                          cout << "\t\tfind new smallest_score_index of " << num_best_hits_gv << " slots.\n";
 #endif
                                           uint32_t smallest_score = 1000000;
                                           s_align *this_alignment = alignment->second.ptr;
@@ -3110,24 +3108,23 @@ paralleltraversal ( char* inputreads,
                                             }
                                           }
 #ifdef DEBUG_BEST_N
-                                          cout << "smallest_score_index = " << smallest_score_index << endl;
+                                          cout << "\t\tnew smallest_score_index = " << smallest_score_index << endl;
 #endif
                                           alignment->second.min_index = smallest_score_index;
                                         }
-#ifdef DEBUG_BEST_N
-                                        cout << "free result.\n";
-#endif                                                         
 	                                // update the index position of the first occurrence of the
 					// highest alignment score
 					if ( result->score1 > (alignment->second.ptr + highest_score_index)->score1 )
 					  alignment->second.max_index = array_size - 1;
 
 #ifdef DEBUG_BEST_N
-					cout << "max_index = " << alignment->second.max_index << endl;
+					cout << "\tmax_index = " << alignment->second.max_index << endl;
 #endif
                                         // the maximum possible score for this read has been found
-                                        if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
-                                        
+                                        if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;                                  
+#ifdef DEBUG_BEST_N
+                                        cout << "\tfree result.\n";
+#endif
                                         // free result
                                         free(result);
                                         result = NULL;                                          
@@ -3140,9 +3137,9 @@ paralleltraversal ( char* inputreads,
                                         // get the alignment with the smallest score
                                         s_align *smallest_alignment = (alignment->second.ptr) + smallest_score_index;
 #ifdef DEBUG_BEST_N
-                                        cout << "replace alignment with higher score" << endl;
-                                        cout << "smallest_alignment->score1 = " << smallest_alignment->score1 << endl;
-                                        cout << "replace alignment in an existing slot.\n";
+                                        cout << "\treplace alignment with higher score.\n";
+                                        cout << "\tsmallest_alignment->score1 = " << smallest_alignment->score1 << endl;
+                                        cout << "\treplace alignment in an existing slot.\n";
 #endif
 					// update max_index to the position of the first occurrence
 					// of the highest scoring alignment
@@ -3172,7 +3169,7 @@ paralleltraversal ( char* inputreads,
                                           }
                                         }                                                               
 #ifdef DEBUG_BEST_N
-                                        cout << "new smallest_score_index = " << smallest_score_index << endl;
+                                        cout << "\nnew smallest_score_index = " << smallest_score_index << endl;
 #endif                                 
                                         alignment->second.min_index = smallest_score_index;
                                         
@@ -3203,7 +3200,10 @@ paralleltraversal ( char* inputreads,
 				      else max_size = BEST_HITS_INCREMENT;
 
 				      s_align *new_alignment = new s_align[max_size]();
-
+#ifdef DEBUG_BEST_N
+				      cout << "memory allocated for alignment array = "
+					   << sizeof(s_align)*max_size << " bytes" << endl;
+#endif
 				      if ( new_alignment == NULL )
                                       {
                                         fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment "

@@ -49,7 +49,7 @@ using namespace std;
 /*! @brief Number of slots by which to dynamically
            increment the array storing all alignments
            per read*/
-#define BEST_HITS_INCREMENT 5
+#define BEST_HITS_INCREMENT 100
 
 /* for each 18-mer hit on the read, we store the 
    key to find the positions and the window number
