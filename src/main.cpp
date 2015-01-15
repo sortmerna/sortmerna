@@ -69,7 +69,7 @@ bool full_search_gv = false;
 char version_num[] = "2.0-dev, 29/11/2014";
 bool as_percent_gv = false;
 bool pid_gv = false;
-int16_t num_best_hits_gv = 0;
+int32_t num_best_hits_gv = 0;
 
 
 
@@ -865,10 +865,9 @@ main(int argc,
           }
           else
           {
-            if ( (sscanf(argv[narg+1],"%hd",&num_best_hits_gv) != 1) ||
-                 (num_best_hits_gv <= 0) )
+            if ( (sscanf(argv[narg+1],"%hd",&num_best_hits_gv) != 1 ) )
             {
-              fprintf(stderr,"\n  %sERROR%s: --best [INT] must be > 0.\n\n",
+              fprintf(stderr,"\n  %sERROR%s: could not read --best [INT] as integer.\n\n",
                       "\033[0;31m","\033[0m");
               exit(EXIT_FAILURE);
             }
