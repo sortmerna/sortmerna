@@ -140,19 +140,20 @@ char complement[4] = {3,2,1,0};
 bool smallest ( const mypair &a, const mypair &b )
 {
   if ( a.first == b.first ) return ( a.second < b.second );
-  else return ( a.first < b.first );
+  return ( a.first < b.first );
 }
 
 /*! @fn largest()
     @brief Return the largest integer of two input integers
     @param const mypair &a
     @param const mypair &b
-    @return largest integer of a and b, or a if a == b
+    @return 'a' goes before 'b' if a.first > b.first, otherwise
+            'a'
 */
 bool largest ( const mypair &a, const mypair &b )
 {
   if ( a.first == b.first ) return ( a.second > b.second );
-  else return ( a.first > b.first );
+  return ( a.first > b.first );
 }
 
 /* @function format_forward()
@@ -2334,7 +2335,7 @@ paralleltraversal ( char* inputreads,
               }
               // the maximum scoring alignment has been found, go to next read
 	      // (unless all alignments are being output)
-              else if ( (min_lis_gv > 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) continue;
+              else if ( (num_best_hits_gv > 0) && (min_lis_gv > 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) continue;
             }
                         
             // read on integer alphabet {0,1,2,3}
@@ -2684,7 +2685,18 @@ paralleltraversal ( char* inputreads,
                                         
                     // sort the highest scoring sequences to the head of the array
                     sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
-                                                                                
+
+		    /* tmp
+		    cout << "\npass = " << pass_n << endl;
+		    for ( int r = 0; r < most_frequent_seq.size(); r++ )
+		    {
+		      cout << most_frequent_seq[r].second << "\t";
+		      char* tt = reference_seq[(2*(int)most_frequent_seq[r].second)];
+		      while (*tt != ' ' ) cout << (char)*tt++;
+		      cout << "\t " << most_frequent_seq[r].first << endl;
+		    }
+		    */
+
                     // STEP 3: for each reference sequence candidate
                     // (starting from highest scoring)
                     for ( uint32_t k = 0; k < most_frequent_seq.size(); k++ )
@@ -2700,7 +2712,8 @@ paralleltraversal ( char* inputreads,
                       cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
                       cout << "\t\t\t\tnumseq_part = " << numseq_part << endl; //TESTING
                       cout << "\t\t\t\tindex size for reference_seq = " << (numseq_part<<1) << endl; //TESTING
-                      cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
+		      if ( min_lis_gv > 0 )
+			cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
 #endif                             
                       // not enough window hits, try to collect more hits or go to next read
                       if ( max_occur < (uint32_t)seed_hits_gv ) break;
@@ -3045,14 +3058,14 @@ paralleltraversal ( char* inputreads,
                                       // number of alignments stored per read < num_best_hits_gv, 
                                       // add alignment to array without comparison to other members
 				      // of array
-				      if ( array_size < num_best_hits_gv )
+				      if ( (num_best_hits_gv == 0) || (array_size < num_best_hits_gv) )
 				      {
 					// number of alignments stored per read == maximum number of 
 					// alignments allowed, resize array by another BEST_HITS_INCREMENT slots 
 					if ( array_size == array_max_size )
 					{
 					  uint32_t new_array_max_size = 0;
-					  if ( array_size + BEST_HITS_INCREMENT <= num_best_hits_gv )
+					  if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= num_best_hits_gv) )
 					    new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
 					  else
 					    new_array_max_size = num_best_hits_gv;
@@ -3092,6 +3105,8 @@ paralleltraversal ( char* inputreads,
 
                                         // all slots have been filled, find slot with smallest
                                         // alignment score and set the smallest_score_index
+					// (this is not done when num_best_hits_gv == 0 since
+					// we want to output all alignments for some --min_lis)
                                         if ( array_size == num_best_hits_gv )
                                         {
 #ifdef DEBUG_BEST_N
@@ -3196,7 +3211,8 @@ paralleltraversal ( char* inputreads,
 				      uint32_t max_size = 0;
 				      
                                       // create new instance of alignments
-				      if ( num_best_hits_gv < BEST_HITS_INCREMENT+1 ) max_size = num_best_hits_gv;
+				      if ( (num_best_hits_gv > 0) && (num_best_hits_gv < BEST_HITS_INCREMENT+1) )
+					max_size = num_best_hits_gv;
 				      else max_size = BEST_HITS_INCREMENT;
 
 				      s_align *new_alignment = new s_align[max_size]();
@@ -3868,7 +3884,7 @@ paralleltraversal ( char* inputreads,
                   uint32_t length = (0xfffffff0&*(ptr_alignment->cigar + c2))>>4;
                   if (letter == 0) 
                   {
-                    for (int p = 0; p < length; ++p)
+                    for (int u = 0; u < length; ++u)
                     {
                       if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
                       else ++id;
@@ -4042,15 +4058,7 @@ paralleltraversal ( char* inputreads,
                   }         
                 }//~if (samout_gv || blastout_gv)
               }//~if alignment at current database and index part loaded in RAM
-              // increment pointer to next best alignment, or
-              // exit loop if at final alignment                          
-              if ( p+1 < num_best_hits_gv )
-              {
-                ptr_alignment++;
-              
-                // break if an alignment doesn't exist
-                if ( ptr_alignment->cigar == NULL ) break;
-              }
+	      ptr_alignment++;
             }//~for all best alignments
           }//~for all reads
                         
