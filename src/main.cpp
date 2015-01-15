@@ -865,7 +865,7 @@ main(int argc,
           }
           else
           {
-            if ( (sscanf(argv[narg+1],"%hd",&num_best_hits_gv) != 1 ) )
+            if ( (sscanf(argv[narg+1],"%d",&num_best_hits_gv) != 1 ) )
             {
               fprintf(stderr,"\n  %sERROR%s: could not read --best [INT] as integer.\n\n",
                       "\033[0;31m","\033[0m");
