@@ -14,6 +14,7 @@ from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
 
 from skbio.parse.sequences import parse_fasta
+from skbio.util import remove_files
 
 
 # ----------------------------------------------------------------------------
@@ -31,7 +32,7 @@ class SortmernaV2Tests(TestCase):
 
     def setUp(self):
         self.output_dir = mkdtemp()
-        self.root = "/Users/evko1434/sortmerna/tests/data"
+        self.root = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
 
         # reference databases
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
@@ -48,9 +49,32 @@ class SortmernaV2Tests(TestCase):
         self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
         self.read_GQ099317 = join(self.root, "illumina_GQ099317.fasta")
 
+        # create temporary file with reference sequence
+        f, self.subject_str_fp = mkstemp(prefix='temp_subject_',
+                                         suffix='.fasta')
+        close(f)
+
+        # write _reference_ sequences to tmp file
+        with open(self.subject_str_fp, 'w') as tmp:
+            tmp.write(subject_str)
+        tmp.close()
+
+        # create temporary file with query sequence
+        f, self.query_str_fp = mkstemp(prefix='temp_query_',
+                                       suffix='.fasta')
+        close(f)
+
+        # write _reference_ sequences to tmp file
+        with open(self.query_str_fp, 'w') as tmp:
+            tmp.write(query_str)
+        tmp.close()
+
+        self.files_to_remove = [self.subject_str_fp, self.query_str_fp]
+
 
     def tearDown(self):
         rmtree(self.output_dir)
+        remove_files(self.files_to_remove)
 
 
     def test_ref_shorter_than_seed(self):
@@ -74,11 +98,9 @@ class SortmernaV2Tests(TestCase):
 
         self.assertTrue(stderr)
 
-        error_msg = """\n  ERROR: at least one of your reads is shorter
-                    than the seed length 19, please filter out all
-                    reads shorter than 19 to continue index construction.\n"""
+        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: at least one of your reads is shorter than the seed length 19, please filter out all reads shorter than 19 to continue index construction.\n\n"""
 
-        self.assertTrue(error_msg, stderr)
+        self.assertEqual(error_msg, stderr)
 
 
     def test_indexdb_rna_tmpdir_arg(self):
@@ -325,8 +347,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -393,7 +415,7 @@ class SortmernaV2Tests(TestCase):
                              "--log",
                              "--otu_map",
                              "--de_novo_otu",
-                             "--blast", "3",
+                             "--blast", "1 cigar qcov",
                              "--fastx",
                              "-v"]
 
@@ -405,8 +427,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -499,7 +521,7 @@ class SortmernaV2Tests(TestCase):
                              "--log",
                              "--otu_map",
                              "--de_novo_otu",
-                             "--blast", "3",
+                             "--blast", "1 cigar qcov",
                              "--fastx",
                              "--best", "5",
                              "-v"]
@@ -512,8 +534,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -626,7 +648,7 @@ class SortmernaV2Tests(TestCase):
                              "--log",
                              "--otu_map",
                              "--de_novo_otu",
-                             "--blast", "3",
+                             "--blast", "1 cigar qcov",
                              "--fastx",
                              "-m", "1",
                              "-v"]
@@ -639,8 +661,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -753,7 +775,7 @@ class SortmernaV2Tests(TestCase):
                              "--log",
                              "--otu_map",
                              "--de_novo_otu",
-                             "--blast", "3",
+                             "--blast", "1 cigar qcov",
                              "--fastx",
                              "-v"]
 
@@ -765,8 +787,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -885,8 +907,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -967,8 +989,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         # Correct number of clusters in OTU-map
         with open(aligned_basename + ".log", 'U') as f_log:
@@ -1032,8 +1054,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -1091,8 +1113,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -1150,8 +1172,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         f_log = open(aligned_basename + ".log", "U")
         f_log_str = f_log.read()
@@ -1224,8 +1246,8 @@ class SortmernaV2Tests(TestCase):
         proc.wait()
 
         stdout, stderr = proc.communicate()
-
-        print stderr
+        if stderr:
+            print stderr
 
         sam_alignments_expected = [['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
                                     '0',
@@ -1265,7 +1287,393 @@ class SortmernaV2Tests(TestCase):
         for alignment in sam_alignments_expected:
             self.assertTrue(alignment in sam_alignments)
 
-        
+    def test_cigar_lcs_1(self):
+        """ Test the following case for alignment:
+            beginning from align_ref_start = 0 and align_que_start = X, the read finishes
+            before the end of the reference
+                      ref |----------------|
+           que |------------------------|
+                            LIS |-----|
+                          ^
+                          align_que_start
+        """
+        index_db = join(self.output_dir, "subject_str")
+        index_path = "%s,%s" % (self.subject_str_fp, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+ 
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.query_str_fp,
+                             "--sam",
+                             "--blast", "1 qstrand cigar",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+        if stderr:
+            print stderr
+
+        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412",
+                              "64", "30", "59", "1470", "2", "1429", "0",
+                              "2041", "+",
+                              "58S56M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1243M17S"]
+
+        with open("%s.blast" % aligned_basename, 'U') as aligned_f:
+            for line in aligned_f:
+                actual_alignment = line.strip().split('\t')
+
+        expected_alignment.sort()
+        actual_alignment.sort()
+
+        self.assertEqual(expected_alignment, actual_alignment)
+
+    def test_blast_format_0(self):
+        """ Test BLAST-like pairwise format
+        """
+        index_db = join(self.output_dir, "subject_str")
+        index_path = "%s,%s" % (self.subject_str_fp, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+ 
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.query_str_fp,
+                             "--sam",
+                             "--blast", "0",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+        if stderr:
+            print stderr
+
+        expected_alignment = """Sequence ID: Unc49508 count=1; cluster_weight=4; cluster=Unc49508; cluster_score=1.000000; cluster_center=True; 
+Query ID: AB271211 1487 residues
+Score: 2394 bits (2041) Expect: 0   strand: +
+
+Target:        2    AGAGTTTGATCCTGGCTCAGGACGAACGCTGGCGGCGTGCTTAACACATGCAAGTC--AC    59
+                    ||||||||||||||||||||||*|||||||||||||||||*|||||||||||||||  ||
+Query:        59    AGAGTTTGATCCTGGCTCAGGATGAACGCTGGCGGCGTGCCTAACACATGCAAGTCGAAC    118
+
+Target:       60    GGGGGCCCGCAAGGGT--AACCGGCGAACGGGTGCGTAACACGTGAGCAATCTGCCGTC-    116
+                    |||***|**|  ||*|  *|**||||*|||||||*|||||*|||*|| |||||**|*|| 
+Query:       119    GGGAATCTTC--GGATTCTAGTGGCGGACGGGTGAGTAACGCGTAAG-AATCTAACTTCA    175
+
+Target:      117    -CACTGGGGGATAGCCG-GCCCAACGGCCGGGTAATACCGCATACGTTCCCTTGCCGGCA    174
+                     *||  |||||*|*|*| |***||| |*|*|*|||||||     ||*|   *|||||**|
+Query:       176    GGAC--GGGGACAACAGTGGGAAAC-GACTGCTAATACC-----CGAT---GTGCCGCGA    224
+
+Target:      175    TCGGTGGGGGAGGAAACCTCCGGGGGTGGACGAGGAGCTCGCGGCCTATCAGCTAGTTGG    234
+                      |||       |||||||****||***||*||||||||*|||*|**||*||||||||||
+Query:       225    --GGT-------GAAACCTAATTGGCCTGAAGAGGAGCTTGCGTCTGATTAGCTAGTTGG    275
+
+Target:      235    TGGGGTCACGGCCTACCAAGGCGATGACGGGTAGCTGGTCTGAGAGGATGGCCAGCCACA    294
+                    ||||||*|**||||||||||||||*||***||||||||||||||||||||**||||||||
+Query:       276    TGGGGTAAGAGCCTACCAAGGCGACGATCAGTAGCTGGTCTGAGAGGATGAGCAGCCACA    335
+
+Target:      295    TTGGGACTGAGATACGGCCCAGACTCCTACGGGAGGCAGCAGTGGGGAATATTGCGCAAT    354
+                    *|||||||||||*|||||||||||||||||||||||||||||||||||||*||*||||||
+Query:       336    CTGGGACTGAGACACGGCCCAGACTCCTACGGGAGGCAGCAGTGGGGAATTTTCCGCAAT    395
+
+Target:      355    GGCCGCAAGGCTGACGCAGCGACGCCGCGTGAGGGAGGAAGGTCTTTGGATTGTAAACCT    414
+                    ||*||*|||*||||||*|||*|||||||||||||||||||||||||||||||||||||||
+Query:       396    GGGCGAAAGCCTGACGGAGCAACGCCGCGTGAGGGAGGAAGGTCTTTGGATTGTAAACCT    455
+
+Target:      415    CTTTTCTCAAGGAAGAAGTTCTGACGGTACTTGAGGAATCAGCCTCGGCTAACTCCGTGC    474
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       456    CTTTTCTCAAGGAAGAAGTTCTGACGGTACTTGAGGAATCAGCCTCGGCTAACTCCGTGC    515
+
+Target:      475    CAGCAGCCGCGGTAATACGGGGGAGGCAAGCGTTATCCGGAATTATTGGGCGTAAAGCGT    534
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       516    CAGCAGCCGCGGTAATACGGGGGAGGCAAGCGTTATCCGGAATTATTGGGCGTAAAGCGT    575
+
+Target:      535    CCGCAGGTGGTCAGCCAAGTCTGCCGTCAAATCAGGTTGCTTAACGACCTAAAGGCGGTG    594
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       576    CCGCAGGTGGTCAGCCAAGTCTGCCGTCAAATCAGGTTGCTTAACGACCTAAAGGCGGTG    635
+
+Target:      595    GAAACTGGCAGACTAGAGAGCAGTAGGGGTAGCAGGAATTCCCAGTGTAGCGGTGAAATG    654
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       636    GAAACTGGCAGACTAGAGAGCAGTAGGGGTAGCAGGAATTCCCAGTGTAGCGGTGAAATG    695
+
+Target:      655    CGTAGAGATTGGGAAGAACATCGGTGGCGAAAGCGTGCTACTGGGCTGTATCTGACACTC    714
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       696    CGTAGAGATTGGGAAGAACATCGGTGGCGAAAGCGTGCTACTGGGCTGTATCTGACACTC    755
+
+Target:      715    AGGGACGAAAGCTAGGGGAGCGAAAGGGATTAGATACCCCTGTAGTCCTAGCCGTAAACG    774
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       756    AGGGACGAAAGCTAGGGGAGCGAAAGGGATTAGATACCCCTGTAGTCCTAGCCGTAAACG    815
+
+Target:      775    ATGGATACTAGGCGTGGCTTGTATCGACCCGAGCCGTGCCGAAGCTAACGCGTTAAGTAT    834
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       816    ATGGATACTAGGCGTGGCTTGTATCGACCCGAGCCGTGCCGAAGCTAACGCGTTAAGTAT    875
+
+Target:      835    CCCGCCTGGGGAGTACGCACGCAAGTGTGAAACTCAAAGGAATTGACGGGGGCCCGCACA    894
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       876    CCCGCCTGGGGAGTACGCACGCAAGTGTGAAACTCAAAGGAATTGACGGGGGCCCGCACA    935
+
+Target:      895    AGCGGTGGAGTATGTGGTTTAATTCGATGCAACGCGAAGAACCTTACCAAGACTTGACAT    954
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       936    AGCGGTGGAGTATGTGGTTTAATTCGATGCAACGCGAAGAACCTTACCAAGACTTGACAT    995
+
+Target:      955    GTCGCGAACCCTGGTGAAAGCTGGGGGTGCCTTCGGGAGCGCGAACACAGGTGGTGCATG    1014
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:       996    GTCGCGAACCCTGGTGAAAGCTGGGGGTGCCTTCGGGAGCGCGAACACAGGTGGTGCATG    1055
+
+Target:     1015    GCTGTCGTCAGCTCGTGTCGTGAGATGTTGGGTTAAGTCCCGCAACGAGCGCAACCCTCG    1074
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:      1056    GCTGTCGTCAGCTCGTGTCGTGAGATGTTGGGTTAAGTCCCGCAACGAGCGCAACCCTCG    1115
+
+Target:     1075    TTCTTAGTTGCCAGCATTAAGTTGGGGACTCTAAGGAGACTGCCGGTGACAAACCGGAGG    1134
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:      1116    TTCTTAGTTGCCAGCATTAAGTTGGGGACTCTAAGGAGACTGCCGGTGACAAACCGGAGG    1175
+
+Target:     1135    AAGGTGGGGATGACGTCAAGTCAGCATGCCCCTTACGTCTTGGGCGACACACGTACTACA    1194
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:      1176    AAGGTGGGGATGACGTCAAGTCAGCATGCCCCTTACGTCTTGGGCGACACACGTACTACA    1235
+
+Target:     1195    ATGGTCGGGACAAAGGGCAGCGAACTCGCGAGAGCCAGCGAATCCCAGCAAACCCGGCCT    1254
+                    ||||||||||||||||||||||||||*|||||||||||||||||||||||||||||||||
+Query:      1236    ATGGTCGGGACAAAGGGCAGCGAACTTGCGAGAGCCAGCGAATCCCAGCAAACCCGGCCT    1295
+
+Target:     1255    CAGTTCAGATTGCAGGCTGCAACTCGCCTGCATGAAGGAGGAATCGCTAGTAATCGCCGG    1314
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:      1296    CAGTTCAGATTGCAGGCTGCAACTCGCCTGCATGAAGGAGGAATCGCTAGTAATCGCCGG    1355
+
+Target:     1315    TCAGCATACGGCGGTGAATTCGTTCCCGGGCCTTGTACACACCGCCCGTCACACCATGGA    1374
+                    ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:      1356    TCAGCATACGGCGGTGAATTCGTTCCCGGGCCTTGTACACACCGCCCGTCACACCATGGA    1415
+
+Target:     1375    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1429
+                    |||||||||||||||||||||||||||||||||||||||||||||||||||||||
+Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1470
+
+        """
+
+        with open("%s.blast" % aligned_basename, 'U') as aligned_f:
+            actual_alignment = aligned_f.readlines()
+
+        self.assertTrue(expected_alignment, actual_alignment)
+
+    def test_blast_format_1(self):
+        """ Test BLAST-like pairwise format -m8
+        """
+        index_db = join(self.output_dir, "subject_str")
+        index_path = "%s,%s" % (self.subject_str_fp, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+ 
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.query_str_fp,
+                             "--sam",
+                             "--blast", "1",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+        if stderr:
+            print stderr
+
+        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2041"]
+
+        with open("%s.blast" % aligned_basename, 'U') as aligned_f:
+            for line in aligned_f:
+                actual_alignment = line.strip().split('\t')
+
+        expected_alignment.sort()
+        actual_alignment.sort()
+
+        self.assertEqual(expected_alignment, actual_alignment)
+
+    def test_blast_format_0_other(self):
+        """ Test BLAST-like pairwise format with option '0 qstrand'
+        """
+        index_db = join(self.output_dir, "subject_str")
+        index_path = "%s,%s" % (self.subject_str_fp, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+ 
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.query_str_fp,
+                             "--sam",
+                             "--blast", "0 qstrand",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+        self.assertTrue(stderr)
+
+        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: for human-readable format, --blast [STRING] cannot contain more fields than '0'.\n\n"""
+
+        self.assertEqual(error_msg, stderr)
+
+    def test_blast_format_1_other(self):
+        """ Test BLAST-like -m8 tabular format with unsupported field
+        """
+        index_db = join(self.output_dir, "subject_str")
+        index_path = "%s,%s" % (self.subject_str_fp, index_db)
+
+        indexdb_command = ["indexdb_rna",
+                           "--ref",
+                           index_path,
+                           "-v"]
+ 
+        proc = Popen(indexdb_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        aligned_basename = join(self.output_dir, "aligned")
+
+        sortmerna_command = ["sortmerna",
+                             "--ref", index_path,
+                             "--aligned", aligned_basename,
+                             "--reads", self.query_str_fp,
+                             "--sam",
+                             "--blast", "1 sstrand",
+                             "-v"]
+
+        proc = Popen(sortmerna_command,
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     close_fds=True)
+
+        proc.wait()
+
+        stdout, stderr = proc.communicate()
+        self.assertTrue(stderr)
+
+        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: `sstrand` is not supported in --blast [STRING].\n\n"""
+
+        self.assertEqual(error_msg, stderr)
+
+
+subject_str = """>Unc49508 count=1; cluster_weight=4; cluster=Unc49508; cluster_score=1.000000; cluster_center=True; 
+tagagtttgatcctggctcaggacgaacgctggcggcgtgcttaacacatgcaagtcacgggggcccgcaagggtaaccggcgaacgggtgcgta
+acacgtgagcaatctgccgtccactgggggatagccggcccaacggccgggtaataccgcatacgttcccttgccggcatcggtgggggaggaaa
+cctccgggggtggacgaggagctcgcggcctatcagctagttggtggggtcacggcctaccaaggcgatgacgggtagctggtctgagaggatgg
+ccagccacattgggactgagatacggcccagactcctacgggaggcagcagtggggaatattgcgcaatggccgcaaggctgacgcagcgacgcc
+gcgtgagggaggaaggtctttggattgtaaacctcttttctcaaggaagaagttctgacggtacttgaggaatcagcctcggctaactccgtgcc
+agcagccgcggtaatacgggggaggcaagcgttatccggaattattgggcgtaaagcgtccgcaggtggtcagccaagtctgccgtcaaatcagg
+ttgcttaacgacctaaaggcggtggaaactggcagactagagagcagtaggggtagcaggaattcccagtgtagcggtgaaatgcgtagagattg
+ggaagaacatcggtggcgaaagcgtgctactgggctgtatctgacactcagggacgaaagctaggggagcgaaagggattagatacccctgtagt
+cctagccgtaaacgatggatactaggcgtggcttgtatcgacccgagccgtgccgaagctaacgcgttaagtatcccgcctggggagtacgcacg
+caagtgtgaaactcaaaggaattgacgggggcccgcacaagcggtggagtatgtggtttaattcgatgcaacgcgaagaaccttaccaagacttg
+acatgtcgcgaaccctggtgaaagctgggggtgccttcgggagcgcgaacacaggtggtgcatggctgtcgtcagctcgtgtcgtgagatgttgg
+gttaagtcccgcaacgagcgcaaccctcgttcttagttgccagcattaagttggggactctaaggagactgccggtgacaaaccggaggaaggtg
+gggatgacgtcaagtcagcatgccccttacgtcttgggcgacacacgtactacaatggtcgggacaaagggcagcgaactcgcgagagccagcga
+atcccagcaaacccggcctcagttcagattgcaggctgcaactcgcctgcatgaaggaggaatcgctagtaatcgccggtcagcatacggcggtg
+aattcgttcccgggccttgtacacaccgcccgtcacaccatggaagctggtcacgcccgaagtcattacctcaaccgcaaggagggggatgccta
+aggcagggctagtgactggggtgaagtcgtaacaaggtagccgt
+"""
+
+query_str = """>AB271211 1487 residues
+TCCAACGCGTTGGGAGCTCTCCCATATGGTCGACCTGCAGGCGGCCGCACTAGTGATTAG
+AGTTTGATCCTGGCTCAGGATGAACGCTGGCGGCGTGCCTAACACATGCAAGTCGAACGG
+GAATCTTCGGATTCTAGTGGCGGACGGGTGAGTAACGCGTAAGAATCTAACTTCAGGACG
+GGGACAACAGTGGGAAACGACTGCTAATACCCGATGTGCCGCGAGGTGAAACCTAATTGG
+CCTGAAGAGGAGCTTGCGTCTGATTAGCTAGTTGGTGGGGTAAGAGCCTACCAAGGCGAC
+GATCAGTAGCTGGTCTGAGAGGATGAGCAGCCACACTGGGACTGAGACACGGCCCAGACT
+CCTACGGGAGGCAGCAGTGGGGAATTTTCCGCAATGGGCGAAAGCCTGACGGAGCAACGC
+CGCGTGAGGGAGGAAGGTCTTTGGATTGTAAACCTCTTTTCTCAAGGAAGAAGTTCTGAC
+GGTACTTGAGGAATCAGCCTCGGCTAACTCCGTGCCAGCAGCCGCGGTAATACGGGGGAG
+GCAAGCGTTATCCGGAATTATTGGGCGTAAAGCGTCCGCAGGTGGTCAGCCAAGTCTGCC
+GTCAAATCAGGTTGCTTAACGACCTAAAGGCGGTGGAAACTGGCAGACTAGAGAGCAGTA
+GGGGTAGCAGGAATTCCCAGTGTAGCGGTGAAATGCGTAGAGATTGGGAAGAACATCGGT
+GGCGAAAGCGTGCTACTGGGCTGTATCTGACACTCAGGGACGAAAGCTAGGGGAGCGAAA
+GGGATTAGATACCCCTGTAGTCCTAGCCGTAAACGATGGATACTAGGCGTGGCTTGTATC
+GACCCGAGCCGTGCCGAAGCTAACGCGTTAAGTATCCCGCCTGGGGAGTACGCACGCAAG
+TGTGAAACTCAAAGGAATTGACGGGGGCCCGCACAAGCGGTGGAGTATGTGGTTTAATTC
+GATGCAACGCGAAGAACCTTACCAAGACTTGACATGTCGCGAACCCTGGTGAAAGCTGGG
+GGTGCCTTCGGGAGCGCGAACACAGGTGGTGCATGGCTGTCGTCAGCTCGTGTCGTGAGA
+TGTTGGGTTAAGTCCCGCAACGAGCGCAACCCTCGTTCTTAGTTGCCAGCATTAAGTTGG
+GGACTCTAAGGAGACTGCCGGTGACAAACCGGAGGAAGGTGGGGATGACGTCAAGTCAGC
+ATGCCCCTTACGTCTTGGGCGACACACGTACTACAATGGTCGGGACAAAGGGCAGCGAAC
+TTGCGAGAGCCAGCGAATCCCAGCAAACCCGGCCTCAGTTCAGATTGCAGGCTGCAACTC
+GCCTGCATGAAGGAGGAATCGCTAGTAATCGCCGGTCAGCATACGGCGGTGAATTCGTTC
+CCGGGCCTTGTACACACCGCCCGTCACACCATGGAAGCTGGTCACGCCCGAAGTCATTAC
+CTCAACCGCAAGGAGGGGGATGCCTAAGGCAGGGCTAGTGACTGGGG
+""" 
 
 if __name__ == '__main__':
     main()

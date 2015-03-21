@@ -4,7 +4,7 @@ using namespace std;
 
 /** @file */
 
-/// output Blast-like alignments (code modified from SSW-library)
+// output Blast-like alignments (code modified from SSW-library)
 void report_blast (ofstream &fileout,
                    s_align* a,
                    char* read_name,
@@ -25,7 +25,7 @@ void report_blast (ofstream &fileout,
     char to_char[5] = {'A','C','G','T','N'};
     
     // Blast-like pairwise alignment (only for aligned reads)
-    if ( blast_outfmt == 0 )
+    if ( !blast_tabular )
     {
       fileout << "Sequence ID: ";
       char* tmp = ref_name;
@@ -139,75 +139,93 @@ void report_blast (ofstream &fileout,
         }
       }
     }
-    /// Blast tabular m8 + optional columns for CIGAR and query coverage
-    else if ( blast_outfmt > 0 )
+    // Blast tabular m8 + optional columns for CIGAR and query coverage
+    else
     {
-      /// (1) Query
+      // (1) Query
       while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
       
-      /// print null alignment for non-aligned read
+      // print null alignment for non-aligned read
       if ( print_all_reads_gv && (a == NULL) )
       {
         fileout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
-        if ( blast_outfmt > 1 ) fileout << "\t*";
-        else fileout << "\n";
-        if ( blast_outfmt > 2 ) fileout << "\t0\n";
+        for ( int l = 0; l < user_opts.size(); l++ )
+        {
+          if ( user_opts[l].compare("cigar") == 0 )
+            fileout << "\t*";
+          else if ( user_opts[l].compare("qcov") == 0 )
+            fileout << "\t0";
+          else if ( user_opts[l].compare("qstrand") == 0)
+            fileout << "\t*";
+          fileout << "\n";
+        }
         return ;
       }
         
       fileout << "\t";
-      /// (2) Subject
+      // (2) Subject
       while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t')) fileout << (char)*ref_name++;
       fileout << "\t";
-      /// (3) %id
+      // (3) %id
       fileout.precision(3);
       fileout << id*100 << "\t";
-      /// (4) alignment length
+      // (4) alignment length
       fileout << (a->read_end1 - a->read_begin1 +1 ) << "\t";
-      /// (5) mismatches
+      // (5) mismatches
       fileout << mismatches << "\t";
-      /// (6) gap openings
+      // (6) gap openings
       fileout << gaps << "\t";
-      /// (7) q.start
+      // (7) q.start
       fileout << a->read_begin1+1 << "\t";
-      /// (8) q.end
+      // (8) q.end
       fileout << a->read_end1+1 << "\t";
-      /// (9) s.start
+      // (9) s.start
       fileout << a->ref_begin1+1 << "\t";
-      /// (10) s.end
+      // (10) s.end
       fileout << a->ref_end1+1 << "\t";
-      /// (11) e-value
+      // (11) e-value
       fileout << evalue << "\t";
-      /// (12) bit score
+      // (12) bit score
       fileout << bitscore;
-      /// (13) optional: output CIGAR
-      if ( blast_outfmt > 1 )
+      // OPTIONAL columns
+      for ( uint32_t l = 0; l < user_opts.size(); l++ )
       {
-        fileout << "\t";
-        /// masked region at beginning of alignment
-        if ( a->read_begin1 != 0 ) fileout << a->read_begin1 << "S";
-        for (int c = 0; c < a->cigarLen; ++c)
+        // output CIGAR string
+        if ( user_opts[l].compare("cigar") == 0 )
         {
-          uint32_t letter = 0xf&*(a->cigar + c);
-          uint32_t length = (0xfffffff0&*(a->cigar + c))>>4;
-          fileout << length;
-          if (letter == 0) fileout << "M";
-          else if (letter == 1) fileout << "I";
-          else fileout << "D";
+          fileout << "\t";
+          // masked region at beginning of alignment
+          if ( a->read_begin1 != 0 ) fileout << a->read_begin1 << "S";
+          for (int c = 0; c < a->cigarLen; ++c)
+          {
+            uint32_t letter = 0xf&*(a->cigar + c);
+            uint32_t length = (0xfffffff0&*(a->cigar + c))>>4;
+            fileout << length;
+            if (letter == 0) fileout << "M";
+            else if (letter == 1) fileout << "I";
+            else fileout << "D";
+          }
+          
+          uint32_t end_mask = readlen-a->read_end1-1;
+          // output the masked region at end of alignment
+          if ( end_mask > 0 ) fileout << end_mask << "S";
         }
-        
-        uint32_t end_mask = readlen-a->read_end1-1;
-        /// output the masked region at end of alignment
-        if ( end_mask > 0 ) fileout << end_mask << "S";
+        // output % query coverage
+        else if ( user_opts[l].compare("qcov") == 0 )
+        {
+          fileout << "\t";
+          fileout.precision(3);
+          fileout << coverage*100;
+        }
+        // output strand
+        else if ( user_opts[l].compare("qstrand") == 0 )
+        {
+          fileout << "\t";
+          if (strand) fileout << "+";
+          else fileout << "-";         
+        }
       }
-      /// (14) optional: output % query coverage
-      if ( blast_outfmt > 2 )
-      {
-        fileout << "\t";
-        fileout.precision(3);
-        fileout << coverage*100 << "\t";
-      }
-      fileout << "\n";     
+      fileout << "\n";           
     }//~blast tabular m8
     
     return ;
