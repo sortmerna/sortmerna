@@ -161,23 +161,28 @@ extern long unsigned int map_size_gv;
 /*! @brief SAM output. */
 extern bool samout_gv;
 
-/*! @brief Activate BLAST-like tabular output. */
+/*! @brief Activate BLAST-like alignment output. */
 extern bool blastout_gv;
 
-/*! @brief Integer to store result from option --blast INT. 
+/*! @brief Vector of strings to store result from option --blast STRING. 
 	
-	+ --blast 0: output pairwise alignments\n
-	+ --blast 1: output classical BLAST tabular format,
-			   the fields are:
-			   queryId, subjectId, percIdentity, alnLength,
-			   mismatchCount, gapOpenCount, queryStart, queryEnd,
-			   subjectStart, subjectEnd, eVal, bitScore\n
+	+ --blast '0': output pairwise alignments\n
+	+ --blast '1': output classical BLAST tabular format,
+				   the fields are:
+				   queryId, subjectId, percIdentity, alnLength,
+				   mismatchCount, gapOpenCount, queryStart, queryEnd,
+				   subjectStart, subjectEnd, eVal, bitScore\n
 
-	+ --blast 2: classical tabular format + column for CIGAR string\n
-	+ --blast 3: classical tabular format + column for CIGAR string +
-			   	 column for % query coverage
+	+ --blast '1 cigar': classical tabular format + column for CIGAR string\n
+	+ --blast '1 cigar qcov': classical tabular format + column for CIGAR string
+			   	 and % query coverage\n
+    + --blast '1 cigar qcov strand' : classical tabular format + columns for CIGAR string,
+    			 % query coverage and strand\n
 */
-extern int32_t blast_outfmt;
+extern std::vector<std::string> user_opts;
+
+/*! @brief Output alignments in BLAST-like tabular format. */
+extern bool blast_tabular;
 
 /*! @brief Activate FASTA/Q output. */
 extern bool fastxout_gv;

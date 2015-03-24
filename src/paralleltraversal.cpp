@@ -2858,14 +2858,35 @@ paralleltraversal ( char* inputreads,
                                 align_que_start = lcs_que_start - lcs_ref_start;
                                 head = 0;
                                 // the read is longer than the reference sequence
-                                //            ref |--------------|
-                                // que |----------------------------|
+                                //            ref |----------------|
+                                // que |---------------------...|
                                 //                LIS |-----|
                                 //
                                 if ( reflen < readlen )
                                 {
                                   tail = 0;
-                                  align_length = reflen;
+                                  // beginning from align_ref_start = 0 and align_que_start = X, the read finishes
+                                  // before the end of the reference
+                                  //            ref |----------------|
+                                  // que |------------------------|
+                                  //                  LIS |-----|
+                                  //                ^
+                                  //                align_que_start
+                                  if ( align_que_start > (readlen - reflen) )
+                                  {
+                                    align_length = reflen - (align_que_start - (readlen - reflen));
+                                  }
+                                  // beginning from align_ref_start = 0 and align_que_start = X, the read finishes
+                                  // after the end of the reference
+                                  //            ref |----------------|
+                                  // que |------------------------------|
+                                  //                  LIS |-----|
+                                  //                ^
+                                  //                align_que_start
+                                  else
+                                  {
+                                    align_length = reflen;
+                                  }
                                 }
                                 else
                                 {
@@ -2988,6 +3009,7 @@ paralleltraversal ( char* inputreads,
                               if ( aligned )
                               {
 #ifdef debug_align
+                                cout << "\t\t\t\t\tscore = " << result->score1 << endl;
                                 cout << "\t\t\t\t\taligned!\n"; //TESTING
 #endif
 #pragma omp critical
@@ -3536,7 +3558,7 @@ paralleltraversal ( char* inputreads,
 #pragma omp critical
                 {
                   s_align* null_alignment = NULL;
-                  if ( blastout_gv && (blast_outfmt > 0) )
+                  if ( blastout_gv && blast_tabular )
                   {
                     report_blast (acceptedblast, // blast output file
                                   null_alignment, // SW alignment cigar
@@ -3731,7 +3753,7 @@ paralleltraversal ( char* inputreads,
                 if ( print_all_reads_gv )
                 {
                   s_align* null_alignment = NULL;
-                  if ( blastout_gv && (blast_outfmt > 0) )
+                  if ( blastout_gv && blast_tabular )
                   {
                     report_blast (acceptedblast, // blast output file
                                   null_alignment, // SW alignment cigar
@@ -4087,7 +4109,7 @@ paralleltraversal ( char* inputreads,
         if ( alignment != read_hits_align_info.end() )
         {
           s_align* ptr_alignment = alignment->second.ptr;
-          for ( int p = 0; p < alignment->second.size; p++ )
+          for ( uint32_t p = 0; p < alignment->second.size; p++ )
           {
             free(ptr_alignment->cigar);
             ptr_alignment->cigar = NULL;
@@ -4171,6 +4193,7 @@ paralleltraversal ( char* inputreads,
     {
       delete [] split_read;
       split_read = NULL;
+      split_read_ptr = NULL;
     }
         
     // record the start of the split_read if it exists
@@ -4235,7 +4258,7 @@ paralleltraversal ( char* inputreads,
       // output the ref ID
       outfile << otu_map_it->first;
       // output all reads mapping to ref ID
-      for ( int i = 0; i < otu_map_it->second.size(); i++ ) outfile << "\t" << otu_map_it->second[i];
+      for ( uint32_t i = 0; i < otu_map_it->second.size(); i++ ) outfile << "\t" << otu_map_it->second[i];
       outfile << "\n";
     }
     

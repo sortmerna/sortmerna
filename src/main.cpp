@@ -57,7 +57,8 @@ long unsigned int map_size_gv = pagesize_gv;
 bool map_size_set_gv = false;
 bool samout_gv = false;
 bool blastout_gv = false;
-int32_t blast_outfmt = -1;
+vector<string> user_opts;
+bool blast_tabular = false;
 bool fastxout_gv = false;
 bool otumapout_gv = false;
 int32_t min_lis_gv = -1;
@@ -122,11 +123,14 @@ void printlist()
   printf("     %s--sam%s             %sBOOL%s            output SAM alignment                                           %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         (for aligned reads only)\n");
   printf("     %s--SQ%s              %sBOOL%s            add SQ tags to the SAM file                                    %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s--blast%s           %sINT%s             output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("                                        0 - pairwise\n");
-  printf("                                        1 - tabular (Blast -m 8 format)\n");
-  printf("                                        2 - tabular + column for CIGAR \n");
-  printf("                                        3 - tabular + columns for CIGAR and query coverage\n");
+  printf("     %s--blast%s           %sSTRING%s          output alignments in various Blast-like formats                \n","\033[1m","\033[0m","\033[4m","\033[0m");
+  printf("                                        '0' - pairwise\n");
+  printf("                                        '1' - tabular (Blast -m 8 format)\n");
+  printf("                                        '1 cigar' - tabular + column for CIGAR \n");
+  printf("                                        '1 cigar qcov' - tabular + columns for CIGAR\n");
+  printf("                                                         and query coverage\n");
+  printf("                                        '1 cigar qcov qstrand' - tabular + columns for CIGAR,\n");
+  printf("                                                                query coverage and strand\n");
   printf("     %s--log%s             %sBOOL%s            output overall statistics                                      %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
 #ifdef NOMASK_option
   printf("     %s--no-mask%s         %sBOOL%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -800,19 +804,72 @@ main(int argc,
         {
           if ( blastout_gv )
           {
-            fprintf(stderr,"\n  %sERROR%s: --blast [INT] has already been set once.\n\n",
+            fprintf(stderr,"\n  %sERROR%s: --blast [STRING] has already been set once.\n\n",
                     "\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
           else
           {
-            if ( (sscanf(argv[narg+1],"%d",&blast_outfmt) != 1) || 
-                 (blast_outfmt < 0) || (blast_outfmt > 3))
+            string str(argv[narg+1]);
+            // split blast options into vector by space
+            istringstream iss(str);
+            do
             {
-              fprintf(stderr,"\n  %sERROR%s: --blast [INT] must be a positive integer "
-                      "with value 0<=INT<=3.\n\n","\033[0;31m","\033[0m");
+              string s;
+              iss >> s;
+              user_opts.push_back(s);
+            } while (iss);
+
+            // remove the end of file entry
+            user_opts.pop_back();
+
+            bool blast_human_readable = false;
+            vector<string> supported_opts;
+            supported_opts.push_back("0");
+            supported_opts.push_back("1");
+            supported_opts.push_back("cigar");
+            supported_opts.push_back("qstrand");
+            supported_opts.push_back("qcov");
+
+            // check user options are supported
+            for ( uint32_t i = 0; i < user_opts.size(); i++ )
+            {
+              bool match_found = false;
+              string opt = user_opts[i];
+              vector<string>::iterator it;
+              for ( it = supported_opts.begin(); it != supported_opts.end(); ++it )
+              {
+                if ( opt.compare(*it) == 0 )
+                {
+                  if ( opt.compare("0") == 0 ) blast_human_readable = true;
+                  else if ( opt.compare("1") == 0 ) blast_tabular = true;
+                  match_found = true;
+                  break;
+                }
+              }
+              if ( !match_found )
+              {
+                fprintf(stderr,"\n  %sERROR%s: `%s` is not supported in --blast [STRING].\n\n",
+                               "\033[0;31m","\033[0m", opt.c_str());
+                exit(EXIT_FAILURE);               
+              }
+            }
+
+            // more than 1 field with blast human-readable format given
+            if ( blast_human_readable && (user_opts.size() > 1 ) )
+            {
+              fprintf(stderr,"\n  %sERROR%s: for human-readable format, --blast [STRING] cannot contain "
+                             "more fields than '0'.\n\n", "\033[0;31m","\033[0m");
               exit(EXIT_FAILURE);
             }
+            // both human-readable and tabular format options have been chosen
+            if ( blast_human_readable && blast_tabular )
+            {
+              fprintf(stderr,"\n  %sERROR%s: --blast [STRING] can only have one of the options "
+                             "'0' (human-readable) or '1' (tabular).\n\n", "\033[0;31m","\033[0m");
+              exit(EXIT_FAILURE);
+            }
+
             blastout_gv = true;
             narg+=2;
           }
@@ -1325,10 +1382,10 @@ main(int argc,
         
   // Option --print_all_reads can only be used with Blast-like tabular
   // and SAM formats (not pairwise)
-  if ( print_all_reads_gv && blastout_gv && (blast_outfmt < 1) )
+  if ( print_all_reads_gv && blastout_gv && !blast_tabular )
   {
-    fprintf(stderr,"\n  %sERROR%s: --print_all_reads [BOOL] can only be used for BLAST "
-            "output formats 1,2 and 3 (using --blast INT).\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: --print_all_reads [BOOL] can only be used with BLAST-like "
+            "tabular format.\n\n","\033[0;31m","\033[0m");
     exit(EXIT_FAILURE);
   }
 
