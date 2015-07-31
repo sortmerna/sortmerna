@@ -64,7 +64,7 @@ class SortmernaV2Tests(TestCase):
                                        suffix='.fasta')
         close(f)
 
-        # write _reference_ sequences to tmp file
+        # write _query_ sequences to tmp file
         with open(self.query_str_fp, 'w') as tmp:
             tmp.write(query_str)
         tmp.close()
