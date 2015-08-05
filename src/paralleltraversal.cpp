@@ -3,10 +3,8 @@
  * @brief File containing functions for index traversal.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group, LIFL and 
- * INRIA Nord-Europe, France
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
+ * @copyright 2013-15 Bonsai Bioinformatics Research Group
+ * 2014-15 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -1810,6 +1808,9 @@ paralleltraversal ( char* inputreads,
         
     // begin file memory map
     TIME(s);
+
+    printf("DEBUG: Start mmap\n");
+    printf("partial_file_size = %jd\n", partial_file_size);
         
     // mmap the reads file into memory
     char* raw = (char*)mmap ( 0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map );
@@ -1821,6 +1822,8 @@ paralleltraversal ( char* inputreads,
     }
     // pointer to last character in mmap'd region
     char* end_of_mmap = &raw[partial_file_size-1];
+
+    printf("DEBUG: End map\n");
     
     int32_t strs = 0;
     

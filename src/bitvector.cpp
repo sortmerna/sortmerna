@@ -1,8 +1,10 @@
 /*
+ * @file bivector.cpp
+ * @brief Functions for manipulating the Levenshein bitvector table.
+ * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2014 Bonsai Bioinformatics Research Group
- *
- * This file is part of SortMeRNA.
+ * @copyright 2013-2015 Bonsai Bioinformatics Research Group
+ * 2015 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by

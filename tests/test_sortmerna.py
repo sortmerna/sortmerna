@@ -32,7 +32,8 @@ class SortmernaV2Tests(TestCase):
 
     def setUp(self):
         self.output_dir = mkdtemp()
-        self.root = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
+        # 'data' folder must be in the same directory as test_sortmerna.py
+        self.root = abspath(join(dirname(__file__),"data"))
 
         # reference databases
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
