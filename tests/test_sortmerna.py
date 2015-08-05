@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Software tests for the SortMeRNA
-================================
+Software tests for the SortMeRNA (development version)
+======================================================
 """
 
 
@@ -27,12 +27,12 @@ from skbio.util import remove_files
 
 
 # Test class and cases
-class SortmernaV2Tests(TestCase):
+class SortmernaTests(TestCase):
     """ Tests for SortMeRNA functionality """
 
     def setUp(self):
         self.output_dir = mkdtemp()
-        self.root = "/Users/jenya/Desktop/sortmerna-dev/tests/data"
+        self.root = join(dirname(abspath(__file__)), "data")
 
         # reference databases
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
@@ -138,6 +138,7 @@ class SortmernaV2Tests(TestCase):
         # check temporary folder was that set by --tmpdir
         query = re.compile('temporary file was here: (.*?)\n')
         m = query.search(stdout)
+        tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
         self.assertEqual(tmpdir, tmp_dir)
@@ -180,6 +181,7 @@ class SortmernaV2Tests(TestCase):
         # check temporary folder was that set by --tmpdir
         query = re.compile('temporary file was here: (.*?)\n')
         m = query.search(stdout)
+        tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
         self.assertEqual(tmpdir, tmp_dir)
@@ -220,6 +222,7 @@ class SortmernaV2Tests(TestCase):
         # check temporary folder was that set by --tmpdir
         query = re.compile('temporary file was here: (.*?)\n')
         m = query.search(stdout)
+        tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
         self.assertEqual("/tmp", tmp_dir)
