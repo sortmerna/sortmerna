@@ -1657,7 +1657,7 @@ paralleltraversal ( char* inputreads,
     vector<uint32_t> skiplengths_v(3,0);
     skiplengths.push_back(skiplengths_v);
   }
-  for (int32_t i = 0; i < myfiles.size()-1; i++) skiplengths.push_back(skiplengths[0]);
+  for (uint32_t i = 0; i < myfiles.size()-1; i++) skiplengths.push_back(skiplengths[0]);
     
   // add header lines to SAM output file
   preprocess_data( myfiles,
@@ -1808,12 +1808,9 @@ paralleltraversal ( char* inputreads,
         
     // begin file memory map
     TIME(s);
-
-    printf("DEBUG: Start mmap\n");
-    printf("partial_file_size = %jd\n", partial_file_size);
         
     // mmap the reads file into memory
-    char* raw = (char*)mmap ( 0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map );
+    char* raw = (char*)mmap(0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map);
     if ( raw == MAP_FAILED )
     {
       close(fd);
@@ -1823,14 +1820,13 @@ paralleltraversal ( char* inputreads,
     // pointer to last character in mmap'd region
     char* end_of_mmap = &raw[partial_file_size-1];
 
-    printf("DEBUG: End map\n");
     
-    int32_t strs = 0;
+    size_t strs = 0;
     
     // the length of the split read in file part i+1 (from beginning of file part)
-    int32_t reads_offset_f = 0;
+    uint32_t reads_offset_f = 0;
     // the length of the split read in file part i (from end of file part)
-    int32_t reads_offset_e = 0;
+    uint32_t reads_offset_e = 0;
         
     {
       // (FASTA) count the number of strings in a file section
@@ -1877,8 +1873,8 @@ paralleltraversal ( char* inputreads,
         else
         {
           // count the number of strings in the file section
-          for ( uint32_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
-          
+          for ( size_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
+
           // the paired-read follows the split read at the top of current file section
           if ( offset_pair_from_top )
           {
@@ -1958,7 +1954,7 @@ paralleltraversal ( char* inputreads,
           if ( (strs%4 == 1) && (raw[partial_file_size-1] == '\n') && (raw[partial_file_size-2] == '\n') ) strs--;
           else
           {
-            fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %u\n","\033[0;31m","\033[0m",strs);
+            fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lu\n","\033[0;31m","\033[0m",strs);
             exit(EXIT_FAILURE);
           }
         }
