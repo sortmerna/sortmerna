@@ -1,3 +1,5 @@
+06 August 2015
+	- fix issue 70 (-m parameter for sortmerna not working for values greater than 4096); problem was related to large file support (-D_FILE_OFFSET_BITS=64 flag added to compilation)
 20 March 2015
 	- SILVA associated taxonomy string to representative databases added
 	- fixed bug that causes incorrect CIGAR string when reference length < read length and based on the LCS, read hangs off end reference (alignment length should be computed based on this setup)

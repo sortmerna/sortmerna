@@ -97,7 +97,6 @@ Xcode -> Preferences -> Downloads
 Under "Components", click to install "Command Line Tools"
 
 
-
 Install GCC though MacPorts
 ---------------------------
 
@@ -109,6 +108,17 @@ sudo port install gcc48
 ```
 
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8 .
+
+
+Tests
+-----
+
+Usage tests can be run with the following command:
+```
+python ./tests/test_sortmerna.py
+```
+Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
+
 
 Galaxy wrapper
 --------------
