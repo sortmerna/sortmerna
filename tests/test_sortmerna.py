@@ -32,6 +32,7 @@ class SortmernaTests(TestCase):
 
     def setUp(self):
         self.output_dir = mkdtemp()
+        # 'data' folder must be in the same directory as test_sortmerna.py
         self.root = join(dirname(abspath(__file__)), "data")
 
         # reference databases

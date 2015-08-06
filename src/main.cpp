@@ -3,10 +3,8 @@
  * @brief File containing the main function and argument parsing.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group, LIFL and 
- * INRIA Nord-Europe, France
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
+ * @copyright 2013-15 Bonsai Bioinformatics Research Group
+ * 2014-15 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -82,10 +80,9 @@ int32_t num_best_hits_gv = 0;
 void welcome()
 {
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
-  printf("  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:\n");
+  printf("  Copyright:   2012-15 Bonsai Bioinformatics Research Group:\n");
   printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               OTU-picking extensions and continuing support developed in the Knight Lab,\n");
-  printf("               BioFrontiers Institute, University of Colorado at Boulder\n");
+  printf("               2014-15 Knight Lab, Department of Pediatrics, UCSD, La Jolla,\n");
   printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
   printf("               See the GNU Lesser General Public License for more details.\n");

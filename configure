@@ -4983,7 +4983,7 @@ fi
 rm -f conftest.mmap conftest.txt
 
 
-CXXFLAGS="$CXXFLAGS -pipe -funroll-loops -Wall -msse2 $OPENMP_CFLAGS"
+CXXFLAGS="$CXXFLAGS -pipe -funroll-loops -Wall -msse2 -D_FILE_OFFSET_BITS=64 $OPENMP_CFLAGS"
 CFLAGS="$CFLAGS -pipe -funroll-loops -msse2 -Wall $OPENMP_CFLAGS"
 LIBS="$LIBS -lm"
 
