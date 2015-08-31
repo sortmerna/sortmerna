@@ -1,3 +1,5 @@
+31 August 2015
+    - update to issue 70 for FASTQ reads
 06 August 2015
 	- fix issue 70 (-m parameter for sortmerna not working for values greater than 4096); problem was related to large file support (-D_FILE_OFFSET_BITS=64 flag added to compilation)
 20 March 2015

@@ -1821,7 +1821,7 @@ paralleltraversal ( char* inputreads,
     char* end_of_mmap = &raw[partial_file_size-1];
 
     
-    size_t strs = 0;
+    int64_t strs = 0;
     
     // the length of the split read in file part i+1 (from beginning of file part)
     uint32_t reads_offset_f = 0;
@@ -1873,7 +1873,7 @@ paralleltraversal ( char* inputreads,
         else
         {
           // count the number of strings in the file section
-          for ( size_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
+          for ( int64_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
 
           // the paired-read follows the split read at the top of current file section
           if ( offset_pair_from_top )
@@ -1943,7 +1943,7 @@ paralleltraversal ( char* inputreads,
         cout << "reads_offset_f (split read + paired-read) = " << reads_offset_f << endl; //TESTING
 #endif
         // count the number of lines in the file section
-        for ( uint32_t i = reads_offset_f; i < partial_file_size; i++ ) if ( raw[i] == '\n' ) strs++;
+        for ( int64_t i = reads_offset_f; i < partial_file_size; i++ ) if ( raw[i] == '\n' ) strs++;
 #ifdef debug_mmap
         cout << "strs (not counting reads_offset_f) = " << strs << endl; //TESTING
 #endif
@@ -1954,7 +1954,7 @@ paralleltraversal ( char* inputreads,
           if ( (strs%4 == 1) && (raw[partial_file_size-1] == '\n') && (raw[partial_file_size-2] == '\n') ) strs--;
           else
           {
-            fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lu\n","\033[0;31m","\033[0m",strs);
+            fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lld\n","\033[0;31m","\033[0m",strs);
             exit(EXIT_FAILURE);
           }
         }
@@ -2197,13 +2197,13 @@ paralleltraversal ( char* inputreads,
     map<uint32_t, alignment_struct > read_hits_align_info;
     
     // number of alignments to output per read
-    int32_t *num_alignments_x = NULL;
+    int64_t *num_alignments_x = NULL;
         
     // output num_alignments_gv alignments per read
     if ( num_alignments_gv > 0 )
     {
-      num_alignments_x = new int32_t[strs];
-      for ( int32_t s = 0; s < strs; s++ ) num_alignments_x[s] = num_alignments_gv;
+      num_alignments_x = new int64_t[strs];
+      for ( int64_t s = 0; s < strs; s++ ) num_alignments_x[s] = num_alignments_gv;
     }
     
     // loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
@@ -2233,13 +2233,13 @@ paralleltraversal ( char* inputreads,
         TIME(s);
 
         // number of reference sequences to search alignments for before choosing the best one
-        int32_t *best_x = NULL;
+        int64_t *best_x = NULL;
         
         // search min_lis_gv reference sequences for alignments
         if ( min_lis_gv > 0 )
         {
-          best_x = new int32_t[strs];
-          for ( int32_t s = 0; s < strs; s++ )
+          best_x = new int64_t[strs];
+          for ( int64_t s = 0; s < strs; s++ )
             best_x[s] = min_lis_gv;
         }
                 
@@ -2318,7 +2318,7 @@ paralleltraversal ( char* inputreads,
         {
           // loop through all of the reads in the file 
 #pragma omp parallel for num_threads(numcpu_gv) shared(lookup_tbl,positions_tbl,buffer,reference_seq,reference_seq_len,read_hits_align_info,read_hits,read_max_SW_score) schedule(dynamic,256)
-          for ( int32_t readn = 1; readn < strs; readn+=2 )
+          for ( int64_t readn = 1; readn < strs; readn+=2 )
           {
 #ifdef debug_align
             cout << "readn = " << readn << endl; //TESTING
@@ -2684,17 +2684,6 @@ paralleltraversal ( char* inputreads,
                                         
                     // sort the highest scoring sequences to the head of the array
                     sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
-
-		    /* tmp
-		    cout << "\npass = " << pass_n << endl;
-		    for ( int r = 0; r < most_frequent_seq.size(); r++ )
-		    {
-		      cout << most_frequent_seq[r].second << "\t";
-		      char* tt = reference_seq[(2*(int)most_frequent_seq[r].second)];
-		      while (*tt != ' ' ) cout << (char)*tt++;
-		      cout << "\t " << most_frequent_seq[r].first << endl;
-		    }
-		    */
 
                     // STEP 3: for each reference sequence candidate
                     // (starting from highest scoring)
@@ -3067,41 +3056,41 @@ paralleltraversal ( char* inputreads,
 #endif
                                       uint32_t smallest_score_index = alignment->second.min_index;
                                       uint32_t highest_score_index = alignment->second.max_index;
-				      uint32_t array_size = alignment->second.size;
-				      uint32_t array_max_size = alignment->second.max_size;
+                                      uint32_t array_size = alignment->second.size;
+                                      uint32_t array_max_size = alignment->second.max_size;
 #ifdef DEBUG_BEST_N
                                       cout << "smallest_score_index = " << smallest_score_index << endl; 
                                       cout << "highest_score_index = " << highest_score_index << endl;
-				      cout << "array_size = " << array_size << endl;
-				      cout << "array_max_size = " << array_max_size << endl;
-				      cout << "num_best_hits_gv = " << num_best_hits_gv << endl;
+                                      cout << "array_size = " << array_size << endl;
+                                      cout << "array_max_size = " << array_max_size << endl;
+                                      cout << "num_best_hits_gv = " << num_best_hits_gv << endl;
 #endif
                                       // number of alignments stored per read < num_best_hits_gv, 
                                       // add alignment to array without comparison to other members
-				      // of array
-				      if ( (num_best_hits_gv == 0) || (array_size < num_best_hits_gv) )
-				      {
-					// number of alignments stored per read == maximum number of 
-					// alignments allowed, resize array by another BEST_HITS_INCREMENT slots 
-					if ( array_size == array_max_size )
-					{
-					  uint32_t new_array_max_size = 0;
-					  if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= num_best_hits_gv) )
-					    new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
-					  else
-					    new_array_max_size = num_best_hits_gv;
-#ifdef DEBUG_BEST_N
-					  cout << "\t\tresize array.\n";
-                                          cout << "\t\tnew_array_max_size =  " << new_array_max_size << endl;
-#endif
-					  s_align* bigger_alignment_array = new s_align[new_array_max_size]();
-					  if ( bigger_alignment_array == NULL )
-					  {
-					    fprintf(stderr, "\t  %sERROR%s: could not allocate memory for "
-						            "alignment storage (s_align* bigger_alignment_array "
-						            "in paralleltraversal.cpp\n", "\033[0;31m", "\033[0m");
-					    exit(EXIT_FAILURE);
-					  }
+                                      // of array
+                                      if ( (num_best_hits_gv == 0) || (array_size < num_best_hits_gv) )
+                                      {
+                                      // number of alignments stored per read == maximum number of 
+                                      // alignments allowed, resize array by another BEST_HITS_INCREMENT slots 
+                                      if ( array_size == array_max_size )
+                                      {
+                                        uint32_t new_array_max_size = 0;
+                                        if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= num_best_hits_gv) )
+                                          new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
+                                        else
+                                          new_array_max_size = num_best_hits_gv;
+                                      #ifdef DEBUG_BEST_N
+                                        cout << "\t\tresize array.\n";
+                                                                      cout << "\t\tnew_array_max_size =  " << new_array_max_size << endl;
+                                      #endif
+                                      s_align* bigger_alignment_array = new s_align[new_array_max_size]();
+                                      if ( bigger_alignment_array == NULL )
+                                      {
+                                        fprintf(stderr, "\t  %sERROR%s: could not allocate memory for "
+                                                  "alignment storage (s_align* bigger_alignment_array "
+                                                  "in paralleltraversal.cpp\n", "\033[0;31m", "\033[0m");
+                                        exit(EXIT_FAILURE);
+                                      }
 
 					  // copy smaller array to larger memory slot
 					  memcpy(bigger_alignment_array, alignment->second.ptr, sizeof(s_align)*array_max_size);
@@ -3734,7 +3723,7 @@ paralleltraversal ( char* inputreads,
           load_ref((char*)(myfiles[index_num].first).c_str(),buffer,reference_seq,reference_seq_len,seq_part_size,numseq_part,start_part,0);
                 
           // run through all the reads, output those which aligned
-          for ( uint32_t readn = 1; readn < strs; readn+=2 )
+          for ( int64_t readn = 1; readn < strs; readn+=2 )
           {
             map<uint32_t, alignment_struct >::iterator alignment = read_hits_align_info.find(readn);
 
@@ -4100,7 +4089,7 @@ paralleltraversal ( char* inputreads,
       }//~for every database
 
       // free alignment information for all aligned reads
-      for ( uint32_t readn = 1; readn < strs; readn+=2 )
+      for ( int64_t readn = 1; readn < strs; readn+=2 )
       {
         map<uint32_t, alignment_struct >::iterator alignment = read_hits_align_info.find(readn);
 
