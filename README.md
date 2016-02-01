@@ -123,15 +123,21 @@ Galaxy Wrapper
 --------------
 
 Currently a Galaxy wrapper exists for SortMeRNA 2.0 (thanks to Björn Grüning and Nicola Soranzo,
-see this [PR](https://github.com/bgruening/galaxytools/pull/202).
-Please visit "https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna" for more information.
+see this [PR](https://github.com/bgruening/galaxytools/pull/202) for more details).
+Please visit "https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna" for installation.
 
-Debian package:
----------------
+Debian package
+--------------
 
 Thanks to the [Debian Med](https://www.debian.org/devel/debian-med/) team, SortMeRNA 2.0 is now a package in Debian.
 Thanks to Andreas Tille for the sortmerna and indexdb_rna man pages (version 2.0).
-These have been updated for 2.1.
+These have been updated for 2.1 in the master repository.
+
+Running in [QIIME](http://qiime.org):
+-----------------
+
+SortMeRNA 2.0 can be used in QIIME's [pick_closed_reference_otus.py](http://qiime.org/scripts/pick_closed_reference_otus.html),
+[pick_open_reference_otus.py](http://qiime.org/scripts/pick_open_reference_otus.html) and [assign_taxonomy.py](http://qiime.org/scripts/assign_taxonomy.html) scripts.
 
 Taxonomies
 ----------
