@@ -31,7 +31,7 @@
 
 \title{SortMeRNA User Manual}
 \author{Evguenia Kopylova\\ {\em jenya.kopylov@gmail.com}}
-\date{Oct 2014, version 2.0}
+\date{Feb 2016, version 2.1}
 
 \addtolength{\oddsidemargin}{-.7in}
 \addtolength{\textwidth}{1.2in}
@@ -46,17 +46,17 @@
 \newpage
 \section{Introduction}
 
-Copyright (C) 2012-2015 Bonsai Bioinformatics Research Group \\
-(LIFL - Universit\'{e} Lille 1), CNRS UMR 8022, INRIA Nord-Europe \\
+Copyright (C) 2012-2016 Bonsai Bioinformatics Research Group \\
+(LIFL - Universit\'{e} Lille 1), CNRS UMR 8022, INRIA Nord-Europe, France \\
 \url{http://bioinfo.lifl.fr/RNA/sortmerna/} \\
-OTU-picking extensions and continuous support developed in the Knight Lab, \\
-BioFrontiers Institute, University of Colorado at Boulder, CO \\
+Copyright (C) 2014-2016 Knight Lab \\
+Department of Pediatrics, UCSD School of Medicine, La Jolla, California, USA\\
 \url{https://knightlab.colorado.edu}
 
 SortMeRNA is a local sequence alignment tool for filtering, mapping and OTU-picking.
 The core algorithm is based on approximate seeds and allows for fast and sensitive analyses
 of NGS reads. The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
-Additional applications include OTU-picking and taxonomy assignation available through QIIME v1.9+ (\url{http://qiime.org}, currently the development version to be released in early December).
+Additional applications include OTU-picking and taxonomy assignation available through QIIME v1.9+ (\url{http://qiime.org}).
 SortMeRNA takes as input a file of reads (fasta or fastq format) and one or multiple rRNA
 database file(s), and sorts apart aligned and rejected reads into two files specified by the user.
 SortMeRNA works with Illumina, 454, Ion Torrent and PacBio data, and can produce SAM and
@@ -68,15 +68,16 @@ For questions \& help, please contact:
  1. Evguenia Kopylova     evguenia.kopylova@lifl.fr
  2. Laurent Noe           laurent.noe@lifl.fr
  3. Helene Touzet         helene.touzet@lifl.fr
+ 4. Rob Knight            robknight@ucsd.edu
 \end{verbatim}
 
-{\bf Important:} This user manual is strictly for SortMeRNA version 2.0. 
+{\bf Important:} This user manual is strictly for SortMeRNA version 2.1. 
 
 
 \section{Installation}
 
 \begin{figure}[here!]
-\caption{\texttt{sortmerna-2.0} directory tree}~\\
+\caption{\texttt{sortmerna- 2.1} directory tree}~\\
 \centering
 \tikzstyle{every node}=[draw=black,thick,anchor=west]
 \tikzstyle{selected}=[draw=red,fill=red!30]
@@ -85,7 +86,7 @@ For questions \& help, please contact:
   grow via three points={one child at (0.5,-0.7) and
   two children at (0.5,-0.7) and (0.5,-1.4)},
   edge from parent path={(\tikzparentnode.south) |- (\tikzchildnode.west)}]
-  \node [root] {sortmerna-2.0} 
+  \node [root] {sortmerna- 2.1} 
     child { node {alp}}
     child { node {cmph}}
     child { node {src}}		
@@ -109,13 +110,13 @@ For questions \& help, please contact:
 \label{sec:install}
 
 \begin{enumerate}
- \item Download \texttt{sortmerna-2.0.tar.gz} from \url{https://github.com/biocore/sortmerna/releases}
- \item Extract the source code package into a directory of your choice, enter \texttt{sortmerna-2.0} directory and type,
+ \item Download \texttt{sortmerna- 2.1.tar.gz} from \url{https://github.com/biocore/sortmerna/releases}
+ \item Extract the source code package into a directory of your choice, enter \texttt{sortmerna- 2.1} directory and type,
   \begin{verbatim}
   > bash ./build.sh
  \end{verbatim}
   \item At this point, two executables \texttt{indexdb\_rna} and \texttt{sortmerna} will be located
- in the \texttt{sortmerna-2.0} directory. 
+ in the \texttt{sortmerna- 2.1} directory. 
  If the user would like to install the executables into their default installation directory (\texttt{/usr/local/bin} for Linux or \texttt{/opt/local/bin} for Mac) then type,
  \begin{verbatim}
   > make install (with root permissions)
@@ -147,8 +148,8 @@ For questions \& help, please contact:
  \item Download the latest binary distribution of SortMeRNA from \url{http://bioinfo.lifl.fr/RNA/sortmerna}
  \item Extract the source code package into a directory of your choice,
  \begin{verbatim}
-  > tar -xvf sortmerna-2.0.tar.gz 
-  > cd sortmerna-2.0
+  > tar -xvf sortmerna- 2.1.tar.gz 
+  > cd sortmerna- 2.1
  \end{verbatim}
  \item To begin using SortMeRNA, type `\texttt{indexdb\_rna -h}' or `\texttt{sortmerna -h}'. The user must firstly index 
  the databases with the command \texttt{indexdb\_rna} before they can run the command \texttt{sortmerna}.
@@ -199,11 +200,10 @@ then filter/map reads against the database using the command \texttt{sortmerna}.
 \begin{Verbatim}[fontsize=\footnotesize]
 >> indexdb_rna -h
 
-  Program:     SortMeRNA version 2.0, 29/11/2014
-  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
-               OTU-picking extensions and continuing support developed in the Knight Lab,
-               BioFrontiers Institute, University of Colorado at Boulder
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
   Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
                See the GNU Lesser General Public License for more details.
@@ -236,7 +236,7 @@ then filter/map reads against the database using the command \texttt{sortmerna}.
 
 
 ~\\~\\
-\noindent There are eight rRNA representative databases provided in the `\texttt{sortmerna-2.0/rRNA\_databases}' folder. 
+\noindent There are eight rRNA representative databases provided in the `\texttt{sortmerna- 2.1/rRNA\_databases}' folder. 
 All databases were derived from the SILVA SSU and LSU databases (release 119) and the RFAM databases using HMMER 3.1b1 and SumaClust v1.0.00.
 Additionally, the user can index their own database. \\
 
@@ -245,11 +245,10 @@ Additionally, the user can index their own database. \\
 \begin{Verbatim}[fontsize=\footnotesize]
 >> ./indexdb_rna --ref ./rRNA_databases/silva-bac-16s-id90.fasta,./index/silva-bac-16s-db -v
 
-  Program:     SortMeRNA version 2.0, 29/11/2014
-  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
-               OTU-picking extensions and continuing support developed in the Knight Lab,
-               BioFrontiers Institute, University of Colorado at Boulder
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
   Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
                See the GNU Lesser General Public License for more details.
@@ -347,11 +346,10 @@ the threshold E-value score (default E-value=1). An E-value of 1 signifies that 
 \begin{Verbatim}[fontsize=\footnotesize]
 >> ./sortmerna -h
 
-  Program:     SortMeRNA version 2.0, 29/11/2014
-  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
-               OTU-picking extensions and continuing support developed in the Knight Lab,
-               BioFrontiers Institute, University of Colorado at Boulder
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
   Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
                See the GNU Lesser General Public License for more details.
@@ -382,11 +380,14 @@ the threshold E-value score (default E-value=1). An E-value of 1 signifies that 
      --sam             BOOL            output SAM alignment                                           off
                                          (for aligned reads only)
      --SQ              BOOL            add SQ tags to the SAM file                                    off
-     --blast           INT             output alignments in various Blast-like formats                
-                                        0 - pairwise
-                                        1 - tabular (Blast -m 8 format)
-                                        2 - tabular + column for CIGAR 
-                                        3 - tabular + columns for CIGAR and query coverage
+     --blast           STRING          output alignments in various Blast-like formats                
+                                        `0' - pairwise
+                                        `1' - tabular (Blast -m 8 format)
+                                        `1 cigar' - tabular + column for CIGAR 
+                                        `1 cigar qcov' - tabular + columns for CIGAR
+                                                         and query coverage
+                                        `1 cigar qcov qstrand' - tabular + columns for CIGAR,
+                                                                query coverage and strand
      --log             BOOL            output overall statistics                                      off
      --num_alignments  INT             report first INT alignments per read reaching E-value          -1
                                         (--num_alignments 0 signifies all alignments will be output)
@@ -477,11 +478,10 @@ can increase \texttt{-m} to map larger portions of the file. The limit for \text
  --other SRR105861_non_rRNA --log -v
 
 
-  Program:     SortMeRNA version 2.0, 29/11/2014
-  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
-               OTU-picking extensions and continuing support developed in the Knight Lab,
-               BioFrontiers Institute, University of Colorado at Boulder
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
   Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
                See the GNU Lesser General Public License for more details.
@@ -847,7 +847,7 @@ is the main goal.
 
 Moreover, SortMeRNA is a local alignment tool, so it's also important to look at the query coverage \% for
 each alignment. In the SAM output format, neither \% id or query coverage are reported. If the user wishes
-for these values, then the Blast tabular format with CIGAR + query coverage option {(\tt--blast 3)} is the way to go.
+for these values, then the Blast tabular format with CIGAR + query coverage option {(\tt--blast '1 cigar qcov')} is the way to go.
 
 \subsubsection{Example 5: mapping reads against the 16S Greengenes 97\% id database with multithreading}
 
@@ -857,14 +857,13 @@ reference database as well as the query file, thus the E-value is higher than BL
 
 \begin{Verbatim}[fontsize=\footnotesize]
 >> sortmerna --ref 97_otus_gg_13_8.fasta,./index/97_otus_gg_13_8\
- --reads SRR106861.fasta --blast 3 --sam --log --aligned SRR106861_gg_rRNA -a 20 -v 
+ --reads SRR106861.fasta --blast '1 cigar qcov' --sam --log --aligned SRR106861_gg_rRNA -a 20 -v 
 
 
-  Program:     SortMeRNA version 2.0, 29/11/2014
-  Copyright:   2012-2015 Bonsai Bioinformatics Research Group:
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
-               OTU-picking extensions and continuing support developed in the Knight Lab,
-               BioFrontiers Institute, University of Colorado at Boulder
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
   Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
                See the GNU Lesser General Public License for more details.
@@ -912,7 +911,7 @@ This is almost the same number of 16S rRNA as identified by SortMeRNA using the 
  Date and time
 
  Command: sortmerna --ref 97_otus_gg_13_8.fasta,./index/97_otus_gg_13_8\
-  --reads SRR106861.fasta --blast 3 --sam --log --aligned SRR106861_gg_rRNA -a 20 -v 
+  --reads SRR106861.fasta --blast '1 cigar qcov' --sam --log --aligned SRR106861_gg_rRNA -a 20 -v 
  Process pid = 44246
  Parameters summary:
     Index: ./index/97_otus_gg_13_8
