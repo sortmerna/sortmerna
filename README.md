@@ -139,6 +139,8 @@ Running in QIIME
 SortMeRNA 2.0 can be used in [QIIME](http://qiime.org)'s [pick_closed_reference_otus.py](http://qiime.org/scripts/pick_closed_reference_otus.html),
 [pick_open_reference_otus.py](http://qiime.org/scripts/pick_open_reference_otus.html) and [assign_taxonomy.py](http://qiime.org/scripts/assign_taxonomy.html) scripts.
 
+Note: At the moment, only 2.0 is compatible with QIIME.
+
 Taxonomies
 ----------
 
