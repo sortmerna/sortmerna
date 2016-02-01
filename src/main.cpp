@@ -65,7 +65,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /*! @brief Version number */
-char version_num[] = "2.0-dev, 29/11/2014";
+char version_num[] = "2.1, 01/02/2016";
 bool as_percent_gv = false;
 bool pid_gv = false;
 int32_t num_best_hits_gv = 0;
@@ -80,9 +80,9 @@ int32_t num_best_hits_gv = 0;
 void welcome()
 {
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
-  printf("  Copyright:   2012-15 Bonsai Bioinformatics Research Group:\n");
+  printf("  Copyright:   2012-16 Bonsai Bioinformatics Research Group:\n");
   printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               2014-15 Knight Lab, Department of Pediatrics, UCSD, La Jolla,\n");
+  printf("               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,\n");
   printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
   printf("               See the GNU Lesser General Public License for more details.\n");
