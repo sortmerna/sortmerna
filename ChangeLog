@@ -1,3 +1,5 @@
+01 January 2016 [Release 2.1]
+-----------------------------
 31 August 2015
     - update to issue 70 for FASTQ reads
 06 August 2015
@@ -6,7 +8,10 @@
 	- SILVA associated taxonomy string to representative databases added
 	- fixed bug that causes incorrect CIGAR string when reference length < read length and based on the LCS, read hangs off end reference (alignment length should be computed based on this setup)
 	- modified option --blast INT to --blast STRING to support more fields in BLAST-like tabular output (ex. --blast '1 cigar qstrand')
-31 Oct 2014
+
+30 October 2014 [Release 2.0]
+-----------------------------
+30 October 2014
 	- representative SILVA databases updated to version 119 (for filtering rRNA from metatranscriptomic data)
 14 October 2014
     - [affects FASTQ paired reads] edited code for splitting FASTQ file
