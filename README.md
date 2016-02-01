@@ -133,10 +133,10 @@ Thanks to the [Debian Med](https://www.debian.org/devel/debian-med/) team, SortM
 Thanks to Andreas Tille for the sortmerna and indexdb_rna man pages (version 2.0).
 These have been updated for 2.1 in the master repository.
 
-Running in [QIIME](http://qiime.org):
------------------
+Running in QIIME
+----------------
 
-SortMeRNA 2.0 can be used in QIIME's [pick_closed_reference_otus.py](http://qiime.org/scripts/pick_closed_reference_otus.html),
+SortMeRNA 2.0 can be used in [QIIME](http://qiime.org)'s [pick_closed_reference_otus.py](http://qiime.org/scripts/pick_closed_reference_otus.html),
 [pick_open_reference_otus.py](http://qiime.org/scripts/pick_open_reference_otus.html) and [assign_taxonomy.py](http://qiime.org/scripts/assign_taxonomy.html) scripts.
 
 Taxonomies
