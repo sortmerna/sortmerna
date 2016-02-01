@@ -83,7 +83,6 @@ binaries `sortmerna` and `indexdb_rna` to your installation directory after
 calling `build.sh`.
 
 
-
 Install Clang for Mac OS 
 ------------------------
 
@@ -120,11 +119,17 @@ python ./tests/test_sortmerna.py
 Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
 
-Galaxy wrapper
+Galaxy Wrapper
 --------------
 
-Currently a Galaxy wrapper exists for SortMeRNA v1.9 (thanks to Björn Grüning),
-please visit "https://github.com/bgruening/galaxytools/tree/master/rna_tools/sortmerna" for more information.
+Currently a Galaxy wrapper exists for SortMeRNA 2.0 (thanks to Björn Grüning, see this [PR](https://github.com/bgruening/galaxytools/pull/202).
+Please visit "https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna" for more information.
+
+Debian package:
+---------------
+
+Thanks to the [Debian Med](https://www.debian.org/devel/debian-med/) team, SortMeRNA 2.0 is now a package in Debian.
+Andreas Tille wrote the man pages for sortmerna and indexdb_rna (version 2.0). These have been updated for 2.1.
 
 Taxonomies
 ----------
