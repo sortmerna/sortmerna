@@ -1,0 +1,995 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage[english]{isodate}
+\usepackage[parfill]{parskip}
+\usepackage{url}
+\usepackage{keystroke}
+\usepackage{graphicx}
+\usepackage{fancyvrb}
+\usepackage{color}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+\usepackage{tikz} % graphic diagrams
+\usetikzlibrary{positioning,patterns,backgrounds,decorations.pathreplacing,decorations.markings,shapes,fit,calc,shadows} % fitting shapes to coordinates
+\usetikzlibrary{automata,trees}
+
+\newcommand\verbbf[1]{\textcolor[rgb]{0,0,1}{\textbf{#1}}}
+
+\title{SortMeRNA User Manual}
+\author{Evguenia Kopylova\\ {\em jenya.kopylov@gmail.com}}
+\date{Feb 2016, version 2.1}
+
+\addtolength{\oddsidemargin}{-.7in}
+\addtolength{\textwidth}{1.2in}
+
+
+\begin{document}
+\maketitle
+
+\newpage
+\tableofcontents
+
+\newpage
+\section{Introduction}
+
+Copyright (C) 2012-2016 Bonsai Bioinformatics Research Group \\
+(LIFL - Universit\'{e} Lille 1), CNRS UMR 8022, INRIA Nord-Europe, France \\
+\url{http://bioinfo.lifl.fr/RNA/sortmerna/} \\
+Copyright (C) 2014-2016 Knight Lab \\
+Department of Pediatrics, UCSD School of Medicine, La Jolla, California, USA\\
+\url{https://knightlab.colorado.edu}
+
+SortMeRNA is a local sequence alignment tool for filtering, mapping and OTU-picking.
+The core algorithm is based on approximate seeds and allows for fast and sensitive analyses
+of NGS reads. The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
+Additional applications include OTU-picking and taxonomy assignation available through QIIME v1.9+ (\url{http://qiime.org}).
+SortMeRNA takes as input a file of reads (fasta or fastq format) and one or multiple rRNA
+database file(s), and sorts apart aligned and rejected reads into two files specified by the user.
+SortMeRNA works with Illumina, 454, Ion Torrent and PacBio data, and can produce SAM and
+BLAST-like alignments.
+
+For questions \& help, please contact:
+
+\begin{verbatim}
+ 1. Evguenia Kopylova     evguenia.kopylova@lifl.fr
+ 2. Laurent Noe           laurent.noe@lifl.fr
+ 3. Helene Touzet         helene.touzet@lifl.fr
+ 4. Rob Knight            robknight@ucsd.edu
+\end{verbatim}
+
+{\bf Important:} This user manual is strictly for SortMeRNA version 2.1. 
+
+
+\section{Installation}
+
+\begin{figure}[here!]
+\caption{\texttt{sortmerna- 2.1} directory tree}~\\
+\centering
+\tikzstyle{every node}=[draw=black,thick,anchor=west]
+\tikzstyle{selected}=[draw=red,fill=red!30]
+\tikzstyle{root}=[fill=gray!50]
+\begin{tikzpicture}[%
+  grow via three points={one child at (0.5,-0.7) and
+  two children at (0.5,-0.7) and (0.5,-1.4)},
+  edge from parent path={(\tikzparentnode.south) |- (\tikzchildnode.west)}]
+  \node [root] {sortmerna- 2.1} 
+    child { node {alp}}
+    child { node {cmph}}
+    child { node {src}}		
+    child { node {include}}
+    child { node {scripts}}
+    child { node {tests}}
+    child { node {rRNA\_databases}
+      child { node {silva-bac-16s-id90.fasta}}
+      child { node {...}}
+    }
+    child [missing] {}
+    child [missing] {}
+    child { node [selected] {sortmerna} }
+    child { node [selected] {indexdb\_rna} }
+    ;
+\end{tikzpicture}
+\label{fig:systemtree}
+\end{figure}
+
+\subsection{Install from tarball release}
+\label{sec:install}
+
+\begin{enumerate}
+ \item Download \texttt{sortmerna- 2.1.tar.gz} from \url{https://github.com/biocore/sortmerna/releases}
+ \item Extract the source code package into a directory of your choice, enter \texttt{sortmerna- 2.1} directory and type,
+  \begin{verbatim}
+  > bash ./build.sh
+ \end{verbatim}
+  \item At this point, two executables \texttt{indexdb\_rna} and \texttt{sortmerna} will be located
+ in the \texttt{sortmerna- 2.1} directory. 
+ If the user would like to install the executables into their default installation directory (\texttt{/usr/local/bin} for Linux or \texttt{/opt/local/bin} for Mac) then type,
+ \begin{verbatim}
+  > make install (with root permissions)
+ \end{verbatim}
+ \item To begin using SortMeRNA, type `\texttt{indexdb\_rna -h}' or `\texttt{sortmerna -h}'. Databases must first be indexed using \texttt{indexdb\_rna}.
+\end{enumerate}
+
+\subsection{Install development version from git}
+\label{sec:install}
+
+\begin{enumerate}
+ \item Clone the sortmerna directory to your local system
+ \begin{verbatim}
+  > git clone https://github.com/biocore/sortmerna.git
+ \end{verbatim}
+ \item Build sortmerna
+  \begin{verbatim}
+  > cd sortmerna
+  > bash ./build.sh
+ \end{verbatim}
+
+
+
+\end{enumerate}
+
+\subsection{Install from precompiled code}
+
+\begin{enumerate}
+ \item Download the latest binary distribution of SortMeRNA from \url{http://bioinfo.lifl.fr/RNA/sortmerna}
+ \item Extract the source code package into a directory of your choice,
+ \begin{verbatim}
+  > tar -xvf sortmerna- 2.1.tar.gz 
+  > cd sortmerna- 2.1
+ \end{verbatim}
+ \item To begin using SortMeRNA, type `\texttt{indexdb\_rna -h}' or `\texttt{sortmerna -h}'. The user must firstly index 
+ the databases with the command \texttt{indexdb\_rna} before they can run the command \texttt{sortmerna}.
+ 
+\end{enumerate}
+
+\subsection{Uninstall}
+
+\noindent If the user installed SortMeRNA using the command \texttt{`make install'}, then they can use the command \texttt{`make uninstall'} to
+uninstall SortMeRNA (with root permissions).
+
+\section{Databases}
+\noindent SortMeRNA comes prepackaged with 8 databases,\\
+
+\resizebox{6.4in}{!}{
+\begin{tabular}{l|l|l|l|l}
+ \textbf{representative database} & \textbf{\%id} & $\#$ \textbf{seq (clustered)} & \textbf{origin} & $\#$ \textbf{seq (original)}  \\
+ \hline
+ silva-bac-16s-id90 & 90 & 12798 & SILVA SSU Ref NR v.119 & 464618 \\
+ silva-arc-16s-id95 & 95 &  3193 & SILVA SSU Ref NR v.119 & 18797  \\
+ silva-euk-18s-id95 & 95 &  7348 & SILVA SSU Ref NR v.119 & 51553  \\
+ silva-bac-23s-id98 & 98 &  4488 & SILVA LSU Ref v.119 & 43822  \\
+ silva-arc-23s-id98 & 98 &  251 & SILVA LSU Ref v.119 & 629  \\
+ silva-euk-28s-id98 & 98 &  4935 & SILVA LSU Ref v.119 & 13095 \\
+ rfam-5s-id98 & 98 & 59513 & RFAM & 116760 \\
+ rfam-5.8s-id98 & 98 & 13034 & RFAM & 225185 \\
+\end{tabular}}
+~\\
+
+HMMER 3.1b1 and SumaClust v1.0.00 were used to reduce the size of the original databases to the similarity listed in column 2 (\%id) of the table above
+(see {\tt/sortmerna/rRNA\_databases/README.txt} for a list of complete steps). 
+
+These representative databases were specifically made for fast filtering of rRNA. Approximately the same number of rRNA will be filtered
+using silva-bac-16s-id90 (12802 rRNA) as using Greengenes 97\% (99322 rRNA), but the former will run significantly faster.
+
+\noindent \textbf{id} $\%$: members of the cluster must have identity at least this \% id with the representative sequence \\
+
+\noindent \textbf{Remark}: The user must first index the fasta database by using the command \texttt{indexdb\_rna} and 
+then filter/map reads against the database using the command \texttt{sortmerna}.
+
+\section{How to run SortMeRNA}
+\subsection{Index the rRNA database: command `\texttt{indexdb\_rna}'}
+
+\noindent The executable \texttt{indexdb\_rna} indexes an rRNA database.\\
+
+\noindent To see the man page for \texttt{indexdb\_rna}, 
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> indexdb_rna -h
+
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
+               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
+  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
+               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+               See the GNU Lesser General Public License for more details.
+  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com 
+               Laurent Noe, laurent.noe@lifl.fr
+               Helene Touzet, helene.touzet@lifl.fr
+
+
+  usage:   ./indexdb_rna --ref db.fasta,db.idx [OPTIONS]:
+
+  --------------------------------------------------------------------------------------------------------
+  | parameter        value           description                                                 default |
+  --------------------------------------------------------------------------------------------------------
+     --ref           STRING,STRING   FASTA reference file, index file                            mandatory
+                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)
+                                       If passing multiple reference sequence files, separate
+                                       them by ':',
+                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)
+   [OPTIONS]:
+     --fast          BOOL            suggested option for aligning ~99% related species          off
+     --sensitive     BOOL            suggested option for aligning ~75-98% related species       on
+     --tmpdir        STRING          directory where to write temporary files
+     -m              INT             the amount of memory (in Mbytes) for building the index     3072 
+     -L              INT             seed length                                                 18
+     --max_pos       INT             maximum number of positions to store for each unique L-mer  10000
+                                      (setting --max_pos 0 will store all positions)
+     -v              BOOL            verbose
+     -h              BOOL            help
+\end{Verbatim}
+
+
+~\\~\\
+\noindent There are eight rRNA representative databases provided in the `\texttt{sortmerna- 2.1/rRNA\_databases}' folder. 
+All databases were derived from the SILVA SSU and LSU databases (release 119) and the RFAM databases using HMMER 3.1b1 and SumaClust v1.0.00.
+Additionally, the user can index their own database. \\
+
+\subsubsection{Example 1: indexdb\_rna using one database}
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> ./indexdb_rna --ref ./rRNA_databases/silva-bac-16s-id90.fasta,./index/silva-bac-16s-db -v
+
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
+               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
+  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
+               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+               See the GNU Lesser General Public License for more details.
+  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com 
+               Laurent Noe, laurent.noe@lifl.fr
+               Helene Touzet, helene.touzet@lifl.fr
+
+
+  Parameters summary: 
+    K-mer size: 19
+    K-mer interval: 1
+    Maximum positions to store per unique K-mer: 10000
+
+  Total number of databases to index: 1
+
+  Begin indexing file ./rRNA_databases/silva-bac-16s-id90.fasta under index name ./index/silva-bac-16s-db: 
+  Collecting sequence distribution statistics ..  done  [1.133206 sec]
+
+  start index part # 0: 
+    (1/3) building burst tries .. done  [23.643256 sec]
+    (2/3) building CMPH hash .. done  [22.306709 sec]
+    (3/3) building position lookup tables .. done [54.958680 sec]
+    total number of sequences in this part = 12798
+      writing kmer data to ./index/silva-bac-16s-db.kmer_0.dat
+      writing burst tries to ./index/silva-bac-16s-db.bursttrie_0.dat
+      writing position lookup table to ./index/silva-bac-16s-db.pos_0.dat
+      writing nucleotide distribution statistics to ./index/silva-bac-16s-db.stats
+    done.
+    
+\end{Verbatim}
+
+~\\
+
+\subsubsection{Example 2: indexdb\_rna using multiple databases}
+
+Multiple databases can be indexed simultaneously by passing them as a `:' separated list to \texttt{--ref} (no spaces allowed). 
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> ./indexdb_rna --ref ./rRNA_databases/silva-bac-16s-id90.fasta,./index/silva-bac-16s-db:\
+./rRNA_databases/silva-bac-23s-id98.fasta,./index/silva-bac-23s-db:\
+./rRNA_databases/silva-arc-16s-id95.fasta,./index/silva-arc-16s-db:\
+./rRNA_databases/silva-arc-23s-id98.fasta,./index/silva-arc-23s-db:\
+./rRNA_databases/silva-euk-18s-id95.fasta,./index/silva-euk-18s-db:\
+./rRNA_databases/silva-euk-28s-id98.fasta,./index/silva-euk-28s:\
+./rRNA_databases/rfam-5s-database-id98.fasta,./index/rfam-5s-db:\
+./rRNA_databases/rfam-5.8s-database-id98.fasta,./index/rfam-5.8s-db
+\end{Verbatim}
+
+\newpage
+\subsection{A guide to choosing `{\bf sortmerna}' parameters for filtering and read mapping}
+
+In SortMeRNA version 1.99 beta and up, users have the option to output sequence alignments for their matching rRNA reads in
+the SAM or BLAST-like formats. Depending on the desired quality of alignments, different parameters choices must be set. 
+Table~\ref{tab:guide} presents a guide to setting parameters choices for most use cases. In all cases, output alignments are always guaranteed to reach
+the threshold E-value score (default E-value=1). An E-value of 1 signifies that one random alignment is expected for aligning
+\textbf{all} reads against the reference database. The E-value in SortMeRNA is computed for the entire search space, not per read.
+
+\begin{table}[htp!]
+\caption{SortMeRNA alignment parameter guide}
+\label{tab:guide}
+    \centering
+    \footnotesize
+	\begin{tabular}{l | l | l}
+	\toprule
+	\parbox[t]{0.6in}{\sf option} & {\sf speed} & \parbox[t]{0.45in}{\sf description}  \\
+	\midrule
+	\multirow{8}{*}{{\tt --num-alignments INT}} 
+	& Very fast for {\tt INT = 1}&  \parbox{6cm}{Output the first alignment passing E-value threshold ({\bf best choice if only filtering is needed})} \\
+	\cmidrule{2-3}
+	& Speed decreases for higher value {\tt INT} &  \parbox{6cm}{Higher {\tt INT} signifies more alignments will be made \& output }\\
+	\cmidrule{2-3}
+	& Very slow for {\tt INT = 0} &  \parbox{6cm}{All alignments reaching the E-value threshold are reported (this option is not suggested for high similarity rRNA databases, due to many possible alignments per read causing a very large file output)} \\
+	\midrule
+	\multirow{4}{*}{{\tt --best INT}} 
+	& Fast for {\tt INT = 1} &  \parbox{6cm}{Only one high-candidate reference sequence will be searched for alignments (determined heuristically using a Longest Increasing Subsequence of seed matches). The single best alignment of those will be reported }\\
+	\cmidrule{2-3}
+	& Speed decreases for higher value {\tt INT}  &  \parbox{6cm}{Higher {\tt INT} signifies more alignments will be made, though only the best one will be reported } \\
+	\cmidrule{2-3}
+	& Very slow for {\tt INT = 0} &   \parbox{6cm}{All high-candidate reference sequences will be searched for alignments, though only the best one will be reported }\\
+	\bottomrule
+	\end{tabular}
+\end{table}
+
+
+
+
+
+\newpage
+\subsection{Filter rRNA reads}
+
+\noindent The executable \texttt{sortmerna} can filter rRNA reads against an indexed rRNA database.\\
+
+\noindent To see the man page for \texttt{sortmerna}, 
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> ./sortmerna -h
+
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
+               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
+  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
+               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+               See the GNU Lesser General Public License for more details.
+  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com 
+               Laurent Noe, laurent.noe@lifl.fr
+               Helene Touzet, helene.touzet@lifl.fr
+
+
+  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:
+
+  -------------------------------------------------------------------------------------------------------------
+  | parameter          value           description                                                    default |
+  -------------------------------------------------------------------------------------------------------------
+     --ref             STRING,STRING   FASTA reference file, index file                               mandatory
+                                         (ex. --ref /path/to/file1.fasta,/path/to/index1)
+                                         If passing multiple reference files, separate 
+                                         them using the delimiter ':',
+                                         (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)
+     --reads           STRING          FASTA/FASTQ reads file                                         mandatory
+     --aligned         STRING          aligned reads filepath + base file name                        mandatory
+                                         (appropriate extension will be added)
+
+   [COMMON OPTIONS]: 
+     --other           STRING          rejected reads filepath + base file name
+                                         (appropriate extension will be added)
+     --fastx           BOOL            output FASTA/FASTQ file                                        off
+                                         (for aligned and/or rejected reads)
+     --sam             BOOL            output SAM alignment                                           off
+                                         (for aligned reads only)
+     --SQ              BOOL            add SQ tags to the SAM file                                    off
+     --blast           STRING          output alignments in various Blast-like formats                
+                                        `0' - pairwise
+                                        `1' - tabular (Blast -m 8 format)
+                                        `1 cigar' - tabular + column for CIGAR 
+                                        `1 cigar qcov' - tabular + columns for CIGAR
+                                                         and query coverage
+                                        `1 cigar qcov qstrand' - tabular + columns for CIGAR,
+                                                                query coverage and strand
+     --log             BOOL            output overall statistics                                      off
+     --num_alignments  INT             report first INT alignments per read reaching E-value          -1
+                                        (--num_alignments 0 signifies all alignments will be output)
+       or (default)
+     --best            INT             report INT best alignments per read reaching E-value           1
+                                         by searching --min_lis INT candidate alignments
+                                        (--best 0 signifies all candidate alignments will be searched)
+     --min_lis         INT             search all alignments having the first INT longest LIS         2
+                                         LIS stands for Longest Increasing Subsequence, it is 
+                                         computed using seeds' positions to expand hits into
+                                         longer matches prior to Smith-Waterman alignment. 
+     --print_all_reads BOOL            output null alignment strings for non-aligned reads            off
+                                         to SAM and/or BLAST tabular files
+     --paired_in       BOOL            both paired-end reads go in --aligned fasta/q file             off
+                                         (interleaved reads only, see Section 4.2.4 of User Manual)
+     --paired_out      BOOL            both paired-end reads go in --other fasta/q file               off
+                                         (interleaved reads only, see Section 4.2.4 of User Manual)
+     --match           INT             SW score (positive integer) for a match                        2
+     --mismatch        INT             SW penalty (negative integer) for a mismatch                   -3
+     --gap_open        INT             SW penalty (positive integer) for introducing a gap            5
+     --gap_ext         INT             SW penalty (positive integer) for extending a gap              2
+     -N                INT             SW penalty for ambiguous letters (N's)                         scored as --mismatch
+     -F                BOOL            search only the forward strand                                 off
+     -R                BOOL            search only the reverse-complementary strand                   off
+     -a                INT             number of threads to use                                       1
+     -e                DOUBLE          E-value threshold                                              1
+     -m                INT             INT Mbytes for loading the reads into memory                   1024
+                                        (maximum -m INT is 4096)
+     -v                BOOL            verbose                                                        off
+
+
+   [OTU PICKING OPTIONS]: 
+     --id              DOUBLE          %id similarity threshold (the alignment must                   0.97
+                                         still pass the E-value threshold)
+     --coverage        DOUBLE          %query coverage threshold (the alignment must                  0.97
+                                         still pass the E-value threshold)
+     --de_novo_otu     BOOL            FASTA/FASTQ file for reads matching database < %id             off
+                                         (set using --id) and < %cov (set using --coverage) 
+                                         (alignment must still pass the E-value threshold)
+     --otu_map         BOOL            output OTU map (input to QIIME's make_otu_table.py)            off
+
+
+   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): 
+    --passes           INT,INT,INT     three intervals at which to place the seed on the read         L,L/2,3
+                                         (L is the seed length set in ./indexdb_rna)
+    --edges            INT             number (or percent if INT followed by % sign) of               4
+                                         nucleotides to add to each edge of the read
+                                         prior to SW local alignment 
+    --num_seeds        INT             number of seeds matched before searching                       2
+                                         for candidate LIS 
+    --full_search      BOOL            search for all 0-error and 1-error seed                        off
+                                         matches in the index rather than stopping
+                                         after finding a 0-error match (<1% gain in
+                                         sensitivity with up four-fold decrease in speed)
+    --pid              BOOL            add pid to output file names                                   off
+
+
+   [HELP]:
+     -h                BOOL            help
+     --version         BOOL            SortMeRNA version number
+
+
+\end{Verbatim}
+
+~\\
+\noindent The user can adjust the amount of memory allocated for loading the reads through the 
+command option \texttt{-m}. By default, \texttt{-m} is set to be high enough for 1GB.
+If the reads file is larger than 1GB, then \texttt{sortmerna} internally divides the file into partial sections of 
+1GB and executes one section at a time. Hence, if a user has an input file of 15GB and only 1GB of RAM to store it, the 
+file will be processed in partial sections using \texttt{mmap} without having to physically split it prior to execution. Otherwise, the user
+can increase \texttt{-m} to map larger portions of the file. The limit for \texttt{-m} is given by typing \texttt{sortmerna -h}.
+
+
+\newpage
+ 
+\subsubsection{Example 3: multiple databases and the fastest alignment option}
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> time ./sortmerna --ref ./rRNA_databases/silva-bac-16s-id90.fasta,./index/silva-bac-16s-db:\
+./rRNA_databases/silva-bac-23s-id98.fasta,./index/silva-bac-23s-db:\
+./rRNA_databases/silva-arc-16s-id95.fasta,./index/silva-arc-16s-db:\
+./rRNA_databases/silva-arc-23s-id98.fasta,./index/silva-arc-23s-db:\
+./rRNA_databases/silva-euk-18s-id95.fasta,./index/silva-euk-18s-db:\
+./rRNA_databases/silva-euk-28s-id98.fasta,./index/silva-euk-28s:\
+./rRNA_databases/rfam-5s-database-id98.fasta,./index/rfam-5s-db:\
+./rRNA_databases/rfam-5.8s-database-id98.fasta,./index/rfam-5.8s-db\
+ --reads SRR106861.fasta --sam --num_alignments 1 --fastx --aligned SRR105861_rRNA\
+ --other SRR105861_non_rRNA --log -v
+
+
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
+               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
+  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
+               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+               See the GNU Lesser General Public License for more details.
+  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com 
+               Laurent Noe, laurent.noe@lifl.fr
+               Helene Touzet, helene.touzet@lifl.fr
+
+
+  Computing read file statistics ... done [2.16 sec]
+  size of reads file: 35238748 bytes
+  partial section(s) to be executed: 1 of size 35238748 bytes 
+  Parameters summary:
+    Number of seeds = 2
+    Edges = 4 (as integer)
+    SW match = 2
+    SW mismatch = -3
+    SW gap open penalty = 5
+    SW gap extend penalty = 2
+    SW ambiguous nucleotide = -3
+    SQ tags are not output
+    Number of threads = 1
+
+  Begin mmap reads section # 1:
+  Time to mmap reads and set up pointers [0.11 sec]
+
+  Begin analysis of: ./rRNA_databases/silva-bac-16s-id90.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.602397
+    Gumbel K = 0.328927
+    Minimal SW score based on E-value = 54
+    Loading index part 1/1 ...  done [4.67 sec]
+    Begin index search ...  done [83.53 sec]
+    Freeing index ...  done [0.87 sec]
+
+  Begin analysis of: ./rRNA_databases/silva-bac-23s-id98.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.603075
+    Gumbel K = 0.330488
+    Minimal SW score based on E-value = 53
+    Loading index part 1/1 ...  done [3.63 sec]
+    Begin index search ...  done [94.76 sec]
+    Freeing index ...  done [0.41 sec]
+
+  Begin analysis of: ./rRNA_databases/silva-arc-16s-id95.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.596230
+    Gumbel K = 0.322143
+    Minimal SW score based on E-value = 52
+    Loading index part 1/1 ...  done [1.14 sec]
+    Begin index search ...  done [22.63 sec]
+    Freeing index ...  done [0.14 sec]
+
+  Begin analysis of: ./rRNA_databases/silva-arc-23s-id98.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.597749
+    Gumbel K = 0.325630
+    Minimal SW score based on E-value = 49
+    Loading index part 1/1 ...  done [0.50 sec]
+    Begin index search ...  done [13.27 sec]
+    Freeing index ...  done [0.06 sec]
+
+  Begin analysis of: ./rRNA_databases/silva-euk-18s-id95.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.612228
+    Gumbel K = 0.334926
+    Minimal SW score based on E-value = 52
+    Loading index part 1/1 ...  done [3.23 sec]
+    Begin index search ...  done [30.28 sec]
+    Freeing index ...  done [0.45 sec]
+
+  Begin analysis of: ./rRNA_databases/silva-euk-28s-id98.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.612068
+    Gumbel K = 0.344763
+    Minimal SW score based on E-value = 53
+    Loading index part 1/1 ...  done [3.43 sec]
+    Begin index search ...  done [35.69 sec]
+    Freeing index ...  done [0.48 sec]
+
+  Begin analysis of: ./rRNA_databases/rfam-5s-database-id98.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.616617
+    Gumbel K = 0.341306
+    Minimal SW score based on E-value = 51
+    Loading index part 1/1 ...  done [1.77 sec]
+    Begin index search ...  done [13.50 sec]
+    Freeing index ...  done [0.22 sec]
+
+  Begin analysis of: ./rRNA_databases/rfam-5.8s-database-id98.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.617817
+    Gumbel K = 0.340589
+    Minimal SW score based on E-value = 49
+    Loading index part 1/1 ...  done [0.60 sec]
+    Begin index search ...  done [8.78 sec]
+    Freeing index ...  done [0.07 sec]
+    Total number of reads mapped (incl. all reads file sections searched): 104243
+    Writing aligned FASTA/FASTQ ...  done [1.13 sec]
+    Writing not-aligned FASTA/FASTQ ...  done [0.10 sec]
+              
+\end{Verbatim}
+
+~\\
+\noindent The option `\texttt{--log}' will create an overall statistics file,\\
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> cat SRR105861_rRNA.log 
+ Time and date
+
+ Command: sortmerna --ref ./rRNA_databases/silva-bac-16s-id90.fasta,./index/silva-bac-16s-db:\
+ ./rRNA_databases/silva-bac-23s-id98.fasta,./index/silva-bac-23s-db:\
+ ./rRNA_databases/silva-arc-16s-id95.fasta,./index/silva-arc-16s-db:\
+ ./rRNA_databases/silva-arc-23s-id98.fasta,./index/silva-arc-23s-db:\
+ ./rRNA_databases/silva-euk-18s-id95.fasta,./index/silva-euk-18s-db:\
+ ./rRNA_databases/silva-euk-28s-id98.fasta,./index/silva-euk-28s:\
+ ./rRNA_databases/rfam-5s-database-id98.fasta,./index/rfam-5s-db:\
+ ./rRNA_databases/rfam-5.8s-database-id98.fasta,./index/rfam-5.8s-db\
+  --reads /Users/jenya/Downloads/SRR106861.fasta --sam --num_alignments 1\
+   --fastx --aligned SRR105861_rRNA --other SRR105861_non_rRNA.fasta fasta -v 
+ Process pid = 1957
+ Parameters summary:
+    Index: ./index/silva-bac-16s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.602397
+     Gumbel K = 0.328927
+     Minimal SW score based on E-value = 54
+    Index: ./index/silva-bac-23s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.603075
+     Gumbel K = 0.330488
+     Minimal SW score based on E-value = 53
+    Index: ./index/silva-arc-16s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.596230
+     Gumbel K = 0.322143
+     Minimal SW score based on E-value = 52
+    Index: ./index/silva-arc-23s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.597749
+     Gumbel K = 0.325630
+     Minimal SW score based on E-value = 49
+    Index: ./index/silva-euk-18s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.612228
+     Gumbel K = 0.334926
+     Minimal SW score based on E-value = 52
+    Index: ./index/silva-euk-28s
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.612068
+     Gumbel K = 0.344763
+     Minimal SW score based on E-value = 53
+    Index: ./index/rfam-5s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.616617
+     Gumbel K = 0.341306
+     Minimal SW score based on E-value = 51
+    Index: ./index/rfam-5.8s-db
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.617817
+     Gumbel K = 0.340589
+     Minimal SW score based on E-value = 49
+    Number of seeds = 2
+    Edges = 4 (as integer)
+    SW match = 2
+    SW mismatch = -3
+    SW gap open penalty = 5
+    SW gap extend penalty = 2
+    SW ambiguous nucleotide = -3
+    SQ tags are not output
+    Number of threads = 1
+    Reads file = SRR106861.fasta
+
+ Results:
+    Total reads = 113128
+    Total reads passing E-value threshold = 104243 (92.15%)
+    Total reads failing E-value threshold = 8885 (7.85%)
+    Minimum read length = 59
+    Maximum read length = 1253
+    Mean read length = 267
+ By database:
+    ./rRNA_databases/silva-bac-16s-id90.fasta		25.73%
+    ./rRNA_databases/silva-bac-23s-id98.fasta		64.37%
+    ./rRNA_databases/silva-arc-16s-id95.fasta		0.00%
+    ./rRNA_databases/silva-arc-23s-id98.fasta		0.00%
+    ./rRNA_databases/silva-euk-18s-id95.fasta		0.00%
+    ./rRNA_databases/silva-euk-28s-id98.fasta		0.00%
+    ./rRNA_databases/rfam-5s-database-id98.fasta		2.04%
+    ./rRNA_databases/rfam-5.8s-database-id98.fasta		0.00%
+    
+ \end{Verbatim}
+
+\subsubsection{Filtering paired-end reads}
+
+When writing aligned and non-aligned reads to FASTA/Q files, sometimes the situation arises 
+where one of the paired-end reads aligns and the other one doesn't. Since SortMeRNA
+looks at each read individually, by default the reads will be split into two separate files. That is, the read that
+aligned will go into the {\tt--aligned} FASTA/Q file and the pair that didn't align will go into the
+{\tt--other} FASTA/Q file.
+
+This situation would result in the splitting of some paired reads in the
+output files and not optimal for users who require paired order of the reads for
+downstream analyses.
+
+For users who  wish to keep the order of their paired-ended reads, two options are available.
+If one read aligns and the other one not then,
+
+\begin{enumerate}
+ \item[(1)] {\tt--paired-in} will put both reads into the file specified by {\tt--aligned}
+ \item[(2)] {\tt--paired-out} will put both reads into the file specified by {\tt--other}
+\end{enumerate}
+
+The first option, {\tt--paired-in} is optimal for users that want all reads in the {\tt--other} file
+to be non-rRNA. However, there are small chances that reads which are non-rRNA will also be
+put into the {\tt--aligned} file.
+
+The second option, {\tt--paired-out} is optimal for users that want only rRNA reads in the
+{\tt--aligned} file. However, there are small chances that reads which are rRNA will also be
+put into the {\tt--other} file.
+
+If neither of these two options is added to the {\tt sortmerna} command, then aligned and
+non-aligned reads will be properly output to the {\tt--aligned} and {\tt--other} files, possibly breaking
+the order for a set of paired reads between two output files.
+
+{\bf It's important to note} that regardless of the options used, the {\tt--log} file will always
+report the true number of reads classified as rRNA (not the number of reads in the {\tt--aligned}
+file).
+
+\subsubsection{Example 4: forward-reverse paired-end reads (2 input files)}
+
+\begin{figure}[here!]
+\centering
+\resizebox{5in}{!}{
+\tikzstyle{mybox} = [draw=OliveGreen, fill=blue!5, very thick,
+    rectangle, rounded corners, inner sep=10pt, inner ysep=20pt]
+\tikzstyle{fancytitle} =[fill=OliveGreen, text=white, rectangle, rounded corners]
+%
+\begin{tikzpicture}
+\node [mybox] (box1) {%
+    \begin{minipage}[t!]{2in}
+    {\footnotesize
+       @SEQUENCE\_ID\_1/\textbf{1} \\
+       ACTT..\\
+       +\\
+       QUALITY\_1/1\\
+       @SEQUENCE\_ID\_2/\textbf{1} \\
+       GTTA..\\
+       +\\
+       QUALITY\_2/1\\
+       ..
+    }
+    \end{minipage}
+};
+
+\node [mybox] (box2) [right=of box1,xshift=2cm] {%
+    \begin{minipage}[t!]{2in}
+    {\footnotesize
+       @SEQUENCE\_ID\_1/\textbf{2} \\
+       GTAC..\\
+       +\\
+       QUALITY\_1/2\\
+       @SEQUENCE\_ID\_2/\textbf{2} \\
+       CCAC..\\
+       +\\
+       QUALITY\_2/2\\
+       ..
+    }
+    \end{minipage}
+};
+    
+\node[fancytitle] at (box1.north) {{\small FASTQ forward reads}};
+\node[fancytitle] at (box2.north) {{\small FASTQ reverse reads}};
+
+\draw [decorate,color=black!80,decoration={brace,mirror,amplitude=5pt,raise=2pt}] (3,0.3) --  node[right=10pt]{$~~pair~\#~1$}(3,1.8);
+\draw [decorate,color=black!80,decoration={brace,amplitude=5pt,raise=2pt}] (5.8,0.3) --  node[right=10pt]{~}(5.8,1.8);
+
+\draw [decorate,color=black!80,decoration={brace,amplitude=5pt,raise=2pt}] (3,0) --  node[right=10pt]{$~~pair~\#~2$}(3,-1.5);
+\draw [decorate,color=black!80,decoration={brace,mirror,amplitude=5pt,raise=2pt}] (5.8,0) --  node[right=10pt]{~}(5.8,-1.5);
+
+\end{tikzpicture}
+}%resizebox
+\caption{Forward and reverse reads in paired-end sequencing format}
+\label{fig:format2}
+\end{figure}
+
+\begin{figure}[here!]
+\centering
+\resizebox{2.3in}{!}{
+\tikzstyle{mybox} = [draw=OliveGreen, fill=blue!5, very thick,
+    rectangle, rounded corners, inner sep=10pt, inner ysep=20pt]
+\tikzstyle{fancytitle} =[fill=OliveGreen, text=white, rectangle, rounded corners]
+%
+\begin{tikzpicture}
+\node [mybox] (box) {%
+    \begin{minipage}[t!]{2in}
+    {\footnotesize
+       @SEQUENCE\_ID\_1/\textbf{1} \\
+       ACTT..\\
+       +\\
+       QUALITY\_1/1\\
+       @SEQUENCE\_ID\_1/\textbf{2} \\
+       GTAC..\\
+       +\\
+       QUALITY\_1/2\\
+       ..
+    }
+    \end{minipage}
+    };
+\node[fancytitle] at (box.north) {{\small FASTQ paired-end reads}};
+\draw [decorate,color=black!80,decoration={brace,mirror,amplitude=10pt,raise=2pt}] (0.5,-1.5) --  node[right=10pt]{$~pair~\#~1$}(0.5,1.8);
+\end{tikzpicture}
+}%resizebox
+\caption{Paired-end read format accepted by SortMeRNA}
+\label{fig:format1}
+\end{figure}
+
+\noindent SortMeRNA accepts only 1 file as input for the reads. If a user has two input files, in the case for the 
+foward and reverse paired-end reads (see Figure~\ref{fig:format2}), they may use the \texttt{merge-paired-reads.sh} script found in 
+\texttt{`sortmerna/scripts'} folder to interleave the paired reads into the format of Figure~\ref{fig:format1}.\\
+
+\noindent The command for \texttt{merge-paired-reads.sh} is the following,
+\begin{verbatim}
+ > bash ./merge-paired-reads.sh forward-reads.fastq reverse-reads.fastq outfile.fastq
+\end{verbatim}
+
+\noindent Now, the user may input \texttt{outfile.fastq} to SortMeRNA for analysis.
+
+\noindent Similarly, for unmerging the paired reads back into two separate files, use the command,
+{\small
+\begin{verbatim}
+ > bash ./unmerge-paired-reads.sh merged-reads.fastq forward-reads.fastq reverse-reads.fastq 
+\end{verbatim}}
+{\bf Important:} unmerge-paired-reads.sh should only be used if one of the options {\tt--paired\_in} or {\tt--paired\_out}
+was used during filtering. Otherwise it may give incorrect results if a paired-read was split during alignment (one
+read aligned and the other one not).
+
+\newpage
+\subsection{Read mapping}
+
+\subsubsection{Mapping reads for classification}
+
+Although SortMeRNA is very sensitive with the small rRNA databases distributed with the source code,
+these databases are not optimal for classification since often alignments with 75-90\% identity
+will be returned (there are only several thousand rRNA in most of the databases, compared to the original
+SILVA or Greengenes databases containing millions of rRNA). Classification at the species level generally
+considers alignments at 97\% and above, so it is suggested to use a larger database is species classification
+is the main goal.
+
+Moreover, SortMeRNA is a local alignment tool, so it's also important to look at the query coverage \% for
+each alignment. In the SAM output format, neither \% id or query coverage are reported. If the user wishes
+for these values, then the Blast tabular format with CIGAR + query coverage option {(\tt--blast '1 cigar qcov')} is the way to go.
+
+\subsubsection{Example 5: mapping reads against the 16S Greengenes 97\% id database with multithreading}
+
+This example will generate SAM and BLAST tabular output files. Alignments are classified as significant
+based on the E-value cutoff (default 1). SortMeRNA's E-value takes into consideration the full size of the
+reference database as well as the query file, thus the E-value is higher than BLAST's (ex. equivalent to BLAST's 1e-5).
+
+\begin{Verbatim}[fontsize=\footnotesize]
+>> sortmerna --ref 97_otus_gg_13_8.fasta,./index/97_otus_gg_13_8\
+ --reads SRR106861.fasta --blast '1 cigar qcov' --sam --log --aligned SRR106861_gg_rRNA -a 20 -v 
+
+
+  Program:     SortMeRNA version 2.1, 01/02/2016
+  Copyright:   2012-16 Bonsai Bioinformatics Research Group:
+               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
+               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,
+  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
+               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+               See the GNU Lesser General Public License for more details.
+  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com 
+               Laurent Noe, laurent.noe@lifl.fr
+               Helene Touzet, helene.touzet@lifl.fr
+
+
+  Computing read file statistics ... done [0.44 sec]
+  size of reads file: 35238748 bytes
+  partial section(s) to be executed: 1 of size 35238748 bytes 
+  Parameters summary:
+    Number of seeds = 2
+    Edges = 4 (as integer)
+    SW match = 2
+    SW mismatch = -3
+    SW gap open penalty = 5
+    SW gap extend penalty = 2
+    SW ambiguous nucleotide = -3
+    SQ tags are not output
+    Number of threads = 20
+
+  Begin mmap reads section # 1:
+  Time to mmap reads and set up pointers [0.10 sec]
+
+  Begin analysis of: 97_otus_gg_13_8.fasta
+    Seed length = 18
+    Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+    Gumbel lambda = 0.600470
+    Gumbel K = 0.327880
+    Minimal SW score based on E-value = 57
+    Loading index part 1/1 ...  done [10.76 sec]
+    Begin index search ...  done [23.75 sec]
+    Freeing index ...  done [1.44 sec]
+    Total number of reads mapped (incl. all reads file sections searched): 29089
+    Writing alignments ...  done [7.71 sec]
+              
+\end{Verbatim}
+
+This is almost the same number of 16S rRNA as identified by SortMeRNA using the smaller provided database,
+
+\begin{Verbatim}[fontsize=\footnotesize]
+
+>> cat SRR106861_gg_rRNA.log 
+ Date and time
+
+ Command: sortmerna --ref 97_otus_gg_13_8.fasta,./index/97_otus_gg_13_8\
+  --reads SRR106861.fasta --blast '1 cigar qcov' --sam --log --aligned SRR106861_gg_rRNA -a 20 -v 
+ Process pid = 44246
+ Parameters summary:
+    Index: ./index/97_otus_gg_13_8
+     Seed length = 18
+     Pass 1 = 18, Pass 2 = 9, Pass 3 = 3
+     Gumbel lambda = 0.600470
+     Gumbel K = 0.327880
+     Minimal SW score based on E-value = 57
+    Number of seeds = 2
+    Edges = 4 (as integer)
+    SW match = 2
+    SW mismatch = -3
+    SW gap open penalty = 5
+    SW gap extend penalty = 2
+    SW ambiguous nucleotide = -3
+    SQ tags are not output
+    Number of threads = 20
+    Reads file = SRR106861.fasta
+
+ Results:
+    Total reads = 113128
+    Total reads passing E-value threshold = 29089 (25.71%)
+    Total reads failing E-value threshold = 84039 (74.29%)
+    Minimum read length = 59
+    Maximum read length = 1253
+    Mean read length = 267
+ By database:
+    97_otus_gg_13_8.fasta		25.71%
+    
+\end{Verbatim}
+
+\newpage
+\subsection{OTU-picking}
+
+SortMeRNA is implemented in QIIME's closed-reference and open-reference OTU-picking workflows.
+The readers are referred to QIIME's tutorials for an in-depth discussion of these methods
+\url{http://qiime.org/tutorials/otu_picking.html}.
+
+\section{SortMeRNA advanced options}
+
+\subsection*{{\tt --num\_seeds INT}}
+The threshold number of seeds required to match in the primary seed-search filter before 
+moving on to the secondary seed-cluster filter. More specifically, the threshold number of 
+seeds required before searching for a longest increasing subsequence (LIS) of the seeds' positions
+between the read and the closest matching reference sequence. By default, this is set to 2 seeds. 
+
+\subsection*{{\tt --passes INT,INT,INT}}
+In the primary seed-search filter, SortMeRNA moves a seed of length $L$ (parameter of {\tt indexdb\_rna}) 
+across the read using three passes. If at the end of each pass a threshold number of seeds (defined by {\tt --num\_seeds}) 
+did not match to the reference database, SortMeRNA attempts to find more seeds by decreasing the interval at which the 
+seed is placed along the read by using another pass. In default mode, these intervals are set to 
+$L,L/2,3$ for Pass 1, 2 and 3, respectively. Usually, if the read is highly similar to the reference
+database, a threshold number of seeds will be found in the first pass.
+
+\subsection*{{\tt --edges INT(\%)}}
+The number (or percentage if followed by \%) of nucleotides to add to each edge of the alignment region 
+on the reference sequence before performing Smith-Waterman alignment. By default, this is set to 4 nucleotides.
+
+\subsection*{{\tt --full\_search FLAG}}
+During the index traversal, if a seed match is found with 0-errors, SortMeRNA will stop searching for further
+1-error matches. This heuristic is based upon the assumption that 0-error matches are more significant than
+1-error matches. By turning it off using the {\tt--full\_search} flag, the sensitivity may increase (often
+by less than 1\%) but with up to four-fold decrease in speed.
+
+\subsection*{{\tt --pid FLAG}}
+The pid of the running {\tt sortmerna} process will be added to the output files in order to avoid over-writing output if the same
+{\tt --aligned STRING} base name is provided for different runs. 
+
+\section{Help}
+
+Any issues or bug reports should be reported to \url{https://github.com/biocore/sortmerna/issues} or by e-mail
+to the authors (see list of e-mails in Section 1 of this document). Comments and suggestions are also always appreciated!
+
+\section{Citation}
+
+If you use SortMeRNA please cite,
+
+Kopylova E., No\'{e} L. and Touzet H., ``SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data", {\it Bioinformatics} (2012), doi: 10.1093/bioinformatics/bts611.
+
+\end{document}
+
