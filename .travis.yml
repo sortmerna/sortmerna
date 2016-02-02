@@ -19,5 +19,6 @@ install:
   - pip install scikit-bio==0.2.3
 script:
   - bash ./build.sh
-  - python --version
+  - pwd
+  - export PATH="$HOME/sortmerna:$PATH"
   - cd tests; python ./test_sortmerna.py
