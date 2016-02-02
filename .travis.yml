@@ -17,7 +17,7 @@ install:
   - conda create --yes -n env_name python=2.7 numpy scipy
   - source activate env_name
   - pip install scikit-bio==0.2.3
-  - echo "backend: TkAgg" > ./matplotlibrc
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then touch ./matplotlibrc; echo "backend: TkAgg" > ./matplotlibrc; fi
 script:
   - bash ./build.sh
   - export PATH="$PWD:$PATH"
