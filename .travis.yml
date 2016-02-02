@@ -15,7 +15,7 @@ before_install:
   - conda update --yes conda
   - wget http://bioinfo.lifl.fr/RNA/sortmerna/material/data.tar.gz
   - tar -zxvf data.tar.gz
-  - mv data sortmerna/tests
+  - mv data ./tests/
 install:
   - conda create --yes -n env_name python=2.7 numpy scipy
   - source activate env_name
