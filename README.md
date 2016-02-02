@@ -1,6 +1,8 @@
 sortmerna
 =========
 
+[![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
+
 This is ongoing development of SortMeRNA. See 'release' on this page for
 releases or visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
