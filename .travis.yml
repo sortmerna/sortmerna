@@ -19,6 +19,7 @@ install:
   - pip install scikit-bio==0.2.3
   - ls -lha $HOME/miniconda/envs/env_name/lib/python2.7/site-packages
   - ls -lha $HOME/miniconda/envs/env_name/lib/python2.7/site-packages/matplotlib
+  - python -c "import matplotlib; print matplotlib.matplotlib_fname()"
   - echo "backend: TkAgg" > $HOME/.matplotlib/matplotlibrc
 script:
   - bash ./build.sh
