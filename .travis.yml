@@ -20,4 +20,5 @@ install:
   - pip install scikit-bio==0.2.3
 script:
   - bash ./build.sh
-  - cd tests; python test_sortmerna.py
+  - echo python --version
+  - cd tests; python ./test_sortmerna.py
