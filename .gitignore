@@ -1,20 +1,7 @@
-# Compiled Object files
-*.slo
-*.lo
-*.o
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-
 *.a
 *.o
 *~
+*.dylib
 .deps
 .dirstamp
 /autom4te.cache
