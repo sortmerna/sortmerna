@@ -20,5 +20,6 @@ install:
 script:
   - bash ./build.sh
   - pwd
+  - echo $HOME
   - export PATH="$HOME/sortmerna:$PATH"
   - cd tests; python ./test_sortmerna.py
