@@ -7,10 +7,10 @@ os:
   - osx
 sudo: false
 install:
-  - pip install python==2.7
-  - pip install scikit-bio==0.2.3
   - pip install numpy
   - pip install scipy
+  - pip install python==2.7
+  - pip install scikit-bio==0.2.3
 script:
   - bash ./build.sh
   - cd tests; python test_sortmerna.py
