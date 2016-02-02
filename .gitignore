@@ -11,3 +11,16 @@
 *.lai
 *.la
 *.a
+
+*.a
+*.o
+*~
+.deps
+.dirstamp
+/autom4te.cache
+/config.h
+/config.log
+/config.status
+/stamp-h1
+Makefile
+Makefile.in
