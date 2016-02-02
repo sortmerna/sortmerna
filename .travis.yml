@@ -17,10 +17,7 @@ install:
   - conda create --yes -n env_name python=2.7 numpy scipy
   - source activate env_name
   - pip install scikit-bio==0.2.3
-  - ls -lha $HOME/miniconda/envs/env_name/lib/python2.7/site-packages
-  - cat $HOME/miniconda/envs/env_name/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
-  - python -c "import matplotlib; print matplotlib.matplotlib_fname()"
-  - echo "backend: TkAgg" > $HOME/.matplotlib/matplotlibrc
+  - echo "backend: TkAgg" > ./matplotlibrc
 script:
   - bash ./build.sh
   - export PATH="$PWD:$PATH"
