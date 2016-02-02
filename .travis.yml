@@ -16,6 +16,7 @@ before_install:
 install:
   - conda create --yes -n env_name python=2.7 numpy scipy
   - source activate env_name
+  - pip install scikit-bio==0.2.3
 script:
   - bash ./build.sh
   - cd tests; python test_sortmerna.py
