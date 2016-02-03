@@ -1,0 +1,24 @@
+language: c
+compiler:
+  - clang
+  - gcc
+os:
+  - linux
+  - osx
+sudo: false
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh; fi
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda update --yes conda
+install:
+  - conda create --yes -n env_name python=2.7 numpy scipy
+  - source activate env_name
+  - pip install scikit-bio==0.2.3
+script:
+  - bash ./build.sh
+  - export PATH="$PWD:$PATH"
+  - cd tests
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
