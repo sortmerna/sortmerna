@@ -135,6 +135,11 @@ Thanks to the [Debian Med](https://www.debian.org/devel/debian-med/) team, SortM
 Thanks to Andreas Tille for the sortmerna and indexdb_rna man pages (version 2.0).
 These have been updated for 2.1 in the master repository.
 
+GNU Guix package
+----------------
+
+Thanks to Ben Woodcroft for adding SortMeRNA 2.1 to GNU Guix, find the package [here](https://www.gnu.org/software/guix/packages/).
+
 Running in QIIME
 ----------------
 
