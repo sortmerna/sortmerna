@@ -19,10 +19,13 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
+ * @authors jenya.kopylov@gmail.com
+ *          laurent.noe@lifl.fr
+ *          helene.touzet@lifl.fr
+ *          robknight@ucsd.edu
  */
 
  /** @file paralleltraversal.hpp */
@@ -30,37 +33,22 @@
 #ifndef PARALLELTRAVERSAL_H
 #define PARALLELTRAVERSAL_H
 
-#include "bitvector.hpp"
 #include "outputformats.hpp"
-//! ALP program for computing the Gumbel parameters
-#include "../alp/sls_alp_data.hpp"
-#include "../alp/sls_alp_sim.hpp"
-#include "../alp/gumbel_params.hpp"
+#include "load_index.hpp"
+#include "traverse_bursttrie.hpp"
 
 #include <iomanip>
 #include <map>
 #include <algorithm>
 #include <queue>
-#include <deque> 
-
+ 
 
 using namespace std;
 
 /*! @brief Number of slots by which to dynamically
            increment the array storing all alignments
-           per read*/
+           per read */
 #define BEST_HITS_INCREMENT 100
-
-/* for each 18-mer hit on the read, we store the 
-   key to find the positions and the window number
-   on the read at which the 18-mer occurs   */
-struct id_win
-{
-  // key value to find index positions
-  uint32_t id;
-  // the associated window number on the read 
-  uint32_t win;
-};
 
 /* holds the index of the minimum and maximum scoring
    alignments in an array of alignments pointed to by
@@ -83,9 +71,6 @@ struct alignment_struct
 */
 typedef pair<uint32_t,uint32_t> mypair;
 
-
-
-	
 /*! @fn paralleltraversal()
     @brief Traverse the query input and indexed database and output
            alignments passing the E-value threshold
@@ -148,73 +133,6 @@ paralleltraversal ( char* inputreads,
                     bool yes_SQ,
                     vector< pair<string,string> >& myfiles,
                     bool exit_early );
-
-
-/*! @fn traversetrie_align()
-    @brief 
-    @detail Exact matching of [p_1] in [s_1] is completed fully
-    in the trie nodes, continue parallel traversal of the trie
-    beginning at [s_2]:<br/>
-                   
-	  	seed =    |------ [s_1] ------|------ [s_2] ------|<br/>
-	  	pattern = |------ [p_1] ------|------ [p_2] --....--|<br/>
-	  	          |------ trie -------|----- tail ----....--|<br/>
- 
-    @param NodeElement* trie_t, root node 
-    @param uint32_t lev_t, initial levenshtein state
-    @param unsigned char depth, trie node depth
-    @param MYBITSET *win_k1_ptr,
-    @param MYBITSET *win_k1_full,
-    @param bool &accept_zero_kmer,
-    @param vector< id_win > &id_hits,
-    @param uint32_t readn,
-    @param uint32_t win_num,
-    @param uint32_t partialwin
-    @return none
-*/
-
-inline void
-traversetrie_align ( NodeElement *trie_t,
-                     uint32_t lev_t,
-                     unsigned char depth,
-                     MYBITSET *win_k1_ptr,
-                     MYBITSET *win_k1_full,
-                     bool &accept_zero_kmer,
-                     vector< id_win > &id_hits,
-                     uint32_t readn,
-                     uint32_t win_num,
-                     uint32_t partialwin );
-
-void 
-preprocess_data( vector< pair<string,string> >& myfiles,
-                 char** argv,
-                 int argc,
-                 bool yes_SQ,
-                 char* acceptedstrings_sam,
-                 int32_t _match,
-                 int32_t _mismatch,
-                 int32_t _gap_open,
-                 int32_t _gap_extension,
-                 vector<vector<uint32_t> >& skiplengths,
-                 vector<uint16_t>& num_index_parts,
-                 vector<vector<index_parts_stats> >& index_parts_stats_vec,
-                 vector<uint64_t>& full_ref,
-                 vector<uint64_t>& full_read,
-                 vector<uint32_t>& lnwin,
-                 vector<uint32_t>& partialwin,
-                 vector<uint32_t>& minimal_score,
-                 uint32_t number_total_read,
-                 vector<pair<double, double> >& gumbel,
-                 vector<uint32_t>& numbvs,
-                 vector<uint32_t>& numseq );
-
-void
-load_index( char* ptr_dbindex,
-           string part_str,
-           kmer*& lookup_tbl,
-           kmer_origin*& positions_tbl,
-           uint32_t& number_elements,
-           uint32_t lnwin);
 
 void
 find_lis( deque<mypair> &a, vector<int> &b );

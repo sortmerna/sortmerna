@@ -29,9 +29,11 @@
 #ifndef BITVECTOR_H
 #define BITVECTOR_H
 
-#include "indexdb.hpp" 				 /* for map matrix */
+/* for map matrix */
+#include "indexdb.hpp"
 
-#define MYBITSET unsigned char     /* a bitvector of 1 byte */
+/* a bitvector of 1 byte */
+#define MYBITSET unsigned char
 
 /* mask for depth > 0 bitvectors for k = 1 */
 #define MSB4 (MYBITSET)4

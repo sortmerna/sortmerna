@@ -80,7 +80,6 @@ const char map_nt[122] = {
 	/* 120, 121 */
     2,   1};
 
-
 /* length of the sliding window parameters */
 uint32_t lnwin_gv = 0;
 uint32_t pread_gv = 0;
