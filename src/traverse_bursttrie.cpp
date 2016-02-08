@@ -3,8 +3,8 @@
  * @brief Traverse the burst trie searching for candidate sequences.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2013-16 Bonsai Bioinformatics Research Group
- * 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -93,7 +93,7 @@ traversetrie_align ( NodeElement *trie_t,
                      MYBITSET *win_k1_full,
                      bool &accept_zero_kmer,
                      vector< id_win > &id_hits,
-                     uint32_t readn,
+                     int64_t readn,
                      uint32_t win_num,
                      uint32_t partialwin
                     )

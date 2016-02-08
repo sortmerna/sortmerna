@@ -3,8 +3,8 @@
  * @brief File containing functions for index traversal.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2013-15 Bonsai Bioinformatics Research Group
- * 2014-15 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,10 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
+ * @authors jenya.kopylov@gmail.com
+ *          laurent.noe@lifl.fr
+ *          helene.touzet@lifl.fr
+ *          robknight@ucsd.edu
  */
 
 #include "../include/paralleltraversal.hpp"

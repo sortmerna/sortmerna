@@ -3,8 +3,8 @@
  * @brief Load data (reads) using mmap.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2013-16 Bonsai Bioinformatics Research Group
- * 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
  * @authors jenya.kopylov@gmail.com
@@ -305,15 +305,15 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
  *
  *******************************************************************/
 void
-load_index( char* ptr_dbindex,
+load_index(char* ptr_dbindex,
            string part_str,
            kmer*& lookup_tbl,
            kmer_origin*& positions_tbl,
            uint32_t& number_elements,
            uint32_t lnwin)
 {
-    // STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
-    string ptr_dbindex_str = ptr_dbindex;
+  // STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
+  string ptr_dbindex_str = ptr_dbindex;
   ifstream inkmer( (char*)(ptr_dbindex_str + ".kmer_" + part_str + ".dat").c_str(), ios::in | ios::binary );
     
   if ( !inkmer.good() )
