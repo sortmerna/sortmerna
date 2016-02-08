@@ -71,6 +71,7 @@ include_HEADERS    = ./alp/gumbel_params.hpp \
                      ./include/bitvector.hpp \
                      ./include/load_index.hpp \
                      ./include/traverse_bursttrie.hpp \
+                     ./include/mmap.hpp \
                      ./include/paralleltraversal.hpp \
                      ./include/ssw.h \
                      ./include/outputformats.hpp
@@ -117,6 +118,7 @@ sortmerna_SOURCES  = ./alp/gumbel_params.cpp \
 					 ./src/bitvector.cpp \
 					 ./src/load_index.cpp \
 					 ./src/traverse_bursttrie.cpp \
+					 ./src/mmap.cpp \
 					 ./src/paralleltraversal.cpp \
 					 ./src/ssw.c \
 					 ./src/outputformats.cpp \
