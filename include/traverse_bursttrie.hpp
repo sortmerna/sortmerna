@@ -3,8 +3,8 @@
  * @brief header file for traverse_bursttrie.cpp
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2013-16 Bonsai Bioinformatics Research Group
- * 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -57,11 +57,11 @@ struct id_win
 	  	pattern = |------ [p_1] ------|------ [p_2] --....--|<br/>
 	  	          |------ trie -------|----- tail ----....--|<br/>
  
-    @param NodeElement* trie_t, root node 
-    @param uint32_t lev_t, initial levenshtein state
-    @param unsigned char depth, trie node depth
-    @param MYBITSET *win_k1_ptr,
-    @param MYBITSET *win_k1_full,
+    @param NodeElement* trie_t 
+    @param uint32_t lev_t
+    @param unsigned char depth
+    @param MYBITSET *win_k1_ptr
+    @param MYBITSET *win_k1_full
     @param bool &accept_zero_kmer,
     @param vector< id_win > &id_hits,
     @param uint32_t readn,
@@ -70,14 +70,14 @@ struct id_win
     @return none
 */
 void
-traversetrie_align ( NodeElement *trie_t,
-                     uint32_t lev_t,
-                     unsigned char depth,
-                     MYBITSET *win_k1_ptr,
-                     MYBITSET *win_k1_full,
-                     bool &accept_zero_kmer,
-                     vector< id_win > &id_hits,
-                     uint32_t readn,
-                     uint32_t win_num,
-                     uint32_t partialwin );
+traversetrie_align ( NodeElement *trie_t /**< root node to mini burst trie */,
+                     uint32_t lev_t /**< initial Levenshtein automaton state */,
+                     unsigned char depth /**< trie node depth */,
+                     MYBITSET *win_k1_ptr /**< pointer to start of forward L/2-mer bitvector */,
+                     MYBITSET *win_k1_full /**< pointer to start of structure storing all bitvectors */,
+                     bool &accept_zero_kmer /**< if true, if a match is found during forward subsearch, then skip reverse subsearch */,
+                     vector< id_win > &id_hits /**< vector storing IDs of all candidate L-mers (matching in mini burst trie) */,
+                     int64_t readn /**< read number */,
+                     uint32_t win_num /**< sliding window (seed) number on read */,
+                     uint32_t partialwin /**< */);
 #endif

@@ -3,10 +3,8 @@
  * @brief Function and variable definitions for paralleltraversal.cpp
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group, LIFL and 
- * INRIA Nord-Europe, France
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -102,37 +100,37 @@ typedef pair<uint32_t,uint32_t> mypair;
            L-mers using smaller intervals </li>
     </ol>
 
-    @param char* inputreads, pointer to query reads file
-    @param *ptr_filetype_ar, pointer to string for aligned seqeunces filepath
-    @param *ptr_filetype_or, pointer to string for rejected sequences filepath
-    @param int32_t match, SW match reward score (positive)
-    @param int32_t mismatch, SW mismatch penalty score (negative)
-    @param int32_t gap_open, SW gap open penalty score (positive)
-    @param int32_t gap_extension, SW gap extend penalty score (positive)
-    @param int32_t score_N, SW penalty for ambiguous nucleotide (negative)
-    @param vector< vector<uint32_t> >& skiplengths, 
-    @param int argc, number of arguments passed to sortmerna
-    @param char **argv, argument string passed to sortmerna
-    @param bool yes_SQ, boolean to include @SQ tags in SAM output
-    @param vector< pair<string,string> >& myfiles, 
+    @param char* inputreads 
+    @param *ptr_filetype_ar 
+    @param *ptr_filetype_or
+    @param int32_t match
+    @param int32_t mismatch
+    @param int32_t gap_open
+    @param int32_t gap_extension
+    @param int32_t score_N
+    @param vector< vector<uint32_t> > 
+    @param int argc
+    @param char **argv
+    @param bool yes_SQ
+    @param vector< pair<string,string> >& myfiles
     @return void
     @version 1.0 Jan 14, 2013 
 */
 void
-paralleltraversal ( char* inputreads,
-                    char* ptr_filetype_ar,
-                    char* ptr_filetype_or,
-                    int32_t match,
-                    int32_t mismatch,
-                    int32_t gap_open,
-                    int32_t gap_extension,
-                    int32_t score_N,
-                    vector< vector<uint32_t> >& skiplengths,
-                    int argc,
-                    char **argv,
-                    bool yes_SQ,
-                    vector< pair<string,string> >& myfiles,
-                    bool exit_early );
+paralleltraversal ( char* inputreads /**< pointer to query reads file */,
+                    char* ptr_filetype_ar /**< pointer to string for aligned seqeunces filepath */,
+                    char* ptr_filetype_or /**< pointer to string for rejected sequences filepath */,
+                    int32_t match /**< SW match reward score (positive) */,
+                    int32_t mismatch /**< SW mismatch penalty score (negative) */,
+                    int32_t gap_open /**< SW gap open penalty score (positive) */,
+                    int32_t gap_extension /**< SW gap extend penalty score (positive) */,
+                    int32_t score_N /**< SW penalty for ambiguous nucleotide (negative) */,
+                    vector< vector<uint32_t> >& skiplengths /**< skiplengths, three intervals at which to place seeds on read */,
+                    int argc /**< number of arguments passed to SortMeRNA */,
+                    char **argv /**< argument string passed to SortMeRNA */,
+                    bool yes_SQ /**< if true, include @SQ tags in SAM output */,
+                    vector< pair<string,string> >& myfiles /**< vector of (FASTA file, index name) pairs for loading index */,
+                    bool exit_early /**< if true, exit program if reads file is not FASTA or FASTQ, or reads files or reference file is empty */);
 
 void
 find_lis( deque<mypair> &a, vector<int> &b );
