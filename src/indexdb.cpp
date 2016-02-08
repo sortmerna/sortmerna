@@ -3,8 +3,8 @@
  * @brief Functions for indexing the reference database.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2013-2015 Bonsai Bioinformatics Research Group
- * 2015 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,10 +17,12 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
- * file: indexdb.cpp
- * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
+ * @authors jenya.kopylov@gmail.com
+ *          laurent.noe@lifl.fr
+ *          helene.touzet@lifl.fr
+ *          robknight@ucsd.edu
  *
  */
 
@@ -79,7 +81,6 @@ const char map_nt[122] = {
     0,   0,   0,   0,   0,   2,   3,   3,   0,   1,
 	/* 120, 121 */
     2,   1};
-
 
 /* length of the sliding window parameters */
 uint32_t lnwin_gv = 0;
@@ -870,7 +871,8 @@ void welcome()
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
   printf("  Copyright:   2012-16 Bonsai Bioinformatics Research Group:\n");
   printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla,\n");
+  printf("               2014-16 Knight Lab:\n" );
+  printf("               Department of Pediatrics, UCSD, La Jolla,\n");
   printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
   printf("               See the GNU Lesser General Public License for more details.\n");
