@@ -16,7 +16,22 @@ steps outlined in the above link to install the version of Clang with multithrea
 though this version has not yet been tested with SortMeRNA. Otherwise, the user is 
 recommended to install the original GCC compiler via MacPorts (contains full multithreading support).
   
+Documentation:
+--------------
 
+If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, you can generate the documentation
+by modifying the following lines in ```doxygen_configure.txt```:
+
+```
+INPUT = /path/to/sortmerna/include /path/to/sortmerna/src
+IMAGE_PATH = /path/to/sortmerna/algorithm
+```
+
+and running the following command:
+
+```
+doxygen doxygen_configure.txt
+```
 
 To compile on Linux OS:
 -----------------------
