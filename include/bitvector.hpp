@@ -1,9 +1,10 @@
 /*
+ * @file bitvector.hpp
+ * @brief Function and variable definitions for bitvector.cpp
+ * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
- *
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * This file is part of SortMeRNA.
  *
@@ -18,9 +19,14 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
- * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
+ * @authors jenya.kopylov@gmail.com
+ *          laurent.noe@lifl.fr
+ *          helene.touzet@lifl.fr
+ *          pierre.pericard@lifl.fr
+ *          mikael.salson@lifl.fr
+ *          robknight@ucsd.edu
  *
  */
 
