@@ -33,6 +33,10 @@ and running the following command:
 doxygen doxygen_configure.txt
 ```
 
+This command will generate a folder ```html``` in the directory from which the
+command was run.
+
+
 To compile on Linux OS:
 -----------------------
 
