@@ -2771,13 +2771,14 @@ paralleltraversal (char* inputreads,
     }
                 
     // output aligned and non-aligned reads to FASTA/FASTQ file
-    report_fasta (acceptedstrings,
-                  ptr_filetype_or,
-                  ptr_filetype_ar,
-                  reads,strs,
-                  read_hits,
-                  file_s,
-                  finalnt);
+    report_fasta(acceptedstrings,
+                 ptr_filetype_or,
+                 ptr_filetype_ar,
+                 reads,
+                 strs,
+                 read_hits,
+                 file_s,
+                 finalnt);
     
     // output aligned and non-aligned reads with < %id and
     // < %coverage to FASTA/FASTQ file for de novo analysis

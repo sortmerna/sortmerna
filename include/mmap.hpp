@@ -56,13 +56,13 @@ mmap_reads(off_t partial_file_size /**< number of bytes in memory map buffer */,
            char filesig /**< @ or > to identify FASTQ or FASTA file */,
            uint32_t file_s /**< current file section number */,
            uint32_t file_sections /**< number of file sections (size of reads file divided by mmap buffer size) */,
-           int32_t offset_pair_from_top /**< number of lines to offset at the top of the current file section */,
+           int32_t &offset_pair_from_top /**< number of lines to offset at the top of the current file section */,
            char* split_read_ptr /**< pointer to the position in the split read where to attach the connecting part of the split read (and possibly its pair) */,
            char* split_read /**< pointer to the split read (the read which is split between any two file sections) */,
            int64_t &strs /**< number of reads in current memory mapped section */,
            char* finalnt /**< pointer to final character in memory mapped buffer */,
-           uint32_t reads_offset_f /**< the length of the split read in file part i+1 (from beginning of file part) */,
-           uint32_t reads_offset_e /**< the length of the split read in file part i (from end of file part) */);
+           uint32_t &reads_offset_f /**< the length of the split read in file part i+1 (from beginning of file part) */,
+           uint32_t &reads_offset_e /**< the length of the split read in file part i (from end of file part) */);
 
 
 /*! @fn unmmap_reads()

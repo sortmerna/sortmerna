@@ -46,13 +46,13 @@ mmap_reads(off_t partial_file_size,
            char filesig,
            uint32_t file_s,
            uint32_t file_sections,
-           int32_t offset_pair_from_top,
+           int32_t &offset_pair_from_top,
            char* split_read_ptr,
            char* split_read,
            int64_t &strs,
            char* finalnt,
-           uint32_t reads_offset_f,
-           uint32_t reads_offset_e)
+           uint32_t &reads_offset_f,
+           uint32_t &reads_offset_e)
 {
   // mmap the reads file into memory
   raw = (char*)mmap(0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map);
