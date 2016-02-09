@@ -82,11 +82,11 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = indexdb_rna$(EXEEXT) sortmerna$(EXEEXT)
 subdir = .
-DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
+DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog COPYING \
 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(top_srcdir)/include/config.h.in depcomp $(include_HEADERS) \
-	COPYING compile install-sh missing
+	compile install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -128,8 +128,9 @@ am_sortmerna_OBJECTS = ./alp/gumbel_params.$(OBJEXT) \
 	./alp/sls_alp_regression.$(OBJEXT) ./alp/sls_alp_sim.$(OBJEXT) \
 	./alp/sls_pvalues.$(OBJEXT) ./src/bitvector.$(OBJEXT) \
 	./src/load_index.$(OBJEXT) ./src/traverse_bursttrie.$(OBJEXT) \
-	./src/paralleltraversal.$(OBJEXT) ./src/ssw.$(OBJEXT) \
-	./src/outputformats.$(OBJEXT) ./src/main.$(OBJEXT)
+	./src/mmap.$(OBJEXT) ./src/paralleltraversal.$(OBJEXT) \
+	./src/ssw.$(OBJEXT) ./src/outputformats.$(OBJEXT) \
+	./src/main.$(OBJEXT)
 sortmerna_OBJECTS = $(am_sortmerna_OBJECTS)
 sortmerna_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -408,6 +409,7 @@ include_HEADERS = ./alp/gumbel_params.hpp \
                      ./include/bitvector.hpp \
                      ./include/load_index.hpp \
                      ./include/traverse_bursttrie.hpp \
+                     ./include/mmap.hpp \
                      ./include/paralleltraversal.hpp \
                      ./include/ssw.h \
                      ./include/outputformats.hpp
@@ -454,6 +456,7 @@ sortmerna_SOURCES = ./alp/gumbel_params.cpp \
 					 ./src/bitvector.cpp \
 					 ./src/load_index.cpp \
 					 ./src/traverse_bursttrie.cpp \
+					 ./src/mmap.cpp \
 					 ./src/paralleltraversal.cpp \
 					 ./src/ssw.c \
 					 ./src/outputformats.cpp \
@@ -688,6 +691,8 @@ alp/$(DEPDIR)/$(am__dirstamp):
 	src/$(DEPDIR)/$(am__dirstamp)
 ./src/traverse_bursttrie.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+./src/mmap.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 ./src/paralleltraversal.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 ./src/ssw.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
@@ -750,6 +755,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/indexdb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/load_index.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/mmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/outputformats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/paralleltraversal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./src/$(DEPDIR)/ssw.Po@am__quote@

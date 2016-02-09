@@ -23,6 +23,8 @@
  * @authors jenya.kopylov@gmail.com
  *          laurent.noe@lifl.fr
  *          helene.touzet@lifl.fr
+ *          pierre.pericard@lifl.fr
+ *          mikael.salson@lifl.fr
  *          robknight@ucsd.edu
  */
 
@@ -31,15 +33,15 @@
 #ifndef PARALLELTRAVERSAL_H
 #define PARALLELTRAVERSAL_H
 
-#include "outputformats.hpp"
-#include "load_index.hpp"
-#include "traverse_bursttrie.hpp"
-
 #include <iomanip>
 #include <map>
 #include <algorithm>
 #include <queue>
  
+#include "outputformats.hpp"
+#include "load_index.hpp"
+#include "traverse_bursttrie.hpp"
+#include "mmap.hpp"
 
 using namespace std;
 

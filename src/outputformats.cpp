@@ -23,6 +23,8 @@
  * @authors jenya.kopylov@gmail.com
  *          laurent.noe@lifl.fr
  *          helene.touzet@lifl.fr
+ *          pierre.pericard@lifl.fr
+ *          mikael.salson@lifl.fr
  *          robknight@ucsd.edu
  */
 #include "../include/outputformats.hpp"
