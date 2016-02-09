@@ -25,7 +25,12 @@ from skbio.util import remove_files
 # The full license is in the file COPYING.txt, distributed with this software.
 # ----------------------------------------------------------------------------
 
+# Some notes on memory debugging:
 # Memory check with valgrind --leak-check=full --track-origins=yes
+# use -g compile option for line numbers in valgrind and traceback
+# with gdb
+# "$ export GLIBCXX_FORCE_NEW" to disable std::string memory pool optimizations
+# prior to running valgrind
 
 
 # Test class and cases

@@ -50,7 +50,7 @@ mmap_reads(off_t partial_file_size,
            char* split_read_ptr,
            char* split_read,
            int64_t &strs,
-           char* finalnt,
+           char*& finalnt,
            uint32_t &reads_offset_f,
            uint32_t &reads_offset_e)
 {
