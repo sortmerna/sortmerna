@@ -17,7 +17,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  * @authors jenya.kopylov@gmail.com
  *          laurent.noe@lifl.fr
@@ -42,7 +42,7 @@ char**
 mmap_reads(off_t partial_file_size,
            int fd,
            off_t offset_map,
-           char* raw,
+           char*& raw,
            char filesig,
            uint32_t file_s,
            uint32_t file_sections,
@@ -64,7 +64,6 @@ mmap_reads(off_t partial_file_size,
   }
   // pointer to last character in mmap'd region
   char* end_of_mmap = &raw[partial_file_size-1];
-
 
   // range of *start and *end pointers
   {
@@ -215,12 +214,12 @@ mmap_reads(off_t partial_file_size,
       cout << "strs (incl. reads_offset_f and reads_offset_e) = " << strs << endl; //TESTING
       if (raw[partial_file_size-1] == '\n') cout << "file section ends with a newline\n"; //TESTING
   #endif
-      // count one extra newline for the split read at bottom of file                                                                                                                                                                                                           
-      // in order to facilitate reads_offset_e count                                                                                                                                                                                                                            
-      // conditions: 1. file section cannot be the last one                                                                                                                                                                                                                     
-      //             2. file section must contain more than 0 reads                                                                                                                                                                                                             
-      //             3. file section must not end in a new line while containing                                                                                                                                                                                                
-      //                an exact number of paired-reads                                                                                                                                                                                                                         
+      // count one extra newline for the split read at bottom of file                                                                                               
+      // in order to facilitate reads_offset_e count                                     
+      // conditions: 1. file section cannot be the last one                                                      
+      //             2. file section must contain more than 0 reads                                               
+      //             3. file section must not end in a new line while containing                                       
+      //                an exact number of paired-reads                          
       if ( (file_s != file_sections-1) && (strs != 0) && !((raw[partial_file_size-1] == '\n') && (offset_pair_from_bottom == 0)) ) offset_pair_from_bottom++;
       
       // compute the reads offset length at bottom of file section
@@ -424,11 +423,11 @@ mmap_reads(off_t partial_file_size,
  *
  * FUNCTION : unmmap_reads()
  * PURPOSE  : load reads using mmap
- * OUTPUT   : double pointer array to sequences in mmap
+ * OUTPUT   : none
  * See complete documentation in include/mmap.hpp
  *
  *******************************************************/
-void unmmap_reads(char* raw, off_t partial_file_size)
+void unmmap_reads(char*& raw, off_t partial_file_size)
 {
   // free the mmap'd file section
   if ( munmap(raw, partial_file_size ) == -1 )

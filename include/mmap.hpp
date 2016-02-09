@@ -52,7 +52,7 @@ char**
 mmap_reads(off_t partial_file_size /**< number of bytes in memory map buffer */,
            int fd /**< file descriptor */,
            off_t offset_map /**< the offset from the start of the reads file for mmap */,
-           char* raw /**< the address of the new mapping from mmap */,
+           char*& raw /**< the address of the new mapping from mmap */,
            char filesig /**< @ or > to identify FASTQ or FASTA file */,
            uint32_t file_s /**< current file section number */,
            uint32_t file_sections /**< number of file sections (size of reads file divided by mmap buffer size) */,
@@ -67,13 +67,13 @@ mmap_reads(off_t partial_file_size /**< number of bytes in memory map buffer */,
 
 /*! @fn unmmap_reads()
     @brief unmap file
-    @param char* raw
+    @param char*& raw
     @param off_t partial_file_size
     @return void
     @version Feb 08, 2016 
 */
 void
-unmmap_reads(char* raw /**< the address of the new mapping from mmap */,
+unmmap_reads(char*& raw /**< the address of the new mapping from mmap */,
              off_t partial_file_size /**< number of bytes in memory map buffer */);
 
 #endif

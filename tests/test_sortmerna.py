@@ -25,6 +25,8 @@ from skbio.util import remove_files
 # The full license is in the file COPYING.txt, distributed with this software.
 # ----------------------------------------------------------------------------
 
+# Memory check with valgrind --leak-check=full --track-origins=yes
+
 
 # Test class and cases
 class SortmernaTests(TestCase):
