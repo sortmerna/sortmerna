@@ -34,7 +34,8 @@ using namespace std;
 /** @file */
 
 // output Blast-like alignments (code modified from SSW-library)
-void report_blast (ofstream &fileout,
+void
+report_blast (ofstream &fileout,
                    s_align* a,
                    char* read_name,
                    char* read_seq,
@@ -261,7 +262,8 @@ void report_blast (ofstream &fileout,
 }
 
 // output SAM alignments (code modified from SSW-library)
-void report_sam (ofstream &fileout,
+void
+report_sam (ofstream &fileout,
                  s_align* a,
                  char* read_name,
                  char* read_seq,
@@ -347,9 +349,9 @@ void report_sam (ofstream &fileout,
 }
 
 
-
 // output aligned and non-aligned reads in FASTA/FASTQ format
-void report_fasta (char* acceptedstrings,
+void
+report_fasta (char* acceptedstrings,
                    char* ptr_filetype_or,
                    char* ptr_filetype_ar,
                    char** reads,
@@ -598,7 +600,8 @@ void report_fasta (char* acceptedstrings,
     return ;
 }
 
-void report_denovo(char *denovo_otus_file,
+void
+report_denovo(char *denovo_otus_file,
                    char **reads,
                    int32_t strs,
                    vector<bool>& read_hits_denovo,

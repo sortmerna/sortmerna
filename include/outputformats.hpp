@@ -32,12 +32,12 @@
 #include <istream>
 
 //! SIMD Smith-Waterman alignment library
-#include "ssw.h"
 #include "indexdb.hpp"
 
 using namespace std;
 
-void report_blast (ofstream &fileout,
+void
+report_blast (ofstream &fileout,
                    s_align* a,
                    char* read_name,
                    char* read_seq,
@@ -54,7 +54,8 @@ void report_blast (ofstream &fileout,
                    uint32_t gaps);
 
 
-void report_sam (ofstream &fileout,
+void
+report_sam (ofstream &fileout,
                  s_align* a,
                  char* read_name,
                  char* read_seq,
@@ -65,7 +66,8 @@ void report_sam (ofstream &fileout,
                  bool strand,
                  uint32_t diff);
 
-void report_fasta (char* acceptedstrings,
+void
+report_fasta (char* acceptedstrings,
                    char* ptr_filetype_or,
                    char* ptr_filetype_ar,
                    char** reads,
@@ -74,7 +76,8 @@ void report_fasta (char* acceptedstrings,
                    uint32_t file_s,
                    char* finalnt);
 
-void report_denovo(char *denovo_otus_file,
+void
+report_denovo(char *denovo_otus_file,
                    char **reads,
                    int32_t strs,
                    vector<bool>& read_hits_denovo,

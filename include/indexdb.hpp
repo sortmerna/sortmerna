@@ -19,7 +19,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @authors jenya.kopylov@gmail.com
  *          laurent.noe@lifl.fr
@@ -30,11 +30,12 @@
  *
  */
 
-/** @file indexdb.hpp */ 
  
 #ifndef INDEXDB_H
 #define INDEXDB_H
 
+#include <sys/types.h>
+#include "ssw.h"
 #include "common.hpp"
 
 using namespace std;
