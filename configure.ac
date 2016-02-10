@@ -31,6 +31,10 @@ if test "x${have_zlib}" = "xyes"; then
   AC_CHECK_HEADERS([zlib.h], [], [have_zlib=no])
 fi
 
+AC_CHECK_LIB([zlib],
+[AMADEUS_LIBS="-lzlib $AMADEUS_LIBS"],
+[AC_MSG_ERROR([zlib missing])])
+
 AC_SUBST(SSE2_EXTRA_CFLAGS)
 CXXFLAGS="$CXXFLAGS -pipe -funroll-loops -Wall -msse2 -D_FILE_OFFSET_BITS=64 $OPENMP_CXXFLAGS"
 CFLAGS="$CFLAGS -pipe -funroll-loops -msse2 -Wall $OPENMP_CFLAGS"
