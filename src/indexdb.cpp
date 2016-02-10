@@ -32,7 +32,6 @@
 #include <string.h>
 #include <dirent.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include "../include/indexdb.hpp"
 #include "../cmph/cmph.h"

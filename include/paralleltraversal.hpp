@@ -28,48 +28,18 @@
  *          robknight@ucsd.edu
  */
 
- /** @file paralleltraversal.hpp */
-
 #ifndef PARALLELTRAVERSAL_H
 #define PARALLELTRAVERSAL_H
 
 #include <iomanip>
-#include <map>
-#include <algorithm>
-#include <queue>
  
 #include "outputformats.hpp"
 #include "load_index.hpp"
 #include "traverse_bursttrie.hpp"
+#include "alignment.hpp"
 #include "mmap.hpp"
 
 using namespace std;
-
-/*! @brief Number of slots by which to dynamically
-           increment the array storing all alignments
-           per read */
-#define BEST_HITS_INCREMENT 100
-
-/* holds the index of the minimum and maximum scoring
-   alignments in an array of alignments pointed to by
-   s_align* ptr */
-struct alignment_struct
-{
-  uint32_t max_size;
-  uint32_t size;
-  uint32_t min_index;
-  uint32_t max_index;
-  s_align* ptr;
-  alignment_struct(uint32_t max_size, uint32_t size, uint32_t min, uint32_t max, s_align* p) : max_size(max_size), size(size), min_index(min), max_index(max), ptr(p) {}
-};
-
-
-/*! @brief Type mypair
-
-    A data structure holding two variables
-    of type uint32_t.
-*/
-typedef pair<uint32_t,uint32_t> mypair;
 
 /*! @fn paralleltraversal()
     @brief Traverse the query input and indexed database and output
@@ -133,9 +103,6 @@ paralleltraversal ( char* inputreads /**< pointer to query reads file */,
                     bool yes_SQ /**< if true, include @SQ tags in SAM output */,
                     vector< pair<string,string> >& myfiles /**< vector of (FASTA file, index name) pairs for loading index */,
                     bool exit_early /**< if true, exit program if reads file is not FASTA or FASTQ, or reads files or reference file is empty */);
-
-void
-find_lis( deque<mypair> &a, vector<int> &b );
 
 
 #endif //~parallel_traversal_h
