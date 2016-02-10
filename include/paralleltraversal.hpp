@@ -32,7 +32,6 @@
 #define PARALLELTRAVERSAL_H
 
 #include <iomanip>
-#include <algorithm>
  
 #include "outputformats.hpp"
 #include "load_index.hpp"

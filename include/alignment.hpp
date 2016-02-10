@@ -33,8 +33,9 @@
 
 #include <map>
 #include <queue>
+#include <algorithm>
 #include "traverse_bursttrie.hpp"
- #include "outputformats.hpp"
+#include "outputformats.hpp"
 
 using namespace std;
 
