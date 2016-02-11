@@ -142,11 +142,13 @@ paralleltraversal (char* inputreads,
   uint32_t number_total_read = 0;
   // total number of reads mapped passing E-value threshold
   uint32_t total_reads_mapped = 0;
-  // total number of reads mapped passing E-value threshold & %id and/or %query coverage thresholds
+  // total number of reads mapped passing E-value threshold and
+  // %id and/or %query coverage thresholds
   uint32_t total_reads_mapped_cov = 0;
   // total number of reads for de novo clustering
   uint32_t total_reads_denovo_clustering = 0;
-  // the minimum occurrences of a (L/2)-mer required to allow search for a seed of length L in the burst tries
+  // the minimum occurrences of a (L/2)-mer required to allow
+  // search for a seed of length L in the burst tries
   uint32_t minoccur = 0;
   // for timing different processes
   double s,f;

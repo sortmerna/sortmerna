@@ -113,7 +113,7 @@ void printlist()
   printf("                                         If passing multiple reference files, separate \n");
   printf("                                         them using the delimiter ':',\n");
   printf("                                         (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-  printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ reads file                                         %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+  printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ reads file (raw or gzipped)                        %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
   printf("     %s--aligned%s         %sSTRING%s          aligned reads filepath + base file name                        %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
   printf("                                         (appropriate extension will be added)\n\n");
   printf("   [COMMON OPTIONS]: \n");
@@ -150,9 +150,9 @@ void printlist()
   printf("     %s--print_all_reads%s %sBOOL%s            output null alignment strings for non-aligned reads            %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                         to SAM and/or BLAST tabular files\n");
   printf("     %s--paired_in%s       %sBOOL%s            both paired-end reads go in --aligned fasta/q file             %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
+  printf("                                        (interleaved reads only, see Section 4.2.4 of User Manual)\n");
   printf("     %s--paired_out%s      %sBOOL%s            both paired-end reads go in --other fasta/q file               %soff%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");\
-  printf("                                         (interleaved reads only, see Section 4.2.4 of User Manual)\n");
+  printf("                                        (interleaved reads only, see Section 4.2.4 of User Manual)\n");
   printf("     %s--match %s          %sINT%s             SW score (positive integer) for a match                        %s2%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--mismatch%s        %sINT%s             SW penalty (negative integer) for a mismatch                   %s-3%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("     %s--gap_open%s        %sINT%s             SW penalty (positive integer) for introducing a gap            %s5%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -164,11 +164,17 @@ void printlist()
   printf("     %s-e%s                %sDOUBLE%s          E-value threshold                                              %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   // RAM cannot support 1GB default
   if ( 1073741824/pagesize_gv > maxpages_gv/2)
-    printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory               %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
+    printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap             %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
   // RAM can support at least 1GB default
   else
-    printf("     %s-m%s                %sINT%s             INT Mbytes for loading the reads into memory                   %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap               %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
+  printf("                                        (NOTE: If this option is chosen, reads will be loaded using\n");
+  printf("                                         mmap rather than the default generic stream buffer; if the\n");
+  printf("                                         input reads are in compressed format, this option will be\n");
+  printf("                                         ignored; loading reads with mmap can be faster and is\n");
+  printf("                                         recommended for large files which cannot fit into\n");
+  printf("                                         available RAM)\n");
   printf("     %s-v%s                %sBOOL%s            verbose                                                        %soff%s\n\n\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("   [OTU PICKING OPTIONS]: \n");
   printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0.97%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
@@ -1509,20 +1515,20 @@ main(int argc,
   // 3. For each window, traverse in parallel the Burst trie/reverse and
   // LEV(k), outputting all reads with edit distance <= k between the
   // window.
-  paralleltraversal( readsfile,
-                     ptr_filetype_ar,
-                     ptr_filetype_or,
-                     match,
-                     mismatch,
-                     gap_open,
-                     gap_extension,
-                     score_N,
-                     skiplengths,
-                     argc,
-                     argv,
-                     yes_SQ,
-                     myfiles,
-                     exit_early);
+  paralleltraversal(readsfile,
+                    ptr_filetype_ar,
+                    ptr_filetype_or,
+                    match,
+                    mismatch,
+                    gap_open,
+                    gap_extension,
+                    score_N,
+                    skiplengths,
+                    argc,
+                    argv,
+                    yes_SQ,
+                    myfiles,
+                    exit_early);
   
   return 0;
     

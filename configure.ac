@@ -2,6 +2,7 @@ AC_PREREQ([2.50])
 AC_INIT([sortmerna],[2.1],[jenya DT kopylov AT gmail DT fr],[sortmerna],[http://bioinfo.lifl.fr/sortmerna])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([include/config.h])
+m4_include([m4/ax_check_zlib.m4])
 AM_INIT_AUTOMAKE([subdir-objects])
 # AM_SILENT_RULES([yes])
 if test -z $CXXFLAGS; then
@@ -20,20 +21,7 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_FUNC_MMAP
 
-have_zlib=no
-
-AC_ARG_ENABLE(zlib, AS_HELP_STRING([--disable-zlib], [Disable zlib support]))
-AS_IF([test "x$enable_zlib" != "xno"], [
-  have_zlib=yes
-])
-
-if test "x${have_zlib}" = "xyes"; then
-  AC_CHECK_HEADERS([zlib.h], [], [have_zlib=no])
-fi
-
-AC_CHECK_LIB([zlib],
-[AMADEUS_LIBS="-lzlib $AMADEUS_LIBS"],
-[AC_MSG_ERROR([zlib missing])])
+AX_CHECK_ZLIB([zlib found],[AC_MSG_WARN([Could not find zlib support])])
 
 AC_SUBST(SSE2_EXTRA_CFLAGS)
 CXXFLAGS="$CXXFLAGS -pipe -funroll-loops -Wall -msse2 -D_FILE_OFFSET_BITS=64 $OPENMP_CXXFLAGS"

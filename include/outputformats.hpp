@@ -1,11 +1,10 @@
-/*
+/**
+ * @file outputformats.hpp
+ * @brief Function and variable definitions for outputformats.cpp
+ * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
- *
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
- *
- * This file is part of SortMeRNA.
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,13 +17,16 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+ * @endparblock
  *
- * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
- *
- */
-
-/** @file outputformats.hpp */ 
+ * @authors jenya.kopylov@gmail.com
+ *          laurent.noe@lifl.fr
+ *          helene.touzet@lifl.fr
+ *          pierre.pericard@lifl.fr
+ *          mikael.salson@lifl.fr
+ *          robknight@ucsd.edu
+ */ 
  
 #ifndef OUTPUTFORMATS_H
 #define OUTPUTFORMATS_H

@@ -727,7 +727,7 @@ report_denovo(char *denovo_otus_file,
 }
 
 
-/// output a biom table
+// output a biom table
 void report_biom (char* biomfile)
 {
     ofstream biomout ( biomfile, ios::in );

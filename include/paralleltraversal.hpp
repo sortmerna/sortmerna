@@ -38,6 +38,7 @@
 #include "traverse_bursttrie.hpp"
 #include "alignment.hpp"
 #include "mmap.hpp"
+#include "kseq_load.hpp"
 
 using namespace std;
 
@@ -86,23 +87,23 @@ using namespace std;
     @param bool yes_SQ
     @param vector< pair<string,string> >& myfiles
     @return void
-    @version 1.0 Jan 14, 2013 
+    @version Feb 10, 2016 
 */
 void
-paralleltraversal ( char* inputreads /**< pointer to query reads file */,
-                    char* ptr_filetype_ar /**< pointer to string for aligned seqeunces filepath */,
-                    char* ptr_filetype_or /**< pointer to string for rejected sequences filepath */,
-                    int32_t match /**< SW match reward score (positive) */,
-                    int32_t mismatch /**< SW mismatch penalty score (negative) */,
-                    int32_t gap_open /**< SW gap open penalty score (positive) */,
-                    int32_t gap_extension /**< SW gap extend penalty score (positive) */,
-                    int32_t score_N /**< SW penalty for ambiguous nucleotide (negative) */,
-                    vector< vector<uint32_t> >& skiplengths /**< skiplengths, three intervals at which to place seeds on read */,
-                    int argc /**< number of arguments passed to SortMeRNA */,
-                    char **argv /**< argument string passed to SortMeRNA */,
-                    bool yes_SQ /**< if true, include @SQ tags in SAM output */,
-                    vector< pair<string,string> >& myfiles /**< vector of (FASTA file, index name) pairs for loading index */,
-                    bool exit_early /**< if true, exit program if reads file is not FASTA or FASTQ, or reads files or reference file is empty */);
+paralleltraversal (char* inputreads /**< pointer to query reads file */,
+                   char* ptr_filetype_ar /**< pointer to string for aligned seqeunces filepath */,
+                   char* ptr_filetype_or /**< pointer to string for rejected sequences filepath */,
+                   int32_t match /**< SW match reward score (positive) */,
+                   int32_t mismatch /**< SW mismatch penalty score (negative) */,
+                   int32_t gap_open /**< SW gap open penalty score (positive) */,
+                   int32_t gap_extension /**< SW gap extend penalty score (positive) */,
+                   int32_t score_N /**< SW penalty for ambiguous nucleotide (negative) */,
+                   vector< vector<uint32_t> >& skiplengths /**< skiplengths, three intervals at which to place seeds on read */,
+                   int argc /**< number of arguments passed to SortMeRNA */,
+                   char **argv /**< argument string passed to SortMeRNA */,
+                   bool yes_SQ /**< if true, include @SQ tags in SAM output */,
+                   vector< pair<string,string> >& myfiles /**< vector of (FASTA file, index name) pairs for loading index */,
+                   bool exit_early /**< if true, exit program if reads file is not FASTA or FASTQ, or reads files or reference file is empty */);
 
 
 #endif //~parallel_traversal_h
