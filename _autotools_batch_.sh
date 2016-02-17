@@ -11,14 +11,13 @@ find . -name "*~" -exec rm \{\} \;
 find . -name "stamp-h1" -exec rm \{\} \;
 
 # 1) autotools
-
 aclocal
 autoconf -I m4
 autoheader
 automake --add-missing
 
 # 2) create distrib
-./configure
-make clean
-make 
-make dist
+#./configure
+#make clean
+#make 
+#make dist

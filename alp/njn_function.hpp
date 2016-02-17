@@ -108,9 +108,10 @@ namespace Njn {
       template <typename T> T probability (T x_) {return bound <T> (x_, 0.0, 1.0);}
       template <typename T> T prob (T x_) {return probability <T> (x_);}
 
-      template <typename T> bool isProb (T x_) {return 0.0 <= x_ && x_ <= 1.0;}; // the closest value to x_ in the interval [0.0, 1.0]
+      template <typename T> bool isProb (T x_) {return 0.0 <= x_ && x_ <= 1.0;}/*sls deleted;*/ // the closest value to x_ in the interval [0.0, 1.0]
 
 		}
 	}
 
 #endif //! INCLUDED
+

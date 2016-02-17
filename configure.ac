@@ -21,10 +21,10 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_FUNC_MMAP
 
-AX_CHECK_ZLIB([zlib found],[AC_MSG_WARN([Could not find zlib support])])
+CHECK_ZLIB
 
 AC_SUBST(SSE2_EXTRA_CFLAGS)
-CXXFLAGS="$CXXFLAGS -pipe -funroll-loops -Wall -msse2 -D_FILE_OFFSET_BITS=64 $OPENMP_CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -pipe -funroll-loops -Wall -msse2 -D_FILE_OFFSET_BITS=64 $OPENMP_CFLAGS"
 CFLAGS="$CFLAGS -pipe -funroll-loops -msse2 -Wall $OPENMP_CFLAGS"
 LIBS="$LIBS -lm"
 AC_SUBST(CXXFLAGS)

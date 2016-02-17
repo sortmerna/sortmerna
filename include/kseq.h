@@ -96,7 +96,7 @@ typedef struct __kstring_t {
 		str->l = 0;														\
 		if (ks->begin >= ks->end && ks->is_eof) return -1;				\
 		for (;;) {														\
-			int i;														\
+			int i;                                                      \
 			if (ks->begin >= ks->end) {									\
 				if (!ks->is_eof) {										\
 					ks->begin = 0;										\
@@ -115,7 +115,7 @@ typedef struct __kstring_t {
 				for (i = ks->begin; i < ks->end; ++i)					\
 					if (isspace(ks->buf[i]) && ks->buf[i] != ' ') break; \
 			} else i = 0; /* never come to here! */						\
-			if (str->m - str->l < i - ks->begin + 1) {					\
+			if (str->m - str->l < (unsigned int)i - ks->begin + 1) {	\
 				str->m = str->l + (i - ks->begin) + 1;					\
 				kroundup32(str->m);										\
 				str->s = (char*)realloc(str->s, str->m);				\

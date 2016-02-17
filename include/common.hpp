@@ -36,7 +36,7 @@
 #include <sstream>
 #include <fstream>
 #include <cstdlib>
-#include <cstdio>
+#include <stdio.h>
 #include <cmath>
 #include <sys/time.h>
 #include <set>
@@ -46,6 +46,9 @@
 #include <fcntl.h>    // file checking, open/close
 #include <sys/mman.h> 
 #include <errno.h>
+#include "config.h"
+
+using namespace std;
 
 extern timeval t;
 
@@ -157,6 +160,9 @@ extern bool pid_gv;
 
 /*! @brief Size of partial section of reads file to mmap. */
 extern long unsigned int map_size_gv;
+
+/*! @brief if true, load reads using mmap */
+extern bool map_size_set_gv;
 
 /*! @brief SAM output. */
 extern bool samout_gv;

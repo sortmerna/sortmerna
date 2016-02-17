@@ -139,17 +139,17 @@ traversetrie_align ( NodeElement *trie_t,
         // (1) the node element holds a pointer to another trie node
         if ( value == 1 )
         {
-          traversetrie_align ( trie_t->whichnode.trie,
-                                        lev_t,
-                                        ++depth,
-                                        win_k1_ptr,
-                                        win_k1_full,
-                                        accept_zero_kmer,
-                                        id_hits,
-                                        readn,
-                                        win_num,
-                                        partialwin
-                                        );
+          traversetrie_align(trie_t->whichnode.trie,
+                             lev_t,
+                             ++depth,
+                             win_k1_ptr,
+                             win_k1_full,
+                             accept_zero_kmer,
+                             id_hits,
+                             readn,
+                             win_num,
+                             partialwin
+                             );
                     
           // go to next window on the read (0-error match found)
           if ( accept_zero_kmer ) return ;
@@ -253,7 +253,7 @@ traversetrie_align ( NodeElement *trie_t,
                 if ( !id_hits.empty() )
                 {
                   bool found = false;
-                  for ( int f = 0; f < id_hits.size(); f++ )
+                  for ( uint32_t f = 0; f < id_hits.size(); f++ )
                   {
                     if ( id_hits[f].id == entry.id )
                     {

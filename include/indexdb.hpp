@@ -38,7 +38,6 @@
 #include "ssw.h"
 #include "common.hpp"
 
-using namespace std;
 
 /*! @brief The size of an entry in a burst trie bucket 
 

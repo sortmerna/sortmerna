@@ -68,7 +68,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /*! @brief Version number */
-char version_num[] = "2.1, 01/02/2016";
+char version_num[] = "2.1-dev, 01/02/2016";
 bool as_percent_gv = false;
 bool pid_gv = false;
 int32_t num_best_hits_gv = 0;
@@ -86,7 +86,7 @@ void welcome()
   printf("  Copyright:   2012-16 Bonsai Bioinformatics Research Group:\n");
   printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
   printf("               2014-16 Knight Lab:\n" );
-  printf("               Department of Pediatrics, UCSD, La Jolla,\n");
+  printf("               Department of Pediatrics, UCSD, La Jolla\n");
   printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
   printf("               See the GNU Lesser General Public License for more details.\n");
@@ -104,7 +104,9 @@ void welcome()
  */
 void printlist()
 {
-  printf("\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:\n\n");
+  printf("\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:\n");
+  printf("  OR\n");
+  printf("  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:\n\n");
   printf("  -------------------------------------------------------------------------------------------------------------\n");
   printf("  | parameter          value           description                                                    default |\n");
   printf("  -------------------------------------------------------------------------------------------------------------\n");
@@ -113,7 +115,11 @@ void printlist()
   printf("                                         If passing multiple reference files, separate \n");
   printf("                                         them using the delimiter ':',\n");
   printf("                                         (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-  printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ reads file (raw or gzipped)                        %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+  printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ raw reads file                                     %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+#ifdef HAVE_LIBZ
+  printf("       OR\n");
+  printf("     %s--reads-gz%s        %sSTRING%s          FASTA/FASTQ compressed (with zip or gzip) reads file           %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+#endif
   printf("     %s--aligned%s         %sSTRING%s          aligned reads filepath + base file name                        %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
   printf("                                         (appropriate extension will be added)\n\n");
   printf("   [COMMON OPTIONS]: \n");
@@ -167,7 +173,7 @@ void printlist()
     printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap             %s%lu%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m",((pagesize_gv*(maxpages_gv/2))/1048576),"\033[0m");
   // RAM can support at least 1GB default
   else
-    printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap               %s1024%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
+    printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap               %s[suggested: 1024]%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
   printf("                                        (maximum -m INT is %lu)\n",(((maxpages_gv/2)*pagesize_gv)/1048576));
   printf("                                        (NOTE: If this option is chosen, reads will be loaded using\n");
   printf("                                         mmap rather than the default generic stream buffer; if the\n");
@@ -225,11 +231,11 @@ main(int argc,
   // rejected reads output file
   char* ptr_filetype_or = NULL;
   // SW alignment parameters
-  int32_t match = 0;
-  int32_t mismatch = 0;
-  int32_t gap_open = 0;
-  int32_t gap_extension = 0;
-  int32_t score_N = 0;
+  long match = 0;
+  long mismatch = 0;
+  long gap_open = 0;
+  long gap_extension = 0;
+  long score_N = 0;
   bool match_set = false;
   bool mismatch_set = false;
   bool gap_open_set = false;
@@ -242,6 +248,8 @@ main(int argc,
   bool min_lis_gv_set = false;
   bool num_alignments_gv_set = false;
   bool best_gv_set = false;
+  bool have_reads = false;
+  bool have_reads_gz = false;
   // this BOOL is set if the reads file or the reference file
   // is empty
   bool exit_early = false;
@@ -292,9 +300,15 @@ main(int argc,
         // FASTA/FASTQ reads sequences
         if ( strcmp ( myoption, "reads" ) == 0 )
         {
+          if ( have_reads_gz )
+          {
+            fprintf(stderr,"\n %sERROR%s: option --reads-gz has also been set, only one of "
+                           "--reads-gz or --reads is permitted\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
           if ( argv[narg+1] == NULL )
           {
-            fprintf(stderr,"\n  %sERROR%s: a path to a reads fasta/fastq file "
+            fprintf(stderr,"\n  %sERROR%s: a path to a reads FASTA/FASTQ file "
                            "must be given after the option --reads\n","\033[0;31m","\033[0m");
             exit(EXIT_FAILURE);
           }
@@ -317,6 +331,8 @@ main(int argc,
               readsfile = argv[narg+1];
               narg+=2;
               fclose(file);
+
+              have_reads = true;
             }
             else
             {
@@ -326,6 +342,53 @@ main(int argc,
             }
           }
         }
+#ifdef HAVE_LIBZ
+        // FASTA/FASTQ compressed reads sequences
+        else if ( strcmp ( myoption, "reads-gz" ) == 0 )
+        {
+          if ( have_reads )
+          {
+            fprintf(stderr,"\n %sERROR%s: option --reads has also been set, only one of "
+                           "--reads or --reads-gz is permitted\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
+          if ( argv[narg+1] == NULL )
+          {
+            fprintf(stderr,"\n  %sERROR%s: a path to a reads FASTA/FASTQ compressed (.zip, .gz) file "
+                           "must be given after the option --reads-gz\n","\033[0;31m","\033[0m");
+            exit(EXIT_FAILURE);
+          }
+          else
+          {
+            // check the file exists
+            if ( gzFile file = gzopen(argv[narg+1], "r") )
+            {
+              // get size of file
+              gzseek(file, 0, SEEK_END);
+              size_t filesize = gztell(file);
+
+              // set exit BOOL to exit program after outputting
+              // empty files, sortmerna will not execute after
+              // that call (in paralleltraversal.cpp)
+              if ( !filesize ) exit_early = true;
+              // reset file pointer to start of file
+              gzseek(file, 0, SEEK_SET);
+
+              readsfile = argv[narg+1];
+              narg+=2;
+              gzclose(file);
+
+              have_reads_gz = true;
+            }
+            else
+            {
+              fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
+                      "%s.\n\n","\033[0;31m","\033[0m",argv[narg+1],strerror(errno));
+              exit(EXIT_FAILURE);
+            }
+          }
+        }
+#endif
         // FASTA reference sequences
         else if ( strcmp ( myoption, "ref") == 0 )
         {
@@ -826,10 +889,8 @@ main(int argc,
               iss >> s;
               user_opts.push_back(s);
             } while (iss);
-
             // remove the end of file entry
             user_opts.pop_back();
-
             bool blast_human_readable = false;
             vector<string> supported_opts;
             supported_opts.push_back("0");
@@ -837,7 +898,6 @@ main(int argc,
             supported_opts.push_back("cigar");
             supported_opts.push_back("qstrand");
             supported_opts.push_back("qcov");
-
             // check user options are supported
             for ( uint32_t i = 0; i < user_opts.size(); i++ )
             {
@@ -861,7 +921,6 @@ main(int argc,
                 exit(EXIT_FAILURE);               
               }
             }
-
             // more than 1 field with blast human-readable format given
             if ( blast_human_readable && (user_opts.size() > 1 ) )
             {
@@ -876,7 +935,6 @@ main(int argc,
                              "'0' (human-readable) or '1' (tabular).\n\n", "\033[0;31m","\033[0m");
               exit(EXIT_FAILURE);
             }
-
             blastout_gv = true;
             narg+=2;
           }
@@ -1135,7 +1193,6 @@ main(int argc,
         }
       }
       break;
-
       case 'a': 
       {
         // the number of cpus has been set twice
@@ -1152,7 +1209,6 @@ main(int argc,
         }
       }
       break;
-
       case 'e': 
       {
         // E-value
@@ -1181,7 +1237,6 @@ main(int argc,
         }
       }
       break;
-
       case 'F': 
       {
         // only forward strand
@@ -1198,7 +1253,6 @@ main(int argc,
         }
       }
       break;
-
       case 'R': 
       {
         // only reverse strand
@@ -1215,15 +1269,13 @@ main(int argc,
         }
       }
       break;
-
       case 'h': 
       {
         // help
         welcome();
         printlist();
       }
-      break;
-                
+      break;        
       case 'v': 
       {
         // turn on verbose
@@ -1231,7 +1283,6 @@ main(int argc,
         narg++;
       }
       break;
-
       case 'N': 
       {
         // match ambiguous N's
@@ -1249,7 +1300,6 @@ main(int argc,
         }
       }
       break;
-
       case 'm': 
       {
         // set the map_size_gv variable
@@ -1261,16 +1311,14 @@ main(int argc,
           // note 1 Mb = 1024^2 = 1048576 bytes
           unsigned long long int pages_asked =\
             (unsigned long long int)(_m*1048576)/pagesize_gv;
-                    
           // RAM limit exceeds available resources
           if ( pages_asked > maxpages_gv/2 )
           {
             int max_ram = (maxpages_gv*pagesize_gv)/1048576;
-            fprintf(stderr,"\n  %sERROR%s: -m [INT] must not exceed %d (Mbyte)."
-                    "\n\n","\033[0;31m","\033[0m",max_ram);
+            fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] -m [INT] must not exceed %d (Mbyte)."
+                    "\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__, max_ram);
             exit(EXIT_FAILURE);
           }
-
           // set RAM limit
           if ( _m != 0 )
           {
@@ -1280,24 +1328,23 @@ main(int argc,
           }
           else
           {
-            fprintf(stderr, "\n  %sERROR%s: -m [INT] must be a positive integer "
-                    "value (in Mbyte).\n\n","\033[0;31m","\033[0m");
+            fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] -m [INT] must be a positive integer "
+                    "value (in Mbyte).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }
         }
         else
         {
-          fprintf(stderr,"\n  %sERROR%s: -m [INT] has been set twice, please verify "
-                            "your command parameters.\n\n","\033[0;31m","\033[0m");
+          fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] -m [INT] has been set twice, please verify "
+                            "your command parameters.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
           exit(EXIT_FAILURE);
         }
       }
-      break;
-              
+      break;       
       default : 
       {
-        fprintf(stderr,"\n  %sERROR%s: '%c' is not one of the options.\n",
-                "\033[0;31m","\033[0m",argv[narg][1]);
+        fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] '%c' is not one of the options.\n",
+                "\033[0;31m","\033[0m", __LINE__, __FILE__, argv[narg][1]);
         printlist();
       }
     }//~switch
@@ -1305,139 +1352,131 @@ main(int argc,
     
     
     
-  // ERROR messages *******
-    
+  // ERROR messages ******* 
   // Reads file is mandatory
   if ( (readsfile == NULL) || myfiles.empty() )
   {
-    fprintf(stderr,"\n  %sERROR%s: a reads file (--reads file.{fa/fq}) and a "
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] a reads file (--reads file.{fa/fq}) and a "
             "reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) "
-            "are mandatory input.\n\n","\033[0;31m","\033[0m");
+            "are mandatory input.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     printlist();
   }
-
   // Basename for aligned reads is mandatory
   if ( ptr_filetype_ar == NULL )
   {
-    fprintf(stderr,"\n  %sERROR%s: parameter --aligned [STRING] is mandatory.\n\n",
-            "\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
+            "\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
   // No output format has been chosen
   else if ( !(fastxout_gv || blastout_gv || samout_gv || otumapout_gv || logout_gv || de_novo_otu_gv) )
   {
-    fprintf(stderr,"\n  %sERROR%s: no output format has been chosen (fastx/sam/blast/otu_"
-            "map/log).\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] no output format has been chosen (fastx/sam/blast/otu_"
+            "map/log).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
-
   // Options --paired_in and --paired_out can only be used with FASTA/Q output
   if ( !fastxout_gv && (pairedin_gv || pairedout_gv) )
   {
-    fprintf(stderr,"\n  %sERROR%s: options --paired_in and --paired_out "
-            "must be accompanied by option --fastx.\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] options --paired_in and --paired_out "
+            "must be accompanied by option --fastx.\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  These BOOLs are for FASTA and FASTQ output files, for "
             "maintaining paired reads together.\n");
     exit(EXIT_FAILURE);
-  }
-    
+  }  
   // Basename for non-aligned reads is mandatory
   if ( ptr_filetype_or != NULL )
   {
     if ( !fastxout_gv && (blastout_gv || samout_gv) )
     {
-      fprintf(stderr,"\n  %sERROR%s: option --other [STRING] can only be used together "
-              "with the --fastx option.\n\n","\033[0;31m","\033[0m");
+      fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] option --other [STRING] can only be used together "
+              "with the --fastx option.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
       exit(EXIT_FAILURE);
     }
   }
-
   // An OTU map can only be constructed with the single best alignment per read
   if ( otumapout_gv && num_alignments_gv_set )
   {
-    fprintf(stderr,"\n  %sERROR%s: --otu_map cannot be set together with "
-            "--num_alignments [INT].\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --otu_map cannot be set together with "
+            "--num_alignments [INT].\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  The option --num_alignments [INT] doesn't keep track of "
             "the best alignment which is required for constructing an OTU map.\n");
     fprintf(stderr,"  Use --otu_map with --best [INT] instead.\n\n");
     exit(EXIT_FAILURE);
-  }
-    
+  } 
   // If --num_alignments output was chosen, check an alignment format has also been chosen
   if ( num_alignments_gv_set && !(blastout_gv || samout_gv || fastxout_gv) )
   {
-    fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] has been set but no output "
-            "format has been chosen (--blast, --sam or --fastx).\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --num_alignments [INT] has been set but no output "
+            "format has been chosen (--blast, --sam or --fastx).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
-
   // If --best output was chosen, check an alignment format has also been chosen
   if ( best_gv_set && !(blastout_gv || samout_gv || otumapout_gv) )
   {
-    fprintf(stderr,"\n  %sERROR%s: --best [INT] has been set but no output "
-            "format has been chosen (--blast or --sam or --otu_map).\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --best [INT] has been set but no output "
+            "format has been chosen (--blast or --sam or --otu_map).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
-  }
-    
+  } 
   // Check gap extend score < gap open score
   if ( gap_extension > gap_open )
   {
-    fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] must be less than --gap_open [INT].\n\n",
-            "\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --gap_ext [INT] must be less than --gap_open [INT].\n\n",
+            "\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
-  }
-        
+  }  
   // Option --print_all_reads can only be used with Blast-like tabular
   // and SAM formats (not pairwise)
   if ( print_all_reads_gv && blastout_gv && !blast_tabular )
   {
-    fprintf(stderr,"\n  %sERROR%s: --print_all_reads [BOOL] can only be used with BLAST-like "
-            "tabular format.\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --print_all_reads [BOOL] can only be used with BLAST-like "
+            "tabular format.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
-
   // Only one of these options is allowed (--best outputs one alignment,
   // --num_alignments outputs > 1 alignments)
   if ( best_gv_set && num_alignments_gv_set )
   {
-    fprintf(stderr,"\n  %sERROR%s: --best [INT] and --num_alignments [INT] cannot "
-            "be set together. \n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --best [INT] and --num_alignments [INT] cannot "
+            "be set together. \n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  (--best [INT] will search INT highest scoring reference sequences "
             "and output a single best alignment, whereas --num_alignments [INT] will "
             "output the first INT alignments).\n\n");
   }
-    
   // Option --min_lis [INT] can only accompany --best [INT]
   if ( min_lis_gv_set && num_alignments_gv_set )
   {
-    fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] and --num_alignments [INT] cannot "
-            "be set together. \n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --min_lis [INT] and --num_alignments [INT] cannot "
+            "be set together. \n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  --min_lis [INT] can only be used with --best [INT] (refer to "
             "the User manual on this option).\n\n");
     exit(EXIT_FAILURE);
   }
-  
   // Option --mis_lis INT accompanies --best INT, cannot be set alone
   if ( min_lis_gv_set && !best_gv_set)
   {
-    fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] must be set together with --best "
-            "[INT].\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --min_lis [INT] must be set together with --best "
+            "[INT].\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
-  }
-    
+  } 
   // %id and %coverage can only be used with --otu_map
   if ( ((align_id > 0) || (align_cov > 0 )) && !otumapout_gv )
   {
-    fprintf(stderr,"\n  %sERROR%s: --id [INT] and --coverage [INT] can only be used "
-            "together with --otu_map.\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --id [INT] and --coverage [INT] can only be used "
+            "together with --otu_map.\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  These two options are used for constructing the OTU map by "
             "filtering alignments passing the E-value threshold.\n\n");
     exit(EXIT_FAILURE);
   }
-      
+  // reads input is in compressed format and mmap was chosen
+  if ( map_size_set_gv && have_reads_gz )
+  {
+    fprintf(stderr,"\n  %sWARNING%s: [Line %d: %s] loading compressed reads using memory map "
+            "is not possible. Using default buffer I/O.\n", "\033[0;33m","\033[0m", __LINE__, __FILE__);
+    map_size_set_gv = false;
+  }
   // the list of arguments is correct, welcome the user!
   if ( verbose ) welcome();
-  
   // if neither strand was selected for search, search both
   if ( !forward_gv && !reverse_gv )
   {
@@ -1446,26 +1485,14 @@ main(int argc,
   }
   // default number of threads is 1
   if ( numcpu_gv  < 0 ) numcpu_gv = 1;
-    
   // default E-value
   if ( evalue < 0.0 ) evalue = 1;
-    
   // SW alignment parameters
   if ( !match_set ) match = 2;
   if ( !mismatch_set ) mismatch = -3;
   if ( !gap_open_set ) gap_open = 5;
   if ( !gap_ext_set ) gap_extension = 2;
   if ( !match_ambiguous_N_gv ) score_N = mismatch;
-    
-  if ( !map_size_set_gv )
-  { 
-    // the maximum memory allowed for reads is less than 1GB
-    if ( 1073741824 > maxpages_gv*pagesize_gv/2 ) map_size_gv =\
-        maxpages_gv*pagesize_gv/2;
-    // we set the memory to 1GB
-    else map_size_gv = 1073741824;
-  }
-    
   // default method for searching alignments
   if ( !best_gv_set && !num_alignments_gv_set )
   {
@@ -1480,22 +1507,17 @@ main(int argc,
       min_lis_gv = 2;
     }
   }
-    
   // default minimum LIS used for setting the number of
   // alignments to search prior to outputting --best INT
-  if ( best_gv_set && !min_lis_gv_set ) min_lis_gv = 2;
-      
+  if ( best_gv_set && !min_lis_gv_set ) min_lis_gv = 2;   
   // default number of seed hits before searching for candidate LIS
   if ( seed_hits_gv < 0 ) seed_hits_gv = 2;
-    
   // default number of nucleotides to add to each edge of an alignment
   // region before extension
   if ( edges_gv < 0 ) edges_gv = 4;
-    
   // activate heuristic for stopping search (of 1-error matches) after
   // finding 0-error match
   if ( !full_search_set ) full_search_gv = false;
-    
   // default %id to keep alignment
   if ( align_id < 0 )
   {
@@ -1503,19 +1525,18 @@ main(int argc,
     if ( otumapout_gv ) align_id = 0.97;
     else align_id = 0;
   }
-  
   // default %query coverage to keep alignment
   if ( align_cov < 0 )
   {
     // if OTU-map is chosen, set default coverage to 0.97
     if ( otumapout_gv ) align_cov = 0.97;
     else align_cov = 0;
-  }
-    
+  } 
   // 3. For each window, traverse in parallel the Burst trie/reverse and
   // LEV(k), outputting all reads with edit distance <= k between the
   // window.
   paralleltraversal(readsfile,
+                    have_reads_gz,
                     ptr_filetype_ar,
                     ptr_filetype_or,
                     match,
@@ -1529,7 +1550,5 @@ main(int argc,
                     yes_SQ,
                     myfiles,
                     exit_early);
-  
   return 0;
-    
 }//~main()

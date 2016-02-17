@@ -27,7 +27,7 @@
 
 File name: sls_alp.cpp
 
-Author: Sergey Sheetlin
+Author: Sergey Sheetlin, Martin Frith
 
 Contents: Ascending ladder points simulation
 
@@ -37,6 +37,8 @@ Contents: Ascending ladder points simulation
 #include "sls_alp.hpp"
 
 using namespace Sls;
+
+static long int small_long=(long int)((double)LONG_MIN/2.0);
 
 
 alp::alp(//constructor
@@ -104,25 +106,13 @@ alp_data *alp_data_
 	d_alp_data=alp_data_;
 	if(!d_alp_data)
 	{
-		throw error("Unexpected error",4);
+		throw error("Unexpected error\n",4);
 	};
 
 	d_a_step=30;
 
-	
-
-
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
 	try
 	{
-	try
-	{
-	
-
-		
-	
 
 		d_is_now=true;
 		d_seqi_len=0;
@@ -177,34 +167,20 @@ alp_data *alp_data_
 		increment_W_weights();
 		increment_H_weights_with_sentinels(0);
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		this->~alp();
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-};
-
+}
 
 alp::~alp()//destructor
 {
 
 	release_and_calculate_memory(d_seqi,d_seq_a_len);
 	release_and_calculate_memory(d_seqj,d_seq_a_len);
+
 
 
 	release_and_calculate_memory(d_WS_i_const_pred,d_W_matr_a_len);
@@ -277,8 +253,6 @@ alp::~alp()//destructor
 
 
 
-
-
 	
 	release_and_calculate_memory(d_alp);
 
@@ -287,6 +261,7 @@ alp::~alp()//destructor
 	release_and_calculate_memory(d_H_J);
 
 	release_and_calculate_memory(d_alp_pos);
+
 
 
 
@@ -304,8 +279,6 @@ alp::~alp()//destructor
 
 					for(i=0;i<=d_nalp;i++)
 					{
-
-
 
 
 						release_and_calculate_memory(d_alp_states->d_elem[i]->d_HS_i_const_next,d_alp_states->d_elem[i]->d_H_matr_len);
@@ -332,6 +305,7 @@ alp::~alp()//destructor
 						release_and_calculate_memory(d_alp_states->d_elem[i]->d_cells_counts);
 
 						release_and_calculate_memory(d_alp_states->d_elem[i]);
+
 						
 					};
 				};
@@ -340,7 +314,6 @@ alp::~alp()//destructor
 	};
 
 	
-
 	release_and_calculate_memory(d_alp_states);
 
 	release_and_calculate_memory(d_alp_weights);
@@ -348,7 +321,8 @@ alp::~alp()//destructor
 	
 	release_and_calculate_memory(d_cells_counts);
 
-};
+
+}
 
 void alp::partially_release_memory()
 {
@@ -440,7 +414,7 @@ void alp::partially_release_memory()
 		};
 	};
 
-};
+}
 
 
 long int alp::random_AA1()
@@ -450,7 +424,7 @@ long int alp::random_AA1()
 		d_alp_data->d_number_of_AA,
 		d_alp_data->d_RR1_sum,
 		d_alp_data->d_RR1_sum_elements);
-};
+}
 
 long int alp::random_AA2()
 {
@@ -459,19 +433,13 @@ long int alp::random_AA2()
 		d_alp_data->d_number_of_AA,
 		d_alp_data->d_RR2_sum,
 		d_alp_data->d_RR2_sum_elements);
-};
-
+}
 
 bool alp::one_step_of_importance_sampling_without_weight_calculation(
 	long int d_dim1_,
 	long int d_dim2_)
 {
-	//char previous_state_; //jenya, remove compiling warnings
-
 	char &state_=d_IS_state;
-
-	//bool length1_change_; //jenya, remove compiling warnings
-	//bool length2_change_; //jenya, remove compiling warnings
 
 	alp_data *&las_object_=d_alp_data;
 
@@ -495,11 +463,6 @@ bool alp::one_step_of_importance_sampling_without_weight_calculation(
 	};
 
 
-	//previous_state_=state_; //jenya, remove compiling warnings
-
-	//length1_change_=false; //jenya, remove compiling warnings
-	//length2_change_=false; //jenya, remove compiling warnings
-
 	if(state_=='D')
 	{
 		if(length1_==d_dim1_)
@@ -515,7 +478,6 @@ bool alp::one_step_of_importance_sampling_without_weight_calculation(
 
 		d_seqi_rglobal_[length1_]=random_AA1();
 		length1_++;
-		//length1_change_=true; //jenya, remove compiling warnings
 
 		state_=alp_data::random_long(
 			las_object_->ran2(),
@@ -541,7 +503,6 @@ bool alp::one_step_of_importance_sampling_without_weight_calculation(
 
 		d_seqj_rglobal_[length2_]=random_AA2();
 		length2_++;
-		//length2_change_=true; //jenya, remove compiling warnings
 
 		state_=alp_data::random_long(
 			las_object_->ran2(),
@@ -576,8 +537,6 @@ bool alp::one_step_of_importance_sampling_without_weight_calculation(
 
 		length1_++;
 		length2_++;
-		//length1_change_=true; //jenya, remove compiling warnings
-		//length2_change_=true; //jenya, remove compiling warnings
 
 		state_=alp_data::random_long(
 			las_object_->ran2(),
@@ -591,19 +550,13 @@ weight_calculation:
 //----deleted-------
 return res;
 
-};
-
-
+}
 
 void alp::increment_sequences()
 {
 	long int *d_seqi_new=NULL;
 	long int *d_seqj_new=NULL;
-	bool ee_error_flag=false;
-	error ee_error("",0);
 
-	try
-	{
 	try
 	{
 
@@ -640,28 +593,14 @@ void alp::increment_sequences()
 		d_alp_data->d_memory_size_in_MB+=(double)(sizeof(long int)*d_a_step*2)/mb_bytes;
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		delete[]d_seqi_new;d_seqi_new=NULL;
 		delete[]d_seqj_new;d_seqj_new=NULL;
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-};
+}
 
 void alp::increment_W_matrix()
 {
@@ -681,11 +620,6 @@ void alp::increment_W_matrix()
 	double *d_WI_j_const_next_new=NULL;
 	double *d_WD_j_const_next_new=NULL;
 
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
-	try
-	{
 	try
 	{
 
@@ -789,23 +723,8 @@ void alp::increment_W_matrix()
 		
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
-
 		delete[]d_WS_i_const_pred_new;d_WS_i_const_pred_new=NULL;
 		delete[]d_WI_i_const_pred_new;d_WI_i_const_pred_new=NULL;
 		delete[]d_WD_i_const_pred_new;d_WD_i_const_pred_new=NULL;
@@ -821,11 +740,10 @@ void alp::increment_W_matrix()
 		delete[]d_WS_j_const_next_new;d_WS_j_const_next_new=NULL;
 		delete[]d_WI_j_const_next_new;d_WI_j_const_next_new=NULL;
 		delete[]d_WD_j_const_next_new;d_WD_j_const_next_new=NULL;
-
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-};
+}
 
 void alp::increment_H_matrix()
 {
@@ -852,11 +770,6 @@ void alp::increment_H_matrix()
 
 	long int *d_H_edge_max_new=NULL;
 
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
-	try
-	{
 	try
 	{
 
@@ -988,22 +901,8 @@ void alp::increment_H_matrix()
 
 		
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		delete[]d_HS_i_const_pred_new;d_HS_i_const_pred_new=NULL;
 		delete[]d_HI_i_const_pred_new;d_HI_i_const_pred_new=NULL;
 		delete[]d_HD_i_const_pred_new;d_HD_i_const_pred_new=NULL;
@@ -1025,11 +924,11 @@ void alp::increment_H_matrix()
 		delete[]d_H_j_const_next_new;d_H_j_const_next_new=NULL;
 
 		delete[]d_H_edge_max_new;d_H_edge_max_new=NULL;
-
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-};
+
+}
 
 void alp::increment_W_weights()
 //the function calculates weigths for d_W_matr_len increased by 1
@@ -1124,7 +1023,7 @@ void alp::increment_W_weights()
 
 	
 
-};
+}
 
 double alp::degree(//returns x_^n_
 double x_,
@@ -1149,7 +1048,7 @@ double n_)
 
 	return exp(n_*log(x_));
 
-};
+}
 
 void alp::increment_H_weights()
 {
@@ -1161,7 +1060,7 @@ void alp::increment_H_weights()
 	{
 		increment_H_weights_without_insertions_after_deletions();
 	};
-};
+}
 
 void alp::increment_H_weights_without_insertions_after_deletions()
 //the function calculates alignment scores for d_H_matr_len increased by 1
@@ -1339,7 +1238,7 @@ void alp::increment_H_weights_without_insertions_after_deletions()
 	check_time_function();
 
 
-};
+}
 
 
 void alp::increment_H_weights_with_insertions_after_deletions()
@@ -1525,10 +1424,9 @@ void alp::increment_H_weights_with_insertions_after_deletions()
 	check_time_function();
 
 
-};
+}
 
-void alp::check_time_function(
-long int ff_)
+void alp::check_time_function()
 {
 	if(d_check_time_flag)
 	{
@@ -1539,8 +1437,7 @@ long int ff_)
 		{
 			if(d_time_error_flag)
 			{
-				throw error("The program cannot calculate the parameters for the given scoring system:\nthere is no logarithmic stage reached for the input calculation time\nPlease try to increase the allowed calculation time\n",1);
-
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 			}
 			else
 			{
@@ -1554,7 +1451,19 @@ long int ff_)
 		};
 
 	};
-};
+
+	if(d_alp_data->d_max_time<=0&&d_alp_data->d_max_time_with_computation_parameters>0)
+	{
+		double time_after3;
+		alp_data::get_current_time(time_after3);
+
+		if((time_after3-d_alp_data->d_time_before1)>d_alp_data->d_max_time_with_computation_parameters)
+		{
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+		};
+
+	};
+}
 
 void alp::increment_H_weights_with_sentinels(
 	long int diff_opt_)
@@ -1571,7 +1480,7 @@ void alp::increment_H_weights_with_sentinels(
 		increment_H_weights_with_sentinels_without_insertions_after_deletions(diff_opt_);
 	};
 
-};
+}
 
 void alp::increment_H_weights_with_sentinels_without_insertions_after_deletions(
 	long int diff_opt_)
@@ -1650,11 +1559,6 @@ void alp::increment_H_weights_with_sentinels_without_insertions_after_deletions(
 	long int d_H_matr_len_2=d_H_matr_len-2;
 
 	//boundary conditions
-	//long int gap_tmp=-d_alp_data->d_open-d_H_matr_len_1*d_alp_data->d_epen;
-	//long int gap_tmp1=-d_alp_data->d_open1-d_H_matr_len_1*d_alp_data->d_epen1;
-	//long int gap_tmp2=-d_alp_data->d_open2-d_H_matr_len_1*d_alp_data->d_epen2;
-
-
 	long int sentinel_i_boundary=alp_data::Tmin(d_sentinel_i_pred+(long int)2,d_H_matr_len_1);
 	long int sentinel_j_boundary=alp_data::Tmin(d_sentinel_j_pred+(long int)2,d_H_matr_len_1);
 
@@ -1807,7 +1711,7 @@ void alp::increment_H_weights_with_sentinels_without_insertions_after_deletions(
 
 	check_time_function();
 
-};
+}
 
 
 
@@ -1888,11 +1792,6 @@ void alp::increment_H_weights_with_sentinels_with_insertions_after_deletions(
 	long int d_H_matr_len_2=d_H_matr_len-2;
 
 	//boundary conditions
-	//long int gap_tmp=-d_alp_data->d_open-d_H_matr_len_1*d_alp_data->d_epen;
-	//long int gap_tmp1=-d_alp_data->d_open1-d_H_matr_len_1*d_alp_data->d_epen1;
-	//long int gap_tmp2=-d_alp_data->d_open2-d_H_matr_len_1*d_alp_data->d_epen2;
-
-
 	long int sentinel_i_boundary=alp_data::Tmin(d_sentinel_i_pred+(long int)2,d_H_matr_len_1);
 	long int sentinel_j_boundary=alp_data::Tmin(d_sentinel_j_pred+(long int)2,d_H_matr_len_1);
 
@@ -2045,12 +1944,11 @@ void alp::increment_H_weights_with_sentinels_with_insertions_after_deletions(
 
 	check_time_function();
 
-};
+}
 
 
 
 void alp::restore_state(
-long int nalp_,
 state * &state_)
 {
 	d_M=state_->d_M;
@@ -2069,15 +1967,8 @@ state * &state_)
 	d_cells_counts=new array<long int>(d_alp_data);
 	alp_data::assert_mem(d_cells_counts);
 
-	
 
-	array<long int> * array_tmp=state_->d_cells_counts;
-
-	long int i;
-	for(i=array_tmp->d_ind0;i<=array_tmp->d_dim_plus_d_ind0;i++)
-	{
-		d_cells_counts->set_elem(i,array_tmp->d_elem[i-array_tmp->d_ind0]);
-	};
+	d_cells_counts->set_elems(state_->d_cells_counts);
 
 
 	d_HS_ij_next=state_->d_HS_ij_next;
@@ -2085,6 +1976,7 @@ state * &state_)
 	d_HD_ij_next=state_->d_HD_ij_next;
 	d_H_ij_next=state_->d_H_ij_next;
 
+	long int i;
 	for(i=0;i<d_H_matr_len;i++)
 	{
 		d_HS_i_const_next[i]=state_->d_HS_i_const_next[i];
@@ -2101,7 +1993,7 @@ state * &state_)
 	d_sentinel_j_next=state_->d_sentinel_j_next;
 
 
-};
+}
 
 state::state()
 {
@@ -2117,7 +2009,7 @@ state::state()
 	d_HD_j_const_next=NULL;
 	d_H_j_const_next=NULL;
 
-};
+}
 
 void alp::save_state(
 state * &state_)
@@ -2140,11 +2032,7 @@ state * &state_)
 
 	d_alp_data->d_memory_size_in_MB+=(double)(sizeof(array<long int>))/mb_bytes;
 
-	long int i;
-	for(i=d_cells_counts->d_ind0;i<=d_cells_counts->d_dim_plus_d_ind0;i++)
-	{
-		state_->d_cells_counts->set_elem(i,d_cells_counts->d_elem[i-d_cells_counts->d_ind0]);
-	};
+	state_->d_cells_counts->set_elems(d_cells_counts);
 
 	state_->d_H_matr_len=d_H_matr_len;
 
@@ -2212,11 +2100,12 @@ state * &state_)
 	state_->d_sentinel_i_next=d_sentinel_i_next;
 	state_->d_sentinel_j_next=d_sentinel_j_next;
 
-};
+}
 
 void alp::kill_upto_level(
 long int M_min_,
-long int M_level_)
+long int M_level_,
+long int *M_upper_level_)
 {
 	if(d_is_now)
 	{
@@ -2246,7 +2135,7 @@ long int M_level_)
 			throw error("Unexpected error\n",4);
 		};
 
-		restore_state(d_nalp_killing,d_alp_states->d_elem[d_nalp_killing]);
+		restore_state(d_alp_states->d_elem[d_nalp_killing]);
 
 	};
 
@@ -2256,6 +2145,15 @@ long int M_level_)
 		{
 			d_success=false;
 			return;
+		};
+
+		if(M_upper_level_)
+		{
+			if(d_H_edge_max[d_H_matr_len]>(*M_upper_level_))
+			{
+				d_success=false;
+				return;
+			};
 		};
 		
 
@@ -2287,7 +2185,7 @@ long int M_level_)
 	};
 
 	d_success=true;
-};
+}
 
 double alp::John2_weight_calculation(
 long int length_)//calculation of weigths for the importance sampling
@@ -2371,8 +2269,7 @@ long int length_)//calculation of weigths for the importance sampling
 
 	return weight;
 
-};
-
+}
 
 void alp::simulate_next_alp()//simulates next ALP
 {
@@ -2391,12 +2288,13 @@ void alp::simulate_next_alp()//simulates next ALP
 	while(d_nalp<target_nalp)
 	{
 		long int k=alp_data::Tmin(d_seqi_len,d_seqj_len);
+		//std::cout<<k<<"\t"<<this->d_H_edge_max[k]<<std::endl;
 
 		while(alp_data::Tmin(d_seqi_len,d_seqj_len)!=k+1)
 		{
 			bool success=one_step_of_importance_sampling_without_weight_calculation(
 			d_alp_data->d_dim1_tmp,
-			d_alp_data->d_dim2_tmp);	
+			d_alp_data->d_dim2_tmp);
 
 
 			check_time_function();
@@ -2435,8 +2333,7 @@ void alp::simulate_next_alp()//simulates next ALP
 
 	d_alp_weights->set_elem(d_nalp,weight);
 
-};
-
+}
 
 void alp::simulate_alp_upto_the_given_number(//simulates ALP upto the given number nalp_ including
 long int nalp_)
@@ -2450,7 +2347,7 @@ long int nalp_)
 			return;
 		};
 	};
-};
+}
 
 void alp::simulate_alp_upto_the_given_level(//simulates ALP upto the given level M_min_ including
 long int M_min_)
@@ -2465,5 +2362,5 @@ long int M_min_)
 		};
 	};
 	d_nalp_killing=d_nalp;
-};
+}
 

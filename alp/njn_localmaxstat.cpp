@@ -33,7 +33,7 @@ Contents:
 
 ******************************************************************************/
 
-#include "sls_alp_data.hpp"
+#include "sls_basic.hpp"
 #include "njn_localmaxstat.hpp"
 #include "njn_memutil.hpp"
 #include "njn_dynprogproblim.hpp"
@@ -140,10 +140,13 @@ const double *prob_) // corresponding probabilities
     if (! LocalMaxStatUtil::isLogarithmic (dimension_, score_, prob_))
     {
         //IoUtil::abort ("LocalMaxStat::copy : ! isLogarithmic");
-		throw Sls::error("The regime is not logarithmic\n",3);
+		throw Sls::error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
     }
 
     size_t i = 0;
+    /*sls deleted size_t j = 0;*/
+    /*sls deleted long int iter = 0;*/
+    /*sls deleted long int value = 0;*/
 
     free2 ();
     init (dimension_);

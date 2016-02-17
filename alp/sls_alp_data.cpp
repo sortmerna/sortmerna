@@ -33,14 +33,178 @@ Contents: Input data for the ascending ladder points simulation
 
 ******************************************************************************/
 
-
 #include "sls_alp_data.hpp"
 
-
 using namespace Sls;
+using namespace std;
+
+void alp_data::input_data_for_the_constructor(
+string randout_,//if defined, then the program outputs complete randomization information into a file
+string smatr_file_name_,//scoring matrix file name
+string RR1_file_name_,//probabilities1 file name
+string RR2_file_name_,//probabilities2 file name
+
+struct_for_randomization &rand_all_,
+bool &rand_flag_,
+long int &rand_,
+
+long int &alphabetSize_,
+long int **&substitutionScoreMatrix_,
+double *&letterFreqs1_,
+double *&letterFreqs2_)
+{
+	ifstream frand;
+
+	try
+	{
+
+		long int number_of_AA_RR1;
+		long int number_of_AA_RR2;
+		long int number_of_AA_smatr;
+
+		read_smatr(
+		smatr_file_name_,
+		d_smatr,
+		number_of_AA_smatr);
+
+		d_number_of_AA_smatr=number_of_AA_smatr;
+		
+		read_RR(
+		RR1_file_name_,
+		d_RR1,
+		d_RR1_sum,
+		d_RR1_sum_elements,
+		number_of_AA_RR1);
 
 
-alp_data::alp_data(//constructor
+		read_RR(
+		RR2_file_name_,
+		d_RR2,
+		d_RR2_sum,
+		d_RR2_sum_elements,
+		number_of_AA_RR2);
+
+
+		if(number_of_AA_RR1==number_of_AA_smatr)
+		{
+			alphabetSize_=number_of_AA_smatr;
+		}
+		else
+		{
+			throw error("Number of letters is different in the files "+smatr_file_name_+" and "+RR1_file_name_+"\n",3);
+		};
+
+		if(number_of_AA_RR2!=number_of_AA_smatr)
+		{
+			throw error("Number of letters is different in the files "+smatr_file_name_+" and "+RR2_file_name_+"\n",3);
+		};
+
+
+		if(randout_!="")
+		{
+			rand_flag_=true;
+
+			string rand_st=randout_;
+			frand.open(rand_st.data(),ios::in);
+			if(!frand)
+			{
+				rand_flag_=false;
+			}
+			else
+			{
+
+				long int i,size;
+				frand>>rand_all_.d_random_seed;
+
+
+				if(rand_all_.d_random_seed<0)
+				{
+					throw error("File "+rand_st+" is not correct\n",3);
+				};
+
+				rand_=rand_all_.d_random_seed;
+
+
+
+				frand>>size;
+				for(i=0;i<size;i++)
+				{
+					long int tmp;
+					frand>>tmp;
+					rand_all_.d_first_stage_preliminary_realizations_numbers_ALP.push_back(tmp);
+					if(tmp<0)
+					{
+						throw error("File "+rand_st+" is not correct\n",3);
+					};
+
+				};
+
+				frand>>size;
+				for(i=0;i<size;i++)
+				{
+					long int tmp;
+					frand>>tmp;
+					rand_all_.d_preliminary_realizations_numbers_ALP.push_back(tmp);
+					if(tmp<0)
+					{
+						throw error("File "+rand_st+" is not correct\n",3);
+					};
+
+				};
+
+				frand>>size;
+				for(i=0;i<size;i++)
+				{
+					long int tmp;
+					frand>>tmp;
+					rand_all_.d_preliminary_realizations_numbers_killing.push_back(tmp);
+					if(tmp<0)
+					{
+						throw error("File "+rand_st+" is not correct\n",3);
+					};
+
+				};
+
+
+				frand>>rand_all_.d_total_realizations_number_with_ALP;
+				if(rand_all_.d_total_realizations_number_with_ALP<0)
+				{
+					throw error("File "+rand_st+" is not correct\n",3);
+				};
+
+				frand>>rand_all_.d_total_realizations_number_with_killing;
+				if(rand_all_.d_total_realizations_number_with_killing<0)
+				{
+					throw error("File "+rand_st+" is not correct\n",3);
+				};
+
+				frand.close();
+			};
+		}
+		else
+		{
+			rand_flag_=false;
+		};
+
+
+		if(!(alphabetSize_>0&&substitutionScoreMatrix_&&letterFreqs1_&&letterFreqs2_))
+		{
+			throw error("Incorrect input parameters\n",1);
+		};
+
+	}
+	catch (...)
+	{ 
+		if(frand.is_open())
+		{
+			frand.close();
+		};
+		throw;
+	};
+
+}
+
+void alp_data::init_main_class_members(
 long int rand_,//randomization number
 string randout_,//if defined, then the program outputs complete randomization information into a file
 
@@ -52,50 +216,50 @@ long int epen_,//gap extension penalty
 long int epen1_,//gap extension penalty for a gap in the sequence #1
 long int epen2_,//gap extension penalty for a gap in the sequence #2
 
-string smatr_file_name_,//scoring matrix file name
-string RR1_file_name_,//probabilities1 file name
-string RR2_file_name_,//probabilities2 file name
 double max_time_,//maximum allowed calculation time in seconds
 double max_mem_,//maximum allowed memory usage in MB
 double eps_lambda_,//relative error for lambda calculation
 double eps_K_,//relative error for K calculation
-bool insertions_after_deletions_,//if true, then insertions after deletions are allowed
-long int match,
-long int mismatch,
-double A_,
-double C_,
-double G_,
-double T_
-)
+bool insertions_after_deletions_)//if true, then insertions after deletions are allowed
 {
-
-	ifstream frand;
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
-	d_smatr=NULL;
-	d_RR1=NULL;
-	d_RR1_sum=NULL;
-	d_RR1_sum_elements=NULL;
-
-	d_RR2=NULL;
-	d_RR2_sum=NULL;
-	d_RR2_sum_elements=NULL;
-
-	d_is=NULL;
-	d_r_i_dot=NULL;
-	d_r_dot_j=NULL;
-
-	d_rand_all=NULL;
-
-
-
 	try
 	{
-	try
-	{
+		d_randout=randout_;
+
+		if(!d_rand_flag&&rand_<0)
+		{
+			
+			rand_=(long int)time(NULL);
+			#ifndef _MSC_VER //UNIX program
+				struct timeval tv;
+				struct timezone tz;
+				gettimeofday(&tv, &tz);
+				rand_+=tv.tv_usec*10000000;
+			#else
+				struct _timeb timebuffer;
+				char *timeline;
+				_ftime( &timebuffer );
+				timeline = ctime( & ( timebuffer.time ) );
+				rand_+=timebuffer.millitm*10000000;
+			#endif
+
+			rand_=abs(rand_);
+
+			d_rand_flag=false;
+			
+		};
+
+
+		d_random_seed=rand_;
+		//cout<<"Random seed "<<d_random_seed<<endl;
+
+		//srand(d_random_seed);
+
+		Njn::Random::seed(d_random_seed);
+
+		d_number_of_AA_smatr=d_number_of_AA;
+
 		d_sentinels_flag=false;
-
 
 		d_memory_size_in_MB=0;
 
@@ -105,100 +269,10 @@ double T_
 			_CrtMemCheckpoint( &d_s1 );
 		#endif
 
-
-		long int number_of_AA_RR1;
-		long int number_of_AA_RR2;
-
 		d_smatr_symmetric_flag=false;
-
-		Sls::alp_data::get_memory_for_matrix(4,d_smatr);
-
-		for(int i=0;i<4;i++)
-		{
-			for(int j=0;j<4;j++)
-			{
-				i == j ? d_smatr[i][j] = match : d_smatr[i][j] = mismatch; 
-			};
-		};
-
-		/* build background probabilities matrix with passed values */
-		number_of_AA_RR1 = 4;//A,C,G,T
-		d_RR1=new double[number_of_AA_RR1];
-		alp_data::assert_mem(d_RR1);
-
-		d_RR1_sum=new double[number_of_AA_RR1];
-		alp_data::assert_mem(d_RR1_sum);
-
-		d_RR1_sum_elements=new long int [number_of_AA_RR1];
-		alp_data::assert_mem(d_RR1_sum_elements);
-
-		d_RR1[0] = A_;
-		d_RR1[1] = C_;
-		d_RR1[2] = G_;
-		d_RR1[3] = T_;
-
-		for(int i=0;i<number_of_AA_RR1;i++)
-		{
-			if(i!=0)
-			{
-				d_RR1_sum[i]=d_RR1_sum[i-1]+d_RR1[i];
-			}
-			else
-			{
-				d_RR1_sum[i]=d_RR1[i];
-			};
-			d_RR1_sum_elements[i]=i;
-		};
-
-		#ifdef DEBUG
-		printf("\n  Sum of probabilities: %0.10lf \n",d_RR1_sum[number_of_AA_RR1-1]);
-		#endif
-
-		if(fabs(d_RR1_sum[number_of_AA_RR1-1]-1.0)>0.000000000001)
-		{
-			printf("Warning: sum of probabilities difference: %0.10lf\n",fabs(d_RR1_sum[number_of_AA_RR1-1]-1.0));
-			//cout<<"Warning: sum of probabilities in the file is not equal to 1\n\n";
-		};
-
-		/* build background probabilities 2 matrix with passed values */
-		number_of_AA_RR2 = 4;//A,C,G,T
-		d_RR2=new double[number_of_AA_RR2];
-		alp_data::assert_mem(d_RR2);
-
-		d_RR2_sum=new double[number_of_AA_RR2];
-		alp_data::assert_mem(d_RR1_sum);
-
-		d_RR2_sum_elements=new long int [number_of_AA_RR2];
-		alp_data::assert_mem(d_RR2_sum_elements);
-
-		d_RR2[0] = A_;
-		d_RR2[1] = C_;
-		d_RR2[2] = G_;
-		d_RR2[3] = T_;
-
-		for(int i=0;i<number_of_AA_RR2;i++)
-		{
-			if(i!=0)
-			{
-				d_RR2_sum[i]=d_RR2_sum[i-1]+d_RR2[i];
-			}
-			else
-			{
-				d_RR2_sum[i]=d_RR2[i];
-			};
-			d_RR2_sum_elements[i]=i;
-		};
-
-		if(fabs(d_RR2_sum[number_of_AA_RR2-1]-1.0)>0.000000000001)
-		{
-			//cout<<"Warning: sum of probabilities in the file is not equal to 1\n\n";
-		};
-
-		d_number_of_AA_smatr = number_of_AA_RR1;
-		d_number_of_AA=d_number_of_AA_smatr;
-
+		
 		long int t;
-		for(t=0;t<number_of_AA_RR1;t++)
+		for(t=0;t<d_number_of_AA;t++)
 		{
 			if(d_RR1[t]!=d_RR2[t])
 			{
@@ -208,6 +282,8 @@ double T_
 		};
 
 		d_insertions_after_deletions=insertions_after_deletions_;
+
+
 
 		d_open=open_+epen_;
 		d_open1=open1_+epen1_;
@@ -223,164 +299,16 @@ double T_
 		d_eps_K=eps_K_;
 		d_minimum_realizations_number=40;
 
-		d_rand_all=new struct_for_randomization;
-		alp_data::assert_mem(d_rand_all);
-		d_memory_size_in_MB+=sizeof(struct_for_randomization)/mb_bytes;
-
-		//randomization
-		long int random_factor=rand_;
-		d_randout=randout_;
-
-		if(d_randout!="")
-		{
-			d_rand_flag=true;
-            
-			//string rand_st="rand_"+alp_data::long_to_string(random_factor)+".out";
-			string rand_st=d_randout;
-			frand.open(rand_st.data(),ios::in);
-			if(!frand)
-			{
-				d_rand_flag=false;
-				//throw error("Error - file "+rand_st+" is not found\n",3);
-			}
-			else
-			{
-
-				long int i,size;
-                
-				frand>>d_rand_all->d_random_factor;
-
-				if((long int)random_factor!=d_rand_all->d_random_factor)
-				{
-					throw error("Unexpected error in randomization seed\n",3);
-				};
-
-				if((long int)random_factor!=d_rand_all->d_random_factor)
-				if(d_rand_all->d_random_factor<0)
-				{
-					throw error("File "+rand_st+" is not correct\n",3);
-				};
-
-				random_factor=d_rand_all->d_random_factor;
-
-				frand>>size;
-				for(i=0;i<size;i++)
-				{
-					long int tmp;
-					frand>>tmp;
-					d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP.push_back(tmp);
-					if(tmp<0)
-					{
-						throw error("File "+rand_st+" is not correct\n",3);
-					};
-
-				};
-
-				frand>>size;
-				for(i=0;i<size;i++)
-				{
-					long int tmp;
-					frand>>tmp;
-					d_rand_all->d_preliminary_realizations_numbers_ALP.push_back(tmp);
-					if(tmp<0)
-					{
-						throw error("File "+rand_st+" is not correct\n",3);
-					};
-
-				};
-
-				frand>>size;
-				for(i=0;i<size;i++)
-				{
-					long int tmp;
-					frand>>tmp;
-					d_rand_all->d_preliminary_realizations_numbers_killing.push_back(tmp);
-					if(tmp<0)
-					{
-						throw error("File "+rand_st+" is not correct\n",3);
-					};
-
-				};
 
 
-				frand>>d_rand_all->d_total_realizations_number_with_ALP;
-				if(d_rand_all->d_total_realizations_number_with_ALP<0)
-				{
-					throw error("File "+rand_st+" is not correct\n",3);
-				};
+		
 
-				frand>>d_rand_all->d_total_realizations_number_with_killing;
-				if(d_rand_all->d_total_realizations_number_with_killing<0)
-				{
-					throw error("File "+rand_st+" is not correct\n",3);
-				};
-
-				frand.close();
-			};
-		}
-		else
-		{
-			//d_rand_flag=false; //jenya
-            d_rand_flag=true; //jenya
-            random_factor = 182345345; //jenya
-            d_rand_all->d_random_factor = 182345345; //jenya
-            d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP.push_back(39); //jenya
-            d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP.push_back(119); //jenya
-            d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP.push_back(279); //jenya
-            d_rand_all->d_preliminary_realizations_numbers_ALP.push_back(319); //jenya
-            d_rand_all->d_preliminary_realizations_numbers_ALP.push_back(999); //jenya
-            d_rand_all->d_preliminary_realizations_numbers_killing.push_back(39); //jenya
-            d_rand_all->d_preliminary_realizations_numbers_killing.push_back(999); //jenya
-            d_rand_all->d_total_realizations_number_with_ALP = 14112; //jenya
-            d_rand_all->d_total_realizations_number_with_killing = 14112; //jenya
-		};
-
-
-		if(!d_rand_flag&&random_factor<0)
-		{
-			
-			random_factor=(long int)time(NULL);
-			#ifndef _MSDOS_ //UNIX program
-				struct timeval tv;
-				struct timezone tz;
-				//struct tm *tm; //jenya, remove compiling warnings 
-				gettimeofday(&tv, &tz);
-				//tm=localtime(&tv.tv_sec); //jenya, remove compiling warnings
-				random_factor+=tv.tv_usec*10000000;
-			#else
-				struct _timeb timebuffer;
-				char *timeline;
-				_ftime( &timebuffer );
-				timeline = ctime( & ( timebuffer.time ) );
-				random_factor+=timebuffer.millitm*10000000;
-			#endif
-
-			random_factor=abs(random_factor);
-
-			d_rand_flag=false;
-			
-		};
-
-		d_random_factor=random_factor;
-
-		#ifdef DEBUG
-		cout<<"  Random seed: "<<d_random_factor<<endl;
-		#endif
-
-		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		srand(d_random_factor);
-
-		Njn::Random::seed(d_random_factor);
 
 		d_is=new importance_sampling(
 			this,
 			d_open,
-			d_open1,
-			d_open2,
 
 			d_epen,
-			d_epen1,
-			d_epen2,
 
 			d_number_of_AA,
 			d_smatr,
@@ -445,31 +373,281 @@ double T_
 
 		d_dim1_tmp=(long int)tmp_size;
 		d_dim2_tmp=(long int)tmp_size;
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
+
 	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		release_memory();
+		throw;
 	};
+}
 
-	if(frand.is_open())
+
+alp_data::alp_data(//constructor
+long int rand_,//randomization number
+string randout_,//if defined, then the program outputs complete randomization information into a file
+
+long int open_,//gap opening penalty
+long int open1_,//gap opening penalty for a gap in the sequence #1
+long int open2_,//gap opening penalty for a gap in the sequence #2
+
+long int epen_,//gap extension penalty
+long int epen1_,//gap extension penalty for a gap in the sequence #1
+long int epen2_,//gap extension penalty for a gap in the sequence #2
+
+string smatr_file_name_,//scoring matrix file name
+string RR1_file_name_,//probabilities1 file name
+string RR2_file_name_,//probabilities2 file name
+double max_time_,//maximum allowed calculation time in seconds
+double max_mem_,//maximum allowed memory usage in MB
+double eps_lambda_,//relative error for lambda calculation
+double eps_K_,//relative error for K calculation
+bool insertions_after_deletions_)//if true, then insertions after deletions are allowed
+{
+
+
+	d_smatr=NULL;
+	d_RR1=NULL;
+	d_RR1_sum=NULL;
+	d_RR1_sum_elements=NULL;
+
+	d_RR2=NULL;
+	d_RR2_sum=NULL;
+	d_RR2_sum_elements=NULL;
+
+	d_is=NULL;
+	d_r_i_dot=NULL;
+	d_r_dot_j=NULL;
+
+	d_rand_all=NULL;
+
+	try
 	{
-		frand.close();
-	};
 
-	if(ee_error_flag)
+		d_rand_flag=true;
+
+		d_rand_all=new struct_for_randomization;
+		alp_data::assert_mem(d_rand_all);
+		d_memory_size_in_MB+=sizeof(struct_for_randomization)/mb_bytes;
+
+
+		input_data_for_the_constructor(
+		randout_,//if defined, then the program outputs complete randomization information into a file
+		smatr_file_name_,//scoring matrix file name
+		RR1_file_name_,//probabilities1 file name
+		RR2_file_name_,//probabilities2 file name
+
+		*d_rand_all,
+		d_rand_flag,
+		rand_,
+
+
+		d_number_of_AA,
+		d_smatr,
+		d_RR1,
+		d_RR2);
+
+		init_main_class_members(
+		rand_,//randomization number
+		randout_,//if defined, then the program outputs complete randomization information into a file
+
+		open_,//gap opening penalty
+		open1_,//gap opening penalty for a gap in the sequence #1
+		open2_,//gap opening penalty for a gap in the sequence #2
+
+		epen_,//gap extension penalty
+		epen1_,//gap extension penalty for a gap in the sequence #1
+		epen2_,//gap extension penalty for a gap in the sequence #2
+
+		max_time_,//maximum allowed calculation time in seconds
+		max_mem_,//maximum allowed memory usage in MB
+		eps_lambda_,//relative error for lambda calculation
+		eps_K_,//relative error for K calculation
+		insertions_after_deletions_);//if true, then insertions after deletions are allowed
+
+		d_max_time_with_computation_parameters=-1;
+
+		if(max_time_>0)
+		{
+			d_max_time_for_quick_tests=0.25*max_time_;
+		}
+		else
+		{
+			d_max_time_for_quick_tests=1e99;
+		};
+
+
+
+	}
+	catch (...)
 	{
-		this->~alp_data();
-		throw error(ee_error.st,ee_error.error_code);
+		release_memory();
+		throw;
 	};
+}
 
-};
+
+alp_data::alp_data(//constructor
+long int rand_,//randomization number
+struct_for_randomization *randomization_parameters_,//if not NULL, sets d_rand_flag to true and initializes d_rand_all
+
+long int open_,//gap opening penalty
+long int open1_,//gap opening penalty for a gap in the sequence #1
+long int open2_,//gap opening penalty for a gap in the sequence #2
+
+long int epen_,//gap extension penalty
+long int epen1_,//gap extension penalty for a gap in the sequence #1
+long int epen2_,//gap extension penalty for a gap in the sequence #2
+
+long alphabetSize_,
+const long *const *substitutionScoreMatrix_,
+const double *letterFreqs1_,
+const double *letterFreqs2_,
+
+double max_time_,//maximum allowed calculation time in seconds
+double max_mem_,//maximum allowed memory usage in MB
+double eps_lambda_,//relative error for lambda calculation
+double eps_K_,//relative error for K calculation
+bool insertions_after_deletions_,//if true, then insertions after deletions are allowed
+double max_time_for_quick_tests_,//maximum allowed calculation time in seconds for quick tests
+double max_time_with_computation_parameters_)//maximum allowed time in seconds for the whole computation
+{
+
+
+	d_smatr=NULL;
+	d_RR1=NULL;
+	d_RR1_sum=NULL;
+	d_RR1_sum_elements=NULL;
+
+	d_RR2=NULL;
+	d_RR2_sum=NULL;
+	d_RR2_sum_elements=NULL;
+
+	d_is=NULL;
+	d_r_i_dot=NULL;
+	d_r_dot_j=NULL;
+
+	d_rand_all=NULL;
+
+	try
+	{
+
+		d_rand_flag=false;
+
+		d_number_of_AA=alphabetSize_;
+		string randout="";
+
+
+		get_memory_for_matrix(alphabetSize_,d_smatr);
+		alp_data::assert_mem(d_smatr);
+		d_RR1=new double[alphabetSize_];
+		alp_data::assert_mem(d_RR1);
+		d_RR2=new double[alphabetSize_];
+		alp_data::assert_mem(d_RR2);
+
+		long int i,j;
+		for(i=0;i<alphabetSize_;i++)
+		{
+			d_RR1[i]=letterFreqs1_[i];
+			d_RR2[i]=letterFreqs2_[i];
+			for(j=0;j<alphabetSize_;j++)
+			{
+				d_smatr[i][j]=substitutionScoreMatrix_[i][j];
+			};
+
+		};
+
+		d_rand_all=new struct_for_randomization;
+
+		if(randomization_parameters_)
+		{
+			d_rand_flag=true;
+
+			d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP=
+				randomization_parameters_->d_first_stage_preliminary_realizations_numbers_ALP;
+
+			d_rand_all->d_preliminary_realizations_numbers_ALP=
+				randomization_parameters_->d_preliminary_realizations_numbers_ALP;
+
+			d_rand_all->d_preliminary_realizations_numbers_killing=
+				randomization_parameters_->d_preliminary_realizations_numbers_killing;
+
+			d_rand_all->d_random_seed=
+				randomization_parameters_->d_random_seed;
+
+			d_rand_all->d_total_realizations_number_with_ALP=
+				randomization_parameters_->d_total_realizations_number_with_ALP;
+
+			d_rand_all->d_total_realizations_number_with_killing=
+				randomization_parameters_->d_total_realizations_number_with_killing;
+		};
+
+		alp_data::assert_mem(d_rand_all);
+		d_memory_size_in_MB+=sizeof(struct_for_randomization)/mb_bytes;
+
+		init_main_class_members(
+		rand_,//randomization number
+		randout,//if defined, then the program outputs complete randomization information into a file
+
+		open_,//gap opening penalty
+		open1_,//gap opening penalty for a gap in the sequence #1
+		open2_,//gap opening penalty for a gap in the sequence #2
+
+		epen_,//gap extension penalty
+		epen1_,//gap extension penalty for a gap in the sequence #1
+		epen2_,//gap extension penalty for a gap in the sequence #2
+
+		max_time_,//maximum allowed calculation time in seconds
+		max_mem_,//maximum allowed memory usage in MB
+		eps_lambda_,//relative error for lambda calculation
+		eps_K_,//relative error for K calculation
+		insertions_after_deletions_);//if true, then insertions after deletions are allowed
+
+		if(max_time_for_quick_tests_>0)
+		{
+			d_max_time_for_quick_tests=max_time_for_quick_tests_;
+		}
+		else
+		{
+			if(max_time_>0)
+			{
+				d_max_time_for_quick_tests=0.25*max_time_;
+			}
+			else
+			{
+				d_max_time_for_quick_tests=1e99;
+			};
+		};
+
+		if((max_time_with_computation_parameters_>0)&&(!(max_time_>0)))
+		{
+			d_max_time_with_computation_parameters=max_time_with_computation_parameters_;
+		}
+		else
+		{
+			d_max_time_with_computation_parameters=1e99;
+		};
+
+		calculate_RR_sum(
+		d_RR1,
+		alphabetSize_,
+		d_RR1_sum,
+		d_RR1_sum_elements);
+
+		calculate_RR_sum(
+		d_RR2,
+		alphabetSize_,
+		d_RR2_sum,
+		d_RR2_sum_elements);
+
+
+	}
+	catch (...)
+	{ 
+		release_memory();
+		throw;
+	};
+}
 
 long int alp_data::random_long(
 double value_,
@@ -477,7 +655,7 @@ long int dim_)
 {
 	if(value_<0||value_>1.0||dim_<=0)
 	{
-		throw error("Unexpected error",4);
+		throw error("Unexpected error\n",4);
 	};
 
 	if(dim_==1)
@@ -488,10 +666,9 @@ long int dim_)
 	long int tmp=(long int)floor(value_*(double)dim_);
 	tmp=Tmin(tmp,dim_-1);
 	return tmp;
-};
+}
 
-
-alp_data::~alp_data()//destructor
+void alp_data::release_memory()
 {
 	delete[]d_RR1;d_RR1=NULL;
 	delete[]d_RR1_sum;d_RR1_sum=NULL;
@@ -501,10 +678,18 @@ alp_data::~alp_data()//destructor
 	delete[]d_RR2_sum;d_RR2_sum=NULL;
 	delete[]d_RR2_sum_elements;d_RR2_sum_elements=NULL;
 
+	
+	
 
-	d_memory_size_in_MB-=(double)(2.0*sizeof(double)+sizeof(long int))*(double)d_number_of_AA/mb_bytes;
+	d_memory_size_in_MB-=2.0*(double)(2.0*sizeof(double)+sizeof(long int))*(double)d_number_of_AA/mb_bytes;
 
-	delete_memory_for_matrix(d_number_of_AA_smatr,d_smatr);
+
+
+	if(d_smatr)
+	{
+		delete_memory_for_matrix(d_number_of_AA_smatr,d_smatr);
+	};
+
 
 	delete d_is;d_is=NULL;
 
@@ -517,19 +702,19 @@ alp_data::~alp_data()//destructor
 	delete d_rand_all;d_rand_all=NULL;
 	d_memory_size_in_MB-=sizeof(struct_for_randomization)/mb_bytes;
 
+}
 
-};
+alp_data::~alp_data()//destructor
+{
+	release_memory();
+}
 
 void alp_data::check_out_file(
 	string out_file_name_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 	ifstream f;
 	char *str_ch=NULL;
 
-	try
-	{
 	try
 	{
 		f.open(out_file_name_.data(),ios::in);
@@ -543,10 +728,7 @@ void alp_data::check_out_file(
 		string str;
 		getline(f,str);
 		str_ch=new char[str.length()+1];
-		if(!str_ch)
-		{
-			throw error("Memory allocation error\n",41);
-		};
+		alp_data::assert_mem(str_ch);
 
 		long int k;
 		for(k=0;k<(long int)str.length();k++)
@@ -561,7 +743,7 @@ void alp_data::check_out_file(
 
 		if(!test_flag0)
 		{
-			throw error("The output file "+out_file_name_+" exists and does not have correct format;\nplease delete the file and rerun the program\n",3);
+			throw error("The output file "+out_file_name_+" exists and does not have the correct format;\nplease delete the file and rerun the program\n",3);
 		};
 
 		char str_for_test[]="0.5*";
@@ -583,7 +765,7 @@ void alp_data::check_out_file(
 		{
 			if(!d_smatr_symmetric_flag)
 			{
-				throw error("The output file "+out_file_name_+" exists and corresponds to symmetric case; \ncurrent calculation uses non-symmetric parameters;\nplease define another output file name\n",3);
+				throw error("The output file "+out_file_name_+" exists and corresponds to symmetric case; \nthe current calculation uses non-symmetric parameters;\nplease define another output file name\n",3);
 			};
 		};
 
@@ -591,64 +773,26 @@ void alp_data::check_out_file(
 		{
 			if(d_smatr_symmetric_flag)
 			{
-				throw error("The output file "+out_file_name_+" exists and corresponds to non-symmetric case; \ncurrent calculation uses symmetric parameters;\nplease define another output file name\n",3);
+				throw error("The output file "+out_file_name_+" exists and corresponds to non-symmetric case; \nthe current calculation uses symmetric parameters;\nplease define another output file name\n",3);
 			};
 		};
 
 		f.close();
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
+		delete[]str_ch;str_ch=NULL;
 	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
+		delete[]str_ch;str_ch=NULL;
 
-	delete[]str_ch;str_ch=NULL;
-
-	if(f.is_open())
-	{
-		f.close();
-	};
-
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
-
-};
-
-
-double alp_data::get_allocated_memory_in_MB()
-{
-
-	#ifndef _MSDOS_ //UNIX program
-
-		return 0;
-
-	#else
-		_CrtMemCheckpoint( &d_s2 );
-
-		_CrtMemDifference( &d_s3, &d_s1, &d_s2);
-
-		double total=0;
-		int use;
-		for (use = 0; use < _MAX_BLOCKS; use++)
+		if(f.is_open())
 		{
-			total+=d_s3.lSizes[use];
-		}
+			f.close();
+		};
 
-		total/=(double)1048576;
-		return total;
+		throw;
+	};
 
-	#endif
-
-};
+}
 
 double importance_sampling::lambda_equation(double x_,void* func_number_)
 {
@@ -670,19 +814,15 @@ double importance_sampling::lambda_equation(double x_,void* func_number_)
 	};
 
 	return res-1.0;
-};
+}
 
 void alp_data::read_smatr(
 string smatr_file_name_,
 long int **&smatr_,
 long int &number_of_AA_smatr_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 	ifstream f;
 
-	try
-	{
 	try
 	{
 
@@ -713,52 +853,18 @@ long int &number_of_AA_smatr_)
 
 		f.close();
 
-		bool flag=true; 
-		for(i=0;i<number_of_AA_smatr_;i++)
-		{
-			for(j=0;j<i;j++)
-			{
-				if(smatr_[i][j]!=smatr_[j][i])
-				{
-					flag=false; 
-				};
-			};
-		};
-
-		if ( flag )
-        {
-            ;
-        }
-
-		//d_smatr_symmetric_flag=flag;
-
-		//d_smatr_symmetric_flag=false;
-
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
 	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		if(f.is_open())
+		{
+			f.close();
+		};
+		throw;
 	};
 
-	//memory release
-	if(f.is_open())
-	{
-		f.close();
-	};
 
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
-
-};
+}
 
 void alp_data::read_RR(
 string RR_file_name_,
@@ -767,12 +873,159 @@ double *&RR_sum_,
 long int *&RR_sum_elements_,
 long int &number_of_AA_RR_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
-	ifstream f;
+
+	read_RR(
+	RR_file_name_,
+	RR_,
+	number_of_AA_RR_);
+
+	calculate_RR_sum(
+	RR_,
+	number_of_AA_RR_,
+	RR_sum_,
+	RR_sum_elements_);
+}
+
+void alp_data::check_RR_sum(
+double sum_tmp_,
+long int number_of_AA_RR_,
+string RR_file_name_)
+{
+
+	if(number_of_AA_RR_<=0)
+	{
+		throw error("Error - number of letters in the probabilities file must be greater than 0\n",3);
+	};
+
+	double diff_tmp=fabs(sum_tmp_-1.0);
+	if(diff_tmp>0)
+	{
+		double lg_diff=-(log(diff_tmp)-log((double)number_of_AA_RR_))/log(10.0);
+		double lg_eps=-log(DBL_EPSILON)/log(10.0)-1;
+		if(lg_diff<lg_eps)
+		{
+
+			if(sum_tmp_<=0)
+			{
+				if(RR_file_name_!="")
+				{
+					throw error("Error: the sum of the probabilities from the file "+RR_file_name_+" is non-positive\n",3);
+				}
+				else
+				{
+					throw error("Error: the sum of the probabilities is non-positive\n",3);
+				};
+
+			};
+
+			if(RR_file_name_!="")
+			{
+				static map<string, bool> flag_RR;
+
+				if(!flag_RR[RR_file_name_])
+				{
+					cout<<"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+					cout<<"Warning: the sum of the probabilities from the file "<<RR_file_name_<<" is not equal to 1\n";
+					cout<<"The probabilities will be normalized for the computation\n";
+					cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
+
+					flag_RR[RR_file_name_]=true;
+				};
+			}
+			else
+			{
+				//no messages if called from the library functions
+			};
+
+		};
+
+	};
+
+
+
+}
+
+void alp_data::calculate_RR_sum(
+double *RR_,
+long int number_of_AA_RR_,
+double *&RR_sum_,
+long int *&RR_sum_elements_)
+{
+	RR_sum_=NULL;
+	RR_sum_elements_=NULL;
 
 	try
 	{
+
+		long int i;
+		if(number_of_AA_RR_<=0)
+		{
+			throw error("Error - number of letters in the probabilities file must be greater than 0\n",3);
+		};
+		
+		RR_sum_=new double[number_of_AA_RR_];
+		assert_mem(RR_sum_);
+
+		RR_sum_elements_=new long int [number_of_AA_RR_];
+		assert_mem(RR_sum_elements_);
+
+
+		for(i=0;i<number_of_AA_RR_;i++)
+		{
+			if(RR_[i]<0)
+			{
+				throw error("Error - the frequencies must be non-negative\n",3);
+			};
+
+			if(i!=0)
+			{
+				RR_sum_[i]=RR_sum_[i-1]+RR_[i];
+			}
+			else
+			{
+				RR_sum_[i]=RR_[i];
+			};
+			RR_sum_elements_[i]=i;
+		};
+
+		double sum_tmp=RR_sum_[number_of_AA_RR_-1];
+
+		check_RR_sum(
+		sum_tmp,
+		number_of_AA_RR_,
+		"");
+
+		if(sum_tmp>0)
+		{
+			long int i;
+			for(i=0;i<number_of_AA_RR_;i++)
+			{
+				RR_[i]/=sum_tmp;
+				RR_sum_[i]/=sum_tmp;
+			};
+		};
+
+	}
+	catch (...)
+	{ 
+		delete[]RR_sum_;RR_sum_=NULL;
+		delete[]RR_sum_elements_;RR_sum_elements_=NULL;
+		throw;
+	};
+
+
+}
+
+
+void alp_data::read_RR(
+string RR_file_name_,
+double *&RR_,
+long int &number_of_AA_RR_)
+{
+
+	ifstream f;
+	RR_=NULL;
+
 	try
 	{
 
@@ -793,73 +1046,42 @@ long int &number_of_AA_RR_)
 		RR_=new double[number_of_AA_RR_];
 		assert_mem(RR_);
 
-		RR_sum_=new double[number_of_AA_RR_];
-		assert_mem(RR_sum_);
 
-		RR_sum_elements_=new long int [number_of_AA_RR_];
-		assert_mem(RR_sum_elements_);
-
-		//d_memory_size_in_MB+=(double)(2.0*sizeof(double)+sizeof(long int))*(double)number_of_AA_RR_/mb_bytes;
-
-
+		double sum_tmp=0;
 		for(i=0;i<number_of_AA_RR_;i++)
 		{
 			f>>RR_[i];
 
 			if(RR_[i]<0)
 			{
-				throw error("Error - input letter's probability number "+long_to_string(i+1)+" is negative\n",3);
+				throw error("Error - the frequencies defined in the file "+RR_file_name_+" must be non-negative\n",3);
 			};
 
-			if(RR_[i]>1.0)
-			{
-				throw error("Error - input letter's probability number "+long_to_string(i+1)+" is greater than 1.0\n",3);
-			};
+			sum_tmp+=RR_[i];
 
-
-			if(i!=0)
-			{
-				RR_sum_[i]=RR_sum_[i-1]+RR_[i];
-			}
-			else
-			{
-				RR_sum_[i]=RR_[i];
-			};
-			RR_sum_elements_[i]=i;
 		};
 
-		if(fabs(RR_sum_[number_of_AA_RR_-1]-1.0)>0.000000000001)
-		{
-			//cout<<"Warning: sum of probabilities in the file "<<RR_file_name_<<" is not equal to 1\n\n";
-		};
-
+		check_RR_sum(
+		sum_tmp,
+		number_of_AA_RR_,
+		RR_file_name_);
 
 		f.close();
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
+
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		delete[]RR_;RR_=NULL;
+		if(f.is_open())
+		{
+			f.close();
+		};
+		throw;
 	};
 
-	//memory release
-	if(f.is_open())
-	{
-		f.close();
-	};
+}
 
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
 
-};
 
 string alp_data::long_to_string(//convert interer ot string
 long int number_)
@@ -882,7 +1104,9 @@ long int number_)
 		};
 	};
 	number_=abs(number_);
-	do{
+
+	for( ; ; )
+	{
 		long int reminder=number_%10;
 		number_=(number_-reminder)/10;
 		res_=digit_to_string(reminder)+res_;
@@ -890,11 +1114,10 @@ long int number_)
 		{
 			break;
 		};
-	}
-	while (true);
+	};
 
 	return tmp_string+res_;
-};
+}
 
 char alp_data::digit_to_string(//convert interer ot string
 long int digit_)
@@ -913,42 +1136,13 @@ long int digit_)
 	case 9:return '9';
 	default:return '?';
 	};
-};
-
-
-
-
-void alp_data::assert_mem(void *pointer_)
-{
-	if(!pointer_)
-	{
-		throw error("Memory allocation error\n",41);
-	};
-};
-
-double alp_data::round(//returns nearest integer to x_
-const double &x_)
-{
-	double x_floor=floor(x_);
-	double x_ceil=ceil(x_);
-	if(fabs(x_-x_floor)<0.5)
-	{
-		return x_floor;
-	};
-	return x_ceil;
-};
-
-
+}
 
 importance_sampling::importance_sampling(
 alp_data *alp_data_,
 long int open_,
-long int open1_,
-long int open2_,
 
 long int epen_,
-long int epen1_,
-long int epen2_,
 
 long int number_of_AA_,
 long int **smatr_,
@@ -960,20 +1154,17 @@ double *RR2_)
 
 	d_exp_s=NULL;
 
-
 	d_alp_data=alp_data_;
 	if(!d_alp_data)
 	{
-		throw error("Unexpected error",4);
+		throw error("Unexpected error\n",4);
 	};
 
-	bool ee_error_flag=false;
-	error ee_error("",0);
+	try
+	{
 
-	try
-	{
-	try
-	{
+
+
 		{
 
 			//calculation of the importance sampling theta
@@ -1009,6 +1200,8 @@ double *RR2_)
 						continue;
 					};
 										
+
+
 					aver_score+=RR1_[i]*RR2_[j]*smatr_[i][j];
 
 					if(smatr_max<smatr_[i][j])
@@ -1035,7 +1228,7 @@ double *RR2_)
 
 			if(aver_score>=-threshold)
 			{
-				throw error("Error - sum[i,j] RR1[i]*RR2[j]*smatr[i][j]>=0; the program cannot continue the calculation\n",3);
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 			};
 
 			if(smatr_max<=0)
@@ -1053,13 +1246,13 @@ double *RR2_)
 
 				if(a<threshold*100.0)
 				{
-					throw error("Error - the input parameters correspond to non-logarithmic regime\n",3);
+					throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 				};
 			};
 
 			if(a<threshold*100.0)
 			{
-				throw error("Error - the input parameters define the regime which is too close to the critical regime\n",3);
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 			};
 
 			eps=a/10.0;
@@ -1070,7 +1263,7 @@ double *RR2_)
 
 			
 			long int n_partition=2;
-			std::vector<double> res_lambda;
+			vector<double> res_lambda;
 			
 			
 			alp_reg::find_tetta_general(
@@ -1086,7 +1279,8 @@ double *RR2_)
 
 			if(res_lambda.size()==0)
 			{
-				throw error("Error - the program is not able to find the ungapped lambda\n",3);
+				//throw error("Error - the program is not able to find the ungapped lambda. The program does not work with the input scoring scheme. \n",3);
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 			};
 
 			d_lambda=res_lambda[res_lambda.size()-1];
@@ -1195,27 +1389,13 @@ double *RR2_)
 		d_alp_data->d_memory_size_in_MB+=sizeof(double)*number_of_AA_/mb_bytes;
 		d_alp_data->d_memory_size_in_MB+=sizeof(q_elem)*number_of_AA_/mb_bytes;
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		this->~importance_sampling();
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-};
+}
 
 importance_sampling::~importance_sampling()
 {
@@ -1229,45 +1409,139 @@ importance_sampling::~importance_sampling()
 		d_alp_data->d_memory_size_in_MB-=sizeof(q_elem)*d_is_number_of_AA/mb_bytes;
 	};
 
-};
+}
 
-void alp_data::get_current_time(
-double &seconds_)
+double alp_data::error_of_the_sum(//v1_+v2_
+double v1_error_,
+double v2_error_)
 {
-#ifndef _MSDOS_ //UNIX program
-	struct timeval tv;
-	struct timezone tz;
-	//struct tm *tm; //jenya, remove compiling warnings
+	if(v1_error_>=1e100||v2_error_>=1e100)
+	{
+		return 1e100;
+	};
 
-	gettimeofday(&tv, &tz);
-	//tm=localtime(&tv.tv_sec); //jenya, remove compiling warnings
+	return sqrt(v1_error_*v1_error_+v2_error_*v2_error_);
+}
 
-	 seconds_=(double)(tv.tv_sec)+(double)(tv.tv_usec)/1000000.0;
+double alp_data::error_of_the_product(//v1_*v2_
+double v1_,
+double v1_error_,
+double v2_,
+double v2_error_)
+{
+	if(v1_error_>=1e100||v2_error_>=1e100)
+	{
+		return 1e100;
+	};
 
-#else
+	double a1=(v1_+v1_error_)*(v2_+v2_error_);
+	double a2=(v1_-v1_error_)*(v2_+v2_error_);
+	double a3=(v1_+v1_error_)*(v2_-v2_error_);
+	double a4=(v1_-v1_error_)*(v2_-v2_error_);
 
-	struct _timeb timebuffer;
+	double a=v1_*v2_;
 
-	_ftime( &timebuffer );
+	return Tmax(fabs(a1-a),fabs(a2-a),fabs(a3-a),fabs(a4-a));
 
-	seconds_=timebuffer.time+(double)(timebuffer.millitm)/1000.0;
+}
 
-#endif
-};
+double alp_data::error_of_the_sqrt(//sqrt(v1_)
+double v1_,
+double v1_error_)
+{
+	if(v1_error_>=1e100||v1_<0)
+	{
+		return 1e100;
+	};
 
+	double s=sqrt(v1_);
+	double s1=sqrt(alp_data::Tmax(0.0,v1_-v1_error_));
+	double s2=sqrt(alp_data::Tmax(0.0,v1_+v1_error_));
+
+	return alp_data::Tmax(fabs(s-s1),fabs(s-s2));
+}
+
+double alp_data::error_of_the_ratio(//v1_/v2_
+double v1_,
+double v1_error_,
+double v2_,
+double v2_error_)
+{
+	if(v1_error_>=1e100||v2_error_>=1e100)
+	{
+		return 1e100;
+	};
+
+	if(v2_==0)
+	{
+		return 1e100;
+	};
+
+	if(v1_==0&&v1_error_==0)
+	{
+		return 0.0;
+	};
+
+	double a=v1_/v2_;
+
+	if(((v2_+v2_error_)*v2_<=0))
+	{
+		double a3=(v1_+v1_error_)/(v2_-v2_error_);
+		double a4=(v1_-v1_error_)/(v2_-v2_error_);
+		return alp_data::Tmax(fabs(a-a3),fabs(a-a4));
+	};
+
+	if(((v2_-v2_error_)*v2_<=0))
+	{
+		double a1=(v1_+v1_error_)/(v2_+v2_error_);
+		double a2=(v1_-v1_error_)/(v2_+v2_error_);
+		return alp_data::Tmax(fabs(a-a1),fabs(a-a2));
+	};
+
+
+	double a1=(v1_+v1_error_)/(v2_+v2_error_);
+	double a2=(v1_-v1_error_)/(v2_+v2_error_);
+	double a3=(v1_+v1_error_)/(v2_-v2_error_);
+	double a4=(v1_-v1_error_)/(v2_-v2_error_);
+
+	return Tmax(fabs(a-a1),fabs(a-a2),fabs(a-a3),fabs(a-a4));
+}
+
+double alp_data::error_of_the_lg(//lg(v1_)
+double v1_,
+double v1_error_)
+{
+	if(v1_error_>=1e100||v1_<=0)
+	{
+		return 1e100;
+	};
+
+	return alp_data::Tmin(fabs(log(v1_)/log(10.0)),v1_error_/v1_/log(10.0));
+}
 
 bool alp_data::the_value_is_double(
 string str_,
 double &val_)
 {
-	bool res=true;
-	int flag=sscanf(str_.c_str(),"%lf",&val_);
-	if(flag!=1)
+	if(str_=="")
+	{
+		return false;
+	};
+
+	bool res=false;
+	errno=0;
+	char *p;
+	val_=strtod(str_.c_str(),&p);
+	if(errno!=0)
 	{
 		res=false;
 	}
+	else
+	{
+		res=(*p==0);
+	};
 	return res;
-};
+}
 
 bool alp_data::the_value_is_long(
 string str_,
@@ -1385,7 +1659,5 @@ long int &val_)
 	};
 
 	return true;
-};
-
-
+}
 

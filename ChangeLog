@@ -1,3 +1,9 @@
+17 February 2016
+    - update ALP library to version 1.95
+    - add [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml) library, allow compressed reads input
+    - support both mmap and generic buffer input
+    - remove type warnings
+
 01 February 2016 [Release 2.1]
 -----------------------------
 31 August 2015

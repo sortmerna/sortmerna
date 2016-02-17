@@ -36,7 +36,7 @@
 /*! @fn mmap_reads()
     @brief mmap file
     @param off_t partial_file_size
-    @param int fd
+    @param char* inputreads
     @param off_t offset_map
     @param char* raw
     @param char filesig
@@ -45,12 +45,16 @@
     @param int32_t offset_pair_from_top
     @param char* split_read_ptr
     @param char* split_read
+    @param uint64_t &strs
+    @param char*& finalnt
+    @param uint32_t &reads_offset_f
+    @param uint32_t &reads_offset_e
     @return char**
     @version Feb 08, 2016 
 */
 char**
 mmap_reads(off_t partial_file_size /**< number of bytes in memory map buffer */,
-           int fd /**< file descriptor */,
+           char* inputreads /**< pointer to query reads file */,
            off_t offset_map /**< the offset from the start of the reads file for mmap */,
            char*& raw /**< the address of the new mapping from mmap */,
            char filesig /**< @ or > to identify FASTQ or FASTA file */,
@@ -59,7 +63,7 @@ mmap_reads(off_t partial_file_size /**< number of bytes in memory map buffer */,
            int32_t &offset_pair_from_top /**< number of lines to offset at the top of the current file section */,
            char* split_read_ptr /**< pointer to the position in the split read where to attach the connecting part of the split read (and possibly its pair) */,
            char* split_read /**< pointer to the split read (the read which is split between any two file sections) */,
-           int64_t &strs /**< number of reads in current memory mapped section */,
+           uint64_t &strs /**< number of reads in current memory mapped section */,
            char*& finalnt /**< pointer to final character in memory mapped buffer */,
            uint32_t &reads_offset_f /**< the length of the split read in file part i+1 (from beginning of file part) */,
            uint32_t &reads_offset_e /**< the length of the split read in file part i (from end of file part) */);

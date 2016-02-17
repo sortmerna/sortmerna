@@ -19,7 +19,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  *
  * @authors jenya.kopylov@gmail.com
  *          laurent.noe@lifl.fr
@@ -33,13 +33,32 @@
 #ifndef KSEQ_LOAD_H
 #define KSEQ_LOAD_H
 
-#ifdef HAVE_ZLIB_H
-#include <zlib.h>
-#endif
-
 #include "common.hpp"
 #include "kseq.h"
+#ifdef HAVE_LIBZ
+#include <zlib.h>
+KSEQ_INIT(gzFile, gzread)
+#else
+KSEQ_INIT(int, read)
+#endif
 
-using namespace std;
+
+
+/*! @fn load_reads()
+    @brief load reads into buffer using kseq library
+    @param char* inputreads
+    @param char* raw
+    @param uint64_t number_total_read
+    @param off_t full_file_size
+    @param char*& finalnt
+    @return char** reads
+    @version Feb 08, 2016 
+*/
+char**
+load_reads(char* inputreads,
+           char* raw,
+           uint64_t number_total_read,
+           off_t full_file_size,
+           char*& finalnt);
 
 #endif

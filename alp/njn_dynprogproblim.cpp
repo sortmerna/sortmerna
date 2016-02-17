@@ -151,6 +151,7 @@ void DynProgProbLim::update () // updates dynamic prog probs
     long int value = 0;
     long int valueLower = 0;
     long int valueUpper = 0;
+    /*sls deleted size_t arrayPos = 0;*/
     double prob = 0.0;
 
     oldArray = getArray () [getStep () % 2];

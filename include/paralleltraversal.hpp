@@ -40,7 +40,29 @@
 #include "mmap.hpp"
 #include "kseq_load.hpp"
 
-using namespace std;
+
+/*! @fn check_file_format()
+    @brief check input reads file format (FASTA, FASTQ or unrecognized)
+    @param char* inputreads
+    @param char& filesig
+    @return bool
+    @version Feb 15, 2016
+ */
+bool
+check_file_format(char* inputreads /**< pointer to query reads file */,
+                  char& filesig /**< first character of sequence label */);
+
+/*! @fn compute_read_stats()
+    @brief compute total number of reads in file and their combined length
+    @param char* inputreads
+    @param uint64_t& number_total_read
+    @param uint64_t& full_read_main
+    @version Feb 15, 2016
+ */
+void compute_read_stats(char* inputreads /**< pointer to query reads file */,
+                        uint64_t& number_total_read /**< total number of reads */,
+                        uint64_t& full_read_main /**< total number of nucleotides in all reads */);
+
 
 /*! @fn paralleltraversal()
     @brief Traverse the query input and indexed database and output
@@ -73,14 +95,15 @@ using namespace std;
            L-mers using smaller intervals </li>
     </ol>
 
-    @param char* inputreads 
+    @param char* inputreads
+    @param bool have_reads_gz
     @param *ptr_filetype_ar 
     @param *ptr_filetype_or
-    @param int32_t match
-    @param int32_t mismatch
-    @param int32_t gap_open
-    @param int32_t gap_extension
-    @param int32_t score_N
+    @param long match
+    @param long mismatch
+    @param long gap_open
+    @param long gap_extension
+    @param long score_N
     @param vector< vector<uint32_t> > 
     @param int argc
     @param char **argv
@@ -91,13 +114,14 @@ using namespace std;
 */
 void
 paralleltraversal (char* inputreads /**< pointer to query reads file */,
+                   bool have_reads_gz /**< if true, input reads file is in compressed format */,
                    char* ptr_filetype_ar /**< pointer to string for aligned seqeunces filepath */,
                    char* ptr_filetype_or /**< pointer to string for rejected sequences filepath */,
-                   int32_t match /**< SW match reward score (positive) */,
-                   int32_t mismatch /**< SW mismatch penalty score (negative) */,
-                   int32_t gap_open /**< SW gap open penalty score (positive) */,
-                   int32_t gap_extension /**< SW gap extend penalty score (positive) */,
-                   int32_t score_N /**< SW penalty for ambiguous nucleotide (negative) */,
+                   long match /**< SW match reward score (positive) */,
+                   long mismatch /**< SW mismatch penalty score (negative) */,
+                   long gap_open /**< SW gap open penalty score (positive) */,
+                   long gap_extension /**< SW gap extend penalty score (positive) */,
+                   long score_N /**< SW penalty for ambiguous nucleotide (negative) */,
                    vector< vector<uint32_t> >& skiplengths /**< skiplengths, three intervals at which to place seeds on read */,
                    int argc /**< number of arguments passed to SortMeRNA */,
                    char **argv /**< argument string passed to SortMeRNA */,

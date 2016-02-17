@@ -31,8 +31,6 @@
 
 #include "bitvector.hpp"
 
-using namespace std;
-
 // Universal Levenshtein table for k=1
 extern uint32_t table[4][16][14];
 

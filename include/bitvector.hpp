@@ -64,9 +64,8 @@ extern int thisread;
  * PARAMETERS	: 	  
  *
  **************************************************************************************************************/
-void init_win_f   ( char*, MYBITSET*, MYBITSET*, int numbvs );
-void init_win_r   ( char*, MYBITSET*, MYBITSET*, int numbvs );
-
+void init_win_f ( char*, MYBITSET*, MYBITSET*, int numbvs );
+void init_win_r ( char*, MYBITSET*, MYBITSET*, int numbvs );
 
 
 /*
@@ -80,7 +79,6 @@ void init_win_r   ( char*, MYBITSET*, MYBITSET*, int numbvs );
  *
  **************************************************************************************************************/
 void offset_win_k1 ( char*, char*, MYBITSET*, MYBITSET*, MYBITSET*, int numbvs );
-
 
 
 /*

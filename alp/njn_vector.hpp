@@ -37,10 +37,7 @@ Contents: Matrix routines
 ******************************************************************************/
 
 #include <vector>
-
 #include "njn_approx.hpp"
-using namespace std;
-
 
 namespace Njn {
 
@@ -193,6 +190,7 @@ namespace Njn {
       
 	  using namespace Njn;
 	  using namespace IoUtil;
+	  using namespace std;
 
       size_t i = 0;
 
@@ -243,6 +241,7 @@ namespace Njn {
 
 	  using namespace Njn;
 	  using namespace IoUtil;
+	  using namespace std;
 
 
       string s;

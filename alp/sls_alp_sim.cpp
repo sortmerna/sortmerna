@@ -37,7 +37,10 @@ Contents: Calculation of Gumbel parameters
 #include "sls_alp_sim.hpp"
 
 using namespace Sls;
+using namespace std;
 
+static bool calculate_C_S_constant_flag=true;
+static double dbl_max_log=log(DBL_MAX);
 
 alp_sim::alp_sim(//constructor
 alp_data *alp_data_)
@@ -55,19 +58,17 @@ alp_data *alp_data_)
 
 
 	d_alp_data=alp_data_;
-	if(!d_alp_data)
-	{
-		throw error("Unexpected error",4);
-	};
-	bool ee_error_flag=false;
-	error ee_error("",0);
+
 	ofstream frand;
 
 	try
 	{
-	try
-	{
-	
+
+		if(!d_alp_data)
+		{
+			throw error("Unexpected error\n",4);
+		};
+
 		d_alp_obj=new array_positive<alp*> (d_alp_data);
 		alp_data::assert_mem(d_alp_obj);
 		d_n_alp_obj=0;
@@ -84,7 +85,7 @@ alp_data *alp_data_)
 
 		if(!d_alp_data->d_rand_flag)
 		{
-			d_alp_data->d_rand_all->d_random_factor=d_alp_data->d_random_factor;
+			d_alp_data->d_rand_all->d_random_seed=d_alp_data->d_random_seed;
 		};
 
 
@@ -107,7 +108,12 @@ alp_data *alp_data_)
 		alp_data::assert_mem(d_C_tmp_errors);
 
 
+		//quick tests
 		
+		quick_test(
+		quick_tests_trials_number,
+		d_alp_data->d_max_time_for_quick_tests);
+
 		long int maximum_number_of_realizations_for_preliminary_simulation=1000;
 
 		bool loop_break_flag;
@@ -134,6 +140,7 @@ alp_data *alp_data_)
 			{
 				number_tmp=alp_data::Tmin(maximum_number_of_realizations_for_preliminary_simulation-1,d_n_alp_obj+sim_number*d_alp_data->d_minimum_realizations_number-1);
 			};
+
 
 		get_minimal_simulation(
 			0,
@@ -290,12 +297,11 @@ alp_data *alp_data_)
 			C_calculation,
 			check_time_flag);
 
+
 		if(!d_alp_data->d_rand_flag)
 		{
 			d_alp_data->d_rand_all->d_preliminary_realizations_numbers_ALP.push_back(number_of_realizations_with_ALP);
 		};
-
-
 
 
 		lambda=d_lambda_tmp->d_elem[nalp];
@@ -468,8 +474,6 @@ alp_data *alp_data_)
 		}
 		while(!loop_break_flag);
 
-		//double memory_after2=d_alp_data->d_memory_size_in_MB;
-
 
 		long int k;
 		for(k=0;k<=number_of_realizations_with_killing;k++)
@@ -488,7 +492,7 @@ alp_data *alp_data_)
 
 		if(K_C<=0)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		double tmp=((K_C_error/K_C)/d_alp_data->d_eps_K);
@@ -525,7 +529,7 @@ alp_data *alp_data_)
 		long int nalp_for_simulation=nalp;
 
 		//!!!!!!!!!!!!!!!!!!!!!!!
-		//cout<<"A number of ALP for the calculaton\t"<<nalp_for_simulation<<endl;
+		//cout<<"A number of ALPs\t"<<nalp_for_simulation<<endl;
 
 		if(d_alp_data->d_rand_flag)
 		{
@@ -543,7 +547,7 @@ alp_data *alp_data_)
 
 			long int step_for_time=1;
 
-			long int number_of_unsuccesful_objects=0;
+			//long int number_of_unsuccesful_objects=0;
 
 			//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			//cout<<"M_min="<<M_min<<endl;
@@ -635,16 +639,20 @@ alp_data *alp_data_)
 
 					if(!sucess_flag)
 					{
-						number_of_unsuccesful_objects++;
-						
-						if(number_of_unsuccesful_objects>5+j*eps_tmp)
+						if(realizations_number2_K+j>realizations_number2_lambda)
 						{
-							if(realizations_number2_K+j>realizations_number2_lambda)
-							{
-								d_n_alp_obj--;
-							};
-							throw error("The program cannot calculate the parameters\n",3);
+							d_n_alp_obj--;
 						};
+
+						//number_of_unsuccesful_objects++;
+//						if(number_of_unsuccesful_objects>/*5+*/0.5*alp_data::Tmin(d_alp_data->d_rand_all->d_total_realizations_number_with_killing,d_alp_data->d_rand_all->d_total_realizations_number_with_ALP)*eps_tmp)
+//						{
+							//if(realizations_number2_K+j>realizations_number2_lambda)
+							//{
+							//	d_n_alp_obj--;
+							//};
+							//throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+//						};
 					};
 				};
 
@@ -723,8 +731,6 @@ alp_data *alp_data_)
 		d_n_alp_obj=final_realizations_number_lambda;
 
 
-		//double memory_after3=d_alp_data->d_memory_size_in_MB;
-
 		double time_after100;
 		alp_data::get_current_time(time_after100);
 		//cout<<"\nActual calculation time is "<<time_after100-time_before1<<" seconds\n";
@@ -751,7 +757,7 @@ alp_data *alp_data_)
 			long int i;
 
 
-			frand<<d_alp_data->d_rand_all->d_random_factor<<endl;
+			frand<<d_alp_data->d_rand_all->d_random_seed<<endl;
 			frand<<d_alp_data->d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP.size()<<"\t";
 			for(i=0;i<(long int)d_alp_data->d_rand_all->d_first_stage_preliminary_realizations_numbers_ALP.size();i++)
 			{
@@ -782,6 +788,8 @@ alp_data *alp_data_)
 
 		};
 
+		//cout<<"A number of realizations\t"<<d_alp_data->d_rand_all->d_total_realizations_number_with_ALP<<endl;
+
 	
 
 		bool inside_simulation_flag;
@@ -789,37 +797,16 @@ alp_data *alp_data_)
 		this->m_CalcTime=time_after100-time_before1;
 
 		output_main_parameters2m_new(
-		time_after100-time_before1,
-		nalp,
 		nalp_for_simulation,
 		level,
-		M_min,
 		inside_simulation_flag,
 		final_realizations_number_lambda,
 		final_realizations_number_killing);
 
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-	if(frand.is_open())
-	{
-		frand.close();
-	};
-
-	if(ee_error_flag)
-	{
 		delete d_lambda_tmp;d_lambda_tmp=NULL;
 		delete d_lambda_tmp_errors;d_lambda_tmp_errors=NULL;
 
@@ -827,11 +814,74 @@ alp_data *alp_data_)
 		delete d_C_tmp_errors;d_C_tmp_errors=NULL;
 
 		this->~alp_sim();
-		throw error(ee_error.st,ee_error.error_code);
+
+		if(frand.is_open())
+		{
+			frand.close();
+		};
+
+		throw;
+
+	};
+}
+
+void alp_sim::symmetric_parameters_for_symmetric_scheme()
+{
+	//check whether the scoring scheme is symmetric
+	bool symmetric_flag=true;
+	long int i,j;
+	for(i=0;i<d_alp_data->d_number_of_AA;i++)
+	{
+		for(j=0;j<i;j++)
+		{
+			if(d_alp_data->d_smatr[i][j]!=d_alp_data->d_smatr[j][i])
+			{
+				symmetric_flag=false;
+				break;
+			};
+		};
+		if(!symmetric_flag)
+		{
+			break;
+		};
 	};
 
-};
+	if(symmetric_flag)
+	{
+		for(i=0;i<d_alp_data->d_number_of_AA;i++)
+		{
+			if(d_alp_data->d_RR1[i]!=d_alp_data->d_RR2[i])
+			{
+				symmetric_flag=false;
+				break;
+			};
+		};
+	};
 
+	if(symmetric_flag)
+	{
+		if(d_alp_data->d_epen1!=d_alp_data->d_epen2||d_alp_data->d_open1!=d_alp_data->d_open2)
+		{
+			symmetric_flag=false;
+		};
+	};
+
+	if(symmetric_flag)
+	{
+		m_AI=0.5*(m_AI+m_AJ);
+		m_AJ=m_AI;
+		m_AIError=0.5*(m_AIError+m_AJError);
+		m_AJError=m_AIError;
+
+
+		m_AlphaI=0.5*(m_AlphaI+m_AlphaJ);
+		m_AlphaJ=m_AlphaI;
+		m_AlphaIError=0.5*(m_AlphaIError+m_AlphaJError);
+		m_AlphaJError=m_AlphaIError;
+
+	};
+
+}
 
 void alp_sim::randomize_realizations(
 long int final_realizations_number_lambda_,
@@ -839,20 +889,15 @@ long int final_realizations_number_killing_)
 {
 	randomize_realizations_ind(0,final_realizations_number_killing_-1);
 	randomize_realizations_ind(final_realizations_number_killing_,final_realizations_number_lambda_-1);
-
-};
+}
 
 void alp_sim::randomize_realizations_ind(
 long int ind1_,
 long int ind2_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 	alp**array_ind=NULL;
 	long int *perm=NULL;
 
-	try
-	{
 	try
 	{
 
@@ -863,7 +908,7 @@ long int ind2_)
 
 		if(ind2_>d_n_alp_obj-1)
 		{
-			throw error("Unexpected error",4);
+			throw error("Unexpected error\n",4);
 		};
 
 
@@ -892,32 +937,17 @@ long int ind2_)
 			d_alp_obj->d_elem[ind1_+i]=array_ind[i];
 		};
 
-
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
+		delete[]array_ind;array_ind=NULL;
+		delete[]perm;perm=NULL;
 	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		delete[]array_ind;array_ind=NULL;
+		delete[]perm;perm=NULL;
+		throw;
 	};
 
-	//memory release
-	delete[]array_ind;array_ind=NULL;
-	delete[]perm;perm=NULL;
-
-
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
-
-
-};
+}
 
 void alp_sim::generate_random_permulation(
 long int *perm_,
@@ -936,134 +966,91 @@ long int dim_)
 		perm_[ind_swap]=perm_[i];
 		perm_[i]=tmp;
 	};
-};
-
+}
 
 void alp_sim::output_main_parameters2m_new(
-double time_,
-long int nalp,
 long int nalp_for_lambda_simulation,
 long int level,
-long int M_min_,
 bool &inside_simulation_flag,
 long int final_realizations_number_lambda_,
 long int final_realizations_number_killing_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 
-	try
+	double lambda;
+	double lambda_error;
+	double test_difference;
+	double test_difference_error;
+	double C;
+	double C_error;
+	double K_C;
+	double K_C_error;
+	double a_I;
+	double a_I_error;
+	double a_J;
+	double a_J_error;
+	double sigma;
+	double sigma_error;
+	double alpha_I;
+	double alpha_I_error;
+	double alpha_J;
+	double alpha_J_error;
+	double K;
+	double K_error;
+
+	bool flag=false;
+	long int number_of_trials=0;
+	long int number_of_trials_threshold=4;
+
+	do{
+
+	calculate_main_parameters2m(
+	final_realizations_number_lambda_,
+	final_realizations_number_killing_,
+	nalp_for_lambda_simulation,
+	level,
+	inside_simulation_flag,
+	lambda,
+	lambda_error,
+	test_difference,
+	test_difference_error,
+	C,
+	C_error,
+	K_C,
+	K_C_error,
+	a_I,
+	a_I_error,
+	a_J,
+	a_J_error,
+	sigma,
+	sigma_error,
+	alpha_I,
+	alpha_I_error,
+	alpha_J,
+	alpha_J_error,
+	K,
+	K_error,
+	flag);
+
+
+	number_of_trials++;
+
+	if(!flag)
 	{
-	try
-	{
-
-		double lambda;
-		double lambda_error;
-		double test_difference;
-		double test_difference_error;
-		double C;
-		double C_error;
-		double C2;
-		double C2_error;
-		double C4;
-		double C4_error;
-		double K_C;
-		double K_C_error;
-		double a_I;
-		double a_I_error;
-		double a_J;
-		double a_J_error;
-		double sigma;
-		double sigma_error;
-		double alpha_I;
-		double alpha_I_error;
-		double alpha_J;
-		double alpha_J_error;
-		double K;
-		double K_error;
-
-		bool flag=false;
-		long int number_of_trials=0;
-		long int number_of_trials_threshold=4;
-
-		do{
-
-		calculate_main_parameters2m(
+		randomize_realizations(
 		final_realizations_number_lambda_,
-		final_realizations_number_killing_,
-		nalp,
-		nalp_for_lambda_simulation,
-		level,
-		inside_simulation_flag,
-		lambda,
-		lambda_error,
-		test_difference,
-		test_difference_error,
-		C,
-		C_error,
-		C2,
-		C2_error,
-		C4,
-		C4_error,
-		K_C,
-		K_C_error,
-		a_I,
-		a_I_error,
-		a_J,
-		a_J_error,
-		sigma,
-		sigma_error,
-		alpha_I,
-		alpha_I_error,
-		alpha_J,
-		alpha_J_error,
-		K,
-		K_error,
-		flag);
-
-
-		number_of_trials++;
-
-		if(!flag)
-		{
-			randomize_realizations(
-			final_realizations_number_lambda_,
-			final_realizations_number_killing_);
-			//cout<<"Randomization attempt\t"<<number_of_trials<<endl;
-		};
-		}
-		while(!flag&&number_of_trials<=number_of_trials_threshold);
-
-		if(!flag)
-		{
-			throw error("Error - please run the program once again\n",2);
-		};
-
-
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
+		final_realizations_number_killing_);
+		//cout<<"Randomization attempt\t"<<number_of_trials<<endl;
 	};
 	}
-	catch (...)
-	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
+	while(!flag&&number_of_trials<=number_of_trials_threshold);
 
-	//memory release
-
-	if(ee_error_flag)
+	if(!flag)
 	{
-		throw error(ee_error.st,ee_error.error_code);
+		throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 	};
-};
+}
 
-
-
-double alp_sim::round_doulbe(
+double alp_sim::round_double(
 double val_,
 long int digits_)
 {
@@ -1079,7 +1066,7 @@ long int digits_)
 	};
 
 	return val_;
-};
+}
 
 double alp_sim::relative_error_in_percents(
 double val_,
@@ -1090,10 +1077,9 @@ double val_error_)
 		return DBL_MAX;
 	};
 
-	return fabs(round_doulbe(val_error_/val_*100.0,1));
+	return fabs(round_double(val_error_/val_*100.0,1));
 
-};
-
+}
 
 long int alp_sim::get_number_of_subsimulations(
 long int number_of_realizations_)
@@ -1105,7 +1091,7 @@ long int number_of_realizations_)
 
 	if(number_of_realizations_<min_number_of_realizations_for_subsimulation*min_number_of_subsimulations)
 	{
-		throw error("Please repeat the simulation or increase calculation time\n",1);
+		throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 	};
 
 	long int res_subsimulations=(long int)ceil(sqrt((double)number_of_realizations_));
@@ -1113,14 +1099,149 @@ long int number_of_realizations_)
 	res_subsimulations=alp_data::Tmax(res_subsimulations,min_number_of_subsimulations);
 
 	return res_subsimulations;
-};
+}
+
+void alp_sim::memory_release_for_calculate_main_parameters2m(
+long int nalp_for_lambda_simulation,
+long int *&d_mult_realizations,
+long int *&d_mult_K_realizations,
+
+double *&lambda_mult,
+double *&lambda_mult_error,
+
+double *&C_mult,
+double *&C_mult_error,
+
+double *&a_I_mult,
+double *&a_I_mult_error,
+
+double *&a_J_mult,
+double *&a_J_mult_error,
+
+double *&sigma_mult,
+double *&sigma_mult_error,
+
+double *&alpha_I_mult,
+double *&alpha_I_mult_error,
+
+double *&alpha_J_mult,
+double *&alpha_J_mult_error,
+
+double *&K_C_mult,
+double *&K_C_mult_error,
+
+double *&K_mult,
+double *&K_mult_error,
+
+double *&Sc_mult,
+double *&Sc_mult_error,
 
 
+void **&alp_distr,
+void **&alp_distr_errors,
+
+void ***&alp_mult_distr,
+void ***&alp_mult_distr_errors)
+{
+	if(alp_distr)
+	{
+		long int j;
+		for(j=1;j<=nalp_for_lambda_simulation;j++)
+		{
+			delete (array_positive<double>*)alp_distr[j];alp_distr[j]=NULL;
+		};
+
+		delete[]alp_distr;alp_distr=NULL;
+	};
+
+
+
+	if(alp_distr_errors)
+	{
+		long int j;
+		for(j=1;j<=nalp_for_lambda_simulation;j++)
+		{
+			delete (array_positive<double>*)alp_distr_errors[j];alp_distr_errors[j]=NULL;
+		};
+
+		delete[]alp_distr_errors;alp_distr_errors=NULL;
+	};
+
+
+	if(alp_mult_distr)
+	{
+		long int k,j;
+		for(k=1;k<=d_mult_number;k++)
+		{
+			if(alp_mult_distr[k])
+			{
+				for(j=1;j<=nalp_for_lambda_simulation;j++)
+				{
+					delete (array_positive<double>*)alp_mult_distr[k][j];alp_mult_distr[k][j]=NULL;
+				};
+
+				delete[]alp_mult_distr[k];alp_mult_distr[k]=NULL;
+			};
+		};
+
+		delete[]alp_mult_distr;alp_mult_distr=NULL;
+	};
+
+
+	if(alp_mult_distr_errors)
+	{
+		long int k,j;
+		for(k=1;k<=d_mult_number;k++)
+		{
+			if(alp_mult_distr_errors[k])
+			{
+				for(j=1;j<=nalp_for_lambda_simulation;j++)
+				{
+					delete (array_positive<double>*)alp_mult_distr_errors[k][j];alp_mult_distr_errors[k][j]=NULL;
+				};
+
+				delete[]alp_mult_distr_errors[k];alp_mult_distr_errors[k]=NULL;
+			};
+		};
+
+		delete[]alp_mult_distr_errors;alp_mult_distr_errors=NULL;
+	};
+
+
+	delete[]d_mult_realizations;d_mult_realizations=NULL;
+	delete[]d_mult_K_realizations;d_mult_K_realizations=NULL;
+
+	delete[]lambda_mult;lambda_mult=NULL;
+	delete[]lambda_mult_error;lambda_mult_error=NULL;
+
+	delete[]C_mult;C_mult=NULL;
+	delete[]C_mult_error;C_mult_error=NULL;
+
+	delete[]a_I_mult;a_I_mult=NULL;
+	delete[]a_I_mult_error;a_I_mult_error=NULL;
+	delete[]a_J_mult;a_J_mult=NULL;
+	delete[]a_J_mult_error;a_J_mult_error=NULL;
+	delete[]sigma_mult;sigma_mult=NULL;
+	delete[]sigma_mult_error;sigma_mult_error=NULL;
+	delete[]alpha_I_mult;alpha_I_mult=NULL;
+	delete[]alpha_I_mult_error;alpha_I_mult_error=NULL;
+	delete[]alpha_J_mult;alpha_J_mult=NULL;
+	delete[]alpha_J_mult_error;alpha_J_mult_error=NULL;
+
+	delete[]K_C_mult;K_C_mult=NULL;
+	delete[]K_C_mult_error;K_C_mult_error=NULL;
+
+	delete[]K_mult;K_mult=NULL;
+	delete[]K_mult_error;K_mult_error=NULL;
+
+	delete[]Sc_mult;Sc_mult=NULL;
+	delete[]Sc_mult_error;Sc_mult_error=NULL;
+
+}
 
 void alp_sim::calculate_main_parameters2m(
 long int final_realizations_number_lambda_,
 long int final_realizations_number_killing_,
-long int nalp,
 long int nalp_for_lambda_simulation,
 long int level,
 bool &inside_simulation_flag,
@@ -1130,10 +1251,6 @@ double &test_difference,
 double &test_difference_error,
 double &C,
 double &C_error,
-double &C2,
-double &C2_error,
-double &C4,
-double &C4_error,
 double &K_C,
 double &K_C_error,
 double &a_I,
@@ -1150,9 +1267,6 @@ double &K,
 double &K_error,
 bool &flag_)
 {
-
-	bool ee_error_flag=false;
-	error ee_error("",0);
 
 	long int *d_mult_realizations=NULL;
 	long int *d_mult_K_realizations=NULL;
@@ -1184,15 +1298,16 @@ bool &flag_)
 	double *K_mult=NULL;
 	double *K_mult_error=NULL;
 
+	double *Sc_mult=NULL;
+	double *Sc_mult_error=NULL;
+
+
 	void **alp_distr=NULL;
 	void **alp_distr_errors=NULL;
 
 	void ***alp_mult_distr=NULL;
-	void ***alp_mult_distr_errors=NULL;
+ 	void ***alp_mult_distr_errors=NULL;
 
-
-	try
-	{
 	try
 	{
 
@@ -1206,6 +1321,10 @@ bool &flag_)
 
 		long int mult_number_lambda=get_number_of_subsimulations(d_n_alp_obj);
 		long int mult_number_K=get_number_of_subsimulations(final_realizations_number_killing_);
+
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		//mult_number_lambda=mult_number_K=final_realizations_number_killing_;
+
 
 		d_mult_number=alp_data::Tmin(mult_number_lambda,mult_number_K);
 
@@ -1270,6 +1389,12 @@ bool &flag_)
 		K_mult_error=new double[d_mult_number+1];
 		alp_data::assert_mem(K_mult_error);
 
+		Sc_mult=new double[d_mult_number+1];
+		alp_data::assert_mem(Sc_mult);
+		Sc_mult_error=new double[d_mult_number+1];
+		alp_data::assert_mem(Sc_mult_error);
+
+
 
 		double lambda_mult2=0;
 		double C_mult2=0;
@@ -1280,6 +1405,7 @@ bool &flag_)
 		double alpha_I_mult2=0;
 		double alpha_J_mult2=0;
 		double K_mult2=0;
+		double Sc_mult2=0;
 
 		double lambda_mult2_error=0;
 		double C_mult2_error=0;
@@ -1290,6 +1416,7 @@ bool &flag_)
 		double alpha_I_mult2_error=0;
 		double alpha_J_mult2_error=0;
 		double K_mult2_error=0;
+		double Sc_mult2_error=0;
 
 
 
@@ -1367,8 +1494,6 @@ bool &flag_)
 			nalp_for_lambda_simulation,
 			nalp_tmp,
 			inside_simulation_flag,
-			nr_tmp-d_mult_realizations[k],
-			nr_tmp-1,
 			alp_mult_distr[k],
 			alp_mult_distr_errors[k],
 			lambda_mult[k],
@@ -1396,8 +1521,6 @@ bool &flag_)
 		nalp_for_lambda_simulation,
 		nalp_tmp,
 		inside_simulation_flag,
-		0,
-		final_realizations_number_lambda_-1,
 		alp_distr,
 		alp_distr_errors,
 		lambda,
@@ -1407,7 +1530,7 @@ bool &flag_)
 
 		if(!inside_simulation_flag)
 		{
-			throw error("Error - please run the program once again\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		lambda_mult[0]=lambda;
@@ -1418,43 +1541,51 @@ bool &flag_)
 		nr_tmp=0;
 		for(k=1;k<=d_mult_number;k++)
 		{
-
 			nr_tmp+=d_mult_realizations[k];
 			calculate_C(
 			0,
 			nalp_for_lambda_simulation,
-			nr_tmp-d_mult_realizations[k],
-			nr_tmp-1,
 			alp_mult_distr[k],
 			alp_mult_distr_errors[k],
 			lambda_mult[k],
 			lambda_mult_error[k],
 			C_mult[k],
-			C_mult_error[k]);
+			C_mult_error[k],
+			Sc_mult[k],
+			Sc_mult_error[k]);
 
 			C_mult2+=C_mult[k];
 			C_mult2_error+=C_mult[k]*C_mult[k];
 
+			Sc_mult2+=Sc_mult[k];
+			Sc_mult2_error+=Sc_mult[k]*Sc_mult[k];
+
 
 		};
 		
+		double Sc;
+		double Sc_error;
+
 
 		calculate_C(
 		0,
 		nalp_for_lambda_simulation,
-		0,
-		final_realizations_number_lambda_-1,
 		alp_distr,
 		alp_distr_errors,
 		lambda,
 		lambda_error,
 		C,
-		C_error);
+		C_error,
+		Sc,
+		Sc_error);
+
 
 
 		C_mult[0]=C;
 		C_mult_error[0]=C_error;
 
+		Sc_mult[0]=Sc;
+		Sc_mult_error[0]=Sc_error;
 
 
 		nr_tmp=0;
@@ -1467,9 +1598,10 @@ bool &flag_)
 			nr_tmp-d_mult_realizations[k],
 			nr_tmp-1,
 			alp_mult_distr[k],
-			alp_mult_distr_errors[k],
 			lambda_mult[k],
-			lambda_mult_error[k],
+			Sc_mult[k],
+			//Sc_mult_error[k],
+
 			a_I_mult[k],
 			a_I_mult_error[k],
 			a_J_mult[k],
@@ -1505,9 +1637,10 @@ bool &flag_)
 		0,
 		final_realizations_number_lambda_-1,
 		alp_distr,
-		alp_distr_errors,
 		lambda,
-		lambda_error,
+		Sc,
+		//Sc_error,
+
 		a_I,
 		a_I_error,
 		a_J,
@@ -1543,7 +1676,7 @@ bool &flag_)
 			d_mult_K_realizations[k]=real_number;
 		};
 
-
+		//output2
 		nr_tmp=0;
 		for(k=1;k<=d_mult_number;k++)
 		{
@@ -1567,7 +1700,7 @@ bool &flag_)
 
 
 			K_mult[k]=C_mult[k]*K_C_mult[k];
-			K_mult_error[k]=alp_reg::error_of_the_product(
+			K_mult_error[k]=alp_data::error_of_the_product(
 			C_mult[k],
 			C_mult_error[k],
 			K_C_mult[k],
@@ -1603,7 +1736,7 @@ bool &flag_)
 		
 
 		K=C*K_C;
-		K_error=alp_reg::error_of_the_product(
+		K_error=alp_data::error_of_the_product(
 		C,
 		C_error,
 		K_C,
@@ -1757,119 +1890,100 @@ bool &flag_)
 
 	label1:;
 
+	symmetric_parameters_for_symmetric_scheme();
 
 
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
+
 	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
+		memory_release_for_calculate_main_parameters2m(
+		nalp_for_lambda_simulation,
+		d_mult_realizations,
+		d_mult_K_realizations,
 
-	//memory release
-	if(alp_distr)
-	{
-		long int j;
-		for(j=1;j<=nalp_for_lambda_simulation;j++)
-		{
-			delete (array_positive<double>*)alp_distr[j];alp_distr[j]=NULL;
-		};
+		lambda_mult,
+		lambda_mult_error,
 
-		delete[]alp_distr;alp_distr=NULL;
-	};
+		C_mult,
+		C_mult_error,
+
+		a_I_mult,
+		a_I_mult_error,
+
+		a_J_mult,
+		a_J_mult_error,
+
+		sigma_mult,
+		sigma_mult_error,
+
+		alpha_I_mult,
+		alpha_I_mult_error,
+
+		alpha_J_mult,
+		alpha_J_mult_error,
+
+		K_C_mult,
+		K_C_mult_error,
+
+		K_mult,
+		K_mult_error,
+
+		Sc_mult,
+		Sc_mult_error,
 
 
+		alp_distr,
+		alp_distr_errors,
 
-	if(alp_distr_errors)
-	{
-		long int j;
-		for(j=1;j<=nalp_for_lambda_simulation;j++)
-		{
-			delete (array_positive<double>*)alp_distr_errors[j];alp_distr_errors[j]=NULL;
-		};
-
-		delete[]alp_distr_errors;alp_distr_errors=NULL;
-	};
-
-
-	if(alp_mult_distr)
-	{
-		long int k,j;
-		for(k=1;k<=d_mult_number;k++)
-		{
-			if(alp_mult_distr[k])
-			{
-				for(j=1;j<=nalp_for_lambda_simulation;j++)
-				{
-					delete (array_positive<double>*)alp_mult_distr[k][j];alp_mult_distr[k][j]=NULL;
-				};
-
-				delete[]alp_mult_distr[k];alp_mult_distr[k]=NULL;
-			};
-		};
-
-		delete[]alp_mult_distr;alp_mult_distr=NULL;
+		alp_mult_distr,
+		alp_mult_distr_errors);
+		throw;
 	};
 
 
-	if(alp_mult_distr_errors)
-	{
-		long int k,j;
-		for(k=1;k<=d_mult_number;k++)
-		{
-			if(alp_mult_distr_errors[k])
-			{
-				for(j=1;j<=nalp_for_lambda_simulation;j++)
-				{
-					delete (array_positive<double>*)alp_mult_distr_errors[k][j];alp_mult_distr_errors[k][j]=NULL;
-				};
+	memory_release_for_calculate_main_parameters2m(
+	nalp_for_lambda_simulation,
+	d_mult_realizations,
+	d_mult_K_realizations,
 
-				delete[]alp_mult_distr_errors[k];alp_mult_distr_errors[k]=NULL;
-			};
-		};
+	lambda_mult,
+	lambda_mult_error,
 
-		delete[]alp_mult_distr_errors;alp_mult_distr_errors=NULL;
-	};
+	C_mult,
+	C_mult_error,
+
+	a_I_mult,
+	a_I_mult_error,
+
+	a_J_mult,
+	a_J_mult_error,
+
+	sigma_mult,
+	sigma_mult_error,
+
+	alpha_I_mult,
+	alpha_I_mult_error,
+
+	alpha_J_mult,
+	alpha_J_mult_error,
+
+	K_C_mult,
+	K_C_mult_error,
+
+	K_mult,
+	K_mult_error,
+
+	Sc_mult,
+	Sc_mult_error,
 
 
-	delete[]d_mult_realizations;d_mult_realizations=NULL;
-	delete[]d_mult_K_realizations;d_mult_K_realizations=NULL;
+	alp_distr,
+	alp_distr_errors,
 
-	delete[]lambda_mult;lambda_mult=NULL;
-	delete[]lambda_mult_error;lambda_mult_error=NULL;
-
-	delete[]C_mult;C_mult=NULL;
-	delete[]C_mult_error;C_mult_error=NULL;
-
-	delete[]a_I_mult;a_I_mult=NULL;
-	delete[]a_I_mult_error;a_I_mult_error=NULL;
-	delete[]a_J_mult;a_J_mult=NULL;
-	delete[]a_J_mult_error;a_J_mult_error=NULL;
-	delete[]sigma_mult;sigma_mult=NULL;
-	delete[]sigma_mult_error;sigma_mult_error=NULL;
-	delete[]alpha_I_mult;alpha_I_mult=NULL;
-	delete[]alpha_I_mult_error;alpha_I_mult_error=NULL;
-	delete[]alpha_J_mult;alpha_J_mult=NULL;
-	delete[]alpha_J_mult_error;alpha_J_mult_error=NULL;
-
-	delete[]K_C_mult;K_C_mult=NULL;
-	delete[]K_C_mult_error;K_C_mult_error=NULL;
-
-	delete[]K_mult;K_mult=NULL;
-	delete[]K_mult_error;K_mult_error=NULL;
-
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
-
-};
+	alp_mult_distr,
+	alp_mult_distr_errors);
+}
 
 void alp_sim::error_in_calculate_main_parameters2m(
 double C,
@@ -1885,30 +1999,33 @@ double C_mult2_error)
 	{
 		C_error=C_mult2_error;
 	};
-};
+}
 
 alp_sim::~alp_sim()//destructor
 {
 	long int i;
-	for(i=0;i<d_n_alp_obj;i++)
+
+	if(d_alp_obj)
 	{
-		delete d_alp_obj->d_elem[i];d_alp_obj->d_elem[i]=NULL;
+		for(i=0;i<d_n_alp_obj;i++)
+		{
+			delete d_alp_obj->d_elem[i];d_alp_obj->d_elem[i]=NULL;
+		};
+
+		if(d_alp_data)
+		{
+			d_alp_data->d_memory_size_in_MB-=sizeof(alp)*d_n_alp_obj/mb_bytes;
+		};
+
+		delete d_alp_obj;d_alp_obj=NULL;
 	};
-
-
-	if(d_alp_data)
-	{
-		d_alp_data->d_memory_size_in_MB-=sizeof(alp)*d_n_alp_obj/mb_bytes;
-	};
-
-	delete d_alp_obj;d_alp_obj=NULL;
 	if(d_alp_data)
 	{
 		d_alp_data->d_memory_size_in_MB-=(double)(sizeof(array_positive<alp*>))/mb_bytes;
 	};
 
 
-};
+}
 
 void alp_sim::kill(
 bool check_time_,
@@ -1926,7 +2043,7 @@ long int &diff_opt_)
 	bool flag=false;
 	long int current_level=(long int)floor(M_min_*0.5);
 	long int recommended_level;
-	long int number_of_unsucesful_objects=0;
+	//long int number_of_unsucesful_objects=0;
 
 	
 	long int i;
@@ -1953,13 +2070,13 @@ long int &diff_opt_)
 				alp_obj_tmp->kill_upto_level(M_min_,current_level);
 				if(!alp_obj_tmp->d_success)
 				{
-					number_of_unsucesful_objects++;
-					if(number_of_unsucesful_objects>5+(ind2_-ind1_+1)*
-						d_alp_obj->d_alp_data->d_eps_K 
-						)
-					{
-						throw error("The program cannot estimate the parameters.\nPlease try to increase the allowed amount of memory or change parameters of the scoring system to ensure the logarithmic regime of the alignment score\n",1);
-					};
+					//number_of_unsucesful_objects++;
+					//if(number_of_unsucesful_objects>/*5+*/0.5*(ind2_-ind1_+1)*
+					//	d_alp_obj->d_alp_data->d_eps_K 
+					//	)
+					//{
+						//throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+					//};
 					delete alp_obj_tmp;alp_obj_tmp=NULL;
 					alp_obj_tmp=new alp(d_alp_data);
 					alp_data::assert_mem(alp_obj_tmp);
@@ -1974,16 +2091,16 @@ long int &diff_opt_)
 					while(!flag)
 					{
 						alp_obj_tmp->simulate_alp_upto_the_given_level(M_min_);
-						if(!alp_obj_tmp->d_success)
-						{
-							number_of_unsucesful_objects++;
-							if(number_of_unsucesful_objects>5+(ind2_-ind1_+1)*
-								d_alp_obj->d_alp_data->d_eps_K 
-								)
-							{
-								throw error("The program cannot estimate the parameters.\nPlease try to increase the allowed amount of memory or change parameters of the scoring system to ensure the logarithmic regime of the alignment score\n",1);
-							};
-						};
+						//if(!alp_obj_tmp->d_success)
+						//{
+						//	number_of_unsucesful_objects++;
+						//	if(number_of_unsucesful_objects>/*5+*/0.5*(ind2_-ind1_+1)*
+						//		d_alp_obj->d_alp_data->d_eps_K 
+						//		)
+						//	{
+								//throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+						//	};
+						//};
 						flag=alp_obj_tmp->d_success;
 					};
 
@@ -2011,7 +2128,7 @@ long int &diff_opt_)
 
 	level_=current_level;
 
-};
+}
 
 void alp_sim::get_single_realization(
 bool check_time_,
@@ -2072,7 +2189,104 @@ double &d_eps_)
 		};
 	};
 
-};
+}
+
+void alp_sim::quick_test(
+long int trials_number_,
+double max_time_)
+{
+	if(trials_number_<=0)
+	{
+		throw error("Unexpected error in alp_sim::quick_test\n",1);
+	};
+
+	bool check_time_flag=false;
+	if(max_time_>0)
+	{
+		check_time_flag=true;
+	};
+
+	long int alp_number=5;
+	double p_thres=1e-10;
+
+	double lambda_ungapped=this->d_alp_data->d_is->d_ungap_lambda;
+	if(lambda_ungapped<=0)
+	{
+		throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+	};
+	long int score_diff=(long int)alp_data::round(-log(p_thres)/lambda_ungapped);
+
+	long int i;
+
+	long int max_number_of_unsuccessful_objects2=(long int)floor(/*5+*/0.5*trials_number_*(d_alp_obj->d_alp_data->d_eps_K+d_alp_obj->d_alp_data->d_eps_lambda));
+	long int number_of_unsuccessful_objects2=0;
+
+	double max_time_store=d_alp_data->d_max_time;
+	
+	if(check_time_flag)
+	{
+		d_alp_data->d_max_time=max_time_;
+	};
+
+	for(i=0;i<trials_number_;i++)
+	{
+
+		alp* alp_obj_tmp=NULL;
+		bool success3=false;
+		while(!success3)
+		{
+			alp_obj_tmp=new alp(d_alp_data);
+			alp_data::assert_mem(alp_obj_tmp);
+
+			d_alp_data->d_memory_size_in_MB+=(double)(sizeof(alp))/mb_bytes;
+
+			alp_obj_tmp->d_check_time_flag=check_time_flag;
+			alp_obj_tmp->d_time_error_flag=check_time_flag;
+
+
+			alp_obj_tmp->simulate_alp_upto_the_given_number(alp_number+1);
+
+			success3=alp_obj_tmp->d_success;
+
+			
+
+			if(!success3)
+			{
+				delete alp_obj_tmp;alp_obj_tmp=NULL;
+				d_alp_data->d_memory_size_in_MB-=(double)(sizeof(alp))/mb_bytes;
+				number_of_unsuccessful_objects2++;
+				if(number_of_unsuccessful_objects2>max_number_of_unsuccessful_objects2)
+				{
+					throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+				};
+			};
+		};
+
+		long int last_alp=alp_obj_tmp->d_alp->d_elem[alp_number];
+		long int M_upper_level=last_alp+score_diff;
+		
+		alp_obj_tmp->d_sentinels_flag=false;
+		alp_obj_tmp->kill_upto_level(last_alp,last_alp-score_diff,&M_upper_level);
+		if(!alp_obj_tmp->d_success)
+		{
+			number_of_unsuccessful_objects2++;
+			if(number_of_unsuccessful_objects2>max_number_of_unsuccessful_objects2)
+			{
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+			};
+		};
+
+
+		delete alp_obj_tmp;alp_obj_tmp=NULL;
+		d_alp_data->d_memory_size_in_MB-=(double)(sizeof(alp))/mb_bytes;
+
+	};
+
+	if(check_time_flag)
+	{
+		d_alp_data->d_max_time=max_time_store;
+	};
+}
 
 
 void alp_sim::get_minimal_simulation(
@@ -2084,34 +2298,35 @@ long int &nalp_lambda_,
 bool C_calculation_,
 bool check_time_flag_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 
 	long int &alp_number=nalp_;
-	alp_number=0;
 
 	void **alp_distr=NULL;
 	void **alp_distr_errors=NULL;
 
+	try
+	{
 
-	try
-	{
-	try
-	{
+		long int add_alp_number=3;
+		long int add_alp_number_count=0;
+		long int max_alp_number=30;
 
 		if(d_n_alp_obj<ind1_||d_n_alp_obj-1>ind2_)
 		{
 			throw error("Unexpected error\n",4);
 		};
 
-		long int nalp_lambda_equilibration=-1;
+		
+
+		alp_number=0;
+
+		//long int nalp_lambda_equilibration=-1;
 
 		//create the objects
 		long int i;
 		for(i=d_n_alp_obj;i<=ind2_;i++)
 		{
 			d_alp_obj->set_elem(i,NULL);
-			d_n_alp_obj=i+1;
 
 
 			alp *&alp_obj_tmp=d_alp_obj->d_elem[i];
@@ -2126,6 +2341,8 @@ bool check_time_flag_)
 			alp_obj_tmp->d_time_error_flag=check_time_flag_;
 
 		};
+
+		d_n_alp_obj=ind2_+1;
 	
 
 		bool M_min_flag=false;
@@ -2137,12 +2354,15 @@ bool check_time_flag_)
 		long int number_of_fails_threshold=5;
 
 		do{
+			if(alp_number>=max_alp_number)
+			{
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",1);
+			};
 
-			long int number_of_unsuccessful_objects=0;
+			//long int number_of_unsuccessful_objects=0;
 			long int i;
 			for(i=ind1_;i<=ind2_;i++)
 			{
-
 				alp* &alp_obj_tmp=d_alp_obj->d_elem[i];
 
 				alp_obj_tmp->d_check_time_flag=check_time_flag_;
@@ -2154,23 +2374,24 @@ bool check_time_flag_)
 
 					alp_obj_tmp->simulate_alp_upto_the_given_number(alp_number+1);
 
+					//cout<<i<<"\t"<<alp_obj_tmp->d_success<<endl;
+
 					if(!alp_obj_tmp->d_success)
 					{
-						number_of_unsuccessful_objects++;
+						//number_of_unsuccessful_objects++;
 						delete alp_obj_tmp;
 						alp_obj_tmp=NULL;
 
-						if(number_of_unsuccessful_objects>5+(ind2_-d_n_alp_obj+1)*
-							d_alp_obj->d_alp_data->d_eps_lambda*(alp_number+1)
-							)
-						{
+						//if(number_of_unsuccessful_objects>/*5+*/0.5*(ind2_-ind1_+1)*
+						//	d_alp_obj->d_alp_data->d_eps_lambda*(alp_number+1)
+						//	)
+						//{
 							
-							throw error("The parameters cannot be correctly calculated for the given accuracy, calculation time and memory usage\n",1);
-						};
+							//throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+						//};
 
 
 						bool success2=false;
-
 						while(!success2)
 						{
 							alp_obj_tmp=new alp(d_alp_data);
@@ -2178,12 +2399,10 @@ bool check_time_flag_)
 
 
 							long int j;
-
 							for(j=0;j<=alp_number;j++)
 							{
 								alp_obj_tmp->simulate_alp_upto_the_given_number(j+1);
 							};
-
 
 							success2=alp_obj_tmp->d_success;
 
@@ -2191,22 +2410,19 @@ bool check_time_flag_)
 
 							if(!success2)
 							{
-
 								delete alp_obj_tmp;
-
 								alp_obj_tmp=NULL;
-								number_of_unsuccessful_objects++;
-								if(number_of_unsuccessful_objects>5+(ind2_-d_n_alp_obj+1)*
-									d_alp_obj->d_alp_data->d_eps_lambda*(alp_number+1)
-									)
-								{
+								//number_of_unsuccessful_objects++;
+								//if(number_of_unsuccessful_objects>/*5+*/0.5*(ind2_-ind1_+1)*
+								//	d_alp_obj->d_alp_data->d_eps_lambda*(alp_number+1)
+								//	)
+								//{
 									
-									throw error("The parameters cannot be correctly calculated for the given accuracy, calculation time and memory usage\n",1);
-								};
+									//throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
+								//};
 							};
 
 						};
-
 					};
 
 				};
@@ -2219,6 +2435,8 @@ bool check_time_flag_)
 
 			bool inside_simulation_flag=false;
 
+			double lambda;
+
 			criterion_flag=the_criterion(
 				alp_number,
 				nalp_lambda_,
@@ -2230,15 +2448,27 @@ bool check_time_flag_)
 				M_min_flag,
 				nalp_flag,
 				inside_simulation_flag,
-				C_calculation_);
+				C_calculation_,
+				&lambda);
 
-			
-			if(nalp_lambda_equilibration==-1&&nalp_flag)
+			if(inside_simulation_flag)
 			{
-				nalp_lambda_equilibration=alp_number;
+				if(lambda<=0)
+				{
+					criterion_flag=false;
+					inside_simulation_flag=false;
+				};
+			}
+			else
+			{
+				criterion_flag=false;
 			};
 			
-
+			//if(nalp_lambda_equilibration==-1&&nalp_flag)
+			//if(nalp_flag)
+			//{
+			//	nalp_lambda_equilibration=alp_number;
+			//};
 
 			if(!inside_simulation_flag)
 			{
@@ -2288,7 +2518,7 @@ bool check_time_flag_)
 
 				if(number_of_fails>number_of_fails_threshold)
 				{
-					throw error("The program is not able to calculate the parameters accurately.\nPlease try to increase the allowed calculation time and memory limit\n",1);
+					throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 				};
 
 				for(i=ind1_;i<=ind2_;i++)
@@ -2304,31 +2534,68 @@ bool check_time_flag_)
 
 				};
 
+				continue;
+
+			};
+
+			if(criterion_flag)
+			{
+				add_alp_number_count++;
+				if(add_alp_number_count<add_alp_number)
+				{
+					criterion_flag=false;
+				};
+
+				if(criterion_flag)
+				{
+					criterion_flag=check_K_criterion(
+					alp_number,
+					ind1_,
+					ind2_,
+					lambda,
+					d_alp_data->d_eps_K,
+					M_min_);
+				};
+
+			}
+			else
+			{
+				add_alp_number_count=0;
 			};
 
 		}
 		while(!criterion_flag);
+
 		
-		nalp_lambda_=alp_data::Tmax(nalp_lambda_equilibration,nalp_lambda_);
-		nalp_lambda_=alp_data::Tmin(nalp_lambda_,nalp_);
+		//nalp_lambda_=alp_data::Tmax(nalp_lambda_equilibration,nalp_lambda_);
+		//nalp_lambda_=alp_data::Tmin(nalp_lambda_,nalp_);
 
 		nalp_lambda_=nalp_;
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		memory_release_for_get_minimal_simulation(
+		nalp_,
+		alp_distr,
+		alp_distr_errors);
+
+		throw;
 	};
 
-	//memory release
+	memory_release_for_get_minimal_simulation(
+	nalp_,
+	alp_distr,
+	alp_distr_errors);
 
+}
+
+void alp_sim::memory_release_for_get_minimal_simulation(
+long int nalp_,
+void **&alp_distr,
+void **&alp_distr_errors)
+{
+	//memory release
 	if(alp_distr)
 	{
 		long int i;
@@ -2351,12 +2618,7 @@ bool check_time_flag_)
 		delete[]alp_distr_errors;alp_distr_errors=NULL;
 	};
 
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
-
-};
+}
 
 bool alp_sim::the_criterion(//criteria of stopping of the simulating ALP
 //if the function returns true then calculates optimal M_min and ALP number
@@ -2371,7 +2633,9 @@ long int &M_min_,
 bool &M_min_flag_,
 bool &nalp_flag_,
 bool &inside_simulation_flag_,
-bool C_calculation_)
+bool C_calculation_,
+double *lambda_,
+double *lambda_error_)
 {
 
 	nalp_flag_=false;
@@ -2384,11 +2648,11 @@ bool C_calculation_)
 
 
 
-	double lambda;
-	double lambda_error;
+	double lambda=0;
+	double lambda_error=0;
 
-	double test_difference;
-	double test_difference_error;
+	double test_difference=0;
+	double test_difference_error=0;
 
 	long int nalp=upto_nalp_;
 
@@ -2411,8 +2675,6 @@ bool C_calculation_)
 	upto_nalp_,
 	nalp_for_lambda_simulation_,
 	inside_simulation_flag_,
-	ind1_,
-	ind2_,
 	alp_distr,
 	alp_distr_errors,
 	lambda,
@@ -2435,18 +2697,22 @@ bool C_calculation_)
 		double C;
 		double C_error;
 
+		double Sc;
+		double Sc_error;
+
+
 
 		calculate_C(
 		0,
 		upto_nalp_,
-		ind1_,
-		ind2_,
 		alp_distr,
 		alp_distr_errors,
 		lambda,
 		lambda_error,
 		C,
-		C_error);
+		C_error,
+		Sc,
+		Sc_error);
 
 
 		d_C_tmp->set_elem(upto_nalp_,C);
@@ -2455,6 +2721,15 @@ bool C_calculation_)
 	};
 
 
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	if(lambda_)
+	{
+		*lambda_=lambda;
+	};
+	if(lambda_error_)
+	{
+		*lambda_error_=lambda_error;
+	};
 
 
 	if(nalp>=1)
@@ -2463,6 +2738,7 @@ bool C_calculation_)
 		if(test_difference<=test_difference_error)
 		{
 			nalp_flag_=true;
+			/*
 			M_min_flag_=check_K_criterion(
 			nalp,
 			ind1_,
@@ -2470,14 +2746,17 @@ bool C_calculation_)
 			lambda,
 			d_alp_data->d_eps_K,
 			M_min_);
+			*/
+			M_min_=0;
 
-			return M_min_flag_;
+			//return M_min_flag_;
+			return true;
 		};
 	};
 
 
 	return false;
-};
+}
 
 double alp_sim::lambda_exp(
 long int &i_,
@@ -2489,17 +2768,85 @@ double *&exp_array_)
 	};
 
 	return exp_array_[i_];
-};
+}
 
+void alp_sim::memory_release_for_calculate_FSC(
+double *&exp_array,
+
+double *&delta_E,
+double *&delta_E_error,
+
+double *&delta_E_E,
+double *&delta_E_E_error,
+
+
+double *&delta_I,
+double *&delta_I_error,
+
+double *&delta_J,
+double *&delta_J_error,
+
+double *&delta_I_I,
+double *&delta_I_I_error,
+
+double *&delta_I_J,
+double *&delta_I_J_error,
+
+double *&delta_J_J,
+double *&delta_J_J_error,
+
+double *&cov_J_J,
+double *&cov_J_J_error,
+
+double *&cov_I_J,
+double *&cov_I_J_error,
+
+double *&cov_I_I,
+double *&cov_I_I_error,
+
+double *&cov_E_E,
+double *&cov_E_E_error)
+{
+	//memory release
+	delete[]exp_array;exp_array=NULL;
+
+	delete[]delta_E;delta_E=NULL;
+	delete[]delta_E_error;delta_E_error=NULL;
+	delete[]delta_E_E;delta_E_E=NULL;
+	delete[]delta_E_E_error;delta_E_E_error=NULL;
+
+	delete[]delta_I;delta_I=NULL;
+	delete[]delta_I_error;delta_I_error=NULL;
+	delete[]delta_J;delta_J=NULL;
+	delete[]delta_J_error;delta_J_error=NULL;
+
+	delete[]delta_I_J;delta_I_J=NULL;
+	delete[]delta_I_J_error;delta_I_J_error=NULL;
+	delete[]delta_J_J;delta_J_J=NULL;
+	delete[]delta_J_J_error;delta_J_J_error=NULL;
+	delete[]delta_I_I;delta_I_I=NULL;
+	delete[]delta_I_I_error;delta_I_I_error=NULL;
+
+	delete[]cov_I_J;cov_I_J=NULL;
+	delete[]cov_I_J_error;cov_I_J_error=NULL;
+	delete[]cov_J_J;cov_J_J=NULL;
+	delete[]cov_J_J_error;cov_J_J_error=NULL;
+	delete[]cov_I_I;cov_I_I=NULL;
+	delete[]cov_I_I_error;cov_I_I_error=NULL;
+
+	delete[]cov_E_E;cov_E_E=NULL;
+	delete[]cov_E_E_error;cov_E_E_error=NULL;
+
+}
 
 void alp_sim::calculate_FSC(
 long int nalp_,
 long int ind1_,
 long int ind2_,
 void **alp_distr,
-void **alp_distr_errors,
 double lambda_,
-double lambda_error_,
+double Sc_,
+//double Sc_error_,
 double &a_I_,
 double &a_I_error_,
 double &a_J_,
@@ -2511,8 +2858,6 @@ double &alpha_I_error_,
 double &alpha_J_,
 double &alpha_J_error_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 
 	double *exp_array=NULL;
 
@@ -2551,8 +2896,6 @@ double &alpha_J_error_)
 	double *cov_E_E_error=NULL;
 
 
-	try
-	{
 	try
 	{
 
@@ -2665,6 +3008,18 @@ double &alpha_J_error_)
 			delta_J_J_error[j]=0.0;
 		};
 
+		double C_S_constant=1.0;
+
+		if(calculate_C_S_constant_flag)
+		{
+			if(Sc_>0)
+			{
+				C_S_constant=Sc_;
+			};
+		};
+
+		double one_div_C_S_constant=1.0/C_S_constant;
+		
 		
 		for(i=ind1_;i<=ind2_;i++)
 		{
@@ -2685,10 +3040,12 @@ double &alpha_J_error_)
 				long int &J_j_1=alp_obj_tmp->d_H_J->d_elem[j_1];
 				long int &J_j=alp_obj_tmp->d_H_J->d_elem[j];
 
-				double delta_I_tmp=(I_j-I_j_1)*lambda_exp(E_j,exp_array)*weight_j;
-				double delta_J_tmp=(J_j-J_j_1)*lambda_exp(E_j,exp_array)*weight_j;
-				double delta_E_tmp=(E_j-E_j_1)*lambda_exp(E_j,exp_array)*weight_j;
-				double delta_E_E_tmp=(E_j-E_j_1)*(E_j-E_j_1)*lambda_exp(E_j,exp_array)*weight_j;
+				double exp_tmp=lambda_exp(E_j,exp_array)*one_div_C_S_constant;
+
+				double delta_I_tmp=(I_j-I_j_1)*exp_tmp*weight_j;
+				double delta_J_tmp=(J_j-J_j_1)*exp_tmp*weight_j;
+				double delta_E_tmp=(E_j-E_j_1)*exp_tmp*weight_j;
+				double delta_E_E_tmp=(E_j-E_j_1)*(E_j-E_j_1)*exp_tmp*weight_j;
 
 				
 				double delta_I_I_tmp=delta_I_tmp*(I_j-I_j_1);
@@ -2773,17 +3130,17 @@ double &alpha_J_error_)
 
 			cov_E_E[j]=delta_E_E[j]-delta_E[j]*delta_E[j];
 
-			cov_I_J_error[j]=alp_reg::error_of_the_product(delta_I[j],delta_I_error[j],delta_J[j],delta_J_error[j]);
-			cov_I_J_error[j]=sqrt(delta_I_J_error[j]+cov_I_J_error[j]*cov_I_J_error[j]);
+			cov_I_J_error[j]=alp_data::error_of_the_product(delta_I[j],delta_I_error[j],delta_J[j],delta_J_error[j]);
+			cov_I_J_error[j]=alp_reg::sqrt_for_errors(delta_I_J_error[j]+cov_I_J_error[j]*cov_I_J_error[j]);
 
-			cov_I_I_error[j]=alp_reg::error_of_the_product(delta_I[j],delta_I_error[j],delta_I[j],delta_I_error[j]);
-			cov_I_I_error[j]=sqrt(delta_I_I_error[j]+cov_I_I_error[j]*cov_I_I_error[j]);
+			cov_I_I_error[j]=alp_data::error_of_the_product(delta_I[j],delta_I_error[j],delta_I[j],delta_I_error[j]);
+			cov_I_I_error[j]=alp_reg::sqrt_for_errors(delta_I_I_error[j]+cov_I_I_error[j]*cov_I_I_error[j]);
 
-			cov_J_J_error[j]=alp_reg::error_of_the_product(delta_J[j],delta_J_error[j],delta_J[j],delta_J_error[j]);
-			cov_J_J_error[j]=sqrt(delta_J_J_error[j]+cov_J_J_error[j]*cov_J_J_error[j]);
+			cov_J_J_error[j]=alp_data::error_of_the_product(delta_J[j],delta_J_error[j],delta_J[j],delta_J_error[j]);
+			cov_J_J_error[j]=alp_reg::sqrt_for_errors(delta_J_J_error[j]+cov_J_J_error[j]*cov_J_J_error[j]);
 
-			cov_E_E_error[j]=alp_reg::error_of_the_product(delta_E[j],delta_E_error[j],delta_E[j],delta_E_error[j]);
-			cov_E_E_error[j]=sqrt(delta_E_E_error[j]+cov_E_E_error[j]*cov_E_E_error[j]);
+			cov_E_E_error[j]=alp_data::error_of_the_product(delta_E[j],delta_E_error[j],delta_E[j],delta_E_error[j]);
+			cov_E_E_error[j]=alp_reg::sqrt_for_errors(delta_E_E_error[j]+cov_E_E_error[j]*cov_E_E_error[j]);
 
 		};
 
@@ -2827,10 +3184,9 @@ double &alpha_J_error_)
 		k2_opt,
 		res_was_calculated);
 
-
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation2\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 
@@ -2858,7 +3214,7 @@ double &alpha_J_error_)
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation3\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 
@@ -2883,7 +3239,7 @@ double &alpha_J_error_)
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation4\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		double cov_I_I_aver;
@@ -2897,6 +3253,7 @@ double &alpha_J_error_)
 
 		double cov_E_E_aver;
 		double cov_E_E_aver_error;
+
 
 		alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
 		0,
@@ -2914,12 +3271,11 @@ double &alpha_J_error_)
 		k2_opt,
 		res_was_calculated);
 
-
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation5\n",2);
+			//error
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
-
 
 		alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
 		0,
@@ -2939,7 +3295,7 @@ double &alpha_J_error_)
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation6\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
@@ -2960,7 +3316,7 @@ double &alpha_J_error_)
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation7\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
@@ -2981,23 +3337,24 @@ double &alpha_J_error_)
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation7_E\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 
 
 		if(delta_E_aver<=0)
 		{
-			throw error("FSC parameters estimations failed\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 
 
 		a_I_=delta_I_aver/delta_E_aver;
-		a_I_error_=alp_reg::error_of_the_ratio(delta_I_aver,delta_I_aver_error,delta_E_aver,delta_E_aver_error);
+		a_I_error_=alp_data::error_of_the_ratio(delta_I_aver,delta_I_aver_error,delta_E_aver,delta_E_aver_error);
 		a_J_=delta_J_aver/delta_E_aver;
-		a_J_error_=alp_reg::error_of_the_ratio(delta_J_aver,delta_J_aver_error,delta_E_aver,delta_E_aver_error);
-		
+		a_J_error_=alp_data::error_of_the_ratio(delta_J_aver,delta_J_aver_error,delta_E_aver,delta_E_aver_error);
+
+
 		sigma_calculation(
 		delta_I_aver,
 		delta_I_aver_error,
@@ -3043,55 +3400,95 @@ double &alpha_J_error_)
 		alpha_J_,
 		alpha_J_error_);
 
+		//if the estimates are negative, replace them by 0.0
+		a_I_=alp_data::Tmax(a_I_,0.0);
+		a_J_=alp_data::Tmax(a_J_,0.0);
+		sigma_=alp_data::Tmax(sigma_,0.0);
+		alpha_I_=alp_data::Tmax(alpha_I_,0.0);
+		alpha_J_=alp_data::Tmax(alpha_J_,0.0);
 
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
+
 	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		memory_release_for_calculate_FSC(
+		exp_array,
+
+		delta_E,
+		delta_E_error,
+
+		delta_E_E,
+		delta_E_E_error,
+
+
+		delta_I,
+		delta_I_error,
+
+		delta_J,
+		delta_J_error,
+
+		delta_I_I,
+		delta_I_I_error,
+
+		delta_I_J,
+		delta_I_J_error,
+
+		delta_J_J,
+		delta_J_J_error,
+
+		cov_J_J,
+		cov_J_J_error,
+
+		cov_I_J,
+		cov_I_J_error,
+
+		cov_I_I,
+		cov_I_I_error,
+
+		cov_E_E,
+		cov_E_E_error);
+		throw;
 	};
 
-	//memory release
-	delete[]exp_array;exp_array=NULL;
 
-	delete[]delta_E;delta_E=NULL;
-	delete[]delta_E_error;delta_E_error=NULL;
-	delete[]delta_E_E;delta_E_E=NULL; //jenya
-	delete[]delta_E_E_error;delta_E_E_error=NULL; //jenya
-	delete[]delta_I;delta_I=NULL;
-	delete[]delta_I_error;delta_I_error=NULL;
-	delete[]delta_J;delta_J=NULL;
-	delete[]delta_J_error;delta_J_error=NULL;
+	memory_release_for_calculate_FSC(
+	exp_array,
 
-	delete[]delta_I_J;delta_I_J=NULL;
-	delete[]delta_I_J_error;delta_I_J_error=NULL;
-	delete[]delta_J_J;delta_J_J=NULL;
-	delete[]delta_J_J_error;delta_J_J_error=NULL;
-	delete[]delta_I_I;delta_I_I=NULL;
-	delete[]delta_I_I_error;delta_I_I_error=NULL;
+	delta_E,
+	delta_E_error,
 
-	delete[]cov_I_J;cov_I_J=NULL;
-	delete[]cov_I_J_error;cov_I_J_error=NULL;
-	delete[]cov_E_E;cov_E_E=NULL; //jenya
-	delete[]cov_E_E_error;cov_E_E_error=NULL; //jenya
-	delete[]cov_J_J;cov_J_J=NULL;
-	delete[]cov_J_J_error;cov_J_J_error=NULL;
-	delete[]cov_I_I;cov_I_I=NULL;
-	delete[]cov_I_I_error;cov_I_I_error=NULL;
+	delta_E_E,
+	delta_E_E_error,
 
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
 
-};
+	delta_I,
+	delta_I_error,
 
+	delta_J,
+	delta_J_error,
+
+	delta_I_I,
+	delta_I_I_error,
+
+	delta_I_J,
+	delta_I_J_error,
+
+	delta_J_J,
+	delta_J_J_error,
+
+	cov_J_J,
+	cov_J_J_error,
+
+	cov_I_J,
+	cov_I_J_error,
+
+	cov_I_I,
+	cov_I_I_error,
+
+	cov_E_E,
+	cov_E_E_error);
+
+}
 
 void alp_sim::sigma_calculation(
 double delta_I_aver_,
@@ -3118,38 +3515,34 @@ double &sigma_error_)
 	sigma_=(nom1+nom2)/den;
 
 	
-	double nom1_sigma_error=alp_reg::error_of_the_product(delta_I_aver_,delta_I_aver_error_,delta_J_aver_,delta_J_aver_error_);
-	nom1_sigma_error=alp_reg::error_of_the_product(nom1_1,nom1_sigma_error,cov_E_E_aver_,cov_E_E_aver_error_);
+	double nom1_sigma_error=alp_data::error_of_the_product(delta_I_aver_,delta_I_aver_error_,delta_J_aver_,delta_J_aver_error_);
+	nom1_sigma_error=alp_data::error_of_the_product(nom1_1,nom1_sigma_error,cov_E_E_aver_,cov_E_E_aver_error_);
 
 	
-	double nom2_sigma_error_2=alp_reg::error_of_the_product(delta_E_aver_,delta_E_aver_error_,delta_E_aver_,delta_E_aver_error_);
-	double nom2_sigma_error=alp_reg::error_of_the_product(nom2_2,nom2_sigma_error_2,cov_I_J_aver_,cov_I_J_aver_error_);
+	double nom2_sigma_error_2=alp_data::error_of_the_product(delta_E_aver_,delta_E_aver_error_,delta_E_aver_,delta_E_aver_error_);
+	double nom2_sigma_error=alp_data::error_of_the_product(nom2_2,nom2_sigma_error_2,cov_I_J_aver_,cov_I_J_aver_error_);
 
 	
-	double den_sigma_error=alp_reg::error_of_the_product(nom2_2,nom2_sigma_error_2,delta_E_aver_,delta_E_aver_error_);
+	double den_sigma_error=alp_data::error_of_the_product(nom2_2,nom2_sigma_error_2,delta_E_aver_,delta_E_aver_error_);
 
-	double nom_sigma_error=alp_reg::error_of_the_sum(nom1,nom1_sigma_error,nom2,nom2_sigma_error);
+	double nom_sigma_error=alp_data::error_of_the_sum(nom1_sigma_error,nom2_sigma_error);
 
-	sigma_error_=alp_reg::error_of_the_ratio(nom1+nom2,nom_sigma_error,den,den_sigma_error);
+	sigma_error_=alp_data::error_of_the_ratio(nom1+nom2,nom_sigma_error,den,den_sigma_error);
 
-};
-
-
+}
 
 void alp_sim::calculate_C(
 long int starting_point,
 long int nalp_,
-long int ind1_,
-long int ind2_,
 void **alp_distr,
 void **alp_distr_errors,
 double lambda_,
 double lambda_error_,
 double &C_,
-double &C_error_)
+double &C_error_,
+double &Sc_,
+double &Sc_error_)
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
 
 	double *P=NULL;
 	double *P_errors=NULL;
@@ -3163,8 +3556,6 @@ double &C_error_)
 	double *E_T_beta_errors=NULL;
 
 
-	try
-	{
 	try
 	{
 
@@ -3218,7 +3609,7 @@ double &C_error_)
 		for(j=0;j<total_number_of_ALP;j++)
 		{
 			values_P_ratio[j]=P[j+1]/P[j];
-			errors_P_ratio[j]=alp_reg::error_of_the_ratio(P[j+1],P_errors[j+1],P[j],P_errors[j]);
+			errors_P_ratio[j]=alp_data::error_of_the_ratio(P[j+1],P_errors[j+1],P[j],P_errors[j]);
 		};
 
 
@@ -3240,7 +3631,7 @@ double &C_error_)
 		double P_beta_inf;
 		double P_beta_inf_error=0;
 
-		bool res_was_calculated; 
+		bool res_was_calculated;
 		
 		alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
 		0,
@@ -3258,11 +3649,12 @@ double &C_error_)
 		k2_opt,
 		res_was_calculated);
 
+
 		
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		P_beta_inf=1-P_beta_inf;
@@ -3347,7 +3739,7 @@ double &C_error_)
 			double beta0_error;
 			double beta1_error=0;
 
-			bool res_was_calculated; 
+			bool res_was_calculated;
 
 			alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
 			0,
@@ -3365,9 +3757,10 @@ double &C_error_)
 			k2_opt,
 			res_was_calculated);
 
+
 			if(!res_was_calculated)
 			{
-				throw error("The program cannot estimate the parameters; please repeat the calculation\n",2);
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 			};
 
 
@@ -3394,7 +3787,7 @@ double &C_error_)
 
 			if(!res_was_calculated)
 			{
-				throw error("The program cannot estimate the parameters; please repeat the calculation\n",2);
+				throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 			};
 
 
@@ -3405,36 +3798,61 @@ double &C_error_)
 			
 		};
 
+
+
 		double exp_lambda_error=exp(-lambda_)*lambda_error_;
 		double exp_lambda=(1-exp(-lambda_));
 
 		
-		double den_error=alp_reg::error_of_the_product(E_T_beta_diff_aver,E_T_beta_diff_aver_error,exp_lambda,exp_lambda_error);
+		double den_error=alp_data::error_of_the_product(E_T_beta_diff_aver,E_T_beta_diff_aver_error,exp_lambda,exp_lambda_error);
 		double den=(1-exp(-lambda_))*E_T_beta_diff_aver;
 
-		double E_aver_sqr_error=alp_reg::error_of_the_product(E_aver,E_aver_error,E_aver,E_aver_error);
-		double E_aver_sqr=E_aver*E_aver;
 
-		double nom_error=alp_reg::error_of_the_product(P_beta_inf,P_beta_inf_error,E_aver_sqr,E_aver_sqr_error);
-		double nom=P_beta_inf*E_aver_sqr;
+		double nom;
+		double nom_error;
 
-		C_error_=alp_reg::error_of_the_ratio(nom,nom_error,den,den_error);
+		if(calculate_C_S_constant_flag)
+		{
+			Sc_error_=E_aver_error;
+			Sc_=E_aver;
+
+			nom_error=alp_data::error_of_the_product(P_beta_inf,P_beta_inf_error,E_aver,E_aver_error);
+			nom=P_beta_inf*E_aver;
+		}
+		else
+		{
+			double E_aver_sqr_error=alp_data::error_of_the_product(E_aver,E_aver_error,E_aver,E_aver_error);
+			double E_aver_sqr=E_aver*E_aver;
+
+			nom_error=alp_data::error_of_the_product(P_beta_inf,P_beta_inf_error,E_aver_sqr,E_aver_sqr_error);
+			nom=P_beta_inf*E_aver_sqr;
+
+		};
+
+		C_error_=alp_data::error_of_the_ratio(nom,nom_error,den,den_error);
 		C_=nom/den;
 
 
 
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		//memory release
+
+		delete[]values_P_ratio;values_P_ratio=NULL;
+		delete[]errors_P_ratio;errors_P_ratio=NULL;
+
+
+		delete[]P;P=NULL;
+		delete[]P_errors;P_errors=NULL;
+
+		delete[]E;E=NULL;
+		delete[]E_T_beta;E_T_beta=NULL;
+		delete[]E_errors;E_errors=NULL;
+		delete[]E_T_beta_errors;E_T_beta_errors=NULL;
+		throw;
+
 	};
 
 	//memory release
@@ -3451,12 +3869,8 @@ double &C_error_)
 	delete[]E_errors;E_errors=NULL;
 	delete[]E_T_beta_errors;E_T_beta_errors=NULL;
 
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
 
-};
+}
 
 void alp_sim::get_and_allocate_alp_distribution(
 long int ind1_,
@@ -3484,11 +3898,6 @@ long int nalp)
 	long int allocation_dim=nalp;
 	long int allocation_dim_tmp=nalp+1;
 
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
-	try
-	{
 	try
 	{
 
@@ -3556,22 +3965,9 @@ long int nalp)
 			tmp_errors->d_elem[j]/=ind_diff;
 		};
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
+
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		long int i;
 		if(alp_distr_tmp)
 		{
@@ -3609,11 +4005,12 @@ long int nalp)
 			delete []alp_distr_errors;alp_distr_errors=NULL;
 		};
 
-
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-};
+
+
+}
 
 bool alp_sim::check_K_criterion(
 long int nalp_,
@@ -3627,12 +4024,8 @@ long int &M_min_)
 	{
 		throw error("Unexpected error\n",4);
 	};
-	bool ee_error_flag=false;
-	error ee_error("",0);
 	array_positive<double>* diff=NULL;
 
-	try
-	{
 	try
 	{
 
@@ -3671,7 +4064,7 @@ long int &M_min_)
 
 		if(den<=0||sum_of_weights<=0)
 		{
-			throw error("The program is not able to estimate the parameters\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 
@@ -3704,29 +4097,13 @@ long int &M_min_)
 		
 		return true;
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
+		delete diff;diff=NULL;
+		throw;
 	};
 
-	//memory release
-
-	delete diff;diff=NULL;
-
-	if(ee_error_flag)
-	{
-		throw error(ee_error.st,ee_error.error_code);
-	};
-	return false;
-
-};
+}
 
 bool alp_sim::check_K_criterion_during_killing(
 long int ind1_,
@@ -3747,11 +4124,6 @@ double &K_C_error_)
 	array_positive<double>* diff=NULL;
 	array_positive<double>* diff_error=NULL;
 
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
-	try
-	{
 	try
 	{
 
@@ -3828,11 +4200,11 @@ double &K_C_error_)
 
 		if(den<=0||sum_of_weights<=0)
 		{
-			throw error("The program is not able to estimate the parameters\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 		K_C_=sum_of_weights/den;
-		K_C_error_=alp_reg::error_of_the_ratio(sum_of_weights,sum_of_weights_error,den,den_error);
+		K_C_error_=alp_data::error_of_the_ratio(sum_of_weights,sum_of_weights_error,den,den_error);
 
 
 		M_aver/=tmp2;
@@ -3864,40 +4236,20 @@ double &K_C_error_)
 		diff_opt_=(long int)ceil(M_aver-recommended_level_);
 		return true;
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		delete diff;diff=NULL;
 		delete diff_error;diff_error=NULL;
-
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
-	return false;
 
-};
-
-
+}
 
 void alp_sim::calculate_lambda(
 bool check_the_criteria_,
 long int nalp_,
 long int &nalp_thr_,
 bool &inside_simulation_flag_,
-long int ind1_,
-long int ind2_,
 void **alp_distr,
 void **alp_distr_errors,
 double &lambda_,
@@ -3957,7 +4309,7 @@ double &test_difference_error_)
 	
 
 	tmp_struct.d_calculate_alp_number=true;
-	double f1=func(lambda_,func_pointer);
+	double f1=func(lambda_,func_pointer);//cout<<ind1_<<"\t"<<ind2_<<"\t"<<tmp_struct.d_last_sum<<"\t"<<tmp_struct.d_last_sum_error<<endl;
 	nalp_thr_=tmp_struct.d_alp_number;
 	tmp_struct.d_calculate_alp_number=false;
 
@@ -4001,6 +4353,8 @@ double &test_difference_error_)
 	double sum2=tmp_struct.d_last_sum;
 	double sum2_error=tmp_struct.d_last_sum_error;
 
+	
+
 	double max_sum=alp_data::Tmax(fabs(sum1),fabs(sum2));
 
 	if(max_sum!=0)
@@ -4014,13 +4368,7 @@ double &test_difference_error_)
 		test_difference_error_=0;
 	};
 
-
-
-
-	
-
-
-};
+}
 
 double alp_sim::get_root(
 const std::vector<double> &res_tmp_,
@@ -4028,8 +4376,8 @@ double point_)
 {
 	if(res_tmp_.size()==0)
 	{
-		throw error("Error in alp_sim::get_root - the equation does not have roots\n",2);
-		return 0;
+		//throw error("Error in alp_sim::get_root - the equation does not have roots\n",2);
+		throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 	};
 
 	long int i;
@@ -4046,9 +4394,7 @@ double point_)
 	};
 
 	return res_tmp_[p];
-};
-
-
+}
 
 double alp_sim::function_for_lambda_calculation(
 double lambda_,
@@ -4058,11 +4404,6 @@ void * data_)
 	double *expect=NULL;
 	double *expect_errors=NULL;
 
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
-	try
-	{
 	try
 	{
 
@@ -4186,7 +4527,7 @@ void * data_)
 
 		if(!res_was_calculated)
 		{
-			throw error("The program cannot estimate the parameters; please repeat the calculation\n",2);
+			throw error("Error - you have exceeded the calculation time or memory limit.\nThe error might indicate that the regime is linear or too close to linear to permit efficient computation.\nPossible solutions include changing the randomization seed, or increasing the allowed calculation time and the memory limit.\n",3);
 		};
 
 
@@ -4197,29 +4538,12 @@ void * data_)
 		return beta1;
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		delete[]expect;expect=NULL;
 		delete[]expect_errors;expect_errors=NULL;
-
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-	return 0.0;
-
-};
+}
 

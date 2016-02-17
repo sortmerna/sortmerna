@@ -50,7 +50,7 @@ largest ( const mypair &a, const mypair &b )
  * see alignment.hpp for documentation
  *************************************/
 void find_lis(deque<pair<uint32_t, uint32_t> > &a,
-              vector<uint32_t> &b, int64_t readn)
+              vector<uint32_t> &b, uint64_t readn)
 {
   vector<uint32_t> p(a.size());
   int u, v;
@@ -104,31 +104,31 @@ compute_lis_alignment(uint32_t size_ambiguous_nt,
                       kmer_origin* positions_tbl,
                       uint16_t* read_max_SW_score,
                       bool& search,
-                      int64_t* best_x,
-                      int64_t readn,
-                      int64_t* num_alignments_x,
+                      int32_t* best_x,
+                      uint64_t readn,
+                      int32_t* num_alignments_x,
                       uint32_t readlen,
                       uint32_t lnwin_index_num,
                       uint16_t index_num,
-                      uint32_t* reference_seq_len,
+                      uint64_t* reference_seq_len,
                       char* myread,
                       int32_t* ambiguous_nt,
                       int8_t* mat,
                       char** reference_seq,
-                      int32_t gap_open,
-                      int32_t gap_extension,
+                      long gap_open,
+                      long gap_extension,
                       uint32_t minimal_score_index_num,
                       vector<bool>& read_hits,
-                      uint32_t& total_reads_mapped,
-                      vector<uint32_t>& reads_matched_per_db,
+                      uint64_t& total_reads_mapped,
+                      vector<uint64_t>& reads_matched_per_db,
                       uint16_t part,
-                      map<uint32_t, alignment_struct >& read_hits_align_info,
+                      map<uint64_t, alignment_struct >& read_hits_align_info,
                       uint32_t max_SW_score,
                       bool& read_to_count,
-                      uint32_t& total_reads_mapped_cov,
+                      uint64_t& total_reads_mapped_cov,
                       vector<bool>& read_hits_denovo,
                       char filesig,
-                      int64_t strs,
+                      uint64_t strs,
                       uint32_t file_s,
                       uint32_t file_sections,
                       char** reads,
@@ -218,8 +218,6 @@ bool aligned = false;
 #ifdef debug_align
       cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
       cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
-      cout << "\t\t\t\tnumseq_part = " << numseq_part << endl; //TESTING
-      cout << "\t\t\t\tindex size for reference_seq = " << (numseq_part<<1) << endl; //TESTING
 if ( min_lis_gv > 0 )
 cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
 #endif                             
@@ -330,7 +328,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
             {
 #ifdef debug_align
               cout << "\t\t\t\tLIS = " << list.size() << endl; //TESTING
-              for ( int p = 0; p < list.size(); p++ )
+              for ( uint32_t p = 0; p < list.size(); p++ )
                   cout << "\t\t\t\tref: " << vi_read[list[p]].first << "\tread: " << vi_read[list[p]].second << endl;   
 #endif
 #ifdef HEURISTIC1_OFF
@@ -549,7 +547,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                     result->part = part;
                     result->strand = strand;
 
-                    map<uint32_t, alignment_struct>::iterator alignment = read_hits_align_info.find(readn);
+                    map<uint64_t, alignment_struct>::iterator alignment = read_hits_align_info.find(readn);
 #ifdef DEBUG_BEST_N
                     cout << "\nreadn = " << readn << endl;
                     cout << "max_seq = " << (2*max_seq) << endl;
@@ -585,14 +583,14 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       // number of alignments stored per read < num_best_hits_gv, 
                       // add alignment to array without comparison to other members
                       // of array
-                      if ( (num_best_hits_gv == 0) || (array_size < num_best_hits_gv) )
+                      if ( (num_best_hits_gv == 0) || (array_size < (uint32_t)num_best_hits_gv) )
                       {
                         // number of alignments stored per read == maximum number of 
                         // alignments allowed, resize array by another BEST_HITS_INCREMENT slots 
                         if ( array_size == array_max_size )
                         {
                           uint32_t new_array_max_size = 0;
-                          if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= num_best_hits_gv) )
+                          if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= (uint32_t)num_best_hits_gv) )
                             new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
                           else
                             new_array_max_size = num_best_hits_gv;
@@ -633,7 +631,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                         // alignment score and set the smallest_score_index
                         // (this is not done when num_best_hits_gv == 0 since
                         // we want to output all alignments for some --min_lis)
-                        if ( array_size == num_best_hits_gv )
+                        if ( array_size == (uint32_t)num_best_hits_gv )
                         {
 #ifdef DEBUG_BEST_N
                           cout << "\t\tfind new smallest_score_index of " << num_best_hits_gv << " slots.\n";
@@ -791,7 +789,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       uint32_t length = (0xfffffff0&*(result->cigar + c2))>>4;
                       if (letter == 0) 
                       {
-                        for (int p = 0; p < length; ++p)
+                        for (uint32_t p = 0; p < length; ++p)
                         {
                           if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
                           else ++id;

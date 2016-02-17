@@ -81,6 +81,12 @@ export CC=clang
 export CXX=clang++
 ```
 
+Run configure and make scripts with default parameters:
+
+```bash
+bash ./build.sh
+```
+
 (2b) To set your compiler to the original GCC (check you have it "gcc-mp-4.8 --version", 
 if not then see "Install GCC through MacPorts" below. Note the GCC compiler comes in many 
 versions, 4.8 is one of the latest):
@@ -90,13 +96,25 @@ export CC=gcc-mp-4.8
 export CXX=g++-mp-4.8
 ```
 
-(3) Run configure and make scripts:
+If using the original GCC compiler, Zlib should also be installed via MacPorts in order
+for compression to work (read .zip and .gz files). See section "Install GCC and Zlib
+though MacPorts" below for installation instructions.
+
+Assuming you have Zlib installed:
+
+Run configure and make scripts (if compression feature wanted):
 
 ```bash
-bash ./build.sh
+bash ./build.sh --with-zlib="/opt/local"
 ```
 
-Note: `make install` is not called in this script. However, any arguments given
+Otherwise (if compression feature not wanted):
+
+```bash
+bash ./build.sh --without-zlib"
+```
+
+Note 1: `make install` is not called in this script. However, any arguments given
 to `build.sh` will be passed to the configure script. If you plan on calling `make install`
 afterwards, then you can set your installation directory using
 `build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
@@ -117,17 +135,19 @@ Xcode -> Preferences -> Downloads
 Under "Components", click to install "Command Line Tools"
 
 
-Install GCC though MacPorts
----------------------------
+Install GCC and Zlib though MacPorts
+------------------------------------
 
 Assuming you have MacPorts installed, type:
 
 ```bash
 sudo port selfupdate
 sudo port install gcc48
+sudo port install zlib
 ```
 
-After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8 .
+After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8
+as well as Zlib in /opt/local/lib/libz.dylib and /opt/local/include/zlib.h .
 
 
 Tests
@@ -147,7 +167,6 @@ Various features in SortMeRNA are dependent on third-party libraries, including:
 	2. [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
 	3. [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml): FASTA/FASTQ parser (including compressed files)
 	4. [SSW](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138): SIMD Smith-Waterman C/C++ Library
-
 
 Galaxy Wrapper
 --------------

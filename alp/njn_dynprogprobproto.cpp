@@ -38,3 +38,4 @@ Contents:
 using namespace Njn;
 
 DynProgProbProto::~DynProgProbProto () {}
+

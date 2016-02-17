@@ -104,7 +104,8 @@ namespace Njn {
         }
 
         template <typename T>
-        void deleteMatrix (T **&matrix, size_t m_, size_t n_) 
+
+        void deleteMatrix (T **&matrix, size_t m_ , size_t /*sls deleted n_*/) 
         // Assumes matrix was created with the call 
         //         matrix = newMatrix <T> (iBegin, iEnd, jBegin, jEnd);
         {
@@ -120,4 +121,7 @@ namespace Njn {
 		}
 	}
 
+
+
 #endif
+
