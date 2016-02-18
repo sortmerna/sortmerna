@@ -68,7 +68,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /*! @brief Version number */
-char version_num[] = "2.1-dev, 01/02/2016";
+char version_num[] = "2.2, 02/18/2016";
 bool as_percent_gv = false;
 bool pid_gv = false;
 int32_t num_best_hits_gv = 0;
@@ -83,16 +83,19 @@ int32_t num_best_hits_gv = 0;
 void welcome()
 {
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
-  printf("  Copyright:   2012-16 Bonsai Bioinformatics Research Group:\n");
-  printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               2014-16 Knight Lab:\n" );
-  printf("               Department of Pediatrics, UCSD, La Jolla\n");
-  printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-  printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-  printf("               See the GNU Lesser General Public License for more details.\n");
-  printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-  printf("               Laurent Noé, laurent.noe@lifl.fr\n");
-  printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
+  printf("  Copyright:    2012-16 Bonsai Bioinformatics Research Group:\n");
+  printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+  printf("                2014-16 Knight Lab:\n" );
+  printf("                Department of Pediatrics, UCSD, La Jolla\n");
+  printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+  printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+  printf("                See the GNU Lesser General Public License for more details.\n");
+  printf("  Contributors: Jenya Kopylova, jenya.kopylov@gmail.com \n");
+  printf("                Laurent Noé, laurent.noe@lifl.fr\n");
+  printf("                Pierre Pericard, pierre.pericard@lifl.fr\n");
+  printf("                Mikaël Salson, mikael.salson@lifl.fr\n");
+  printf("                Hélène Touzet, helene.touzet@lifl.fr\n");
+  printf("                Rob Knight, robknight@ucsd.edu\n\n");
 }
 
 
@@ -105,9 +108,11 @@ void welcome()
 void printlist()
 {
   printf("\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:\n");
+#ifdef HAVE_LIBZ
   printf("  OR\n");
-  printf("  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:\n\n");
-  printf("  -------------------------------------------------------------------------------------------------------------\n");
+  printf("  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:\n");
+#endif
+  printf("\n  -------------------------------------------------------------------------------------------------------------\n");
   printf("  | parameter          value           description                                                    default |\n");
   printf("  -------------------------------------------------------------------------------------------------------------\n");
   printf("     %s--ref%s             %sSTRING,STRING%s   FASTA reference file, index file                               %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");

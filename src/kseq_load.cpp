@@ -78,7 +78,6 @@ load_reads(char* inputreads,
   char* input_ptr = raw;
   while ((l = kseq_read(seq)) >= 0) {
     // '>' or '@'
-    cout << i << endl;
     reads[i++] = input_ptr;
     *input_ptr++ = seq->last_char;
     // sequence label
@@ -90,9 +89,9 @@ load_reads(char* inputreads,
       *input_ptr++ = ' ';
       memcpy(input_ptr, seq->comment.s, seq->comment.l);
       input_ptr += seq->comment.l;
-      // '\n'
-      *input_ptr++ = '\n';
     }
+    // '\n'
+    *input_ptr++ = '\n';
     // sequence
     reads[i++] = input_ptr;
     memcpy(input_ptr, seq->seq.s, seq->seq.l);
@@ -115,6 +114,10 @@ load_reads(char* inputreads,
   // EOF
   finalnt = input_ptr;
   *input_ptr++ = '\0';
+  /* TEST */
+  //char* st = raw;
+  //while (*st != '\0') {cout << *st++;} cout << endl;
+  /* TEST */
   if (l == -2)
   {
     fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not read reads file - %s\n\n",

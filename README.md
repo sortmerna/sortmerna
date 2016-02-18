@@ -171,9 +171,8 @@ Various features in SortMeRNA are dependent on third-party libraries, including:
 Galaxy Wrapper
 --------------
 
-Currently a Galaxy wrapper exists for SortMeRNA 2.0 (thanks to Björn Grüning and Nicola Soranzo,
-see this [PR](https://github.com/bgruening/galaxytools/pull/202) for more details).
-Please visit "https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna" for installation.
+Thanks to Björn Grüning and Nicola Soranzo, an up-to-date Galaxy wrapper exists for SortMeRNA.
+Please visit Björn's [github page](https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna) for installation.
 
 Debian package
 --------------

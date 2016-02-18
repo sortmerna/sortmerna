@@ -286,14 +286,14 @@ paralleltraversal (char* inputreads,
     }
     else
       file_sections = 1;
+    TIME(f);
+    eprintf("  done [%.2f sec]\n", (f-s));
     if ( map_size_set_gv )
     {
       eprintf("  size of reads file: %lu bytes\n", (unsigned long int)full_file_size );
       eprintf("  partial section(s) to be executed: %d of size %lu bytes \n",
                  file_sections,(unsigned long int)partial_file_size );
     }
-    TIME(f);
-    eprintf(" done [%.2f sec]\n", (f-s));
   }//~if (!exit_early)
   // output streams for accepted reads (FASTA/FASTQ, SAM and BLAST-like)
   ofstream acceptedreads;
@@ -600,10 +600,8 @@ paralleltraversal (char* inputreads,
                      "\033[0;31m","\033[0m", __LINE__, __FILE__, logoutfile);
       exit(EXIT_FAILURE);
     }
-    
     time_t q = time(0);
     struct tm * now = localtime(&q);
-    
     fprintf(bilan," %s\n",asctime(now));
     fprintf(bilan," Command: ");
     for ( int j = 0; j < argc; j++ ) fprintf(bilan,"%s ",argv[j]);
@@ -642,8 +640,7 @@ paralleltraversal (char* inputreads,
 #else
     fprintf(bilan,"    Number of threads = 1 (OpenMP is not supported with your current C++ compiler).\n");
 #endif
-    fprintf(bilan,"    Reads file = %s\n\n",inputreads);
-        
+    fprintf(bilan,"    Reads file = %s\n\n",inputreads); 
     fclose(bilan);
   }
   // pointer to the split read
@@ -837,15 +834,15 @@ paralleltraversal (char* inputreads,
         // search both strands
         else max = 2;       
         // search the forward and/or reverse strands
-        for ( int32_t strand = 0; strand < max; strand++ )
-        {
+        for (int32_t strand = 0; strand < max; strand++)
+        { 
           // loop through all of the reads in the file 
 #pragma omp parallel for num_threads(numcpu_gv) shared(lookup_tbl,positions_tbl,buffer,reference_seq,reference_seq_len,read_hits_align_info,read_hits,read_max_SW_score) schedule(dynamic,256)
-          for ( uint64_t readn = 1; readn < strs; readn+=2 )
+          for (uint64_t readn = 1; readn < strs; readn+=2)
           {
 #ifdef debug_align
             cout << "readn = " << readn << endl; //TESTING
-#endif                   
+#endif          
             // for reverse reads
             if ( !forward_gv )
             {
@@ -894,8 +891,8 @@ paralleltraversal (char* inputreads,
                   readlen++;
                   if ( readlen > READLEN )
                   {
-                    fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n",
-                                   "\033[0;31m","\033[0m",READLEN);
+                    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
+                                   "\033[0;31m","\033[0m", __LINE__, __FILE__, READLEN);
                     fprintf(stderr,"  Please check your reads or contact the authors.\n");
                     exit(EXIT_FAILURE);
                   }
@@ -922,8 +919,8 @@ paralleltraversal (char* inputreads,
                 readlen++;
                 if ( readlen > READLEN )
                 {
-                  fprintf(stderr,"\n  %sERROR%s: at least one of your reads is > %d nt \n",
-                                 "\033[0;31m","\033[0m",READLEN);
+                  fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
+                                 "\033[0;31m","\033[0m", __LINE__, __FILE__, READLEN);
                   fprintf(stderr,"  Please check your reads or contact the authors.\n");
                   exit(EXIT_FAILURE);
                 }
@@ -933,7 +930,7 @@ paralleltraversal (char* inputreads,
             // find the minimum sequence length
             readlen < min_read_len ? min_read_len = readlen : min_read_len;
             // find the maximum sequence length
-            readlen > max_read_len ? max_read_len = readlen : max_read_len;        
+            readlen > max_read_len ? max_read_len = readlen : max_read_len;  
             // the read length is too short
             if ( readlen < lnwin[index_num] )
             {
@@ -1184,34 +1181,34 @@ paralleltraversal (char* inputreads,
                   s_align* null_alignment = NULL;
                   if ( blastout_gv && blast_tabular )
                   {
-                    report_blast (acceptedblast, // blast output file
-                                  null_alignment, // SW alignment cigar
-                                  reads[readn-1]+1, //read name
-                                  0, // read sequence (in integer format)
-                                  0, // read quality
-                                  0, // reference name
-                                  0, // reference sequence
-                                  0, // e-value score
-                                  0, // read length (to compute the masked regions)
-                                  0, // bitscore
-                                  0, // forward or reverse strand
-                                  0, // %id
-                                  0, // %query coverage
-                                  0, // number of mismatches
-                                  0); // number of gaps
+                    report_blast(acceptedblast, // blast output file
+                                 null_alignment, // SW alignment cigar
+                                 reads[readn-1]+1, //read name
+                                 0, // read sequence (in integer format)
+                                 0, // read quality
+                                 0, // reference name
+                                 0, // reference sequence
+                                 0, // e-value score
+                                 0, // read length (to compute the masked regions)
+                                 0, // bitscore
+                                 0, // forward or reverse strand
+                                 0, // %id
+                                 0, // %query coverage
+                                 0, // number of mismatches
+                                 0); // number of gaps
                   }
                   if ( samout_gv )
                   {
-                    report_sam (acceptedsam, // sam output file
-                                null_alignment, // SW alignment cigar
-                                reads[readn-1]+1, // read name
-                                0, // read sequence (in integer format)
-                                0, // read quality
-                                0, // reference name
-                                0, // reference sequence
-                                0, // read length (to compute the masked regions)
-                                0, // forward or reverse strand
-                                0); // edit distance
+                    report_sam(acceptedsam, // sam output file
+                               null_alignment, // SW alignment cigar
+                               reads[readn-1]+1, // read name
+                               0, // read sequence (in integer format)
+                               0, // read quality
+                               0, // reference name
+                               0, // reference sequence
+                               0, // read length (to compute the masked regions)
+                               0, // forward or reverse strand
+                               0); // edit distance
                   }
                 }//~if print_all_reads_gv
               }// allow writing to file 1 thread at a time
@@ -1232,11 +1229,11 @@ paralleltraversal (char* inputreads,
           {
             for ( uint32_t i = 0; i < number_elements; i++ )
             {
-                if ( positions_tbl[i].arr != NULL )
-                {
-                  delete [] positions_tbl[i].arr;
-                  positions_tbl[i].arr = NULL;
-                }
+              if ( positions_tbl[i].arr != NULL )
+              {
+                delete [] positions_tbl[i].arr;
+                positions_tbl[i].arr = NULL;
+              }
             }
             delete [] positions_tbl;
             positions_tbl = NULL;
@@ -1292,7 +1289,7 @@ paralleltraversal (char* inputreads,
     // clear array holding number of alignments output for each read
     if ( num_alignments_x != NULL ) delete [] num_alignments_x;
     delete [] read_max_SW_score;
-    eprintf("    Total number of reads mapped (incl. all reads file sections searched): %llu\n",total_reads_mapped);  
+    eprintf("    Total number of reads mapped (incl. all reads file sections searched): %llu\n", total_reads_mapped);  
     // filter the sequences by %id and %query coverage, output them if --best INT
     if ( min_lis_gv > -1 )
     {
@@ -1304,13 +1301,13 @@ paralleltraversal (char* inputreads,
 #endif            
       TIME(s);
       // loop through all databases
-      for ( uint32_t index_num = 0; index_num < myfiles.size(); index_num++ )
+      for (uint32_t index_num = 0; index_num < myfiles.size(); index_num++)
       {
 #ifdef debug_output
         cout << "index_num = " << index_num << endl;
 #endif
         // loop through each section of a database
-        for ( uint16_t part = 0; part < num_index_parts[index_num]; part++ )
+        for (uint16_t part = 0; part < num_index_parts[index_num]; part++)
         {
           uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
           uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
@@ -1325,14 +1322,16 @@ paralleltraversal (char* inputreads,
           char* buffer = new char[(seq_part_size+1)]();
           if ( buffer == NULL )
           {
-            fprintf(stderr,"  %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+            fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for reference sequence buffer\n",
+                           "\033[0;31m","\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }  
           // pointer to the start of every sequence in the buffer
           char** reference_seq = new char*[(numseq_part<<1)]();
           if ( reference_seq == NULL )
           {
-            fprintf(stderr,"  %sERROR%s: could not allocate memory for reference_seq (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+            fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for reference_seq\n",
+                           "\033[0;31m","\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }         
           // length of every sequence in the buffer (is not required here)
@@ -1402,7 +1401,6 @@ paralleltraversal (char* inputreads,
             cout << "readn = " << readn << endl;
 #endif
             // get all alignments for this read
-            //s_align* ptr_alignment = alignment->second.second;
             s_align* ptr_alignment = alignment->second.ptr;
             if ( ptr_alignment == NULL )
             {
@@ -1417,7 +1415,7 @@ paralleltraversal (char* inputreads,
             // OTU-map: index of alignment holding maximum SW score
             uint32_t index_max_score = alignment->second.max_index;
             // loop through all of the best alignments for this read
-            for ( uint32_t p = 0; p < alignment->second.size; p++ )
+            for (uint32_t p = 0; p < alignment->second.size; p++)
             {
 #ifdef debug_output
               cout << "best_hit = " << p << endl;
@@ -1721,9 +1719,9 @@ paralleltraversal (char* inputreads,
     if ( align_cov || align_id )
     {
       eprintf("    Total number of reads mapped with");
-      if ( align_id > 0 ) eprintf(" >= %.2lf identity,",align_id);
-      if ( align_cov > 0 ) eprintf(" >= %.2lf query coverage",align_cov);
-      eprintf(" (incl. all reads file sections searched): %llu\n",total_reads_mapped_cov);
+      if ( align_id > 0 ) eprintf(" >= %.2lf identity,", align_id);
+      if ( align_cov > 0 ) eprintf(" >= %.2lf query coverage", align_cov);
+      eprintf(" (incl. all reads file sections searched): %llu\n", total_reads_mapped_cov);
     } 
     if ( blastout_gv )
     {
@@ -1758,7 +1756,8 @@ paralleltraversal (char* inputreads,
     {
       // count number of reads output for de novo clustering
       for ( uint64_t d = 1; d < strs; d+=2 )
-        if ( read_hits_denovo[d] ) total_reads_denovo_clustering++;
+        if ( read_hits_denovo[d] )
+          total_reads_denovo_clustering++;
       report_denovo(denovo_otus_file,
                     reads,
                     strs,

@@ -109,7 +109,7 @@ uint32_t num_elem[100] = {0};
 bool verbose = false;
 
 // change version number here
-char version_num[] = "2.1, 01/02/2016";
+char version_num[] = "2.2, 02/18/2016";
 
 
 
@@ -864,16 +864,19 @@ void load_index( kmer* lookup_table, char* outfile )
 void welcome()
 {
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
-  printf("  Copyright:   2012-16 Bonsai Bioinformatics Research Group:\n");
-  printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               2014-16 Knight Lab:\n" );
-  printf("               Department of Pediatrics, UCSD, La Jolla\n");
-  printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-  printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-  printf("               See the GNU Lesser General Public License for more details.\n");
-  printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-  printf("               Laurent Noé, laurent.noe@lifl.fr\n");
-  printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
+  printf("  Copyright:    2012-16 Bonsai Bioinformatics Research Group:\n");
+  printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+  printf("                2014-16 Knight Lab:\n" );
+  printf("                Department of Pediatrics, UCSD, La Jolla\n");
+  printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+  printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+  printf("                See the GNU Lesser General Public License for more details.\n");
+  printf("  Contributors: Jenya Kopylova, jenya.kopylov@gmail.com \n");
+  printf("                Laurent Noé, laurent.noe@lifl.fr\n");
+  printf("                Pierre Pericard, pierre.pericard@lifl.fr\n");
+  printf("                Mikaël Salson, mikael.salson@lifl.fr\n");
+  printf("                Hélène Touzet, helene.touzet@lifl.fr\n");
+  printf("                Rob Knight, robknight@ucsd.edu\n\n");
 }
 
 
