@@ -61,11 +61,9 @@ class SortmernaTestsZlib(TestCase):
         f_log.seek(0)
         for line in f_log:
             if line.startswith("    Total reads passing E-value threshold"):
-                num_hits = (re.split('Total reads passing E-value \
-                  threshold = | \(', line)[1]).strip()
+                num_hits = (re.split('Total reads passing E-value threshold = | \(', line)[1]).strip()
             elif line.startswith("    Total reads for de novo clustering"):
-                num_failures_log =\
-                    (re.split('Total reads for de novo clustering = ',
+                num_failures_log = (re.split('Total reads for de novo clustering = ',
                               line)[1]).strip()
             elif line.startswith(" Total OTUs"):
                 num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
