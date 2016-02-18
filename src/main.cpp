@@ -123,7 +123,7 @@ void printlist()
   printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ raw reads file                                     %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
 #ifdef HAVE_LIBZ
   printf("       OR\n");
-  printf("     %s--reads-gz%s        %sSTRING%s          FASTA/FASTQ compressed (with zip or gzip) reads file           %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
+  printf("     %s--reads-gz%s        %sSTRING%s          FASTA/FASTQ compressed (with gzip) reads file                  %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
 #endif
   printf("     %s--aligned%s         %sSTRING%s          aligned reads filepath + base file name                        %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
   printf("                                         (appropriate extension will be added)\n\n");

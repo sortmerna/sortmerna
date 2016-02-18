@@ -150,7 +150,8 @@ bool check_file_format(char* inputreads, char& filesig)
  * */
 void compute_read_stats(char* inputreads,
                         uint64_t& number_total_read,
-                        uint64_t& full_read_main)
+                        uint64_t& full_read_main,
+                        off_t& full_file_size)
 {
 #ifdef HAVE_LIBZ
   // Count total number of reads and their combined length
@@ -167,6 +168,10 @@ void compute_read_stats(char* inputreads,
   while ((l = kseq_read(seq)) >= 0) {
     full_read_main += seq->seq.l;
     number_total_read++;
+    // compute size of all reads to store in memory
+    // + 7 (4 possible new lines, 2 symbols > or @ and +, space for comment)
+    if (!map_size_set_gv)
+      full_file_size += (seq->name.l + seq->comment.l + seq->seq.l + seq->qual.l + 7);
   }
   if (l == -2)
   {
@@ -244,7 +249,10 @@ paralleltraversal (char* inputreads,
   {
     eprintf("\n  Computing read file statistics ...");
     TIME(s);
-    compute_read_stats(inputreads, number_total_read, full_read_main);
+    compute_read_stats(inputreads,
+                       number_total_read,
+                       full_read_main,
+                       full_file_size);
     // find the mean sequence length
     mean_read_len = full_read_main/number_total_read;
     // check there are an even number of reads for --paired-in
@@ -258,24 +266,25 @@ paralleltraversal (char* inputreads,
       pairedin_gv = false;
       pairedout_gv = false;
     }
-    int fd = open(inputreads, O_RDONLY);
-    // find the size of the total file
-    if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
-    {
-      fprintf(stderr,"  %sERROR%s: Line %d: %s Could not seek reads file!\n\n",
-                     "\033[0;31m","\033[0m", __LINE__, __FILE__);
-      exit(EXIT_FAILURE);
-    }
-    if (lseek(fd, 0L, SEEK_SET) == -1)
-    {
-      fprintf(stderr,"  %sERROR%s: Line %d: %s Could not seek set the reads file!\n\n",
-                     "\033[0;31m","\033[0m", __LINE__, __FILE__);
-      exit(EXIT_FAILURE);
-    }
-    close(fd);
     // setup for mmap
-    if ( map_size_set_gv )
+    if (map_size_set_gv)
     {
+      // full_file_size for mmap is the exact file size
+      int fd = open(inputreads, O_RDONLY);
+      // find the size of the total file
+      if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
+      {
+        fprintf(stderr,"  %sERROR%s: Line %d: %s Could not seek reads file!\n\n",
+                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+      }
+      if (lseek(fd, 0L, SEEK_SET) == -1)
+      {
+        fprintf(stderr,"  %sERROR%s: Line %d: %s Could not seek set the reads file!\n\n",
+                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+      }
+      close(fd); 
       partial_file_size = full_file_size;
       last_part_size = full_file_size%map_size_gv;
       // if the full_file_size is bigger than m*PAGE_SIZE, mmap
@@ -295,19 +304,19 @@ paralleltraversal (char* inputreads,
                  file_sections,(unsigned long int)partial_file_size );
     }
   }//~if (!exit_early)
-  // output streams for accepted reads (FASTA/FASTQ, SAM and BLAST-like)
+  // output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
   ofstream acceptedreads;
   ofstream acceptedsam;
   ofstream acceptedblast;
-  // determine the suffix (fasta,fastq..) of accepted strings
+  // determine the suffix (fasta, fastq, ...) of aligned strings
   char suffix[20] = "out";
-  char *suff = strrchr( inputreads, '.');
-  if ( suff != NULL )
-    strcpy( suffix, suff+1 );
-  else if ( filesig == '>' )
-    strcpy( suffix, "fasta");
+  char *suff = strrchr(inputreads, '.');
+  if (suff != NULL and !have_reads_gz)
+    strcpy(suffix, suff+1);
+  else if (filesig == '>')
+    strcpy(suffix, "fasta");
   else
-    strcpy( suffix, "fastq");
+    strcpy(suffix, "fastq");
   suff = NULL;
   char *acceptedstrings = NULL;
   char *acceptedstrings_sam = NULL;
@@ -757,7 +766,7 @@ paralleltraversal (char* inputreads,
       // for each partial file of burst trie index (part_0 .. part_x)
       for ( part = 0; part < num_index_parts[index_num]; part++ )
       {
-        eprintf("    Loading index part %d/%u ... ",part+1,num_index_parts[index_num] );      
+        eprintf("    Loading index part %d/%u ... ",part+1,num_index_parts[index_num]);      
         TIME(s);
         // number of reference sequences to search alignments for before choosing the best one
         int32_t *best_x = NULL;
@@ -854,7 +863,9 @@ paralleltraversal (char* inputreads,
               }
               // the maximum scoring alignment has been found, go to next read
               // (unless all alignments are being output)
-              else if ( (num_best_hits_gv > 0) && (min_lis_gv > 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) continue;
+              else if ( (num_best_hits_gv > 0) &&
+                        (min_lis_gv > 0) &&
+                        (read_max_SW_score[readn] == num_best_hits_gv) ) continue;
             }        
             // read on integer alphabet {0,1,2,3}
             char myread[READLEN] = "";
@@ -869,7 +880,7 @@ paralleltraversal (char* inputreads,
             // flag to count only 1 alignment per read
             bool read_to_count = true;         
             // length of read
-            uint32_t readlen = 0;           
+            uint32_t readlen = 0;       
             // change the read into an integer alphabet -- FASTA
             if ( filesig == '>' )
             {
@@ -930,7 +941,7 @@ paralleltraversal (char* inputreads,
             // find the minimum sequence length
             readlen < min_read_len ? min_read_len = readlen : min_read_len;
             // find the maximum sequence length
-            readlen > max_read_len ? max_read_len = readlen : max_read_len;  
+            readlen > max_read_len ? max_read_len = readlen : max_read_len;
             // the read length is too short
             if ( readlen < lnwin[index_num] )
             {

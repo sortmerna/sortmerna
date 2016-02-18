@@ -8,8 +8,8 @@ Software tests for the SortMeRNA
 from unittest import TestCase, main
 import re
 from subprocess import Popen, PIPE
-from os import close, walk, remove, environ
-from os.path import abspath, exists, getsize, join, dirname
+from os import close, remove, environ
+from os.path import abspath, exists, join, dirname
 from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
 
@@ -45,13 +45,17 @@ class SortmernaTests(TestCase):
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
         self.db_arc16s = join(self.root, "silva-arc-16s-database-id95.fasta")
         self.db_gg_13_8 = join(self.root, "gg_13_8_ref_set.fasta")
-        self.db_GQ099317 = join(self.root, "ref_GQ099317_forward_and_rc.fasta")
+        self.db_GQ099317 = join(
+            self.root, "ref_GQ099317_forward_and_rc.fasta")
         self.db_short = join(self.root, "ref_short_seqs.fasta")
         # reads
-        self.set2 = join(self.root, "set2_environmental_study_550_amplicon.fasta")
+        self.set2 = join(
+            self.root, "set2_environmental_study_550_amplicon.fasta")
         self.set3 = join(self.root, "empty_file.fasta")
-        self.set4 = join(self.root, "set4_mate_pairs_metatranscriptomics.fastq")
-        self.set5 = join(self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
+        self.set4 = join(
+            self.root, "set4_mate_pairs_metatranscriptomics.fastq")
+        self.set5 = join(
+            self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
         self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
         self.read_GQ099317 = join(self.root, "illumina_GQ099317.fasta")
         # create temporary file with reference sequence
@@ -317,8 +321,6 @@ class SortmernaTests(TestCase):
                 total_reads_log = (re.split(' = ', line)[1]).strip()
             elif line.startswith("    Total reads passing E-value threshold"):
                 num_hits_log = (re.split(' = | \(', line)[1]).strip()
-            elif line.startswith("    Total reads failing E-value threshold"):
-                num_fails_log = (re.split(' = | \(', line)[1]).strip()
         f_log.close()
         # Correct number of reads
         self.assertEqual("6", total_reads_log)
@@ -327,7 +329,7 @@ class SortmernaTests(TestCase):
         num_hits_file = 0
         with open(aligned_basename + ".fasta", 'U') as f_mapped:
             for label, seq in parse_fasta(f_mapped):
-                num_hits_file +=1
+                num_hits_file += 1
         self.assertEqual(num_hits_log, str(num_hits_file))
 
     def output_test(self, aligned_basename, other_basename):
@@ -351,7 +353,8 @@ class SortmernaTests(TestCase):
                 num_hits_log = (re.split(' = | \(', line)[1]).strip()
             elif line.startswith("    Total reads failing E-value threshold"):
                 num_fails_log = (re.split(' = | \(', line)[1]).strip()
-            elif line.startswith(" Total reads passing %id and %coverage thresholds"):
+            elif line.startswith(
+                    " Total reads passing %id and %coverage thresholds"):
                 num_pass_id_cov_log = (re.split(' = ', line)[1]).strip()
             elif line.startswith(" Total OTUs"):
                 num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
@@ -363,21 +366,21 @@ class SortmernaTests(TestCase):
         num_denovo_file = 0
         with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
             for label, seq in parse_fasta(f_denovo):
-                num_denovo_file +=1
+                num_denovo_file += 1
         self.assertEqual(num_denovo_log, str(num_denovo_file))
         # Correct number of reads mapped
         self.assertEqual("19995", num_hits_log)
         num_hits_file = 0
         with open(aligned_basename + ".fasta", 'U') as f_mapped:
             for label, seq in parse_fasta(f_mapped):
-                num_hits_file +=1
+                num_hits_file += 1
         self.assertEqual(num_hits_log, str(num_hits_file))
         # Correct number of reads not mapped
         self.assertEqual("10005", num_fails_log)
         num_fails_file = 0
         with open(other_basename + ".fasta", 'U') as f_not_mapped:
             for label, seq in parse_fasta(f_not_mapped):
-                num_fails_file +=1
+                num_fails_file += 1
         self.assertEqual(num_fails_log, str(num_fails_file))
         # Correct number of reads passing %id and %coverage threshold
         self.assertEqual("10164", num_pass_id_cov_log)
@@ -387,7 +390,7 @@ class SortmernaTests(TestCase):
                 f_id = float(line.strip().split('\t')[2])
                 f_cov = float(line.strip().split('\t')[13])
                 if (f_id >= 97.0 and f_cov >= 97.0):
-                    num_pass_id_cov_file +=1
+                    num_pass_id_cov_file += 1
         self.assertEqual(num_pass_id_cov_log, str(num_pass_id_cov_log))
         # Correct number of clusters recorded
         self.assertEqual("4400", num_clusters_log)
@@ -395,8 +398,8 @@ class SortmernaTests(TestCase):
         num_reads_in_clusters_file = 0
         with open(aligned_basename + "_otus.txt", 'U') as f_otus:
             for line in f_otus:
-                num_clusters_file +=1
-                num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)      
+                num_clusters_file += 1
+                num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
         self.assertEqual(num_clusters_log, str(num_clusters_file))
         self.assertEqual(num_pass_id_cov_log, str(num_reads_in_clusters_file))
 
@@ -724,7 +727,7 @@ class SortmernaTests(TestCase):
         num_failures_file = 0
         with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
             for label, seq in parse_fasta(f_denovo):
-                num_failures_file +=1
+                num_failures_file += 1
         # Correct number of reads for de novo clustering
         self.assertEqual(num_failures_log, str(num_failures_file))
 
@@ -782,8 +785,10 @@ class SortmernaTests(TestCase):
                 2000 - align
                 2000 - random
 
-            Always only 6000 will align at any point, at the other 4000 are random reads.
-            Using neither --paired_in or --paired_out, the --aligned file will have 6000 reads.
+            Always only 6000 will align at any point, at the other 4000 are
+            random reads.
+            Using neither --paired_in or --paired_out, the --aligned file
+            will have 6000 reads.
             With --paired_in, the --aligned file will contain 10000 reads
                               the --other file will contain 0 reads
             With --paired_out, the --aligned file will contain 2000 reads

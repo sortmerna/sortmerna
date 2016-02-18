@@ -112,8 +112,9 @@ load_reads(char* inputreads,
     }
   }
   // EOF
+  *input_ptr = '\0';
   finalnt = input_ptr;
-  *input_ptr++ = '\0';
+  input_ptr++;
   /* TEST */
   //char* st = raw;
   //while (*st != '\0') {cout << *st++;} cout << endl;
