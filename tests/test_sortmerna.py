@@ -330,7 +330,7 @@ class SortmernaTests(TestCase):
                 num_hits_file +=1
         self.assertEqual(num_hits_log, str(num_hits_file))
 
-    def output_test(self, aligned_basename):
+    def output_test(self, aligned_basename, other_basename):
         """ Test output of unit test functions.
             test_simulated_amplicon_1_part_map()
             test_simulated_amplicon_generic_buffer()
@@ -447,7 +447,7 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         if stderr:
             print stderr
-        self.output_test(aligned_basename)
+        self.output_test(aligned_basename, other_basename)
         # Clean up before next call
         remove(aligned_basename + ".log")
         remove(aligned_basename + ".fasta")
@@ -479,7 +479,7 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         if stderr:
             print stderr
-        self.output_test(aligned_basename)
+        self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_generic_buffer(self):
         """ Test sortmerna on simulated data,
@@ -527,7 +527,7 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         if stderr:
             print stderr
-        self.output_test(aligned_basename)
+        self.output_test(aligned_basename, other_basename)
         # Clean up before next call
         remove(aligned_basename + ".log")
         remove(aligned_basename + ".fasta")
@@ -558,7 +558,7 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         if stderr:
             print stderr
-        self.output_test(aligned_basename)
+        self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_6_part_map(self):
         """ Test sortmerna on simulated data,
@@ -606,7 +606,7 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         if stderr:
             print stderr
-        self.output_test(aligned_basename)
+        self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_12_part_index(self):
         """ Test sortmerna on simulated data,
@@ -654,7 +654,7 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         if stderr:
             print stderr
-        self.output_test(aligned_basename)
+        self.output_test(aligned_basename, other_basename)
 
     def test_environmental_output(self):
         """ Test outputting FASTA file for de novo
