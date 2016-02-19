@@ -21,8 +21,8 @@ script:
   # configure and test without zlib
   - bash ./build.sh --without-zlib
   - export PATH="$PWD:$PATH"; cd tests
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   # configure and test with zlib
   - cd ../; make clean; bash ./build.sh --with-zlib; cd ./tests
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi
