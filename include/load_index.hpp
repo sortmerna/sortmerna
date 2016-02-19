@@ -48,10 +48,10 @@ extern char nt_table[128];
     @param int argc
     @param bool yes_SQ
     @param char* acceptedstrings_sam
-    @param int32_t _match
-    @param int32_t _mismatch
-    @param int32_t _gap_open
-    @param int32_t _gap_extension
+    @param long _match
+    @param long _mismatch
+    @param long _gap_open
+    @param long _gap_extension
     @param vector<vector<uint32_t> >&
     @param vector<uint16_t>& num_index_parts
     @param vector<vector<index_parts_stats> >& index_parts_stats_vec

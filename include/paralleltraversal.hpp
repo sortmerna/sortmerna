@@ -131,5 +131,4 @@ paralleltraversal (char* inputreads /**< pointer to query reads file */,
                    vector< pair<string,string> >& myfiles /**< vector of (FASTA file, index name) pairs for loading index */,
                    bool exit_early /**< if true, exit program if reads file is not FASTA or FASTQ, or reads files or reference file is empty */);
 
-
 #endif //~parallel_traversal_h
