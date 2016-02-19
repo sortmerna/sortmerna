@@ -57,11 +57,13 @@ check_file_format(char* inputreads /**< pointer to query reads file */,
     @param char* inputreads
     @param uint64_t& number_total_read
     @param uint64_t& full_read_main
+    @param off_t& full_file_size
     @version Feb 15, 2016
  */
 void compute_read_stats(char* inputreads /**< pointer to query reads file */,
                         uint64_t& number_total_read /**< total number of reads */,
-                        uint64_t& full_read_main /**< total number of nucleotides in all reads */);
+                        uint64_t& full_read_main /**< total number of nucleotides in all reads */,
+                        off_t& full_file_size /**< the size of the full reads file (in bytes) */);
 
 
 /*! @fn paralleltraversal()
