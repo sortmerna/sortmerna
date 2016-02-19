@@ -51,8 +51,6 @@ Contents: Ascending ladder points simulation
 namespace Sls {
 
 
-	const double DBL_MAX1=DBL_MAX/10.0;
-
 	class state//struct to save a state of calculation
 	{
 	public:
@@ -159,7 +157,7 @@ namespace Sls {
 		T tmp=a1_;
 		a1_=a2_;
 		a2_=tmp;
-	};
+	}
 
 	static double degree(//returns x_^n_
 		double x_,
@@ -173,15 +171,14 @@ namespace Sls {
 		state * &state_);
 
 	void restore_state(
-		long int nalp_,
 		state * &state_);
 
 	void kill_upto_level(
 		long int M_min_,
-		long int M_level_);
+		long int M_level_,
+		long int *M_upper_level_=NULL);
 
-	void check_time_function(
-		long int ff_=0);
+	void check_time_function();
 
 	template<typename T>
 	void release_and_calculate_memory(
@@ -198,7 +195,7 @@ namespace Sls {
 			d_alp_data->d_memory_size_in_MB-=(double)(sizeof(T)*dim_)/mb_bytes;
 		};
 		
-	};
+	}
 
 
 	template<typename T>
@@ -215,7 +212,7 @@ namespace Sls {
 			d_alp_data->d_memory_size_in_MB-=(double)(sizeof(T))/mb_bytes;
 		};
 		
-	};
+	}
 
 	void partially_release_memory();
 
@@ -364,3 +361,4 @@ namespace Sls {
 
 
 #endif
+

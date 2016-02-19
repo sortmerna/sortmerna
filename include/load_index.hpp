@@ -34,10 +34,9 @@
 #include <deque>
 #include "indexdb.hpp"
  //! ALP program for computing the Gumbel parameters
-#include "../alp/sls_alp_data.hpp"
-#include "../alp/sls_alp_sim.hpp"
-#include "../alp/gumbel_params.hpp"
+#include "../alp/sls_alignment_evaluer.hpp"
 
+using namespace Sls;
 using namespace std;
 
 extern char nt_table[128];
@@ -50,10 +49,10 @@ extern char nt_table[128];
     @param int argc
     @param bool yes_SQ
     @param char* acceptedstrings_sam
-    @param int32_t _match
-    @param int32_t _mismatch
-    @param int32_t _gap_open
-    @param int32_t _gap_extension
+    @param long _match
+    @param long _mismatch
+    @param long _gap_open
+    @param long _gap_extension
     @param vector<vector<uint32_t> >&
     @param vector<uint16_t>& num_index_parts
     @param vector<vector<index_parts_stats> >& index_parts_stats_vec
@@ -74,10 +73,10 @@ load_index_stats(vector< pair<string,string> >& myfiles, /**< vector of (FASTA f
                  int argc, /**< number of arguments in command line for executing SortMeRNA */
                  bool yes_SQ, /**< if true, include @SQ tags in SAM output */
                  char* acceptedstrings_sam, /**< pointer to output SAM file */
-                 int32_t _match, /**< Smith-Waterman score for a match */
-                 int32_t _mismatch, /**< Smith-Waterman score for a mismatch */
-                 int32_t _gap_open, /**< Smith-Waterman score for gap opening */
-                 int32_t _gap_extension, /**< Smith-Waterman score for gap extension */
+                 long _match, /**< Smith-Waterman score for a match */
+                 long _mismatch, /**< Smith-Waterman score for a mismatch */
+                 long _gap_open, /**< Smith-Waterman score for gap opening */
+                 long _gap_extension, /**< Smith-Waterman score for gap extension */
                  vector<vector<uint32_t> >& skiplengths, /**< skiplengths, three intervals at which to place seeds on read */
                  vector<uint16_t>& num_index_parts, /**< number of index files */
                  vector<vector<index_parts_stats> >& index_parts_stats_vec, /**< statistics for index files */

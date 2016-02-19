@@ -278,6 +278,7 @@ namespace Njn {
 
 	using namespace Njn;
 	using namespace Njn::IoUtil;
+	using namespace std;
 
         size_t i = 0;
         size_t j = 0;
@@ -290,7 +291,7 @@ namespace Njn {
 
                     for (i = 0; i < getM (); i++) { 
              
-                        if (i != 0) ostr_ << endl;
+						if (i != 0) ostr_ << endl;
 
                         for (size_t j = 0; j < getN (); j++) {
 
@@ -353,6 +354,7 @@ namespace Njn {
 
 		using namespace Njn;
 		using namespace Njn::IoUtil;
+		using namespace std;
 
         size_t i = 0;
         size_t j = 0;
