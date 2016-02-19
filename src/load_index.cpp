@@ -57,10 +57,10 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
                       int argc,
                       bool yes_SQ,
                       char* acceptedstrings_sam,
-                      int32_t _match,
-                      int32_t _mismatch,
-                      int32_t _gap_open,
-                      int32_t _gap_extension,
+                      long match,
+                      long mismatch,
+                      long gap_open,
+                      long gap_extension,
                       vector<vector<uint32_t> >& skiplengths,
                       vector<uint16_t>& num_index_parts,
                       vector<vector<index_parts_stats> >& index_parts_stats_vec,
@@ -87,9 +87,25 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     // @HD header
     else acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
   }
+
+  // create and initialize scoring matrix
+  long alphabetSize = 4;
+  long **scoring_matrix = new long *[alphabetSize];
+
+  for (long i = 0; i < alphabetSize; i++)
+  {
+    scoring_matrix[i] = new long [alphabetSize];
+    for (long j = 0; j < alphabetSize; j++)
+    {
+      if (i == j)
+        scoring_matrix[i][j] = match;
+      else
+        scoring_matrix[i][j] = mismatch;
+    }
+  }
     
   // loop through the .stats index files for each database
-  for ( uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++ )
+  for (uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++)
   {
     ifstream stats( (char*)(myfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary );
     if ( !stats.good() )
@@ -97,19 +113,15 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
       fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
       exit(EXIT_FAILURE);
-    }
-      
+    } 
     // read the file size for file used to build the index
     size_t filesize = 0;
     stats.read(reinterpret_cast<char*>(&filesize), sizeof(size_t));
-    
     // read the fasta file name used to build the index
     uint32_t fastafile_len = 0;
     stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(uint32_t));
-    
     char fastafile_name[2000];
     stats.read(reinterpret_cast<char*>(fastafile_name), sizeof(char)*fastafile_len);
-    
     // compute reference database file size for this index
     FILE *fastafile = fopen ((char*)(myfiles[index_num].first).c_str(),"r");
     if ( fastafile == NULL )
@@ -119,8 +131,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     }
     fseek(fastafile,0L,SEEK_END);
     size_t sz = ftell(fastafile);
-    fclose(fastafile);
-      
+    fclose(fastafile); 
     if ( sz != filesize )
     {
       fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
@@ -128,27 +139,19 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       fprintf(stderr,"    Check your --ref list of files and corresponding indexes.\n\n");
       exit(EXIT_FAILURE);
     }
-      
     // A,C,G,T background frequencies to compute the Gumbel parameters lambda and K
     double background_freq_gv[4] = {0};
-    
     // A/C/G/T distribution frequencies
     stats.read(reinterpret_cast<char*>(&background_freq_gv), sizeof(double)*4);
-    
     // total length of sequences in the complete database
     stats.read(reinterpret_cast<char*>(&full_ref[index_num]), sizeof(uint64_t));
-    
     // sliding window length lnwin & initialize
     stats.read(reinterpret_cast<char*>(&lnwin[index_num]), sizeof(uint32_t));
-    
     // total number of reference sequences in one complete reference database
     stats.read(reinterpret_cast<char*>(&numseq[index_num]), sizeof(uint32_t));
-    
     partialwin[index_num] = lnwin[index_num]/2;
-      
     // number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward
     numbvs[index_num] = 4*(partialwin[index_num]-3);
-      
     // set the window shift for different seed lengths (if not set by user, or one of the lengths is <= 0)
     if ( (skiplengths[index_num][0] == 0) || (skiplengths[index_num][1] == 0) || (skiplengths[index_num][2] == 0) )
     {
@@ -156,11 +159,9 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       skiplengths[index_num][1] = partialwin[index_num];
       skiplengths[index_num][2] = 3;
     }
-    
     // number of index parts
     stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
     vector<index_parts_stats> hold;
-    
     // information on the location and size of sequences used to build each index part
     for ( uint16_t j = 0; j < num_index_parts[index_num]; j++ )
     {
@@ -168,76 +169,55 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       stats.read(reinterpret_cast<char*>(&stats_hold), sizeof(index_parts_stats));
       hold.push_back(stats_hold);
     }
-        
     index_parts_stats_vec.push_back(hold);
-    
-    // compute Gumbel parameters
-    long int rand_ = 182345345;
-    //string randout_= "./alp/random_param.txt";
-    string randout_= "";
-    
-    int gapopen_ = _gap_open;
-    int gapopen1_ = _gap_open;
-    int gapopen2_ = _gap_open;
-    
-    int gapextend_ = _gap_extension;
-    int gapextend1_ = _gap_extension;
-    int gapextend2_ = _gap_extension;
-    
-    int match = _match;
-    int mismatch = _mismatch;
-    double A_ = background_freq_gv[0];
-    double C_ = background_freq_gv[1];
-    double G_ = background_freq_gv[2];
-    double T_ = background_freq_gv[3];
-    
-    string scoremat_file_name_ ="";
-    string freqs1_file_name_ ="";
-    string freqs2_file_name_ ="";
-    double max_time_=1;
-    double max_mem_=500;
-    double eps_lambda_gv_=0.001;
-    double eps_K_gv_=0.005;
-    string gumbelparout_file_name_ ="";
-    bool gapped_ = true;
-    bool insertions_after_deletions_=false;
-    
-    Sls::set_of_parameters gumbel_params;
-      
-    CGumbelParamsCalc::Params_Run2(
-                                   rand_,//randomization number
-                                   randout_,//if true, then the program outputs complete randomization information into a file
-                                   
-                                   gapopen_,//gap opening penalty
-                                   gapopen1_,//gap opening penalty for a gap in the sequence #1
-                                   gapopen2_,//gap opening penalty for a gap in the sequence #2
-                                   
-                                   gapextend_,//gap extension penalty
-                                   gapextend1_,//gap extension penalty for a gap in the sequence #1
-                                   gapextend2_,//gap extension penalty for a gap in the sequence #2
-                                   
-                                   scoremat_file_name_,//scoring matrix file name
-                                   freqs1_file_name_,//probabilities1 file name
-                                   freqs2_file_name_,//probabilities1 file name
-                                   max_time_,//maximum allowed calculation time in seconds
-                                   max_mem_,//maximum allowed memory usage in MB
-                                   eps_lambda_gv_,//relative error for lambda_gv calculation
-                                   eps_K_gv_,//relative error for K_gv calculation
-                                   gumbelparout_file_name_,
-                                   gapped_,
-                                   insertions_after_deletions_,//if true, then insertions after deletions are allowed
-                                   gumbel_params,
-                                   match,//NEW - SW score for a match,
-                                   mismatch,//NEW - SW score for a mismatch,
-                                   A_,//NEW - background frequency for A
-                                   C_,//NEW - background frequency for C
-                                   G_,//NEW - background frequency for G
-                                   T_,//NEW- background frequency for T
-                                   (gumbel[index_num].first), //lambda
-                                   (gumbel[index_num].second) // K
-                                   );
-      
-      
+    // Gumbel parameters
+    long **substitutionScoreMatrix = scoring_matrix;    
+    long gapOpen1 = gap_open;
+    long gapOpen2 = gap_open;
+    long gapEpen1 = gap_extension;
+    long gapEpen2 = gap_extension;
+    bool insertions_after_deletions = false;
+    double max_time = -1; // required if radomization parameters are set
+    double max_mem = 500;
+    double eps_lambda = 0.001;
+    double eps_K = 0.005;
+    long randomSeed = 182345345;
+    double *letterFreqs1 = new double[alphabetSize];
+    double *letterFreqs2 = new double[alphabetSize];
+    long number_of_samples = 14112;
+    long number_of_samples_for_preliminary_stages = 39;
+    for (long i = 0; i < alphabetSize; i++ )
+    {
+      // background probabilities for ACGT based on reference file
+      letterFreqs1[i] = background_freq_gv[i];
+      letterFreqs2[i] = background_freq_gv[i];
+    }
+    // create an object to store the Gumbel parameters
+    AlignmentEvaluer GumbelCalculator_obj;
+    // set the randomization parameters
+    // (will yield the same Lamba and K values on subsequent runs with the same input files)
+    GumbelCalculator_obj.set_gapped_computation_parameters_simplified(max_time,
+                                                                      number_of_samples,
+                                                                      number_of_samples_for_preliminary_stages);
+    GumbelCalculator_obj.initGapped(
+    alphabetSize,
+    substitutionScoreMatrix,
+    letterFreqs1,
+    letterFreqs2,
+    gapOpen1,
+    gapEpen1,
+    gapOpen2,
+    gapEpen2,
+    insertions_after_deletions,
+    eps_lambda,
+    eps_K,
+    max_time,
+    max_mem,
+    randomSeed);
+    gumbel[index_num].first = GumbelCalculator_obj.parameters().lambda;
+    gumbel[index_num].second = GumbelCalculator_obj.parameters().K;
+    delete [] letterFreqs2;
+    delete [] letterFreqs1;
     // Shannon's entropy for reference sequence nucleotide distribution
     double entropy_H_gv = -(background_freq_gv[0]*(log(background_freq_gv[0])/log(2)) +
                             background_freq_gv[1]*(log(background_freq_gv[1])/log(2)) +
@@ -246,44 +226,37 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       
     // Length correction for Smith-Waterman alignment score
     uint64_t expect_L = log((gumbel[index_num].second)*full_read[index_num]*full_ref[index_num])/entropy_H_gv;
-    
     // correct the reads & databases sizes for E-value calculation
-    if ( full_ref[index_num] > (expect_L*numseq[index_num]) ) full_ref[index_num]-=(expect_L*numseq[index_num]);
+    if ( full_ref[index_num] > (expect_L*numseq[index_num]) )
+      full_ref[index_num]-=(expect_L*numseq[index_num]);
     full_read[index_num]-=(expect_L*number_total_read);
-    
     // minimum score required to reach E-value
     minimal_score[index_num] = (log(evalue/((double)(gumbel[index_num].second)*full_ref[index_num]*full_read[index_num])))/-(gumbel[index_num].first);
-      
     // SAM @SQ data
     if ( samout_gv )
     {
       // number of nucleotide sequences in the reference file
       uint32_t num_sq = 0;
       stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
-      
       // loop through each @SQ
       for ( uint32_t j = 0; j < num_sq; j++ )
       {
         // length of the sequence id
         uint32_t len_id = 0;
         stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
-        
         // the sequence id string
         char s[len_id+1];
         memset(s,0,len_id+1);
         stats.read(reinterpret_cast<char*>(&s), sizeof(char)*len_id);
-        
         // the length of the sequence itself
         uint32_t len_seq = 0;
         stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
-        
         // @SQ header
         if ( yes_SQ ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
       }
     }     
     stats.close();
   }//~for all indexes
-    
   if ( samout_gv )
   {
     // @PG to sam file
@@ -293,6 +266,12 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     
     acceptedsam.close();
   }//~if samout_gv
+  // free memory
+  for (long i = 0 ; i < alphabetSize; i++)
+  {
+    delete [] scoring_matrix[i];
+  };
+  delete [] scoring_matrix;
 }//~load_index_stats()
 
 

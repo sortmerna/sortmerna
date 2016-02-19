@@ -41,7 +41,7 @@ Contents:
 #include "njn_memutil.hpp"
 #include "njn_root.hpp"
 
-#include "sls_alp_data.hpp"
+#include "sls_basic.hpp"
 
 using namespace Njn;
 
@@ -405,7 +405,7 @@ bool *terminated_) // ? Was the dynamic programming computation terminated prema
 
     double time0 = 0.0;
     double time1 = 0.0;
-	if (time_ > 0.0) Sls::alp_data::get_current_time (time0);
+	if (time_ > 0.0) Sls::sls_basic::get_current_time (time0);
 
     DynProgProbLim dynProgProb (n_step, dimension_, prob_, score_ [0] - 1, Y_MAX);
 
@@ -448,7 +448,7 @@ bool *terminated_) // ? Was the dynamic programming computation terminated prema
 
         if (time_ > 0.0)
         {
-			Sls::alp_data::get_current_time (time1);
+			Sls::sls_basic::get_current_time (time1);
             if (time1 - time0 > time_) 
             {
                 *terminated_ = true;
@@ -471,7 +471,7 @@ bool *terminated_) // ? Was the dynamic programming computation terminated prema
     }
     prob += dynProgProb.getProbLost ();
 
-    const double FUDGE = 2.0;
+    const double FUDGE = 100.0;
     assert (prob <= FUDGE * static_cast <double> (dimension_) * REL_TOL);
 }
 

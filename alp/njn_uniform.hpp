@@ -61,7 +61,8 @@ namespace Njn {
       {
          assert (a_ != b_);
 
-         if (b_ < a_) std::swap <T> (a_, b_); // a_ < b_
+         //if (b_ < a_) std::swap <T> (a_, b_); // a_ < b_
+		 if (b_ < a_) std::swap (a_, b_); // a_ < b_/*sls deleted <T>*/
 
          long random = 0;
          while ((random = Njn::Random::number ()) == 0x7fffffff);

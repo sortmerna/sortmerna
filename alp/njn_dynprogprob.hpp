@@ -38,7 +38,6 @@ Contents:
 
 #include "njn_dynprogprobproto.hpp"
 #include <climits>
-#include <assert.h>
 
 namespace Njn {
 
@@ -234,3 +233,4 @@ namespace Njn {
 }
 
 #endif 
+

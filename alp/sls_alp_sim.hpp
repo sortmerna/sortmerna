@@ -85,6 +85,9 @@ namespace Sls {
 		void alp_sim_from_random_seed(//simulation from random seed
 		alp_data *alp_data_);
 
+		void quick_test(//runs quick tests to determine whether the scoring scheme is linear
+		long int trials_number_,
+		double max_time_);
 
 		void get_minimal_simulation(
 		long int ind1_,
@@ -94,6 +97,12 @@ namespace Sls {
 		long int &nalp_lambda_,
 		bool C_calculation_,
 		bool check_time_flag_);//simulation using [ind1_,ind2_] range of realizations with an estimation of parameters for accuracy, memory usage and calculation time
+
+
+		void memory_release_for_get_minimal_simulation(
+		long int nalp_,
+		void **&alp_distr,
+		void **&alp_distr_errors);
 
 		bool the_criterion(//criteria of stopping of the simulating ALP
 		//if the function returns true then calculates optimal M_min and ALP number
@@ -108,15 +117,15 @@ namespace Sls {
 		bool &M_min_flag_,
 		bool &nalp_flag_,
 		bool &inside_simulation_flag_,
-		bool C_calculation_);
+		bool C_calculation_,
+		double *lambda_=NULL,
+		double *lambda_error_=NULL);
 
 		void calculate_lambda(
 		bool check_the_criteria_,
 		long int nalp_,
 		long int &nalp_thr_,
 		bool &inside_simulation_flag_,
-		long int ind1_,
-		long int ind2_,
 		void **alp_distr,
 		void **alp_distr_errors,
 		double &lambda_,
@@ -127,23 +136,62 @@ namespace Sls {
 		void calculate_C(
 		long int starting_point,
 		long int nalp_,
-		long int ind1_,
-		long int ind2_,
 		void **alp_distr,
 		void **alp_distr_errors,
 		double lambda_,
 		double lambda_error_,
 		double &C_,
-		double &C_error_);
+		double &C_error_,
+		double &Sc_,
+		double &Sc_error_);
+
+		void memory_release_for_calculate_FSC(
+		double *&exp_array,
+
+		double *&delta_E,
+		double *&delta_E_error,
+
+		double *&delta_E_E,
+		double *&delta_E_E_error,
+
+
+		double *&delta_I,
+		double *&delta_I_error,
+
+		double *&delta_J,
+		double *&delta_J_error,
+
+		double *&delta_I_I,
+		double *&delta_I_I_error,
+
+		double *&delta_I_J,
+		double *&delta_I_J_error,
+
+		double *&delta_J_J,
+		double *&delta_J_J_error,
+
+		double *&cov_J_J,
+		double *&cov_J_J_error,
+
+		double *&cov_I_J,
+		double *&cov_I_J_error,
+
+		double *&cov_I_I,
+		double *&cov_I_I_error,
+
+		double *&cov_E_E,
+		double *&cov_E_E_error);
+
 
 		void calculate_FSC(
 		long int nalp_,
 		long int ind1_,
 		long int ind2_,
 		void **alp_distr,
-		void **alp_distr_errors,
 		double lambda_,
-		double lambda_error_,
+		double Sc_,
+		//double Sc_error_,
+
 		double &a_I_,
 		double &a_I_error_,
 		double &a_J_,
@@ -303,10 +351,51 @@ namespace Sls {
 		double &K,
 		double &K_error);
 
+		void memory_release_for_calculate_main_parameters2m(
+		long int nalp_for_lambda_simulation,
+		long int *&d_mult_realizations,
+		long int *&d_mult_K_realizations,
+
+		double *&lambda_mult,
+		double *&lambda_mult_error,
+
+		double *&C_mult,
+		double *&C_mult_error,
+
+		double *&a_I_mult,
+		double *&a_I_mult_error,
+
+		double *&a_J_mult,
+		double *&a_J_mult_error,
+
+		double *&sigma_mult,
+		double *&sigma_mult_error,
+
+		double *&alpha_I_mult,
+		double *&alpha_I_mult_error,
+
+		double *&alpha_J_mult,
+		double *&alpha_J_mult_error,
+
+		double *&K_C_mult,
+		double *&K_C_mult_error,
+
+		double *&K_mult,
+		double *&K_mult_error,
+
+		double *&Sc_mult,
+		double *&Sc_mult_error,
+
+
+		void **&alp_distr,
+		void **&alp_distr_errors,
+
+		void ***&alp_mult_distr,
+		void ***&alp_mult_distr_errors);
+
 		void calculate_main_parameters2m(
 		long int final_realizations_number_lambda_,
 		long int final_realizations_number_killing_,
-		long int nalp,
 		long int nalp_for_lambda_simulation,
 		long int level,
 		bool &inside_simulation_flag,
@@ -316,10 +405,6 @@ namespace Sls {
 		double &test_difference_error,
 		double &C,
 		double &C_error,
-		double &C2,
-		double &C2_error,
-		double &C4,
-		double &C4_error,
 		double &K_C,
 		double &K_C_error,
 		double &a_I,
@@ -381,14 +466,13 @@ namespace Sls {
 		long int final_realizations_number_killing_);
 
 		void output_main_parameters2m_new(
-		double time_,
-		long int nalp,
 		long int nalp_for_lambda_simulation,
 		long int level,
-		long int M_min_,
 		bool &inside_simulation_flag,
 		long int final_realizations_number_lambda_,
 		long int final_realizations_number_killing_);
+
+		void symmetric_parameters_for_symmetric_scheme();
 
 
 
@@ -397,7 +481,7 @@ namespace Sls {
 		double val_,
 		double val_error_);
 
-		static double round_doulbe(
+		static double round_double(
 		double val_,
 		long int digits_);
 
@@ -474,17 +558,17 @@ namespace Sls {
 		long int m_G1;
 		long int m_G2;
 
-		vector<double> m_LambdaSbs;
-		vector<double> m_KSbs;
-		vector<double> m_CSbs;
+		std::vector<double> m_LambdaSbs;
+		std::vector<double> m_KSbs;
+		std::vector<double> m_CSbs;
 
-		vector<double> m_SigmaSbs;
+		std::vector<double> m_SigmaSbs;
 
-		vector<double> m_AlphaISbs;
-		vector<double> m_AlphaJSbs;
+		std::vector<double> m_AlphaISbs;
+		std::vector<double> m_AlphaJSbs;
 
-		vector<double> m_AISbs;
-		vector<double> m_AJSbs;
+		std::vector<double> m_AISbs;
+		std::vector<double> m_AJSbs;
 
 
 
@@ -492,3 +576,4 @@ namespace Sls {
 }
 
 #endif
+

@@ -144,7 +144,7 @@ double &x_)
     string s;
     in_ >> s;
 
-    for (string::iterator i = s.begin (); i != s.end (); i++) *i = tolower (*i);
+    for (string::iterator i = s.begin (); i != s.end (); i++) *i = /*sls added (char)*/(char) tolower (*i);
 
     if (s == "1.#inf")
     {
@@ -164,3 +164,4 @@ double &x_)
 
     return in_;
 }
+

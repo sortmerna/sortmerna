@@ -30,17 +30,12 @@
 
 File name: sls_alp_data.hpp
 
-Author: Sergey Sheetlin
+Author: Sergey Sheetlin, Martin Frith
 
 Contents: Contains input data
 
 ******************************************************************************/
-
-
-//if _MSDOS_ is defined then it is Windows program, if not - then it is UNIX program
-//#ifndef _MSDOS_
-//#define _MSDOS_
-//#endif
+#include "sls_basic.hpp"
 
 #include <complex>
 #include <iostream>
@@ -54,9 +49,10 @@ Contents: Contains input data
 #include <climits>
 #include <cstring>
 #include <cstdlib>
+#include <errno.h>
 
 
-#ifndef _MSDOS_ //UNIX program
+#ifndef _MSC_VER //UNIX program
 #include <sys/time.h>
 #else
 #include <sys/timeb.h>
@@ -66,62 +62,34 @@ Contents: Contains input data
 
 #endif
 
-#include "gumbel_params.hpp"
 
 #include "sls_alp_regression.hpp"
-
 #include "njn_random.hpp"
 #include "njn_uniform.hpp"
-
 
 
 const double mb_bytes=1048576.0;
 
 namespace Sls {
 
-	static long int small_long=(long int)((double)LONG_MIN/2.0);
-	static double dbl_max_log=log(DBL_MAX);
 
 	struct struct_for_randomization
 	{
-		long int d_random_factor;
-		vector<long int> d_first_stage_preliminary_realizations_numbers_ALP;
-		vector<long int> d_preliminary_realizations_numbers_ALP;
-		vector<long int> d_preliminary_realizations_numbers_killing;
+		long int d_random_seed;
+		std::vector<long int> d_first_stage_preliminary_realizations_numbers_ALP;
+		std::vector<long int> d_preliminary_realizations_numbers_ALP;
+		std::vector<long int> d_preliminary_realizations_numbers_killing;
 		long int d_total_realizations_number_with_ALP;
 		long int d_total_realizations_number_with_killing;
 	};
 
 
 
-	struct error//struct to handle exceptions
-	{
-		std::string st;
-		error(std::string st_,long int error_code_){st=st_;error_code=error_code_;};
-		long int error_code;
-		//if=0 Result was calculated and returned
-
-		//if =1 //Computation stoped because time
-			// or memory requirements exceeded
-			// user-specified thresholds
-
-		//if =2 //Computation stopped due to different
-			// reasons than time or memory
-			// repeating computation with the same
-			// input parameters may be successful
-		//if =3 //Result can not be computed for current
-			// input parameters
-
-		//if =4 //Other cases
-		//if =41 //memory allocation error
-	};
-
 	struct error_for_single_realization//struct to handle exceptions during calclation of single realization
 	{
 		std::string st;
 		error_for_single_realization(){};
 	};
-
 
 	struct data_for_lambda_equation//struct for lambda_equation
 	{
@@ -142,52 +110,52 @@ namespace Sls {
 			d_alp_data=alp_data_; 
 			if(!d_alp_data)
 			{
-				throw error("Unexpected error",4);
+				throw error("Unexpected error\n",4);
 			};
 			d_dim=-1;
 			d_step=10;
-		};
+		}
 
 		~array_positive();
 
 
-		void increment_array();
+		void increment_array(long int ind_);
 		
 
 		inline void set_elem(
 			long int ind_,
 			T elem_)
 		{
-			while(ind_>d_dim)
+			if(ind_>d_dim)
 			{
-				increment_array();
+				increment_array(ind_);
 			};
 
 			d_elem[ind_]=elem_;
-		};
+		}
 
 		inline void increase_elem_by_1(
 			long int ind_)
 		{
-			while(ind_>d_dim)
+			if(ind_>d_dim)
 			{
-				increment_array();
+				increment_array(ind_);
 			};
 
 			d_elem[ind_]++;
-		};
+		}
 
 		inline void increase_elem_by_x(
 			long int ind_,
 			T x_)
 		{
-			while(ind_>d_dim)
+			if(ind_>d_dim)
 			{
-				increment_array();
+				increment_array(ind_);
 			};
 
 			d_elem[ind_]+=x_;
-		};
+		}
 
 
 
@@ -210,48 +178,49 @@ namespace Sls {
 			d_ind0=0;
 			d_step=10;
 			d_dim_plus_d_ind0=d_dim+d_ind0;
-		};   
+		}
 
 		~array();
 
-		void increment_array_on_the_rigth();
+		void increment_array_on_the_right(long int ind_);
 
-		void increment_array_on_the_left();
+		void increment_array_on_the_left(long int ind_);
 
+
+		void set_elems(const array<T> *a_);
 
 		inline void set_elem(
 			long int ind_,
 			T elem_)
 		{
-
-			while(ind_>d_dim_plus_d_ind0)
+			if(ind_>d_dim_plus_d_ind0)
 			{
-				increment_array_on_the_rigth();
+				increment_array_on_the_right(ind_);
 			};
 
-			while(ind_<d_ind0)
+			if(ind_<d_ind0)
 			{
-				increment_array_on_the_left();
+				increment_array_on_the_left(ind_);
 			};
 
 			d_elem[ind_-d_ind0]=elem_;
-		};
+		}
 
 		inline void increase_elem_by_1(
 			long int ind_)
 		{
-			while(ind_>d_dim_plus_d_ind0)
+			if(ind_>d_dim_plus_d_ind0)
 			{
-				increment_array_on_the_rigth();
+				increment_array_on_the_right(ind_);
 			};
 
-			while(ind_<d_ind0)
+			if(ind_<d_ind0)
 			{
-				increment_array_on_the_left();
+				increment_array_on_the_left(ind_);
 			};
 
 			d_elem[ind_-d_ind0]++;
-		};
+		}
 
 		
 	public:
@@ -277,12 +246,8 @@ namespace Sls {
 		importance_sampling(
 		alp_data *alp_data_,
 		long int open_,
-		long int open1_,
-		long int open2_,
 
 		long int epen_,
-		long int epen1_,
-		long int epen2_,
 
 		long int number_of_AA_,
 		long int **smatr_,
@@ -327,7 +292,7 @@ namespace Sls {
 
 
 
-	class alp_data{
+	class alp_data: public sls_basic{
 
 	
 
@@ -335,7 +300,7 @@ namespace Sls {
 
 		alp_data(//constructor
 			long int rand_,//randomization number
-			string randout_,//if defined, then the program outputs complete randomization information into a file
+			std::string randout_,//if defined, then the program outputs complete randomization information into a file
 
 			long int open_,//gap opening penalty
 			long int open1_,//gap opening penalty for a gap in the sequence #1
@@ -345,61 +310,106 @@ namespace Sls {
 			long int epen1_,//gap extension penalty for a gap in the sequence #1
 			long int epen2_,//gap extension penalty for a gap in the sequence #2
 
-			string smatr_file_name_,//scoring matrix file name
-			string RR1_file_name_,//probabilities1 file name
-			string RR2_file_name_,//probabilities2 file name
+			std::string smatr_file_name_,//scoring matrix file name
+			std::string RR1_file_name_,//probabilities1 file name
+			std::string RR2_file_name_,//probabilities2 file name
+			double max_time_,//maximum allowed calculation time in seconds
+			double max_mem_,//maximum allowed memory usage in MB
+			double eps_lambda_,//relative error for lambda calculation
+			double eps_K_,//relative error for K calculation
+			bool insertions_after_deletions_);//if true, then insertions after deletions are allowed
+
+			alp_data(//constructor
+			long int rand_,//randomization number
+			struct_for_randomization *randomization_parameters_,//if not NULL, sets d_rand_flag to true and initializes d_rand_all
+
+			long int open_,//gap opening penalty
+			long int open1_,//gap opening penalty for a gap in the sequence #1
+			long int open2_,//gap opening penalty for a gap in the sequence #2
+
+			long int epen_,//gap extension penalty
+			long int epen1_,//gap extension penalty for a gap in the sequence #1
+			long int epen2_,//gap extension penalty for a gap in the sequence #2
+
+			long alphabetSize_,
+			const long *const *substitutionScoreMatrix_,
+			const double *letterFreqs1_,
+			const double *letterFreqs2_,
+
 			double max_time_,//maximum allowed calculation time in seconds
 			double max_mem_,//maximum allowed memory usage in MB
 			double eps_lambda_,//relative error for lambda calculation
 			double eps_K_,//relative error for K calculation
 			bool insertions_after_deletions_,//if true, then insertions after deletions are allowed
-			long int match,//NEW
-			long int mismatch,//NEW
-			double A_,//NEW
-			double C_,//NEW
-			double G_,//NEW
-			double T_//NEW
-			);
+			double max_time_for_quick_tests_,//maximum allowed calculation time in seconds for quick tests
+			double max_time_with_computation_parameters_);//maximum allowed time in seconds for the whole computation
+
+
+			void input_data_for_the_constructor(
+			std::string randout_,//if defined, then the program outputs complete randomization information into a file
+			std::string smatr_file_name_,//scoring matrix file name
+			std::string RR1_file_name_,//probabilities1 file name
+			std::string RR2_file_name_,//probabilities2 file name
+
+			struct_for_randomization &rand_all_,
+			bool &rand_flag_,
+			long int &rand_,
+
+			long int &alphabetSize_,
+			long int **&substitutionScoreMatrix_,
+			double *&letterFreqs1_,
+			double *&letterFreqs2_);
+
+			void init_main_class_members(
+			long int rand_,//randomization number
+			std::string randout_,//if defined, then the program outputs complete randomization information into a file
+
+			long int open_,//gap opening penalty
+			long int open1_,//gap opening penalty for a gap in the sequence #1
+			long int open2_,//gap opening penalty for a gap in the sequence #2
+
+			long int epen_,//gap extension penalty
+			long int epen1_,//gap extension penalty for a gap in the sequence #1
+			long int epen2_,//gap extension penalty for a gap in the sequence #2
+
+			double max_time_,//maximum allowed calculation time in seconds
+			double max_mem_,//maximum allowed memory usage in MB
+			double eps_lambda_,//relative error for lambda calculation
+			double eps_K_,//relative error for K calculation
+			bool insertions_after_deletions_);//if true, then insertions after deletions are allowed
 
 
 		~alp_data();//destructor
 
+		void release_memory();
+
 		inline double ran2()//generates the next random value
 		{
 			return Njn::Uniform::variate <double> (0,1);
-
-			//double rand_C=(double)((double)rand()/(double)RAND_MAX);
-			//return rand_C;	
-		};
+		}
 
 		static void read_smatr(
-			string smatr_file_name_,
+			std::string smatr_file_name_,
 			long int **&smatr_,
 			long int &number_of_AA_smatr_);
 
 		void check_out_file(
-			string out_file_name_);
+			std::string out_file_name_);
 
 
 
-		static double round(//returns nearest integer to x_
-			const double &x_);
-
-		static string long_to_string(//convert interer ot string
+		static std::string long_to_string(//convert interer ot string
 			long int number_);
 
 		static char digit_to_string(//convert interer ot string
 			long int digit_);
 
-		static void get_current_time(
-			double &seconds_);
-
 				static bool the_value_is_double(
-				string str_,
+				std::string str_,
 				double &val_);
 
 				static bool the_value_is_long(
-				string str_,
+				std::string str_,
 				long int &val_);
 
 
@@ -407,29 +417,39 @@ namespace Sls {
 
 
 		static void read_RR(
-			string RR_file_name_,
+			std::string RR_file_name_,
 			double *&RR_,
 			double *&RR_sum_,
 			long int *&RR_sum_elements_,
 			long int &number_of_AA_RR_);
 
-		double get_allocated_memory_in_MB();
+		static void read_RR(
+			std::string RR_file_name_,
+			double *&RR_,
+			long int &number_of_AA_RR_);
 
-		static void assert_mem(void *pointer_);
+		static void calculate_RR_sum(
+			double *RR_,
+			long int number_of_AA_RR_,
+			double *&RR_sum_,
+			long int *&RR_sum_elements_);
 
-	
+		static void check_RR_sum(
+			double sum_tmp_,
+			long int number_of_AA_RR_,
+			std::string RR_file_name_);
+
+
+
 
 		template<typename T>
 		static void get_memory_for_matrix(
 		long int dim_,
-		T ** &matr_)
+		T ** &matr_,
+		alp_data *alp_data_=NULL)
 		{
 			matr_=NULL;
-			bool ee_error_flag=false;
-			error ee_error("",0);
 
-			try
-			{
 			try
 			{
 
@@ -447,49 +467,36 @@ namespace Sls {
 					matr_[i]=new T [dim_];
 					assert_mem(matr_[i]);
 				};
-				//d_memory_size_in_MB+=(double)sizeof(T)*(double)dim_*(double)dim_/mb_bytes;
 
-			}
-			catch (error er)
-			{
-				ee_error_flag=true;
-				ee_error=er;		
-			};
+				if(alp_data_)
+				{
+					alp_data_->d_memory_size_in_MB+=(double)sizeof(T)*(double)dim_*(double)dim_/mb_bytes;
+				};
+
 			}
 			catch (...)
 			{ 
-				ee_error_flag=true;
-				ee_error=error("Internal error in the program\n",4);
-			};
-
-			//memory release
-
-			if(ee_error_flag)
-			{
-
 				if(matr_)
 				{
 					long int i;
 					for(i=0;i<dim_;i++)
 					{
-						if(matr_[i])
-						{
-							delete[]matr_[i];matr_[i]=NULL;
-						};
+						delete[]matr_[i];matr_[i]=NULL;
 					};
 
 					delete[]matr_;matr_=NULL;
 				};
-
-				throw error(ee_error.st,ee_error.error_code);
+				throw;
 			};
 
-		};
+
+		}
 
 		template<typename T>
 		static void delete_memory_for_matrix(
 		long int dim_,
-		T ** &matr_)
+		T ** &matr_,
+		alp_data *alp_data_=NULL)
 		{
 			long int i;
 			if(matr_)
@@ -501,13 +508,15 @@ namespace Sls {
 				delete []matr_;matr_=NULL;
 			};
 
-			//d_memory_size_in_MB-=(double)sizeof(T)*(double)dim_*(double)dim_/mb_bytes;
-		};
+			if(alp_data_)
+			{
+				alp_data_->d_memory_size_in_MB-=(double)sizeof(T)*(double)dim_*(double)dim_/mb_bytes;
+			};
+		}
 
 	static long int random_long(
 	double value_,
 	long int dim_);
-
 
 	template<typename T>
 	static T random_long(
@@ -526,17 +535,15 @@ namespace Sls {
 
 		while(v2-v1>1)
 		{
-			long int v3=(long int)(round(double(v2+v1)/2.0));
-			/*
+			long int v3=(long int)(Sls::alp_data::round(double(v2+v1)/2.0));
 			if(sum_distr_[v3-1]==value_)
 			{
 				v1=v3-1;
 				v2=v3;
 				break;
 			};
-			*/
 
-			if(sum_distr_[v3-1]>=value_)
+			if(sum_distr_[v3-1]>value_)
 			{
 				v2=v3;
 			}
@@ -546,58 +553,86 @@ namespace Sls {
 			};
 		};
 
-		return elements_[v2-1];
-
-	};
-
-
-	template<class T>
-	static inline T Tmax(T i_, T j_)
-	{
-		if(i_>j_)
+		if(elements_)
 		{
-			return i_;
-		};
-		return j_;
-	};
+			long int v2_1=v2-1;
 
-	template<class T>
-	static inline T Tmin(T i_, T j_)
-	{
-		if(i_<j_)
+
+			long int v2_minus=-1;
+
+			long int j;
+			for(j=v2_1;j>=1;j--)
+			{
+				if(sum_distr_[j]!=sum_distr_[j-1])
+				{
+					v2_minus=j;
+					break;
+				};
+			};
+
+			if(v2_minus<0)
+			{
+				if(sum_distr_[0]>0)
+				{
+					v2_minus=0;
+				};
+			};
+
+			if(v2_minus>=0)
+			{
+				return elements_[v2_minus];
+			};
+
+			long int v2_plus=-1;
+			for(j=v2;j<dim_;j++)
+			{
+				if(sum_distr_[j]!=sum_distr_[j-1])
+				{
+					v2_plus=j;
+					break;
+				};
+			};
+
+			if(v2_minus<0)
+			{
+				throw error("Unexpected error in alp_data::random_long\n",1);
+			}
+			else
+			{
+				return elements_[v2_plus];
+			};
+
+		}
+		else
 		{
-			return i_;
+			throw error("Unexpected error in alp_data::random_long: the parameter elements_ must be defined\n",4);
 		};
-		return j_;
-	};
 
+	}
 
-	template<class T>
-	static inline T Tmax(T x_,T y_,T z_)
-	{
-		return Tmax(Tmax(x_,y_),z_);
-	};
-
-	template<class T>
-	static inline T Tmin(T x_,T y_,T z_)
-	{
-		return Tmin(Tmin(x_,y_),z_);
-	};
-
-	template<class T>
-	static inline T Tmax(T x_,T y_,T z_,T w_)
-	{
-		return Tmax(Tmax(x_,y_),Tmax(z_,w_));
-	};
-
-	template<class T>
-	static inline T Tmin(T x_,T y_,T z_,T w_)
-	{
-		return Tmin(Tmin(x_,y_),Tmin(z_,w_));
-	};
-
-
+	static double error_of_the_sum(//v1_+v2_
+	double v1_error_,
+	double v2_error_);
 	
+	static double error_of_the_product(//v1_*v2_
+	double v1_,
+	double v1_error_,
+	double v2_,
+	double v2_error_);
+
+	static double error_of_the_sqrt(//sqrt(v1_)
+	double v1_,
+	double v1_error_);
+
+	static double error_of_the_ratio(//v1_/v2_
+	double v1_,
+	double v1_error_,
+	double v2_,
+	double v2_error_);
+
+	static double error_of_the_lg(//lg(v1_)
+	double v1_,
+	double v1_error_);
 
 
 
@@ -617,18 +652,13 @@ namespace Sls {
 
 
 	double d_max_time;//maximum allowed calculation time in seconds
+	double d_max_time_for_quick_tests;//maximum allowed calculation time in seconds for quick tests
+	double d_max_time_with_computation_parameters;//maximum allowed time in seconds for the whole computation
 	double d_max_mem;//maximum allowed memory usage in MB
 	double d_eps_lambda;//relative error for lambda calculation
 	double d_eps_K;//relative error for K calculation
 
 	bool d_insertions_after_deletions;//if true, then insertions after deletions are allowed
-
-	long int d_match;//NEW
-	long int d_mismatch;//NEW
-	double d_A_;//NEW
-	double d_C_;//NEW
-	double d_G_;//NEW
-	double d_T_;//NEW
 
 	
 	//additional parameters
@@ -648,8 +678,8 @@ namespace Sls {
 	double *d_RR2_sum;//probability distribution function for d_RR
 	long int *d_RR2_sum_elements;//numbers of AA corresponded to d_RR
 
-	long int d_random_factor;
-	string d_randout;//if defined, then the program outputs complete randomization information into a file
+	long int d_random_seed;
+	std::string d_randout;//if defined, then the program outputs complete randomization information into a file
 
 
 	double d_memory_size_in_MB;//approximate current allocated memory size
@@ -678,18 +708,6 @@ namespace Sls {
 	
 
 
-
-private:
-
-	#ifndef _MSDOS_ //UNIX program
-
-	#else
-		_CrtMemState d_s1, d_s2, d_s3;
-	#endif
-
-	
-
-
 	};
 
 	//array_positive functions
@@ -702,33 +720,32 @@ private:
 			d_alp_data->d_memory_size_in_MB-=(double)sizeof(T)*(double)(d_dim+1)/mb_bytes;
 		};
 
-	};
+	}
 
 
 	template<class T>
-	void array_positive<T>::increment_array()
+	void array_positive<T>::increment_array(long int ind_)
 	{
-		bool ee_error_flag=false;
-		error ee_error("",0);
 		T *d_elem_new=NULL;
 
 		try
 		{
-		try
-		{
-
-			d_dim+=d_step;
+			long int o_dim=d_dim;
+			do{
+			  d_dim+=d_step;
+			}while(ind_>d_dim);
+			long int jump=d_dim-o_dim;
 
 			d_elem_new=new T[d_dim+1];
 			alp_data::assert_mem(d_elem_new);
 
 			long int i;
-			for(i=0;i<d_dim+1-d_step;i++)
+			for(i=0;i<o_dim+1;i++)
 			{
 				d_elem_new[i]=d_elem[i];
 			};
 
-			for(i=d_dim+1-d_step;i<d_dim+1;i++)
+			for(i=o_dim+1;i<d_dim+1;i++)
 			{
 				d_elem_new[i]=0;
 			};
@@ -737,33 +754,18 @@ private:
 			delete[]d_elem;d_elem=NULL;
 			if(d_alp_data)
 			{
-				d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)d_step/mb_bytes;
+				d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)jump/mb_bytes;
 			};
 
 			d_elem=d_elem_new;d_elem_new=NULL;
-
-		}
-		catch (error er)
-		{
-			ee_error_flag=true;
-			ee_error=er;
-		};
 		}
 		catch (...)
 		{ 
-			ee_error_flag=true;
-			ee_error=error("Internal error in the program\n",4);
-		};
-
-		//memory release
-
-		if(ee_error_flag)
-		{
 			delete[]d_elem_new;d_elem_new=NULL;
-			throw error(ee_error.st,ee_error.error_code);
+			throw;
 		};
 		
-	};
+	}
 
 	//array functions
 
@@ -776,10 +778,45 @@ private:
 			d_alp_data->d_memory_size_in_MB-=(double)sizeof(T)*(double)(d_dim+1)/mb_bytes;
 		};
 
-	};
+	}
 
 	template<class T>
-	void array<T>::increment_array_on_the_rigth()
+	void array<T>::set_elems(const array<T> *a_)
+	{
+		long int a0=a_->d_ind0;
+		long int a1=a_->d_dim_plus_d_ind0;
+
+		if(a0>a1)return;
+
+		while(a1>d_dim_plus_d_ind0)
+		{
+			d_dim_plus_d_ind0+=d_step;
+		};
+
+		while(a0<d_ind0)
+		{
+			d_ind0-=d_step;
+		};
+
+		d_dim=d_dim_plus_d_ind0-d_ind0;
+		d_elem=new T[d_dim+1];
+		sls_basic::assert_mem(d_elem);
+
+		if(d_alp_data)
+		{
+			d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)(d_dim+1)/mb_bytes;
+		};
+
+		long int i;
+		for(i=a0;i<=a1;i++)
+		{
+			d_elem[i-d_ind0]=a_->d_elem[i-a0];
+		}
+	}
+
+
+	template<class T>
+	void array<T>::increment_array_on_the_right(long int ind_)
 	{
 		bool ee_error_flag=false;
 		error ee_error("",0);
@@ -791,27 +828,30 @@ private:
 		{
 
 
-			d_dim+=d_step;
+			long int o_dim=d_dim;
+			do{
+			  d_dim+=d_step;
+			  d_dim_plus_d_ind0+=d_step;
+			}while(ind_>d_dim_plus_d_ind0);
+			long int jump=d_dim-o_dim;
 
 			d_elem_new=new T[d_dim+1];
 			alp_data::assert_mem(d_elem_new);
 
 			long int i;
-			for(i=0;i<d_dim+1-d_step;i++)
+			for(i=0;i<o_dim+1;i++)
 			{
 				d_elem_new[i]=d_elem[i];
 			};
 
-			for(i=d_dim+1-d_step;i<d_dim+1;i++)
+			for(i=o_dim+1;i<d_dim+1;i++)
 			{
 				d_elem_new[i]=0;
 			};
 
-			d_dim_plus_d_ind0=d_dim+d_ind0;
-
 			if(d_alp_data)
 			{
-				d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)d_step/mb_bytes;
+				d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)jump/mb_bytes;
 			};
 
 
@@ -840,71 +880,58 @@ private:
 			throw error(ee_error.st,ee_error.error_code);
 		};
 
-	};
+	}
 
 	template<class T>
-		void array<T>::increment_array_on_the_left()
+		void array<T>::increment_array_on_the_left(long int ind_)
 	{
-		bool ee_error_flag=false;
-		error ee_error("",0);
 		T *d_elem_new=NULL;
 
 		try
 		{
-		try
-		{
-			d_dim+=d_step;
-			d_ind0-=d_step;
+			long int o_dim=d_dim;
+			do{
+			  d_dim+=d_step;
+			  d_ind0-=d_step;
+			}while(ind_<d_ind0);
+			long int jump=d_dim-o_dim;
 
 			d_elem_new=new T[d_dim+1];
 			alp_data::assert_mem(d_elem_new);
 
 			long int i;
 
-			for(i=0;i<d_step;i++)
+			for(i=0;i<jump;i++)
 			{
 				d_elem_new[i]=0;
 			};
 
-			for(i=0;i<d_dim+1-d_step;i++)
+			for(i=0;i<o_dim+1;i++)
 			{
-				d_elem_new[i+d_step]=d_elem[i];
+				d_elem_new[i+jump]=d_elem[i];
 			};
 
 			if(d_alp_data)
 			{
-				d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)d_step/mb_bytes;
+				d_alp_data->d_memory_size_in_MB+=(double)sizeof(T)*(double)jump/mb_bytes;
 			};
 
 			delete[]d_elem;d_elem=NULL;
 			d_elem=d_elem_new;d_elem_new=NULL;
 
-
-		}
-		catch (error er)
-		{
-			ee_error_flag=true;
-			ee_error=er;		
-		};
 		}
 		catch (...)
 		{
-			ee_error_flag=true;
-			ee_error=error("Internal error in the program\n",4);
-		};
-
-		//memory release
-
-		if(ee_error_flag)
-		{
 			delete[]d_elem_new;d_elem_new=NULL;
-			throw error(ee_error.st,ee_error.error_code);
+			throw;
 		};
 
-	};
+
+	}
 
 
 	}
 
 
 #endif
+

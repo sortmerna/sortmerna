@@ -143,3 +143,4 @@ std::istream &operator >> (std::istream &istr_, Njn::IoUtil::Format format_)
 
 
 #endif //! INCLUDED
+

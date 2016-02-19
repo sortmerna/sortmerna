@@ -116,11 +116,11 @@ void
 paralleltraversal (char* inputreads,
                    char* ptr_filetype_ar,
                    char* ptr_filetype_or,
-                   int32_t match,
-                   int32_t mismatch,
-                   int32_t gap_open,
-                   int32_t gap_extension,
-                   int32_t score_N,
+                   long match,
+                   long mismatch,
+                   long gap_open,
+                   long gap_extension,
+                   long score_N,
                    vector< vector<uint32_t> >& skiplengths,
                    int argc,
                    char **argv,
@@ -566,11 +566,11 @@ paralleltraversal (char* inputreads,
       eprintf(" (as percent)\n");
   else
       eprintf(" (as integer)\n");
-  eprintf("    SW match = %d\n",match);
-  eprintf("    SW mismatch = %d\n",mismatch);
-  eprintf("    SW gap open penalty = %d\n",gap_open);
-  eprintf("    SW gap extend penalty = %d\n",gap_extension);
-  eprintf("    SW ambiguous nucleotide = %d",score_N);
+  eprintf("    SW match = %ld\n",match);
+  eprintf("    SW mismatch = %ld\n",mismatch);
+  eprintf("    SW gap open penalty = %ld\n",gap_open);
+  eprintf("    SW gap extend penalty = %ld\n",gap_extension);
+  eprintf("    SW ambiguous nucleotide = %ld",score_N);
   if ( score_N > 0 ) eprintf(" %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
   else eprintf("\n");
   if ( yes_SQ )
@@ -622,11 +622,11 @@ paralleltraversal (char* inputreads,
       fprintf(bilan," (as percent)\n");
     else
       fprintf(bilan," (as integer)\n");
-    fprintf(bilan,"    SW match = %d\n",match);
-    fprintf(bilan,"    SW mismatch = %d\n",mismatch);
-    fprintf(bilan,"    SW gap open penalty = %d\n",gap_open);
-    fprintf(bilan,"    SW gap extend penalty = %d\n",gap_extension);
-    fprintf(bilan,"    SW ambiguous nucleotide = %d",score_N);
+    fprintf(bilan,"    SW match = %ld\n",match);
+    fprintf(bilan,"    SW mismatch = %ld\n",mismatch);
+    fprintf(bilan,"    SW gap open penalty = %ld\n",gap_open);
+    fprintf(bilan,"    SW gap extend penalty = %ld\n",gap_extension);
+    fprintf(bilan,"    SW ambiguous nucleotide = %ld",score_N);
     if ( score_N > 0 ) fprintf(bilan," <-- %sWarning!%s Positive score set for ambiguous nucleotides.\n","\033[0;33m","\033[0m");
     else fprintf(bilan,"\n");
     if ( yes_SQ )

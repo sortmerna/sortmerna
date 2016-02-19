@@ -75,11 +75,11 @@ using namespace std;
     @param char* inputreads 
     @param *ptr_filetype_ar 
     @param *ptr_filetype_or
-    @param int32_t match
-    @param int32_t mismatch
-    @param int32_t gap_open
-    @param int32_t gap_extension
-    @param int32_t score_N
+    @param long match
+    @param long mismatch
+    @param long gap_open
+    @param long gap_extension
+    @param long score_N
     @param vector< vector<uint32_t> > 
     @param int argc
     @param char **argv
@@ -92,11 +92,11 @@ void
 paralleltraversal ( char* inputreads /**< pointer to query reads file */,
                     char* ptr_filetype_ar /**< pointer to string for aligned seqeunces filepath */,
                     char* ptr_filetype_or /**< pointer to string for rejected sequences filepath */,
-                    int32_t match /**< SW match reward score (positive) */,
-                    int32_t mismatch /**< SW mismatch penalty score (negative) */,
-                    int32_t gap_open /**< SW gap open penalty score (positive) */,
-                    int32_t gap_extension /**< SW gap extend penalty score (positive) */,
-                    int32_t score_N /**< SW penalty for ambiguous nucleotide (negative) */,
+                    long match /**< SW match reward score (positive) */,
+                    long mismatch /**< SW mismatch penalty score (negative) */,
+                    long gap_open /**< SW gap open penalty score (positive) */,
+                    long gap_extension /**< SW gap extend penalty score (positive) */,
+                    long score_N /**< SW penalty for ambiguous nucleotide (negative) */,
                     vector< vector<uint32_t> >& skiplengths /**< skiplengths, three intervals at which to place seeds on read */,
                     int argc /**< number of arguments passed to SortMeRNA */,
                     char **argv /**< argument string passed to SortMeRNA */,

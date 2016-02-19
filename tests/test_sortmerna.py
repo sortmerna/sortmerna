@@ -1346,7 +1346,7 @@ class SortmernaTests(TestCase):
 
         expected_alignment = ["AB271211", "Unc49508", "93.4", "1412",
                               "64", "30", "59", "1470", "2", "1429", "0",
-                              "2041", "+",
+                              "2039", "+",
                               "58S56M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1243M17S"]
 
         with open("%s.blast" % aligned_basename, 'U') as aligned_f:
@@ -1543,7 +1543,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         if stderr:
             print stderr
 
-        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2041"]
+        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2039"]
 
         with open("%s.blast" % aligned_basename, 'U') as aligned_f:
             for line in aligned_f:

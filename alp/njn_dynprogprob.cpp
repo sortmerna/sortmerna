@@ -33,7 +33,7 @@ Contents:
 
 ******************************************************************************/
 
-//#include <assert.h>
+#include <assert.h>
 
 #include "njn_dynprogprob.hpp"
 #include "njn_memutil.hpp"
@@ -86,9 +86,8 @@ long int valueLower_, // lower long int value corresponding to the "probability"
 long int valueUpper_, // one beyond present upper long int value corresponding to the "probability" array
 const double *prob_) // "probabilities" prob [valueLower_, valueUpper_) corresponding to the long ints
 {
-	//assert ((! prob_ && valueLower_ <= 0 && 0 <= valueUpper_) || 
-	//	prob_ && valueLower_ < valueUpper_);
-	assert ((!prob_ && (valueLower_ <= 0) && (0 <= valueUpper_)) || (prob_ && (valueLower_ < valueUpper_))); //mine
+	assert ((! prob_ && valueLower_ <= 0 && 0 <= valueUpper_) || 
+		/*sls added "("*/(prob_ && valueLower_ < valueUpper_)/*sls added ")"*/ );
 
     if (prob_) 
     {
@@ -205,6 +204,7 @@ void DynProgProb::update () // updates dynamic prog probs
     long int valueBegin = 0;
     long int valueLower = 0;
     long int valueUpper = 0;
+    /*sls deleted size_t arrayPos = 0;*/
 
     oldArray = d_array_p [d_step % 2];
     array = d_array_p [(d_step + 1) % 2];

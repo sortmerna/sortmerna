@@ -33,10 +33,10 @@ Contents: Regression methods
 
 ******************************************************************************/
 
-
 #include "sls_alp_regression.hpp"
 
 using namespace Sls;
+using namespace std;
 
 
 //-------------------------Solution of arbitrary equations----------------------------
@@ -56,7 +56,7 @@ std::vector<double> &res_
 	if(n_partition_<=0)
 	{
 		throw error("Error in alp_reg::find_tetta_general\n",4);
-		return;
+		
 	};
 	
 	long int i;
@@ -109,7 +109,7 @@ std::vector<double> &res_
 	sort(res_.begin(),res_.end());
 
 	return;
-};
+}
 
 double alp_reg::find_single_tetta_general(
 function_type *func_,
@@ -122,7 +122,6 @@ double eps_
 	if(b_<a_)
 	{
 		throw error("Error in alp_reg::find_single_tetta_general\n",4);
-		return 0;
 	};
 
 	double x1=a_;
@@ -173,7 +172,7 @@ double eps_
 	};
 
 	return (x1+x2)/2;
-};
+}
 
 //------------regression-----------------------------------
 
@@ -184,7 +183,7 @@ long int number_of_elements_)
 
 	if(number_of_elements_<=0)
 	{
-		throw error("Unexpected error",4);
+		throw error("Unexpected error\n",4);
 	};
 	
 
@@ -194,7 +193,7 @@ long int number_of_elements_)
 	{
 		if(errors_[i]<0)
 		{
-			throw error("Error in the regression is less than 0",4);
+			throw error("Error in alp_reg::correction_of_errors: input error in the regression model is less than 0\n",4);
 		};
 
 		average_error+=errors_[i];
@@ -221,7 +220,7 @@ long int number_of_elements_)
 			errors_[i]=error_eps;
 		};
 	};
-};
+}
 
 void alp_reg::robust_regression_sum_with_cut_LSM(
 long int min_length_,
@@ -313,7 +312,7 @@ bool &res_was_calculated_)
 	for(k1=k1_start;k1<=k1_end;k1++)
 	{
 
-		for(k2=alp_data::Tmax(k1+(long int)1,alp_data::Tmax(k1,k2_start)+min_length_);k2<=k2_end;k2++)
+		for(k2=sls_basic::Tmax(k1+(long int)1,sls_basic::Tmax(k1,k2_start)+min_length_);k2<=k2_end;k2++)
 		{
 			double beta0_opt_tmp,beta1_opt_tmp,beta0_opt_error_tmp,beta1_opt_error_tmp;
 			bool res_was_calculated;
@@ -361,7 +360,7 @@ bool &res_was_calculated_)
 	};
 
 	
-};
+}
 
 double alp_reg::function_for_robust_regression_sum_with_cut_LSM(
 double *values_,
@@ -406,7 +405,7 @@ bool &res_was_calculated_)
 	y1_error=alp_reg::sqrt_for_errors(y1_error);
 	y2_error=alp_reg::sqrt_for_errors(y2_error);
 
-	double eps=1e-10*alp_data::Tmax(fabs(a11*a22),fabs(a21*a12));
+	double eps=1e-10*sls_basic::Tmax(fabs(a11*a22),fabs(a21*a12));
 
 	double den=a11*a22-a21*a12;
 	if(fabs(den)<=eps)
@@ -437,7 +436,7 @@ bool &res_was_calculated_)
 	};
 
 	return res;
-};
+}
 
 void alp_reg::robust_regression_sum_with_cut_LSM_beta1_is_defined(
 long int min_length_,
@@ -507,13 +506,11 @@ bool &res_was_calculated_)
 		};
 	};
 	
-	long int k1_opt=0,k2_opt=0; //jenya initialized 
+	long int k1_opt=0,k2_opt=0;
 
 	double func_opt=DBL_MAX;
-	double beta0_opt = 0; //jenya initialized 
-	//double beta1_opt=beta1_; //jenya, remove compiling warnings
-	double beta0_opt_error = 0.0;
-	//double beta1_opt_error=beta1_error_; //jenya, remove compiling warnings
+	double beta0_opt=0;
+	double beta0_opt_error=0;
 
 	long int k1,k2;
 
@@ -523,7 +520,7 @@ bool &res_was_calculated_)
 	for(k1=k1_start;k1<=k1_end;k1++)
 	{
 
-		for(k2=alp_data::Tmax(k1,k2_start)+min_length_;k2<=k2_end;k2++)
+		for(k2=sls_basic::Tmax(k1,k2_start)+min_length_;k2<=k2_end;k2++)
 		{
 			double beta0_opt_tmp,beta1_opt_tmp,beta0_opt_error_tmp,beta1_opt_error_tmp;
 			bool res_was_calculated;
@@ -547,9 +544,7 @@ bool &res_was_calculated_)
 			{
 				func_opt=tmp;
 				beta0_opt=beta0_opt_tmp;
-				//beta1_opt=beta1_opt_tmp; //jenya, remove compiling warnings
 				beta0_opt_error=beta0_opt_error_tmp;
-				//beta1_opt_error=beta1_opt_error_tmp; //jenya, remove compiling warnings
 				k1_opt=k1;
 				k2_opt=k2;
 				res_was_calculated_=true;
@@ -567,7 +562,7 @@ bool &res_was_calculated_)
 	};
 
 	
-};
+}
 
 double alp_reg::function_for_robust_regression_sum_with_cut_LSM_beta1_is_defined(
 double *values_,
@@ -633,120 +628,7 @@ bool &res_was_calculated_)
 
 	return res;
 
-};
-
-double alp_reg::error_of_the_lg(//lg(v1_)
-double v1_,
-double v1_error_)
-{
-	if(v1_error_>=1e100||v1_<=0)
-	{
-		return 1e100;
-	};
-
-	return alp_data::Tmin(fabs(log(v1_)/log(10.0)),v1_error_/v1_/log(10.0));
-};
-
-
-double alp_reg::error_of_the_sqrt(//sqrt(v1_)
-double v1_,
-double v1_error_)
-{
-	if(v1_error_>=1e100||v1_<0)
-	{
-		return 1e100;
-	};
-
-	double s=sqrt(v1_);
-	double s1=sqrt(alp_data::Tmax(0.0,v1_-v1_error_));
-	double s2=sqrt(alp_data::Tmax(0.0,v1_+v1_error_));
-
-	return alp_data::Tmax(fabs(s-s1),fabs(s-s2));
-};
-
-
-
-double alp_reg::error_of_the_ratio(//v1_/v2_
-double v1_,
-double v1_error_,
-double v2_,
-double v2_error_)
-{
-	if(v1_error_>=1e100||v2_error_>=1e100)
-	{
-		return 1e100;
-	};
-
-	if(v2_==0)
-	{
-		return 1e100;
-	};
-
-	if(v1_==0&&v1_error_==0)
-	{
-		return 0.0;
-	};
-
-	double a=v1_/v2_;
-
-	if(((v2_+v2_error_)*v2_<=0))
-	{
-		double a3=(v1_+v1_error_)/(v2_-v2_error_);
-		double a4=(v1_-v1_error_)/(v2_-v2_error_);
-		return alp_data::Tmax(fabs(a-a3),fabs(a-a4));
-	};
-
-	if(((v2_-v2_error_)*v2_<=0))
-	{
-		double a1=(v1_+v1_error_)/(v2_+v2_error_);
-		double a2=(v1_-v1_error_)/(v2_+v2_error_);
-		return alp_data::Tmax(fabs(a-a1),fabs(a-a2));
-	};
-
-
-	double a1=(v1_+v1_error_)/(v2_+v2_error_);
-	double a2=(v1_-v1_error_)/(v2_+v2_error_);
-	double a3=(v1_+v1_error_)/(v2_-v2_error_);
-	double a4=(v1_-v1_error_)/(v2_-v2_error_);
-
-	return alp_data::Tmax(fabs(a-a1),fabs(a-a2),fabs(a-a3),fabs(a-a4));
-};
-
-double alp_reg::error_of_the_product(//v1_*v2_
-double v1_,
-double v1_error_,
-double v2_,
-double v2_error_)
-{
-	if(v1_error_>=1e100||v2_error_>=1e100)
-	{
-		return 1e100;
-	};
-
-	double a1=(v1_+v1_error_)*(v2_+v2_error_);
-	double a2=(v1_-v1_error_)*(v2_+v2_error_);
-	double a3=(v1_+v1_error_)*(v2_-v2_error_);
-	double a4=(v1_-v1_error_)*(v2_-v2_error_);
-
-	double a=v1_*v2_;
-
-	return alp_data::Tmax(fabs(a1-a),fabs(a2-a),fabs(a3-a),fabs(a4-a));
-
-};
-
-double alp_reg::error_of_the_sum(//v1_+v2_
-double v1_,
-double v1_error_,
-double v2_,
-double v2_error_)
-{
-	if(v1_error_>=1e100||v2_error_>=1e100)
-	{
-		return 1e100;
-	};
-
-	return sqrt(v1_error_*v1_error_+v2_error_*v2_error_);
-};
+}
 
 double alp_reg::median(
 long int dim_,
@@ -761,16 +643,16 @@ double *array_)
 	sort(array_vect.begin(),array_vect.end());
 	if(dim_%2==0)
 	{
-		long int k=(long int)alp_data::round((double)dim_/2.0);
+		long int k=(long int)sls_basic::round((double)dim_/2.0);
 		return 0.5*(array_vect[k-1]+array_vect[k]);
 	}
 	else
 	{
-		long int k=(long int)alp_data::round((double)(dim_-1.0)/2.0);
+		long int k=(long int)sls_basic::round((double)(dim_-1.0)/2.0);
 		return array_vect[k];
 
 	};
-};
+}
 
 double alp_reg::robust_sum(
 double *values,
@@ -780,22 +662,16 @@ bool *&remove_flag)
 {
 	remove_flag=NULL;
 
-	if(dim<=N_points)
-	{
-		throw error("Unexpected error\n",4);
-	};
-
-	bool ee_error_flag=false;
-	error ee_error("",0);
-
 	try
 	{
-	try
-	{
+		if(dim<=N_points)
+		{
+			throw error("Unexpected error\n",4);
+		};
 
 		long int i;
 		remove_flag=new bool[dim];
-		alp_data::assert_mem(remove_flag);
+		sls_basic::assert_mem(remove_flag);
 		for(i=0;i<dim;i++)
 		{
 			remove_flag[i]=true;
@@ -837,27 +713,11 @@ bool *&remove_flag)
 		return res;
 
 	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
 	catch (...)
 	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",4);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
 		delete[]remove_flag;remove_flag=NULL;
-		throw error(ee_error.st,ee_error.error_code);
+		throw;
 	};
 
-	return 0.0;
-
-};
+}
 

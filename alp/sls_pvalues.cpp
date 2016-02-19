@@ -35,235 +35,29 @@ Contents: Calculation of P-values using precalculated Gumbel parameters
 
 #include "sls_pvalues.hpp"
 #include "sls_alp_data.hpp"
+#include <iomanip>      // std::setprecision
+
+#include "sls_normal_distr_array.hpp"
 
 
 using namespace Sls;
-
-const bool read_Sbs_par_flag=true;
+using namespace std;
 
 const double nat_cut_off_in_max=2.0;//nat cut-off in max used in FSC
 
 
-
-double pvalues::error_of_the_sum(//v1_+v2_
-double v1_,
-double v1_error_,
-double v2_,
-double v2_error_)
-{
-	if(v1_error_>=1e100||v2_error_>=1e100)
-	{
-		return 1e100;
-	};
-
-	return sqrt(v1_error_*v1_error_+v2_error_*v2_error_);
-};
-
-double pvalues::error_of_the_product(//v1_*v2_
-double v1_,
-double v1_error_,
-double v2_,
-double v2_error_)
-{
-	if(v1_error_>=1e100||v2_error_>=1e100)
-	{
-		return 1e100;
-	};
-
-	double a1=(v1_+v1_error_)*(v2_+v2_error_);
-	double a2=(v1_-v1_error_)*(v2_+v2_error_);
-	double a3=(v1_+v1_error_)*(v2_-v2_error_);
-	double a4=(v1_-v1_error_)*(v2_-v2_error_);
-
-	double a=v1_*v2_;
-
-	return alp_data::Tmax(fabs(a1-a),fabs(a2-a),fabs(a3-a),fabs(a4-a));
-
-};
-
-
-double pvalues::error_of_the_sqrt(//sqrt(v1_)
-double v1_,
-double v1_error_)
-{
-	if(v1_error_>=1e100||v1_<0)
-	{
-		return 1e100;
-	};
-
-	double s=sqrt(v1_);
-	double s1=sqrt(alp_data::Tmax(0.0,v1_-v1_error_));
-	double s2=sqrt(alp_data::Tmax(0.0,v1_+v1_error_));
-
-	return alp_data::Tmax(fabs(s-s1),fabs(s-s2));
-};
-
-double pvalues::error_of_the_ratio(//v1_/v2_
-double v1_,
-double v1_error_,
-double v2_,
-double v2_error_)
-{
-	if(v1_error_>=1e100||v2_error_>=1e100)
-	{
-		return 1e100;
-	};
-
-
-	if(v2_==0)
-	{
-		return 1e100;
-	};
-
-	if(v1_==0&&v1_error_==0)
-	{
-		return 0.0;
-	};
-
-	double a=v1_/v2_;
-
-
-	if(((v2_+v2_error_)*v2_<=0))
-	{
-		double a3=(v1_+v1_error_)/(v2_-v2_error_);
-		double a4=(v1_-v1_error_)/(v2_-v2_error_);
-		return alp_data::Tmax(fabs(a-a3),fabs(a-a4));
-	};
-
-	if(((v2_-v2_error_)*v2_<=0))
-	{
-		double a1=(v1_+v1_error_)/(v2_+v2_error_);
-		double a2=(v1_-v1_error_)/(v2_+v2_error_);
-		return alp_data::Tmax(fabs(a-a1),fabs(a-a2));
-	};
-
-
-	double a1=(v1_+v1_error_)/(v2_+v2_error_);
-	double a2=(v1_-v1_error_)/(v2_+v2_error_);
-	double a3=(v1_+v1_error_)/(v2_-v2_error_);
-	double a4=(v1_-v1_error_)/(v2_-v2_error_);
-
-	return alp_data::Tmax(fabs(a-a1),fabs(a-a2),fabs(a-a3),fabs(a-a4));
-};
-
-
-
-
-double pvalues::one_minus_exp_function(
-double y_)
-{
-	if(fabs(y_)>1e-8)
-	{
-		return 1.0-exp(y_);
-	}
-	else
-	{
-		return -(y_+y_*y_/2.0+y_*y_*y_/6.0+y_*y_*y_*y_/24.0);
-	};
-};
-
-double pvalues::normal_probability(
-double x_,
-double eps_)
-{
-
-	double pi=3.1415926535897932384626433832795;
-	if(x_==0)
-	{
-		return 0.5;
-	};
-
-
-	eps_=alp_data::Tmin(1.0,eps_);
-
-	double x_max=10*eps_+sqrt(alp_data::Tmax(0.0,-2*log(eps_)));
-
-
-	if(x_>=x_max)
-	{
-		double x=x_/sqrt(2.0);
-		return 1-0.5*exp(-x*x)/(x*sqrt(pi))*(1-1.0/(2*x*2*x));
-	};
-
-	if(x_<=-x_max)
-	{
-		double x=x_/sqrt(2.0);
-		return 0.5*exp(-x*x)/(-x*sqrt(pi))*(1-1.0/(2*x*2*x));
-	};
-
-
-	double const_val=1/sqrt(2.0*pi);
-
-	
-
-
-	long int N=(long int)alp_data::round(fabs(x_)/eps_)+1;
-	double h=x_/(double)N;
-
-
-
-	double res=0;
-	long int i;
-	for(i=0;i<=N;i++)
-	{
-		double y=h*i;
-		double tmp=exp(-0.5*y*y);
-		if(i==0||i==N)
-		{
-			res+=0.5*tmp;
-		}
-		else
-		{
-			res+=tmp;
-		};
-	};
-
-	res*=h;
-
-	return 0.5+const_val*(res);
-};
-
-double pvalues::normal_probability(
-double a_,
-double b_,
-double h_,
-long int N_,
-double *p_,
-double x_,
-double eps_)
-{
-	if(x_<a_||x_>b_)
-	{
-		return normal_probability(x_,eps_);
-	};
-
-	long int x_n=(long int)floor((x_-a_)/h_);
-	x_n=alp_data::Tmin(N_-1,x_n);
-	return p_[x_n]+(p_[x_n+1]-p_[x_n])*(x_-(h_*x_n+a_))/h_;
-};
-
-double pvalues::ln_one_minus_val(
-double val_)
-{
-	if(val_>1e-8)
-	{
-		return log(1-val_);
-	};
-
-	return -val_-val_*val_/2.0-val_*val_*val_/3.0;
-};
-
-
-
 void pvalues::get_appr_tail_prob_with_cov(
-set_of_parameters &par_,
+const ALP_set_of_parameters &par_,
 bool blast_,
 double y_,
-long int m_,
-long int n_,
+double m_,
+double n_,
 
 double &P_,
 double &P_error_,
+
+double &E_,
+double &E_error_,
 
 double &area_,
 
@@ -276,6 +70,8 @@ double *p_normal_,
 bool &area_is_1_flag_)
 {
 
+	//to optimize performance
+	blast_=false;
 
 	double lambda_=par_.lambda;
 	double lambda_error_=par_.lambda_error;
@@ -284,30 +80,41 @@ bool &area_is_1_flag_)
 
 	double ai_hat_=par_.a_I;
 	double ai_hat_error_=par_.a_I_error;
-	double bi_hat_=2.0*par_.G*(par_.gapless_a-par_.a_I); 
-	double bi_hat_error_=2.0*par_.G*error_of_the_sum(par_.gapless_a,par_.gapless_a_error,par_.a_I,par_.a_I_error); 
+	double bi_hat_; 
+	double bi_hat_error_; 
 	double alphai_hat_=par_.alpha_I;
 	double alphai_hat_error_=par_.alpha_I_error;
-	double betai_hat_=2.0*par_.G*(par_.gapless_alpha-par_.alpha_I); 
-	double betai_hat_error_=2.0*par_.G*error_of_the_sum(par_.gapless_alpha,par_.gapless_alpha_error,par_.alpha_I,par_.alpha_I_error); 
+	double betai_hat_;
+	double betai_hat_error_; 
 
 	double aj_hat_=par_.a_J;
 	double aj_hat_error_=par_.a_J_error;
-	double bj_hat_=2.0*par_.G*(par_.gapless_a-par_.a_J); 
-	double bj_hat_error_=2.0*par_.G*error_of_the_sum(par_.gapless_a,par_.gapless_a_error,par_.a_J,par_.a_J_error); 
+	double bj_hat_; 
+	double bj_hat_error_; 
 	double alphaj_hat_=par_.alpha_J;
 	double alphaj_hat_error_=par_.alpha_J_error;
-	double betaj_hat_=2.0*par_.G*(par_.gapless_alpha-par_.alpha_J); 
-	double betaj_hat_error_=2.0*par_.G*error_of_the_sum(par_.gapless_alpha,par_.gapless_alpha_error,par_.alpha_J,par_.alpha_J_error); 
+	double betaj_hat_; 
+	double betaj_hat_error_; 
 
 	double sigma_hat_=par_.sigma;
 	double sigma_hat_error_=par_.sigma_error;
-	double tau_hat_=2.0*par_.G*(par_.gapless_alpha-par_.sigma);
- 	double tau_hat_error_=2.0*par_.G*error_of_the_sum(par_.gapless_alpha,par_.gapless_alpha_error,par_.sigma,par_.sigma_error);
- 
+	double tau_hat_;
+ 	double tau_hat_error_;
 
-	bool where_it_is_works_flag=false;
-	bool negative_flag=false;
+	{
+		bi_hat_=par_.b_I;
+		bi_hat_error_=par_.b_I_error;
+		betai_hat_=par_.beta_I;
+		betai_hat_error_=par_.beta_I_error;
+
+		bj_hat_=par_.b_J;
+		bj_hat_error_=par_.b_J_error;
+		betaj_hat_=par_.beta_J;
+		betaj_hat_error_=par_.beta_J_error;
+
+		tau_hat_=par_.tau;
+		tau_hat_error_=par_.tau_error;
+	};
 
 
 	if(blast_)
@@ -328,61 +135,24 @@ bool &area_is_1_flag_)
 		tau_hat_error_=0;
 	};
 
-	double const_val=1/sqrt(2.0*3.1415926535897932384626433832795);
 	double eps=0.000001;
 
+	double m_li_y_error=0;
+	double m_li_y=0;
 
+	double tmp=ai_hat_*y_+bi_hat_;
 
-	double m_li_y_error;
-	double m_li_y;
-
-	bool flag_Mi=true;
-
-	if(flag_Mi||blast_)
-	{
-		double tmp=ai_hat_*y_+bi_hat_;
-
-		if(where_it_is_works_flag)
-		{
-			if(ai_hat_*y_+bi_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-		m_li_y_error=error_of_the_sum(y_*ai_hat_,fabs(y_)*ai_hat_error_,bi_hat_,bi_hat_error_);
-		m_li_y=m_-tmp;
-	};
+	m_li_y_error=alp_data::error_of_the_sum(fabs(y_)*ai_hat_error_,bi_hat_error_);
+	m_li_y=m_-tmp;
 	
-	double vi_y_error;
-	double vi_y;
+	double vi_y_error=0;
+	double vi_y=0;
 
-	bool flag_Mii=true;
+	vi_y_error=alp_data::error_of_the_sum(fabs(y_)*alphai_hat_error_,betai_hat_error_);
 
-	if(flag_Mii||blast_)
-	{
-		vi_y_error=error_of_the_sum(y_*alphai_hat_,fabs(y_)*alphai_hat_error_,betai_hat_,betai_hat_error_);
+	vi_y=alp_data::Tmax(par_.vi_y_thr,alphai_hat_*y_+betai_hat_);
 
-		if(lambda_>0)
-		{
-			vi_y=alp_data::Tmax(nat_cut_off_in_max*alphai_hat_/lambda_,alphai_hat_*y_+betai_hat_);
-		}
-		else
-		{
-			vi_y=0.0;
-		};
-
-		if(where_it_is_works_flag)
-		{
-			if(alphai_hat_*y_+betai_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-	};
-
-	double sqrt_vi_y_error=error_of_the_sqrt(vi_y,vi_y_error);
-
-	vi_y=alp_data::Tmax(0.0,vi_y);//to avoid unexpected error
+	double sqrt_vi_y_error=alp_data::error_of_the_sqrt(vi_y,vi_y_error);
 
 	double sqrt_vi_y=sqrt(vi_y);
 
@@ -396,83 +166,44 @@ bool &area_is_1_flag_)
 	}
 	else
 	{
-		m_F_error=error_of_the_ratio(m_li_y,m_li_y_error,sqrt_vi_y,sqrt_vi_y_error);
+		m_F_error=alp_data::error_of_the_ratio(m_li_y,m_li_y_error,sqrt_vi_y,sqrt_vi_y_error);
 		m_F=m_li_y/sqrt_vi_y;
 	};
 
 
-	double P_m_F=normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,m_F,eps);
+	double P_m_F=sls_basic::normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,m_F,eps);
 	double P_m_F_error=const_val*exp(-0.5*m_F*m_F)*m_F_error;
 
 	double E_m_F=-const_val*exp(-0.5*m_F*m_F);
 	double E_m_F_error=fabs(-E_m_F*m_F)*m_F_error;
 
-	double m_li_y_P_m_F_error=error_of_the_product(m_li_y,m_li_y_error,P_m_F,P_m_F_error);
+	double m_li_y_P_m_F_error=alp_data::error_of_the_product(m_li_y,m_li_y_error,P_m_F,P_m_F_error);
 	double m_li_y_P_m_F=m_li_y*P_m_F;
 
-	double sqrt_vi_y_E_m_F_error=error_of_the_product(sqrt_vi_y,sqrt_vi_y_error,E_m_F,E_m_F_error);
+	double sqrt_vi_y_E_m_F_error=alp_data::error_of_the_product(sqrt_vi_y,sqrt_vi_y_error,E_m_F,E_m_F_error);
 	double sqrt_vi_y_E_m_F=sqrt_vi_y*E_m_F;
 
-	double p1_error=error_of_the_sum(m_li_y_P_m_F,m_li_y_P_m_F_error,sqrt_vi_y_E_m_F,sqrt_vi_y_E_m_F_error);
+	double p1_error=alp_data::error_of_the_sum(m_li_y_P_m_F_error,sqrt_vi_y_E_m_F_error);
 	double p1=m_li_y_P_m_F-sqrt_vi_y_E_m_F;
 
 
-	double n_lj_y_error;
-	double n_lj_y;
+	double n_lj_y_error=0;
+	double n_lj_y=0;
 
-	bool flag_Mj=true;
 
-	if(flag_Mj||blast_)
-	{
+	tmp=aj_hat_*y_+bj_hat_;
 
-		double tmp=aj_hat_*y_+bj_hat_;
+	n_lj_y_error=alp_data::error_of_the_sum(fabs(y_)*aj_hat_error_,bj_hat_error_);
+	n_lj_y=n_-tmp;
 
-		n_lj_y_error=error_of_the_sum(y_*aj_hat_,fabs(y_)*aj_hat_error_,bj_hat_,bj_hat_error_);
-		n_lj_y=n_-tmp;
+	double vj_y_error=0;
+	double vj_y=0;
 
-		if(where_it_is_works_flag)
-		{
-			if(aj_hat_*y_+bj_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
+	vj_y_error=alp_data::error_of_the_sum(fabs(y_)*alphaj_hat_error_,betaj_hat_error_);
 
-	};
+	vj_y=alp_data::Tmax(par_.vj_y_thr,alphaj_hat_*y_+betaj_hat_);
 
-	double vj_y_error;
-	double vj_y;
-
-	bool flag_Mjj=true;
-
-	if(flag_Mjj||blast_)
-	{
-		vj_y_error=error_of_the_sum(y_*alphaj_hat_,fabs(y_)*alphaj_hat_error_,betaj_hat_,betaj_hat_error_);
-
-		if(lambda_>0)
-		{
-			vj_y=alp_data::Tmax(nat_cut_off_in_max*alphaj_hat_/lambda_,alphaj_hat_*y_+betaj_hat_);
-		}
-		else
-		{
-			vj_y=0.0;
-		};
-
-		if(where_it_is_works_flag)
-		{
-			if(alphaj_hat_*y_+betaj_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-
-	};
-
-	
-
-	double sqrt_vj_y_error=error_of_the_sqrt(vj_y,vj_y_error);
-
-	vj_y=alp_data::Tmax(0.0,vj_y);//to avoid unexpected error
+	double sqrt_vj_y_error=alp_data::error_of_the_sqrt(vj_y,vj_y_error);
 
 	double sqrt_vj_y=sqrt(vj_y);
 
@@ -486,68 +217,47 @@ bool &area_is_1_flag_)
 	}
 	else
 	{
-		n_F_error=error_of_the_ratio(n_lj_y,n_lj_y_error,sqrt_vj_y,sqrt_vj_y_error);
+		n_F_error=alp_data::error_of_the_ratio(n_lj_y,n_lj_y_error,sqrt_vj_y,sqrt_vj_y_error);
 
 		n_F=n_lj_y/sqrt_vj_y;
 	};
 
-	double P_n_F=normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,n_F,eps);
+	double P_n_F=sls_basic::normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,n_F,eps);
 	double P_n_F_error=const_val*exp(-0.5*n_F*n_F)*n_F_error;
 
 	double E_n_F=-const_val*exp(-0.5*n_F*n_F);
 	double E_n_F_error=fabs(-E_n_F*n_F)*n_F_error;
 
-	double n_lj_y_P_n_F_error=error_of_the_product(n_lj_y,n_lj_y_error,P_n_F,P_n_F_error);
+	double n_lj_y_P_n_F_error=alp_data::error_of_the_product(n_lj_y,n_lj_y_error,P_n_F,P_n_F_error);
 	double n_lj_y_P_n_F=n_lj_y*P_n_F;
 
-	double sqrt_vj_y_E_n_F_error=error_of_the_product(sqrt_vj_y,sqrt_vj_y_error,E_n_F,E_n_F_error);
+	double sqrt_vj_y_E_n_F_error=alp_data::error_of_the_product(sqrt_vj_y,sqrt_vj_y_error,E_n_F,E_n_F_error);
 	double sqrt_vj_y_E_n_F=sqrt_vj_y*E_n_F;
 
-	double p2_error=error_of_the_sum(n_lj_y_P_n_F,n_lj_y_P_n_F_error,sqrt_vj_y_E_n_F,sqrt_vj_y_E_n_F_error);
+	double p2_error=alp_data::error_of_the_sum(n_lj_y_P_n_F_error,sqrt_vj_y_E_n_F_error);
 	double p2=n_lj_y_P_n_F-sqrt_vj_y_E_n_F;
 
 
 
 
-	double c_y_error;
-	double c_y;
+	double c_y_error=0;
+	double c_y=0;
 
-	bool flag_Mij=true;
+	c_y_error=alp_data::error_of_the_sum(sigma_hat_error_*y_,tau_hat_error_);
 
-	if(flag_Mij||blast_)
-	{
-		c_y_error=error_of_the_sum(sigma_hat_*y_,sigma_hat_error_*y_,tau_hat_,tau_hat_error_);
+	c_y=alp_data::Tmax(par_.c_y_thr,sigma_hat_*y_+tau_hat_);
 
-		if(lambda_>0)
-		{
-			c_y=alp_data::Tmax(nat_cut_off_in_max*sigma_hat_/lambda_,sigma_hat_*y_+tau_hat_);
-		}
-		else
-		{
-			c_y=0.0;
-		};
-
-		if(where_it_is_works_flag)
-		{
-			if(sigma_hat_*y_+tau_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-
-	};
-
-	double P_m_F_P_n_F_error=error_of_the_product(P_m_F,P_m_F_error,P_n_F,P_n_F_error);
+	double P_m_F_P_n_F_error=alp_data::error_of_the_product(P_m_F,P_m_F_error,P_n_F,P_n_F_error);
 	double P_m_F_P_n_F=P_m_F*P_n_F;
 
-	double c_y_P_m_F_P_n_F_error=error_of_the_product(c_y,c_y_error,P_m_F_P_n_F,P_m_F_P_n_F_error);
+	double c_y_P_m_F_P_n_F_error=alp_data::error_of_the_product(c_y,c_y_error,P_m_F_P_n_F,P_m_F_P_n_F_error);
 	double c_y_P_m_F_P_n_F=c_y*P_m_F_P_n_F;
 
-	double p1_p2_error=error_of_the_product(p1,p1_error,p2,p2_error);
+	double p1_p2_error=alp_data::error_of_the_product(p1,p1_error,p2,p2_error);
 	double p1_p2=p1*p2;
 
 
-	double area_error=error_of_the_sum(p1_p2,p1_p2_error,c_y_P_m_F_P_n_F,c_y_P_m_F_P_n_F_error);
+	double area_error=alp_data::error_of_the_sum(p1_p2_error,c_y_P_m_F_P_n_F_error);
 	double area=p1_p2+c_y_P_m_F_P_n_F;
 
 
@@ -570,45 +280,108 @@ bool &area_is_1_flag_)
 		};
 	};
 
-	if(negative_flag&&where_it_is_works_flag)
-	{
-		area=0;
-	};
-
-
 
 	double exp_lambda_y_error=fabs(lambda_error_*y_*exp(-lambda_*y_));
 	double exp_lambda_y=exp(-lambda_*y_);
 
-	double area_k_error=error_of_the_product(area,area_error,k_,k_error_);
-	double area_k=area*k_;
+	double k_exp_lambda_y_error=alp_data::error_of_the_product(k_,k_error_,exp_lambda_y,exp_lambda_y_error);
+	double k_exp_lambda_y=k_*exp_lambda_y;
 
-	double area_k_exp_lambda_y_error=error_of_the_product(area_k,area_k_error,exp_lambda_y,exp_lambda_y_error);
-	double area_k_exp_lambda_y=-area_k*exp_lambda_y;
+	double area_k_exp_lambda_y_error=alp_data::error_of_the_product(area,area_error,k_exp_lambda_y,k_exp_lambda_y_error);
+	double area_k_exp_lambda_y=-area*k_exp_lambda_y;
+
+	E_=-area_k_exp_lambda_y;
+	E_error_=area_k_exp_lambda_y_error;
 
 	P_error_=exp(area_k_exp_lambda_y)*area_k_exp_lambda_y_error;
 
-	P_=one_minus_exp_function(area_k_exp_lambda_y);
+	P_=sls_basic::one_minus_exp_function(area_k_exp_lambda_y);
 //	P_=1-exp(-k_*area*exp(-lambda_*y_));
 
 	area_=area;
 
-	
 
-	
-};
+}
 
+void pvalues::compute_intercepts(
+ALP_set_of_parameters &par_)
+{
+	if(!par_.d_params_flag)
+	{
+		throw error("Unexpected error: pvalues::compute_intercepts is called for undefined parameters\n",1);
+	};
 
+	par_.b_I=2.0*par_.G*(par_.gapless_a-par_.a_I); 
+	par_.b_I_error=2.0*par_.G*alp_data::error_of_the_sum(par_.gapless_a_error,par_.a_I_error); 
+	par_.beta_I=2.0*par_.G*(par_.gapless_alpha-par_.alpha_I); 
+	par_.beta_I_error=2.0*par_.G*alp_data::error_of_the_sum(par_.gapless_alpha_error,par_.alpha_I_error); 
+
+	par_.b_J=2.0*par_.G*(par_.gapless_a-par_.a_J); 
+	par_.b_I_error=2.0*par_.G*alp_data::error_of_the_sum(par_.gapless_a_error,par_.a_J_error); 
+	par_.beta_J=2.0*par_.G*(par_.gapless_alpha-par_.alpha_J); 
+	par_.beta_J_error=2.0*par_.G*alp_data::error_of_the_sum(par_.gapless_alpha_error,par_.alpha_J_error); 
+
+	par_.tau=2.0*par_.G*(par_.gapless_alpha-par_.sigma);
+	par_.tau_error=2.0*par_.G*alp_data::error_of_the_sum(par_.gapless_alpha_error,par_.sigma_error);
+
+	long int vector_size=(long int)par_.m_LambdaSbs.size();
+
+	par_.m_BISbs.resize(vector_size);
+	par_.m_BJSbs.resize(vector_size);
+	par_.m_BetaISbs.resize(vector_size);
+	par_.m_BetaJSbs.resize(vector_size);
+	par_.m_TauSbs.resize(vector_size);
+
+	long int i;
+	for(i=0;i<vector_size;i++)
+	{
+		par_.m_BISbs[i]=2.0*par_.G*(par_.gapless_a-par_.m_AISbs[i]); 
+		par_.m_BetaISbs[i]=2.0*par_.G*(par_.gapless_alpha-par_.m_AlphaISbs[i]); 
+
+		par_.m_BJSbs[i]=2.0*par_.G*(par_.gapless_a-par_.m_AJSbs[i]); 
+		par_.m_BetaJSbs[i]=2.0*par_.G*(par_.gapless_alpha-par_.m_AlphaJSbs[i]); 
+
+		par_.m_TauSbs[i]=2.0*par_.G*(par_.gapless_alpha-par_.m_SigmaSbs[i]);
+	};
+
+	compute_tmp_values(par_);
+
+}
+
+void pvalues::compute_tmp_values(ALP_set_of_parameters &par_)
+{
+	if(!par_.d_params_flag)
+	{
+		throw error("Unexpected call of pvalues::compute_tmp_values\n",1);
+	};
+
+	//tmp values
+	if(par_.lambda>0)
+	{
+		par_.vi_y_thr=alp_data::Tmax(nat_cut_off_in_max*par_.alpha_I/par_.lambda,0.0);
+		par_.vj_y_thr=alp_data::Tmax(nat_cut_off_in_max*par_.alpha_J/par_.lambda,0.0);
+		par_.c_y_thr=alp_data::Tmax(nat_cut_off_in_max*par_.sigma/par_.lambda,0.0);
+	}
+	else
+	{
+		par_.vi_y_thr=0;
+		par_.vj_y_thr=0;
+		par_.c_y_thr=0;
+
+		par_.d_params_flag=false;
+	};
+}
 
 void pvalues::get_appr_tail_prob_with_cov_without_errors(
-set_of_parameters &par_,
+const ALP_set_of_parameters &par_,
 bool blast_,
 double y_,
-long int m_,
-long int n_,
+double m_,
+double n_,
 
 double &P_,
-double &P_error_,
+
+double &E_,
 
 double &area_,
 
@@ -618,31 +391,38 @@ double h_normal_,
 long int N_normal_,
 double *p_normal_,
 
-bool &area_is_1_flag_)
+bool &area_is_1_flag_,
+bool compute_only_area_)
 {
 
-
+	//to optimize performance
+	blast_=false;
 
 	double lambda_=par_.lambda;
 	double k_=par_.K;
 
 	double ai_hat_=par_.a_I;
-	double bi_hat_=2.0*par_.G*(par_.gapless_a-par_.a_I);
+	double bi_hat_;
 	double alphai_hat_=par_.alpha_I;
-	double betai_hat_=2.0*par_.G*(par_.gapless_alpha-par_.alpha_I);
+	double betai_hat_;
 
 	double aj_hat_=par_.a_J;
-	double bj_hat_=2.0*par_.G*(par_.gapless_a-par_.a_J);
+	double bj_hat_;
 	double alphaj_hat_=par_.alpha_J;
-	double betaj_hat_=2.0*par_.G*(par_.gapless_alpha-par_.alpha_J);
+	double betaj_hat_;
 
 	double sigma_hat_=par_.sigma;
-	double tau_hat_=2.0*par_.G*(par_.gapless_alpha-par_.sigma);
+	double tau_hat_;
 
+	{
+		bi_hat_=par_.b_I;
+		betai_hat_=par_.beta_I;
 
-	bool where_it_is_works_flag=false;
-	bool negative_flag=false;
+		bj_hat_=par_.b_J;
+		betaj_hat_=par_.beta_J;
 
+		tau_hat_=par_.tau;
+	};
 
 	if(blast_)
 	{
@@ -656,54 +436,17 @@ bool &area_is_1_flag_)
 		tau_hat_=0;
 	};
 
-	double const_val=1/sqrt(2.0*3.1415926535897932384626433832795);
 	double eps=0.000001;
 
+	double m_li_y=0;
 
-	double m_li_y;
+	double tmp=ai_hat_*y_+bi_hat_;
 
-	bool flag_Mi=true;
-
-	if(flag_Mi||blast_)
-	{
-		
-		double tmp=ai_hat_*y_+bi_hat_;
-
-		if(where_it_is_works_flag)
-		{
-			if(ai_hat_*y_+bi_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-		m_li_y=m_-tmp;
-	};
+	m_li_y=m_-tmp;
 	
-	double vi_y;
+	double vi_y=0;
 
-	bool flag_Mii=true;
-
-	if(flag_Mii||blast_)
-	{
-		if(lambda_>0)
-		{
-			vi_y=alp_data::Tmax(nat_cut_off_in_max*alphai_hat_/lambda_,alphai_hat_*y_+betai_hat_);
-		}
-		else
-		{
-			vi_y=0.0;
-		};
-
-		if(where_it_is_works_flag)
-		{
-			if(alphai_hat_*y_+betai_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-	};
-
-	vi_y=alp_data::Tmax(0.0,vi_y);//to avoid unexpected error
+	vi_y=alp_data::Tmax(par_.vi_y_thr,alphai_hat_*y_+betai_hat_);
 
 	double sqrt_vi_y=sqrt(vi_y);
 
@@ -720,7 +463,7 @@ bool &area_is_1_flag_)
 	};
 
 
-	double P_m_F=normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,m_F,eps);
+	double P_m_F=sls_basic::normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,m_F,eps);
 
 	double E_m_F=-const_val*exp(-0.5*m_F*m_F);
 
@@ -731,53 +474,15 @@ bool &area_is_1_flag_)
 	double p1=m_li_y_P_m_F-sqrt_vi_y_E_m_F;
 
 
-	double n_lj_y;
+	double n_lj_y=0;
 
-	bool flag_Mj=true;
+	tmp=aj_hat_*y_+bj_hat_;
 
-	if(flag_Mj||blast_)
-	{
-		double tmp=aj_hat_*y_+bj_hat_;
+	n_lj_y=n_-tmp;
 
-		n_lj_y=n_-tmp;
+	double vj_y=0;
 
-		if(where_it_is_works_flag)
-		{
-			if(aj_hat_*y_+bj_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-
-	};
-
-	double vj_y;
-
-	bool flag_Mjj=true;
-
-	if(flag_Mjj||blast_)
-	{
-		if(lambda_>0)
-		{
-			vj_y=alp_data::Tmax(nat_cut_off_in_max*alphaj_hat_/lambda_,alphaj_hat_*y_+betaj_hat_);
-		}
-		else
-		{
-			vj_y=0.0;
-		};
-
-		if(where_it_is_works_flag)
-		{
-			if(alphaj_hat_*y_+betaj_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-
-	};
-
-	
-	vj_y=alp_data::Tmax(0.0,vj_y);//to avoid unexpected error
+	vj_y=alp_data::Tmax(par_.vj_y_thr,alphaj_hat_*y_+betaj_hat_);
 
 	double sqrt_vj_y=sqrt(vj_y);
 
@@ -792,7 +497,7 @@ bool &area_is_1_flag_)
 		n_F=n_lj_y/sqrt_vj_y;
 	};
 
-	double P_n_F=normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,n_F,eps);
+	double P_n_F=sls_basic::normal_probability(a_normal_,b_normal_,h_normal_,N_normal_,p_normal_,n_F,eps);
 
 	double E_n_F=-const_val*exp(-0.5*n_F*n_F);
 
@@ -805,30 +510,9 @@ bool &area_is_1_flag_)
 
 
 
-	double c_y;
+	double c_y=0;
 
-	bool flag_Mij=true;
-
-	if(flag_Mij||blast_)
-	{
-		if(lambda_>0)
-		{
-			c_y=alp_data::Tmax(nat_cut_off_in_max*sigma_hat_/lambda_,sigma_hat_*y_+tau_hat_);
-		}
-		else
-		{
-			c_y=0.0;
-		};
-
-		if(where_it_is_works_flag)
-		{
-			if(sigma_hat_*y_+tau_hat_<0)
-			{
-				negative_flag=true;
-			};
-		};
-
-	};
+	c_y=alp_data::Tmax(par_.c_y_thr,sigma_hat_*y_+tau_hat_);
 
 	double P_m_F_P_n_F=P_m_F*P_n_F;
 
@@ -858,37 +542,38 @@ bool &area_is_1_flag_)
 		};
 	};
 
-	if(negative_flag&&where_it_is_works_flag)
+	area_=area;
+
+	if(compute_only_area_)
 	{
-		area=0;
+		return;
 	};
-
-
 
 	double exp_lambda_y=exp(-lambda_*y_);
 
-	double area_k=area*k_;
+	double k_exp_lambda_y=k_*exp_lambda_y;
 
-	double area_k_exp_lambda_y=-area_k*exp_lambda_y;
+	double area_k_exp_lambda_y=-area*k_exp_lambda_y;
 
-	P_=one_minus_exp_function(area_k_exp_lambda_y);
+	E_=-area_k_exp_lambda_y;
+
+	P_=sls_basic::one_minus_exp_function(area_k_exp_lambda_y);
 //	P_=1-exp(-k_*area*exp(-lambda_*y_));
 
-	area_=area;
-
-};
+}
 
 void pvalues::get_P_error_using_splitting_method(
-set_of_parameters &par_,
+const ALP_set_of_parameters &par_,
 bool blast_,
 double y_,
-long int m_,
-long int n_,
+double m_,
+double n_,
 
 double &P_,
 double &P_error_,
 
-double &area_,
+double &E_,
+double &E_error_,
 
 double a_normal_,
 double b_normal_,
@@ -907,13 +592,22 @@ bool &area_is_1_flag_)
 	P_=0;
 	P_error_=0;
 
+	E_=0;
+	E_error_=0;
+
+	double exp_E_values_aver=0;
+	double exp_E_values_error=0;
+
 
 	vector<double> P_values(dim);
+	vector<double> E_values(dim);
+	vector<double> exp_E_values(dim);
+
 
 	long int i;
 	for(i=0;i<dim;i++)
 	{
-		set_of_parameters par_tmp;
+		ALP_set_of_parameters par_tmp;
 
 		par_tmp.a_I=par_.m_AISbs[i];
 		par_tmp.a_I_error=0;
@@ -960,7 +654,32 @@ bool &area_is_1_flag_)
 		par_tmp.G1=par_.G1;
 		par_tmp.G2=par_.G2;
 
-		double P_tmp,P_tmp_error,area_tmp;
+		//intercepts
+
+		{
+			par_tmp.b_I=par_.m_BISbs[i];
+			par_tmp.b_I_error=0;
+
+			par_tmp.b_J=par_.m_BJSbs[i];
+			par_tmp.b_J_error=0;
+
+			par_tmp.beta_I=par_.m_BetaISbs[i];
+			par_tmp.beta_I_error=0;
+
+			par_tmp.beta_J=par_.m_BetaJSbs[i];
+			par_tmp.beta_J_error=0;
+
+			par_tmp.tau=par_.m_TauSbs[i];
+			par_tmp.tau_error=0;
+
+			par_tmp.d_params_flag=true;
+
+			compute_tmp_values(par_tmp);
+
+		};
+
+
+		double P_tmp,area_tmp,E_tmp;
 
 		get_appr_tail_prob_with_cov_without_errors(
 		par_tmp,
@@ -970,7 +689,8 @@ bool &area_is_1_flag_)
 		n_,
 
 		P_tmp,
-		P_tmp_error,
+
+		E_tmp,
 
 		area_tmp,
 
@@ -986,6 +706,15 @@ bool &area_is_1_flag_)
 
 		P_+=P_tmp;
 
+		E_values[i]=E_tmp;
+
+		E_+=E_tmp;
+
+		double exp_E_tmp=exp(-E_tmp);
+		exp_E_values[i]=exp_E_tmp;
+		exp_E_values_aver+=exp_E_tmp;
+
+
 	};
 
 	if(dim<=1)
@@ -999,82 +728,91 @@ bool &area_is_1_flag_)
 		return;
 	};
 
+	if(E_<=0)
+	{
+		return;
+	};
+
+
 	P_/=(double)dim;
+	E_/=(double)dim;
+	exp_E_values_aver/=(double)dim;
 
 	for(i=0;i<dim;i++)
 	{
-		double tmp=P_values[i]/P_;
-		P_error_+=tmp*tmp;
+		double tmp;
+		
+		if(P_>0)
+		{
+			tmp=P_values[i]/P_;
+			P_error_+=tmp*tmp;
+		};
+
+		if(E_>0)
+		{
+			tmp=E_values[i]/E_;
+			E_error_+=tmp*tmp;
+		};
+
+		if(exp_E_values_aver>0)
+		{
+			tmp=exp_E_values[i]/exp_E_values_aver;
+			exp_E_values_error+=tmp*tmp;
+		};
+
 	};
 
 	P_error_/=(double)dim;
 	P_error_-=1;
 	
+	E_error_/=(double)dim;
+	E_error_-=1;
 
-	
-	P_error_=P_*alp_reg::sqrt_for_errors(P_error_/(double)dim);
+	exp_E_values_error/=(double)dim;
+	exp_E_values_error-=1;
 
-};
+
+	if(P_<1e-4)
+	{
+		P_error_=P_*alp_reg::sqrt_for_errors(P_error_/(double)dim);
+	}
+	else
+	{
+		P_error_=exp_E_values_aver*alp_reg::sqrt_for_errors(exp_E_values_error/(double)dim);
+	};
+
+	E_error_=E_*alp_reg::sqrt_for_errors(E_error_/(double)dim);
+
+}
 
 
 pvalues::pvalues()
 {
-	bool ee_error_flag=false;
-	error ee_error("",0);
-	
-	p_normal=NULL;
-
-	try
-	{
-	try
-	{
-
-		blast=false;
-		eps=0.0001;
-		a_normal=-10;
-		b_normal=10;
-		N_normal=NORMAL_DISTR_ARRAY_DIM;
-		h_normal=(b_normal-a_normal)/(double)N_normal;
-		p_normal=normal_distr_array_for_P_values_calculation;
-
-	}
-	catch (error er)
-	{
-		ee_error_flag=true;
-		ee_error=er;		
-	};
-	}
-	catch (...)
-	{ 
-		ee_error_flag=true;
-		ee_error=error("Internal error in the program\n",1);
-	};
-
-	//memory release
-
-	if(ee_error_flag)
-	{
-		this->~pvalues();
-		throw error(ee_error.st,ee_error.error_code);
-	};
-
-
-};
+	blast=false;
+	eps=0.0001;
+	a_normal=-10;
+	b_normal=10;
+	N_normal=NORMAL_DISTR_ARRAY_DIM;
+	h_normal=(b_normal-a_normal)/(double)N_normal;
+	p_normal=normal_distr_array_for_P_values_calculation;
+}
 
 
 pvalues::~pvalues()
 {
 	
-};
+}
 
 void pvalues::calculate_P_values(
 long int Score1,
 long int Score2,
-long int Seq1Len,
-long int Seq2Len,
-set_of_parameters &ParametersSet,
+double Seq1Len,
+double Seq2Len,
+const ALP_set_of_parameters &ParametersSet,
 vector<double> &P_values,
-vector<double> &P_values_errors)
+vector<double> &P_values_errors,
+vector<double> &E_values,
+vector<double> &E_values_errors)
 {
 	if(Score2<Score1)
 	{
@@ -1086,42 +824,96 @@ vector<double> &P_values_errors)
 		throw error("Error - Seq1Len<=0||Seq2Len<=0\n",2);
 	};
 
-	long int ymin_=Score1;//calculation of P-values in the range [ymin_,ymax_]
-	long int ymax_=Score2;
-	long int m_=Seq1Len;//length of the first sequence
-	long int n_=Seq2Len;//length of the second sequence
-	set_of_parameters &par_=ParametersSet;
+	P_values.resize(Score2-Score1+1);
+	P_values_errors.resize(Score2-Score1+1);
 
-	P_values.resize(ymax_-ymin_+1);
-	P_values_errors.resize(ymax_-ymin_+1);
-
+	E_values.resize(Score2-Score1+1);
+	E_values_errors.resize(Score2-Score1+1);
 
 
 	long int y;
-	for(y=ymin_;y<=ymax_;y++)
+	for(y=Score1;y<=Score2;y++)
 	{
+		calculate_P_values(
+		y,
+		Seq1Len,
+		Seq2Len,
+		ParametersSet,
+		P_values[y-Score1],
+		P_values_errors[y-Score1],
+		E_values[y-Score1],
+		E_values_errors[y-Score1]);
+	};
 
-		double P;
-		double P_error;
-		double area;
-		bool area_is_1_flag=false;
+}
+
+void pvalues::calculate_P_values(
+double Score,
+double Seq1Len,
+double Seq2Len,
+const ALP_set_of_parameters &ParametersSet,
+double &P_value,
+double &P_value_error,
+double &E_value,
+double &E_value_error,
+bool read_Sbs_par_flag)
+{
+
+	if(Seq1Len<=0||Seq2Len<=0)
+	{
+		throw error("Error - Seq1Len<=0||Seq2Len<=0\n",2);
+	};
+
+	double P;
+	double P_error;
+	double E;
+	double E_error;
+	double area;
+	bool area_is_1_flag=false;
 
 
-		if(read_Sbs_par_flag)
+	if(read_Sbs_par_flag)
+	{
+		
+
+		get_appr_tail_prob_with_cov_without_errors(
+		ParametersSet,
+		blast,
+		Score,
+		Seq1Len,
+		Seq2Len,
+
+		P,
+
+		E,
+
+		area,
+		a_normal,
+		b_normal,
+		h_normal,
+		N_normal,
+		p_normal,
+		area_is_1_flag);
+
+
+		
+		double P_tmp,E_tmp;
+
+		if(ParametersSet.m_LambdaSbs.size()>0)
 		{
-			
-
-			get_appr_tail_prob_with_cov_without_errors(
-			par_,
+			get_P_error_using_splitting_method(
+			ParametersSet,
 			blast,
-			(double)y,
-			m_,
-			n_,
+			Score,
+			Seq1Len,
+			Seq2Len,
 
-			P,
+			P_tmp,
 			P_error,
 
-			area,
+			E_tmp,
+			E_error,
+
 			a_normal,
 			b_normal,
 			h_normal,
@@ -1130,75 +922,426 @@ vector<double> &P_values_errors)
 			area_is_1_flag);
 
 
-			
-			double P_tmp,area_tmp;
-
-			if(par_.m_LambdaSbs.size()>0)
+			if(P_tmp>0)
 			{
-				get_P_error_using_splitting_method(
-				par_,
-				blast,
-				(double)y,
-				m_,
-				n_,
-
-				P_tmp,
-				P_error,
-
-				area_tmp,
-				a_normal,
-				b_normal,
-				h_normal,
-				N_normal,
-				p_normal,
-				area_is_1_flag);
-
-
-				if(P_tmp>0)
-				{
-					P_error=P_error/P_tmp*P;
-				};
-
-				P_values_errors[y-ymin_]=P_error;
-			}
-			else
-			{
-				P_values_errors[y-ymin_]=-DBL_MAX;
+				P_error=P_error/P_tmp*P;
 			};
 
-			
-			
+			P_value_error=P_error;
+
+			if(E_tmp>0)
+			{
+				E_error=E_error/E_tmp*E;
+			};
+
+			E_value_error=E_error;
+
 		}
 		else
 		{
-			get_appr_tail_prob_with_cov(
-			par_,
-			blast,
-			(double)y,
-			m_,
-			n_,
-
-			P,
-			P_error,
-
-			area,
-			a_normal,
-			b_normal,
-			h_normal,
-			N_normal,
-			p_normal,
-			area_is_1_flag);
-
-			P_values_errors[y-ymin_]=P_error;
+			P_value_error=-DBL_MAX;
+			E_value_error=-DBL_MAX;
 		};
-	
 
-
-		P_values[y-ymin_]=P;
 		
+		
+	}
+	else
+	{
+		get_appr_tail_prob_with_cov(
+		ParametersSet,
+		blast,
+		Score,
+		Seq1Len,
+		Seq2Len,
 
+		P,
+		P_error,
 
+		E,
+		E_error,
+
+		area,
+		a_normal,
+		b_normal,
+		h_normal,
+		N_normal,
+		p_normal,
+		area_is_1_flag);
+
+		P_value_error=P_error;
+		E_value_error=E_error;
 	};
-	
-};
+
+	P_value=P;
+	E_value=E;
+}
+
+
+//input/output Gumbel parameters
+
+namespace Sls {
+
+std::ostream &operator<<(std::ostream &s_,
+const ALP_set_of_parameters &gumbel_params_)
+{
+
+
+	s_<<"Lambda\tLambda error\tK\tK error\tC\tC error\ta\ta error\ta_1\ta_1 error\ta_2\ta_2 error\tsigma\tsigma error\talpha\talpha error\talpha_1\talpha_1 error\talpha_2\talpha_2 error\tGapless a\tGapless a error\tGapless alpha\tGapless alpha error\tG\tCalculation time\tArrays for error calculation\n";
+	s_.precision(17);
+	s_<<
+		gumbel_params_.lambda<<"\t"<<gumbel_params_.lambda_error<<"\t"<<
+		gumbel_params_.K<<"\t"<<gumbel_params_.K_error<<"\t"<<
+		gumbel_params_.C<<"\t"<<gumbel_params_.C_error<<"\t"<<
+		gumbel_params_.a<<"\t"<<gumbel_params_.a_error<<"\t"<<
+		gumbel_params_.a_J<<"\t"<<gumbel_params_.a_J_error<<"\t"<<
+		gumbel_params_.a_I<<"\t"<<gumbel_params_.a_I_error<<"\t"<<
+		gumbel_params_.sigma<<"\t"<<gumbel_params_.sigma_error<<"\t"<<
+		gumbel_params_.alpha<<"\t"<<gumbel_params_.alpha_error<<"\t"<<
+		gumbel_params_.alpha_J<<"\t"<<gumbel_params_.alpha_J_error<<"\t"<<
+		gumbel_params_.alpha_I<<"\t"<<gumbel_params_.alpha_I_error<<"\t"<<
+		gumbel_params_.gapless_a<<"\t"<<gumbel_params_.gapless_a_error<<"\t"<<
+		gumbel_params_.gapless_alpha<<"\t"<<gumbel_params_.gapless_alpha_error<<"\t"<<
+		gumbel_params_.G<<"\t"<<
+		gumbel_params_.m_CalcTime<<"\t";
+
+	long int i;
+
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_LambdaSbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_KSbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_CSbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_AJSbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_AISbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_SigmaSbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_AlphaJSbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+
+	{
+		const vector<double> &tmp=gumbel_params_.m_AlphaISbs;
+		s_<<tmp.size()<<"\t";
+		for(i=0;i<(long int)tmp.size();i++)
+		{
+			s_<<tmp[i]<<"\t";
+		};
+	};
+
+	s_<<endl;
+
+	return s_;
+
+}
+
+std::istream &operator>>(std::istream &s_,
+ALP_set_of_parameters &gumbel_params_)
+{
+
+	gumbel_params_.d_params_flag=false;
+	try
+	{
+
+		string st;
+		getline(s_,st);
+		s_>>
+			gumbel_params_.lambda>>gumbel_params_.lambda_error>>
+			gumbel_params_.K>>gumbel_params_.K_error>>
+			gumbel_params_.C>>gumbel_params_.C_error>>
+			gumbel_params_.a>>gumbel_params_.a_error>>
+			gumbel_params_.a_J>>gumbel_params_.a_J_error>>
+			gumbel_params_.a_I>>gumbel_params_.a_I_error>>
+			gumbel_params_.sigma>>gumbel_params_.sigma_error>>
+			gumbel_params_.alpha>>gumbel_params_.alpha_error>>
+			gumbel_params_.alpha_J>>gumbel_params_.alpha_J_error>>
+			gumbel_params_.alpha_I>>gumbel_params_.alpha_I_error>>
+			gumbel_params_.gapless_a>>gumbel_params_.gapless_a_error>>
+			gumbel_params_.gapless_alpha>>gumbel_params_.gapless_alpha_error>>
+			gumbel_params_.G>>
+			gumbel_params_.m_CalcTime;
+
+		long int i;
+
+
+		{
+			vector<double> &tmp=gumbel_params_.m_LambdaSbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+		{
+			vector<double> &tmp=gumbel_params_.m_KSbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+
+		{
+			vector<double> &tmp=gumbel_params_.m_CSbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+
+
+		{
+			vector<double> &tmp=gumbel_params_.m_AJSbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+		{
+			vector<double> &tmp=gumbel_params_.m_AISbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+
+
+		{
+			vector<double> &tmp=gumbel_params_.m_SigmaSbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+
+		{
+			vector<double> &tmp=gumbel_params_.m_AlphaJSbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+		{
+			vector<double> &tmp=gumbel_params_.m_AlphaISbs;
+			long int tmp_size;
+			s_>>tmp_size;
+			if(tmp_size<=0)
+			{
+				throw error("Error in the input parameters\n",4);
+			};
+			tmp.resize(tmp_size);
+			for(i=0;i<tmp_size;i++)
+			{
+				s_>>tmp[i];
+			};
+		};
+
+		gumbel_params_.d_params_flag=true;
+		return s_;
+	}
+	catch (...)
+	{ 
+		gumbel_params_.d_params_flag=false;
+		throw;
+	};
+
+}
+
+//returns "true" if the Gumbel parameters are properly defined and "false" otherwise
+bool pvalues::assert_Gumbel_parameters(
+const ALP_set_of_parameters &par_)//a set of Gumbel parameters
+{
+		if(par_.lambda<=0||
+		par_.lambda_error<0||
+
+		//the parameters C and K_C are not necessary for the P-value calculation
+		//par_.C<0||
+		//par_.C_error<0||
+
+		par_.K<=0||
+		par_.K_error<0||
+
+		par_.a_I<0||
+		par_.a_I_error<0||
+
+		par_.a_J<0||
+		par_.a_J_error<0||
+
+		par_.sigma<0||
+		par_.sigma_error<0||
+
+		par_.alpha_I<0||
+		par_.alpha_I_error<0||
+
+		par_.alpha_J<0||
+		par_.alpha_J_error<0||
+
+		par_.gapless_a<0||
+		par_.gapless_a_error<0||
+
+		par_.gapless_alpha<0||
+		par_.gapless_alpha_error<0||
+
+		par_.G<0||
+		par_.G1<0||
+		par_.G2<0||
+
+		//intercepts
+		par_.b_I_error<0||
+
+		par_.b_J_error<0||
+
+		par_.beta_I_error<0||
+
+		par_.beta_J_error<0||
+
+		par_.tau_error<0
+
+		)
+		{
+			return false;
+		};
+
+
+
+		size_t size_tmp=par_.m_LambdaSbs.size();
+		if(
+		par_.m_KSbs.size()!=size_tmp||
+		//par_.m_CSbs.size()!=size_tmp||
+
+		par_.m_SigmaSbs.size()!=size_tmp||
+
+		par_.m_AlphaISbs.size()!=size_tmp||
+		par_.m_AlphaJSbs.size()!=size_tmp||
+
+		par_.m_AISbs.size()!=size_tmp||
+		par_.m_AJSbs.size()!=size_tmp||
+
+		par_.m_BISbs.size()!=size_tmp||
+		par_.m_BJSbs.size()!=size_tmp||
+
+		par_.m_BetaISbs.size()!=size_tmp||
+		par_.m_BetaJSbs.size()!=size_tmp||
+
+		par_.m_TauSbs.size()!=size_tmp)
+		{
+			return false;
+		};
+
+
+		return true;
+
+}
+
+
+
+}
 

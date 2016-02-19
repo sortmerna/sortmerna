@@ -35,6 +35,7 @@ Author: Sergey Sheetlin
 Contents: Regression methods
 
 ******************************************************************************/
+#include "sls_basic.hpp"
 
 #include <complex>
 #include <iostream>
@@ -43,10 +44,6 @@ Contents: Regression methods
 #include <fstream>
 #include <float.h>
 #include <algorithm>
-
-#include "sls_alp_data.hpp"
-
-
 
 namespace Sls { 
 
@@ -143,32 +140,6 @@ namespace Sls {
 		double beta1_error_,
 		bool &res_was_calculated_);
 
-		static double error_of_the_lg(//lg(v1_)
-		double v1_,
-		double v1_error_);
-
-		static double error_of_the_sqrt(//sqrt(v1_)
-		double v1_,
-		double v1_error_);
-
-		static double error_of_the_ratio(//v1_/v2_
-		double v1_,
-		double v1_error_,
-		double v2_,
-		double v2_error_);
-
-		static double error_of_the_product(//v1_*v2_
-		double v1_,
-		double v1_error_,
-		double v2_,
-		double v2_error_);
-
-		static double error_of_the_sum(//v1_+v2_
-		double v1_,
-		double v1_error_,
-		double v2_,
-		double v2_error_);
-
 
 		inline static double sqrt_for_errors(
 			double x_)
@@ -181,7 +152,7 @@ namespace Sls {
 				{
 					return sqrt(x_);
 				};
-			};
+			}
 
 
 		static double median(
@@ -196,7 +167,8 @@ namespace Sls {
 
 
 	};
-};
+}
 
 
 #endif
+

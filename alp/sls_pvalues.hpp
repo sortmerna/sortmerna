@@ -36,17 +36,41 @@ Contents: P-values calculation routines
 
 ******************************************************************************/
 
+#include "sls_basic.hpp"
 
 #include <vector>
 #include <string>
+#include <math.h>
+#include <cstdlib>
 
-#include "sls_normal_distr_array.hpp"
-
+#include <cmath>
+#include <iostream>
 
 namespace Sls {
 
-	struct set_of_parameters
+	struct ALP_set_of_parameters
 	{
+		ALP_set_of_parameters()
+		{
+			d_params_flag=false;
+
+			b_I=0;
+			b_I_error=0;
+
+			b_J=0;
+			b_J_error=0;
+
+			beta_I=0;
+			beta_I_error=0;
+
+			beta_J=0;
+			beta_J_error=0;
+
+			tau=0;
+			tau_error=0;
+
+		};
+
 		double lambda;
 		double lambda_error;
 
@@ -102,10 +126,43 @@ namespace Sls {
 
 		double m_CalcTime;
 
+		bool d_params_flag;//if true, then the parameters are defined and P-values can be calculated
 
+		//intercepts
+		double b_I;
+		double b_I_error;
+
+		double b_J;
+		double b_J_error;
+
+		double beta_I;
+		double beta_I_error;
+
+		double beta_J;
+		double beta_J_error;
+
+		double tau;
+		double tau_error;
+
+		std::vector<double > m_BISbs;
+		std::vector<double > m_BJSbs;
+
+		std::vector<double > m_BetaISbs;
+		std::vector<double > m_BetaJSbs;
+
+		std::vector<double > m_TauSbs;
+
+		//tmp values
+		double vi_y_thr;
+		double vj_y_thr;
+		double c_y_thr;
 	};
 
+	std::ostream &operator<<(std::ostream &s_,
+	const ALP_set_of_parameters &gumbel_params_);
 
+	std::istream &operator>>(std::istream &s_,
+	ALP_set_of_parameters &gumbel_params_);
 
 	class pvalues{
 
@@ -116,70 +173,21 @@ namespace Sls {
 
 		~pvalues();
 
-		private:
 
-		struct error//struct to handle exceptions
-		{
-			std::string st;
-			error(std::string st_,long int error_code_){st=st_;error_code=error_code_;};
-			long int error_code;
-			//if==1: Unexpected error
-			//if==2: Invalid input parameters
-			//if=41: Memory allocation error
-		};
-
-
-		static double error_of_the_sum(//v1_+v2_
-		double v1_,
-		double v1_error_,
-		double v2_,
-		double v2_error_);
-
-		static double error_of_the_product(//v1_*v2_
-		double v1_,
-		double v1_error_,
-		double v2_,
-		double v2_error_);
-
-		static double error_of_the_sqrt(//sqrt(v1_)
-		double v1_,
-		double v1_error_);
-
-		static double error_of_the_ratio(//v1_/v2_
-		double v1_,
-		double v1_error_,
-		double v2_,
-		double v2_error_);
-
-		static double one_minus_exp_function(
-		double y_);
-
-		static double ln_one_minus_val(
-		double val_);
-
-
-		static double normal_probability(
-		double x_,
-		double eps_);
-
-		static double normal_probability(
-		double a_,
-		double b_,
-		double h_,
-		long int N_,
-		double *p_,
-		double x_,
-		double eps_);
+		public:
 
 		static void get_appr_tail_prob_with_cov(
-		set_of_parameters &par_,
+		const ALP_set_of_parameters &par_,
 		bool blast_,
 		double y_,
-		long int m_,
-		long int n_,
+		double m_,
+		double n_,
 
 		double &P_,
 		double &P_error_,
+
+		double &E_,
+		double &E_error_,
 
 		double &area_,
 
@@ -191,16 +199,18 @@ namespace Sls {
 
 		bool &area_is_1_flag_);
 
+		static void compute_tmp_values(ALP_set_of_parameters &par_);
 
 		static void get_appr_tail_prob_with_cov_without_errors(
-		set_of_parameters &par_,
+		const ALP_set_of_parameters &par_,
 		bool blast_,
 		double y_,
-		long int m_,
-		long int n_,
+		double m_,
+		double n_,
 
 		double &P_,
-		double &P_error_,
+
+		double &E_,
 
 		double &area_,
 
@@ -210,19 +220,21 @@ namespace Sls {
 		long int N_normal_,
 		double *p_normal_,
 
-		bool &area_is_1_flag_);
+		bool &area_is_1_flag_,
+		bool compute_only_area_=false);
 
 		static void get_P_error_using_splitting_method(
-		set_of_parameters &par_,
+		const ALP_set_of_parameters &par_,
 		bool blast_,
 		double y_,
-		long int m_,
-		long int n_,
+		double m_,
+		double n_,
 
 		double &P_,
 		double &P_error_,
 
-		double &area_,
+		double &E_,
+		double &E_error_,
 
 		double a_normal_,
 		double b_normal_,
@@ -234,21 +246,68 @@ namespace Sls {
 
 
 		public:
+
+		static void compute_intercepts(
+		ALP_set_of_parameters &par_);
+
 		void calculate_P_values(
 		long int Score1,
 		long int Score2,
-		long int Seq1Len,
-		long int Seq2Len,
-		set_of_parameters &ParametersSet,
+		double Seq1Len,
+		double Seq2Len,
+		const ALP_set_of_parameters &ParametersSet,
 		std::vector<double> &P_values,
-		std::vector<double> &P_values_errors);
+		std::vector<double> &P_values_errors,
+		std::vector<double> &E_values,
+		std::vector<double> &E_values_errors);
+
+		void calculate_P_values(
+		double Score,
+		double Seq1Len,
+		double Seq2Len,
+		const ALP_set_of_parameters &ParametersSet,
+		double &P_value,
+		double &P_value_error,
+		double &E_value,
+		double &E_value_error,
+		bool read_Sbs_par_flag=true);
+
+		static inline double ran3()//generates the next random value
+		{
+			double rand_C=(double)((double)rand()/(double)RAND_MAX);
+			return rand_C;	
+		};
+
+		static inline double standard_normal()//generates standard normal random value using the Box–Muller transform
+		{
+			double r1=0;
+			while(r1==0)
+			{
+				r1=ran3();
+			};
+			double r2=0;
+			while(r2==0)
+			{
+				r2=ran3();
+			};
+
+			double v1=-2*log(r1);
+			if(v1<0)
+			{
+				v1=0;
+			};
+			return sqrt(v1)*cos(2*pi*r2);
+		};
+
+		static //returns "true" if the Gumbel parameters are properly defined and "false" otherwise
+		bool assert_Gumbel_parameters(
+		const ALP_set_of_parameters &par_);//a set of Gumbel parameters
 
 
 
 
 
-
-		private:
+		public:
 
 
 		bool blast;

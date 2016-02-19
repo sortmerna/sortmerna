@@ -141,3 +141,4 @@ namespace Njn {
 
 
 #endif //!INCLUDED_NJS_LOCALMAXSTAT 
+

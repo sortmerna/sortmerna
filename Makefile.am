@@ -3,30 +3,20 @@
 # bin are installed by default in /usr/local/bin/
 bin_PROGRAMS       = indexdb_rna sortmerna
 
-include_HEADERS    = ./alp/gumbel_params.hpp \
-                     ./alp/njn_approx.hpp \
-                     ./alp/njn_doubletype.hpp \
-                     ./alp/njn_dynprogprob.hpp \
+include_HEADERS    = ./alp/njn_dynprogprob.hpp \
                      ./alp/njn_dynprogproblim.hpp \
                      ./alp/njn_dynprogprobproto.hpp \
-                     ./alp/njn_function.hpp \
-                     ./alp/njn_integer.hpp \
                      ./alp/njn_ioutil.hpp \
                      ./alp/njn_localmaxstat.hpp \
                      ./alp/njn_localmaxstatmatrix.hpp \
                      ./alp/njn_localmaxstatutil.hpp \
-                     ./alp/njn_matrix.hpp \
-                     ./alp/njn_memutil.hpp \
                      ./alp/njn_random.hpp \
-                     ./alp/njn_root.hpp \
-                     ./alp/njn_stringutil.hpp \
-                     ./alp/njn_uniform.hpp \
-                     ./alp/njn_vector.hpp \
+                     ./alp/sls_alignment_evaluer.hpp \
                      ./alp/sls_alp.hpp \
                      ./alp/sls_alp_data.hpp \
                      ./alp/sls_alp_regression.hpp \
                      ./alp/sls_alp_sim.hpp \
-                     ./alp/sls_normal_distr_array.hpp \
+                     ./alp/sls_basic.hpp \
                      ./alp/sls_pvalues.hpp \
                      ./cmph/bdz.h \
                      ./cmph/bdz_ph.h \
@@ -102,8 +92,7 @@ indexdb_rna_SOURCES    = ./cmph/bdz.c \
                          ./cmph/vstack.c \
                          ./src/indexdb.cpp
 
-sortmerna_SOURCES  = ./alp/gumbel_params.cpp \
-                     ./alp/njn_dynprogprob.cpp \
+sortmerna_SOURCES  = ./alp/njn_dynprogprob.cpp \
                      ./alp/njn_dynprogproblim.cpp \
                      ./alp/njn_dynprogprobproto.cpp \
                      ./alp/njn_ioutil.cpp \
@@ -111,10 +100,12 @@ sortmerna_SOURCES  = ./alp/gumbel_params.cpp \
                      ./alp/njn_localmaxstatmatrix.cpp \
                      ./alp/njn_localmaxstatutil.cpp \
                      ./alp/njn_random.cpp \
+                     ./alp/sls_alignment_evaluer.cpp \
                      ./alp/sls_alp.cpp \
                      ./alp/sls_alp_data.cpp \
                      ./alp/sls_alp_regression.cpp \
                      ./alp/sls_alp_sim.cpp \
+                     ./alp/sls_basic.cpp \
                      ./alp/sls_pvalues.cpp \
                      ./src/bitvector.cpp \
                      ./src/load_index.cpp \
