@@ -19,10 +19,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  *
  */
 
@@ -1578,10 +1581,10 @@ int main (int argc, char** argv)
       full_len+=len;    
       if ( len < pread_gv )
       {
-        fprintf(stderr, "\n  %sERROR%s: at least one of your reads is shorter "
-                        "than the seed length %d, please filter out all reads "
-                        "shorter than %d to continue index construction.\n\n",
-                        "\033[0;31m","\033[0m", pread_gv, pread_gv );
+        fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your sequences "
+                        "is shorter than the seed length %d, please filter out all "
+                        "sequences shorter than %d to continue index construction.\n\n",
+                        "\033[0;31m","\033[0m", __LINE__, __FILE__, pread_gv, pread_gv );
 	      exit(EXIT_FAILURE);
       }
       // if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )

@@ -20,12 +20,13 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          pierre.pericard@lifl.fr
- *          mikael.salson@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
 #include "../include/paralleltraversal.hpp"
@@ -1812,11 +1813,15 @@ paralleltraversal (char* inputreads,
       cout << ".STOP." <<endl; //TESTING
 #endif  
     }// (s < file_sections - 1)
-    if ( map_size_set_gv )
+    if (map_size_set_gv)
     {
       // free the mmap'd file section
       unmmap_reads(raw, partial_file_size);
       offset_map+=map_size_gv;
+    }
+    else
+    {
+      delete [] raw;
     }
     // last section of the full file, count strings until EOF is reached
     if ( ++file_s == file_sections - 1 )
