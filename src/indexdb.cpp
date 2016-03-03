@@ -112,7 +112,7 @@ uint32_t num_elem[100] = {0};
 bool verbose = false;
 
 // change version number here
-char version_num[] = "2.1, 01/02/2016";
+char version_num[] = "2.1b, 03/03/2016";
 
 
 
