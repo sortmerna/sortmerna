@@ -1,3 +1,7 @@
+03 March 2016 [Release 2.1b]
+----------------------------
+	- fix issue regarding duplications in include_HEADERS for Galaxy (see pull request 105)
+
 01 February 2016 [Release 2.1]
 -----------------------------
 31 August 2015
