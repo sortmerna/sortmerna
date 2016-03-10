@@ -1,4 +1,4 @@
-AC_PREREQ([2.69])
+AC_PREREQ([2.50])
 AC_INIT([sortmerna],[2.1b],[jenya DT kopylov AT gmail DT fr],[sortmerna],[http://bioinfo.lifl.fr/sortmerna])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([include/config.h])
