@@ -6,9 +6,6 @@ sortmerna
 This is ongoing development of SortMeRNA. See 'release' on this page for
 releases or visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
-WARNING: Do not run `_autotools_batch_.sh` unless you have Autotools installed. 
-This script is for producing a distribution version of the code.
-
 NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
 A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
 though has not been yet incorporated into the Clang mainline. The user may follow the
@@ -40,6 +37,15 @@ command was run.
 To compile on Linux OS:
 -----------------------
 
+NOTE: You will require Autotools to build from the cloned
+repository or from source code in the `Source code` tar
+balls under release Downloads.
+
+```bash
+bash autogen.sh
+```
+
+
 (1) Check your GCC compiler is version 4.0 or higher:
 
 ```bash
@@ -49,20 +55,31 @@ gcc --version
 (2) Run configure and make scripts:
 
 ```bash
-bash ./build.sh
+./configure
+make
 ```
 
-Note: `make install` is not called in this script. However, any arguments given
-to `build.sh` will be passed to the configure script. If you plan on calling `make install`
-afterwards, then you can set your installation directory using
-`build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
-binaries `sortmerna` and `indexdb_rna` to your installation directory after
-calling `build.sh`.
+(3) To install:
 
+```bash
+make install
+```
+
+You can define an alternative installation directory by
+specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
 To compile on Mac OS:
 ---------------------
+
+NOTE: You will require Autotools to build from the cloned
+repository or from source code in the `Source code` tar
+balls under release Downloads.
+
+```bash
+bash autogen.sh
+```
+
 
 (1) Check the version of your C/C++ compiler:
 
@@ -84,12 +101,12 @@ export CXX=clang++
 Run configure and make scripts with default parameters:
 
 ```bash
-bash ./build.sh
+./configure
+make
 ```
 
 (2b) To set your compiler to the original GCC (check you have it "gcc-mp-4.8 --version", 
-if not then see "Install GCC through MacPorts" below. Note the GCC compiler comes in many 
-versions, 4.8 is one of the latest):
+if not then see "Install GCC through MacPorts" below):
 
 ```bash
 export CC=gcc-mp-4.8
@@ -105,21 +122,25 @@ Assuming you have Zlib installed:
 Run configure and make scripts (if compression feature wanted):
 
 ```bash
-bash ./build.sh --with-zlib="/opt/local"
+./configure --with-zlib="/opt/local"
+make
 ```
 
 Otherwise (if compression feature not wanted):
 
 ```bash
-bash ./build.sh --without-zlib"
+./configure --without-zlib"
+make
 ```
 
-Note 1: `make install` is not called in this script. However, any arguments given
-to `build.sh` will be passed to the configure script. If you plan on calling `make install`
-afterwards, then you can set your installation directory using
-`build.sh --prefix=/path/to/installation/dir`. Otherwise, you can simply copy the
-binaries `sortmerna` and `indexdb_rna` to your installation directory after
-calling `build.sh`.
+(3) To install:
+
+```bash
+make install
+```
+
+You can define an alternative installation directory by
+specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
 Install Clang for Mac OS 

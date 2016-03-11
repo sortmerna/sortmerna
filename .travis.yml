@@ -14,15 +14,20 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda update --yes conda
 install:
-  - conda create --yes -n env_name python=2.7 numpy scipy zlib
+  - conda create --yes -n env_name python=2.7 numpy scipy zlib autotools
   - source activate env_name
   - pip install scikit-bio==0.2.3
 script:
   # configure and test without zlib
-  - bash ./build.sh --without-zlib
+  - bash ./autogen.sh
+  - ./configure --without-zlib
+  - make
   - export PATH="$PWD:$PATH"; cd tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   # configure and test with zlib
-  - cd ../; make clean; bash ./build.sh --with-zlib; cd ./tests
+  - cd ../; make clean
+  - ./configure --with-zlib
+  - make
+  - cd ./tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi

@@ -3,7 +3,13 @@
 # bin are installed by default in /usr/local/bin/
 bin_PROGRAMS       = indexdb_rna sortmerna
 
-include_HEADERS    = ./alp/njn_dynprogprob.hpp \
+include_HEADERS    = ./alp/njn_approx.hpp \
+                     ./alp/njn_matrix.hpp \
+                     ./alp/njn_integer.hpp \
+                     ./alp/njn_doubletype.hpp \
+                     ./alp/njn_function.hpp \
+                     ./alp/njn_memutil.hpp \
+                     ./alp/njn_dynprogprob.hpp \
                      ./alp/njn_dynprogproblim.hpp \
                      ./alp/njn_dynprogprobproto.hpp \
                      ./alp/njn_ioutil.hpp \
@@ -149,6 +155,7 @@ EXTRA_DIST = rRNA_databases/rfam-5.8s-database-id98.fasta \
              rRNA_databases/silva-euk-28s-id98.fasta \
              scripts/merge-paired-reads.sh \
              scripts/unmerge-paired-reads.sh \
+             m4/ax_check_zlib.m4 \
              SortMeRNA-User-Manual-2.1.pdf 
 
 uninstall: uninstall-am
