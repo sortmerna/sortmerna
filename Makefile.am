@@ -3,7 +3,10 @@
 # bin are installed by default in /usr/local/bin/
 bin_PROGRAMS       = indexdb_rna sortmerna
 
-include_HEADERS    = ./alp/njn_approx.hpp \
+include_HEADERS    = ./alp/njn_uniform.hpp \
+                     ./alp/njn_root.hpp \
+                     ./alp/njn_vector.hpp \
+                     ./alp/njn_approx.hpp \
                      ./alp/njn_matrix.hpp \
                      ./alp/njn_integer.hpp \
                      ./alp/njn_doubletype.hpp \
