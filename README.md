@@ -3,32 +3,34 @@ sortmerna
 
 [![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
 
-This is ongoing development of SortMeRNA. See 'release' on this page for
-releases or visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
+SortMeRNA is a local sequence alignment tool for filtering, mapping and OTU-picking. The core
+algorithm is based on approximate seeds and allows for fast and sensitive analyses of NGS reads.
+The main application of SortMeRNA is filtering rRNA from metatranscriptomic data. Additional
+applications include OTU-picking and taxonomy assignation available through QIIME v1.9.1 (http:
+//qiime.org). SortMeRNA takes as input a file of reads (fasta or fastq format) and one or multiple
+rRNA database file(s), and sorts apart aligned and rejected reads into two files specified by the user.
+SortMeRNA works with Illumina, 454, Ion Torrent and PacBio data, and can produce SAM and
+BLAST-like alignments.
 
-NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
-A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
-though has not been yet incorporated into the Clang mainline. The user may follow the
-steps outlined in the above link to install the version of Clang with multithreading support, 
-though this version has not yet been tested with SortMeRNA. Otherwise, the user is 
-recommended to install the original GCC compiler via MacPorts (contains full multithreading support).
+Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
+
 
 Table of Contents
 =================
 * [Documentation](#documentation)
 * [Compilation](#compilation)
-	*[Linux OS](#to-compile-on-linux-os)
-	*[Mac OS](#to-compile-on-mac-os)
+  *[Linux OS](#to-compile-on-linux-os)
+  *[Mac OS](#to-compile-on-mac-os)
 * [Install compilers](#install-compilers)
-	* [Clang for Mac OS](#install-clang-for-mac-os)
-	* [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
+  * [Clang for Mac OS](#install-clang-for-mac-os)
+  * [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
 * [Tests](#tests)
 * [Third-party libraries](#third-party-libraries)
 * [Wrappers and packages](#wrappers-and-packages)
-	*[Galaxy](#galaxy)
-	*[Debian](#debian)
-	*[GNU Guix](#gnu-guix)
-	*[QIIME](#qiime)
+  *[Galaxy](#galaxy)
+  *[Debian](#debian)
+  *[GNU Guix](#gnu-guix)
+  *[QIIME](#qiime)
 * [Taxonomies](#taxonomies)
 * [Citation](#citation)
 * [Contributors](#contributors)
@@ -160,6 +162,13 @@ specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 Install compilers
 =================
+
+NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
+A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
+though has not been yet incorporated into the Clang mainline. The user may follow the
+steps outlined in the above link to install the version of Clang with multithreading support, 
+though this version has not yet been tested with SortMeRNA. Otherwise, the user is 
+recommended to install the original GCC compiler via MacPorts (contains full multithreading support).
 
 Clang for Mac OS
 ----------------
