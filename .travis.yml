@@ -13,9 +13,9 @@ before_install:
   - ./miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda update --yes conda
-  - conda config --add channels https://github.com/ChrisBarker-NOAA
 install:
-  - conda create --yes -n env_name python=2.7 numpy scipy zlib autoconf
+  - conda create --yes -n env_name python=2.7 numpy scipy zlib
+  - conda install -c https://conda.anaconda.org/biobuilds autoconf-update
   - source activate env_name
   - pip install scikit-bio==0.2.3
 script:
