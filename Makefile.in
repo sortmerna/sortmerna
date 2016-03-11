@@ -106,7 +106,7 @@ CONFIG_HEADER = $(top_builddir)/include/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(indexdir)" \
-	"$(DESTDIR)$(sortmernadir)" "$(DESTDIR)$(includedir)"
+	"$(DESTDIR)$(includedir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_indexdb_rna_OBJECTS = ./cmph/bdz.$(OBJEXT) ./cmph/bdz_ph.$(OBJEXT) \
@@ -217,7 +217,7 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-DATA = $(index_DATA) $(sortmerna_DATA)
+DATA = $(index_DATA)
 HEADERS = $(include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -353,7 +353,16 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-include_HEADERS = ./alp/njn_dynprogprob.hpp \
+include_HEADERS = ./alp/njn_uniform.hpp \
+                     ./alp/njn_root.hpp \
+                     ./alp/njn_vector.hpp \
+                     ./alp/njn_approx.hpp \
+                     ./alp/njn_matrix.hpp \
+                     ./alp/njn_integer.hpp \
+                     ./alp/njn_doubletype.hpp \
+                     ./alp/njn_function.hpp \
+                     ./alp/njn_memutil.hpp \
+                     ./alp/njn_dynprogprob.hpp \
                      ./alp/njn_dynprogproblim.hpp \
                      ./alp/njn_dynprogprobproto.hpp \
                      ./alp/njn_ioutil.hpp \
@@ -361,6 +370,7 @@ include_HEADERS = ./alp/njn_dynprogprob.hpp \
                      ./alp/njn_localmaxstatmatrix.hpp \
                      ./alp/njn_localmaxstatutil.hpp \
                      ./alp/njn_random.hpp \
+                     ./alp/sls_normal_distr_array.hpp \
                      ./alp/sls_alignment_evaluer.hpp \
                      ./alp/sls_alp.hpp \
                      ./alp/sls_alp_data.hpp \
@@ -471,10 +481,6 @@ sortmerna_SOURCES = ./alp/njn_dynprogprob.cpp \
                      ./src/outputformats.cpp \
                      ./src/main.cpp
 
-
-# dir are installed by default in /usr/local/sortmerna/
-sortmernadir = $(prefix)/@PACKAGE@/index
-sortmerna_DATA = index/.tobuild
 indexdir = $(prefix)/@PACKAGE@/rRNA_databases
 index_DATA = rRNA_databases/rfam-5.8s-database-id98.fasta \
                   rRNA_databases/rfam-5s-database-id98.fasta \
@@ -499,6 +505,8 @@ EXTRA_DIST = rRNA_databases/rfam-5.8s-database-id98.fasta \
              rRNA_databases/silva-euk-28s-id98.fasta \
              scripts/merge-paired-reads.sh \
              scripts/unmerge-paired-reads.sh \
+             m4/ax_check_zlib.m4 \
+             index \
              SortMeRNA-User-Manual-2.1.pdf 
 
 all: all-am
@@ -830,27 +838,6 @@ uninstall-indexDATA:
 	@list='$(index_DATA)'; test -n "$(indexdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(indexdir)'; $(am__uninstall_files_from_dir)
-install-sortmernaDATA: $(sortmerna_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(sortmerna_DATA)'; test -n "$(sortmernadir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(sortmernadir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(sortmernadir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(sortmernadir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(sortmernadir)" || exit $$?; \
-	done
-
-uninstall-sortmernaDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(sortmerna_DATA)'; test -n "$(sortmernadir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(sortmernadir)'; $(am__uninstall_files_from_dir)
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
@@ -1099,7 +1086,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(DATA) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(indexdir)" "$(DESTDIR)$(sortmernadir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(indexdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1160,8 +1147,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-includeHEADERS install-indexDATA \
-	install-sortmernaDATA
+install-data-am: install-includeHEADERS install-indexDATA
 
 install-dvi: install-dvi-am
 
@@ -1209,7 +1195,7 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
-	uninstall-indexDATA uninstall-sortmernaDATA
+	uninstall-indexDATA
 
 .MAKE: install-am install-strip
 
@@ -1225,18 +1211,17 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
 	install-exec-am install-html install-html-am \
 	install-includeHEADERS install-indexDATA install-info \
 	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-sortmernaDATA install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
 	uninstall-am uninstall-binPROGRAMS uninstall-includeHEADERS \
-	uninstall-indexDATA uninstall-sortmernaDATA
+	uninstall-indexDATA
 
 .PRECIOUS: Makefile
 
 
 uninstall: uninstall-am
-	cd $(prefix)/@PACKAGE@/index && rm *
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

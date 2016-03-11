@@ -1717,13 +1717,13 @@ int main (int argc, char** argv)
         fprintf(stderr,"\n  %sWARNING%s: the index for sequence `","\033[0;33m","\033[0m");
         int c = 0;
         do
-	{
+	      {
           c = fgetc(fp);
           fprintf(stderr,"%c",(char)c);
         } while ( c != '\n' );
                 
-        fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.",mem);
-        fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.",estimated_seq_mem);
+        fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.", mem);
+        fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.", estimated_seq_mem);
         fseek(fp,end_seq,SEEK_SET);
         continue;
       }

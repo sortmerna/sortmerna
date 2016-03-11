@@ -20,6 +20,7 @@ include_HEADERS    = ./alp/njn_uniform.hpp \
                      ./alp/njn_localmaxstatmatrix.hpp \
                      ./alp/njn_localmaxstatutil.hpp \
                      ./alp/njn_random.hpp \
+                     ./alp/sls_normal_distr_array.hpp \
                      ./alp/sls_alignment_evaluer.hpp \
                      ./alp/sls_alp.hpp \
                      ./alp/sls_alp_data.hpp \
@@ -129,10 +130,6 @@ sortmerna_SOURCES  = ./alp/njn_dynprogprob.cpp \
                      ./src/ssw.c \
                      ./src/outputformats.cpp \
                      ./src/main.cpp
-                     
-# dir are installed by default in /usr/local/sortmerna/
-sortmernadir       =  $(prefix)/@PACKAGE@/index
-sortmerna_DATA     =  index/.tobuild
 
 indexdir       =  $(prefix)/@PACKAGE@/rRNA_databases
 index_DATA     =  rRNA_databases/rfam-5.8s-database-id98.fasta \
@@ -159,9 +156,8 @@ EXTRA_DIST = rRNA_databases/rfam-5.8s-database-id98.fasta \
              scripts/merge-paired-reads.sh \
              scripts/unmerge-paired-reads.sh \
              m4/ax_check_zlib.m4 \
+             index \
              SortMeRNA-User-Manual-2.1.pdf 
 
 uninstall: uninstall-am
-	cd $(prefix)/@PACKAGE@/index && rm *
-
 

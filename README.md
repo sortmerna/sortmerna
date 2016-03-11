@@ -37,14 +37,16 @@ command was run.
 To compile on Linux OS:
 -----------------------
 
-NOTE: You will require Autotools to build from the cloned
+NOTE: You will require ```autoconf``` to build from the cloned
 repository or from source code in the `Source code` tar
-balls under release Downloads.
+balls under release Downloads. ```autoconf``` is installable
+via ```conda```, see [here](https://anaconda.org/biobuilds/autoconf-update) for details.
+
+(0) Prepare your build system for compilation:
 
 ```bash
 bash autogen.sh
 ```
-
 
 (1) Check your GCC compiler is version 4.0 or higher:
 
@@ -72,14 +74,16 @@ specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 To compile on Mac OS:
 ---------------------
 
-NOTE: You will require Autotools to build from the cloned
+NOTE: You will require ```autoconf``` to build from the cloned
 repository or from source code in the `Source code` tar
-balls under release Downloads.
+balls under release Downloads. ```autoconf``` is installable
+via ```conda```, see [here](https://anaconda.org/biobuilds/autoconf-update) for details.
+
+(0) Prepare your build system for compilation:
 
 ```bash
 bash autogen.sh
 ```
-
 
 (1) Check the version of your C/C++ compiler:
 
