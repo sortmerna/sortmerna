@@ -19,18 +19,18 @@ Table of Contents
 =================
 * [Documentation](#documentation)
 * [Compilation](#compilation)
-  *[Linux OS](#to-compile-on-linux-os)
-  *[Mac OS](#to-compile-on-mac-os)
-* [Install compilers](#install-compilers)
-  * [Clang for Mac OS](#install-clang-for-mac-os)
-  * [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
+	* [Linux OS](#to-compile-on-linux-os)
+	* [Mac OS](#to-compile-on-mac-os)
+* [Install compilers and ZLIB](#install-compilers)
+	* [Clang for Mac OS](#install-clang-for-mac-os)
+	* [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
 * [Tests](#tests)
 * [Third-party libraries](#third-party-libraries)
 * [Wrappers and packages](#wrappers-and-packages)
-  *[Galaxy](#galaxy)
-  *[Debian](#debian)
-  *[GNU Guix](#gnu-guix)
-  *[QIIME](#qiime)
+	* [Galaxy](#galaxy)
+	* [Debian](#debian)
+	* [GNU Guix](#gnu-guix)
+	* [QIIME](#qiime)
 * [Taxonomies](#taxonomies)
 * [Citation](#citation)
 * [Contributors](#contributors)
@@ -160,8 +160,8 @@ You can define an alternative installation directory by
 specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
-Install compilers
-=================
+Install compilers and ZLIB
+==========================
 
 NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
 A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
