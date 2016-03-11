@@ -12,9 +12,30 @@ though has not been yet incorporated into the Clang mainline. The user may follo
 steps outlined in the above link to install the version of Clang with multithreading support, 
 though this version has not yet been tested with SortMeRNA. Otherwise, the user is 
 recommended to install the original GCC compiler via MacPorts (contains full multithreading support).
+
+Table of Contents
+=================
+* [Documentation](#documentation)
+* [Compilation](#compilation)
+	*[Linux OS](#to-compile-on-linux-os)
+	*[Mac OS](#to-compile-on-mac-os)
+* [Install compilers](#install-compilers)
+	* [Clang for Mac OS](#install-clang-for-mac-os)
+	* [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
+* [Tests](#tests)
+* [Third-party libraries](#third-party-libraries)
+* [Wrappers and packages](#wrappers-and-packages)
+	*[Galaxy](#galaxy)
+	*[Debian](#debian)
+	*[GNU Guix](#gnu-guix)
+	*[QIIME](#qiime)
+* [Taxonomies](#taxonomies)
+* [Citation](#citation)
+* [Contributors](#contributors)
+
   
-Documentation:
---------------
+Documentation
+=============
 
 If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, you can generate the documentation
 by modifying the following lines in ```doxygen_configure.txt```:
@@ -33,20 +54,21 @@ doxygen doxygen_configure.txt
 This command will generate a folder ```html``` in the directory from which the
 command was run.
 
-
-To compile on Linux OS:
------------------------
+Compilation
+===========
 
 NOTE: You will require ```autoconf``` to build from the cloned
 repository or from source code in the `Source code` tar
-balls under release Downloads. ```autoconf``` is installable
-via ```conda```, see [here](https://anaconda.org/biobuilds/autoconf-update) for details.
+balls under release Downloads.
 
 (0) Prepare your build system for compilation:
 
 ```bash
 bash autogen.sh
 ```
+
+Linux OS
+--------
 
 (1) Check your GCC compiler is version 4.0 or higher:
 
@@ -71,19 +93,8 @@ You can define an alternative installation directory by
 specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
-To compile on Mac OS:
----------------------
-
-NOTE: You will require ```autoconf``` to build from the cloned
-repository or from source code in the `Source code` tar
-balls under release Downloads. ```autoconf``` is installable
-via ```conda```, see [here](https://anaconda.org/biobuilds/autoconf-update) for details.
-
-(0) Prepare your build system for compilation:
-
-```bash
-bash autogen.sh
-```
+Mac OS
+------
 
 (1) Check the version of your C/C++ compiler:
 
@@ -133,7 +144,7 @@ make
 Otherwise (if compression feature not wanted):
 
 ```bash
-./configure --without-zlib"
+./configure --without-zlib
 make
 ```
 
@@ -147,8 +158,11 @@ You can define an alternative installation directory by
 specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
-Install Clang for Mac OS 
-------------------------
+Install compilers
+=================
+
+Clang for Mac OS
+----------------
 
 Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
 install the latest version of Clang supported with Xcode. 
@@ -160,8 +174,8 @@ Xcode -> Preferences -> Downloads
 Under "Components", click to install "Command Line Tools"
 
 
-Install GCC and Zlib though MacPorts
-------------------------------------
+GCC and Zlib though MacPorts
+----------------------------
 
 Assuming you have MacPorts installed, type:
 
@@ -176,7 +190,7 @@ as well as Zlib in /opt/local/lib/libz.dylib and /opt/local/include/zlib.h .
 
 
 Tests
------
+=====
 
 Usage tests can be run with the following command:
 ```
@@ -186,33 +200,36 @@ Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py
 
 
 Third-party libraries
----------------------
+=====================
 Various features in SortMeRNA are dependent on third-party libraries, including:
 	1. [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
 	2. [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
 	3. [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml): FASTA/FASTQ parser (including compressed files)
 	4. [SSW](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138): SIMD Smith-Waterman C/C++ Library
 
-Galaxy Wrapper
---------------
+Wrappers and Packages
+=====================
+
+Galaxy
+------
 
 Thanks to Björn Grüning and Nicola Soranzo, an up-to-date Galaxy wrapper exists for SortMeRNA.
 Please visit Björn's [github page](https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna) for installation.
 
-Debian package
---------------
+Debian
+------
 
 Thanks to the [Debian Med](https://www.debian.org/devel/debian-med/) team, SortMeRNA 2.0 is now a package in Debian.
 Thanks to Andreas Tille for the sortmerna and indexdb_rna man pages (version 2.0).
 These have been updated for 2.1 in the master repository.
 
-GNU Guix package
-----------------
+GNU Guix
+--------
 
 Thanks to Ben Woodcroft for adding SortMeRNA 2.1 to GNU Guix, find the package [here](https://www.gnu.org/software/guix/packages/).
 
-Running in QIIME
-----------------
+QIIME
+-----
 
 SortMeRNA 2.0 can be used in [QIIME](http://qiime.org)'s [pick_closed_reference_otus.py](http://qiime.org/scripts/pick_closed_reference_otus.html),
 [pick_open_reference_otus.py](http://qiime.org/scripts/pick_open_reference_otus.html) and [assign_taxonomy.py](http://qiime.org/scripts/assign_taxonomy.html) scripts.
@@ -220,17 +237,19 @@ SortMeRNA 2.0 can be used in [QIIME](http://qiime.org)'s [pick_closed_reference_
 Note: At the moment, only 2.0 is compatible with QIIME.
 
 Taxonomies
-----------
+==========
 
 The folder `rRNA_databases/silva_ids_acc_tax.tar.gz` contains SILVA taxonomy strings (extracted from XML file generated by ARB)
 for each of the reference sequences in the representative databases. The format of the files is three tab-separated columns,
 the first being the reference sequence ID, the second being the accession number and the final column is the taxonomy.
 
 Citation
---------
+========
 
 If you use SortMeRNA, please cite:
 Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data", Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.
 
-
+Contributors
+============
+See [AUTHORS](./AUTHORS) for a list of contributors to this project.
 
