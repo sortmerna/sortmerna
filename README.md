@@ -211,10 +211,10 @@ Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py
 Third-party libraries
 =====================
 Various features in SortMeRNA are dependent on third-party libraries, including:
-	1. [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
-	2. [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
-	3. [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml): FASTA/FASTQ parser (including compressed files)
-	4. [SSW](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138): SIMD Smith-Waterman C/C++ Library
+	- [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
+	- [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
+	- [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml): FASTA/FASTQ parser (including compressed files)
+	- [SSW](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138): SIMD Smith-Waterman C/C++ Library
 
 Wrappers and Packages
 =====================
