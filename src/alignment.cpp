@@ -573,7 +573,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                           {
                             fprintf(stderr, "\t  %sERROR%s: could not allocate memory for "
                                       "alignment storage (s_align* bigger_alignment_array "
-                                      "in paralleltraversal.cpp\n", "\033[0;31m", "\033[0m");
+                                      "in paralleltraversal.cpp\n", startColor, "\033[0m");
                             exit(EXIT_FAILURE);
                           }
                           // copy smaller array to larger memory slot
@@ -709,7 +709,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       if ( new_alignment == NULL )
                       {
                         fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment "
-                                       "storage (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+                                       "storage (paralleltraversal.cpp)\n",startColor,"\033[0m");
                         exit(EXIT_FAILURE);
                       }
                       else

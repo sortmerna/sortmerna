@@ -52,7 +52,7 @@ load_reads(char* inputreads,
   if ( raw == NULL )
   {
     fprintf(stderr,"    %sERROR%s: [Line %d: %s] could not allocate memory for reference sequence buffer\n",
-                   "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                   startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
   // 2 pointers per entry (1 for label + 1 for sequence)
@@ -60,7 +60,7 @@ load_reads(char* inputreads,
   if ( reads == NULL )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] cannot allocate memory for reads\n\n",
-                   "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                   startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_LIBZ
@@ -119,7 +119,7 @@ load_reads(char* inputreads,
   if (l == -2)
   {
     fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not read reads file - %s\n\n",
-                   "\033[0;31m","\033[0m", __LINE__, __FILE__, strerror(errno));
+                   startColor,"\033[0m", __LINE__, __FILE__, strerror(errno));
     exit(EXIT_FAILURE);    
   }
   kseq_destroy(seq);

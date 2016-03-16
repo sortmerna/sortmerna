@@ -21,9 +21,10 @@ Table of Contents
 * [Compilation](#compilation)
 	* [Linux OS](#to-compile-on-linux-os)
 	* [Mac OS](#to-compile-on-mac-os)
-* [Install compilers and ZLIB](#install-compilers)
+* [Install compilers, ZLIB and autoconf](#install-compilers-,-zlib-and-autoconf)
 	* [Clang for Mac OS](#install-clang-for-mac-os)
 	* [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
+	* [autoconf](#autoconf)
 * [Tests](#tests)
 * [Third-party libraries](#third-party-libraries)
 * [Wrappers and packages](#wrappers-and-packages)
@@ -160,8 +161,8 @@ You can define an alternative installation directory by
 specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
-Install compilers and ZLIB
-==========================
+Install compilers, ZLIB and autoconf
+====================================
 
 NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
 A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
@@ -197,6 +198,28 @@ sudo port install zlib
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8
 as well as Zlib in /opt/local/lib/libz.dylib and /opt/local/include/zlib.h .
 
+autoconf
+--------
+
+```bash
+wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+tar -zxvf autoconf-2.69.tar.gz
+cd autoconf-2.69
+./configure
+make
+make install
+```
+
+You can define an alternative installation directory by
+specifying ```--prefix=/path/to/installation/dir``` to ```configure```
+(before calling ```make```).
+
+If installing in a directory other than those listed in $PATH,
+add the installation directory to $PATH:
+
+```bash
+export PATH=$PATH:/path/to/installation/dir
+```
 
 Tests
 =====

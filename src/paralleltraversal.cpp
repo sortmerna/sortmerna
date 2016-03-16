@@ -132,7 +132,7 @@ bool check_file_format(char* inputreads, char& filesig)
   else
   {
     fprintf(stderr, "  %sERROR%s: Line %d: %s unrecognized file format or empty file %s\n\n",
-                    "\033[0;31m","\033[0m", __LINE__, __FILE__, inputreads);
+                    startColor,"\033[0m", __LINE__, __FILE__, inputreads);
     exit_early = true;
   }
   kseq_destroy(seq);
@@ -177,7 +177,7 @@ void compute_read_stats(char* inputreads,
   if (l == -2)
   {
     fprintf(stderr,"  %sERROR%s: Line %d: %s could not read reads file - %s\n\n",
-                   "\033[0;31m","\033[0m", __LINE__, __FILE__, strerror(errno));
+                   startColor,"\033[0m", __LINE__, __FILE__, strerror(errno));
     exit(EXIT_FAILURE);    
   }
   kseq_destroy(seq);
@@ -276,13 +276,13 @@ paralleltraversal (char* inputreads,
       if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
       {
         fprintf(stderr,"  %sERROR%s: Line %d: %s Could not seek reads file!\n\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       if (lseek(fd, 0L, SEEK_SET) == -1)
       {
         fprintf(stderr,"  %sERROR%s: Line %d: %s Could not seek set the reads file!\n\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       close(fd); 
@@ -342,7 +342,7 @@ paralleltraversal (char* inputreads,
       if ( acceptedstrings == NULL )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       strcpy ( acceptedstrings, ptr_filetype_ar );
@@ -364,7 +364,7 @@ paralleltraversal (char* inputreads,
       if ( acceptedstrings_sam == NULL )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_sam\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       strcpy( acceptedstrings_sam, ptr_filetype_ar );
@@ -384,7 +384,7 @@ paralleltraversal (char* inputreads,
       if ( acceptedstrings_blast == NULL )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       strcpy( acceptedstrings_blast, ptr_filetype_ar );
@@ -405,7 +405,7 @@ paralleltraversal (char* inputreads,
       if ( logoutfile == NULL )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       strcpy( logoutfile, ptr_filetype_ar );
@@ -427,7 +427,7 @@ paralleltraversal (char* inputreads,
       if ( acceptedotumap_file == NULL )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedotumap\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       strcpy( acceptedotumap_file, ptr_filetype_ar );
@@ -447,7 +447,7 @@ paralleltraversal (char* inputreads,
       if ( denovo_otus_file == NULL )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for denovo_otus_file_name\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       strcpy( denovo_otus_file, ptr_filetype_ar );
@@ -494,7 +494,7 @@ paralleltraversal (char* inputreads,
       FILE* bilan = fopen(logoutfile,"w");
       if ( bilan == NULL )
       {
-        fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open file %s \n","\033[0;31m","\033[0m",
+        fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open file %s \n",startColor,"\033[0m",
                 __LINE__, __FILE__, logoutfile);
         exit(EXIT_FAILURE);
       }
@@ -607,7 +607,7 @@ paralleltraversal (char* inputreads,
     if ( bilan == NULL )
     {
       fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open file %s \n",
-                     "\033[0;31m","\033[0m", __LINE__, __FILE__, logoutfile);
+                     startColor,"\033[0m", __LINE__, __FILE__, logoutfile);
       exit(EXIT_FAILURE);
     }
     time_t q = time(0);
@@ -673,7 +673,7 @@ paralleltraversal (char* inputreads,
       if (!acceptedsam.good())
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open SAM output file for writing: %s.\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__, acceptedstrings_sam);
+                       startColor,"\033[0m", __LINE__, __FILE__, acceptedstrings_sam);
         exit(EXIT_FAILURE);
       }
     }
@@ -683,7 +683,7 @@ paralleltraversal (char* inputreads,
       if (!acceptedblast.good())
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open BLAST output file for writing: %s.\n",
-                       "\033[0;31m","\033[0m", __LINE__, __FILE__, acceptedstrings_blast);
+                       startColor,"\033[0m", __LINE__, __FILE__, acceptedstrings_blast);
         exit(EXIT_FAILURE);
       }
     }
@@ -801,7 +801,7 @@ paralleltraversal (char* inputreads,
           buffer = new char[(seq_part_size+1)]();
           if ( buffer == NULL )
           {
-            fprintf(stderr,"    %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+            fprintf(stderr,"    %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }       
           // pointer to the start of every sequence in the buffer
@@ -809,7 +809,7 @@ paralleltraversal (char* inputreads,
           if ( reference_seq == NULL )
           {
             fprintf(stderr,"    %sERROR%s: Line %d: %s could not allocate memory for reference_seq\n",
-                           "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                           startColor,"\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }
           // length of every sequence in the buffer
@@ -817,7 +817,7 @@ paralleltraversal (char* inputreads,
           if ( reference_seq_len == NULL )
           {
             fprintf(stderr,"    %sERROR%s: Line %d: %s could not allocate memory for reference_seq_len\n",
-                           "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                           startColor,"\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }         
           // load the reference sequences for SW alignment
@@ -904,7 +904,7 @@ paralleltraversal (char* inputreads,
                   if ( readlen > READLEN )
                   {
                     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
-                                   "\033[0;31m","\033[0m", __LINE__, __FILE__, READLEN);
+                                   startColor,"\033[0m", __LINE__, __FILE__, READLEN);
                     fprintf(stderr,"  Please check your reads or contact the authors.\n");
                     exit(EXIT_FAILURE);
                   }
@@ -932,7 +932,7 @@ paralleltraversal (char* inputreads,
                 if ( readlen > READLEN )
                 {
                   fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
-                                 "\033[0;31m","\033[0m", __LINE__, __FILE__, READLEN);
+                                 startColor,"\033[0m", __LINE__, __FILE__, READLEN);
                   fprintf(stderr,"  Please check your reads or contact the authors.\n");
                   exit(EXIT_FAILURE);
                 }
@@ -1335,7 +1335,7 @@ paralleltraversal (char* inputreads,
           if ( buffer == NULL )
           {
             fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for reference sequence buffer\n",
-                           "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                           startColor,"\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }  
           // pointer to the start of every sequence in the buffer
@@ -1343,7 +1343,7 @@ paralleltraversal (char* inputreads,
           if ( reference_seq == NULL )
           {
             fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not allocate memory for reference_seq\n",
-                           "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                           startColor,"\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }         
           // length of every sequence in the buffer (is not required here)
@@ -1740,7 +1740,7 @@ paralleltraversal (char* inputreads,
       if ( acceptedblast.is_open() ) acceptedblast.close();
       else
       {
-        fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_blast);
+        fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n",startColor,"\033[0m",acceptedstrings_blast);
         exit(EXIT_FAILURE);
       }
     }
@@ -1749,7 +1749,7 @@ paralleltraversal (char* inputreads,
       if ( acceptedsam.is_open() ) acceptedsam.close();
       else
       {
-        fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedstrings_sam);
+        fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n",startColor,"\033[0m",acceptedstrings_sam);
         exit(EXIT_FAILURE);
       }
     }        
@@ -1792,7 +1792,7 @@ paralleltraversal (char* inputreads,
       split_read = new char[(READLEN*2)];
       if ( split_read == NULL )
       {
-        fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n","\033[0;31m","\033[0m");
+        fprintf(stderr, "  %sERROR%s: could not allocate memory for the bridged read\n",startColor,"\033[0m");
         exit(EXIT_FAILURE);
       } 
       // compute the first half of the split_read
@@ -1845,7 +1845,7 @@ paralleltraversal (char* inputreads,
     if ( outfile.is_open() ) outfile.close();
     else
     {
-      fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n","\033[0;31m","\033[0m",acceptedotumap_file);
+      fprintf(stderr,"  %sERROR%s: file %s was not opened for writing.\n",startColor,"\033[0m",acceptedotumap_file);
       exit(EXIT_FAILURE);
     }
     // free memory for OTU mapping file
@@ -1863,7 +1863,7 @@ paralleltraversal (char* inputreads,
     FILE* bilan = fopen(logoutfile,"a");
     if ( bilan == NULL )
     {
-      fprintf(stderr,"  %sERROR%s: could not open file %s \n","\033[0;31m","\033[0m",logoutfile);
+      fprintf(stderr,"  %sERROR%s: could not open file %s \n",startColor,"\033[0m",logoutfile);
       exit(EXIT_FAILURE);
     }
     // output total number of reads

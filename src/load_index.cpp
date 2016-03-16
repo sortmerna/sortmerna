@@ -84,7 +84,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     acceptedsam.open (acceptedstrings_sam);
     if (!acceptedsam.good())
     {
-      fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing.\n","\033[0;31m","\033[0m");
+      fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing.\n",startColor,"\033[0m");
       exit(EXIT_FAILURE);
     }
     // @HD header
@@ -113,7 +113,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     ifstream stats( (char*)(myfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary );
     if ( !stats.good() )
     {
-      fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
+      fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n",startColor,"\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
       fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
       exit(EXIT_FAILURE);
     }     
@@ -129,7 +129,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     FILE *fastafile = fopen ((char*)(myfiles[index_num].first).c_str(),"r");
     if ( fastafile == NULL )
     {
-      fprintf(stderr,"    %sERROR%s: could not open FASTA reference file: %s .\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
+      fprintf(stderr,"    %sERROR%s: could not open FASTA reference file: %s .\n",startColor,"\033[0m",(char*)(myfiles[index_num].first).c_str());
       exit(EXIT_FAILURE);
     }
     fseek(fastafile,0L,SEEK_END);
@@ -137,7 +137,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     fclose(fastafile);
     if ( sz != filesize )
     {
-      fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
+      fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n",startColor,"\033[0m",(char*)(myfiles[index_num].first).c_str());
       fprintf(stderr,"    does not appear to be the same FASTA file (%s) used to build the index %s.\n",fastafile_name,(char*)(myfiles[index_num].second).c_str());
       fprintf(stderr,"    Check your --ref list of files and corresponding indexes.\n\n");
       exit(EXIT_FAILURE);
@@ -436,7 +436,7 @@ load_index(char* ptr_dbindex,
                   char* bucket = new char[sizeofbucket]();
                   if ( bucket == NULL )
                   {
-                    fprintf(stderr,"\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+                    fprintf(stderr,"\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n",startColor,"\033[0m");
                     exit(EXIT_FAILURE);
                   }         
                   btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);       
@@ -454,7 +454,7 @@ load_index(char* ptr_dbindex,
                 // ?
                 default:
                 {
-                  fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",flag);
+                  fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n",startColor,"\033[0m",flag);
                   exit(EXIT_FAILURE);
                 }
                   break;
@@ -538,14 +538,14 @@ load_ref(char* ptr_dbfile,
   if ( fp == NULL )
   {
     fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open file %s\n",
-                   "\033[0;31m","\033[0m", __LINE__, __FILE__, ptr_dbfile);
+                   startColor,"\033[0m", __LINE__, __FILE__, ptr_dbfile);
     exit(EXIT_FAILURE);
   }
   // set the file pointer to the first sequence added to the index for this index file section
   if ( fseek(fp,start_part,SEEK_SET) != 0 )
     {
       fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not locate the sequences used to construct the index.\n",
-                     "\033[0;31m","\033[0m", __LINE__, __FILE__);
+                     startColor,"\033[0m", __LINE__, __FILE__);
       fprintf(stderr,"  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",
               ptr_dbfile);
     }
@@ -571,7 +571,7 @@ load_ref(char* ptr_dbfile,
       if ( *s == '\n' )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA format "
-                       "(there is an extra new line).","\033[0;31m","\033[0m", __LINE__, __FILE__);
+                       "(there is an extra new line).",startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
       // the sequence

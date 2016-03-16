@@ -64,7 +64,13 @@ extern timeval t;
 extern bool verbose;
 
 /*! @brief Print function for verbose mode */
-#define eprintf(format, ...) do { if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+#define eprintf(format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+
+/*! @brief start color text red */
+#define startColor "\033[0;31m"
+
+/*! @brief end color text color */
+#define endColor "\033[0m"
 
 // DEBUG: memory map
 // output information during the splitting of 

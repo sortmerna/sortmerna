@@ -274,7 +274,7 @@ main(int argc,
   size_t len = sizeof(size);
   if ( sysctl(sz,namelen,&size,&len,NULL,0) < 0 )
   {
-    fprintf(stderr,"\n  %sERROR%s: sysctl (main.cpp)\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: sysctl (main.cpp)\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
   else
@@ -311,13 +311,13 @@ main(int argc,
           if ( have_reads_gz )
           {
             fprintf(stderr,"\n %sERROR%s: option --reads-gz has also been set, only one of "
-                           "--reads-gz or --reads is permitted\n","\033[0;31m","\033[0m");
+                           "--reads-gz or --reads is permitted\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           if ( argv[narg+1] == NULL )
           {
             fprintf(stderr,"\n  %sERROR%s: a path to a reads FASTA/FASTQ file "
-                           "must be given after the option --reads\n","\033[0;31m","\033[0m");
+                           "must be given after the option --reads\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -345,7 +345,7 @@ main(int argc,
             else
             {
               fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-                      "%s.\n\n","\033[0;31m","\033[0m",argv[narg+1],strerror(errno));
+                      "%s.\n\n",startColor,"\033[0m",argv[narg+1],strerror(errno));
               exit(EXIT_FAILURE);
             }
           }
@@ -357,13 +357,13 @@ main(int argc,
           if ( have_reads )
           {
             fprintf(stderr,"\n %sERROR%s: option --reads has also been set, only one of "
-                           "--reads or --reads-gz is permitted\n","\033[0;31m","\033[0m");
+                           "--reads or --reads-gz is permitted\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           if ( argv[narg+1] == NULL )
           {
             fprintf(stderr,"\n  %sERROR%s: a path to a reads FASTA/FASTQ compressed (.zip, .gz) file "
-                           "must be given after the option --reads-gz\n","\033[0;31m","\033[0m");
+                           "must be given after the option --reads-gz\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -391,7 +391,7 @@ main(int argc,
             else
             {
               fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-                      "%s.\n\n","\033[0;31m","\033[0m",argv[narg+1],strerror(errno));
+                      "%s.\n\n",startColor,"\033[0m",argv[narg+1],strerror(errno));
               exit(EXIT_FAILURE);
             }
           }
@@ -403,7 +403,7 @@ main(int argc,
           if ( argv[narg+1] == NULL )
           {
             fprintf(stderr,"\n  %sERROR%s: --ref must be followed by at least one entry "
-                    "(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n","\033[0;31m","\033[0m");
+                    "(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // path exists, check path
@@ -425,7 +425,7 @@ main(int argc,
               if ( *ptr == '\0' )
               {
                 fprintf(stderr,"   %sERROR%s: the FASTA reference file name %s must be followed "
-                        " by an index name.\n\n","\033[0;31m","\033[0m",fastafile);
+                        " by an index name.\n\n",startColor,"\033[0m",fastafile);
                 exit(EXIT_FAILURE);
               }
               ptr++; //skip the ',' delimiter
@@ -444,7 +444,7 @@ main(int argc,
               else
               {
                 fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-                        " %s.\n\n","\033[0;31m","\033[0m",fastafile,strerror(errno));
+                        " %s.\n\n",startColor,"\033[0m",fastafile,strerror(errno));
                 exit(EXIT_FAILURE);
               }
                                    
@@ -475,12 +475,12 @@ main(int argc,
                 if ( ptr_end != NULL )
                   fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index "
                           "'%s' could not be opened. The full directory path must be "
-                          "provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",
+                          "provided (ex. no '~'). \n\n",startColor,"\033[0m",
                           dir,ptr_end+1);
                 else
                   fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index "
                           "'%s' could not be opened. The full directory path must be "
-                          "provided (ex. no '~'). \n\n","\033[0;31m","\033[0m",
+                          "provided (ex. no '~'). \n\n",startColor,"\033[0m",
                           dir,indexfile);
                 
                 exit(EXIT_FAILURE);
@@ -517,7 +517,7 @@ main(int argc,
           if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
           {
             fprintf(stderr,"\n  %sERROR%s: a filename must follow the option --aligned "
-                    "[STRING]\n","\033[0;31m","\033[0m");
+                    "[STRING]\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -544,7 +544,7 @@ main(int argc,
             else
             {
               fprintf(stderr,"\n  %sERROR%s: the --aligned [STRING] directory "
-                      "%s could not be opened: %s.\n\n","\033[0;31m","\033[0m",
+                      "%s could not be opened: %s.\n\n",startColor,"\033[0m",
                       dir,strerror(errno));
               exit(EXIT_FAILURE);
             }
@@ -556,7 +556,7 @@ main(int argc,
           if ( (argv[narg+1] == NULL) || ( argv[narg+1][0] == '-' ) )
           {
               fprintf(stderr,"\n  %sERROR%s: a filename must follow the option "
-                      "--other [STRING]\n","\033[0;31m","\033[0m");
+                      "--other [STRING]\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
           }
           else
@@ -583,7 +583,7 @@ main(int argc,
             else
             {
               fprintf(stderr,"\n  %sERROR%s: the --other %s directory could not be "
-                      "opened, please check it exists.\n\n","\033[0;31m",
+                      "opened, please check it exists.\n\n",startColor,
                       "\033[0m",dir);
               exit(EXIT_FAILURE);
             }
@@ -595,7 +595,7 @@ main(int argc,
           if ( logout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --log has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -611,7 +611,7 @@ main(int argc,
           if ( de_novo_otu_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --de_novo_otu has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -626,7 +626,7 @@ main(int argc,
           if ( otumapout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --otu_map has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -641,7 +641,7 @@ main(int argc,
           if ( print_all_reads_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --print_all_reads has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -656,7 +656,7 @@ main(int argc,
           if ( pid_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --pid has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -671,14 +671,14 @@ main(int argc,
           if ( pairedin_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --paired_in has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else if ( pairedout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --paired_out has been set, please choose "
                     "one or the other, or use the default option.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -693,13 +693,13 @@ main(int argc,
           if ( pairedout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --paired_out has already been set once.\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else if ( pairedin_gv )
           {
             fprintf(stderr,"\n %sERROR%s: --paired_in has been set, please choose one "
-                    "or the other, or use the default option.\n","\033[0;31m","\033[0m");
+                    "or the other, or use the default option.\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -714,7 +714,7 @@ main(int argc,
           if (argv[narg+1] == NULL)
           {
             fprintf(stderr,"\n  %sERROR%s: --match [INT] requires a positive integer as "
-                    "input (ex. --match 2).\n","\033[0;31m","\033[0m");
+                    "input (ex. --match 2).\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set match
@@ -727,7 +727,7 @@ main(int argc,
           else
           {
             fprintf(stderr,"\n  %sERROR%s: --match [INT] has been set twice, please "
-                    "verify your choice\n\n","\033[0;31m","\033[0m");
+                    "verify your choice\n\n",startColor,"\033[0m");
             printlist();
           }
         }
@@ -737,7 +737,7 @@ main(int argc,
           if (argv[narg+1] == NULL)
           {
             fprintf(stderr,"\n  %sERROR%s: --mismatch [INT] requires a negative integer "
-                    "input (ex. --mismatch -2)\n","\033[0;31m","\033[0m");
+                    "input (ex. --mismatch -2)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set mismatch
@@ -747,7 +747,7 @@ main(int argc,
             if ( mismatch > 0 )
             {
               fprintf(stderr,"\n  %sERROR%s: --mismatch [INT] requires a negative "
-                      "integer input (ex. --mismatch -2)\n","\033[0;31m","\033[0m");
+                      "integer input (ex. --mismatch -2)\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -756,7 +756,7 @@ main(int argc,
           else
           {
             printf("\n  %sERROR%s: --mismatch [INT] has been set twice, please verify "
-                    "your choice\n\n","\033[0;31m","\033[0m");
+                    "your choice\n\n",startColor,"\033[0m");
             printlist();
           }
         }
@@ -766,7 +766,7 @@ main(int argc,
           if (argv[narg+1] == NULL)
           {
             fprintf(stderr,"\n  %sERROR%s: --gap_open [INT] requires a positive integer "
-                    "as input (ex. --gap_open 5)\n","\033[0;31m","\033[0m");
+                    "as input (ex. --gap_open 5)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set gap open
@@ -776,7 +776,7 @@ main(int argc,
             if ( gap_open < 0 )
             {
               fprintf(stderr,"\n  %sERROR%s: --gap_open [INT] requires a positive "
-                      "integer as input (ex. --gap_open 5)\n","\033[0;31m","\033[0m");
+                      "integer as input (ex. --gap_open 5)\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -785,7 +785,7 @@ main(int argc,
           else
           {
             printf("\n  %sERROR%s: --gap_open [INT] has been set twice, please verify "
-                    "your choice\n\n","\033[0;31m","\033[0m");
+                    "your choice\n\n",startColor,"\033[0m");
             printlist();
           }
         }
@@ -795,7 +795,7 @@ main(int argc,
           if (argv[narg+1] == NULL)
           {
             fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] requires a positive integer "
-                    "as input (ex. --gap_ext 2)\n","\033[0;31m","\033[0m");
+                    "as input (ex. --gap_ext 2)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set gap extend
@@ -805,7 +805,7 @@ main(int argc,
             if ( gap_extension < 0 )
             {
               fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] requires a positive "
-                      "integer as input (ex. --gap_ext 2)\n","\033[0;31m","\033[0m");
+                      "integer as input (ex. --gap_ext 2)\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -814,7 +814,7 @@ main(int argc,
           else
           {
             fprintf(stderr,"\n  %sERROR%s: --gap_ext [INT] has been set twice, please "
-                    "verify your choice\n\n","\033[0;31m","\033[0m");
+                    "verify your choice\n\n",startColor,"\033[0m");
             printlist();
           }
         }
@@ -824,7 +824,7 @@ main(int argc,
           if (argv[narg+1] == NULL)
           {
             fprintf(stderr,"\n  %sERROR%s: --num_seeds [INT] requires a positive integer "
-                    "as input (ex. --num_seeds 6)\n","\033[0;31m","\033[0m");
+                    "as input (ex. --num_seeds 6)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set number of seeds
@@ -835,7 +835,7 @@ main(int argc,
             if ( seed_hits_gv <= 0 )
             {
               fprintf(stderr,"\n  %sERROR%s: --num_seeds [INT] requires a positive "
-                      "integer (>0) as input (ex. --num_seeds 6)\n","\033[0;31m","\033[0m");
+                      "integer (>0) as input (ex. --num_seeds 6)\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -843,7 +843,7 @@ main(int argc,
           else
           {
             fprintf(stderr,"\n  %sERROR%s: --num_seeds [INT] has been set twice, please "
-                    "verify your choice\n\n","\033[0;31m","\033[0m");
+                    "verify your choice\n\n",startColor,"\033[0m");
             printlist();
           }
         }
@@ -853,7 +853,7 @@ main(int argc,
           if ( fastxout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --fastx has already been set once.\n\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -868,7 +868,7 @@ main(int argc,
           if ( samout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --sam has already been set once.\n\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -883,7 +883,7 @@ main(int argc,
           if ( blastout_gv )
           {
             fprintf(stderr,"\n  %sERROR%s: --blast [STRING] has already been set once.\n\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -925,7 +925,7 @@ main(int argc,
               if ( !match_found )
               {
                 fprintf(stderr,"\n  %sERROR%s: `%s` is not supported in --blast [STRING].\n\n",
-                               "\033[0;31m","\033[0m", opt.c_str());
+                               startColor,"\033[0m", opt.c_str());
                 exit(EXIT_FAILURE);               
               }
             }
@@ -933,14 +933,14 @@ main(int argc,
             if ( blast_human_readable && (user_opts.size() > 1 ) )
             {
               fprintf(stderr,"\n  %sERROR%s: for human-readable format, --blast [STRING] cannot contain "
-                             "more fields than '0'.\n\n", "\033[0;31m","\033[0m");
+                             "more fields than '0'.\n\n", startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             // both human-readable and tabular format options have been chosen
             if ( blast_human_readable && blast_tabular )
             {
               fprintf(stderr,"\n  %sERROR%s: --blast [STRING] can only have one of the options "
-                             "'0' (human-readable) or '1' (tabular).\n\n", "\033[0;31m","\033[0m");
+                             "'0' (human-readable) or '1' (tabular).\n\n", startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             blastout_gv = true;
@@ -954,14 +954,14 @@ main(int argc,
           {
             fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] requires an integer (>=0) as "
                     "input (ex. --min_lis 2) (note: 0 signifies to search all high scoring "
-                    "reference sequences).\n\n","\033[0;31m","\033[0m");
+                    "reference sequences).\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // min_lis_gv has already been set
           else if ( min_lis_gv_set )
           {
             fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] has been set twice, please "
-                    "verify your choice.\n\n","\033[0;31m","\033[0m");
+                    "verify your choice.\n\n",startColor,"\033[0m");
             printlist();
           }
           else
@@ -970,7 +970,7 @@ main(int argc,
               {
                 fprintf(stderr,"\n  %sERROR%s: --min_lis [INT] must be >= 0 (0 signifies "
                         "to search all high scoring reference sequences).\n\n",
-                        "\033[0;31m","\033[0m");
+                        startColor,"\033[0m");
                 exit(EXIT_FAILURE);
               }
               narg+=2;
@@ -983,14 +983,14 @@ main(int argc,
           if (argv[narg+1] == NULL)
           {
             fprintf(stderr,"\n  %sERROR%s: --best [INT] requires an integer (> 0) "
-                    "as input (ex. --best 2).\n\n","\033[0;31m","\033[0m");
+                    "as input (ex. --best 2).\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // best_gv_set has already been set
           else if ( best_gv_set )
           {
             fprintf(stderr,"\n  %sERROR%s: --best [INT] has been set twice, please "
-                    "verify your choice.\n\n","\033[0;31m","\033[0m");
+                    "verify your choice.\n\n",startColor,"\033[0m");
             printlist();
           }
           else
@@ -998,7 +998,7 @@ main(int argc,
             if ( (sscanf(argv[narg+1],"%d",&num_best_hits_gv) != 1 ) )
             {
               fprintf(stderr,"\n  %sERROR%s: could not read --best [INT] as integer.\n\n",
-                      "\033[0;31m","\033[0m");
+                      startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -1012,14 +1012,14 @@ main(int argc,
           {
             fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] requires an integer "
                     "(>=0) as input (ex. --num_alignments 2) (note: 0 signifies to "
-                    "output all alignments).\n\n","\033[0;31m","\033[0m");
+                    "output all alignments).\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // --num_alignments [INT] has already been set
           else if ( num_alignments_gv_set )
           {
             fprintf(stderr,"\n  %sERROR%s:--num_alignments [INT] has been set twice, "
-                    "please verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                    "please verify your command parameters.\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set number of alignments to output reaching the E-value
@@ -1030,7 +1030,7 @@ main(int argc,
             {
               fprintf(stderr,"\n  %sERROR%s: --num_alignments [INT] must be >= 0 "
                       "(0 signifies to output all alignments).\n\n",
-                      "\033[0;31m","\033[0m");
+                      startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -1044,7 +1044,7 @@ main(int argc,
           if ( edges_set )
           {
             fprintf(stderr,"\n  %sERROR%s: --edges [INT]%% has already been set once.\n\n",
-                    "\033[0;31m","\033[0m");
+                    startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -1060,7 +1060,7 @@ main(int argc,
             if ( edges_gv < 1 || edges_gv > 10 )
             {
               fprintf(stderr,"\n  %sERROR%s: --edges [INT]%% requires a positive integer "
-                      "between 0-10 as input (ex. --edges 4).\n","\033[0;31m","\033[0m");
+                      "between 0-10 as input (ex. --edges 4).\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             
@@ -1073,7 +1073,7 @@ main(int argc,
           if ( full_search_set )
           {
             fprintf(stderr,"\n  %sERROR%s: BOOL --full_search has been set twice, please "
-                    "verify your choice.\n\n","\033[0;31m","\033[0m");
+                    "verify your choice.\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -1089,7 +1089,7 @@ main(int argc,
           if ( yes_SQ )
           {
             fprintf(stderr,"\n  %sERROR%s: BOOL --SQ has been set twice, please verify "
-                    "your choice.\n\n","\033[0;31m","\033[0m");
+                    "your choice.\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -1104,7 +1104,7 @@ main(int argc,
           if ( passes_set )
           {
             fprintf(stderr,"\n  %sERROR%s: --passes [INT,INT,INT] has been set twice, "
-                    "please verify your choice.\n\n","\033[0;31m","\033[0m");
+                    "please verify your choice.\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set passes
@@ -1118,7 +1118,7 @@ main(int argc,
             {
               fprintf(stderr,"\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
                       "must contain positive integers where 0<INT<(shortest read length)."
-                      "\n\n","\033[0;31m","\033[0m");
+                      "\n\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             t = (int)strtol(strtok(NULL, ","),&end,10);
@@ -1127,7 +1127,7 @@ main(int argc,
             {
               fprintf(stderr,"\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
                       "must contain positive integers where 0<INT<(shortest read length). "
-                      "\n\n","\033[0;31m","\033[0m");
+                      "\n\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             t = (int)strtol(strtok(NULL, ","),&end,10);
@@ -1136,7 +1136,7 @@ main(int argc,
             {
               fprintf(stderr,"\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
                       "must contain positive integers where 0<INT<(shortest read length)."
-                      "\n\n","\033[0;31m","\033[0m");
+                      "\n\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             
@@ -1154,7 +1154,7 @@ main(int argc,
                  (align_id < 0) || (align_id > 1))
             {
               fprintf(stderr,"\n  %sERROR%s: --id [DOUBLE] must be a positive float "
-                      "with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
+                      "with value 0<=id<=1.\n\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -1162,7 +1162,7 @@ main(int argc,
           else
           {
             fprintf(stderr,"\n  %sERROR%s: --id [DOUBLE] has been set twice, please "
-                    "verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                    "verify your command parameters.\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
         }
@@ -1175,7 +1175,7 @@ main(int argc,
                  (align_cov<0) || (align_cov>1) )
             {
               fprintf(stderr,"\n  %sERROR%s: --coverage [DOUBLE] must be a positive "
-                      "float with value 0<=id<=1.\n\n","\033[0;31m","\033[0m");
+                      "float with value 0<=id<=1.\n\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             narg+=2;
@@ -1183,7 +1183,7 @@ main(int argc,
           else
           {
             fprintf(stderr,"\n  %sERROR%s: --coverage [DOUBLE] has been set twice, please "
-                    "verify your command parameters.\n\n","\033[0;31m","\033[0m");
+                    "verify your command parameters.\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
         }
@@ -1196,7 +1196,7 @@ main(int argc,
         else
         {
           fprintf(stderr,"\n  %sERROR%s: option --%s is not an option.\n\n",
-                  "\033[0;31m","\033[0m",myoption);
+                  startColor,"\033[0m",myoption);
           printlist();
         }
       }
@@ -1212,7 +1212,7 @@ main(int argc,
         else
         {
           printf("\n  %sERROR%s: -a [INT] has been set twice, please verify "
-                 "your command parameters.\n\n","\033[0;31m","\033[0m");
+                 "your command parameters.\n\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
       }
@@ -1223,7 +1223,7 @@ main(int argc,
         if ( argv[narg+1] == NULL )
         {
           fprintf(stderr,"\n  %sERROR%s: -e [DOUBLE] requires a positive double "
-                  "as input (ex. --e 1e-5)\n","\033[0;31m","\033[0m");
+                  "as input (ex. --e 1e-5)\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
         if ( evalue < 0 )
@@ -1232,7 +1232,7 @@ main(int argc,
           if ( evalue < 0 )
           {
             fprintf(stderr,"\n  %sERROR%s: -e [DOUBLE] requires a positive double "
-                    "as input (ex. --e 1e-5)\n","\033[0;31m","\033[0m");
+                    "as input (ex. --e 1e-5)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           narg+=2;
@@ -1240,7 +1240,7 @@ main(int argc,
         else
         {
           fprintf(stderr,"\n  %sERROR%s: -e [DOUBLE] has been set twice, please verify "
-                  "your command parameters.\n\n","\033[0;31m","\033[0m");
+                  "your command parameters.\n\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
       }
@@ -1256,7 +1256,7 @@ main(int argc,
         else
         {
           fprintf(stderr,"\n  %sERROR%s: BOOL -F has been set more than once, please check "
-                  "your command parameters.\n","\033[0;31m","\033[0m");
+                  "your command parameters.\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
       }
@@ -1272,7 +1272,7 @@ main(int argc,
         else
         {
           fprintf(stderr,"\n  %sERROR%s: BOOL -R has been set more than once, please check "
-                  "your command parameters.\n","\033[0;31m","\033[0m");
+                  "your command parameters.\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
       }
@@ -1303,7 +1303,7 @@ main(int argc,
         else
         {
           fprintf(stderr,"\n  %sERROR%s: BOOL -N has been set more than once, please "
-                  "check your command parameters.\n","\033[0;31m","\033[0m");
+                  "check your command parameters.\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
       }
@@ -1324,7 +1324,7 @@ main(int argc,
           {
             int max_ram = (maxpages_gv*pagesize_gv)/1048576;
             fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] -m [INT] must not exceed %d (Mbyte)."
-                    "\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__, max_ram);
+                    "\n\n",startColor,"\033[0m", __LINE__, __FILE__, max_ram);
             exit(EXIT_FAILURE);
           }
           // set RAM limit
@@ -1337,14 +1337,14 @@ main(int argc,
           else
           {
             fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] -m [INT] must be a positive integer "
-                    "value (in Mbyte).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+                    "value (in Mbyte).\n\n",startColor,"\033[0m", __LINE__, __FILE__);
             exit(EXIT_FAILURE);
           }
         }
         else
         {
           fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] -m [INT] has been set twice, please verify "
-                            "your command parameters.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+                            "your command parameters.\n\n",startColor,"\033[0m", __LINE__, __FILE__);
           exit(EXIT_FAILURE);
         }
       }
@@ -1352,7 +1352,7 @@ main(int argc,
       default : 
       {
         fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] '%c' is not one of the options.\n",
-                "\033[0;31m","\033[0m", __LINE__, __FILE__, argv[narg][1]);
+                startColor,"\033[0m", __LINE__, __FILE__, argv[narg][1]);
         printlist();
       }
     }//~switch
@@ -1366,28 +1366,28 @@ main(int argc,
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] a reads file (--reads file.{fa/fq}) and a "
             "reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) "
-            "are mandatory input.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "are mandatory input.\n\n",startColor,"\033[0m", __LINE__, __FILE__);
     printlist();
   }
   // Basename for aligned reads is mandatory
   if ( ptr_filetype_ar == NULL )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
-            "\033[0;31m","\033[0m", __LINE__, __FILE__);
+            startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
   // No output format has been chosen
   else if ( !(fastxout_gv || blastout_gv || samout_gv || otumapout_gv || logout_gv || de_novo_otu_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] no output format has been chosen (fastx/sam/blast/otu_"
-            "map/log).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "map/log).\n\n",startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
   // Options --paired_in and --paired_out can only be used with FASTA/Q output
   if ( !fastxout_gv && (pairedin_gv || pairedout_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] options --paired_in and --paired_out "
-            "must be accompanied by option --fastx.\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "must be accompanied by option --fastx.\n",startColor,"\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  These BOOLs are for FASTA and FASTQ output files, for "
             "maintaining paired reads together.\n");
     exit(EXIT_FAILURE);
@@ -1398,7 +1398,7 @@ main(int argc,
     if ( !fastxout_gv && (blastout_gv || samout_gv) )
     {
       fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] option --other [STRING] can only be used together "
-              "with the --fastx option.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+              "with the --fastx option.\n\n",startColor,"\033[0m", __LINE__, __FILE__);
       exit(EXIT_FAILURE);
     }
   }
@@ -1406,7 +1406,7 @@ main(int argc,
   if ( otumapout_gv && num_alignments_gv_set )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --otu_map cannot be set together with "
-            "--num_alignments [INT].\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "--num_alignments [INT].\n",startColor,"\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  The option --num_alignments [INT] doesn't keep track of "
             "the best alignment which is required for constructing an OTU map.\n");
     fprintf(stderr,"  Use --otu_map with --best [INT] instead.\n\n");
@@ -1416,21 +1416,21 @@ main(int argc,
   if ( num_alignments_gv_set && !(blastout_gv || samout_gv || fastxout_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --num_alignments [INT] has been set but no output "
-            "format has been chosen (--blast, --sam or --fastx).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "format has been chosen (--blast, --sam or --fastx).\n\n",startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
   // If --best output was chosen, check an alignment format has also been chosen
   if ( best_gv_set && !(blastout_gv || samout_gv || otumapout_gv) )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --best [INT] has been set but no output "
-            "format has been chosen (--blast or --sam or --otu_map).\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "format has been chosen (--blast or --sam or --otu_map).\n\n",startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   } 
   // Check gap extend score < gap open score
   if ( gap_extension > gap_open )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --gap_ext [INT] must be less than --gap_open [INT].\n\n",
-            "\033[0;31m","\033[0m", __LINE__, __FILE__);
+            startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }  
   // Option --print_all_reads can only be used with Blast-like tabular
@@ -1438,7 +1438,7 @@ main(int argc,
   if ( print_all_reads_gv && blastout_gv && !blast_tabular )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --print_all_reads [BOOL] can only be used with BLAST-like "
-            "tabular format.\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "tabular format.\n\n",startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   }
   // Only one of these options is allowed (--best outputs one alignment,
@@ -1446,7 +1446,7 @@ main(int argc,
   if ( best_gv_set && num_alignments_gv_set )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --best [INT] and --num_alignments [INT] cannot "
-            "be set together. \n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "be set together. \n",startColor,"\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  (--best [INT] will search INT highest scoring reference sequences "
             "and output a single best alignment, whereas --num_alignments [INT] will "
             "output the first INT alignments).\n\n");
@@ -1455,7 +1455,7 @@ main(int argc,
   if ( min_lis_gv_set && num_alignments_gv_set )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --min_lis [INT] and --num_alignments [INT] cannot "
-            "be set together. \n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "be set together. \n",startColor,"\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  --min_lis [INT] can only be used with --best [INT] (refer to "
             "the User manual on this option).\n\n");
     exit(EXIT_FAILURE);
@@ -1464,14 +1464,14 @@ main(int argc,
   if ( min_lis_gv_set && !best_gv_set)
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --min_lis [INT] must be set together with --best "
-            "[INT].\n\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "[INT].\n\n",startColor,"\033[0m", __LINE__, __FILE__);
     exit(EXIT_FAILURE);
   } 
   // %id and %coverage can only be used with --otu_map
   if ( ((align_id > 0) || (align_cov > 0 )) && !otumapout_gv )
   {
     fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] --id [INT] and --coverage [INT] can only be used "
-            "together with --otu_map.\n","\033[0;31m","\033[0m", __LINE__, __FILE__);
+            "together with --otu_map.\n",startColor,"\033[0m", __LINE__, __FILE__);
     fprintf(stderr,"  These two options are used for constructing the OTU map by "
             "filtering alignments passing the E-value threshold.\n\n");
     exit(EXIT_FAILURE);

@@ -61,7 +61,7 @@ mmap_reads(off_t partial_file_size,
   raw = (char*)mmap(0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map);
   if ( raw == MAP_FAILED )
   {
-    fprintf(stderr,"  %sERROR%s: cannot mmap file: %s\n\n","\033[0;31m","\033[0m",strerror(errno));
+    fprintf(stderr,"  %sERROR%s: cannot mmap file: %s\n\n",startColor,"\033[0m",strerror(errno));
     exit(EXIT_FAILURE);
   }
   close(fd);
@@ -97,7 +97,7 @@ mmap_reads(off_t partial_file_size,
         // 0 strings can only exist in the last file section
         if ( file_s != file_sections-1 )
         {
-          fprintf(stderr,"   %sERROR%s: 0 sequences mapped in the current file section.\n","\033[0;31m","\033[0m");
+          fprintf(stderr,"   %sERROR%s: 0 sequences mapped in the current file section.\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
         reads_offset_f = 0;
@@ -111,8 +111,11 @@ mmap_reads(off_t partial_file_size,
       else
       {
         // count the number of strings in the file section
-        for ( int64_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' )
-          strs++;
+        // significance of -2 is to remove the "\n>" characters from search
+        // at the end of the mapped file section
+        for ( int64_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ )
+          if ( raw[i] == '>' )
+            strs++;
         // the paired-read follows the split read at the top of current file section
         if ( offset_pair_from_top )
         {
@@ -187,7 +190,7 @@ mmap_reads(off_t partial_file_size,
         if ( (strs%4 == 1) && (raw[partial_file_size-1] == '\n') && (raw[partial_file_size-2] == '\n') ) strs--;
         else
         {
-          fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lld\n","\033[0;31m","\033[0m",strs);
+          fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lld\n",startColor,"\033[0m",strs);
           exit(EXIT_FAILURE);
         }
       }
@@ -244,7 +247,7 @@ mmap_reads(off_t partial_file_size,
   char** reads = new char*[strs]();
   if ( reads == NULL )
   {
-    fprintf(stderr,"\n  %sERROR%s: cannot allocate memory for reads\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: cannot allocate memory for reads\n\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
   // record the end of the split read
@@ -338,7 +341,9 @@ mmap_reads(off_t partial_file_size,
         line++;
       }
       // compute the minimum length read
-      if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread;
+      // if readlen in less than minlenread then minlenread = readlen,
+      // otherwise minlenread = minlenread
+      if ( readlen >= LNWIN ) readlen < minlenread ? minlenread = readlen : minlenread;
     }  
   }//~if ( filesig == '>' )
   // (FASTQ)
@@ -375,7 +380,7 @@ mmap_reads(off_t partial_file_size,
   // debug_mmap
   if ( minlenread == 1000000 )
   {
-    fprintf(stderr,"   %sERROR%s: All reads are too short (<22nt) for further analysis.\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"   %sERROR%s: All reads are too short (<22nt) for further analysis.\n\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
   return reads;
@@ -395,7 +400,7 @@ void unmmap_reads(char*& raw, off_t partial_file_size)
   // free the mmap'd file section
   if ( munmap(raw, partial_file_size ) == -1 )
   {
-    fprintf(stderr,"  %sERROR%s: Could not munmap file!\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"  %sERROR%s: Could not munmap file!\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
 }
