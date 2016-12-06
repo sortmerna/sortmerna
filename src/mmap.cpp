@@ -379,7 +379,7 @@ mmap_reads(off_t partial_file_size,
 #endif
   }//~if ( filesig == '@' )   
   // debug_mmap
-  if ( minlenread == 1000000 )
+  if ( minlenread == READLEN )
   {
     fprintf(stderr,"   %sERROR%s: All reads are too short (<22nt) for further analysis.\n\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
