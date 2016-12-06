@@ -54,7 +54,8 @@ mmap_reads(off_t partial_file_size,
            uint64_t& strs,
            char*& finalnt,
            uint32_t &reads_offset_f,
-           uint32_t &reads_offset_e)
+           uint32_t &reads_offset_e,
+           uint32_t min_lnwin)
 {
   // mmap the reads file into memory
   int fd = open(inputreads, O_RDONLY);
@@ -343,7 +344,7 @@ mmap_reads(off_t partial_file_size,
       // compute the minimum length read
       // if readlen in less than minlenread then minlenread = readlen,
       // otherwise minlenread = minlenread
-      if ( readlen >= LNWIN ) readlen < minlenread ? minlenread = readlen : minlenread;
+      if ( readlen >= min_lnwin ) readlen < minlenread ? minlenread = readlen : minlenread;
     }  
   }//~if ( filesig == '>' )
   // (FASTQ)

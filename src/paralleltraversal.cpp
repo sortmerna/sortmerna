@@ -699,6 +699,11 @@ paralleltraversal (char* inputreads,
     // the length of the split read in file part i (from end of file part)
     uint32_t reads_offset_e = 0;
     char** reads = NULL;
+    uint32_t min_lnwin = size(uint32_t);
+    for (int lwin = 0; lwin < num_databases; lwin++)
+    {
+      if 
+    }
     if ( map_size_set_gv )
     {
       reads = mmap_reads(partial_file_size,
@@ -714,7 +719,8 @@ paralleltraversal (char* inputreads,
                          strs,
                          finalnt,
                          reads_offset_f,
-                         reads_offset_e);
+                         reads_offset_e,
+                         min_lnwin);
     }
     else
     {

@@ -67,7 +67,8 @@ mmap_reads(off_t partial_file_size /**< number of bytes in memory map buffer */,
            uint64_t &strs /**< number of reads in current memory mapped section */,
            char*& finalnt /**< pointer to final character in memory mapped buffer */,
            uint32_t &reads_offset_f /**< the length of the split read in file part i+1 (from beginning of file part) */,
-           uint32_t &reads_offset_e /**< the length of the split read in file part i (from end of file part) */);
+           uint32_t &reads_offset_e /**< the length of the split read in file part i (from end of file part) */,
+           uint32_t min_lnwin /**< the minimum seed length used to index reference databases */);
 
 
 /*! @fn unmmap_reads()
