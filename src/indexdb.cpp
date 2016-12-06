@@ -19,10 +19,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  *
  */
 
@@ -86,12 +89,9 @@ uint32_t lnwin_gv = 0;
 uint32_t pread_gv = 0;
 uint32_t partialwin_gv = 0;
 
-uint32_t numseq_gv = 0;
-
 /* bit masking during sliding of window by 1 character */
 uint32_t mask32 = 0;
 uint64_t mask64 = 0;
-
 
 uint32_t total_num_trie_nodes = 0;
 uint32_t size_of_all_buckets = 0;
@@ -113,7 +113,6 @@ bool verbose = false;
 
 // change version number here
 char version_num[] = "2.1b, 03/03/2016";
-
 
 
 /*
@@ -154,7 +153,7 @@ inline void insert_prefix( NodeElement* trie_node,
     if ( node_elem->whichnode.bucket == NULL )
     {
       fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket "
-                     "(insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
+                     "(insert_prefix() in indexdb.cpp)\n",startColor,"\033[0m");
       exit(EXIT_FAILURE);
     }
     // initialize bucket memory to 0
@@ -174,7 +173,7 @@ inline void insert_prefix( NodeElement* trie_node,
     if ( node_elem->whichnode.bucket == NULL )
     {
       fprintf(stderr,"  %sERROR%s: could not allocate memory for bucket "
-                     "resize (insert_prefix() in indexdb.cpp): %s\n","\033[0;31m",
+                     "resize (insert_prefix() in indexdb.cpp): %s\n",startColor,
                      "\033[0m",strerror(errno));
       exit(EXIT_FAILURE);
     }
@@ -219,7 +218,7 @@ inline void insert_prefix( NodeElement* trie_node,
       if ( child_node == NULL )
       {
         fprintf(stderr,"  %sERROR%s: could not allocate memory for child_node "
-                       "(insert_prefix())\n","\033[0;31m","\033[0m");
+                       "(insert_prefix())\n",startColor,"\033[0m");
 	exit(EXIT_FAILURE);
       }
       memset(child_node, 0, 4*sizeof(NodeElement));
@@ -239,7 +238,7 @@ inline void insert_prefix( NodeElement* trie_node,
           if (node_elem_child->whichnode.bucket == NULL)
           {
             fprintf(stderr,"  %sERROR%s: could not allocate memory for child bucket "
-                           "(insert_prefix())\n","\033[0;31m","\033[0m");
+                           "(insert_prefix())\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           memset(node_elem_child->whichnode.bucket, 0, ENTRYSIZE);
@@ -255,7 +254,7 @@ inline void insert_prefix( NodeElement* trie_node,
           if ( node_elem_child->whichnode.bucket == NULL )
           {
             fprintf(stderr,"  %sERROR%s: could not allocate memory for child bucket resize "
-                           "(insert_prefix() in indexdb.cpp)\n","\033[0;31m","\033[0m");
+                           "(insert_prefix() in indexdb.cpp)\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           memset(node_elem_child->whichnode.bucket, 0, child_bucket_size+ENTRYSIZE);
@@ -836,7 +835,7 @@ void load_index( kmer* lookup_table, char* outfile )
             // ?
 	    default:
 	    {
-	      fprintf(stderr, "  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",trienode->flag);
+	      fprintf(stderr, "  %sERROR%s: flag is set to %d (load_index)\n",startColor,"\033[0m",trienode->flag);
 	      exit(EXIT_FAILURE);
 	    }
             break;
@@ -852,7 +851,6 @@ void load_index( kmer* lookup_table, char* outfile )
       }//~if mini-burst trie exists
     }//~for each mini-burst trie in the 9-mer
   }//~for each 9-mer
-    
   btrie.close();  
 }//~load_index()
 
@@ -868,16 +866,20 @@ void load_index( kmer* lookup_table, char* outfile )
 void welcome()
 {
   printf("\n  Program:     SortMeRNA version %s\n",version_num );
-  printf("  Copyright:   2012-16 Bonsai Bioinformatics Research Group:\n");
-  printf("               LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
-  printf("               2014-16 Knight Lab:\n" );
-  printf("               Department of Pediatrics, UCSD, La Jolla,\n");
-  printf("  Disclaimer:  SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-  printf("               implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-  printf("               See the GNU Lesser General Public License for more details.\n");
-  printf("  Contact:     Evguenia Kopylova, jenya.kopylov@gmail.com \n");
-  printf("               Laurent Noé, laurent.noe@lifl.fr\n");
-  printf("               Hélène Touzet, helene.touzet@lifl.fr\n\n");
+  printf("  Copyright:    2012-17 Bonsai Bioinformatics Research Group:\n");
+  printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
+  printf("                2014-17 Knight Lab:\n" );
+  printf("                Department of Pediatrics, UCSD, La Jolla\n");
+  printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
+  printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+  printf("                See the GNU Lesser General Public License for more details.\n");
+  printf("  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com \n");
+  printf("                Laurent Noé      laurent.noe@lifl.fr\n");
+  printf("                Pierre Pericard  pierre.pericard@lifl.fr\n");
+  printf("                Daniel McDonald  wasade@gmail.com\n");
+  printf("                Mikaël Salson    mikael.salson@lifl.fr\n");
+  printf("                Hélène Touzet    helene.touzet@lifl.fr\n");
+  printf("                Rob Knight       robknight@ucsd.edu\n\n");
 }
 
 
@@ -969,7 +971,7 @@ int main (int argc, char** argv)
           // no files are given
 	  if ( argv[narg+1] == NULL )
 	  {
-	    fprintf(stderr,"\n  %sERROR%s: --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n","\033[0;31m","\033[0m");
+	    fprintf(stderr,"\n  %sERROR%s: --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n",startColor,"\033[0m");
 	    exit(EXIT_FAILURE);
 	  }
           else
@@ -1029,7 +1031,7 @@ int main (int argc, char** argv)
               else
               {
                 fprintf(stderr, "\n  %sERROR%s: the file %s could not be "
-                                "opened: %s.\n\n","\033[0;31m","\033[0m",
+                                "opened: %s.\n\n",startColor,"\033[0m",
                                 fastafile,strerror(errno));
                 exit(EXIT_FAILURE);
               }
@@ -1065,11 +1067,11 @@ int main (int argc, char** argv)
                   fprintf(stderr,"\n  %sERROR%s: the directory %s for writing "
                                  "index '%s' could not be opened. The full directory "
                                  "path must be provided (ex. no '~'). \n\n",
-                                 "\033[0;31m","\033[0m",dir,ptr_end+1);
+                                 startColor,"\033[0m",dir,ptr_end+1);
                 else
                   fprintf(stderr,"\n  %sERROR%s: the directory %s for writing index "
                                  "'%s' could not be opened. The full directory path must "
-                                 "be provided (ex. no '~'). \n\n","\033[0;31m",
+                                 "be provided (ex. no '~'). \n\n",startColor,
                                   "\033[0m",dir,indexfile);
                 
                 exit(EXIT_FAILURE);
@@ -1089,7 +1091,7 @@ int main (int argc, char** argv)
                 {
                   fprintf(stderr, "\n  %sERROR%s: the index name %s has "
                                   "been entered twice in the list. Index names "
-                                  "must be unique.\n\n","\033[0;31m",
+                                  "must be unique.\n\n",startColor,
                                   "\033[0m",indexfile);
                   exit(EXIT_FAILURE);
                 }
@@ -1106,7 +1108,7 @@ int main (int argc, char** argv)
           {
             fprintf(stderr,"\n  %sERROR%s: a directory path must "
                            "follow the option --tmpdir (ex. /path/to/dir ) \n",
-                           "\033[0;31m","\033[0m");
+                           startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           else
@@ -1122,7 +1124,7 @@ int main (int argc, char** argv)
           {
             fprintf(stderr,"\n  %sERROR%s: --interval requires a positive "
                            "integer as input (ex. --interval 2).\n\n",
-                           "\033[0;31m","\033[0m");
+                           startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set interval
@@ -1132,7 +1134,7 @@ int main (int argc, char** argv)
             {
               fprintf(stderr,"\n  %sERROR%s: --interval requires a "
                              "positive integer as input (ex. --interval 2).\n\n",
-                             "\033[0;31m","\033[0m");
+                             startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             else if (isdigit(argv[narg+1][0]))
@@ -1145,7 +1147,7 @@ int main (int argc, char** argv)
             {
               fprintf(stderr,"\n  %sERROR%s: --interval requires a positive "
                              "integer as input (ex. --interval 2).\n\n",
-                             "\033[0;31m","\033[0m");
+                             startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
           }
@@ -1153,7 +1155,7 @@ int main (int argc, char** argv)
           {
             fprintf(stderr,"\n  %sERROR%s: --interval has been set "
                            "twice, please verify your choice\n\n",
-                           "\033[0;31m","\033[0m");
+                           startColor,"\033[0m");
             printlist();
           }
         }
@@ -1164,7 +1166,7 @@ int main (int argc, char** argv)
           {
             fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive "
                            "integer as input (ex. --max_pos 250).\n\n",
-                           "\033[0;31m","\033[0m");
+                           startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
           // set max_pos
@@ -1174,7 +1176,7 @@ int main (int argc, char** argv)
             {
               fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive "
                              "integer as input (ex. --max_pos 250).\n\n",
-                             "\033[0;31m","\033[0m");
+                             startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
             else if (isdigit(argv[narg+1][0]))
@@ -1187,14 +1189,14 @@ int main (int argc, char** argv)
             {
               fprintf(stderr,"\n  %sERROR%s: --max_pos requires a positive "
                              "integer as input (ex. --max_pos 250).\n\n",
-                             "\033[0;31m","\033[0m");
+                             startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
           }
           else
           {
             fprintf(stderr,"\n  %sERROR%s: --max_pos has been set twice, "
-                           "please verify your choice\n\n","\033[0;31m",
+                           "please verify your choice\n\n",startColor,
                            "\033[0m");
             printlist();
           }
@@ -1202,7 +1204,7 @@ int main (int argc, char** argv)
         else
 	{
 	  fprintf(stderr,"\n  %sERROR%s: unknown option --%s.\n\n",
-                         "\033[0;31m","\033[0m",myoption);
+                         startColor,"\033[0m",myoption);
 	  printlist();
 	  exit(EXIT_FAILURE);
 	}
@@ -1213,7 +1215,7 @@ int main (int argc, char** argv)
 	 if ( lnwin_set )
 	 {
 	   fprintf(stderr,"\n  %sERROR%s: option -L can only be set once.\n\n",
-                          "\033[0;31m","\033[0m");
+                          startColor,"\033[0m");
 	   exit(EXIT_FAILURE);
 	 }
                 
@@ -1223,24 +1225,24 @@ int main (int argc, char** argv)
 	if ( lnwin_t <= 0 )
 	{
 	  fprintf(stderr,"\n  %sERROR%s: -L must be a positive integer "
-                         "(10, 12, 14, .. , 20).\n\n","\033[0;31m","\033[0m");
+                         "(10, 12, 14, .. , 20).\n\n",startColor,"\033[0m");
 	  exit(EXIT_FAILURE);
 	}
 	else if ( lnwin_t%2 == 1 )
 	{
 	  fprintf(stderr,"\n  %sERROR%s: -L must be an even integer (10, 12, "
-                         "14, .. , 20).\n\n","\033[0;31m","\033[0m");
+                         "14, .. , 20).\n\n",startColor,"\033[0m");
 	  exit(EXIT_FAILURE);
 	}
 	else if ( (lnwin_t < 8) || (lnwin_t > 26) )
 	{
 	  fprintf(stderr,"\n  %sERROR%s: -L must be between 8 and 26, inclusive.\n\n",
-                         "\033[0;31m","\033[0m");
+                         startColor,"\033[0m");
 	  exit(EXIT_FAILURE);
 	}
 	else
 	{
-          lnwin_gv = lnwin_t;
+    lnwin_gv = lnwin_t;
 	  pread_gv = lnwin_gv+1;
 	  partialwin_gv = lnwin_gv/2;
 	  narg+=2;
@@ -1258,7 +1260,7 @@ int main (int argc, char** argv)
           if ( !mem )
           {
             fprintf(stderr, "\n  %sERROR%s: -m [INT] must be a positive integer "
-                            "value (in Mbyte).\n\n","\033[0;31m","\033[0m");
+                            "value (in Mbyte).\n\n",startColor,"\033[0m");
             exit(EXIT_FAILURE);
           }
 	  narg+=2;
@@ -1267,7 +1269,7 @@ int main (int argc, char** argv)
 	else
 	{
 	  fprintf(stderr,"\n  %sERROR%s: option -m can only be set once,\n\n",
-                         "\033[0;31m","\033[0m");
+                         startColor,"\033[0m");
 	  exit(EXIT_FAILURE);
 	}
       }
@@ -1292,7 +1294,7 @@ int main (int argc, char** argv)
       default :
       {
         fprintf(stderr,"\n  %sERROR%s: '%c' is not one of the options\n\n",
-                       "\033[0;31m","\033[0m",argv[narg][1]);
+                       startColor,"\033[0m",argv[narg][1]);
         exit(EXIT_FAILURE);
       }
     }//~switch
@@ -1303,7 +1305,7 @@ int main (int argc, char** argv)
   {
     fprintf(stderr,"\n  %sERROR%s: a FASTA reference database & index name "
                    "(--ref /path/to/file1.fasta,/path/to/index1) is mandatory "
-                   "input.\n\n","\033[0;31m","\033[0m");
+                   "input.\n\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
     
@@ -1350,7 +1352,7 @@ int main (int argc, char** argv)
     if ( tmp == NULL )
     {
       fprintf(stderr,"\n  %sERROR%s: cannot access directory %s: "
-                     "%s\n\n","\033[0;31m","\033[0m",ptr_tmpdir,
+                     "%s\n\n",startColor,"\033[0m",ptr_tmpdir,
                      strerror(errno));
       exit(EXIT_FAILURE);
     }
@@ -1445,7 +1447,7 @@ int main (int argc, char** argv)
       if ( tmp == NULL )
       {
         fprintf(stderr,"\n  %sERROR%s: no write permissions in current "
-                       "directory: %s\n","\033[0;31m","\033[0m",
+                       "directory: %s\n",startColor,"\033[0m",
                        strerror(errno));
         fprintf(stderr,"  Please set --tmpdir to a writable directory, "
                        "or change the write permissions in $TMPDIR, /tmp/ "
@@ -1495,7 +1497,7 @@ int main (int argc, char** argv)
     if ( fp == NULL )
     {
       fprintf(stderr,"  %sERROR%s: could not open file %s\n",
-                     "\033[0;31m","\033[0m",(char*)(myfiles[newindex].first).c_str());
+                     startColor,"\033[0m",(char*)(myfiles[newindex].first).c_str());
       exit(EXIT_FAILURE);
     }
         
@@ -1515,15 +1517,15 @@ int main (int argc, char** argv)
     // (c) number of total sequences (for SW alignment)
         
     // total number of reference sequences
-    size_t strs = 0;
+    uint64_t strs = 0;
     // length of longest single sequence
     uint32_t maxlen = 0;
     // length of single sequence
-    int32_t len = 0;
+    uint32_t len = 0;
     // the percentage of each A/C/G/T in the database
     double background_freq[4] = {0.0,0.0,0.0,0.0};
     // total length of reference sequences
-    int64_t full_len = 0;
+    uint64_t full_len = 0;
     int nt = 0;
         
     eprintf("  Collecting sequence distribution statistics ..");
@@ -1542,8 +1544,8 @@ int main (int argc, char** argv)
       else
       {
         fprintf(stderr,"\n%sERROR%s: each read header of the database fasta "
-                       "file must begin with '>';","\033[0;31m","\033[0m");
-        fprintf(stderr,"\n  check sequence # %ld\n\n",strs);
+                       "file must begin with '>';",startColor,"\033[0m");
+        fprintf(stderr,"\n  check sequence # %llu\n\n",strs);
         exit(EXIT_FAILURE);
       }
           
@@ -1572,27 +1574,21 @@ int main (int argc, char** argv)
         }
         nt = fgetc(fp);
       }
-            
       // add sequence name and length to sam_header_
       string s(read_header);
       sam_sq_header.push_back(pair<string,uint32_t>(s,len));
-          
       if ( nt != EOF ) ungetc(nt,fp);
-          
-      full_len+=len;
-          
+      full_len+=len;    
       if ( len < pread_gv )
       {
-	fprintf(stderr, "\n  %sERROR%s: at least one of your reads is shorter "
-                        "than the seed length %d, please filter out all reads "
-		        "shorter than %d to continue index construction.\n\n",
-		        "\033[0;31m","\033[0m", pread_gv, pread_gv );
-	exit(EXIT_FAILURE);
+        fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your sequences "
+                        "is shorter than the seed length %d, please filter out all "
+                        "sequences shorter than %d to continue index construction.\n\n",
+                        startColor,"\033[0m", __LINE__, __FILE__, pread_gv, pread_gv );
+	      exit(EXIT_FAILURE);
       }
-
       // if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
-      len > maxlen ? maxlen = len : maxlen;
-            
+      len > maxlen ? maxlen = len : maxlen;     
     } while ( nt != EOF ); // read until end of file
  
   TIME(f);
@@ -1637,7 +1633,7 @@ int main (int argc, char** argv)
     if ( keys == NULL )
     {
       fprintf(stderr,"  %sERROR%s: could not open %s file for writing\n",
-                     "\033[0;31m","\033[0m",keys_str);
+                     startColor,"\033[0m",keys_str);
       exit(EXIT_FAILURE);
     }
             
@@ -1651,7 +1647,7 @@ int main (int argc, char** argv)
     {
       fprintf(stderr,"  %sERROR%s: could not allocate memory for "
                      "9-mer look-up table (indexdb.cpp)\n",
-                     "\033[0;31m","\033[0m");
+                     startColor,"\033[0m");
       exit(EXIT_FAILURE);
     }
             
@@ -1722,13 +1718,13 @@ int main (int argc, char** argv)
         fprintf(stderr,"\n  %sWARNING%s: the index for sequence `","\033[0;33m","\033[0m");
         int c = 0;
         do
-	{
+	      {
           c = fgetc(fp);
           fprintf(stderr,"%c",(char)c);
         } while ( c != '\n' );
                 
-        fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.",mem);
-        fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.",estimated_seq_mem);
+        fprintf(stderr,"` will not fit into %e Mbytes memory, it will be skipped.", mem);
+        fprintf(stderr,"  If memory can be increased, please try `-m %e` Mbytes.", estimated_seq_mem);
         fseek(fp,end_seq,SEEK_SET);
         continue;
       }
@@ -1813,7 +1809,7 @@ int main (int argc, char** argv)
             lookup_table[kmer_key_short_f].trie_F = (NodeElement*)malloc(4*sizeof(NodeElement));
             if ( lookup_table[kmer_key_short_f].trie_F == NULL )
             {
-              fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n","\033[0;31m","\033[0m");
+              fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n",startColor,"\033[0m");
               exit(EXIT_FAILURE);
             }
               memset(lookup_table[kmer_key_short_f].trie_F, 0, 4*sizeof(NodeElement));
@@ -1863,7 +1859,7 @@ int main (int argc, char** argv)
              lookup_table[kmer_key_short_r].trie_R = (NodeElement*)malloc(4*sizeof(NodeElement));
              if ( lookup_table[kmer_key_short_r].trie_R == NULL )
              {
-               fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n","\033[0;31m","\033[0m");
+               fprintf(stderr,"  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n",startColor,"\033[0m");
                exit(EXIT_FAILURE);
              }
              memset(lookup_table[kmer_key_short_r].trie_R, 0, 4*sizeof(NodeElement));
@@ -1875,7 +1871,7 @@ int main (int argc, char** argv)
          // shift 19-mer window and both 9-mers
          if ( j != numwin-1 )
          {
-           for ( int shift = 0; shift < interval; shift++ )
+           for ( uint32_t shift = 0; shift < interval; shift++ )
            {
              (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
              (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
@@ -1899,7 +1895,7 @@ int main (int argc, char** argv)
      {
        eprintf("\n  %sERROR%s: no index was created, all of your sequences are "
                "too large to be indexed with the current memory limit of %e Mbytes.\n",
-               "\033[0;31m","\033[0m",mem);
+               startColor,"\033[0m",mem);
        break;
      }
      // continue to build hash and positions tables
@@ -1954,7 +1950,7 @@ int main (int argc, char** argv)
      positions_tbl = (kmer_origin*)malloc(number_elements*sizeof(kmer_origin));
      if ( positions_tbl == NULL )
      {
-       fprintf(stderr,"  %sERROR%s: could not allocate memory for positions_tbl (main(), indexdb.cpp)\n","\033[0;31m","\033[0m");
+       fprintf(stderr,"  %sERROR%s: could not allocate memory for positions_tbl (main(), indexdb.cpp)\n",startColor,"\033[0m");
        exit(EXIT_FAILURE);
      }
             
@@ -2072,13 +2068,13 @@ int main (int argc, char** argv)
          // shift the 19-mer and 9-mers
          if ( j != numwin-1 )
          {                    
-           for ( int shift = 0; shift < interval; shift++ )
+           for ( uint32_t shift = 0; shift < interval; shift++ )
            {
-             (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
-	     (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
-	     (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
-             kmer_key_short_r_rp--;
-             index_pos++;
+              (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
+              (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
+              (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
+              kmer_key_short_r_rp--;
+              index_pos++;
            }
          }
        }
@@ -2286,45 +2282,35 @@ int main (int argc, char** argv)
    stringstream prt_str;
    prt_str << part;
    string part_str = prt_str.str();
-
    eprintf("      temporary file was here: %s\n", keys_str);
-   
    // 1. load the kmer 'count' variable /index/kmer.dat
    ofstream oskmer ( (char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), ios::binary );
    eprintf("      writing kmer data to %s\n",(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str());
-            
    index_parts_stats thispart;
    thispart.start_part = start_part;
    thispart.seq_part_size = seq_part_size;
    thispart.numseq_part = numseq_part;
    index_parts_stats_vec.push_back(thispart);
-            
    // the 9-mer look up tables
    for ( uint32_t j = 0; j < (uint32_t)(1<<lnwin_gv); j++ )
    {
      oskmer.write(reinterpret_cast<const char*>(&(lookup_table[j].count)),
                   sizeof(uint32_t));
-   }
-            
-   oskmer.close();
-            
+   }   
+   oskmer.close();        
    // 2. mini-burst tries
-            
    // load 9-mer look-up table and mini-burst tries to /index/bursttrief.dat
    eprintf("      writing burst tries to %s\n",
            (myfiles[newindex].second + ".bursttrie_" + part_str + ".dat").c_str());
    load_index( lookup_table, (char*)(myfiles[newindex].second + ".bursttrie_" + 
                part_str + ".dat").c_str() );
-            
    // 3. 19-mer position look up tables
    ofstream ospos ( (char*)(myfiles[newindex].second + ".pos_" +
                     part_str + ".dat").c_str(), ios::binary );
    eprintf("      writing position lookup table to %s\n",
            (myfiles[newindex].second + ".pos_" + part_str + ".dat").c_str());
-            
    // number of unique 19-mers
-   ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));
-            
+   ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));    
    // the positions
    for ( uint32_t j = 0; j < number_elements; j++ )
    {
@@ -2333,13 +2319,11 @@ int main (int argc, char** argv)
      ospos.write(reinterpret_cast<const char*>(positions_tbl[j].arr), sizeof(seq_pos)*size);
    }
    ospos.close();
-                     
    // Free malloc'd memory
    // Table of unique 19-mer positions
    for ( uint32_t z = 0; z < number_elements; z++ )
      free(positions_tbl[z].arr);
    free(positions_tbl);
-  
    // 9-mer look-up table and mini-burst tries
    for ( uint32_t z = 0; z < (uint32_t)(1<<lnwin_gv); z++ )
    {
@@ -2353,14 +2337,10 @@ int main (int argc, char** argv)
        freebursttrie(lookup_table[z].trie_R);
        free(lookup_table[z].trie_R);
      }
-   }
-            
-   free(lookup_table);
-            
+   }      
+   free(lookup_table);        
    part++;
-            
- } while ( nt != EOF ); // for all index parts
-        
+ } while ( nt != EOF ); // for all index parts    
  if ( index_size != 0 )
  {
    eprintf("      writing nucleotide distribution statistics to %s\n",(myfiles[newindex].second + ".stats").c_str());
@@ -2368,49 +2348,37 @@ int main (int argc, char** argv)
    if ( !stats.good() )
    {
      fprintf(stderr,"\n  %sERROR%s: The file '%s' cannot be created: %s\n\n",
-                    "\033[0;31m","\033[0m",(char*)(myfiles[newindex].second + ".stats").c_str(),
+                    startColor,"\033[0m",(char*)(myfiles[newindex].second + ".stats").c_str(),
                     strerror(errno));
      exit(EXIT_FAILURE);
-   }
-            
+   }   
    // file size for file used to build the index
-   stats.write(reinterpret_cast<const char*>(&filesize), sizeof(size_t));
-            
+   stats.write(reinterpret_cast<const char*>(&filesize), sizeof(size_t));        
    // length of fasta file name (incl. path)
    uint32_t fasta_len = (myfiles[newindex].first).length()+1;
    stats.write(reinterpret_cast<const char*>(&fasta_len), sizeof(uint32_t));
-            
    // the fasta file name (incl. path)
    stats.write(reinterpret_cast<const char*>((myfiles[newindex].first).c_str()), sizeof(char)*fasta_len);
-            
    // number of sequences in the reference file
    uint32_t num_sq = sam_sq_header.size();
-            
    // background frequencies, size of the database, window length
    // and number of reference sequences in a separate stats file
    double total_nt = background_freq[0] + background_freq[1] + background_freq[2] + background_freq[3];
    background_freq[0] = background_freq[0]/total_nt;
    background_freq[1] = background_freq[1]/total_nt;
    background_freq[2] = background_freq[2]/total_nt;
-   background_freq[3] = background_freq[3]/total_nt;
-            
+   background_freq[3] = background_freq[3]/total_nt;      
    // the A/C/G/T percentage distribution
    stats.write(reinterpret_cast<const char*>(&background_freq), sizeof(double)*4);
-            
    // the length of all sequences in the database
    stats.write(reinterpret_cast<const char*>(&full_len), sizeof(uint64_t));
-            
    // sliding window length
    stats.write(reinterpret_cast<const char*>(&lnwin_gv), sizeof(uint32_t));
-            
-   numseq_gv = (int)strs/2;
-            
+   uint64_t numseq = strs/2;
    // number of reference sequences in the database
-   stats.write(reinterpret_cast<const char*>(&numseq_gv), sizeof(uint32_t));
-            
+   stats.write(reinterpret_cast<const char*>(&numseq), sizeof(uint64_t));
    // number of index parts
    stats.write(reinterpret_cast<const char*>(&part), sizeof(uint16_t));
-            
    // information on the location and size of sequences used to build each index part
    for ( uint16_t j = 0; j < part; j++ )
    {

@@ -3,7 +3,16 @@
 # bin are installed by default in /usr/local/bin/
 bin_PROGRAMS       = indexdb_rna sortmerna
 
-include_HEADERS    = ./alp/njn_dynprogprob.hpp \
+include_HEADERS    = ./alp/njn_uniform.hpp \
+                     ./alp/njn_root.hpp \
+                     ./alp/njn_vector.hpp \
+                     ./alp/njn_approx.hpp \
+                     ./alp/njn_matrix.hpp \
+                     ./alp/njn_integer.hpp \
+                     ./alp/njn_doubletype.hpp \
+                     ./alp/njn_function.hpp \
+                     ./alp/njn_memutil.hpp \
+                     ./alp/njn_dynprogprob.hpp \
                      ./alp/njn_dynprogproblim.hpp \
                      ./alp/njn_dynprogprobproto.hpp \
                      ./alp/njn_ioutil.hpp \
@@ -11,6 +20,7 @@ include_HEADERS    = ./alp/njn_dynprogprob.hpp \
                      ./alp/njn_localmaxstatmatrix.hpp \
                      ./alp/njn_localmaxstatutil.hpp \
                      ./alp/njn_random.hpp \
+                     ./alp/sls_normal_distr_array.hpp \
                      ./alp/sls_alignment_evaluer.hpp \
                      ./alp/sls_alp.hpp \
                      ./alp/sls_alp_data.hpp \
@@ -56,11 +66,14 @@ include_HEADERS    = ./alp/njn_dynprogprob.hpp \
                      ./cmph/select_lookup_tables.h \
                      ./cmph/vqueue.h \
                      ./cmph/vstack.h \
+                     ./include/config.h \
                      ./include/common.hpp \
                      ./include/indexdb.hpp \
                      ./include/bitvector.hpp \
                      ./include/load_index.hpp \
                      ./include/traverse_bursttrie.hpp \
+                     ./include/kseq.h \
+                     ./include/kseq_load.hpp \
                      ./include/mmap.hpp \
                      ./include/alignment.hpp \
                      ./include/paralleltraversal.hpp \
@@ -110,16 +123,13 @@ sortmerna_SOURCES  = ./alp/njn_dynprogprob.cpp \
                      ./src/bitvector.cpp \
                      ./src/load_index.cpp \
                      ./src/traverse_bursttrie.cpp \
+                     ./src/kseq_load.cpp \
                      ./src/mmap.cpp \
                      ./src/alignment.cpp \
                      ./src/paralleltraversal.cpp \
                      ./src/ssw.c \
                      ./src/outputformats.cpp \
                      ./src/main.cpp
-                     
-# dir are installed by default in /usr/local/sortmerna/
-sortmernadir       =  $(prefix)/@PACKAGE@/index
-sortmerna_DATA     =  index/.tobuild
 
 indexdir       =  $(prefix)/@PACKAGE@/rRNA_databases
 index_DATA     =  rRNA_databases/rfam-5.8s-database-id98.fasta \
@@ -145,9 +155,9 @@ EXTRA_DIST = rRNA_databases/rfam-5.8s-database-id98.fasta \
              rRNA_databases/silva-euk-28s-id98.fasta \
              scripts/merge-paired-reads.sh \
              scripts/unmerge-paired-reads.sh \
+             m4/ax_check_zlib.m4 \
+             index \
              SortMeRNA-User-Manual-2.1.pdf 
 
 uninstall: uninstall-am
-	cd $(prefix)/@PACKAGE@/index && rm *
-
 

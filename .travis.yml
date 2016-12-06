@@ -13,12 +13,22 @@ before_install:
   - ./miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda update --yes conda
+  - conda config --add channels https://conda.anaconda.org/biobuilds
 install:
-  - conda create --yes -n env_name python=2.7 numpy scipy
+  - conda create --yes -n env_name python=2.7 numpy scipy zlib autoconf-update
   - source activate env_name
   - pip install scikit-bio==0.2.3
 script:
-  - bash ./build.sh
-  - export PATH="$PWD:$PATH"
-  - cd tests
+  # configure and test without zlib
+  - bash ./autogen.sh
+  - ./configure --without-zlib
+  - make
+  - export PATH="$PWD:$PATH"; cd tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
+  # configure and test with zlib
+  - cd ../; make clean
+  - ./configure --with-zlib
+  - make
+  - cd ./tests
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi

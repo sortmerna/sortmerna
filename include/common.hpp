@@ -20,7 +20,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  *
- * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  *
  */
 
@@ -36,7 +42,7 @@
 #include <sstream>
 #include <fstream>
 #include <cstdlib>
-#include <cstdio>
+#include <stdio.h>
 #include <cmath>
 #include <sys/time.h>
 #include <set>
@@ -46,6 +52,9 @@
 #include <fcntl.h>    // file checking, open/close
 #include <sys/mman.h> 
 #include <errno.h>
+#include "config.h"
+
+using namespace std;
 
 extern timeval t;
 
@@ -55,7 +64,13 @@ extern timeval t;
 extern bool verbose;
 
 /*! @brief Print function for verbose mode */
-#define eprintf(format, ...) do { if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+#define eprintf(format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+
+/*! @brief start color text red */
+#define startColor "\033[0;31m"
+
+/*! @brief end color text color */
+#define endColor "\033[0m"
 
 // DEBUG: memory map
 // output information during the splitting of 
@@ -157,6 +172,9 @@ extern bool pid_gv;
 
 /*! @brief Size of partial section of reads file to mmap. */
 extern long unsigned int map_size_gv;
+
+/*! @brief if true, load reads using mmap */
+extern bool map_size_set_gv;
 
 /*! @brief SAM output. */
 extern bool samout_gv;

@@ -8,7 +8,7 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have `z' library (-lz) */
-/* #undef HAVE_LIBZ */
+#define HAVE_LIBZ 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -50,7 +50,7 @@
 #define PACKAGE_NAME "sortmerna"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "sortmerna 2.1"
+#define PACKAGE_STRING "sortmerna 2.1b"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "sortmerna"
@@ -59,13 +59,13 @@
 #define PACKAGE_URL "http://bioinfo.lifl.fr/sortmerna"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "2.1"
+#define PACKAGE_VERSION "2.1b"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "2.1"
+#define VERSION "2.1b"
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the

@@ -20,12 +20,13 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          pierre.pericard@lifl.fr
- *          mikael.salson@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
 #ifndef LOADINDEX_H
@@ -37,7 +38,6 @@
 #include "../alp/sls_alignment_evaluer.hpp"
 
 using namespace Sls;
-using namespace std;
 
 extern char nt_table[128];
 
@@ -61,10 +61,10 @@ extern char nt_table[128];
     @param vector<uint32_t>& lnwin
     @param vector<uint32_t>& partialwin
     @param vector<uint32_t>& minimal_score 
-    @param uint32_t number_total_read
+    @param uint64_t number_total_read
     @param vector<pair<double, double> >& gumbel
-    @param vector<uint32_t>& numbvs 
-    @param vector<uint32_t>& numseq
+    @param vector<uint64_t>& numbvs 
+    @param vector<uint64_t>& numseq
     @return none
 */
 void
@@ -85,10 +85,10 @@ load_index_stats(vector< pair<string,string> >& myfiles, /**< vector of (FASTA f
                  vector<uint32_t>& lnwin, /**< length of seed (sliding window L) */
                  vector<uint32_t>& partialwin, /**< length of seed/2 */
                  vector<uint32_t>& minimal_score, /**< minimal SW score in order to reach threshold E-value */
-                 uint32_t number_total_read, /**< total number of reads in input reads file */
+                 uint64_t number_total_read, /**< total number of reads in input reads file */
                  vector<pair<double, double> >& gumbel, /**< Gumbel parameters Lambda and K */
-                 vector<uint32_t>& numbvs, /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
-                 vector<uint32_t>& numseq /**< total number of reference sequences in one complete reference database */);
+                 vector<uint64_t>& numbvs, /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
+                 vector<uint64_t>& numseq /**< total number of reference sequences in one complete reference database */);
 
  /*! @fn load_index()
     @brief Load reference database index.
@@ -115,9 +115,9 @@ load_index(char* ptr_dbindex, /**< pointer to index file name */
     @param char* ptr_dbfile
     @param char* buffer
     @param char** reference_seq
-    @param uint32_t* reference_seq_len
+    @param uint64_t* reference_seq_len
     @param uint64_t seq_part_size
-    @param uint32_t numseq_part
+    @param uint64_t numseq_part
     @param uint64_t start_part
     @param bool load_for_search
     @return none
@@ -126,9 +126,9 @@ void
 load_ref(char* ptr_dbfile, /**< pointer to reference database file */
          char* buffer, /**< pointer to memory slot for storing reference database */
          char** reference_seq, /**< array of pointers to sequences in buffer */
-         uint32_t* reference_seq_len, /**< array of lengths for each sequence in buffer */
+         uint64_t* reference_seq_len, /**< array of lengths for each sequence in buffer */
          uint64_t seq_part_size, /**< size of memory to allocate for buffer */
-         uint32_t numseq_part, /**< number of sequences in part of database indexed */
+         uint64_t numseq_part, /**< number of sequences in part of database indexed */
          uint64_t start_part, /**< index of first sequence in current index */
          bool load_for_search /**< if true, compute sequence length; if false, only load sequence */);
 #endif

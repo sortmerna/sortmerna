@@ -1,3 +1,10 @@
+
+17 February 2016
+    - update ALP library to version 1.95
+    - add [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml) library, allow compressed reads input
+    - support both mmap and generic buffer input
+    - clean up compiler warnings
+
 03 March 2016 [Release 2.1b]
 ----------------------------
 	- fix issue regarding duplications in include_HEADERS for Galaxy (see pull request 105)

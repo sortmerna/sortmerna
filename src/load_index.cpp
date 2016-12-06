@@ -20,10 +20,13 @@
  * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
 #include "../include/load_index.hpp"
@@ -69,10 +72,10 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
                       vector<uint32_t>& lnwin,
                       vector<uint32_t>& partialwin,
                       vector<uint32_t>& minimal_score,
-                      uint32_t number_total_read,
+                      uint64_t number_total_read,
                       vector<pair<double, double> >& gumbel,
-                      vector<uint32_t>& numbvs,
-                      vector<uint32_t>& numseq)
+                      vector<uint64_t>& numbvs,
+                      vector<uint64_t>& numseq)
 {
   ofstream acceptedsam;
   
@@ -81,7 +84,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     acceptedsam.open (acceptedstrings_sam);
     if (!acceptedsam.good())
     {
-      fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing.\n","\033[0;31m","\033[0m");
+      fprintf(stderr,"  %sERROR%s: could not open SAM output file for writing.\n",startColor,"\033[0m");
       exit(EXIT_FAILURE);
     }
     // @HD header
@@ -110,13 +113,13 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     ifstream stats( (char*)(myfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary );
     if ( !stats.good() )
     {
-      fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
+      fprintf(stderr,"\n  %sERROR%s: The index '%s' does not exist.\n",startColor,"\033[0m",(char*)(myfiles[index_num].second + ".stats").c_str());
       fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
       exit(EXIT_FAILURE);
-    } 
+    }     
     // read the file size for file used to build the index
     size_t filesize = 0;
-    stats.read(reinterpret_cast<char*>(&filesize), sizeof(size_t));
+    stats.read(reinterpret_cast<char*>(&filesize), sizeof(size_t)); 
     // read the fasta file name used to build the index
     uint32_t fastafile_len = 0;
     stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(uint32_t));
@@ -126,15 +129,15 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     FILE *fastafile = fopen ((char*)(myfiles[index_num].first).c_str(),"r");
     if ( fastafile == NULL )
     {
-      fprintf(stderr,"    %sERROR%s: could not open FASTA reference file: %s .\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
+      fprintf(stderr,"    %sERROR%s: could not open FASTA reference file: %s .\n",startColor,"\033[0m",(char*)(myfiles[index_num].first).c_str());
       exit(EXIT_FAILURE);
     }
     fseek(fastafile,0L,SEEK_END);
     size_t sz = ftell(fastafile);
-    fclose(fastafile); 
+    fclose(fastafile);
     if ( sz != filesize )
     {
-      fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n","\033[0;31m","\033[0m",(char*)(myfiles[index_num].first).c_str());
+      fprintf(stderr,"    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n",startColor,"\033[0m",(char*)(myfiles[index_num].first).c_str());
       fprintf(stderr,"    does not appear to be the same FASTA file (%s) used to build the index %s.\n",fastafile_name,(char*)(myfiles[index_num].second).c_str());
       fprintf(stderr,"    Check your --ref list of files and corresponding indexes.\n\n");
       exit(EXIT_FAILURE);
@@ -148,7 +151,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     // sliding window length lnwin & initialize
     stats.read(reinterpret_cast<char*>(&lnwin[index_num]), sizeof(uint32_t));
     // total number of reference sequences in one complete reference database
-    stats.read(reinterpret_cast<char*>(&numseq[index_num]), sizeof(uint32_t));
+    stats.read(reinterpret_cast<char*>(&numseq[index_num]), sizeof(uint64_t));
     partialwin[index_num] = lnwin[index_num]/2;
     // number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward
     numbvs[index_num] = 4*(partialwin[index_num]-3);
@@ -158,17 +161,17 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       skiplengths[index_num][0] = lnwin[index_num];
       skiplengths[index_num][1] = partialwin[index_num];
       skiplengths[index_num][2] = 3;
-    }
+    }    
     // number of index parts
     stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
     vector<index_parts_stats> hold;
     // information on the location and size of sequences used to build each index part
-    for ( uint16_t j = 0; j < num_index_parts[index_num]; j++ )
+    for (uint16_t j = 0; j < num_index_parts[index_num]; j++)
     {
       index_parts_stats stats_hold;
       stats.read(reinterpret_cast<char*>(&stats_hold), sizeof(index_parts_stats));
       hold.push_back(stats_hold);
-    }
+    }  
     index_parts_stats_vec.push_back(hold);
     // Gumbel parameters
     long **substitutionScoreMatrix = scoring_matrix;    
@@ -223,7 +226,6 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
                             background_freq_gv[1]*(log(background_freq_gv[1])/log(2)) +
                             background_freq_gv[2]*(log(background_freq_gv[2])/log(2)) +
                             background_freq_gv[3]*(log(background_freq_gv[3])/log(2)));
-      
     // Length correction for Smith-Waterman alignment score
     uint64_t expect_L = log((gumbel[index_num].second)*full_read[index_num]*full_ref[index_num])/entropy_H_gv;
     // correct the reads & databases sizes for E-value calculation
@@ -237,7 +239,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     {
       // number of nucleotide sequences in the reference file
       uint32_t num_sq = 0;
-      stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
+      stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t)); 
       // loop through each @SQ
       for ( uint32_t j = 0; j < num_sq; j++ )
       {
@@ -263,7 +265,6 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     acceptedsam << "@PG\tID:sortmerna\tVN:1.0\tCL:";
     for ( int j = 0; j < argc; j++ ) acceptedsam << argv[j] << " ";
     acceptedsam << endl;
-    
     acceptedsam.close();
   }//~if samout_gv
   // free memory
@@ -293,66 +294,52 @@ load_index(char* ptr_dbindex,
 {
   // STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
   string ptr_dbindex_str = ptr_dbindex;
-  ifstream inkmer( (char*)(ptr_dbindex_str + ".kmer_" + part_str + ".dat").c_str(), ios::in | ios::binary );
-    
+  ifstream inkmer( (char*)(ptr_dbindex_str + ".kmer_" + part_str + ".dat").c_str(), ios::in | ios::binary ); 
   if ( !inkmer.good() )
   {
     fprintf(stderr,"\n  ERROR: The index '%s' does not exist.\n", (char*)(ptr_dbindex_str + ".kmer_" + part_str + ".dat").c_str());
     fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
     exit(EXIT_FAILURE);
-  }
-    
+  } 
   lookup_tbl = new kmer[(1<<lnwin)]();
   if ( lookup_tbl == NULL )
   {
     fprintf(stderr,"\n  ERROR: failed to allocate memory for look-up table (paralleltraversal.cpp)\n\n");
     exit(EXIT_FAILURE);
   }
-    
-  uint32_t limit = 1<<lnwin;
-    
-  for ( uint32_t i = 0; i < limit; i++ ) inkmer.read(reinterpret_cast<char*>(&(lookup_tbl[i].count)), sizeof(uint32_t));
-    
+  uint32_t limit = 1<<lnwin; 
+  for ( uint32_t i = 0; i < limit; i++ )
+    inkmer.read(reinterpret_cast<char*>(&(lookup_tbl[i].count)), sizeof(uint32_t));
   inkmer.close();
-    
   // STEP 2: load the burst tries ( bursttrief.dat, bursttrier.dat )
   ifstream btrie( (char*)(ptr_dbindex_str + ".bursttrie_" + part_str + ".dat").c_str(), ios::in | ios::binary );
-    
   if ( !btrie.good() )
   {
     fprintf(stderr,"\n  ERROR: The index '%s' does not exist.\n", (char*)(ptr_dbindex_str + ".bursttrie_" + part_str + ".dat").c_str());
     fprintf(stderr,"  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
     exit(EXIT_FAILURE);
   }
-    
   // loop through all 9-mers
   for ( uint32_t i = 0; i < (uint32_t)(1<<lnwin); i++ )
   {
-    uint32_t sizeoftries[2] = {0};
-        
+    uint32_t sizeoftries[2] = {0};     
 #ifdef see_binary_output
         cout << "9-mer = " << i; //TESTING
 #endif
-        
     // ptr to block of memory for two mini-burst tries
-    char *dst = NULL;
-        
+    char *dst = NULL;  
     // the size of both mini-burst tries
     for ( int j = 0; j < 2; j++ )
     {
       btrie.read(reinterpret_cast<char*>(&sizeoftries[j]), sizeof(uint32_t));
-            
 #ifdef see_binary_output
             if ( j == 0 ) cout << "\tsizeoftrie f = " << sizeoftries[j]; //TESTING
             else cout << "\tsizeoftrie r = " << sizeoftries[j]; //TESTING
-#endif
-            
-    }
-        
+#endif 
+    }  
 #ifdef see_binary_output
         cout << "\tlookup_tbl[i].count = " << lookup_tbl[i].count << endl; //TESTING
 #endif
-        
     // allocate contiguous memory for both mini-burst tries if they exist
     if ( lookup_tbl[i].count != 0 )
     {
@@ -361,8 +348,7 @@ load_index(char* ptr_dbindex,
       {
         fprintf(stderr,"  ERROR: failed to allocate memory for mini-burst tries (paralleltraversal.cpp)\n");
         exit(EXIT_FAILURE);
-      }
-            
+      }      
       // load 2 burst tries per 9-mer
       for ( int j = 0; j < 2; j++ )
       {
@@ -374,23 +360,18 @@ load_index(char* ptr_dbindex,
           if ( j == 1 ) cout << "reverse burst-trie \n"; //TESTING
 #endif            
           // create a root trie node
-          NodeElement newnode[4];
-                    
+          NodeElement newnode[4];             
           // copy the root trie node into the beginning of burst trie array
           memcpy( dst, &newnode[0], sizeof(NodeElement)*4);
           memset( dst, 0, sizeof(NodeElement)*4);
-                    
           if ( j == 0 ) lookup_tbl[i].trie_F = (NodeElement*)dst;
           else lookup_tbl[i].trie_R = (NodeElement*)dst;
-                    
           // queue to store the trie nodes as we create them
           deque<NodeElement*> nodes;
           nodes.push_back( (NodeElement*)dst );
           ((NodeElement *&) dst)+=4;
-                    
           // queue to store the flags of node elements given in the binary file
           deque<char> flags;
-                    
           // read the first trie node
           for ( int i = 0; i < 4; i++ )
           {
@@ -398,21 +379,18 @@ load_index(char* ptr_dbindex,
             btrie.read(reinterpret_cast<char*>(&tmp), sizeof(char));
             flags.push_back(tmp);
 #ifdef see_binary_output
-                        cout << " " << (int)tmp; //TESTING
+            cout << " " << (int)tmp; //TESTING
 #endif
           }
-                    
           // build the mini-burst trie
           while ( !nodes.empty() )
           {
             // ptr to traverse each trie node
-            NodeElement* node = nodes.front();
-                        
+            NodeElement* node = nodes.front(); 
             // trie node elements
             for ( int i = 0; i < 4; i++ )
             {
-              unsigned char flag = flags.front();
-                            
+              unsigned char flag = flags.front();         
               // what does the node element point to
               switch( flag )
               {
@@ -436,44 +414,36 @@ load_index(char* ptr_dbindex,
                     cout << " " << (int)tmp; //TESTING
 #endif
                     flags.push_back(tmp);
-                  }
-                                    
+                  }               
                   node->flag = 1;
                   node->size = 0;
                   NodeElement newnode[4];
                   memcpy( (NodeElement*)dst, &newnode[0], sizeof(NodeElement)*4);
                   nodes.push_back( (NodeElement*)dst );
                   node->whichnode.trie = (NodeElement*)dst;
-                  ((NodeElement *&) dst)+=4;
-                                    
+                  ((NodeElement *&) dst)+=4;            
                 }
                   break;
                 // bucket
                 case 2:
                 {
-                  uint32_t sizeofbucket = 0;
-                                    
+                  uint32_t sizeofbucket = 0;   
                   // read the bucket info
-                  btrie.read(reinterpret_cast<char*>(&sizeofbucket), sizeof(uint32_t));
-                                    
+                  btrie.read(reinterpret_cast<char*>(&sizeofbucket), sizeof(uint32_t)); 
 #ifdef see_binary_output
                   cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
 #endif                      
                   char* bucket = new char[sizeofbucket]();
                   if ( bucket == NULL )
                   {
-                    fprintf(stderr,"\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+                    fprintf(stderr,"\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n",startColor,"\033[0m");
                     exit(EXIT_FAILURE);
-                  }
-                                    
-                  btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);
-                                    
+                  }         
+                  btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);       
                   // copy the bucket into the burst trie array
-                  memcpy( (void*)dst, (void*)bucket, sizeofbucket);
-                                    
+                  memcpy( (void*)dst, (void*)bucket, sizeofbucket);     
                   delete [] bucket;
-                  bucket = NULL;
-                                    
+                  bucket = NULL;    
                   // assign pointers from trie node to the bucket
                   node->flag = flag;
                   node->whichnode.bucket = dst;
@@ -484,21 +454,18 @@ load_index(char* ptr_dbindex,
                 // ?
                 default:
                 {
-                  fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n","\033[0;31m","\033[0m",flag);
+                  fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n",startColor,"\033[0m",flag);
                   exit(EXIT_FAILURE);
                 }
                   break;
               }
-
               flags.pop_front();
               node++;               
-            }//~loop through 4 node elements in a trie node
-                        
+            }//~loop through 4 node elements in a trie node 
 #ifdef see_binary_output
             cout << "\n"; //TESTING
 #endif            
-            nodes.pop_front();
-                        
+            nodes.pop_front(); 
           }//~while !nodes.empty()
         }//~if mini-burst trie exists
         else
@@ -514,51 +481,38 @@ load_index(char* ptr_dbindex,
       lookup_tbl[i].trie_R = NULL;
     }
   }//~for all 9-mers in the look-up table
-    
   btrie.close();
-    
   // STEP 3: load the position reference tables (pos.dat)
   ifstream inreff( (char*)(ptr_dbindex_str + ".pos_" + part_str + ".dat").c_str(), ios::in | ios::binary );
-    
   if ( !inreff.good() )
   {
     fprintf(stderr,"\n  ERROR: The database name '%s' does not exist.\n\n", (char*)(ptr_dbindex_str + ".pos_" + part_str + ".dat").c_str());
     exit(EXIT_FAILURE);
   }
-    
-  uint32_t size = 0;
-    
+  uint32_t size = 0; 
   inreff.read(reinterpret_cast<char*>(&number_elements), sizeof(uint32_t));
-    
   positions_tbl = new kmer_origin[number_elements]();
   if ( positions_tbl == NULL )
   {
     fprintf(stderr,"  ERROR: could not allocate memory for positions_tbl (main(), paralleltraversal.cpp)\n");
     exit(EXIT_FAILURE);
   }
-    
   for ( uint32_t i = 0; i < number_elements; i++ )
   {
     /* the number of positions */
     inreff.read(reinterpret_cast<char*>(&size), sizeof(uint32_t));
-    positions_tbl[i].size = size;
-        
+    positions_tbl[i].size = size;      
     /* the sequence seq_pos array */
     positions_tbl[i].arr = new seq_pos[size]();
-        
     if ( positions_tbl[i].arr == NULL )
     {
       fprintf(stderr, "  ERROR: could not allocate memory for positions_tbl (paralleltraversal.cpp)\n");
       exit(EXIT_FAILURE);
     }
-        
     inreff.read(reinterpret_cast<char*>(positions_tbl[i].arr), sizeof(seq_pos)*size);
   }
-    
-  inreff.close();
-    
+  inreff.close(); 
   return ;
-    
 }//~load_index()
 
 
@@ -574,34 +528,33 @@ void
 load_ref(char* ptr_dbfile,
          char* buffer,
          char** reference_seq,
-         uint32_t* reference_seq_len,
+         uint64_t* reference_seq_len,
          uint64_t seq_part_size,
-         uint32_t numseq_part,
+         uint64_t numseq_part,
          uint64_t start_part,
          bool load_for_search)
 {
   FILE *fp = fopen(ptr_dbfile,"r");
   if ( fp == NULL )
   {
-    fprintf(stderr,"  %sERROR%s: could not open file %s\n",ptr_dbfile,"\033[0;31m","\033[0m");
+    fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open file %s\n",
+                   startColor,"\033[0m", __LINE__, __FILE__, ptr_dbfile);
     exit(EXIT_FAILURE);
   }
-    
   // set the file pointer to the first sequence added to the index for this index file section
   if ( fseek(fp,start_part,SEEK_SET) != 0 )
     {
-      fprintf(stderr,"  %sERROR%s: could not locate the sequences used to construct the index (paralleltraversal.cpp).\n","\033[0;31m","\033[0m");
-      fprintf(stderr,"  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",ptr_dbfile);
+      fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not locate the sequences used to construct the index.\n",
+                     startColor,"\033[0m", __LINE__, __FILE__);
+      fprintf(stderr,"  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",
+              ptr_dbfile);
     }
-    
   // load references sequences into memory, skipping the new lines & spaces in the fasta format
-  uint32_t num_seq_read = 0;
+  uint64_t num_seq_read = 0;
   char *s = buffer;
-    
   int i = 0;
   int j = 0;
   char c = fgetc(fp);
-
   if ( load_for_search )
   {
     do
@@ -615,14 +568,12 @@ load_ref(char* ptr_dbfile,
       }
       // new line
       *s++ = c;
-      
       if ( *s == '\n' )
       {
-        fprintf(stderr,"  %sERROR%s: your reference sequences are not in FASTA format "
-                       "(there is an extra new line).","\033[0;31m","\033[0m");
+        fprintf(stderr,"  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA format "
+                       "(there is an extra new line).",startColor,"\033[0m", __LINE__, __FILE__);
         exit(EXIT_FAILURE);
       }
-      
       // the sequence
       reference_seq[i++] = s;
       c = fgetc(fp);
@@ -632,18 +583,14 @@ load_ref(char* ptr_dbfile,
         {
           // keep record of ambiguous character for alignment
           *s++ = nt_table[(int)c];
-          
           // record the sequence length as we read it
           reference_seq_len[j]++;
         }
         c = fgetc(fp);
       } while ( (c != '>') && (c != EOF) );
-      
       *s++ = '\n';
       j++;
-      
       num_seq_read++;
-        
     } while ( (num_seq_read != numseq_part) && (c != EOF) );
   }
   else
@@ -657,10 +604,8 @@ load_ref(char* ptr_dbfile,
         *s++ = c;
         c = fgetc(fp);
       }
-      
       // new line
       *s++ = c;
-      
       // the sequence
       reference_seq[i++] = s;
       c = fgetc(fp);
@@ -668,17 +613,14 @@ load_ref(char* ptr_dbfile,
       {
         if ( c != '\n' && c != ' ' )
         {
-            // keep record of ambiguous character for alignment
-            *s++ = nt_table[(int)c];
+          // keep record of ambiguous character for alignment
+          *s++ = nt_table[(int)c];
         }
         c = fgetc(fp);
       } while ( (c != '>') && (c != EOF) );
-      
       *s++ = '\n';
       j++;
-      
       num_seq_read++;
-        
     } while ( (num_seq_read != numseq_part) && (c != EOF) );
   }
     

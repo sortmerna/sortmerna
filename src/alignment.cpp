@@ -20,12 +20,13 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          pierre.pericard@lifl.fr
- *          mikael.salson@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
 #include "../include/alignment.hpp"
@@ -50,7 +51,7 @@ largest ( const mypair &a, const mypair &b )
  * see alignment.hpp for documentation
  *************************************/
 void find_lis(deque<pair<uint32_t, uint32_t> > &a,
-              vector<uint32_t> &b, int64_t readn)
+              vector<uint32_t> &b, uint64_t readn)
 {
   vector<uint32_t> p(a.size());
   int u, v;
@@ -104,31 +105,31 @@ compute_lis_alignment(uint32_t size_ambiguous_nt,
                       kmer_origin* positions_tbl,
                       uint16_t* read_max_SW_score,
                       bool& search,
-                      int64_t* best_x,
-                      int64_t readn,
-                      int64_t* num_alignments_x,
+                      int32_t* best_x,
+                      uint64_t readn,
+                      int32_t* num_alignments_x,
                       uint32_t readlen,
                       uint32_t lnwin_index_num,
                       uint16_t index_num,
-                      uint32_t* reference_seq_len,
+                      uint64_t* reference_seq_len,
                       char* myread,
                       int32_t* ambiguous_nt,
                       int8_t* mat,
                       char** reference_seq,
-                      int32_t gap_open,
-                      int32_t gap_extension,
+                      long gap_open,
+                      long gap_extension,
                       uint32_t minimal_score_index_num,
                       vector<bool>& read_hits,
-                      uint32_t& total_reads_mapped,
-                      vector<uint32_t>& reads_matched_per_db,
+                      uint64_t& total_reads_mapped,
+                      vector<uint64_t>& reads_matched_per_db,
                       uint16_t part,
-                      map<uint32_t, alignment_struct >& read_hits_align_info,
+                      map<uint64_t, alignment_struct >& read_hits_align_info,
                       uint32_t max_SW_score,
                       bool& read_to_count,
-                      uint32_t& total_reads_mapped_cov,
+                      uint64_t& total_reads_mapped_cov,
                       vector<bool>& read_hits_denovo,
                       char filesig,
-                      int64_t strs,
+                      uint64_t strs,
                       uint32_t file_s,
                       uint32_t file_sections,
                       char** reads,
@@ -158,39 +159,31 @@ bool aligned = false;
   {
     // map<seq, number of occurrences> most_frequent_seq_t
     map<uint32_t,uint32_t> most_frequent_seq_t;
-    map<uint32_t,uint32_t>::iterator map_it;
-                        
+    map<uint32_t,uint32_t>::iterator map_it;              
     uint32_t max_seq = 0;
     uint32_t max_occur = 0;
-                        
     // STEP 2: for every reference sequence, compute the number of
     // window hits belonging to it
     for ( uint32_t i = 0; i < id_win_hits.size(); i++ )
     {
-      uint32_t _id = id_win_hits[i].id;
-                                                                        
+      uint32_t _id = id_win_hits[i].id;                                             
       // number of entries in the positions table for this id
       uint32_t num_hits = positions_tbl[_id].size;
-                            
       // pointer to the seq_pos array in the positions table for this id
       seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;
-                            
       // loop through every position of id
       for ( uint32_t j = 0; j < num_hits; j++ )
       {
         uint32_t seq = positions_tbl_ptr++->seq;
-        
         // sequence already exists in the map, increment it's value
         if ( (map_it=most_frequent_seq_t.find(seq)) != most_frequent_seq_t.end() )
           map_it->second++;
         // sequence doesn't exist, add it
         else most_frequent_seq_t[seq] = 1;
       }
-    }
-                                                          
+    }          
     // <mypair> = <number of occurrences of a sequence, index of sequence>
-    vector<mypair> most_frequent_seq;
-                        
+    vector<mypair> most_frequent_seq;              
     // copy list of occurrences from map to vector for sorting
     for ( map_it = most_frequent_seq_t.begin(); map_it != most_frequent_seq_t.end(); map_it++ )
     {
@@ -198,34 +191,27 @@ bool aligned = false;
       // only if they have enough seed hits
       if ( map_it->second >= (uint32_t)seed_hits_gv )
         most_frequent_seq.push_back(mypair(map_it->second,map_it->first));
-    }
-                    
-    most_frequent_seq_t.clear();
-                        
+    }           
+    most_frequent_seq_t.clear();                   
     // sort the highest scoring sequences to the head of the array
     sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
-
     // STEP 3: for each reference sequence candidate
     // (starting from highest scoring)
     for ( uint32_t k = 0; k < most_frequent_seq.size(); k++ )
     {
       // the maximum scoring alignment has been found,
       // do not search for anymore alignments
-      if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;
-                            
+      if ( (num_best_hits_gv != 0) && (read_max_SW_score[readn] == num_best_hits_gv) ) break;                
       max_occur = most_frequent_seq[k].first;
       max_seq = most_frequent_seq[k].second; 
 #ifdef debug_align
       cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
       cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
-      cout << "\t\t\t\tnumseq_part = " << numseq_part << endl; //TESTING
-      cout << "\t\t\t\tindex size for reference_seq = " << (numseq_part<<1) << endl; //TESTING
 if ( min_lis_gv > 0 )
 cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
 #endif                             
       // not enough window hits, try to collect more hits or go to next read
-      if ( max_occur < (uint32_t)seed_hits_gv ) break;
-                                            
+      if ( max_occur < (uint32_t)seed_hits_gv ) break;                           
       // update number of reference sequences remaining to check
       if ( (min_lis_gv > 0) && aligned && (k > 0) )
       {
@@ -237,11 +223,9 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
           {
             best_x[readn]--;
           }
-
           if ( best_x[readn] < 1 ) break;
         }
-      }
-                      
+      }           
       // check if the maximum number of alignments per read
       // (--num_alignments INT) have been output
       if ( num_alignments_gv > 0 )
@@ -255,14 +239,12 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
       // reference candidate from the table of positions computed
       // during indexing
       vector<mypair> hits_on_genome;
-      uint32_t count = 0;
-                                            
+      uint32_t count = 0;                                  
       for ( uint32_t i = 0; i < id_win_hits.size(); i++ )
       {
         uint32_t _id = id_win_hits[i].id;
         uint32_t num_hits = positions_tbl[_id].size;
-        seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;
-                                
+        seq_pos* positions_tbl_ptr = positions_tbl[_id].arr;                      
         // loop through every position of id
         for ( uint32_t j = 0; j < num_hits; j++ )
         {
@@ -273,17 +255,14 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
           }
           positions_tbl_ptr++;
         }
-      }
-                                                      
+      }                                            
       // sort the positions on genome in ascending order
-      sort(hits_on_genome.begin(), hits_on_genome.end(), smallest);      
-                            
+      sort(hits_on_genome.begin(), hits_on_genome.end(), smallest);                     
       // iterate over the set of hits, output windows of
       // length == read which have at least ratio hits
       vector<mypair>::iterator it3 = hits_on_genome.begin();
       deque<mypair> vi_read;
-      deque<mypair>::iterator deq;
-                            
+      deque<mypair>::iterator deq;                  
       // STEP 5: run a sliding window of read's length across
       // the genome, and search for windows with enough
       // k-mer hits
@@ -296,8 +275,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
       while ( it3 != hits_on_genome.end() )
       {
         uint32_t stop = begin + readlen - lnwin_index_num + 1;
-        bool push = false;
-                                
+        bool push = false;                      
         while ( (it3 != hits_on_genome.end()) && (it3->first <= stop) )
         {
           vi_read.push_back(*it3);
@@ -330,7 +308,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
             {
 #ifdef debug_align
               cout << "\t\t\t\tLIS = " << list.size() << endl; //TESTING
-              for ( int p = 0; p < list.size(); p++ )
+              for ( uint32_t p = 0; p < list.size(); p++ )
                   cout << "\t\t\t\tref: " << vi_read[list[p]].first << "\tread: " << vi_read[list[p]].second << endl;   
 #endif
 #ifdef HEURISTIC1_OFF
@@ -352,8 +330,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
               if ( as_percent_gv )
                 edges = (((double)edges_gv/100.0)*readlen);
               else
-                edges = edges_gv;
-                              
+                edges = edges_gv;        
               // part of the read hangs off (or matches exactly) the beginning of the reference seq
               //            ref |-----------------------------------|
               // que |-------------------|
@@ -407,7 +384,6 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                 align_ref_start = lcs_ref_start - lcs_que_start;
                 align_que_start = 0;
                 align_ref_start > (edges-1) ? head = edges : head;
-                
                 // part of the read hangs off the end of the reference seq
                 // ref |-----------------------------------|
                 //                          que |-------------------|
@@ -469,8 +445,6 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
               tt = myread+align_que_start;
               while ( *tt != '\n' ) cout << (int)*tt++;
               cout << endl;
-              
-              
               cout << "ref tag: ";
               tt = reference_seq[(2*(int)max_seq)];
               while (*tt != '\n' ) cout << (char)*tt++;
@@ -485,10 +459,8 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
               // create profile for read
               s_profile* profile = 0;
               profile = ssw_init((int8_t*)(myread+align_que_start), (align_length-head-tail), mat, 5, 2);
-              
               s_align* result = 0;
               //uint16_t filters = 0;
-              
               result = ssw_align( profile,
                                  (int8_t*)reference_seq[(2*(int)max_seq)+1]+align_ref_start-head,
                                  align_length,
@@ -526,21 +498,18 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                     read_hits[readn].flip();
                     total_reads_mapped++;
                     reads_matched_per_db[index_num]++;
-                  }
-                                  
+                  }             
                   // output (sam or blast-like) or update alignment information
                   bool strand = false;
                   if ( forward_gv ) strand = true;
                   else strand = false;
-                  
                   // add the offset calculated by the LCS (from the beginning of the sequence)
                   // to the offset computed by SW alignment
                   result->ref_begin1 += (align_ref_start-head);
                   result->ref_end1 += (align_ref_start-head);
                   result->read_begin1 += align_que_start;
                   result->read_end1 += align_que_start;
-                  result->readlen = readlen;
-                                                                    
+                  result->readlen = readlen;                                              
                   // update best alignment
                   if ( min_lis_gv > -1 )
                   {
@@ -548,8 +517,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                     result->ref_seq = max_seq;
                     result->part = part;
                     result->strand = strand;
-
-                    map<uint32_t, alignment_struct>::iterator alignment = read_hits_align_info.find(readn);
+                    map<uint64_t, alignment_struct>::iterator alignment = read_hits_align_info.find(readn);
 #ifdef DEBUG_BEST_N
                     cout << "\nreadn = " << readn << endl;
                     cout << "max_seq = " << (2*max_seq) << endl;
@@ -585,14 +553,14 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       // number of alignments stored per read < num_best_hits_gv, 
                       // add alignment to array without comparison to other members
                       // of array
-                      if ( (num_best_hits_gv == 0) || (array_size < num_best_hits_gv) )
+                      if ( (num_best_hits_gv == 0) || (array_size < (uint32_t)num_best_hits_gv) )
                       {
                         // number of alignments stored per read == maximum number of 
                         // alignments allowed, resize array by another BEST_HITS_INCREMENT slots 
                         if ( array_size == array_max_size )
                         {
                           uint32_t new_array_max_size = 0;
-                          if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= num_best_hits_gv) )
+                          if ( (num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= (uint32_t)num_best_hits_gv) )
                             new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
                           else
                             new_array_max_size = num_best_hits_gv;
@@ -605,7 +573,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                           {
                             fprintf(stderr, "\t  %sERROR%s: could not allocate memory for "
                                       "alignment storage (s_align* bigger_alignment_array "
-                                      "in paralleltraversal.cpp\n", "\033[0;31m", "\033[0m");
+                                      "in paralleltraversal.cpp\n", startColor, "\033[0m");
                             exit(EXIT_FAILURE);
                           }
                           // copy smaller array to larger memory slot
@@ -628,12 +596,11 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                         // increment size of array
                         alignment->second.size++;
                         array_size++;
-
                         // all slots have been filled, find slot with smallest
                         // alignment score and set the smallest_score_index
                         // (this is not done when num_best_hits_gv == 0 since
                         // we want to output all alignments for some --min_lis)
-                        if ( array_size == num_best_hits_gv )
+                        if ( array_size == (uint32_t)num_best_hits_gv )
                         {
 #ifdef DEBUG_BEST_N
                           cout << "\t\tfind new smallest_score_index of " << num_best_hits_gv << " slots.\n";
@@ -684,7 +651,6 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                         // of the highest scoring alignment
                         if ( result->score1 > (alignment->second.ptr + highest_score_index)->score1 )
                           alignment->second.max_index = smallest_score_index;
-
                         // decrement number of reads mapped to database
                         // with lower score
                         reads_matched_per_db[smallest_alignment->index_num]--;
@@ -711,10 +677,8 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                         cout << "\nnew smallest_score_index = " << smallest_score_index << endl;
 #endif                                 
                         alignment->second.min_index = smallest_score_index;
-                        
                         // the maximum possible score for this read has been found
                         if ( result->score1 == max_SW_score ) read_max_SW_score[readn]++;
-                        
                         // free result, except the cigar (now new cigar)
                         free(result);
                         result = NULL;
@@ -745,7 +709,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       if ( new_alignment == NULL )
                       {
                         fprintf(stderr,"\n  %sERROR%s: could not allocate memory for alignment "
-                                       "storage (paralleltraversal.cpp)\n","\033[0;31m","\033[0m");
+                                       "storage (paralleltraversal.cpp)\n",startColor,"\033[0m");
                         exit(EXIT_FAILURE);
                       }
                       else
@@ -791,7 +755,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       uint32_t length = (0xfffffff0&*(result->cigar + c2))>>4;
                       if (letter == 0) 
                       {
-                        for (int p = 0; p < length; ++p)
+                        for (uint32_t p = 0; p < length; ++p)
                         {
                           if ( (char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)] ) ++mismatches;
                           else ++id;

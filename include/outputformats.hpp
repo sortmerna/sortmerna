@@ -1,11 +1,10 @@
-/*
+/**
+ * @file outputformats.hpp
+ * @brief Function and variable definitions for outputformats.cpp
+ * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
- *
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
- *
- * This file is part of SortMeRNA.
+ * @copyright 2012-16 Bonsai Bioinformatics Research Group
+ * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,13 +17,17 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+ * @endparblock
  *
- * contact: jenya.kopylov@gmail.com, laurent.noe@lifl.fr, helene.touzet@lifl.fr
- *
- */
-
-/** @file outputformats.hpp */ 
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
+ */ 
  
 #ifndef OUTPUTFORMATS_H
 #define OUTPUTFORMATS_H
@@ -34,7 +37,6 @@
 //! SIMD Smith-Waterman alignment library
 #include "indexdb.hpp"
 
-using namespace std;
 
 void
 report_blast (ofstream &fileout,
@@ -53,7 +55,6 @@ report_blast (ofstream &fileout,
                    uint32_t mismatches,
                    uint32_t gaps);
 
-
 void
 report_sam (ofstream &fileout,
                  s_align* a,
@@ -71,7 +72,7 @@ report_fasta (char* acceptedstrings,
                    char* ptr_filetype_or,
                    char* ptr_filetype_ar,
                    char** reads,
-                   int32_t strs,
+                   uint64_t strs,
                    vector<bool>& read_hits,
                    uint32_t file_s,
                    char* finalnt);
@@ -79,7 +80,7 @@ report_fasta (char* acceptedstrings,
 void
 report_denovo(char *denovo_otus_file,
                    char **reads,
-                   int32_t strs,
+                   uint64_t strs,
                    vector<bool>& read_hits_denovo,
                    uint32_t file_s,
                    char *finalnt);

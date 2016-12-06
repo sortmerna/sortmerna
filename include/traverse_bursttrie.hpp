@@ -20,18 +20,19 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
 #ifndef TRAVERSE_BURSTTRIE_H
 #define TRAVERSE_BURSTTRIE_H
 
 #include "bitvector.hpp"
-
-using namespace std;
 
 // Universal Levenshtein table for k=1
 extern uint32_t table[4][16][14];

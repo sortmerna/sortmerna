@@ -17,13 +17,16 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
 #include "../include/traverse_bursttrie.hpp"
@@ -139,17 +142,17 @@ traversetrie_align ( NodeElement *trie_t,
         // (1) the node element holds a pointer to another trie node
         if ( value == 1 )
         {
-          traversetrie_align ( trie_t->whichnode.trie,
-                                        lev_t,
-                                        ++depth,
-                                        win_k1_ptr,
-                                        win_k1_full,
-                                        accept_zero_kmer,
-                                        id_hits,
-                                        readn,
-                                        win_num,
-                                        partialwin
-                                        );
+          traversetrie_align(trie_t->whichnode.trie,
+                             lev_t,
+                             ++depth,
+                             win_k1_ptr,
+                             win_k1_full,
+                             accept_zero_kmer,
+                             id_hits,
+                             readn,
+                             win_num,
+                             partialwin
+                             );
                     
           // go to next window on the read (0-error match found)
           if ( accept_zero_kmer ) return ;
@@ -253,7 +256,7 @@ traversetrie_align ( NodeElement *trie_t,
                 if ( !id_hits.empty() )
                 {
                   bool found = false;
-                  for ( int f = 0; f < id_hits.size(); f++ )
+                  for ( uint32_t f = 0; f < id_hits.size(); f++ )
                   {
                     if ( id_hits[f].id == entry.id )
                     {

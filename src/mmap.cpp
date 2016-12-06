@@ -19,12 +19,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          pierre.pericard@lifl.fr
- *          mikael.salson@lifl.fr
- *          robknight@ucsd.edu
+ *
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  */
 
  #include "../include/mmap.hpp"
@@ -40,7 +42,7 @@
  *******************************************************/
 char**
 mmap_reads(off_t partial_file_size,
-           int fd,
+           char* inputreads,
            off_t offset_map,
            char*& raw,
            char filesig,
@@ -49,22 +51,23 @@ mmap_reads(off_t partial_file_size,
            int32_t &offset_pair_from_top,
            char* split_read_ptr,
            char* split_read,
-           int64_t &strs,
+           uint64_t& strs,
            char*& finalnt,
            uint32_t &reads_offset_f,
-           uint32_t &reads_offset_e)
+           uint32_t &reads_offset_e,
+           uint32_t min_lnwin)
 {
   // mmap the reads file into memory
+  int fd = open(inputreads, O_RDONLY);
   raw = (char*)mmap(0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map);
   if ( raw == MAP_FAILED )
   {
-    close(fd);
-    fprintf(stderr,"  %sERROR%s: cannot mmap file: %s\n\n","\033[0;31m","\033[0m",strerror(errno));
+    fprintf(stderr,"  %sERROR%s: cannot mmap file: %s\n\n",startColor,"\033[0m",strerror(errno));
     exit(EXIT_FAILURE);
   }
+  close(fd);
   // pointer to last character in mmap'd region
   char* end_of_mmap = &raw[partial_file_size-1];
-
   // range of *start and *end pointers
   {
     // (FASTA) count the number of strings in a file section
@@ -72,7 +75,6 @@ mmap_reads(off_t partial_file_size,
     {
       // beginning of file section
       char *start = &raw[0];
-      
       // end of file section
       char *end = &raw[partial_file_size-1];
 #ifdef debug_mmap
@@ -96,12 +98,11 @@ mmap_reads(off_t partial_file_size,
         // 0 strings can only exist in the last file section
         if ( file_s != file_sections-1 )
         {
-          fprintf(stderr,"   %sERROR%s: 0 sequences mapped in the current file section.\n","\033[0;31m","\033[0m");
+          fprintf(stderr,"   %sERROR%s: 0 sequences mapped in the current file section.\n",startColor,"\033[0m");
           exit(EXIT_FAILURE);
         }
         reads_offset_f = 0;
         reads_offset_e = 0;
-        
         // split-read + associated paired-read
         if ( offset_pair_from_top ) strs+=2;
         // only split-read
@@ -111,27 +112,27 @@ mmap_reads(off_t partial_file_size,
       else
       {
         // count the number of strings in the file section
-        for ( int64_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ ) if ( raw[i] == '>' ) strs++;
-
+        // significance of -2 is to remove the "\n>" characters from search
+        // at the end of the mapped file section
+        for ( int64_t i = reads_offset_f; i < partial_file_size-reads_offset_e-2; i++ )
+          if ( raw[i] == '>' )
+            strs++;
         // the paired-read follows the split read at the top of current file section
         if ( offset_pair_from_top )
         {
           // go forwards one character past '>'
           start++;
           reads_offset_f++;
-          
           // increase the read's offset for the top of the file to enclose the paired-read
           while ( *start != '>' ) { start++; reads_offset_f++; }
           strs--;
         }
-        
         // the paired-read comes before the split read at the bottom of current file section
         if ( (strs%2 == 1) && (file_s != file_sections-1) )
         {
           // go backwards one character past '>'
           end--;
           reads_offset_e++;
-          
           // increase the read's offset for the bottom of the file to enclose the paired-read
           while ( *end != '>' ) { end--; reads_offset_e++; }
           strs--;
@@ -140,8 +141,7 @@ mmap_reads(off_t partial_file_size,
         }
         // the paired-read follows the split read at top of the following file section
         else offset_pair_from_top = true;         
-      }
-                
+      }         
       // account for the split read and its paired-read from the previous file section to be searched in current file section
       if ( file_s > 0 ) strs+=2;
 #ifdef debug_mmap
@@ -149,7 +149,6 @@ mmap_reads(off_t partial_file_size,
       cout << "reads_offset_r (incl. paired-read) = " << reads_offset_e << endl; //TESTING
       cout << "strs = " << strs << endl; //TESTING
 #endif
-      
       // one pointer for the read tag, second pointer for the read itself
       strs*=2;            
     } //~(FASTA)            
@@ -167,7 +166,6 @@ mmap_reads(off_t partial_file_size,
 #endif
       // compute the reads offset length at top of file section
       int line = 0;
-      
       // compute number of bytes covering split-read at top of file section and the paired-read (if it exists)
       if ( offset_pair_from_top > 0 )
       {
@@ -181,7 +179,8 @@ mmap_reads(off_t partial_file_size,
       cout << "reads_offset_f (split read + paired-read) = " << reads_offset_f << endl; //TESTING
 #endif
       // count the number of lines in the file section
-      for ( int64_t i = reads_offset_f; i < partial_file_size; i++ ) if ( raw[i] == '\n' ) strs++;
+      for ( int64_t i = reads_offset_f; i < partial_file_size; i++ )
+        if ( raw[i] == '\n' ) strs++;
 #ifdef debug_mmap
       cout << "strs (not counting reads_offset_f) = " << strs << endl; //TESTING
 #endif
@@ -192,17 +191,14 @@ mmap_reads(off_t partial_file_size,
         if ( (strs%4 == 1) && (raw[partial_file_size-1] == '\n') && (raw[partial_file_size-2] == '\n') ) strs--;
         else
         {
-          fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lld\n","\033[0;31m","\033[0m",strs);
+          fprintf(stderr,"   %sERROR%s: Your FASTQ reads file has an uneven number of lines: %lld\n",startColor,"\033[0m",strs);
           exit(EXIT_FAILURE);
         }
       }
-                
       int offset_pair_from_bottom = 0;
-      
       // count the number of lines belonging to a split read at bottom of file + a possible paired-read,
       // if there are only 8 strs in the file or we are on the last file, this doesn't apply
       if ( (strs > 8) && (file_s != file_sections-1) ) offset_pair_from_bottom = strs%8;
-      
       strs-=offset_pair_from_bottom;
 #ifdef debug_mmap
       cout << "offset_pair_from_bottom (this file section) = " << offset_pair_from_bottom << endl; //TESTING
@@ -221,7 +217,6 @@ mmap_reads(off_t partial_file_size,
       //             3. file section must not end in a new line while containing                                       
       //                an exact number of paired-reads                          
       if ( (file_s != file_sections-1) && (strs != 0) && !((raw[partial_file_size-1] == '\n') && (offset_pair_from_bottom == 0)) ) offset_pair_from_bottom++;
-      
       // compute the reads offset length at bottom of file section
       line = 0;
       if ( offset_pair_from_bottom > 0 )
@@ -237,14 +232,11 @@ mmap_reads(off_t partial_file_size,
 #ifdef debug_mmap
       cout << "reads_offset_r (split read + possible paired-read) = " << reads_offset_e << endl; //TESTING
 #endif
-      
       // account for the split read if exists
       if ( file_s > 0 ) strs+=8;
-      
 #ifdef debug_mmap
       cout << "strs (incl. split read and paired-read) = " << strs << endl; //TESTING
 #endif
-      
       // one pointer for the read tag, second pointer for the read itself
       strs/=2;
 #ifdef debug_mmap
@@ -252,15 +244,13 @@ mmap_reads(off_t partial_file_size,
 #endif
     }//~FASTQ split read          
   }//~range of *start and *end pointers
-
   // create a char* array for pointers to each string in mmap
   char** reads = new char*[strs]();
   if ( reads == NULL )
   {
-    fprintf(stderr,"\n  %sERROR%s: cannot allocate memory for reads\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"\n  %sERROR%s: cannot allocate memory for reads\n\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
-      
   // record the end of the split read
   if ( file_s > 0 )
   {
@@ -269,7 +259,6 @@ mmap_reads(off_t partial_file_size,
 #ifdef debug_mmap
     cout << "split read end: \n"; //TESTING
 #endif
-      
     while ( start != end )
     {
 #ifdef debug_mmap
@@ -282,10 +271,8 @@ mmap_reads(off_t partial_file_size,
 #endif
     // signify end of split_read
     *split_read_ptr = '\0';
-    
     // add the split read and associated paired-read to the start of reads to be filtered
-    start = split_read;
-          
+    start = split_read;      
 #ifdef debug_mmap
     cout << "full split read: \n"; //TESTING
     char *tt = start;
@@ -307,12 +294,10 @@ mmap_reads(off_t partial_file_size,
       // go to second read in fasta format
       while ( *start != '>') start++;
     }
-    
     // split-read or paired-read
     reads[2] = start;
     while ( *start++ != '\n' );
-    reads[3] = start;
-          
+    reads[3] = start;         
 #ifdef debug_mmap
     cout << "*reads[0] = " << (char)*reads[0] << endl; //TESTING
     cout << "*reads[1] = " << (char)*reads[1] << endl; //TESTING
@@ -320,13 +305,12 @@ mmap_reads(off_t partial_file_size,
     cout << "*reads[3] = " << (char)*reads[3] << endl; //TESTING
 #endif         
   }//~if ( file_s > 0 )
-
-  // a pointer is added to each header and the directly following read, hence the number of pointers for a fasta or fastq file is the same
+  // a pointer is added to each header and the directly following read,
+  // hence the number of pointers for a fasta or fastq file is the same
   char* line = &raw[reads_offset_f];
   finalnt = &raw[partial_file_size-reads_offset_e-1];
-  int minlenread = 1000000;
+  int minlenread = READLEN;
   int readlen = 0;
-
 #ifdef debug_mmap
   cout << "*line = " << (char)*line << endl; //TESTING
   cout << "*(finalnt-1) = " << (char)*(finalnt-1) << endl; //TESTING
@@ -335,11 +319,9 @@ mmap_reads(off_t partial_file_size,
     cout << "*(finalnt+1) = " << (char)*(finalnt+1) << endl; //TESTING
   cout << "raw[partial_file_size-1] = " << (char)raw[partial_file_size-1] << endl; //TESTING
 #endif
-      
   int index = 0;
   if ( file_s > 0 ) index = 4;
   else index = 0;
-      
   // (FASTA)
   if ( filesig == '>' )
   {
@@ -350,33 +332,29 @@ mmap_reads(off_t partial_file_size,
         // the read tag
         reads[index++] = line;
         while ( *line++ != '\n' );
-        
         // the read
         reads[index++] = line;
       }
-              
-      readlen = 0;
-              
+      readlen = 0;       
       while ( (line != finalnt) && (*line != '>') )
       {
         if ( *line != '\n' ) readlen++;
         line++;
       }
-              
       // compute the minimum length read
-      if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread;
+      // if readlen in less than minlenread then minlenread = readlen,
+      // otherwise minlenread = minlenread
+      if ( readlen >= min_lnwin ) readlen < minlenread ? minlenread = readlen : minlenread;
     }  
   }//~if ( filesig == '>' )
   // (FASTQ)
   else
   {
     // line counter (4 lines per fastq entry)
-    int count = 0;
-          
+    int count = 0;    
 #ifdef debug_mmap
     cout << "index (to set up pointers) = " << index << endl; //TESTING
 #endif
-          
     while ( line != finalnt )
     {
       if ( count%4 == 0 )
@@ -384,37 +362,28 @@ mmap_reads(off_t partial_file_size,
         // the read tag
         reads[index++] = line;
         while ( *line++ != '\n' );
-                  
         // the read
         reads[index++] = line;
-                  
         // compute the read length
         while ( *line++ != '\n' ) readlen++;
-        if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread;
-                  
+        if ( readlen >= min_lnwin ) readlen < minlenread ? minlenread = readlen : minlenread; 
         readlen = 0;     
-        count+=2;
-                  
+        count+=2;           
         // skip the quality ..
-      }
-              
+      }         
       if ( *line++ == '\n' ) count++;        
-    }
-          
+    }     
 #ifdef debug_mmap
     cout << "number lines indexed = " << count << endl; //TESTING
     cout << "index size = " << index-1 << endl; //TESTING
 #endif
-          
-  }//~if ( filesig == '@' )
-      
+  }//~if ( filesig == '@' )   
   // debug_mmap
-  if ( minlenread == 1000000 )
+  if ( minlenread == READLEN )
   {
-    fprintf(stderr,"   %sERROR%s: All reads are too short (<22nt) for further analysis.\n\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"   %sERROR%s: All reads are too short (<%unt) for further analysis.\n\n",startColor,"\033[0m",min_lnwin);
     exit(EXIT_FAILURE);
   }
-
   return reads;
 }
 
@@ -432,7 +401,7 @@ void unmmap_reads(char*& raw, off_t partial_file_size)
   // free the mmap'd file section
   if ( munmap(raw, partial_file_size ) == -1 )
   {
-    fprintf(stderr,"  %sERROR%s: Could not munmap file!\n","\033[0;31m","\033[0m");
+    fprintf(stderr,"  %sERROR%s: Could not munmap file!\n",startColor,"\033[0m");
     exit(EXIT_FAILURE);
   }
 }
