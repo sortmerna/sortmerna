@@ -98,7 +98,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
-        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: [Line 1586: src/indexdb.cpp] at least one of your sequences is shorter than the seed length 19, please filter out all sequences shorter than 19 to continue index construction.\n\n"""
+        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: [Line 1587: src/indexdb.cpp] at least one of your sequences is shorter than the seed length 19, please filter out all sequences shorter than 19 to continue index construction.\n\n"""
         self.assertEqual(error_msg, stderr)
 
     def test_indexdb_rna_tmpdir_arg(self):

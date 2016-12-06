@@ -366,7 +366,7 @@ mmap_reads(off_t partial_file_size,
         reads[index++] = line;
         // compute the read length
         while ( *line++ != '\n' ) readlen++;
-        if ( readlen >= 20 ) readlen < minlenread ? minlenread = readlen : minlenread; 
+        if ( readlen >= min_lnwin ) readlen < minlenread ? minlenread = readlen : minlenread; 
         readlen = 0;     
         count+=2;           
         // skip the quality ..
@@ -381,7 +381,7 @@ mmap_reads(off_t partial_file_size,
   // debug_mmap
   if ( minlenread == READLEN )
   {
-    fprintf(stderr,"   %sERROR%s: All reads are too short (<22nt) for further analysis.\n\n",startColor,"\033[0m");
+    fprintf(stderr,"   %sERROR%s: All reads are too short (<%unt) for further analysis.\n\n",startColor,"\033[0m",min_lnwin);
     exit(EXIT_FAILURE);
   }
   return reads;
