@@ -3,13 +3,13 @@ sortmerna
 
 [![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
 
-SortMeRNA is a local sequence alignment tool for filtering, mapping and OTU-picking. The core
-algorithm is based on approximate seeds and allows for fast and sensitive analyses of NGS reads.
-The main application of SortMeRNA is filtering rRNA from metatranscriptomic data. Additional
-applications include OTU-picking and taxonomy assignation available through QIIME v1.9.1 (http:
-//qiime.org). SortMeRNA takes as input a file of reads (fasta or fastq format) and one or multiple
+SortMeRNA is a local sequence alignment tool for filtering, mapping and clustering. The core
+algorithm is based on approximate seeds and allows for sensitive analysis of NGS reads.
+The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
+SortMeRNA takes as input a file of reads (fasta or fastq format) and one or multiple
 rRNA database file(s), and sorts apart aligned and rejected reads into two files specified by the user.
-SortMeRNA works with Illumina, 454, Ion Torrent and PacBio data, and can produce SAM and
+Additional applications include clustering and taxonomy assignation available through QIIME v1.9.1
+(http://qiime.org). SortMeRNA works with Illumina, Ion Torrent and PacBio data, and can produce SAM and
 BLAST-like alignments.
 
 Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
@@ -60,9 +60,9 @@ command was run.
 Compilation
 ===========
 
-NOTE: You will require ```autoconf``` to build from the cloned
+NOTE: You will require ```autoconf``` to build from the git cloned
 repository or from source code in the `Source code` tar
-balls under release Downloads.
+balls under release `Downloads`.
 
 (0) Prepare your build system for compilation:
 
@@ -227,6 +227,7 @@ Tests
 Usage tests can be run with the following command:
 ```
 python ./tests/test_sortmerna.py
+python ./tests/test_sortmerna_zlib.py
 ```
 Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
