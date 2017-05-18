@@ -1,5 +1,6 @@
 18 May 2017
     - update README to include info on SortMeRNA forum
+    - update python tests to use Python 3 & scikit-bio version 0.5.0.dev0
 
 17 February 2016
     - update ALP library to version 1.95

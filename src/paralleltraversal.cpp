@@ -20,13 +20,13 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
- *               Laurent Noé, laurent.noe@lifl.fr
- *               Pierre Pericard, pierre.pericard@lifl.fr
- *               Daniel McDonald, wasade@gmail.com
- *               Mikaël Salson, mikael.salson@lifl.fr
- *               Hélène Touzet, helene.touzet@lifl.fr
- *               Rob Knight, robknight@ucsd.edu
+ * @contributors Jenya Kopylova   jenya.kopylov@gmail.com
+ *               Laurent Noé      laurent.noe@lifl.fr
+ *               Pierre Pericard  pierre.pericard@lifl.fr
+ *               Daniel McDonald  wasade@gmail.com
+ *               Mikaël Salson    mikael.salson@lifl.fr
+ *               Hélène Touzet    helene.touzet@lifl.fr
+ *               Rob Knight       robknight@ucsd.edu
  */
 
 #include "../include/paralleltraversal.hpp"
@@ -505,7 +505,7 @@ paralleltraversal (char* inputreads,
     }
     exit(EXIT_SUCCESS);
   }
-  int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t)); 
+  int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
   {
     int32_t l,k,m;
     // initialize Smith-Waterman scoring matrix for genome sequences
@@ -516,7 +516,8 @@ paralleltraversal (char* inputreads,
       scoring_matrix[k++] = score_N; // ambiguous base
     }
     for ( m = 0; m < 5; ++m ) scoring_matrix[k++] = score_N; // ambiguous base
-  }  
+  }
+
   // the number of parts an index was divided into to fit into specified memory,
   // for each reference database searched
   uint32_t num_databases = myfiles.size();
@@ -1861,6 +1862,7 @@ paralleltraversal (char* inputreads,
       acceptedotumap_file = NULL;
     }
   }
+  // free scoring matrix
   free(scoring_matrix);
   scoring_matrix = NULL;
   // create a bilan (log file)

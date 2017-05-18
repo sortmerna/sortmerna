@@ -3,8 +3,8 @@
  * @brief File containing functions for sequence alignment.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2012-16 Bonsai Bioinformatics Research Group
- * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2012-17 Bonsai Bioinformatics Research Group
+ * @copyright 2014-17 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,13 +20,13 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
- *               Laurent Noé, laurent.noe@lifl.fr
- *               Pierre Pericard, pierre.pericard@lifl.fr
- *               Daniel McDonald, wasade@gmail.com
- *               Mikaël Salson, mikael.salson@lifl.fr
- *               Hélène Touzet, helene.touzet@lifl.fr
- *               Rob Knight, robknight@ucsd.edu
+ * @contributors Jenya Kopylova   jenya.kopylov@gmail.com
+ *               Laurent Noé      laurent.noe@lifl.fr
+ *               Pierre Pericard  pierre.pericard@lifl.fr
+ *               Daniel McDonald  wasade@gmail.com
+ *               Mikaël Salson    mikael.salson@lifl.fr
+ *               Hélène Touzet    helene.touzet@lifl.fr
+ *               Rob Knight       robknight@ucsd.edu
  */
 
 #include "../include/alignment.hpp"
@@ -114,7 +114,7 @@ compute_lis_alignment(uint32_t size_ambiguous_nt,
                       uint64_t* reference_seq_len,
                       char* myread,
                       int32_t* ambiguous_nt,
-                      int8_t* mat,
+                      int8_t* scoring_matrix,
                       char** reference_seq,
                       long gap_open,
                       long gap_extension,
@@ -458,10 +458,12 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
 #endif                                                     
               // create profile for read
               s_profile* profile = 0;
-              profile = ssw_init((int8_t*)(myread+align_que_start), (align_length-head-tail), mat, 5, 2);
+              profile = ssw_init((int8_t*)(myread+align_que_start), (align_length-head-tail), scoring_matrix, 5, 2);
+              
               s_align* result = 0;
               //uint16_t filters = 0;
-              result = ssw_align( profile,
+              
+              result = ssw_align(profile,
                                  (int8_t*)reference_seq[(2*(int)max_seq)+1]+align_ref_start-head,
                                  align_length,
                                  gap_open,
@@ -644,7 +646,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                         s_align *smallest_alignment = (alignment->second.ptr) + smallest_score_index;
 #ifdef DEBUG_BEST_N
                         cout << "\treplace alignment with higher score.\n";
-                        cout << "\tsmallest_alignment->score1 = " << smallest_alignment->score1 << endl;
+                        cout << "\tsmallest_alignment->score = " << smallest_alignment->score1 << endl;
                         cout << "\treplace alignment in an existing slot.\n";
 #endif
                         // update max_index to the position of the first occurrence
@@ -686,7 +688,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                       else
                       {
                         // new alignment has a lower score, destroy it
-                        if (result != NULL) align_destroy(&result);
+                        if (result != NULL) free(result);
                       }
                     }
                     // an alignment for this read doesn't exist, add the first alignment
@@ -898,7 +900,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                                     );
                     }                                     
                     // free alignment info
-                    if ( result != 0 ) align_destroy(&result);
+                    if ( result != 0 ) free(result);
                   }//~if output all alignments
                                                                     
                   // continue to next read (do not need to collect more seeds using another pass)
@@ -924,7 +926,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
 #ifdef debug_align
                   cout << "\t\t\t\tnot aligned \n"; //TESTING
 #endif         
-                  if ( result != 0 ) align_destroy(&result);                            
+                  if ( result != 0 ) free(result);                            
               }  
             }//~if LIS long enough                               
 #ifdef HEURISTIC1_OFF
