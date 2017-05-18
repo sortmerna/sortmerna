@@ -20,13 +20,13 @@
  * along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * @endparblock
  *
- * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
- *               Laurent Noé, laurent.noe@lifl.fr
- *               Pierre Pericard, pierre.pericard@lifl.fr
- *               Daniel McDonald, wasade@gmail.com
- *               Mikaël Salson, mikael.salson@lifl.fr
- *               Hélène Touzet, helene.touzet@lifl.fr
- *               Rob Knight, robknight@ucsd.edu
+ * @contributors Jenya Kopylova   jenya.kopylov@gmail.com
+ *               Laurent Noé      laurent.noe@lifl.fr
+ *               Pierre Pericard  pierre.pericard@lifl.fr
+ *               Daniel McDonald  wasade@gmail.com
+ *               Mikaël Salson    mikael.salson@lifl.fr
+ *               Hélène Touzet    helene.touzet@lifl.fr
+ *               Rob Knight       robknight@ucsd.edu
  */
 
 #ifndef ALIGNMENT_H
@@ -173,7 +173,7 @@ compute_lis_alignment(uint32_t size_ambiguous_nt /**< number of ambiguous nucleo
                       uint64_t* reference_seq_len /**< array storing lengths of all reference sequences in an index */,
                       char* myread /**< read sequence */,
                       int32_t* ambiguous_nt /**< array storing positions of ambiguous nucleotides in read */,
-                      int8_t* mat /**< Smith-Waterman scoring matrix */,
+                      int8_t* scoring_matrix /**< Smith-Waterman scoring matrix */,
                       char** reference_seq /**< array storing raw nucleotide reference sequences in an index */,
                       long gap_open /**< Smith-Waterman gap open score */,
                       long gap_extension /**< Smith-Waterman gap extension score */,

@@ -13,8 +13,7 @@ from os.path import abspath, exists, join, dirname
 from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
 
-from skbio.parse.sequences import parse_fasta
-from skbio.util import remove_files
+import skbio.io
 
 
 # ----------------------------------------------------------------------------
@@ -78,14 +77,15 @@ class SortmernaTests(TestCase):
 
     def tearDown(self):
         rmtree(self.output_dir)
-        remove_files(self.files_to_remove)
+        for file in self.files_to_remove:
+            remove(file)
 
     def test_ref_shorter_than_seed(self):
         """ Test building a database where at least
             one reference sequence is shorter than the
             seed length
         """
-        print "test_ref_shorter_than_seed"
+        print("test_ref_shorter_than_seed")
         index_db = join(self.output_dir, "ref_short_seqs.fasta")
         index_path = "%s,%s" % (self.db_short, index_db)
         indexdb_command = ["indexdb_rna",
@@ -99,12 +99,12 @@ class SortmernaTests(TestCase):
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
         error_msg = """\n  \x1b[0;31mERROR\x1b[0m: [Line 1587: src/indexdb.cpp] at least one of your sequences is shorter than the seed length 19, please filter out all sequences shorter than 19 to continue index construction.\n\n"""
-        self.assertEqual(error_msg, stderr)
+        self.assertEqual(error_msg, stderr.decode('utf-8'))
 
     def test_indexdb_rna_tmpdir_arg(self):
         """ Test writing to --tmpdir
         """
-        print "test_indexdb_rna_tmpdir_arg"
+        print("test_indexdb_rna_tmpdir_arg")
         tmpdir = mkdtemp()
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
@@ -128,18 +128,18 @@ class SortmernaTests(TestCase):
         for fp in expected_db_files:
             self.assertTrue(exists(fp))
         # check temporary folder was that set by --tmpdir
-        query = re.compile('temporary file was here: (.*?)\n')
+        query = re.compile(b'temporary file was here: (.*?)\n')
         m = query.search(stdout)
         tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
-        self.assertEqual(tmpdir, tmp_dir)
+        self.assertEqual(tmpdir, tmp_dir.decode('utf-8'))
         rmtree(tmpdir)
 
     def test_indexdb_rna_TMPDIR_env(self):
         """ Test writing to TMPDIR env variable
         """
-        print "test_indexdb_rna_TMPDIR_env"
+        print("test_indexdb_rna_TMPDIR_env")
         tmpdir = mkdtemp()
         environ["TMPDIR"] = tmpdir
         index_db = join(self.output_dir, "GQ099317")
@@ -162,18 +162,18 @@ class SortmernaTests(TestCase):
         for fp in expected_db_files:
             self.assertTrue(exists(fp))
         # check temporary folder was that set by --tmpdir
-        query = re.compile('temporary file was here: (.*?)\n')
+        query = re.compile(b'temporary file was here: (.*?)\n')
         m = query.search(stdout)
         tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
-        self.assertEqual(tmpdir, tmp_dir)
+        self.assertEqual(tmpdir, tmp_dir.decode('utf-8'))
         rmtree(tmpdir)
 
     def test_indexdb_rna_tmp_dir_system(self):
         """ Test writing to /tmp folder
         """
-        print "test_indexdb_rna_tmp_dir_system"
+        print("test_indexdb_rna_tmp_dir_system")
         environ["TMPDIR"] = ""
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
@@ -195,17 +195,17 @@ class SortmernaTests(TestCase):
         for fp in expected_db_files:
             self.assertTrue(exists(fp))
         # check temporary folder was that set by --tmpdir
-        query = re.compile('temporary file was here: (.*?)\n')
+        query = re.compile(b'temporary file was here: (.*?)\n')
         m = query.search(stdout)
         tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
-        self.assertEqual("/tmp", tmp_dir)
+        self.assertEqual("/tmp", tmp_dir.decode('utf-8'))
 
     def test_indexdb_default_param(self):
-    	""" Test indexing a database using SortMeRNA
+        """ Test indexing a database using SortMeRNA
         """
-        print "test_indexdb_default_param"
+        print("test_indexdb_default_param")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
         indexdb_command = ["indexdb_rna",
@@ -231,7 +231,7 @@ class SortmernaTests(TestCase):
         """ Test indexing a database using SortMeRNA
             with m = 0.05, that is 7 parts
         """
-        print "test_indexdb_split_databases"
+        print("test_indexdb_split_databases")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
         indexdb_command = ["indexdb_rna",
@@ -282,7 +282,7 @@ class SortmernaTests(TestCase):
             4/6 reads match both arc-16s and
             bac-16s and 2/6 are random reads.
         """
-        print "test_multiple_databases_search"
+        print("test_multiple_databases_search")
         index_path = "%s,%s:%s,%s" % (self.db_bac16s,
                                       join(self.output_dir, "db_bac16s"),
                                       self.db_arc16s,
@@ -310,8 +310,8 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
-        f_log = open(aligned_basename + ".log", "U")
+            print(stderr)
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads failing E-value threshold" in f_log_str)
@@ -327,9 +327,8 @@ class SortmernaTests(TestCase):
         # Correct number of reads mapped
         self.assertEqual("4", num_hits_log)
         num_hits_file = 0
-        with open(aligned_basename + ".fasta", 'U') as f_mapped:
-            for label, seq in parse_fasta(f_mapped):
-                num_hits_file += 1
+        for seq in skbio.io.read(aligned_basename + ".fasta", format='fasta'):
+            num_hits_file += 1
         self.assertEqual(num_hits_log, str(num_hits_file))
 
     def output_test(self, aligned_basename, other_basename):
@@ -338,7 +337,7 @@ class SortmernaTests(TestCase):
             test_simulated_amplicon_generic_buffer()
             test_simulated_amplicon_12_part_index()
         """
-        f_log = open(aligned_basename + ".log", "U")
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads for de novo clustering" in f_log_str)
@@ -364,28 +363,25 @@ class SortmernaTests(TestCase):
         # Correct number of de novo reads
         self.assertEqual("9831", num_denovo_log)
         num_denovo_file = 0
-        with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
-            for label, seq in parse_fasta(f_denovo):
-                num_denovo_file += 1
+        for seq in skbio.io.read(aligned_basename + "_denovo.fasta", format='fasta'):
+            num_denovo_file += 1
         self.assertEqual(num_denovo_log, str(num_denovo_file))
         # Correct number of reads mapped
         self.assertEqual("19995", num_hits_log)
         num_hits_file = 0
-        with open(aligned_basename + ".fasta", 'U') as f_mapped:
-            for label, seq in parse_fasta(f_mapped):
-                num_hits_file += 1
+        for seq in skbio.io.read(aligned_basename + ".fasta", format='fasta'):
+            num_hits_file += 1
         self.assertEqual(num_hits_log, str(num_hits_file))
         # Correct number of reads not mapped
         self.assertEqual("10005", num_fails_log)
         num_fails_file = 0
-        with open(other_basename + ".fasta", 'U') as f_not_mapped:
-            for label, seq in parse_fasta(f_not_mapped):
-                num_fails_file += 1
+        for seq in skbio.io.read(other_basename + ".fasta", format='fasta'):
+            num_fails_file += 1
         self.assertEqual(num_fails_log, str(num_fails_file))
         # Correct number of reads passing %id and %coverage threshold
         self.assertEqual("10164", num_pass_id_cov_log)
         num_pass_id_cov_file = 0
-        with open(aligned_basename + ".blast", 'U') as f_blast:
+        with open(aligned_basename + ".blast") as f_blast:
             for line in f_blast:
                 f_id = float(line.strip().split('\t')[2])
                 f_cov = float(line.strip().split('\t')[13])
@@ -396,7 +392,7 @@ class SortmernaTests(TestCase):
         self.assertEqual("4400", num_clusters_log)
         num_clusters_file = 0
         num_reads_in_clusters_file = 0
-        with open(aligned_basename + "_otus.txt", 'U') as f_otus:
+        with open(aligned_basename + "_otus.txt") as f_otus:
             for line in f_otus:
                 num_clusters_file += 1
                 num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
@@ -413,7 +409,7 @@ class SortmernaTests(TestCase):
             query FASTA file both processed as one
             section.
         """
-        print "test_simulated_amplicon_1_part_map"
+        print("test_simulated_amplicon_1_part_map")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -449,7 +445,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename, other_basename)
         # Clean up before next call
         remove(aligned_basename + ".log")
@@ -481,7 +477,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_generic_buffer(self):
@@ -494,7 +490,7 @@ class SortmernaTests(TestCase):
             query FASTA file both processed as one
             section using the generic buffer (kseq lib).
         """
-        print "test_simulated_amplicon_generic_buffer"
+        print("test_simulated_amplicon_generic_buffer")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -529,7 +525,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename, other_basename)
         # Clean up before next call
         remove(aligned_basename + ".log")
@@ -560,7 +556,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_6_part_map(self):
@@ -573,7 +569,7 @@ class SortmernaTests(TestCase):
             as one unit and input query FASTA file
             in 6 sections.
         """
-        print "test_simulated_amplicon_6_part_map"
+        print("test_simulated_amplicon_6_part_map")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -608,7 +604,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_12_part_index(self):
@@ -621,7 +617,7 @@ class SortmernaTests(TestCase):
             as 12 parts and input query FASTA file
             in 1 section.
         """
-        print "test_simulated_amplicon_12_part_index"
+        print("test_simulated_amplicon_12_part_index")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -656,7 +652,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename, other_basename)
 
     def test_environmental_output(self):
@@ -666,7 +662,7 @@ class SortmernaTests(TestCase):
             Conditions: input FASTA file is processed in
             one mapped section.
         """
-        print "test_environmental_output"
+        print("test_environmental_output")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -699,8 +695,8 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
-        f_log = open(aligned_basename + ".log", "U")
+            print(stderr)
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads for de novo clustering" in f_log_str)
@@ -721,20 +717,19 @@ class SortmernaTests(TestCase):
         # Correct number of clusters recorded
         self.assertEqual("272", num_clusters_log)
         # Correct number of clusters in OTU-map
-        with open(aligned_basename + "_otus.txt", 'U') as f_otumap:
+        with open(aligned_basename + "_otus.txt") as f_otumap:
             num_clusters_file = sum(1 for line in f_otumap)
         self.assertEqual(272, num_clusters_file)
         num_failures_file = 0
-        with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
-            for label, seq in parse_fasta(f_denovo):
-                num_failures_file += 1
+        for seq in skbio.io.read(aligned_basename + "_denovo.fasta", format='fasta'):
+            num_failures_file += 1
         # Correct number of reads for de novo clustering
         self.assertEqual(num_failures_log, str(num_failures_file))
 
     def test_empty_query_file(self):
         """ Test SortMeRNA with an empty reads file.
         """
-        print "test_empty_query_file"
+        print("test_empty_query_file")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
         indexdb_command = ["indexdb_rna",
@@ -767,9 +762,9 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         # Correct number of clusters in OTU-map
-        with open(aligned_basename + ".log", 'U') as f_log:
+        with open(aligned_basename + ".log") as f_log:
             self.assertTrue("The input reads file or reference file is empty" in f_log.read())
 
     def test_mate_pairs(self):
@@ -794,7 +789,7 @@ class SortmernaTests(TestCase):
             With --paired_out, the --aligned file will contain 2000 reads
                                the --other file will contain 8000 reads
         """
-        print "test_mate_pairs"
+        print("test_mate_pairs")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -826,8 +821,8 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
-        f_log = open(aligned_basename + ".log", "U")
+            print(stderr)
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads failing E-value threshold" in f_log_str)
@@ -843,11 +838,11 @@ class SortmernaTests(TestCase):
         # Correct number of clusters recorded
         self.assertEqual("4000", num_fail)
         # Correct number of aligned reads
-        with open(aligned_basename + ".fastq", 'U') as f_aligned:
+        with open(aligned_basename + ".fastq") as f_aligned:
             num_aligned_reads = sum(1 for line in f_aligned)
         self.assertEqual(6000, num_aligned_reads/4)
         # Correct number of non-aligned reads
-        with open(nonaligned_basename + ".fastq", 'U') as f_nonaligned:
+        with open(nonaligned_basename + ".fastq") as f_nonaligned:
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
         self.assertEqual(4000, num_nonaligned_reads/4)
         # Clean up before next call
@@ -871,8 +866,8 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
-        f_log = open(aligned_basename + ".log", "U")
+            print(stderr)
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads failing E-value threshold" in f_log_str)
@@ -888,11 +883,11 @@ class SortmernaTests(TestCase):
         # Correct number of clusters recorded
         self.assertEqual("4000", num_fail)
         # Correct number of aligned reads
-        with open(aligned_basename + ".fastq", 'U') as f_aligned:
+        with open(aligned_basename + ".fastq") as f_aligned:
             num_aligned_reads = sum(1 for line in f_aligned)
         self.assertEqual(10000, num_aligned_reads/4)
         # Correct number of non-aligned reads
-        with open(nonaligned_basename + ".fastq", 'U') as f_nonaligned:
+        with open(nonaligned_basename + ".fastq") as f_nonaligned:
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
         self.assertEqual(0, num_nonaligned_reads/4)
         # Clean up before next call
@@ -916,8 +911,8 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
-        f_log = open(aligned_basename + ".log", "U")
+            print(stderr)
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads failing E-value threshold" in f_log_str)
@@ -933,11 +928,11 @@ class SortmernaTests(TestCase):
         # Correct number of clusters recorded
         self.assertEqual("4000", num_fail)
         # Correct number of aligned reads
-        with open(aligned_basename + ".fastq", 'U') as f_aligned:
+        with open(aligned_basename + ".fastq") as f_aligned:
             num_aligned_reads = sum(1 for line in f_aligned)
         self.assertEqual(2000, num_aligned_reads/4)
         # Correct number of non-aligned reads
-        with open(nonaligned_basename + ".fastq", 'U') as f_nonaligned:
+        with open(nonaligned_basename + ".fastq") as f_nonaligned:
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
         self.assertEqual(8000, num_nonaligned_reads/4)
 
@@ -946,7 +941,7 @@ class SortmernaTests(TestCase):
             search both forward and reverse-complement query for
             alignments
         """
-        print "test_output_all_alignments_f_rc"
+        print("test_output_all_alignments_f_rc")
         index_db = join(self.output_dir, "ref_GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         indexdb_command = ["indexdb_rna",
@@ -974,7 +969,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         sam_alignments_expected = [['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
                                     '0',
                                     'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
@@ -1002,7 +997,7 @@ class SortmernaTests(TestCase):
                                     'AS:i:202',
                                     'NM:i:0']]
         sam_alignments = []
-        with open("%s.sam" % aligned_basename, 'U') as aligned_f:
+        with open("%s.sam" % aligned_basename) as aligned_f:
             for line in aligned_f:
                 if line.startswith('@'):
                     continue
@@ -1022,7 +1017,7 @@ class SortmernaTests(TestCase):
                           ^
                           align_que_start
         """
-        print "test_cigar_lcs_1"
+        print("test_cigar_lcs_1")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         indexdb_command = ["indexdb_rna",
@@ -1049,13 +1044,13 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         expected_alignment = ["AB271211", "Unc49508", "93.4", "1412",
                               "64", "30", "59", "1470", "2", "1429", "0",
                               "2039", "+",
                               "58S56M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1243M17S"]
         actual_alignment = []
-        with open("%s.blast" % aligned_basename, 'U') as aligned_f:
+        with open("%s.blast" % aligned_basename) as aligned_f:
             for line in aligned_f:
                 actual_alignment = line.strip().split('\t')
         expected_alignment.sort()
@@ -1065,7 +1060,7 @@ class SortmernaTests(TestCase):
     def test_blast_format_0(self):
         """ Test BLAST-like pairwise format
         """
-        print "test_blast_format_0"
+        print("test_blast_format_0")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         indexdb_command = ["indexdb_rna",
@@ -1092,7 +1087,7 @@ class SortmernaTests(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         expected_alignment = """Sequence ID: Unc49508 count=1; cluster_weight=4; cluster=Unc49508; cluster_score=1.000000; cluster_center=True; 
 Query ID: AB271211 1487 residues
 Score: 2394 bits (2041) Expect: 0   strand: +
@@ -1194,14 +1189,14 @@ Target:     1375    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
 Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1470
 
         """
-        with open("%s.blast" % aligned_basename, 'U') as aligned_f:
+        with open("%s.blast" % aligned_basename) as aligned_f:
             actual_alignment = aligned_f.readlines()
         self.assertTrue(expected_alignment, actual_alignment)
 
     def test_blast_format_1(self):
         """ Test BLAST-like pairwise format -m8
         """
-        print "test_blast_format_1"
+        print("test_blast_format_1")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         indexdb_command = ["indexdb_rna",
@@ -1228,10 +1223,10 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2039"]
         actual_alignment = []
-        with open("%s.blast" % aligned_basename, 'U') as aligned_f:
+        with open("%s.blast" % aligned_basename) as aligned_f:
             for line in aligned_f:
                 actual_alignment = line.strip().split('\t')
         expected_alignment.sort()
@@ -1241,7 +1236,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
     def test_blast_format_0_other(self):
         """ Test BLAST-like pairwise format with option '0 qstrand'
         """
-        print "test_blast_format_0_other"
+        print("test_blast_format_0_other")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         indexdb_command = ["indexdb_rna",
@@ -1269,12 +1264,12 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
         error_msg = """\n  \x1b[0;31mERROR\x1b[0m: for human-readable format, --blast [STRING] cannot contain more fields than '0'.\n\n"""
-        self.assertEqual(error_msg, stderr)
+        self.assertEqual(error_msg, stderr.decode('utf-8'))
 
     def test_blast_format_1_other(self):
         """ Test BLAST-like -m8 tabular format with unsupported field
         """
-        print "test_blast_format_1_other"
+        print("test_blast_format_1_other")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         indexdb_command = ["indexdb_rna",
@@ -1302,7 +1297,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
         error_msg = """\n  \x1b[0;31mERROR\x1b[0m: `sstrand` is not supported in --blast [STRING].\n\n"""
-        self.assertEqual(error_msg, stderr)
+        self.assertEqual(error_msg, stderr.decode('utf-8'))
 
 
 subject_str = """>Unc49508 count=1; cluster_weight=4; cluster=Unc49508; cluster_score=1.000000; cluster_center=True; 
