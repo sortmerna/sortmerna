@@ -3,8 +3,9 @@ sortmerna
 
 [![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
 
-SortMeRNA is a local sequence alignment tool for filtering, mapping and clustering. The core
-algorithm is based on approximate seeds and allows for sensitive analysis of NGS reads.
+SortMeRNA is a local sequence alignment tool for filtering, mapping and clustering.
+
+The core algorithm is based on approximate seeds and allows for sensitive analysis of NGS reads.
 The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
 SortMeRNA takes as input a file of reads (fasta or fastq format) and one or multiple
 rRNA database file(s), and sorts apart aligned and rejected reads into two files specified by the user.
@@ -17,6 +18,7 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
 Table of Contents
 =================
+* [Support](#support)
 * [Documentation](#documentation)
 * [Compilation](#compilation)
 	* [Linux OS](#to-compile-on-linux-os)
@@ -35,6 +37,11 @@ Table of Contents
 * [Taxonomies](#taxonomies)
 * [Citation](#citation)
 * [Contributors](#contributors)
+
+
+Support
+=======
+For questions and comments, please use the SortMeRNA [forum](https://groups.google.com/forum/#!forum/sortmerna).
 
   
 Documentation
@@ -57,8 +64,8 @@ doxygen doxygen_configure.txt
 This command will generate a folder ```html``` in the directory from which the
 command was run.
 
-Compilation
-===========
+SortMeRNA Compilation
+=====================
 
 NOTE: You will require ```autoconf``` to build from the git cloned
 repository or from source code in the `Source code` tar
@@ -231,14 +238,13 @@ python ./tests/test_sortmerna_zlib.py
 ```
 Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
-
 Third-party libraries
 =====================
 Various features in SortMeRNA are dependent on third-party libraries, including:
 * [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
 * [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
 * [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml): FASTA/FASTQ parser (including compressed files)
-* [SSW](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138): SIMD Smith-Waterman C/C++ Library
+* [PARASAIL](https://github.com/jeffdaily/parasail): Pairwise Sequence Alignment Library
 
 Wrappers and Packages
 =====================
