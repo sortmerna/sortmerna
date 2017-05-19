@@ -16,16 +16,16 @@ BLAST-like alignments.
 Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
 
-Table of Contents
-=================
+# Table of Contents
 * [Support](#support)
 * [Documentation](#documentation)
-* [Compilation](#compilation)
-	* [Linux OS](#to-compile-on-linux-os)
-	* [Mac OS](#to-compile-on-mac-os)
-* [Install compilers, ZLIB and autoconf](#install-compilers-,-zlib-and-autoconf)
-	* [Clang for Mac OS](#install-clang-for-mac-os)
-	* [GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
+* [Getting Started](#getting-started)
+* [Compilation](#sortmerna-compilation)
+	* [Linux OS](#linux-os)
+	* [Mac OS](#mac-os)
+* [Install compilers, ZLIB and autoconf](#install-compilers-zlib-and-autoconf)
+	* [Clang for Mac OS](#clang-for-mac-os)
+	* [GCC and Zlib though MacPorts](#gcc-and-zlib-though-macports)
 	* [autoconf](#autoconf)
 * [Tests](#tests)
 * [Third-party libraries](#third-party-libraries)
@@ -39,13 +39,11 @@ Table of Contents
 * [Contributors](#contributors)
 
 
-Support
-=======
+# Support
 For questions and comments, please use the SortMeRNA [forum](https://groups.google.com/forum/#!forum/sortmerna).
 
   
-Documentation
-=============
+# Documentation
 
 If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, you can generate the documentation
 by modifying the following lines in ```doxygen_configure.txt```:
@@ -64,12 +62,26 @@ doxygen doxygen_configure.txt
 This command will generate a folder ```html``` in the directory from which the
 command was run.
 
-SortMeRNA Compilation
-=====================
+
+# Getting Started
+
+There are 3 methods to install SortMeRNA:
+
+1. [GitHub repository](https://github.com/biocore/sortmerna) development version (master branch)
+...* [Installation instructions](#sortmerna-compilation)
+2. [GitHub releases](https://github.com/biocore/sortmerna/releases) (tar balls)
+...* [Installation instructions Linux](#linux-os)
+...* [Installation instructions Mac OS](#mac-os)
+3. [BioInfo releases](http://bioinfo.lifl.fr/RNA/sortmerna/) (tar balls including compiled binaries)
+
+Option (3) is the most straight-forward, as it does not require ```autoconf``` and provides
+access to pre-compiled binaries to various OS.
+
+# SortMeRNA Compilation
 
 NOTE: You will require ```autoconf``` to build from the git cloned
 repository or from source code in the `Source code` tar
-balls under release `Downloads`.
+balls under release GitHub `Downloads`.
 
 (0) Prepare your build system for compilation:
 
@@ -77,10 +89,9 @@ balls under release `Downloads`.
 bash autogen.sh
 ```
 
-Linux OS
---------
+## Linux OS
 
-(1) Check your GCC compiler is version 4.0 or higher:
+(1) Check your GCC compiler is version 4.0 or above:
 
 ```bash
 gcc --version
@@ -103,8 +114,7 @@ You can define an alternative installation directory by
 specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 
 
-Mac OS
-------
+## Mac OS
 
 (1) Check the version of your C/C++ compiler:
 
@@ -112,56 +122,80 @@ Mac OS
 gcc --version
 ```
 
-If the compiler is LLVM-GCC (deprecated, see [Deprecation and Removal Notice](https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/WhatsNewXcode/Articles/xcode_5_0.html)), 
-then you must set it to Clang or the original GCC compiler (installable via MacPorts).
-
-(2a) To set your compiler to Clang (check you have it "clang --version", if not then 
-see "Install Clang for Mac OS" below):
-
-```bash
-export CC=clang
-export CXX=clang++
-```
-
-Run configure and make scripts with default parameters:
+(2a) If the compiler is Clang or GCC, proceed to run configure and make scripts:
 
 ```bash
 ./configure
 make
 ```
 
-(2b) To set your compiler to the original GCC (check you have it "gcc-mp-4.8 --version", 
-if not then see "Install GCC through MacPorts" below):
+Note: If the compiler is Clang, you will not have access to multithreading.
+
+(2b) If the compiler is LLVM-GCC, you will need to change it
+(see [Deprecation and Removal Notice](https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/WhatsNewXcode/Articles/xcode_5_0.html)).
+
+To set your compiler to Clang (see [instructions](#set-clang-compiler-for-mac-os))
+or the original GCC compiler (see [instructions](#set-gcc-compiler-for-mac-os)).
+
+(3) To install:
+
+```bash
+make install
+```
+
+### Set Clang compiler for Mac OS
+
+(1) Check if you have Clang installed:
+
+```bash
+clang --version
+```
+
+(2a) If Clang is installed, set your compiler to Clang:
+
+```bash
+export CC=clang
+export CXX=clang++
+```
+
+(2b) If Clang is not installed, see [Clang for Mac OS](#clang-for-mac-os)
+for installation instructions.
+
+### Set GCC compiler for Mac OS
+
+(1) Check if you have GCC installed:
+
+```bash
+gcc --version
+```
+
+(2a) If GCC is installed, set your compiler to GCC:
 
 ```bash
 export CC=gcc-mp-4.8
 export CXX=g++-mp-4.8
 ```
 
-If using the original GCC compiler, Zlib should also be installed via MacPorts in order
-for compression to work (read .zip and .gz files). See section "Install GCC and Zlib
-though MacPorts" below for installation instructions.
+(2b) If GCC is not installed, see [Install GCC through MacPorts](#gcc-and-zlib-though-macPorts)
+for installation instructions.
 
-Assuming you have Zlib installed:
+(3) Next, if you would like zlib support (reading compressed .zip and .gz FASTA/FASTQ files), Zlib
+should also be installed via MacPorts. See section [Install GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
+for installation instructions.
 
-Run configure and make scripts (if compression feature wanted):
+(4a) Assuming you have Zlib installed, run configure and make scripts
+(if compression feature wanted):
 
 ```bash
 ./configure --with-zlib="/opt/local"
 make
 ```
 
-Otherwise (if compression feature not wanted):
+(4b) Otherwise (if option to read compressed files is not wanted):
 
 ```bash
 ./configure --without-zlib
 make
-```
-
-(3) To install:
-
-```bash
-make install
 ```
 
 You can define an alternative installation directory by
@@ -171,7 +205,7 @@ specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
 Install compilers, ZLIB and autoconf
 ====================================
 
-NOTE: the Clang compiler on Mac (distributed through Xcode) does not support multithreading.
+NOTE: the Clang compiler on Mac (distributed through Xcode) does not support OpenMP (multithreading).
 A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
 though has not been yet incorporated into the Clang mainline. The user may follow the
 steps outlined in the above link to install the version of Clang with multithreading support, 
@@ -237,6 +271,9 @@ python ./tests/test_sortmerna.py
 python ./tests/test_sortmerna_zlib.py
 ```
 Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
+
+Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
+
 
 Third-party libraries
 =====================
