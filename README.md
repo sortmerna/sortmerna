@@ -100,7 +100,7 @@ gcc --version
 (2) Run configure and make scripts:
 
 ```bash
-./configure
+./configure LDFLAGS="-L/usr/lib64"
 make
 ```
 
