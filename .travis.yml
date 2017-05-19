@@ -15,9 +15,9 @@ before_install:
   - conda update --yes conda
   - conda config --add channels https://conda.anaconda.org/biobuilds
 install:
-  - conda create --yes -n env_name python=2.7 numpy scipy zlib autoconf-update
+  - conda create --yes -n env_name python=3.5 numpy scipy zlib autoconf-update
   - source activate env_name
-  - pip install scikit-bio==0.2.3
+  - pip install scikit-bio==0.5.0
 script:
   # configure and test without zlib
   - bash ./autogen.sh

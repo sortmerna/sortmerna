@@ -12,7 +12,7 @@ from os.path import abspath, join, dirname
 from tempfile import mkdtemp
 from shutil import rmtree
 
-from skbio.parse.sequences import parse_fasta
+import skbio.io
 
 
 # ----------------------------------------------------------------------------
@@ -77,16 +77,15 @@ class SortmernaTestsZlib(TestCase):
             num_clusters_file = sum(1 for line in f_otumap)
         self.assertEqual(272, num_clusters_file)
         num_failures_file = 0
-        with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
-            for label, seq in parse_fasta(f_denovo):
-                num_failures_file += 1
+        for seq in skbio.io.read(aligned_basename + "_denovo.fasta", format='fasta'):
+            num_failures_file += 1
         # Correct number of reads for de novo clustering
         self.assertEqual(num_failures_log, str(num_failures_file))
 
     def test_load_gzip(self):
         """ Load file compressed with gzip.
         """
-        print "test_load_gzip"
+        print("test_load_gzip")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -119,7 +118,7 @@ class SortmernaTestsZlib(TestCase):
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
-            print stderr
+            print(stderr)
         self.output_test(aligned_basename)
 
 if __name__ == '__main__':
