@@ -21,14 +21,14 @@ install:
 script:
   # configure and test without zlib
   - bash ./autogen.sh
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; ./configure --without-zlib LDFLAGS="-L/usr/lib64"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; ./configure --without-zlib LDFLAGS='-L/usr/lib64'
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; ./configure --without-zlib
   - make
   - export PATH="$PWD:$PATH"; cd tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   # configure and test with zlib
   - cd ../; make clean
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; ./configure --with-zlib LDFLAGS="-L/usr/lib64"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; ./configure --with-zlib LDFLAGS='-L/usr/lib64'
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; ./configure --with-zlib
   - make
   - cd ./tests
