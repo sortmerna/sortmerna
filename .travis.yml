@@ -25,12 +25,12 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./configure --without-zlib; fi
   - make
   - export PATH="$PWD:$PATH"; cd tests
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
+  - python ./test_sortmerna.py; fi
   # configure and test with zlib
   - cd ../; make clean
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./configure --with-zlib LDFLAGS='-L/usr/lib64'; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./configure --with-zlib; fi
   - make
   - cd ./tests
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi
+  - python ./test_sortmerna.py
+  - python ./test_sortmerna_zlib.py

@@ -53,7 +53,7 @@ class SortmernaTestsZlib(TestCase):
     def output_test(self, aligned_basename):
         """ Test results of test_load_zip() and test_load_gzip()
         """
-        f_log = open(aligned_basename + ".log", "U")
+        f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
         self.assertTrue("Total reads for de novo clustering" in f_log_str)
@@ -73,7 +73,7 @@ class SortmernaTestsZlib(TestCase):
         # Correct number of clusters recorded
         self.assertEqual("272", num_clusters_log)
         # Correct number of clusters in OTU-map
-        with open(aligned_basename + "_otus.txt", 'U') as f_otumap:
+        with open(aligned_basename + "_otus.txt") as f_otumap:
             num_clusters_file = sum(1 for line in f_otumap)
         self.assertEqual(272, num_clusters_file)
         num_failures_file = 0
