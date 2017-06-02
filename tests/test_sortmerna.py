@@ -14,6 +14,7 @@ from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
 
 import skbio.io
+import platform
 
 
 # ----------------------------------------------------------------------------
@@ -31,10 +32,15 @@ import skbio.io
 # "$ export GLIBCXX_FORCE_NEW" to disable std::string memory pool optimizations
 # prior to running valgrind
 
-
+    
 # Test class and cases
 class SortmernaTests(TestCase):
     """ Tests for SortMeRNA functionality """
+    
+    @classmethod
+    def setUpClass(self):
+        self.sortmerna = 'sortmerna'
+        self.indexdb_rna = 'indexdb_rna'
 
     def setUp(self):
         self.output_dir = mkdtemp()
@@ -88,13 +94,14 @@ class SortmernaTests(TestCase):
         print("test_ref_shorter_than_seed")
         index_db = join(self.output_dir, "ref_short_seqs.fasta")
         index_path = "%s,%s" % (self.db_short, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
@@ -108,16 +115,17 @@ class SortmernaTests(TestCase):
         tmpdir = mkdtemp()
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "--tmpdir",
                            tmpdir,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stdout)
@@ -144,14 +152,15 @@ class SortmernaTests(TestCase):
         environ["TMPDIR"] = tmpdir
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stdout)
@@ -177,14 +186,15 @@ class SortmernaTests(TestCase):
         environ["TMPDIR"] = ""
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stdout)
@@ -208,14 +218,15 @@ class SortmernaTests(TestCase):
         print("test_indexdb_default_param")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stdout)
@@ -234,16 +245,17 @@ class SortmernaTests(TestCase):
         print("test_indexdb_split_databases")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v",
                            "-m ",
                            "0.05"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertFalse(stderr)
@@ -287,17 +299,18 @@ class SortmernaTests(TestCase):
                                       join(self.output_dir, "db_bac16s"),
                                       self.db_arc16s,
                                       join(self.output_dir, "db_arc16s"))
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.set7,
@@ -306,7 +319,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -412,19 +425,23 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_1_part_map")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        print('Runnig {}'.format(indexdb_command))
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
+        proc.stdout.close()
+        proc.stderr.close()
         # best 1
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
@@ -438,10 +455,11 @@ class SortmernaTests(TestCase):
                              "--fastx",
                              "-m", "1024",
                              "-v"]
+        print('Runnig {}'.format(sortmerna_command))
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -455,7 +473,7 @@ class SortmernaTests(TestCase):
         remove(aligned_basename + ".blast")
         remove(other_basename + ".fasta")
         # best 5
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
@@ -473,7 +491,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -493,19 +511,20 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_generic_buffer")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
         # best 1
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
@@ -521,7 +540,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -535,7 +554,7 @@ class SortmernaTests(TestCase):
         remove(aligned_basename + ".blast")
         remove(other_basename + ".fasta")
         # best 5
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
@@ -552,7 +571,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -572,18 +591,19 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_6_part_map")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
@@ -600,7 +620,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -620,19 +640,20 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_12_part_index")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v",
                            "-m", "10"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
@@ -648,7 +669,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -665,19 +686,20 @@ class SortmernaTests(TestCase):
         print("test_environmental_output")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "--max_pos",
                            "250",
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--id", "0.97",
@@ -691,7 +713,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -732,19 +754,20 @@ class SortmernaTests(TestCase):
         print("test_empty_query_file")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "--max_pos",
                            "250",
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--id", "0.97",
@@ -758,7 +781,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -792,21 +815,22 @@ class SortmernaTests(TestCase):
         print("test_mate_pairs")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "--max_pos",
                            "250",
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
         nonaligned_basename = join(self.output_dir, "nonaligned")
         # launch normally
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", nonaligned_basename,
@@ -817,7 +841,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -850,7 +874,7 @@ class SortmernaTests(TestCase):
         remove(aligned_basename + ".fastq")
         remove(nonaligned_basename + ".fastq")
         # launch with option --paired_in
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", nonaligned_basename,
@@ -862,7 +886,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -895,7 +919,7 @@ class SortmernaTests(TestCase):
         remove(aligned_basename + ".fastq")
         remove(nonaligned_basename + ".fastq")
         # launch with option --paired_out
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--other", nonaligned_basename,
@@ -907,7 +931,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -944,18 +968,19 @@ class SortmernaTests(TestCase):
         print("test_output_all_alignments_f_rc")
         index_db = join(self.output_dir, "ref_GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
         # num_alignments 0
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.read_GQ099317,
@@ -965,7 +990,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -1020,17 +1045,18 @@ class SortmernaTests(TestCase):
         print("test_cigar_lcs_1")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
@@ -1040,7 +1066,7 @@ class SortmernaTests(TestCase):
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -1063,31 +1089,37 @@ class SortmernaTests(TestCase):
         print("test_blast_format_0")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
+        print('Running: {}'.format(indexdb_command))
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
+        stdout, stderr = proc.communicate()
+        if stderr: print(stderr)
+        if stdout: print(stdout)
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "0",
                              "-v"]
+        print('Running: {}'.format(sortmerna_command))
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
-        if stderr:
-            print(stderr)
+        if stderr: print(stderr); self.assertFalse(stderr)
+        if stdout: print(stdout)
         expected_alignment = """Sequence ID: Unc49508 count=1; cluster_weight=4; cluster=Unc49508; cluster_score=1.000000; cluster_center=True; 
 Query ID: AB271211 1487 residues
 Score: 2394 bits (2041) Expect: 0   strand: +
@@ -1199,17 +1231,18 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_1")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
@@ -1219,7 +1252,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         if stderr:
@@ -1239,17 +1272,18 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_0_other")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
@@ -1259,7 +1293,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
@@ -1272,17 +1306,18 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_1_other")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "-v"]
+        close_fds = False if 'Windows' in platform.platform() else True
         proc = Popen(indexdb_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
@@ -1292,7 +1327,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         proc = Popen(sortmerna_command,
                      stdout=PIPE,
                      stderr=PIPE,
-                     close_fds=True)
+                     close_fds=close_fds)
         proc.wait()
         stdout, stderr = proc.communicate()
         self.assertTrue(stderr)
