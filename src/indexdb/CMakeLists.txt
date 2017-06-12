@@ -13,9 +13,7 @@ set(IXDB_HDRS
 )
 
 set(IXDB_SRCS
-	${CMAKE_SOURCE_DIR}/src/indexdb.cpp
-#	minoccur.cpp
-#	ssw_example.c
+	indexdb.cpp
 )
 
 add_executable(indexdb 
@@ -31,3 +29,5 @@ target_include_directories(indexdb PUBLIC
 	$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:mmanwin32,INCLUDE_DIRECTORIES>
 )
+
+add_dependencies(indexdb winapi mmanwin32)

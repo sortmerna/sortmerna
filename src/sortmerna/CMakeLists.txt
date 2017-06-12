@@ -14,19 +14,18 @@ set(SMR_HDRS
 )
 
 set(SMR_SRCS
-	${CMAKE_SOURCE_DIR}/src/alignment.cpp
-	${CMAKE_SOURCE_DIR}/src/bitvector.cpp
-#	indexdb.cpp
-	${CMAKE_SOURCE_DIR}/src/kseq_load.cpp
-	${CMAKE_SOURCE_DIR}/src/load_index.cpp
-	${CMAKE_SOURCE_DIR}/src/main.cpp
+	alignment.cpp
+	bitvector.cpp
+	kseq_load.cpp
+	load_index.cpp
+	main.cpp
 #	minoccur.cpp
-	${CMAKE_SOURCE_DIR}/src/mmap.cpp
-	${CMAKE_SOURCE_DIR}/src/outputformats.cpp
-	${CMAKE_SOURCE_DIR}/src/paralleltraversal.cpp
-	${CMAKE_SOURCE_DIR}/src/ssw.c
+	mmap.cpp
+	outputformats.cpp
+	paralleltraversal.cpp
+	ssw.c
 #	ssw_example.c
-	${CMAKE_SOURCE_DIR}/src/traverse_bursttrie.cpp
+	traverse_bursttrie.cpp
 )
 
 #message("${SMR_SRCS}")
@@ -52,5 +51,7 @@ target_include_directories(sortmerna PRIVATE
 #TODO: link zlibstaticd.lib properly
 target_link_libraries(sortmerna
 	alp
-	${CMAKE_SOURCE_DIR}/build/3rdparty/zlib/Debug/zlibstaticd.lib
+	${CMAKE_SOURCE_DIR}/build/3rdparty/zlib/Release/zlibstatic.lib
 )
+
+add_dependencies(sortmerna winapi mmanwin32 zlib alp)

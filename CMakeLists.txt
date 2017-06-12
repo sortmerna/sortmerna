@@ -13,18 +13,18 @@ project(sortmerna CXX C)
 set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
 
 # download zlib
-if(NOT EXISTS ${EXTERNAL_DEPS}/zlib/.git)
+if(NOT EXISTS ${EXTERNAL_DEPS}/zlib)
 	execute_process(COMMAND git clone --depth 1 https://github.com/madler/zlib
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 	)
-endif(NOT EXISTS ${EXTERNAL_DEPS}/zlib/.git)
+endif(NOT EXISTS ${EXTERNAL_DEPS}/zlib)
 
 # download dirent. Only dirent.h used from this project - no need to build
-if(NOT EXISTS ${EXTERNAL_DEPS}/dirent/.git)
+if(NOT EXISTS ${EXTERNAL_DEPS}/dirent)
 	execute_process(COMMAND git clone --depth 1 https://github.com/tronkko/dirent
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 )
-endif(NOT EXISTS ${EXTERNAL_DEPS}/dirent/.git)
+endif(NOT EXISTS ${EXTERNAL_DEPS}/dirent)
 
 # mman for Windows
 if(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
@@ -66,6 +66,7 @@ add_subdirectory(${EXTERNAL_DEPS}/mman-win32)
 # build winapi
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/winapi)
 
+# build alp
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/alp)
 
 # build indexdb

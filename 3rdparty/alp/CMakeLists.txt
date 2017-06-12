@@ -9,52 +9,55 @@ cmake_minimum_required(VERSION 3.0)
 project(alp CXX)
 
 set(ALP_HDRS
-	${CMAKE_SOURCE_DIR}/alp/njn_approx.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_doubletype.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_dynprogprob.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_dynprogprob.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_dynprogproblim.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_dynprogproblim.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_dynprogprobproto.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_dynprogprobproto.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_function.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_integer.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_ioutil.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_ioutil.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_localmaxstat.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_localmaxstat.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_localmaxstatmatrix.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_localmaxstatmatrix.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_localmaxstatutil.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_localmaxstatutil.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_matrix.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_memutil.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_random.cpp
-	${CMAKE_SOURCE_DIR}/alp/njn_random.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_root.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_uniform.hpp
-	${CMAKE_SOURCE_DIR}/alp/njn_vector.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alignment_evaluer.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alignment_evaluer.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp_data.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp_data.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp_regression.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp_regression.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp_sim.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_alp_sim.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_basic.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_basic.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_normal_distr_array.hpp
-	${CMAKE_SOURCE_DIR}/alp/sls_pvalues.cpp
-	${CMAKE_SOURCE_DIR}/alp/sls_pvalues.hpp
+	njn_approx.hpp
+	njn_doubletype.hpp
+	njn_dynprogprob.hpp
+	njn_dynprogproblim.hpp
+	njn_dynprogprobproto.hpp
+	njn_function.hpp
+	njn_integer.hpp
+	njn_ioutil.hpp
+	njn_localmaxstat.hpp
+	njn_localmaxstatmatrix.hpp
+	njn_localmaxstatutil.hpp
+	njn_matrix.hpp
+	njn_memutil.hpp
+	njn_random.hpp
+	njn_root.hpp
+	njn_uniform.hpp
+	njn_vector.hpp
+	sls_alignment_evaluer.hpp
+	sls_alp.hpp
+	sls_alp_data.hpp
+	sls_alp_regression.hpp
+	sls_alp_sim.hpp
+	sls_basic.hpp
+	sls_normal_distr_array.hpp
+	sls_pvalues.hpp
 )
 
-add_Library(alp INTERFACE)
-
-target_sources(alp INTERFACE ${ALP_HDRS})
-
-target_include_directories(alp INTERFACE 
-	${CMAKE_SOURCE_DIR}/alp
+set (ALP_SRCS
+	njn_dynprogprob.cpp
+	njn_dynprogproblim.cpp
+	njn_dynprogprobproto.cpp
+	njn_ioutil.cpp
+	njn_localmaxstat.cpp
+	njn_localmaxstatmatrix.cpp
+	njn_localmaxstatutil.cpp
+	njn_random.cpp
+	sls_alignment_evaluer.cpp
+	sls_alp.cpp
+	sls_alp_data.cpp
+	sls_alp_regression.cpp
+	sls_alp_sim.cpp
+	sls_basic.cpp
+	sls_pvalues.cpp
 )
+
+
+add_Library(alp STATIC ${ALP_HDRS} ${ALP_SRCS})
+#add_Library(alp INTERFACE)
+
+#target_sources(alp INTERFACE ${ALP_HDRS})
+
+target_include_directories(alp PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/alp) # INTERFACE
