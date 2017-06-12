@@ -44,6 +44,14 @@ if(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 	# move header file.
 	file(MAKE_DIRECTORY ${EXTERNAL_DEPS}/mman-win32/sys)
 	file(RENAME ${EXTERNAL_DEPS}/mman-win32/trunk/mman.h ${EXTERNAL_DEPS}/mman-win32/sys/mman.h)
+	# remove unused directories
+	file(REMOVE_RECURSE
+		${EXTERNAL_DEPS}/mman-win32/.svn
+		${EXTERNAL_DEPS}/mman-win32/branches
+		${EXTERNAL_DEPS}/mman-win32/tags
+		${EXTERNAL_DEPS}/mman-win32/trunk
+		${EXTERNAL_DEPS}/mman-win32/wiki
+	)
 endif(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 
 # build zlib
