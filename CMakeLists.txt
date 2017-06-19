@@ -71,7 +71,9 @@ if(WIN32)
 endif(WIN32)
 
 # build winapi
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/winapi)
+if(WIN32)
+	add_subdirectory(${CMAKE_SOURCE_DIR}/src/winapi)
+endif(WIN32)
 
 # build indexdb
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
