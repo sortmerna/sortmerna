@@ -47,6 +47,6 @@ endif(WIN32)
 
 if(WIN32)
 	add_dependencies(indexdb winapi mmanwin32)
-else(WIN32)
-	add_dependencies(indexdb)
+#else(WIN32)
+#	add_dependencies(indexdb)
 endif(WIN32)
