@@ -62,6 +62,9 @@ endif(WIN32)
 # build cmph
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/cmph)
 
+# build alp
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/alp)
+
 # build mman-win32
 if(WIN32)
 	add_subdirectory(${EXTERNAL_DEPS}/mman-win32)
@@ -69,11 +72,6 @@ endif(WIN32)
 
 # build winapi
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/winapi)
-
-# build alp
-if(WIN32)
-	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/alp)
-endif(WIN32)
 
 # build indexdb
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
