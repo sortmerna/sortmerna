@@ -55,19 +55,25 @@ if(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 endif(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 
 # build zlib
-add_subdirectory(${EXTERNAL_DEPS}/zlib)
+if(WIN32)
+	add_subdirectory(${EXTERNAL_DEPS}/zlib)
+endif(WIN32)
 
 # build cmph
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/cmph)
 
 # build mman-win32
-add_subdirectory(${EXTERNAL_DEPS}/mman-win32)
+if(WIN32)
+	add_subdirectory(${EXTERNAL_DEPS}/mman-win32)
+endif(WIN32)
 
 # build winapi
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/winapi)
 
 # build alp
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/alp)
+if(WIN32)
+	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/alp)
+endif(WIN32)
 
 # build indexdb
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
