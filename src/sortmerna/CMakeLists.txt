@@ -8,10 +8,16 @@
 cmake_minimum_required(VERSION 3.0)
 project(sortmerna CXX)
 
-set(SMR_HDRS
-	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/3rdparty/dirent/include/dirent.h
-)
+if(WIN32)
+	set(SMR_HDRS
+		${CMAKE_SOURCE_DIR}/include
+		${CMAKE_SOURCE_DIR}/3rdparty/dirent/include/dirent.h
+	)
+else(WIN32)
+	set(SMR_HDRS
+		${CMAKE_SOURCE_DIR}/include
+	)
+endif(WIN32)
 
 set(SMR_SRCS
 	alignment.cpp
@@ -30,28 +36,50 @@ set(SMR_SRCS
 
 #message("${SMR_SRCS}")
 
-add_executable(sortmerna
-	$<TARGET_OBJECTS:winapi>
-	$<TARGET_OBJECTS:mmanwin32> 
-	${SMR_SRCS} ${SMR_HDRS}
-)
+if(WIN32)
+	add_executable(sortmerna
+		$<TARGET_OBJECTS:winapi>
+		$<TARGET_OBJECTS:mmanwin32> 
+		${SMR_SRCS} ${SMR_HDRS}
+	)
+else(WIN32)
+	add_executable(sortmerna
+		${SMR_SRCS} ${SMR_HDRS}
+	)
+endif(WIN32)
 
 #target_compile_definitions(sortmerna PRIVATE
 #	_CRT_SECURE_NO_WARNINGS
 #)
 
-target_include_directories(sortmerna PRIVATE
-	$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:mmanwin32,INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:zlib,INCLUDE_DIRECTORIES>
-	${CMAKE_SOURCE_DIR}/3rdparty/dirent/include
-	${CMAKE_SOURCE_DIR}/include
-)
+if(WIN32)
+	target_include_directories(sortmerna PRIVATE
+		$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:mmanwin32,INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:zlib,INCLUDE_DIRECTORIES>
+		${CMAKE_SOURCE_DIR}/3rdparty/dirent/include
+		${CMAKE_SOURCE_DIR}/include
+	)
+else(WIN32)
+	target_include_directories(sortmerna PRIVATE
+		${CMAKE_SOURCE_DIR}/include
+	)
+endif(WIN32)
 
 #TODO: link zlibstaticd.lib properly
-target_link_libraries(sortmerna
-	alp
-	${CMAKE_SOURCE_DIR}/build/3rdparty/zlib/Release/zlibstatic.lib
-)
+if(WIN32)
+	target_link_libraries(sortmerna
+		alp
+		${CMAKE_SOURCE_DIR}/build/3rdparty/zlib/Release/zlibstatic.lib
+	)
+else(WIN32)
+	target_link_libraries(sortmerna
+		alp
+	)
+endif(WIN32)
 
-add_dependencies(sortmerna winapi mmanwin32 zlib alp)
+if(WIN32)
+	add_dependencies(sortmerna winapi mmanwin32 zlib alp)
+else(WIN32)
+	add_dependencies(sortmerna alp)
+endif(WIN32)

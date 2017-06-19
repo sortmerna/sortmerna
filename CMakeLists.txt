@@ -13,21 +13,21 @@ project(sortmerna CXX C)
 set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
 
 # download zlib
-if(NOT EXISTS ${EXTERNAL_DEPS}/zlib)
+if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
 	execute_process(COMMAND git clone --depth 1 https://github.com/madler/zlib
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 	)
-endif(NOT EXISTS ${EXTERNAL_DEPS}/zlib)
+endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
 
 # download dirent. Only dirent.h used from this project - no need to build
-if(NOT EXISTS ${EXTERNAL_DEPS}/dirent)
+if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/dirent)
 	execute_process(COMMAND git clone --depth 1 https://github.com/tronkko/dirent
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 )
-endif(NOT EXISTS ${EXTERNAL_DEPS}/dirent)
+endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/dirent)
 
 # mman for Windows
-if(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
+if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 	# download archive. The archive contains directory "mman-win32".
 	file(DOWNLOAD
 		https://storage.googleapis.com/google-code-archive-source/v2/code.google.com/mman-win32/source-archive.zip
@@ -52,7 +52,7 @@ if(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 		${EXTERNAL_DEPS}/mman-win32/trunk
 		${EXTERNAL_DEPS}/mman-win32/wiki
 	)
-endif(NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
+endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 
 # build zlib
 if(WIN32)
