@@ -74,6 +74,7 @@ if(WIN32)
 else(WIN32)
 	target_link_libraries(sortmerna
 		alp
+		z
 	)
 endif(WIN32)
 
