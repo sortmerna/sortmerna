@@ -87,4 +87,4 @@ set(CMPH_SRCS
 
 add_library(cmph OBJECT ${CMPH_SRCS} ${CMPH_HDRS})
 
-target_include_directories(cmph PUBLIC ${CMAKE_SOURCE_DIR}/cmph)
+target_include_directories(cmph PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/cmph)

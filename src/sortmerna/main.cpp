@@ -30,7 +30,7 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
-#include "../include/paralleltraversal.hpp"
+#include "paralleltraversal.hpp"
 #include <limits>
 #include <dirent.h>
 

@@ -66,11 +66,10 @@ else(WIN32)
 	)
 endif(WIN32)
 
-#TODO: link zlibstaticd.lib properly
 if(WIN32)
 	target_link_libraries(sortmerna
 		alp
-		${CMAKE_SOURCE_DIR}/build/3rdparty/zlib/Release/zlibstatic.lib
+		zlibstatic
 	)
 else(WIN32)
 	target_link_libraries(sortmerna

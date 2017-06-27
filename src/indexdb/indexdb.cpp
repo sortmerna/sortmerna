@@ -36,8 +36,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
-#include "../include/indexdb.hpp"
-#include "../cmph/cmph.h"
+#include "indexdb.hpp"
+#include "cmph.h"
 #include <iomanip>
 #include <sstream>
 #include <vector>

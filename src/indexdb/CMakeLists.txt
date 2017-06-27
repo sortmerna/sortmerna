@@ -34,19 +34,21 @@ endif(WIN32)
 
 if(WIN32)
 	target_include_directories(indexdb PUBLIC 
-		${CMAKE_SOURCE_DIR}/include 
+		${CMAKE_SOURCE_DIR}/include
 		${CMAKE_SOURCE_DIR}/3rdparty/dirent/include
+		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:mmanwin32,INCLUDE_DIRECTORIES>
 	)
 else(WIN32)
 	target_include_directories(indexdb PUBLIC 
-		${CMAKE_SOURCE_DIR}/include 
+		${CMAKE_SOURCE_DIR}/include
+		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 	)
 endif(WIN32)
 
 if(WIN32)
-	add_dependencies(indexdb winapi mmanwin32)
-#else(WIN32)
-#	add_dependencies(indexdb)
+	add_dependencies(indexdb cmph winapi mmanwin32)
+else(WIN32)
+	add_dependencies(indexdb cmph)
 endif(WIN32)
