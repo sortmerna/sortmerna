@@ -15,20 +15,16 @@ before_install:
   - conda update --yes conda
   - conda config --add channels https://conda.anaconda.org/biobuilds
 install:
-  - conda create --yes -n env_name python=2.7 numpy scipy zlib autoconf-update
+  - conda create --yes -n env_name python=3.5 numpy scipy zlib cmake
   - source activate env_name
   - pip install scikit-bio==0.2.3
 script:
   # configure and test without zlib
-  - bash ./autogen.sh
-  - ./configure --without-zlib
+  - mkdir -p build/Release
+  - pushd build/Release
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
   - make
-  - export PATH="$PWD:$PATH"; cd tests
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
-  # configure and test with zlib
-  - cd ../; make clean
-  - ./configure --with-zlib
-  - make
-  - cd ./tests
+  - popd
+  - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"; cd tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi
