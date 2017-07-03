@@ -6,7 +6,7 @@
 #undef ELAPSED_TIME_IN_uSECONDS
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 // include headers to use gettimeofday
 #else
 	#ifdef __GNUC__

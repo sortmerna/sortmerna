@@ -312,7 +312,7 @@ paralleltraversal (char* inputreads,
   // determine the suffix (fasta, fastq, ...) of aligned strings
   char suffix[20] = "out";
   char *suff = strrchr(inputreads, '.');
-  if (suff != NULL and !have_reads_gz)
+  if (suff != NULL && !have_reads_gz)  // AK and
     strcpy(suffix, suff+1);
   else if (filesig == '>')
     strcpy(suffix, "fasta");
@@ -1008,22 +1008,25 @@ paralleltraversal (char* inputreads,
                   // subsearch 1(a), to skip subsearch 1(b)
                   bool accept_zero_kmer = false;
                   // ids for k-mers that hit the database
-                  vector< id_win > id_hits;            
-                  MYBITSET bitwindowsf[bit_vector_size];
-                  memset(&bitwindowsf[0],0,bit_vector_size);               
+                  vector< id_win > id_hits;
+				  std::string bitwindowsf(bit_vector_size, 0);
+				  std::vector<MYBITSET> vbitwindowsf(bitwindowsf.begin(), bitwindowsf.end());
+				  vbitwindowsf.push_back('\0'); // add terminating 0
+//                 MYBITSET bitwindowsf[bit_vector_size];
+//                 memset(&bitwindowsf[0],0,bit_vector_size);               
                   // build the first bitvector window
-                  init_win_f( &myread[read_index+partialwin[index_num]],
-                              // [w_1] forward k = 1
-                              // bitwindows[0][0][0]
-                              &bitwindowsf[0],
-                              // bitwindows[0][1][0]
-                              &bitwindowsf[4],
-                              numbvs[index_num]);         
-                  uint32_t keyf = 0;
-                  char *keyf_ptr = &myread[read_index];             
-                  // build hash for first half windows (foward and reverse)
-                  for ( uint32_t g = 0; g < partialwin[index_num]; g++ )
-                    (keyf <<= 2) |= (uint32_t)*keyf_ptr++;
+					init_win_f(&myread[read_index + partialwin[index_num]],
+					  // [w_1] forward k = 1
+					  // bitwindows[0][0][0]
+					&vbitwindowsf[0], // AK bitwindowsf -> vbitwindowsf
+                      // bitwindows[0][1][0]
+					&vbitwindowsf[4], // AK bitwindowsf -> vbitwindowsf
+					numbvs[index_num]);         
+					uint32_t keyf = 0;
+					char *keyf_ptr = &myread[read_index];             
+					// build hash for first half windows (foward and reverse)
+					for ( uint32_t g = 0; g < partialwin[index_num]; g++ )
+						(keyf <<= 2) |= (uint32_t)*keyf_ptr++;
                   // do traversal if the exact half window exists in the burst trie
                   if ( (lookup_tbl[keyf].count > minoccur) && (lookup_tbl[keyf].trie_F != NULL) )
                   {
@@ -1044,9 +1047,9 @@ paralleltraversal (char* inputreads,
                                          0,
                                          0,
                                          // win2f_k1_ptr
-                                         &bitwindowsf[0],
+                                         &vbitwindowsf[0], // AK bitwindowsf -> vbitwindowsf
                                          // win2f_k1_full
-                                         &bitwindowsf[offset],
+                                         &vbitwindowsf[offset], // AK bitwindowsf -> vbitwindowsf
                                          accept_zero_kmer,
                                          id_hits,
                                          readn,
@@ -1059,15 +1062,18 @@ paralleltraversal (char* inputreads,
                   // only search if an exact match has not been found
                   if ( !accept_zero_kmer )
                   {
-                    MYBITSET bitwindowsr[bit_vector_size];
-                    memset(&bitwindowsr[0],0,bit_vector_size);                  
+//					  std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
+					  std::string bitwindowsr(bit_vector_size, 0); // AK
+					  std::vector<MYBITSET> vbitwindowsr(bitwindowsr.begin(), bitwindowsr.end()); // AK
+//                    MYBITSET bitwindowsr[bit_vector_size];
+//                    memset(&bitwindowsr[0],0,bit_vector_size);                  
                     // build the first bitvector window
                     init_win_r( &myread[read_index+partialwin[index_num]-1],
                                 // [w_1] reverse k = 1
                                 // bitwindows[0][0][0]
-                                &bitwindowsr[0],
+                                &vbitwindowsr[0],
                                 // bitwindows[0][1][0]
-                                &bitwindowsr[4],
+                                &vbitwindowsr[4],
                                 numbvs[index_num]);                  
                     uint32_t keyr = 0;
                     char *keyr_ptr = &myread[read_index+partialwin[index_num]];                 
@@ -1094,9 +1100,9 @@ paralleltraversal (char* inputreads,
                                             0,
                                             0,
                                             /* win1r_k1_ptr */
-                                            &bitwindowsr[0],
+                                            &vbitwindowsr[0],
                                             /* win1r_k1_full */
-                                            &bitwindowsr[offset],
+                                            &vbitwindowsr[offset],
                                             accept_zero_kmer,
                                             id_hits,
                                             readn,

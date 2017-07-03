@@ -247,9 +247,11 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
         uint32_t len_id = 0;
         stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
         // the sequence id string
-        char s[len_id+1];
-        memset(s,0,len_id+1);
-        stats.read(reinterpret_cast<char*>(&s), sizeof(char)*len_id);
+		std::string s(len_id + 1, 0); // AK
+		std::vector<char> vs(s.begin(), s.end());
+//        char s[len_id+1];
+//        memset(s,0,len_id+1);
+        stats.read(reinterpret_cast<char*>(&vs[0]), sizeof(char)*len_id);
         // the length of the sequence itself
         uint32_t len_seq = 0;
         stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
