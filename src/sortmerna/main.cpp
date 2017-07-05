@@ -42,7 +42,7 @@
 #if defined(_WIN32)
 const char DELIM = ';';
 #else
-const char DELIM = ';';
+const char DELIM = ':';
 #endif
 
 
@@ -557,7 +557,7 @@ main(int argc,
               exit(EXIT_FAILURE);
             }
           }
-        }
+        } // ~if option 'aligned
         // the name of output rejected reads
         else if ( strcmp ( myoption, "other"  ) == 0 )
         {

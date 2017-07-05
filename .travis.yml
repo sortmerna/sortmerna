@@ -19,9 +19,7 @@ install:
   - source activate env_name
   - pip install scikit-bio==0.2.3
 script:
-  # configure and test without zlib
-  - mkdir -p build/Release
-  - pushd build/Release
+  - mkdir -p build/Release; pushd build/Release
   - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
   - make
   - popd

@@ -120,7 +120,7 @@ char version_num[] = "2.1b, 03/03/2016";
 #if defined(_WIN32)
 const char DELIM = ';';
 #else
-const char DELIM = ';';
+const char DELIM = ':';
 #endif
 
 

@@ -310,8 +310,13 @@ class SortmernaTests(TestCase):
             bac-16s and 2/6 are random reads.
         """
         print("test_multiple_databases_search")
-        index_path = "%s,%s:%s,%s" % (self.db_bac16s,
+        if 'Windows' in platform.platform():
+            separator = ';'
+        else:
+            separator = ':'
+        index_path = "%s,%s%s%s,%s" % (self.db_bac16s,
                                       join(self.output_dir, "db_bac16s"),
+                                      separator,
                                       self.db_arc16s,
                                       join(self.output_dir, "db_arc16s"))
         indexdb_command = [self.indexdb_rna,
@@ -319,14 +324,7 @@ class SortmernaTests(TestCase):
                            index_path,
                            "-v"]
         print(indexdb_command)
-        if 'Windows' in platform.platform():
-            proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(indexdb_command,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
+        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
@@ -335,17 +333,9 @@ class SortmernaTests(TestCase):
                              "--log",
                              "--fastx"]
         print(sortmerna_command)
-        if 'Windows' in platform.platform():
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(sortmerna_command,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-            if stderr:
-                print(stderr)
+        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
+        
         f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
@@ -745,14 +735,7 @@ class SortmernaTests(TestCase):
                            "250",
                            "-v"]
         print(indexdb_command)
-        if 'Windows' in platform.platform():
-            proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(indexdb_command,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
+        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
@@ -766,18 +749,10 @@ class SortmernaTests(TestCase):
                              "--reads", self.set2,
                              "-v"]
         print(sortmerna_command)
-        if 'Windows' in platform.platform():
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
-            stderr = proc.stderr
-        else:
-            proc = Popen(sortmerna_command,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-        if stderr:
-            print(stderr)
+        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        stderr = proc.stderr
+        if stderr: print(stderr)
+        
         f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
         self.assertTrue("Total reads passing E-value threshold" in f_log_str)
