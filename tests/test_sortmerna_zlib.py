@@ -86,7 +86,7 @@ class SortmernaTestsZlib(TestCase):
     def test_load_gzip(self):
         """ Load file compressed with gzip.
         """
-        print "test_load_gzip"
+        print("test_load_gzip")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         indexdb_command = ["indexdb_rna",
@@ -118,8 +118,7 @@ class SortmernaTestsZlib(TestCase):
                      close_fds=True)
         proc.wait()
         stdout, stderr = proc.communicate()
-        if stderr:
-            print stderr
+        if stderr: print(stderr)
         self.output_test(aligned_basename)
 
 if __name__ == '__main__':
