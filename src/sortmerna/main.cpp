@@ -30,13 +30,19 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
-#include "../include/paralleltraversal.hpp"
+#include "paralleltraversal.hpp"
 #include <limits>
 #include <dirent.h>
 
 #ifdef __APPLE__
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#endif
+
+#if defined(_WIN32)
+const char DELIM = ';';
+#else
+const char DELIM = ':';
 #endif
 
 
@@ -269,7 +275,7 @@ main(int argc,
   // pipeline for each reference database searched
   vector< vector<uint32_t> > skiplengths;
     
-#ifdef __APPLE__
+#if defined(__APPLE__)
   int sz[2] = {CTL_HW, HW_MEMSIZE};
   u_int namelen = sizeof(sz)/sizeof(sz[0]);
   uint64_t size;
@@ -284,7 +290,7 @@ main(int argc,
     maxpages_gv = size/pagesize_gv;
   }
 #else
-    maxpages_gv = sysconf(_SC_PHYS_PAGES);
+  maxpages_gv = sysconf(_SC_PHYS_PAGES);
 #endif
     
   if ( argc == 1 )
@@ -454,7 +460,7 @@ main(int argc,
               char indexfile[2000];
               char *ptr_indexfile = indexfile;
               // the reference database index name
-              while ( *ptr != ':' && *ptr != '\0') *ptr_indexfile++ = *ptr++;
+              while ( *ptr != DELIM && *ptr != '\0') *ptr_indexfile++ = *ptr++;
               *ptr_indexfile = '\0';
               if ( *ptr != '\0' ) ptr++; //skip the ':' delimiter
               
@@ -551,7 +557,7 @@ main(int argc,
               exit(EXIT_FAILURE);
             }
           }
-        }
+        } // ~if option 'aligned
         // the name of output rejected reads
         else if ( strcmp ( myoption, "other"  ) == 0 )
         {
