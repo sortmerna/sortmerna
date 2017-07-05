@@ -36,13 +36,16 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
-#include "../include/indexdb.hpp"
-#include "../cmph/cmph.h"
+#include "indexdb.hpp"
+#include "cmph.h"
 #include <iomanip>
 #include <sstream>
 #include <vector>
 #include <sys/stat.h> //for creating tmp dir
 #include <deque>
+#if defined(_WIN32)
+#include <Winsock.h>
+#endif
 
 
 
@@ -113,6 +116,12 @@ bool verbose = false;
 
 // change version number here
 char version_num[] = "2.1b, 03/03/2016";
+
+#if defined(_WIN32)
+const char DELIM = ';';
+#else
+const char DELIM = ':';
+#endif
 
 
 /*
@@ -891,30 +900,32 @@ void welcome()
  * @version 1.0 Jan 14, 2013
  *
  *******************************************************************/
-void printlist()
-{
-  printf("\n  usage:   ./indexdb_rna --ref db.fasta,db.idx [OPTIONS]:\n\n");
-  printf("  --------------------------------------------------------------------------------------------------------\n");
-  printf("  | parameter        value           description                                                 default |\n");
-  printf("  --------------------------------------------------------------------------------------------------------\n");
-  printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[0;32m","\033[0m");
-  printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
-  printf("                                       If passing multiple reference sequence files, separate\n");
-  printf("                                       them by ':',\n");
-  printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-  printf("   [OPTIONS]:\n");
-  printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  #ifdef interval
-  printf("     %s--interval%s      %sINT%s             index every INTth L-mer in the reference database             %s1%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  #endif
-  printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n","\033[1m","\033[0m","\033[4m","\033[0m","\033[4m","\033[0m");
-  printf("                                      (setting --max_pos 0 will store all positions)\n");
-  printf("     %s-v%s              %sBOOL%s            verbose\n","\033[1m","\033[0m","\033[4m","\033[0m");
-  printf("     %s-h%s              %sBOOL%s            help	\n\n","\033[1m","\033[0m","\033[4m","\033[0m");
-  exit(EXIT_FAILURE);
-}//~printlist()
+namespace {
+	void printlist()
+	{
+		printf("\n  usage:   ./indexdb_rna --ref db.fasta,db.idx [OPTIONS]:\n\n");
+		printf("  --------------------------------------------------------------------------------------------------------\n");
+		printf("  | parameter        value           description                                                 default |\n");
+		printf("  --------------------------------------------------------------------------------------------------------\n");
+		printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m", "\033[0;32m", "\033[0m");
+		printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
+		printf("                                       If passing multiple reference sequence files, separate\n");
+		printf("                                       them by ':',\n");
+		printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
+		printf("   [OPTIONS]:\n");
+		printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m");
+		printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n", "\033[1m", "\033[0m", "\033[4m", "\033[0m", "\033[4m", "\033[0m");
+		printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m", "\033[4m", "\033[0m");
+#ifdef interval
+		printf("     %s--interval%s      %sINT%s             index every INTth L-mer in the reference database             %s1%s\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m", "\033[4m", "\033[0m");
+#endif
+		printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m", "\033[4m", "\033[0m");
+		printf("                                      (setting --max_pos 0 will store all positions)\n");
+		printf("     %s-v%s              %sBOOL%s            verbose\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m");
+		printf("     %s-h%s              %sBOOL%s            help	\n\n", "\033[1m", "\033[0m", "\033[4m", "\033[0m");
+		exit(EXIT_FAILURE);
+	}//~printlist()
+}
 
 
 
@@ -1003,7 +1014,7 @@ int main (int argc, char** argv)
              	  // get the index filepath
              	  char indexfile[2000];
              	  char *ptr_indexfile = indexfile;
-             	  while ( *ptr != ':' && *ptr != '\0' )
+				  while (*ptr != DELIM && *ptr != '\0')
              	  {
              	    *ptr_indexfile++ = *ptr++;
              	  }
@@ -1040,7 +1051,7 @@ int main (int argc, char** argv)
               char indexfile[2000];
               char *ptr_indexfile = indexfile;
               // the reference database index name
-              while ( *ptr != ':' && *ptr != '\0')
+			  while (*ptr != DELIM && *ptr != '\0')
               {
                 *ptr_indexfile++ = *ptr++;
               }
