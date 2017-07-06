@@ -292,6 +292,10 @@ main(int argc,
 #else
   maxpages_gv = sysconf(_SC_PHYS_PAGES);
 #endif
+
+#if defined(_WIN32)
+  _setmode(_fileno(stderr), _O_BINARY);
+#endif
     
   if ( argc == 1 )
   {

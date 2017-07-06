@@ -482,7 +482,7 @@ class SortmernaTests(TestCase):
                              "--fastx",
                              "-m", "1024",
                              "-v"]
-        print('Runnig {}'.format(sortmerna_command))
+        print('test_simulated_amplicon_1_part_map: Runnig {}'.format(sortmerna_command))
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
             stderr = proc.stderr
@@ -555,7 +555,7 @@ class SortmernaTests(TestCase):
                            "--ref",
                            index_path,
                            "-v"]
-        print(indexdb_command)
+        print("test_simulated_amplicon_generic_buffer: Running {}".format(indexdb_command))
         if 'Windows' in platform.platform():
             proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
         else:
@@ -582,7 +582,7 @@ class SortmernaTests(TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "-v"]
-        print(sortmerna_command)
+        print("test_simulated_amplicon_generic_buffer: Running {}".format(sortmerna_command))
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
             stderr = proc.stderr
@@ -595,8 +595,7 @@ class SortmernaTests(TestCase):
             stdout, stderr = proc.communicate()
             proc.stdout.close()
             proc.stderr.close()
-        if stderr:
-            print(stderr)
+        if stderr: print(stderr)
         self.output_test(aligned_basename, other_basename)
         # Clean up before next call
         remove(aligned_basename + ".log")
@@ -620,6 +619,7 @@ class SortmernaTests(TestCase):
                              "--fastx",
                              "--best", "5",
                              "-v"]
+        print("test_simulated_amplicon_generic_buffer: Running {}".format(sortmerna_command))
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         else:
@@ -631,8 +631,7 @@ class SortmernaTests(TestCase):
             stdout, stderr = proc.communicate()
             proc.stdout.close()
             proc.stderr.close()
-            if stderr:
-                print(stderr)
+            if stderr: print(stderr)
         self.output_test(aligned_basename, other_basename)
 
     def test_simulated_amplicon_6_part_map(self):
@@ -710,6 +709,7 @@ class SortmernaTests(TestCase):
                            index_path,
                            "-v",
                            "-m", "10"]
+        print("test_simulated_amplicon_12_part_index: Running {}".format(indexdb_command))
         proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
 
         aligned_basename = join(self.output_dir, "aligned")
@@ -727,6 +727,7 @@ class SortmernaTests(TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "-v"]
+        print("test_simulated_amplicon_12_part_index: Running {}".format(sortmerna_command))
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
@@ -1293,8 +1294,10 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_0_other: running {}".format(sortmerna_command))
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         self.assertTrue(proc.stderr)
+        #error_msg = """for human-readable format, --blast [STRING] cannot contain more fields than '0'"""
         error_msg = """\n  \x1b[0;31mERROR\x1b[0m: for human-readable format, --blast [STRING] cannot contain more fields than '0'.\n\n"""
-        print("test_blast_format_0_other: Asserting [{}] equals [{}]".format(proc.stderr, error_msg))
+        print("test_blast_format_0_other: Asserting [{}] in [{}]".format(error_msg, proc.stderr))
+        #self.assertTrue(error_msg in proc.stderr.decode('utf-8'))
         self.assertEqual(error_msg, proc.stderr.decode('utf-8'))
 
     def test_blast_format_1_other(self):
