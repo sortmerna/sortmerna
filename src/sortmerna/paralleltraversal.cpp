@@ -35,6 +35,12 @@
 #include <omp.h>
 #endif
 
+#if defined(_WIN32)
+#define O_SMR_READ_BIN O_RDONLY | O_BINARY
+#else
+#define O_SMR_READ_BIN O_RDONLY
+#endif
+
 // see "heuristic 1" below
 //#define HEURISTIC1_OFF
 
@@ -62,7 +68,7 @@ void format_forward(char* read_seq,char* myread, char filesig)
   {
     while ( (*read_seq != '\0') && (*read_seq != '>') )
     {
-      if (*read_seq != '\n') *myread++ = nt_table[(int)*read_seq];
+      if (*read_seq != '\n' || *read_seq != '\r' ) *myread++ = nt_table[(int)*read_seq];
       read_seq++;
     }
     *myread='\n'; // end of read marked by newline
@@ -70,7 +76,7 @@ void format_forward(char* read_seq,char* myread, char filesig)
   // FASTQ
   else
   {
-    while ( *read_seq != '\n' ) { *myread++ = nt_table[(int)*read_seq++]; }
+    while ( *read_seq != '\n' &&  *read_seq != '\r' ) { *myread++ = nt_table[(int)*read_seq++]; }
     *myread='\n'; //end of read marked by newline
   }
 }
@@ -97,7 +103,7 @@ void format_rev(char* start_read,char* end_read,char* myread,char filesig)
   {
     while ( end_read != start_read )
     {
-      if (*end_read != '\n') *myread++ = rc_table[(int)*end_read];
+      if (*end_read != '\n' && *end_read != '\r') *myread++ = rc_table[(int)*end_read];
       end_read--;
     }
     *myread++ = rc_table[(int)*end_read];
@@ -106,7 +112,7 @@ void format_rev(char* start_read,char* end_read,char* myread,char filesig)
   // FASTQ
   else
   {
-    while ( *end_read != '\n' ) { *myread++ = rc_table[(int)*end_read--]; }
+    while ( *end_read != '\n' && *end_read != '\r' ) { *myread++ = rc_table[(int)*end_read--]; }
     *myread='\n';
   }
 }
@@ -123,7 +129,7 @@ bool check_file_format(char* inputreads, char& filesig)
   gzFile fp = gzopen(inputreads, "r");
   kseq_t *seq = kseq_init(fp);
 #else
-  FILE* fp = fopen(inputreads, "r");
+  FILE* fp = fopen(inputreads, "rb");
   kseq_t *seq = kseq_init(fileno(fp));
 #endif
   int l;
@@ -162,7 +168,7 @@ void compute_read_stats(char* inputreads,
 #else
   // Count total number of reads and their combined length
   // (if ZLIB is not supported)
-  FILE* fp = fopen(inputreads, "r");
+  FILE* fp = fopen(inputreads, "rb");
   kseq_t *seq = kseq_init(fileno(fp));
 #endif
   int l;
@@ -271,7 +277,7 @@ paralleltraversal (char* inputreads,
     if (map_size_set_gv)
     {
       // full_file_size for mmap is the exact file size
-      int fd = open(inputreads, O_RDONLY);
+      int fd = open(inputreads, O_SMR_READ_BIN);
       // find the size of the total file
       if ((full_file_size = lseek(fd, 0L, SEEK_END)) == -1)
       {
@@ -354,7 +360,7 @@ paralleltraversal (char* inputreads,
       strcat ( acceptedstrings, ".");
       strcat ( acceptedstrings, suffix);
             
-      acceptedreads.open ( acceptedstrings );
+      acceptedreads.open ( acceptedstrings);
       acceptedreads.close();
     }
     if ( samout_gv )
@@ -670,7 +676,7 @@ paralleltraversal (char* inputreads,
   {
     if ( samout_gv )
     {
-      acceptedsam.open(acceptedstrings_sam, ios::app);
+      acceptedsam.open(acceptedstrings_sam, ios::app | ios::binary);
       if (!acceptedsam.good())
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open SAM output file for writing: %s.\n",
@@ -680,7 +686,7 @@ paralleltraversal (char* inputreads,
     }
     if ( blastout_gv )
     {
-      acceptedblast.open(acceptedstrings_blast, ios::app);
+      acceptedblast.open(acceptedstrings_blast, ios::app | ios::binary);
       if (!acceptedblast.good())
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not open BLAST output file for writing: %s.\n",
@@ -898,7 +904,7 @@ paralleltraversal (char* inputreads,
               // must be terminated by '\0')
               while ( (str != finalnt) && (*str != '>') && (*str != '\0'))
               {
-                if ( *str != '\n' )
+                if ( *str != '\n' && *str != '\r' )
                 {
                   *_myread = nt_table[(int)*str];
                   if ( *_myread == 4 )
@@ -923,7 +929,7 @@ paralleltraversal (char* inputreads,
             // change the read into an integer alphabet -- FASTQ
             else
             {
-              while ( *str != '\n' )
+              while ( *str != '\n' && *str != '\r' )
               {
                 *_myread = nt_table[(int)*str++];
                 if ( *_myread == 4 )
@@ -1047,9 +1053,9 @@ paralleltraversal (char* inputreads,
                                          0,
                                          0,
                                          // win2f_k1_ptr
-                                         &vbitwindowsf[0], // AK bitwindowsf -> vbitwindowsf
+                                         &vbitwindowsf[0],
                                          // win2f_k1_full
-                                         &vbitwindowsf[offset], // AK bitwindowsf -> vbitwindowsf
+                                         &vbitwindowsf[offset],
                                          accept_zero_kmer,
                                          id_hits,
                                          readn,
@@ -1062,17 +1068,11 @@ paralleltraversal (char* inputreads,
                   // only search if an exact match has not been found
                   if ( !accept_zero_kmer )
                   {
-//					  std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
-					  std::string bitwindowsr(bit_vector_size, 0); // AK
-					  std::vector<MYBITSET> vbitwindowsr(bitwindowsr.begin(), bitwindowsr.end()); // AK
-//                    MYBITSET bitwindowsr[bit_vector_size];
-//                    memset(&bitwindowsr[0],0,bit_vector_size);                  
+					  std::string bitwindowsr(bit_vector_size, 0);
+					  std::vector<MYBITSET> vbitwindowsr(bitwindowsr.begin(), bitwindowsr.end());              
                     // build the first bitvector window
                     init_win_r( &myread[read_index+partialwin[index_num]-1],
-                                // [w_1] reverse k = 1
-                                // bitwindows[0][0][0]
                                 &vbitwindowsr[0],
-                                // bitwindows[0][1][0]
                                 &vbitwindowsr[4],
                                 numbvs[index_num]);                  
                     uint32_t keyr = 0;
@@ -1476,7 +1476,7 @@ paralleltraversal (char* inputreads,
                       end_read = reads[readn];
                       while (*end_read != '\0') end_read++;
                       if ( *end_read == '\0' ) end_read--; //account for '\0'
-                      if ( *end_read == '\n' ) end_read--; //account for '\n'
+                      if ( *end_read == '\n' || *end_read == '\r') end_read--; //account for '\n'
                     }
                     // last read in the partial file section
                     else if ( readn >= (strs-2) )
@@ -1490,7 +1490,7 @@ paralleltraversal (char* inputreads,
 #endif
                         while ( *end_read++ != '\0' );
                         // back-track 3 nucleotides (\n\0_)
-                        if ( *(end_read-2) == '\n' ) end_read--;
+                        if ( *(end_read-2) == '\n' || *(end_read - 2) == '\r') end_read--;
                         // back-track 2 nucleotides (\0_)
                         end_read-=2;
                       }
@@ -1596,13 +1596,13 @@ paralleltraversal (char* inputreads,
                     char ref_seq_arr[4000] = "";
                     char* ref_seq_arr_ptr = ref_seq_arr;
                     char* ref_seq_id_ptr = reference_seq[(2*ref_seq)]+1;
-                    while ( (*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') ) *ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
+                    while ( (*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') && (*ref_seq_id_ptr != '\r')) *ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
                     string ref_seq_str = ref_seq_arr;
                     // read identifier
                     char read_seq_arr[4000] = "";
                     char* read_seq_arr_ptr = read_seq_arr;
                     char* read_seq_id_ptr = reads[readn-1]+1;
-                    while ( (*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') ) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
+                    while ( (*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') && (*read_seq_id_ptr != '\r')) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
                     string read_seq_str = read_seq_arr;
                     otu_map[ref_seq_str].push_back(read_seq_str);
                   }
@@ -1625,7 +1625,7 @@ paralleltraversal (char* inputreads,
 #endif
                         read_qual = reads[readn];
                         int8_t numnewlines = 0;
-                        while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
+                        while ( numnewlines<2 ) { if ( *read_qual++ == '\n' || *read_qual++ == '\r' ) numnewlines++; }
                       }
                       else read_qual = reads[readn+1]-readlen-1;
                     }
@@ -1644,7 +1644,7 @@ paralleltraversal (char* inputreads,
                           if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
 #endif
                           while ( *read_qual != '\0' ) read_qual++;
-                          if ( *(read_qual-3) == '\n') read_qual--;
+                          if ( *(read_qual-3) == '\n' || *(read_qual - 3) == '\r') read_qual--;
                           // account for '\n\0'
                           read_qual-=2;
                         }
@@ -1845,7 +1845,7 @@ paralleltraversal (char* inputreads,
   // output OTU map to file
   if ( otumapout_gv )
   {
-    ofstream outfile (acceptedotumap_file,ios::app);
+    ofstream outfile (acceptedotumap_file,ios::app | ios::binary);
     map<string,vector<string> >::iterator otu_map_it;
     for ( otu_map_it = otu_map.begin(); otu_map_it != otu_map.end(); otu_map_it++ )
     {
@@ -1874,7 +1874,7 @@ paralleltraversal (char* inputreads,
   // create a bilan (log file)
   if ( (ptr_filetype_ar != NULL) && logout_gv )
   {
-    FILE* bilan = fopen(logoutfile,"a");
+    FILE* bilan = fopen(logoutfile,"ab");
     if ( bilan == NULL )
     {
       fprintf(stderr,"  %sERROR%s: could not open file %s \n",startColor,"\033[0m",logoutfile);

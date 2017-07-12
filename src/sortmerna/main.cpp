@@ -335,7 +335,7 @@ main(int argc,
           else
           {
             // check the file exists
-            if ( FILE *file = fopen(argv[narg+1], "r") )
+            if ( FILE *file = fopen(argv[narg+1], "rb") )
             {
               // get size of file
               fseek(file, 0, SEEK_END);
@@ -443,7 +443,7 @@ main(int argc,
               ptr++; //skip the ',' delimiter
                       
               // check reference FASTA file exists & is not empty
-              if ( FILE *file = fopen(fastafile, "r") )
+              if ( FILE *file = fopen(fastafile, "rb") )
               {
                 // get file size
                 fseek(file, 0, SEEK_END);
