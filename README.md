@@ -23,6 +23,7 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 * [Compilation](#sortmerna-compilation)
 	* [Linux OS](#linux-os)
 	* [Mac OS](#mac-os)
+	* [Windows OS](#windows-os)
 * [Install compilers, ZLIB and autoconf](#install-compilers-zlib-and-autoconf)
 	* [Clang for Mac OS](#clang-for-mac-os)
 	* [GCC and Zlib though MacPorts](#gcc-and-zlib-though-macports)
@@ -65,29 +66,25 @@ command was run.
 
 # Getting Started
 
+SortMeRNA can be built and run on Windows, Linux, and Mac.
+
 There are 3 methods to install SortMeRNA:
 
 1. [GitHub repository](https://github.com/biocore/sortmerna) development version (master branch)
 ...* [Installation instructions](#sortmerna-compilation)
-2. [GitHub releases](https://github.com/biocore/sortmerna/releases) (tar balls)
+2. [GitHub releases](https://github.com/biocore/sortmerna/releases) (tar balls, zip)
 ...* [Installation instructions Linux](#linux-os)
 ...* [Installation instructions Mac OS](#mac-os)
+...* [Installation instructions Windows OS](#windows-os)
 3. [BioInfo releases](http://bioinfo.lifl.fr/RNA/sortmerna/) (tar balls including compiled binaries)
 
-Option (3) is the most straight-forward, as it does not require ```autoconf``` and provides
-access to pre-compiled binaries to various OS.
+Option (3) is the simplest, as it provides access to pre-compiled binaries to various OS.
 
 # SortMeRNA Compilation
 
-NOTE: You will require ```autoconf``` to build from the git cloned
-repository or from source code in the `Source code` tar
-balls under release GitHub `Downloads`.
-
-(0) Prepare your build system for compilation:
-
-```bash
-bash autogen.sh
-```
+NOTE: CMake is used for building and should be installed prior the build. 
+	CMake distributions are available for all major operating systems. Please visit
+	https://cmake.org/ for download and installation instructions.
 
 ## Linux OS
 
@@ -97,37 +94,32 @@ bash autogen.sh
 gcc --version
 ```
 
-(2) Run configure and make scripts:
+(2) Generate the build files:
 
 ```bash
-./configure
+mkdir -p $SMR_HOME/build/Release
+pushd $SMR_HOME/build/Release
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
+```
+$SMR_HOME is the top directory where sortmerna code is located.
+
+The above commands will perform necessary system check-ups, dependencies, and
+generate Makefile.
+
+(3) Compile and build executables:
+
+```bash
 make
 ```
 
-(3) To install:
-
-```bash
-make install
-```
-
-You can define an alternative installation directory by
-specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
+The binaries are created in $SMR_HOME/build/Release/src/indexdb and $SMR_HOME/build/Release/src/sortmerna
+Simply add the build binaries to the PATH e.g.
+export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"
 
 
 ## Mac OS
 
-(1) Check the version of your C/C++ compiler:
-
-```bash
-gcc --version
-```
-
-(2a) If the compiler is Clang or GCC, proceed to run configure and make scripts:
-
-```bash
-./configure
-make
-```
+The steps are the same as for Linux above
 
 Note: If the compiler is Clang, you will not have access to multithreading.
 
@@ -137,11 +129,6 @@ Note: If the compiler is Clang, you will not have access to multithreading.
 To set your compiler to Clang (see [instructions](#set-clang-compiler-for-mac-os))
 or the original GCC compiler (see [instructions](#set-gcc-compiler-for-mac-os)).
 
-(3) To install:
-
-```bash
-make install
-```
 
 ### Set Clang compiler for Mac OS
 
@@ -239,33 +226,45 @@ sudo port install zlib
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8
 as well as Zlib in /opt/local/lib/libz.dylib and /opt/local/include/zlib.h .
 
-autoconf
---------
 
-```bash
-wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
-tar -zxvf autoconf-2.69.tar.gz
-cd autoconf-2.69
-./configure
-make
-make install
+## Windows OS
+
+MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
+Download and Install VS Community edition from https://www.visualstudio.com/vs/community/
+The following assumes 'Visual Studio 14 2015'
+
+Open Win CMD (command shell)
+```
+mkdir %SMR_HOME%\build
+pushd %SMR_HOME%\build
+cmake -G "Visual Studio 14 2015 Win64" ..
+```
+The above generates VS project files in `%SMR_HOME%\build\` directory.
+`%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
+
+Start Visual Studio and open Sortmerna solution
+`File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
+
+Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`
+In Solution explorer right-click `ALL_BUILD`
+
+Depending on the build type the binaries are generated in 
+`%SMR_HOME%\build\src\sortmerna\Release` (or Debug | RelWithDebInfo | MinSizeRel)
+
+Add sortmerna executables to PATH
+```
+set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
 ```
 
-You can define an alternative installation directory by
-specifying ```--prefix=/path/to/installation/dir``` to ```configure```
-(before calling ```make```).
 
-If installing in a directory other than those listed in $PATH,
-add the installation directory to $PATH:
-
-```bash
-export PATH=$PATH:/path/to/installation/dir
-```
 
 Tests
 =====
 
-Usage tests can be run with the following command:
+Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests)
+The test code requires Python 3.5 or higher.
+
+Tests can be run with the following command:
 ```
 python ./tests/test_sortmerna.py
 python ./tests/test_sortmerna_zlib.py
