@@ -58,8 +58,8 @@ mmap_reads(off_t partial_file_size,
            uint32_t min_lnwin)
 {
   // mmap the reads file into memory
-  int fd = open(inputreads, O_RDONLY);
-  raw = (char*)mmap(0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map);
+  int fd = open(inputreads, O_RDONLY); //  | O_BINARY - useless - also not portable
+  raw = (char*)mmap(0, partial_file_size, PROT_READ, MAP_SHARED, fd, offset_map); // Bug (Windows) - mapped 'raw' preserves '\r\n\' in spite of O_BINARY
   if ( raw == MAP_FAILED )
   {
     fprintf(stderr,"  %sERROR%s: cannot mmap file: %s\n\n",startColor,"\033[0m",strerror(errno));

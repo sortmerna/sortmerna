@@ -829,7 +829,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                         {
                           read_qual = reads[readn];
                           int8_t numnewlines = 0;
-                          while ( numnewlines<2 ) { if ( *read_qual++ == '\n' ) numnewlines++; }
+                          while ( numnewlines<2 ) { if ( *read_qual++ == '\n' || *read_qual++ == '\r') numnewlines++; }
                         }
                         else read_qual = reads[readn+1]-readlen-1;
                       }
@@ -848,7 +848,7 @@ cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
                             if (readn >= (strs-2)) cout << "get quality for last (reverse) read in last file section\n"; //TESTING
 #endif
                             while ( *read_qual != '\0' ) read_qual++;
-                            if ( *(read_qual-3) == '\n') read_qual--;
+                            if ( *(read_qual-3) == '\n' || *(read_qual - 3) == '\r' ) read_qual--;
                             read_qual-=2; //account for '\n\0'
                           }
                           // file section > 0 and < last file section

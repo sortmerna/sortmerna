@@ -33,6 +33,11 @@ from skbio.parse.sequences import parse_fasta
 # Test class and cases
 class SortmernaTestsZlib(TestCase):
     """ Tests for SortMeRNA functionality with ZLIB """
+    
+    @classmethod
+    def setUpClass(self):
+        self.sortmerna = 'sortmerna'
+        self.indexdb_rna = 'indexdb'
 
     def setUp(self):
         self.output_dir = mkdtemp()
@@ -86,10 +91,10 @@ class SortmernaTestsZlib(TestCase):
     def test_load_gzip(self):
         """ Load file compressed with gzip.
         """
-        print "test_load_gzip"
+        print("test_load_gzip")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
-        indexdb_command = ["indexdb_rna",
+        indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
                            "--max_pos",
@@ -100,8 +105,10 @@ class SortmernaTestsZlib(TestCase):
                      stderr=PIPE,
                      close_fds=True)
         proc.wait()
+        proc.stdout.close()
+        proc.stderr.close()
         aligned_basename = join(self.output_dir, "aligned")
-        sortmerna_command = ["sortmerna",
+        sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
                              "--id", "0.97",
@@ -118,8 +125,9 @@ class SortmernaTestsZlib(TestCase):
                      close_fds=True)
         proc.wait()
         stdout, stderr = proc.communicate()
-        if stderr:
-            print stderr
+        proc.stdout.close()
+        proc.stderr.close()
+        if stderr: print(stderr)
         self.output_test(aligned_basename)
 
 if __name__ == '__main__':

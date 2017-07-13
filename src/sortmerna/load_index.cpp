@@ -247,9 +247,11 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
         uint32_t len_id = 0;
         stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
         // the sequence id string
-        char s[len_id+1];
-        memset(s,0,len_id+1);
-        stats.read(reinterpret_cast<char*>(&s), sizeof(char)*len_id);
+		std::string s(len_id + 1, 0); // AK
+		std::vector<char> vs(s.begin(), s.end());
+//        char s[len_id+1];
+//        memset(s,0,len_id+1);
+        stats.read(reinterpret_cast<char*>(&vs[0]), sizeof(char)*len_id);
         // the length of the sequence itself
         uint32_t len_seq = 0;
         stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
@@ -561,14 +563,14 @@ load_ref(char* ptr_dbfile,
     {
       // the tag
       reference_seq[i++] = s;
-      while ( c != '\n' )
+      while ( c != '\n' && c != '\r')
       {
         *s++ = c;
         c = fgetc(fp);
       }
       // new line
       *s++ = c;
-      if ( *s == '\n' )
+      if ( *s == '\n' || *s == '\r' )
       {
         fprintf(stderr,"  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA format "
                        "(there is an extra new line).",startColor,"\033[0m", __LINE__, __FILE__);
@@ -579,7 +581,7 @@ load_ref(char* ptr_dbfile,
       c = fgetc(fp);
       do
       {
-        if ( c != '\n' && c != ' ' )
+        if ( c != '\n' && c != ' ' && c != '\r' )
         {
           // keep record of ambiguous character for alignment
           *s++ = nt_table[(int)c];
@@ -599,7 +601,7 @@ load_ref(char* ptr_dbfile,
     {
       // the tag
       reference_seq[i++] = s;
-      while ( c != '\n' )
+      while ( c != '\n' && c != '\r' )
       {
         *s++ = c;
         c = fgetc(fp);
@@ -611,7 +613,7 @@ load_ref(char* ptr_dbfile,
       c = fgetc(fp);
       do
       {
-        if ( c != '\n' && c != ' ' )
+        if ( c != '\n' && c != ' ' && c != '\r' )
         {
           // keep record of ambiguous character for alignment
           *s++ = nt_table[(int)c];

@@ -1,3 +1,9 @@
+14 July 2017
+	- Transfer build system to CMake
+	- Port software to Windows
+	- Change directory structure to better organise the code, and separate into projects suited for using CMake
+	- Modify python code to comply with version 3.5
+
 18 May 2017
     - update README to include info on SortMeRNA forum
     - update python tests to use Python 3 & scikit-bio version 0.5.0.dev0
