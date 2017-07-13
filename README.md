@@ -230,8 +230,8 @@ as well as Zlib in /opt/local/lib/libz.dylib and /opt/local/include/zlib.h .
 ## Windows OS
 
 MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
-Download and Install VS Community edition from https://www.visualstudio.com/vs/community/
-The following assumes 'Visual Studio 14 2015'
+Download and Install VS Community edition from [Visual Studio community website](https://www.visualstudio.com/vs/community/)
+The following assumes `Visual Studio 14 2015`.
 
 Open Win CMD (command shell)
 ```
@@ -239,17 +239,17 @@ mkdir %SMR_HOME%\build
 pushd %SMR_HOME%\build
 cmake -G "Visual Studio 14 2015 Win64" ..
 ```
-The above generates VS project files in `%SMR_HOME%\build\` directory.
+The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
 `%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
 
 Start Visual Studio and open Sortmerna solution
 `File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
 
-Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`
-In Solution explorer right-click `ALL_BUILD`
+Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
+In Solution explorer right-click `ALL_BUILD' and select `build` in pop-up menu.
 
 Depending on the build type the binaries are generated in 
-`%SMR_HOME%\build\src\sortmerna\Release` (or Debug | RelWithDebInfo | MinSizeRel)
+`%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
 
 Add sortmerna executables to PATH
 ```
@@ -261,8 +261,7 @@ set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Rel
 Tests
 =====
 
-Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests)
-The test code requires Python 3.5 or higher.
+Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
 
 Tests can be run with the following command:
 ```
