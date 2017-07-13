@@ -82,9 +82,9 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 
 # SortMeRNA Compilation
 
-NOTE: CMake is used for building and should be installed prior the build. 
-	CMake distributions are available for all major operating systems. Please visit
-	https://cmake.org/ for download and installation instructions.
+CMake is used for build files generation and should be installed prior the build.
+CMake distributions are available for all major operating systems.
+Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 ## Linux OS
 
@@ -101,10 +101,9 @@ mkdir -p $SMR_HOME/build/Release
 pushd $SMR_HOME/build/Release
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
 ```
-$SMR_HOME is the top directory where sortmerna code is located.
+`$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
-The above commands will perform necessary system check-ups, dependencies, and
-generate Makefile.
+The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
 (3) Compile and build executables:
 
@@ -112,18 +111,18 @@ generate Makefile.
 make
 ```
 
-The binaries are created in $SMR_HOME/build/Release/src/indexdb and $SMR_HOME/build/Release/src/sortmerna
+The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
 Simply add the build binaries to the PATH e.g.
-export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"
+`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
 
 
 ## Mac OS
 
-The steps are the same as for Linux above
+(1) Perform the same steps as described above for Linux.
 
 Note: If the compiler is Clang, you will not have access to multithreading.
 
-(2b) If the compiler is LLVM-GCC, you will need to change it
+(2) If the compiler is LLVM-GCC, you will need to change it
 (see [Deprecation and Removal Notice](https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/WhatsNewXcode/Articles/xcode_5_0.html)).
 
 To set your compiler to Clang (see [instructions](#set-clang-compiler-for-mac-os))
