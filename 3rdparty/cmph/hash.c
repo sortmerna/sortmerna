@@ -53,7 +53,7 @@ void hash_vector(hash_state_t *state, const char *key, cmph_uint32 keylen, cmph_
 
 void hash_state_dump(hash_state_t *state, char **buf, cmph_uint32 *buflen)
 {
-	char *algobuf;
+	char *algobuf = 0;
 	size_t len;
 	switch (state->hashfunc)
 	{

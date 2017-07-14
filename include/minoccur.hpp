@@ -62,7 +62,7 @@ extern int minlen;
 extern int rrnastrings;
 
 extern unsigned int mask32;
-extern char map_nt[122];
+extern const char map_nt[122];
 
 extern hashid *kmerf;
 extern hashid *kmerr;

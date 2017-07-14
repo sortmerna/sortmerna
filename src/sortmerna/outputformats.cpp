@@ -355,7 +355,7 @@ report_fasta(char* acceptedstrings,
     TIME(s);  
     ofstream acceptedreads;
     if ( fastxout_gv )
-      acceptedreads.open(acceptedstrings, ios::app);
+      acceptedreads.open(acceptedstrings, ios::app | ios::binary);
     // pair-ended reads
     if ( pairedin_gv || pairedout_gv )
     {
@@ -474,7 +474,7 @@ report_fasta(char* acceptedstrings,
   {
     eprintf("    Writing not-aligned FASTA/FASTQ ... ");
     TIME(s);
-    ofstream otherreads ( ptr_filetype_or, ios::app );
+    ofstream otherreads ( ptr_filetype_or, ios::app | ios::binary);
     // pair-ended reads
     if ( pairedin_gv || pairedout_gv )
     {
@@ -592,7 +592,7 @@ report_denovo(char *denovo_otus_file,
       eprintf("    Writing de novo FASTA/FASTQ ... ");
       TIME(s);
       
-      ofstream denovoreads (denovo_otus_file, ios::app);
+      ofstream denovoreads (denovo_otus_file, ios::app | ios::binary);
       
       // pair-ended reads
       if ( pairedin_gv || pairedout_gv )
