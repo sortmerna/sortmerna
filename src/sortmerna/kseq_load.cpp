@@ -76,7 +76,7 @@ load_reads(char* inputreads,
   while ((l = kseq_read(seq)) >= 0) {
     // '>' or '@'
     reads[i++] = input_ptr;
-    *input_ptr++ = seq->last_char;
+	*input_ptr++ = seq->last_char == 0 ? '@' : seq->last_char;
     // sequence label
     memcpy(input_ptr, seq->name.s, seq->name.l);
     input_ptr += seq->name.l;
