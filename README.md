@@ -3,7 +3,7 @@ sortmerna
 
 [![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
 
-SortMeRNA is a local sequence alignment tool for filtering, mapping and clustering.
+SortMeRNA is a local sequence alignment tool for filtering, mapping and clustering high throughput sequences.
 
 SortMeRNA is supported for Linux, Mac and Windows.
 
@@ -68,12 +68,11 @@ command was run.
 
 SortMeRNA can be built and run on Linux, Mac and Windows:
 
-* [GitHub development version](https://github.com/biocore/sortmerna) development version (master branch)
-	* [Installation instructions](#sortmerna-compilation)
+* [GitHub development version](#sortmerna-compilation) master branch
 * [GitHub releases](https://github.com/biocore/sortmerna/releases) (tar balls, zip)
-	* [Installation instructions Linux](#linux-os)
-	* [Installation instructions Mac OS](#mac-os)
-	* [Installation instructions Windows OS](#windows-os)
+	* [Linux](#linux-os)
+	* [Mac OS](#mac-os)
+	* [Windows OS](#windows-os)
 
 
 # SortMeRNA Compilation
@@ -117,7 +116,7 @@ mkdir -p $SMR_HOME/build/Release
 pushd $SMR_HOME/build/Release
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
 ```
-`$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located (see step (3) on how to set).
+`$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located (see step (4) on how to set).
 
 The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
@@ -128,8 +127,11 @@ make
 ```
 
 The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-Simply add the build binaries to the PATH e.g.
-`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+Simply add the build binaries to the PATH:
+
+```bash
+export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
+```
 
 ## Mac OS
 
