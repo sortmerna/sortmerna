@@ -1,4 +1,4 @@
-sortmerna
+SortMeRNA
 =========
 
 [![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
@@ -25,8 +25,8 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 * [Compilation](#sortmerna-compilation)
 	* [Linux OS](#linux-os)
 	* [Mac OS](#mac-os)
-	* [Install GCC through MacPorts](#install-gcc-though-macports)
-	* [Install Clang for Mac OS](#install-clang-for-mac-os)
+		* [Install GCC through MacPorts](#install-gcc-though-macports)
+		* [Install Clang for Mac OS](#install-clang-for-mac-os)
 	* [Windows OS](#windows-os)
 * [Tests](#tests)
 * [Third-party libraries](#third-party-libraries)
@@ -143,7 +143,7 @@ For Mac OS, you can use compiler g++/gcc (supports multithreading) or Clang (doe
 gcc --version
 ```
 
-(2a) If GCC is installed, set your compiler to GCC:
+(2a) If installed, set your compiler to GCC:
 
 ```bash
 export CC=gcc-mp-4.8
@@ -162,8 +162,7 @@ export CXX=clang++
 
 (3) Follow steps (3)-(6) above for [Linux OS](#linux-os).
 
-Install GCC through MacPorts
-----------------------------
+### Install GCC through MacPorts
 
 Assuming you have MacPorts installed, type:
 
@@ -174,8 +173,7 @@ sudo port install gcc48
 
 After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8
 
-Install Clang for Mac OS
-------------------------
+### Install Clang for Mac OS
 
 Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
 install the latest version of Clang supported with Xcode. 
@@ -193,11 +191,13 @@ Download and Install VS Community edition from [Visual Studio community website]
 The following assumes `Visual Studio 14 2015`.
 
 Open Win CMD (command shell)
-```
+
+```bash
 mkdir %SMR_HOME%\build
 pushd %SMR_HOME%\build
 cmake -G "Visual Studio 14 2015 Win64" ..
 ```
+
 The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
 `%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
 
@@ -211,7 +211,8 @@ Depending on the build type the binaries are generated in
 `%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
 
 Add sortmerna executables to PATH
-```
+
+```bash
 set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
 ```
 
@@ -222,10 +223,12 @@ Tests
 Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
 
 Tests can be run with the following command:
-```
+
+```bash
 python ./tests/test_sortmerna.py
 python ./tests/test_sortmerna_zlib.py
 ```
+
 Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
 Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
