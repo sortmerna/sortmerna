@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(sortmerna CXX)
 
-option(WITH_OPENMP "build with OpenMP support. On Nx-systems only i.e. No Windows" ON)
+option(WITH_OPENMP "build with OpenMP support. On Nix-systems only i.e. No Windows for now" ON)
 
 if(WIN32)
 	set(SMR_HDRS
