@@ -3,9 +3,9 @@
  * @brief File containing the main function and argument parsing.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2012-16 Bonsai Bioinformatics Research Group
- * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
- * @copyright 2016-17 Evguenia Kopylova
+ * @copyright 2012-17 Bonsai Bioinformatics Research Group
+ * @copyright 2014-17 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2016- Clarity Genomics Inc
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -78,7 +78,7 @@ int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;
 /*! @brief Version number */
-char version_num[] = "2.1b, 03/03/2016";
+char version_num[] = "2.2, 03/08/2017";
 bool as_percent_gv = false;
 bool pid_gv = false;
 int32_t num_best_hits_gv = 0;
@@ -97,16 +97,13 @@ void welcome()
   printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n" );
   printf("                2014-17 Knight Lab:\n" );
   printf("                Department of Pediatrics, UCSD, La Jolla\n");
+  printf("                2016- Clarity Genomics Inc:\n" );
   printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
   printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
   printf("                See the GNU Lesser General Public License for more details.\n");
-  printf("  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com \n");
+  printf("  Contact:      Jenya Kopylova   jenya.kopylov@gmail.com \n");
   printf("                Laurent Noé      laurent.noe@lifl.fr\n");
-  printf("                Pierre Pericard  pierre.pericard@lifl.fr\n");
-  printf("                Daniel McDonald  wasade@gmail.com\n");
-  printf("                Mikaël Salson    mikael.salson@lifl.fr\n");
   printf("                Hélène Touzet    helene.touzet@lifl.fr\n");
-  printf("                Rob Knight       robknight@ucsd.edu\n\n");
 }
 
 

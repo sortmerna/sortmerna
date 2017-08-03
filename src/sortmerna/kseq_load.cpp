@@ -3,10 +3,9 @@
  * @brief Load input reads directly into RAM (FASTA, FASTQ and compressed formats)
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2012-16 Bonsai Bioinformatics Research Group
- * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
- *
- * This file is part of SortMeRNA.
+ * @copyright 2012-17 Bonsai Bioinformatics Research Group
+ * @copyright 2014-17 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2016- Clarity Genomics Inc
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -28,6 +27,7 @@
  *               Mikaël Salson, mikael.salson@lifl.fr
  *               Hélène Touzet, helene.touzet@lifl.fr
  *               Rob Knight, robknight@ucsd.edu
+ *
  */
 
 #include "../include/kseq_load.hpp"

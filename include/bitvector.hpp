@@ -3,10 +3,9 @@
  * @brief Function and variable definitions for bitvector.cpp
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * @copyright 2012-16 Bonsai Bioinformatics Research Group
- * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
- *
- * This file is part of SortMeRNA.
+ * @copyright 2012-17 Bonsai Bioinformatics Research Group
+ * @copyright 2014-17 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2016- Clarity Genomics Inc
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -21,12 +20,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @authors jenya.kopylov@gmail.com
- *          laurent.noe@lifl.fr
- *          helene.touzet@lifl.fr
- *          pierre.pericard@lifl.fr
- *          mikael.salson@lifl.fr
- *          robknight@ucsd.edu
+ * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+ *               Laurent Noé, laurent.noe@lifl.fr
+ *               Pierre Pericard, pierre.pericard@lifl.fr
+ *               Daniel McDonald, wasade@gmail.com
+ *               Mikaël Salson, mikael.salson@lifl.fr
+ *               Hélène Touzet, helene.touzet@lifl.fr
+ *               Rob Knight, robknight@ucsd.edu
  *
  */
 

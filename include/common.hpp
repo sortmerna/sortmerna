@@ -1,11 +1,11 @@
 /*
+ * @file common.hpp
+ * @brief Common variable declarations across source code.
+ * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- * Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group
- *
- * OTU-picking extensions developed in the Knight Lab, BioFrontiers Institute,
- * University of Colorado at Boulder, Boulder, CO
- *
- * This file is part of SortMeRNA.
+ * @copyright 2012-17 Bonsai Bioinformatics Research Group
+ * @copyright 2014-17 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2016- Clarity Genomics Inc
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
  *               Laurent Noé, laurent.noe@lifl.fr
@@ -29,8 +29,6 @@
  *               Rob Knight, robknight@ucsd.edu
  *
  */
-
- /** @file common.hpp */
 
 #ifndef COMMON_H
 #define COMMON_H
