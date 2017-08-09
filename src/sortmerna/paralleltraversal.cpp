@@ -865,7 +865,7 @@ paralleltraversal (char* inputreads,
           {
 #ifdef debug_align
             cout << "readn = " << readn << endl; //TESTING
-#endif          
+#endif
             // for reverse reads
             if ( !forward_gv )
             {
@@ -995,6 +995,8 @@ paralleltraversal (char* inputreads,
             uint32_t max_SW_score = readlen*match;                     
             // loop for each new Pass to granulate seed search intervals
             bool search = true;
+			std::vector<MYBITSET> vbitwindowsf;
+			std::vector<MYBITSET> vbitwindowsr;
             do
             {
 #ifdef debug_align
@@ -1015,18 +1017,17 @@ paralleltraversal (char* inputreads,
                   bool accept_zero_kmer = false;
                   // ids for k-mers that hit the database
                   vector< id_win > id_hits;
-				  std::string bitwindowsf(bit_vector_size, 0);
-				  std::vector<MYBITSET> vbitwindowsf(bitwindowsf.begin(), bitwindowsf.end());
-				  vbitwindowsf.push_back('\0'); // add terminating 0
-//                 MYBITSET bitwindowsf[bit_vector_size];
+				  vbitwindowsf.resize(bit_vector_size);
+				  std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
+//                 MYBITSET bitwindowsf[bit_vector_size]; // Bug 2. bit_vector_size is not known at compile time. Not supported in standard C++ => Fails in VS.
 //                 memset(&bitwindowsf[0],0,bit_vector_size);               
                   // build the first bitvector window
 					init_win_f(&myread[read_index + partialwin[index_num]],
 					  // [w_1] forward k = 1
 					  // bitwindows[0][0][0]
-					&vbitwindowsf[0], // AK bitwindowsf -> vbitwindowsf
+					&vbitwindowsf[0],
                       // bitwindows[0][1][0]
-					&vbitwindowsf[4], // AK bitwindowsf -> vbitwindowsf
+					&vbitwindowsf[4],
 					numbvs[index_num]);         
 					uint32_t keyf = 0;
 					char *keyf_ptr = &myread[read_index];             
@@ -1068,8 +1069,8 @@ paralleltraversal (char* inputreads,
                   // only search if an exact match has not been found
                   if ( !accept_zero_kmer )
                   {
-					  std::string bitwindowsr(bit_vector_size, 0);
-					  std::vector<MYBITSET> vbitwindowsr(bitwindowsr.begin(), bitwindowsr.end());              
+					  vbitwindowsr.resize(bit_vector_size);
+					  std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
                     // build the first bitvector window
                     init_win_r( &myread[read_index+partialwin[index_num]-1],
                                 &vbitwindowsr[0],

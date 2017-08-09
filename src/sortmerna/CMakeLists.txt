@@ -8,8 +8,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(sortmerna CXX)
 
-option(WITH_OPENMP "build with OpenMP support. On Nix-systems only i.e. No Windows for now" ON)
-
 if(WIN32)
 	set(SMR_HDRS
 		${CMAKE_SOURCE_DIR}/include
@@ -19,14 +17,6 @@ else(WIN32)
 	set(SMR_HDRS
 		${CMAKE_SOURCE_DIR}/include
 	)
-	if(WITH_OPENMP)
-		find_package(OpenMP)
-		if(OPENMP_FOUND)
-			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-		endif(OPENMP_FOUND)
-#		set(HAVE_OPENMP "${OPENMP_FOUND}")
-	endif(WITH_OPENMP)
 endif(WIN32)
 
 set(SMR_SRCS
