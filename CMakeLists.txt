@@ -8,7 +8,26 @@
 cmake_minimum_required(VERSION 3.0)
 project(sortmerna CXX C)
 
+option(WITH_OPENMP "build with OpenMP support. On Nix-systems only i.e. No Windows for now" ON)
+
 #include(ExternalProject)
+message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}") # 'GNU' on Ubuntu
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${EXTRA_CXX_FLAGS_RELEASE}" STRGREATER "")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_CXX_FLAGS_RELEASE}")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
+	endif()
+
+	if(WITH_OPENMP AND NOT WIN32)
+		find_package(OpenMP)
+		if(OPENMP_FOUND)
+			set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${OpenMP_C_FLAGS}")
+			set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS}")
+		endif(OPENMP_FOUND)
+	#	set(HAVE_OPENMP "${OPENMP_FOUND}")
+	endif()
+endif()
 
 set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
 
