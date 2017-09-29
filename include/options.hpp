@@ -7,9 +7,12 @@
  *    skip lengths for pass 1, pass 2 and pass 3 in first step of sortmerna
  *    pipeline for each reference database searched
  */
+#include <vector>
+#include <string>
+
 struct Runopts {
-	vector< pair<string, string> > indexfiles; // pairs: (Reference file, Index name)
-	vector< vector<uint32_t> > skiplengths;
+	std::vector< std::pair<std::string, std::string> > indexfiles; // pairs: (Reference file, Index name)
+	std::vector< std::vector<uint32_t> > skiplengths;
 
 	int num_cpus; // number of CPUs on this machine
 	int num_fread_threads = 1; // number of threads reading the Reads file.
