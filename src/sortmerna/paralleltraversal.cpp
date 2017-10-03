@@ -30,6 +30,8 @@
  */
 
 #include "../include/paralleltraversal.hpp"
+#include "options.hpp"
+#include "ThreadPool.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -194,9 +196,74 @@ void compute_read_stats(char* inputreads,
 #endif
 }//~compute_read_stats()
 
+void parallelTraversalJob(Read) 
+{
+	;//printf("To be implemented");
+}
+
+void Reader::read() {
+	int count = 0;
+	Read read;
+
+	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
+	if (!ifs.is_open()) {
+		std::cout << "failed to open " << readsfile << '\n';
+	}
+	else {
+		std::string line;
+		std::cout << "Reader " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+		auto t = std::chrono::high_resolution_clock::now();
+		for (;std::getline(ifs, line);) {
+			if (line[0] == FASTA_HEADER_START)
+			{
+				if (read.header != "")
+				{
+					readsQueue.push(read);
+					//							std::cout << "Pushed: " << rec.header << std::endl;
+					count++;
+				}
+				read = Read();
+				read.header = line;
+			}
+			else {
+				// remove whitespace from line probably
+				read.sequence += line;
+			}
+		} // ~for getline
+		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+		readsQueue.mDoneAdding();
+		std::cout << "Reader: " << id << " (" << std::this_thread::get_id()
+			<< ") done. Elapsed time: " << elapsed.count() << " s "
+			<< " Records added: " << count << std::endl;
+	}
+	ifs.close();
+}
 
 void paralleltraversal2(Runopts & opts)
 {
+	//
+	// TODO: Create N threads e.g. one per CPU core, or as set through process options, or subject to optimization
+	//
+	unsigned int nthreads = std::thread::hardware_concurrency(); // find number of CPU cores
+	std::cout << "CPU cores on this machine: " << nthreads << std::endl; // 8
+
+	ReadsQueue readsQueue(QUEUE_SIZE_MAX);
+	ReadStatsAll readstats;
+	Index index;
+
+	// Init thread pool with the given number of threads
+	//
+	int numThreads = opts.num_fread_threads + opts.num_proc_threads;
+	ThreadPool p(numThreads);
+
+	// Create as many jobs as there are threads
+	for (int i = 0; i < numThreads; i++)
+	{
+		if (i >= 0 && i < opts.num_fread_threads)
+			p.addJob(Reader(i, readsQueue, opts.readsfile));
+		else
+			p.addJob(Processor(i, readsQueue, readstats, index, parallelTraversalJob));
+	}
 } // ~paralleltraversal2
 
 /*! @fn paralleltraversal() */

@@ -17,11 +17,11 @@ struct Runopts {
 	int num_cpus; // number of CPUs on this machine
 	int num_fread_threads = 1; // number of threads reading the Reads file.
 	int num_proc_threads = 3;  // '-a' number of threads to use for processing
-	char* readsfile; // '--reads | --reads-gz' reads file path
+	std::string readsfile; // '--reads | --reads-gz' reads file path
 	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
 	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
-	char* ptr_filetype_ar; // '--aligned' aligned reads output file
-	char* ptr_filetype_or; // '--other' rejected reads output file
+	char* ptr_filetype_ar = 0; // '--aligned' aligned reads output file
+	char* ptr_filetype_or = 0; // '--other' rejected reads output file
 	double evalue = -1.0; // '-e' E-value threshold
 	long match = 2; // '--match' SW score (positive integer) for a match
 	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch

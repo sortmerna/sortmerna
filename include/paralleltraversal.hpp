@@ -29,18 +29,22 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
-#ifndef PARALLELTRAVERSAL_H
-#define PARALLELTRAVERSAL_H
+#pragma once
 
 #include <iomanip>
-
-#include "options.hpp"
+#include <string>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
+ 
 #include "outputformats.hpp"
 #include "load_index.hpp"
 #include "traverse_bursttrie.hpp"
 #include "alignment.hpp"
 #include "mmap.hpp"
 #include "kseq_load.hpp"
+#include "options.hpp"
 
 
  /*! @fn check_file_format()
@@ -137,4 +141,229 @@ void paralleltraversal(
 
 void paralleltraversal2(Runopts & opts);
 
-#endif //~parallel_traversal_h
+//
+// "Producer-Consumer" concurrent pattern participants
+//
+
+const char FASTA_HEADER_START = '>';
+const char FASTQ_HEADER_START = '@';
+const char WIN_ENDLINE = '\r';
+const char LIN_ENDLINE = '\n';
+const int QUEUE_SIZE_MAX = 10; // TODO: set through process options
+const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Change through process options.
+
+// Collective Statistics for all Reads. Encapsulates old 'compute_read_stats' logic and results
+struct ReadStatsAll {
+	// Synchronized - Compute in worker thread (per read) - shared
+	uint32_t min_read_len = READLEN; // length of the shortest Read in the Reads file. 
+	uint32_t max_read_len; // length of the longest Read in the Reads file.
+	uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Computed in 'compute_lis_alignment' in a worker thread i.e. per read.
+
+	// TODO: move to Readrec and get rid of this vector
+	//std::vector<bool> read_hits; // flags if a read was aligned i.e. match found. Each value represents a read. True when the read was matched/aligned.
+
+	// TODO: move to Readrec and get rid of this vector
+	// bits representing all reads. An accepted read with < %id and < %coverage is set to false (0)
+	//std::vector<bool> read_hits_denovo;
+
+	// TODO: move to Readrec and get rid of this vector
+	// array of uint16_t to represent all reads, if the read was aligned with a maximum SW score, its number of alignments is incremeted by 1
+	//uint16_t *read_max_SW_score; // SW (Smith-Waterman) Max SW score of a read -> Readrec.max_SW_score
+	
+	// Non-synchronized - Compute once by calculate
+	uint64_t number_total_read; // total number of reads in file.
+	off_t    full_file_size; // the size of the full reads file (in bytes).
+	uint64_t full_read_main; // total number of nucleotides in all reads.
+
+	ReadStatsAll() {}
+	ReadStatsAll(std::string & readsfile) {}
+	
+	~ReadStatsAll() {}
+
+	// calculate statistics from readsfile see "compute_read_stats"
+	void calculate(std::string & readsfile) {}
+	// called from Main thread once when 'number_total_read' is known
+	//void set_read_hits() {
+	//	read_hits.resize(2*number_total_read); // why twice the number of reads? Because original **reads array has 2 lines per read: header and sequence.
+	//	std::fill(read_hits.begin(), read_hits.end(), false);
+	//}
+	//void set_read_hits_denovo() {
+	//	read_hits_denovo.resize(2*number_total_read);
+	//	std::fill(read_hits_denovo.begin(), read_hits_denovo.end(), true);
+	//}
+	//void set_read_max_SW_score() {
+	//	read_max_SW_score = new uint16_t[2*number_total_read];
+	//	memset(read_max_SW_score, 0, sizeof(uint16_t)*(2*number_total_read));
+	//}
+};
+
+// Match (search) results for a particular Read
+struct MatchResults {
+	bool hit = false; // indicates that a match for this Read has been found
+	bool hit_denovo = true;
+	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
+	uint16_t max_SW_score; // Max Smith-Waterman score
+	int32_t num_alignments; // number of alignments to output per read
+	alignment_struct hits_align_info; // 
+
+	MatchResults() {}
+	~MatchResults() {}
+};
+
+/**
+ * Wrapper of a Reads' record and its Match results
+ */
+struct Read {
+	std::string header;
+	std::string sequence;
+	std::string quality; // "" (fasta) | "xxx..." (fastq)
+	std::string format = "fasta"; // fasta | fastq
+
+	// calculated
+	std::string sequenceInt; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
+	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
+
+	MatchResults matches;
+
+	Read() {}
+	Read(std::string header, std::string sequence, std::string quality, std::string format) :
+		header(header), sequence(sequence), quality(quality), format(format) 
+	{
+		validate();
+		sequenceToInt();
+	}
+
+	~Read() {}
+
+	// convert sequence to "sequenceInt" and populate "ambiguous_nt"
+	void sequenceToInt() {
+		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
+		{
+			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
+			sequenceInt.append(1, nt_table[(int)*it]);
+			if (c == 0) { // ambiguous nt
+				ambiguous_nt.push_back(sequenceInt.size() - 1); // i.e. add current position to the vector
+			}
+		}
+	}
+
+	void validate() {
+		if (sequence.size() > READLEN)
+		{
+			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
+				startColor, "\033[0m", __LINE__, __FILE__, READLEN);
+			fprintf(stderr, "  Please check your reads or contact the authors.\n");
+			exit(EXIT_FAILURE);
+		}
+	} // ~validate
+}; // ~struct Read
+
+/**
+ * Qeueu for Reads' records. Concurrently accessed by the Reader (producer) and the Processors (consumers)
+ */
+struct ReadsQueue {
+	std::queue<Read> recs;
+	int capacity; // max size of the queue
+	int queueSizeAvr; // average size of the queue
+	bool doneAdding; // flag indicating no more records will be added
+	std::mutex lock;
+	std::condition_variable cv;
+
+	ReadsQueue(int capacity) : capacity(capacity), doneAdding(false) {}
+
+	~ReadsQueue() {}
+
+	void push(Read & readsrec) {
+		std::unique_lock<std::mutex> l(lock);
+		cv.wait(l, [this] {return recs.size() < capacity;});
+		recs.push(readsrec);
+//		l.unlock();
+		cv.notify_one();
+	}
+
+	Read pop() {
+		std::unique_lock<std::mutex> l(lock);
+		cv.wait(l, [this] { return doneAdding || !recs.empty();}); //  if False - keep waiting, else - proceed.
+		Read rec;
+		if (!recs.empty()) {
+			rec = recs.front();
+			recs.pop();
+		}
+//		l.unlock(); // probably redundant. The lock will be released when function returns
+		cv.notify_one();
+		return rec;
+	}
+
+	void mDoneAdding() {
+		std::lock_guard<std::mutex> l(lock);
+		doneAdding = true;
+		cv.notify_one(); // otherwise pop can stuck not knowing the adding stopped
+	}
+}; // ~struct ReadsQueue
+
+// Queue for ReadStats objects ready to be written to disk
+struct WriteQueue {
+	WriteQueue(){}
+	~WriteQueue() {}
+};
+
+// Queue for Reads IDs used to synchronize ordering of the records in Reads file and ReadStats file
+struct ReadWriterCounterQueue {
+	ReadWriterCounterQueue(){}
+	~ReadWriterCounterQueue() {}
+};
+
+// reads Reads and ReadStats files, generates Read objects and pushes them onto ReadsQueue
+class Reader {
+public:
+	Reader(int id, ReadsQueue & readsQueue, std::string & readsfile) : id(id), readsQueue(readsQueue), readsfile(readsfile) {}
+	void operator()() { read(); }
+	void read();
+private:
+	int id;
+	ReadsQueue & readsQueue;
+	std::string & readsfile;
+};
+
+class Processor {
+public:
+	Processor(int id, 
+		ReadsQueue & recs,
+		ReadStatsAll & readstats,
+		Index & index, 
+		std::function<void(Read)> callback
+	) :
+		id(id), 
+		recs(recs),
+		readstats(readstats),
+		index(index),
+		callback(callback) {}
+
+	void operator()() { process(); }
+	void process() {
+		Read rec;
+		int count = 0;
+		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+		for (;;) {
+			rec = recs.pop();
+			// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
+			callback(rec);
+			if (rec.header == "") break;
+			count++;
+		}
+		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
+	}
+private:
+	int id;
+	ReadsQueue & recs;
+	ReadStatsAll & readstats;
+	Index & index;
+	std::function<void(Read)> callback;
+};
+
+class Writer {
+	Writer(){}
+	~Writer() {}
+};
+
+// ~PARALLELTRAVERSAL_H

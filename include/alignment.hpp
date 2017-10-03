@@ -105,6 +105,7 @@ struct alignment_struct
   uint32_t min_index;
   uint32_t max_index;
   s_align* ptr;
+  alignment_struct() {}
   alignment_struct(uint32_t max_size,
                    uint32_t size,
                    uint32_t min,
