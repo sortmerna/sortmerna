@@ -48,4 +48,9 @@ struct Runopts {
 	bool fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
 	int32_t min_lis = -1; // '--min_lis' search all alignments having the first INT longest LIS
+
+	Runopts(int argc, char**argv, bool dryrun) { process(argc, argv, dryrun); }
+	~Runopts() {}
+
+	void process(int argc, char**argv, bool dryrun);
 };

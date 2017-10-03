@@ -268,6 +268,8 @@ struct ReadsQueue {
 	bool doneAdding; // flag indicating no more records will be added
 	std::mutex lock;
 	std::condition_variable cv;
+	int numPushed = 0;
+	int numPopped = 0;
 
 	ReadsQueue(int capacity) : capacity(capacity), doneAdding(false) {}
 
@@ -278,6 +280,7 @@ struct ReadsQueue {
 		cv.wait(l, [this] {return recs.size() < capacity;});
 		recs.push(readsrec);
 //		l.unlock();
+		++numPushed;
 		cv.notify_one();
 	}
 
@@ -290,6 +293,9 @@ struct ReadsQueue {
 			recs.pop();
 		}
 //		l.unlock(); // probably redundant. The lock will be released when function returns
+		++numPopped;
+		if (numPopped % 10000 == 0)
+			printf("\rPushed: %d Popped: %d", numPushed, numPopped);
 		cv.notify_one();
 		return rec;
 	}
@@ -343,7 +349,8 @@ public:
 	void process() {
 		Read rec;
 		int count = 0;
-		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+//		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+		printf("Processor %d (%d) started\n", id, std::this_thread::get_id());
 		for (;;) {
 			rec = recs.pop();
 			// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
@@ -351,7 +358,8 @@ public:
 			if (rec.header == "") break;
 			count++;
 		}
-		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
+//		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
+		printf("Processor %d (%d) done. Processed %d reads\n", id, std::this_thread::get_id());
 	}
 private:
 	int id;

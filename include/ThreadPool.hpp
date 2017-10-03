@@ -41,7 +41,8 @@ public:
 		}
 
 		// Wait for all threads to stop
-		std::cerr << "Joining threads" << std::endl;
+//		std::cerr << "Joining threads" << std::endl;
+		printf("Joining threads\n");
 		for (auto& thread : threads_)
 			thread.join();
 	}
@@ -74,11 +75,13 @@ protected:
 				if (jobs_.empty())
 				{
 					// No jobs to do and shutting down
-					std::cerr << "Thread " << std::this_thread::get_id() << " terminates" << std::endl;
+//					std::cerr << "Thread " << std::this_thread::get_id() << " terminates" << std::endl;
+					printf("Thread %d terminates\n", std::this_thread::get_id());
 					return;
 				}
 
-				std::cerr << "Thread " << std::this_thread::get_id() << " running a job" << std::endl;
+//				std::cerr << "Thread " << std::this_thread::get_id() << " running a job" << std::endl;
+				printf("Thread %d running a job\n", std::this_thread::get_id());
 				job = std::move(jobs_.front());
 				jobs_.pop();
 			}

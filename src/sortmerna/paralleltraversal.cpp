@@ -196,6 +196,7 @@ void compute_read_stats(char* inputreads,
 #endif
 }//~compute_read_stats()
 
+// Callback run in a Processor thread
 void parallelTraversalJob(Read) 
 {
 	;//printf("To be implemented");
@@ -211,7 +212,8 @@ void Reader::read() {
 	}
 	else {
 		std::string line;
-		std::cout << "Reader " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+//		std::cout << "Reader " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+		printf("Reader %d (%d) started\n", id, std::this_thread::get_id());
 		auto t = std::chrono::high_resolution_clock::now();
 		for (;std::getline(ifs, line);) {
 			if (line[0] == FASTA_HEADER_START)
@@ -219,7 +221,7 @@ void Reader::read() {
 				if (read.header != "")
 				{
 					readsQueue.push(read);
-					//							std::cout << "Pushed: " << rec.header << std::endl;
+					//std::cout << "Pushed: " << rec.header << std::endl;
 					count++;
 				}
 				read = Read();
@@ -232,9 +234,10 @@ void Reader::read() {
 		} // ~for getline
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readsQueue.mDoneAdding();
-		std::cout << "Reader: " << id << " (" << std::this_thread::get_id()
-			<< ") done. Elapsed time: " << elapsed.count() << " s "
-			<< " Records added: " << count << std::endl;
+		printf("Reader %d () done. Elapsed time: %d s Reads added: %d", id, std::this_thread::get_id(), elapsed.count(), count);
+//		std::cout << "Reader: " << id << " (" << std::this_thread::get_id()
+//			<< ") done. Elapsed time: " << elapsed.count() << " s "
+//			<< " Records added: " << count << std::endl;
 	}
 	ifs.close();
 }

@@ -228,7 +228,7 @@ void printlist()
 }//~printlist()
 
 // TODO: to be removed
-Runopts processOptions_old(int argc, char**argv, bool dryrun) 
+Runopts processOptions(int argc, char**argv, bool dryrun) 
 {
 	// parse the command line input
 	int narg = 1;
@@ -1546,10 +1546,9 @@ Runopts processOptions_old(int argc, char**argv, bool dryrun)
 	}
 } // ~processOptions
 
-Runopts processOptions(int argc, char**argv, bool dryrun)
+void Runopts::process(int argc, char**argv, bool dryrun)
 {
-	Runopts opts; // container for parsed run options
-	if (dryrun) return opts;
+	if (dryrun) return;
 
 	// parse the command line input
 	int narg = 1;
@@ -1639,11 +1638,11 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 						// set exit BOOL to exit program after outputting
 						// empty files, sortmerna will not execute after
 						// that call (in paralleltraversal.cpp)
-						if (!filesize) opts.exit_early = true;
+						if (!filesize) exit_early = true;
 						// reset file pointer to start of file
 						fseek(file, 0, SEEK_SET);
 
-						opts.readsfile = argv[narg + 1];
+						readsfile = argv[narg + 1];
 						narg += 2;
 						fclose(file);
 
@@ -1685,11 +1684,11 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 						// set exit BOOL to exit program after outputting
 						// empty files, sortmerna will not execute after
 						// that call (in paralleltraversal.cpp)
-						if (!filesize) opts.exit_early = true;
+						if (!filesize) exit_early = true;
 						// reset file pointer to start of file
 						gzseek(file, 0, SEEK_SET);
 
-						opts.readsfile = argv[narg + 1];
+						readsfile = argv[narg + 1];
 						narg += 2;
 						gzclose(file);
 
@@ -1743,7 +1742,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 							// get file size
 							fseek(file, 0, SEEK_END);
 							size_t filesize = ftell(file);
-							if (!filesize) opts.exit_early = true;
+							if (!filesize) exit_early = true;
 							// reset file pointer to start of file
 							fseek(file, 0, SEEK_SET);
 							fclose(file);
@@ -1794,15 +1793,15 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 						}
 
 						// check index file names are distinct
-						for (int i = 0; i < (int)opts.indexfiles.size(); i++)
+						for (int i = 0; i < (int)indexfiles.size(); i++)
 						{
-							if ((opts.indexfiles[i].first).compare(fastafile) == 0)
+							if ((indexfiles[i].first).compare(fastafile) == 0)
 							{
 								fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered "
 									"twice in the list. It will be searched twice. "
 									"\n\n", "\033[0;33m", "\033[0m", fastafile);
 							}
-							else if ((opts.indexfiles[i].second).compare(indexfile) == 0)
+							else if ((indexfiles[i].second).compare(indexfile) == 0)
 							{
 								fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered "
 									"twice in the list. It will be searched twice.\n\n", "\033[0;33m",
@@ -1810,7 +1809,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 							}
 						}
 
-						opts.indexfiles.push_back(pair<string, string>(fastafile, indexfile));
+						indexfiles.push_back(pair<string, string>(fastafile, indexfile));
 
 					}//~while (*ptr != '\0')
 
@@ -1844,7 +1843,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 
 					if (DIR *dir_p = opendir(dir))
 					{
-						opts.ptr_filetype_ar = argv[narg + 1];
+						ptr_filetype_ar = argv[narg + 1];
 						narg += 2;
 						closedir(dir_p);
 					}
@@ -1883,7 +1882,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 
 					if (DIR *dir_p = opendir(dir))
 					{
-						opts.ptr_filetype_or = argv[narg + 1];
+						ptr_filetype_or = argv[narg + 1];
 						narg += 2;
 						closedir(dir_p);
 					}
@@ -2027,7 +2026,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 				// set match
 				if (!match_set)
 				{
-					opts.match = atoi(argv[narg + 1]);
+					match = atoi(argv[narg + 1]);
 					narg += 2;
 					match_set = true;
 				}
@@ -2050,8 +2049,8 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 				// set mismatch
 				if (!mismatch_set)
 				{
-					opts.mismatch = atoi(argv[narg + 1]);
-					if (opts.mismatch > 0)
+					mismatch = atoi(argv[narg + 1]);
+					if (mismatch > 0)
 					{
 						fprintf(stderr, "\n  %sERROR%s: --mismatch [INT] requires a negative "
 							"integer input (ex. --mismatch -2)\n", startColor, "\033[0m");
@@ -2079,8 +2078,8 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 				// set gap open
 				if (!gap_open_set)
 				{
-					opts.gap_open = atoi(argv[narg + 1]);
-					if (opts.gap_open < 0)
+					gap_open = atoi(argv[narg + 1]);
+					if (gap_open < 0)
 					{
 						fprintf(stderr, "\n  %sERROR%s: --gap_open [INT] requires a positive "
 							"integer as input (ex. --gap_open 5)\n", startColor, "\033[0m");
@@ -2108,8 +2107,8 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 				// set gap extend
 				if (!gap_ext_set)
 				{
-					opts.gap_extension = atoi(argv[narg + 1]);
-					if (opts.gap_extension < 0)
+					gap_extension = atoi(argv[narg + 1]);
+					if (gap_extension < 0)
 					{
 						fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] requires a positive "
 							"integer as input (ex. --gap_ext 2)\n", startColor, "\033[0m");
@@ -2447,7 +2446,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 						exit(EXIT_FAILURE);
 					}
 
-					opts.skiplengths.push_back(skiplengths_v);
+					skiplengths.push_back(skiplengths_v);
 					narg += 2;
 					passes_set = true;
 				}
@@ -2604,7 +2603,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 			if (!match_ambiguous_N_gv)
 			{
 				match_ambiguous_N_gv = true;
-				opts.score_N = atoi(argv[narg + 1]);
+				score_N = atoi(argv[narg + 1]);
 				narg += 2;
 			}
 			else
@@ -2669,7 +2668,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 
 	 // ERROR messages ******* 
 	 // Reads file is mandatory
-	if (opts.readsfile.empty() || opts.indexfiles.empty())
+	if (readsfile.empty() || indexfiles.empty())
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] a reads file (--reads file.{fa/fq}) and a "
 			"reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) "
@@ -2677,7 +2676,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 		printlist();
 	}
 	// Basename for aligned reads is mandatory
-	if (opts.ptr_filetype_ar == NULL)
+	if (ptr_filetype_ar == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
 			startColor, "\033[0m", __LINE__, __FILE__);
@@ -2700,7 +2699,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// Basename for non-aligned reads is mandatory
-	if (opts.ptr_filetype_or != NULL)
+	if (ptr_filetype_or != NULL)
 	{
 		if (!fastxout_gv && (blastout_gv || samout_gv))
 		{
@@ -2734,7 +2733,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// Check gap extend score < gap open score
-	if (opts.gap_extension > opts.gap_open)
+	if (gap_extension > gap_open)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --gap_ext [INT] must be less than --gap_open [INT].\n\n",
 			startColor, "\033[0m", __LINE__, __FILE__);
@@ -2803,11 +2802,11 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 	// default E-value
 	if (evalue < 0.0) evalue = 1;
 	// SW alignment parameters
-	if (!match_set) opts.match = 2;
-	if (!mismatch_set) opts.mismatch = -3;
-	if (!gap_open_set) opts.gap_open = 5;
-	if (!gap_ext_set) opts.gap_extension = 2;
-	if (!match_ambiguous_N_gv) opts.score_N = opts.mismatch;
+	if (!match_set) match = 2;
+	if (!mismatch_set) mismatch = -3;
+	if (!gap_open_set) gap_open = 5;
+	if (!gap_ext_set) gap_extension = 2;
+	if (!match_ambiguous_N_gv) score_N = mismatch;
 	// default method for searching alignments
 	if (!best_gv_set && !num_alignments_gv_set)
 	{
@@ -2847,9 +2846,7 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 		if (otumapout_gv) align_cov = 0.97;
 		else align_cov = 0;
 	}
-
-	return opts;
-} // ~processOptions
+} // ~Runopts::process
 
 
 /*! @fn main()
@@ -2885,7 +2882,7 @@ int main(int argc, char** argv)
 		exit_early);
 #else
 	bool dryrun = false;
-	Runopts opts = processOptions(argc, argv, dryrun);
+	Runopts opts(argc, argv, dryrun);
 	paralleltraversal2(opts);
 #endif
 	return 0;
