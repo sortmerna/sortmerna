@@ -204,6 +204,7 @@ void parallelTraversalJob(Read)
 
 void Reader::read() {
 	Read read;
+	int id = 0;
 
 	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
@@ -218,6 +219,7 @@ void Reader::read() {
 			{
 				if (read.header != "")
 				{
+					read.id = id++;
 					readQueue.push(read);
 					//std::cout << "Pushed: " << rec.header << std::endl;
 				}
@@ -235,7 +237,7 @@ void Reader::read() {
 			std::this_thread::get_id(), elapsed.count(), readQueue.numPushed);
 	}
 	ifs.close();
-}
+} // ~Reader::read
 
 void Processor::process()
 {
@@ -254,7 +256,7 @@ void Processor::process()
 	writeQueue.mDoneAdding();
 	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
 	printf("Processor thread %d done. Processed %d reads\n", std::this_thread::get_id());
-}
+} // ~Processor::process
 
 // write read alignment results to disk using e.g. RocksDB
 void Writer::write()
@@ -264,6 +266,7 @@ void Writer::write()
 	auto t = std::chrono::high_resolution_clock::now();
 	for (;;) {
 		read = writeQueue.pop();
+		std::string matchResultsStr = read.matches.toJsonString();
 		if (writeQueue.doneAdding && writeQueue.numPopped == writeQueue.numPushed)
 			break;
 	}

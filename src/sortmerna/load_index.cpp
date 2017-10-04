@@ -55,7 +55,7 @@ void Index::load_stats()
 	{
 		ifstream stats((char*)(opts.indexfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary);
 
-		// get number of index parts
+		// get number of index parts 'num_index_parts'
 		stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
 	}
 }

@@ -45,7 +45,8 @@
 #include "mmap.hpp"
 #include "kseq_load.hpp"
 #include "options.hpp"
-
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
  /*! @fn check_file_format()
 	 @brief check input reads file format (FASTA, FASTQ or unrecognized)
@@ -204,16 +205,88 @@ struct MatchResults {
 	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
 	uint16_t max_SW_score; // Max Smith-Waterman score
 	int32_t num_alignments; // number of alignments to output per read
-	alignment_struct hits_align_info; // 
+	alignment_struct hits_align_info;
 
 	MatchResults() {}
 	~MatchResults() {}
+
+	std::string toJsonString() {
+		rapidjson::StringBuffer sbuf;
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
+
+		writer.StartObject();
+		writer.Key("hit");
+		writer.Bool(hit);
+		writer.Key("hit_denovo");
+		writer.Bool(hit_denovo);
+		writer.Key("null_align_output");
+		writer.Bool(null_align_output);
+		writer.Key("max_SW_score");
+		writer.Uint(max_SW_score);
+		writer.Key("num_alignments");
+		writer.Int(num_alignments);
+
+		writer.Key("hits_align_info");
+		writer.StartObject();
+		writer.String("max_size");
+		writer.Uint(10);
+		writer.EndObject();
+
+		writer.EndObject();
+
+		return sbuf.GetString();
+	}
+
+	std::string toBinString() {
+		// total size of this object
+		const uint32_t size = 
+			3 * sizeof(bool) 
+			+ sizeof(uint16_t) 
+			+ sizeof(int32_t) 
+			/* alignment_struct */
+			+ 4 * sizeof(uint32_t)
+			/* s_align */
+			+ hits_align_info.size * (
+				hits_align_info.ptr->cigarLen * (sizeof(uint32_t))
+				+ sizeof(uint32_t)
+				+ 4 * sizeof(int32_t)
+				+ sizeof(uint32_t)
+				+ 4 * sizeof(uint16_t)
+				+ sizeof(bool));
+
+		char *target = new char[size];
+		uint32_t offset = 0;
+		memcpy(target, (void*)&hit, 3 * sizeof(bool));
+		offset += 3 * sizeof(bool);
+		memcpy(target + offset, (void*)&max_SW_score, sizeof(uint16_t));
+		offset += sizeof(uint16_t);
+		memcpy(target + offset, (void*)&num_alignments, sizeof(int32_t));
+		offset += sizeof(int32_t);
+		memcpy(target + offset, (void*)&hits_align_info, 4*sizeof(int32_t));
+		offset += 4 * sizeof(int32_t);
+		// cigar
+		memcpy(target + offset, (void*)&hits_align_info.ptr->cigar, hits_align_info.ptr->cigarLen * (sizeof(uint32_t)));
+		offset += hits_align_info.ptr->cigarLen * (sizeof(uint32_t));
+		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_seq, sizeof(uint32_t));
+		offset += sizeof(uint32_t);
+		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_begin1, 4*sizeof(int32_t));
+		offset += 4 * sizeof(int32_t);
+		memcpy(target + offset, (void*)&hits_align_info.ptr->readlen, sizeof(uint32_t));
+		offset += sizeof(uint32_t);
+		memcpy(target + offset, (void*)&hits_align_info.ptr->score1, 4*sizeof(uint16_t));
+		offset += 4 * sizeof(uint16_t);
+		memcpy(target + offset, (void*)&hits_align_info.ptr->strand, sizeof(bool));
+
+		return target;
+	} // ~MatchResults::toBinString
 };
 
 /**
  * Wrapper of a Reads' record and its Match results
  */
 struct Read {
+	int id = 0; // number of the read in the reads file
+
 	std::string header;
 	std::string sequence;
 	std::string quality; // "" (fasta) | "xxx..." (fastq)
@@ -226,8 +299,8 @@ struct Read {
 	MatchResults matches;
 
 	Read() {}
-	Read(std::string header, std::string sequence, std::string quality, std::string format) :
-		header(header), sequence(sequence), quality(quality), format(format) 
+	Read(int id, std::string header, std::string sequence, std::string quality, std::string format) :
+		id(id), header(header), sequence(sequence), quality(quality), format(format) 
 	{
 		validate();
 		sequenceToInt();
@@ -259,7 +332,7 @@ struct Read {
 }; // ~struct Read
 
 /**
- * Qeueu for Reads' records. Concurrently accessed by the Reader (producer) and the Processors (consumers)
+ * Queue for Reads' records. Concurrently accessed by the Reader (producer) and the Processors (consumers)
  */
 struct ReadsQueue {
 	std::queue<Read> recs;

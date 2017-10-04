@@ -42,7 +42,7 @@ public:
 
 		// Wait for all threads to stop
 //		std::cerr << "Joining threads" << std::endl;
-		printf("Joining threads\n");
+//		printf("Joining threads\n");
 		for (auto& thread : threads_)
 			thread.join();
 	}

@@ -100,8 +100,8 @@ find_lis(deque<pair<uint32_t, uint32_t> > &a /**< list of matching positions on 
    s_align* ptr */
 struct alignment_struct
 {
-  uint32_t max_size;
-  uint32_t size;
+  uint32_t max_size; // max size of s_align array
+  uint32_t size; // actual size of s_align array
   uint32_t min_index;
   uint32_t max_index;
   s_align* ptr;
