@@ -203,26 +203,23 @@ void parallelTraversalJob(Read)
 }
 
 void Reader::read() {
-	int count = 0;
 	Read read;
 
 	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		std::cout << "failed to open " << readsfile << '\n';
+		printf("failed to open %s\n", readsfile);
 	}
 	else {
 		std::string line;
-//		std::cout << "Reader " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
-		printf("Reader %d (%d) started\n", id, std::this_thread::get_id());
+		printf("Reader thread %d started\n", std::this_thread::get_id());
 		auto t = std::chrono::high_resolution_clock::now();
 		for (;std::getline(ifs, line);) {
 			if (line[0] == FASTA_HEADER_START)
 			{
 				if (read.header != "")
 				{
-					readsQueue.push(read);
+					readQueue.push(read);
 					//std::cout << "Pushed: " << rec.header << std::endl;
-					count++;
 				}
 				read = Read();
 				read.header = line;
@@ -233,13 +230,46 @@ void Reader::read() {
 			}
 		} // ~for getline
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-		readsQueue.mDoneAdding();
-		printf("Reader %d () done. Elapsed time: %d s Reads added: %d", id, std::this_thread::get_id(), elapsed.count(), count);
-//		std::cout << "Reader: " << id << " (" << std::this_thread::get_id()
-//			<< ") done. Elapsed time: " << elapsed.count() << " s "
-//			<< " Records added: " << count << std::endl;
+		readQueue.mDoneAdding();
+		printf("Reader thread %d done. Elapsed time: %d s Reads added: %d\n", 
+			std::this_thread::get_id(), elapsed.count(), readQueue.numPushed);
 	}
 	ifs.close();
+}
+
+void Processor::process()
+{
+	Read read;
+	int countReads = 0;
+	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
+	printf("Processor thread %d started\n", std::this_thread::get_id());
+	for (;;) {
+		read = readQueue.pop();
+		// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
+		callback(read);
+		writeQueue.push(read);
+		if (read.header == "") break;
+		countReads++;
+	}
+	writeQueue.mDoneAdding();
+	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
+	printf("Processor thread %d done. Processed %d reads\n", std::this_thread::get_id());
+}
+
+// write read alignment results to disk using e.g. RocksDB
+void Writer::write()
+{
+	Read read;
+	printf("Writer thread %d started\n", std::this_thread::get_id());
+	auto t = std::chrono::high_resolution_clock::now();
+	for (;;) {
+		read = writeQueue.pop();
+		if (writeQueue.doneAdding && writeQueue.numPopped == writeQueue.numPushed)
+			break;
+	}
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+	printf("Writer thread %d done. Elapsed time: %d s Reads written: %d\n",
+		std::this_thread::get_id(), elapsed.count(), writeQueue.numPopped);
 }
 
 void paralleltraversal2(Runopts & opts)
@@ -247,26 +277,51 @@ void paralleltraversal2(Runopts & opts)
 	//
 	// TODO: Create N threads e.g. one per CPU core, or as set through process options, or subject to optimization
 	//
-	unsigned int nthreads = std::thread::hardware_concurrency(); // find number of CPU cores
-	std::cout << "CPU cores on this machine: " << nthreads << std::endl; // 8
+	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
+	std::cout << "CPU cores on this machine: " << numCores << std::endl; // 8
 
-	ReadsQueue readsQueue(QUEUE_SIZE_MAX);
+	ReadsQueue readQueue(QUEUE_SIZE_MAX); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue(QUEUE_SIZE_MAX); // shared: Processor pushes, Writer pops
 	ReadStatsAll readstats;
-	Index index;
+	Index index(opts);
+	index.load_stats();
 
 	// Init thread pool with the given number of threads
 	//
-	int numThreads = opts.num_fread_threads + opts.num_proc_threads;
-	ThreadPool p(numThreads);
+	int numThreads = 2*opts.num_fread_threads + opts.num_proc_threads;
+	if (numThreads > numCores)
+		printf("WARN: Number of cores: %d is less than number allocated threads %d", numCores, numThreads);
 
-	// Create as many jobs as there are threads
-	for (int i = 0; i < numThreads; i++)
+	ThreadPool tpool(numThreads);
+
+	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
+	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
 	{
-		if (i >= 0 && i < opts.num_fread_threads)
-			p.addJob(Reader(i, readsQueue, opts.readsfile));
-		else
-			p.addJob(Processor(i, readsQueue, readstats, index, parallelTraversalJob));
-	}
+		// iterate every part of an index
+		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
+		{	// only search the forward xor reverse strand
+			int32_t max = 0;
+			forward_gv = true;
+			if (forward_gv ^ reverse_gv) max = 1;
+			else max = 2; // search both strands
+
+			// search the forward and/or reverse strands
+			for (int32_t strand = 0; strand < max; strand++)
+			{
+				// Create as many jobs as there are threads
+				for (int i = 0; i < numThreads; i++)
+				{
+					if (i >= 0 && i < opts.num_fread_threads)
+					{
+						tpool.addJob(Reader(i, readQueue, opts.readsfile));
+						tpool.addJob(Writer(i, writeQueue));
+					}
+					else
+						tpool.addJob(Processor(i, readQueue, writeQueue, readstats, index, parallelTraversalJob));
+				}
+			}
+		} // ~for(idx_part)
+	} // ~for(index_num)
 } // ~paralleltraversal2
 
 /*! @fn paralleltraversal() */
@@ -1093,9 +1148,9 @@ void paralleltraversal(
 									vector< id_win > id_hits;
 									vbitwindowsf.resize(bit_vector_size);
 									std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
-									//                 MYBITSET bitwindowsf[bit_vector_size]; // Bug 2. bit_vector_size is not known at compile time. Not supported in standard C++ => Fails in VS.
-									//                 memset(&bitwindowsf[0],0,bit_vector_size);               
-													  // build the first bitvector window
+									//MYBITSET bitwindowsf[bit_vector_size]; // Bug 2. bit_vector_size is not known at compile time. Not supported in standard C++ => Fails in VS.
+									//memset(&bitwindowsf[0],0,bit_vector_size);               
+									// build the first bitvector window
 									init_win_f(&myread[read_index + partialwin[index_num]],
 										// [w_1] forward k = 1
 										// bitwindows[0][0][0]

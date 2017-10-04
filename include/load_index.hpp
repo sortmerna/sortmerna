@@ -36,6 +36,7 @@
 #include "indexdb.hpp"
  //! ALP program for computing the Gumbel parameters
 #include "../alp/sls_alignment_evaluer.hpp"
+#include "options.hpp"
 
 using namespace Sls;
 
@@ -65,8 +66,8 @@ struct Index {
 	long _mismatch; /**< Smith-Waterman score for a mismatch */
 	long _gap_open; /**< Smith-Waterman score for gap opening */
 	long _gap_extension; /**< Smith-Waterman score for gap extension */
-	vector<vector<uint32_t> > skiplengths; /**< skiplengths, three intervals at which to place seeds on read (--passes option) */
-	vector<uint16_t> num_index_parts;      /**< number of index files */
+	vector<vector<uint32_t>> skiplengths; /**< skiplengths, three intervals at which to place seeds on read (--passes option) */
+	vector<uint16_t> num_index_parts;      /**< number of index files. Ses 'load_stats' */
 	vector<vector<index_parts_stats> > index_parts_stats_vec; /**< statistics for index files */
 	vector<uint64_t> full_ref;   /**< corrected size of each reference index (for computing E-value) */
 	vector<uint64_t> full_read;  /**< corrected size of reads (for computing E-value) */
@@ -88,10 +89,12 @@ struct Index {
 	uint64_t start_part; /**< index of first sequence in current index */
 	bool load_for_search; /**< if true, compute sequence length; if false, only load sequence */
 
-	Index() {}
+	Runopts & opts;
 
+	Index(Runopts & opts): opts(opts), num_index_parts(opts.indexfiles.size(), 0) {}
 	~Index() {}
 
+	void load();
 	void load_stats();
 };
 
@@ -122,27 +125,28 @@ struct Index {
     @return none
 */
 void
-load_index_stats(vector< pair<string,string> >& myfiles, /**< vector of (FASTA file, index name) pairs for loading index */
-                 char** argv, /**< command line for executing SortMeRNA */
-                 int argc, /**< number of arguments in command line for executing SortMeRNA */
-                 bool yes_SQ, /**< if true, include @SQ tags in SAM output */
-                 char* acceptedstrings_sam, /**< pointer to output SAM file */
-                 long _match, /**< Smith-Waterman score for a match */
-                 long _mismatch, /**< Smith-Waterman score for a mismatch */
-                 long _gap_open, /**< Smith-Waterman score for gap opening */
-                 long _gap_extension, /**< Smith-Waterman score for gap extension */
-                 vector<vector<uint32_t> >& skiplengths, /**< skiplengths, three intervals at which to place seeds on read */
-                 vector<uint16_t>& num_index_parts, /**< number of index files */
-                 vector<vector<index_parts_stats> >& index_parts_stats_vec, /**< statistics for index files */
-                 vector<uint64_t>& full_ref, /**< corrected size of each reference index (for computing E-value) */
-                 vector<uint64_t>& full_read, /**< corrected size of reads (for computing E-value) */
-                 vector<uint32_t>& lnwin, /**< length of seed (sliding window L) */
-                 vector<uint32_t>& partialwin, /**< length of seed/2 */
-                 vector<uint32_t>& minimal_score, /**< minimal SW score in order to reach threshold E-value */
-                 uint64_t number_total_read, /**< total number of reads in input reads file */
-                 vector<pair<double, double> >& gumbel, /**< Gumbel parameters Lambda and K */
-                 vector<uint64_t>& numbvs, /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
-                 vector<uint64_t>& numseq /**< total number of reference sequences in one complete reference database */);
+load_index_stats(
+	vector< pair<string,string> >& myfiles, /**< vector of (FASTA file, index name) pairs for loading index */
+    char** argv, /**< command line for executing SortMeRNA */
+    int argc, /**< number of arguments in command line for executing SortMeRNA */
+    bool yes_SQ, /**< if true, include @SQ tags in SAM output */
+    char* acceptedstrings_sam, /**< pointer to output SAM file */
+    long _match, /**< Smith-Waterman score for a match */
+    long _mismatch, /**< Smith-Waterman score for a mismatch */
+    long _gap_open, /**< Smith-Waterman score for gap opening */
+    long _gap_extension, /**< Smith-Waterman score for gap extension */
+    vector<vector<uint32_t> >& skiplengths, /**< skiplengths, three intervals at which to place seeds on read */
+    vector<uint16_t>& num_index_parts, /**< number of index files */
+    vector<vector<index_parts_stats> >& index_parts_stats_vec, /**< statistics for index files */
+    vector<uint64_t>& full_ref, /**< corrected size of each reference index (for computing E-value) */
+    vector<uint64_t>& full_read, /**< corrected size of reads (for computing E-value) */
+    vector<uint32_t>& lnwin, /**< length of seed (sliding window L) */
+    vector<uint32_t>& partialwin, /**< length of seed/2 */
+    vector<uint32_t>& minimal_score, /**< minimal SW score in order to reach threshold E-value */
+    uint64_t number_total_read, /**< total number of reads in input reads file */
+    vector<pair<double, double> >& gumbel, /**< Gumbel parameters Lambda and K */
+    vector<uint64_t>& numbvs, /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
+    vector<uint64_t>& numseq /**< total number of reference sequences in one complete reference database */);
 
  /*! @fn load_index()
     @brief Load reference database index.
@@ -156,12 +160,13 @@ load_index_stats(vector< pair<string,string> >& myfiles, /**< vector of (FASTA f
     @return none
 */
 void
-load_index(char* ptr_dbindex, /**< pointer to index file name */
-           string part_str, /**< index part number */
-           kmer*& lookup_tbl, /**< reference to L/2-mer look up table */
-           kmer_origin*& positions_tbl, /**< reference to (L+1)-mer positions table */
-           uint32_t& number_elements, /**< number of positions in (L+1)-mer positions table */
-           uint32_t lnwin /**< length of seed (sliding window L) */);
+load_index(
+	char* ptr_dbindex, /**< pointer to index file name */
+    string part_str, /**< index part number */
+    kmer*& lookup_tbl, /**< reference to L/2-mer look up table */
+    kmer_origin*& positions_tbl, /**< reference to (L+1)-mer positions table */
+    uint32_t& number_elements, /**< number of positions in (L+1)-mer positions table */
+    uint32_t lnwin /**< length of seed (sliding window L) */);
 
  /*! @fn load_ref()
     @brief Load reference database.
@@ -177,12 +182,13 @@ load_index(char* ptr_dbindex, /**< pointer to index file name */
     @return none
 */
 void
-load_ref(char* ptr_dbfile, /**< pointer to reference database file */
-         char* buffer, /**< pointer to memory slot for storing reference database */
-         char** reference_seq, /**< array of pointers to sequences in buffer */
-         uint64_t* reference_seq_len, /**< array of lengths for each sequence in buffer */
-         uint64_t seq_part_size, /**< size of memory to allocate for buffer */
-         uint64_t numseq_part, /**< number of sequences in part of database indexed */
-         uint64_t start_part, /**< index of first sequence in current index */
-         bool load_for_search /**< if true, compute sequence length; if false, only load sequence */);
+load_ref(
+	char* ptr_dbfile, /**< pointer to reference database file */
+    char* buffer, /**< pointer to memory slot for storing reference database */
+    char** reference_seq, /**< array of pointers to sequences in buffer */
+    uint64_t* reference_seq_len, /**< array of lengths for each sequence in buffer */
+    uint64_t seq_part_size, /**< size of memory to allocate for buffer */
+    uint64_t numseq_part, /**< number of sequences in part of database indexed */
+    uint64_t start_part, /**< index of first sequence in current index */
+    bool load_for_search /**< if true, compute sequence length; if false, only load sequence */);
 #endif

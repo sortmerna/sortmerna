@@ -295,7 +295,7 @@ struct ReadsQueue {
 //		l.unlock(); // probably redundant. The lock will be released when function returns
 		++numPopped;
 		if (numPopped % 10000 == 0)
-			printf("\rPushed: %d Popped: %d", numPushed, numPopped);
+			printf("\rThread %d Pushed: %d Popped: %d", std::this_thread::get_id(), numPushed, numPopped);
 		cv.notify_one();
 		return rec;
 	}
@@ -322,56 +322,52 @@ struct ReadWriterCounterQueue {
 // reads Reads and ReadStats files, generates Read objects and pushes them onto ReadsQueue
 class Reader {
 public:
-	Reader(int id, ReadsQueue & readsQueue, std::string & readsfile) : id(id), readsQueue(readsQueue), readsfile(readsfile) {}
+	Reader(int id, ReadsQueue & readQueue, std::string & readsfile) : id(id), readQueue(readQueue), readsfile(readsfile) {}
 	void operator()() { read(); }
 	void read();
 private:
 	int id;
-	ReadsQueue & readsQueue;
+	ReadsQueue & readQueue; // shared with Processor
 	std::string & readsfile;
+};
+
+class Writer {
+public:
+	Writer(int id, ReadsQueue & writeQueue) : id(id), writeQueue(writeQueue) {}
+	~Writer() {}
+
+	void operator()() { write(); }
+	void write();
+private:
+	int id;
+	ReadsQueue & writeQueue; // shared with Processor
 };
 
 class Processor {
 public:
 	Processor(int id, 
-		ReadsQueue & recs,
+		ReadsQueue & readQueue,
+		ReadsQueue & writeQueue,
 		ReadStatsAll & readstats,
 		Index & index, 
 		std::function<void(Read)> callback
 	) :
 		id(id), 
-		recs(recs),
+		readQueue(readQueue),
+		writeQueue(writeQueue),
 		readstats(readstats),
 		index(index),
 		callback(callback) {}
 
 	void operator()() { process(); }
-	void process() {
-		Read rec;
-		int count = 0;
-//		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
-		printf("Processor %d (%d) started\n", id, std::this_thread::get_id());
-		for (;;) {
-			rec = recs.pop();
-			// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
-			callback(rec);
-			if (rec.header == "") break;
-			count++;
-		}
-//		std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
-		printf("Processor %d (%d) done. Processed %d reads\n", id, std::this_thread::get_id());
-	}
+	void process();
 private:
 	int id;
-	ReadsQueue & recs;
+	ReadsQueue & readQueue;
+	ReadsQueue & writeQueue;
 	ReadStatsAll & readstats;
 	Index & index;
 	std::function<void(Read)> callback;
-};
-
-class Writer {
-	Writer(){}
-	~Writer() {}
 };
 
 // ~PARALLELTRAVERSAL_H

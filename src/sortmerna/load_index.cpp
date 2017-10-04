@@ -47,6 +47,19 @@ char nt_table[128] = {
     4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
 };
 
+void Index::load() {}
+void Index::load_stats() 
+{
+	// loop through the .stats index files for each database
+	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
+	{
+		ifstream stats((char*)(opts.indexfiles[index_num].second + ".stats").c_str(), ios::in | ios::binary);
+
+		// get number of index parts
+		stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
+	}
+}
+
  /*
  *
  * @function check files: load the @SQ lines for SAM output & input
@@ -55,27 +68,29 @@ char nt_table[128] = {
  * @version 2.1 February 7, 2016
  *
  *******************************************************************/
-void load_index_stats(vector< pair<string,string> >& myfiles,
-                      char** argv,
-                      int argc,
-                      bool yes_SQ,
-                      char* acceptedstrings_sam,
-                      long match,
-                      long mismatch,
-                      long gap_open,
-                      long gap_extension,
-                      vector<vector<uint32_t> >& skiplengths,
-                      vector<uint16_t>& num_index_parts,
-                      vector<vector<index_parts_stats> >& index_parts_stats_vec,
-                      vector<uint64_t>& full_ref,
-                      vector<uint64_t>& full_read,
-                      vector<uint32_t>& lnwin,
-                      vector<uint32_t>& partialwin,
-                      vector<uint32_t>& minimal_score,
-                      uint64_t number_total_read,
-                      vector<pair<double, double> >& gumbel,
-                      vector<uint64_t>& numbvs,
-                      vector<uint64_t>& numseq)
+void load_index_stats(
+	vector< pair<string,string> >& myfiles,
+    char** argv,
+    int argc,
+    bool yes_SQ,
+    char* acceptedstrings_sam,
+    long match,
+    long mismatch,
+    long gap_open,
+    long gap_extension,
+    vector<vector<uint32_t> >& skiplengths,
+    vector<uint16_t>& num_index_parts,
+    vector<vector<index_parts_stats> >& index_parts_stats_vec,
+    vector<uint64_t>& full_ref,
+    vector<uint64_t>& full_read,
+    vector<uint32_t>& lnwin,
+    vector<uint32_t>& partialwin,
+    vector<uint32_t>& minimal_score,
+    uint64_t number_total_read,
+    vector<pair<double, double> >& gumbel,
+    vector<uint64_t>& numbvs,
+    vector<uint64_t>& numseq
+	)
 {
   ofstream acceptedsam;
   
@@ -161,9 +176,11 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       skiplengths[index_num][0] = lnwin[index_num];
       skiplengths[index_num][1] = partialwin[index_num];
       skiplengths[index_num][2] = 3;
-    }    
+    }
+
     // number of index parts
     stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
+
     vector<index_parts_stats> hold;
     // information on the location and size of sequences used to build each index part
     for (uint16_t j = 0; j < num_index_parts[index_num]; j++)
@@ -195,28 +212,33 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
       letterFreqs1[i] = background_freq_gv[i];
       letterFreqs2[i] = background_freq_gv[i];
     }
+
     // create an object to store the Gumbel parameters
     AlignmentEvaluer GumbelCalculator_obj;
+
     // set the randomization parameters
     // (will yield the same Lamba and K values on subsequent runs with the same input files)
-    GumbelCalculator_obj.set_gapped_computation_parameters_simplified(max_time,
-                                                                      number_of_samples,
-                                                                      number_of_samples_for_preliminary_stages);
+    GumbelCalculator_obj.set_gapped_computation_parameters_simplified(
+		max_time,
+        number_of_samples,
+        number_of_samples_for_preliminary_stages);
+
     GumbelCalculator_obj.initGapped(
-    alphabetSize,
-    substitutionScoreMatrix,
-    letterFreqs1,
-    letterFreqs2,
-    gapOpen1,
-    gapEpen1,
-    gapOpen2,
-    gapEpen2,
-    insertions_after_deletions,
-    eps_lambda,
-    eps_K,
-    max_time,
-    max_mem,
-    randomSeed);
+		alphabetSize,
+		substitutionScoreMatrix,
+		letterFreqs1,
+		letterFreqs2,
+		gapOpen1,
+		gapEpen1,
+		gapOpen2,
+		gapEpen2,
+		insertions_after_deletions,
+		eps_lambda,
+		eps_K,
+		max_time,
+		max_mem,
+		randomSeed);
+
     gumbel[index_num].first = GumbelCalculator_obj.parameters().lambda;
     gumbel[index_num].second = GumbelCalculator_obj.parameters().K;
     delete [] letterFreqs2;
@@ -261,6 +283,7 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     }     
     stats.close();
   }//~for all indexes
+
   if ( samout_gv )
   {
     // @PG to sam file
@@ -269,11 +292,13 @@ void load_index_stats(vector< pair<string,string> >& myfiles,
     acceptedsam << endl;
     acceptedsam.close();
   }//~if samout_gv
+
   // free memory
   for (long i = 0 ; i < alphabetSize; i++)
   {
     delete [] scoring_matrix[i];
   };
+
   delete [] scoring_matrix;
 }//~load_index_stats()
 
