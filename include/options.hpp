@@ -13,10 +13,11 @@
 struct Runopts {
 	std::vector< std::pair<std::string, std::string> > indexfiles; // pairs: (Reference file, Index name)
 	std::vector< std::vector<uint32_t> > skiplengths;
+	std::string kvdbPath = "C:/a01_projects/clarity_genomics/data/kvdb"; // key-value database for match results
 
 	int num_cpus; // number of CPUs on this machine
 	int num_fread_threads = 1; // number of threads reading the Reads file.
-	int num_proc_threads = 3;  // '-a' number of threads to use for processing
+	int num_proc_threads = 4;  // '-a' number of threads to use for processing
 	std::string readsfile; // '--reads | --reads-gz' reads file path
 	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
 	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read

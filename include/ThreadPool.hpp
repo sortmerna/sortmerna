@@ -22,7 +22,7 @@ class ThreadPool
 {
 public:
 
-	ThreadPool(int numThreads) : shutdown_(false)
+	ThreadPool(int numThreads) : shutdown_(false), busy()
 	{
 		// Create the specified number of threads
 		threads_.reserve(numThreads);
@@ -37,7 +37,7 @@ public:
 			std::unique_lock <std::mutex> l(lock_);
 
 			shutdown_ = true;
-			condVar_.notify_all();
+			cv_jobs.notify_all();
 		}
 
 		// Wait for all threads to stop
@@ -54,7 +54,14 @@ public:
 	{
 		std::unique_lock <std::mutex> l(lock_);
 		jobs_.emplace(std::move(func));
-		condVar_.notify_one();
+		cv_jobs.notify_one();
+	}
+
+	void ThreadPool::waitDone()
+	{
+		std::unique_lock<std::mutex> lock(lock_);
+		// wait till no more jobs and no workers running
+		cv_done.wait(lock, [this]() { return jobs_.empty() && (busy == 0); });
 	}
 
 protected:
@@ -70,13 +77,14 @@ protected:
 
 				// while no jobs and no shutdown - just keep waiting.
 				while (!shutdown_ && jobs_.empty())
-					condVar_.wait(l);
+					cv_jobs.wait(l);
 
 				if (jobs_.empty())
 				{
 					// No jobs to do and shutting down
 //					std::cerr << "Thread " << std::this_thread::get_id() << " terminates" << std::endl;
 					printf("Thread %d terminates\n", std::this_thread::get_id());
+					--busy;
 					return;
 				}
 
@@ -84,6 +92,7 @@ protected:
 				printf("Thread %d running a job\n", std::this_thread::get_id());
 				job = std::move(jobs_.front());
 				jobs_.pop();
+				++busy;
 			}
 
 			job(); // Do the job without holding any locks
@@ -91,9 +100,11 @@ protected:
 	} // ~threadEntry
 
 	std::mutex lock_;
-	std::condition_variable condVar_;
+	std::condition_variable cv_jobs;
+	std::condition_variable cv_done;
 	bool shutdown_;
 	std::queue <std::function <void(void)>> jobs_;
 	std::vector <std::thread> threads_;
+	unsigned int busy;
 }; // ~class ThreadPool
 

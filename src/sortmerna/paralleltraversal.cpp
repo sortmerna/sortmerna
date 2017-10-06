@@ -197,14 +197,19 @@ void compute_read_stats(char* inputreads,
 }//~compute_read_stats()
 
 // Callback run in a Processor thread
-void parallelTraversalJob(Read) 
+void parallelTraversalJob(Read read) 
 {
 	;//printf("To be implemented");
 }
 
+void Read::unmarshallString(std::string matchStr) {}
+
+void Read::unmarshallJson(std::string jsonStr) {}
+
 void Reader::read() {
 	Read read;
 	int id = 0;
+	int pushCount = 0;
 
 	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
@@ -220,7 +225,10 @@ void Reader::read() {
 				if (read.header != "")
 				{
 					read.id = id++;
+					if (loopCount > 0)
+						read.unmarshallJson(kvdb.get(std::to_string(read.id))); // get matches from Key-value database
 					readQueue.push(read);
+					pushCount++;
 					//std::cout << "Pushed: " << rec.header << std::endl;
 				}
 				read = Read();
@@ -234,7 +242,7 @@ void Reader::read() {
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
 		printf("Reader thread %d done. Elapsed time: %d s Reads added: %d\n", 
-			std::this_thread::get_id(), elapsed.count(), readQueue.numPushed);
+			std::this_thread::get_id(), elapsed.count(), pushCount);
 	}
 	ifs.close();
 } // ~Reader::read
@@ -255,73 +263,78 @@ void Processor::process()
 	}
 	writeQueue.mDoneAdding();
 	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
-	printf("Processor thread %d done. Processed %d reads\n", std::this_thread::get_id());
+	printf("Processor thread %d done. Processed %d reads\n", std::this_thread::get_id(), countReads);
 } // ~Processor::process
 
 // write read alignment results to disk using e.g. RocksDB
 void Writer::write()
 {
-	Read read;
 	printf("Writer thread %d started\n", std::this_thread::get_id());
 	auto t = std::chrono::high_resolution_clock::now();
+	int numPopped = 0;
 	for (;;) {
-		read = writeQueue.pop();
-		std::string matchResultsStr = read.matches.toJsonString();
-		if (writeQueue.doneAdding && writeQueue.numPopped == writeQueue.numPushed)
-			break;
+		Read read = writeQueue.pop();
+		++numPopped;
+		std::string matchResultsStr = read.matchesToJson();
+		std::string matchResultStrBin = read.matchesToString();
+		kvdb.put(std::to_string(read.id), matchResultsStr);
+		if (writeQueue.isDone()) break;
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 	printf("Writer thread %d done. Elapsed time: %d s Reads written: %d\n",
-		std::this_thread::get_id(), elapsed.count(), writeQueue.numPopped);
+		std::this_thread::get_id(), elapsed.count(), numPopped);
 }
 
 void paralleltraversal2(Runopts & opts)
 {
-	//
 	// TODO: Create N threads e.g. one per CPU core, or as set through process options, or subject to optimization
-	//
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 	std::cout << "CPU cores on this machine: " << numCores << std::endl; // 8
 
-	ReadsQueue readQueue(QUEUE_SIZE_MAX); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue(QUEUE_SIZE_MAX); // shared: Processor pushes, Writer pops
-	ReadStatsAll readstats;
-	Index index(opts);
-	index.load_stats();
-
 	// Init thread pool with the given number of threads
-	//
-	int numThreads = 2*opts.num_fread_threads + opts.num_proc_threads;
+	int numThreads = 2 * opts.num_fread_threads + opts.num_proc_threads;
 	if (numThreads > numCores)
 		printf("WARN: Number of cores: %d is less than number allocated threads %d", numCores, numThreads);
 
 	ThreadPool tpool(numThreads);
+
+	KeyValueDatabase kvdb(opts.kvdbPath);
+	ReadsQueue readQueue(1, QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue(2, QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
+	ReadStatsAll readstats;
+	Index index(opts);
+	index.load_stats();	
+	
+	// only search the forward xor reverse strand
+	int32_t max = 0;
+	forward_gv = true;
+	if (forward_gv ^ reverse_gv) max = 1;
+	else max = 2; // search both strands
+
+	int loopCount = 0; // counter of total number of processing iterations
 
 	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
 	{
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
-		{	// only search the forward xor reverse strand
-			int32_t max = 0;
-			forward_gv = true;
-			if (forward_gv ^ reverse_gv) max = 1;
-			else max = 2; // search both strands
-
+		{
 			// search the forward and/or reverse strands
 			for (int32_t strand = 0; strand < max; strand++)
 			{
-				// Create as many jobs as there are threads
-				for (int i = 0; i < numThreads; i++)
+				for (int i = 0; i < opts.num_fread_threads; i++)
 				{
-					if (i >= 0 && i < opts.num_fread_threads)
-					{
-						tpool.addJob(Reader(i, readQueue, opts.readsfile));
-						tpool.addJob(Writer(i, writeQueue));
-					}
-					else
-						tpool.addJob(Processor(i, readQueue, writeQueue, readstats, index, parallelTraversalJob));
+					tpool.addJob(Reader(i, readQueue, opts.readsfile, kvdb, loopCount));
+					tpool.addJob(Writer(i, writeQueue, kvdb));
 				}
+
+				// add processor jobs
+				for (int i = 0; i < opts.num_proc_threads; i++)
+				{
+					tpool.addJob(Processor(i, readQueue, writeQueue, readstats, index, parallelTraversalJob));
+				}
+				tpool.waitDone(); // wait until the jobs are done
+				++loopCount;
 			}
 		} // ~for(idx_part)
 	} // ~for(index_num)
@@ -883,7 +896,7 @@ void paralleltraversal(
 		uint16_t *read_max_SW_score = new uint16_t[strs];
 		memset(read_max_SW_score, 0, sizeof(uint16_t)*strs);
 		// map accessed by read number, storing a pair <index for smallest SSW score, pointer to array of num_best_hits_gv>
-		map<uint64_t, alignment_struct > read_hits_align_info;
+		map<uint64_t, alignment_struct> read_hits_align_info;
 		// number of alignments to output per read
 		int32_t *num_alignments_x = NULL;
 		// output num_alignments_gv alignments per read

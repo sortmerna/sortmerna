@@ -45,8 +45,13 @@
 #include "mmap.hpp"
 #include "kseq_load.hpp"
 #include "options.hpp"
+
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+
+#include "rocksdb/db.h"
+#include "rocksdb/slice.h"
+#include "rocksdb/options.h"
 
  /*! @fn check_file_format()
 	 @brief check input reads file format (FASTA, FASTQ or unrecognized)
@@ -198,19 +203,91 @@ struct ReadStatsAll {
 	//}
 };
 
-// Match (search) results for a particular Read
-struct MatchResults {
+
+/**
+ * Wrapper of a Reads' record and its Match results
+ */
+struct Read {
+	int id = 0; // number of the read in the reads file
+
+	std::string header;
+	std::string sequence;
+	std::string quality; // "" (fasta) | "xxx..." (fastq)
+	std::string format = "fasta"; // fasta | fastq
+
+	// calculated
+	std::string sequenceInt; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
+	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
+
+	// matching results
 	bool hit = false; // indicates that a match for this Read has been found
 	bool hit_denovo = true;
 	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
-	uint16_t max_SW_score; // Max Smith-Waterman score
-	int32_t num_alignments; // number of alignments to output per read
+	uint16_t max_SW_score = 0; // Max Smith-Waterman score
+	int32_t num_alignments = 0; // number of alignments to output per read
 	alignment_struct hits_align_info;
 
-	MatchResults() {}
-	~MatchResults() {}
+	Read(): hits_align_info(0,0,0,0,0) {
+		// create new instance of alignments
+		//hits_align_info.max_size = 0;
+		//hits_align_info.size = 0;
+		//hits_align_info.min_index = 0;
+		//hits_align_info.max_index = 0;
+		//hits_align_info.ptr = new s_align[1](); // see alignment.cpp
+		//hits_align_info.ptr->cigar = 0;
+		//hits_align_info.ptr->cigar = new uint32_t[1];
+		//hits_align_info.ptr->cigarLen = 0;
+		//hits_align_info.ptr->index_num = 0;
+		//hits_align_info.ptr->part = 0;
+		//hits_align_info.ptr->readlen = 0;
+		//hits_align_info.ptr->read_begin1 = 0;
+		//hits_align_info.ptr->read_end1 = 0;
+		//hits_align_info.ptr->ref_begin1 = 0;
+		//hits_align_info.ptr->ref_end1 = 0;
+		//hits_align_info.ptr->ref_seq = 0;
+		//hits_align_info.ptr->score1 = 0;
+		//hits_align_info.ptr->strand = 0;
+	}
 
-	std::string toJsonString() {
+	Read(int id, std::string header, std::string sequence, std::string quality, std::string format) :
+		id(id), header(header), sequence(sequence), quality(quality), format(format) 
+	{
+		validate();
+		sequenceToInt();
+	}
+
+	~Read() { 
+		if (hits_align_info.ptr != 0) {
+			//	delete[] read.hits_align_info.ptr->cigar;
+			//	delete read.hits_align_info.ptr;
+			delete hits_align_info.ptr; 
+		} 
+	}
+
+	// convert sequence to "sequenceInt" and populate "ambiguous_nt"
+	void sequenceToInt() {
+		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
+		{
+			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
+			sequenceInt.append(1, nt_table[(int)*it]);
+			if (c == 0) { // ambiguous nt
+				ambiguous_nt.push_back(sequenceInt.size() - 1); // i.e. add current position to the vector
+			}
+		}
+	}
+
+	void validate() {
+		if (sequence.size() > READLEN)
+		{
+			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
+				startColor, "\033[0m", __LINE__, __FILE__, READLEN);
+			fprintf(stderr, "  Please check your reads or contact the authors.\n");
+			exit(EXIT_FAILURE);
+		}
+	} // ~validate
+
+
+	std::string matchesToJson() {
 		rapidjson::StringBuffer sbuf;
 		rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
 
@@ -235,14 +312,17 @@ struct MatchResults {
 		writer.EndObject();
 
 		return sbuf.GetString();
-	}
+	} // ~Read::matchesToJsonString
 
-	std::string toBinString() {
+	std::string matchesToString() {
+		if (hits_align_info.ptr == 0)
+			return "";
+
 		// total size of this object
-		const uint32_t size = 
-			3 * sizeof(bool) 
-			+ sizeof(uint16_t) 
-			+ sizeof(int32_t) 
+		const uint32_t size =
+			3 * sizeof(bool)
+			+ sizeof(uint16_t)
+			+ sizeof(int32_t)
 			/* alignment_struct */
 			+ 4 * sizeof(uint32_t)
 			/* s_align */
@@ -262,98 +342,61 @@ struct MatchResults {
 		offset += sizeof(uint16_t);
 		memcpy(target + offset, (void*)&num_alignments, sizeof(int32_t));
 		offset += sizeof(int32_t);
-		memcpy(target + offset, (void*)&hits_align_info, 4*sizeof(int32_t));
-		offset += 4 * sizeof(int32_t);
+		memcpy(target + offset, (void*)&hits_align_info, 4 * sizeof(uint32_t));
+		offset += 4 * sizeof(uint32_t);
 		// cigar
 		memcpy(target + offset, (void*)&hits_align_info.ptr->cigar, hits_align_info.ptr->cigarLen * (sizeof(uint32_t)));
 		offset += hits_align_info.ptr->cigarLen * (sizeof(uint32_t));
 		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_seq, sizeof(uint32_t));
 		offset += sizeof(uint32_t);
-		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_begin1, 4*sizeof(int32_t));
+		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_begin1, 4 * sizeof(int32_t));
 		offset += 4 * sizeof(int32_t);
 		memcpy(target + offset, (void*)&hits_align_info.ptr->readlen, sizeof(uint32_t));
 		offset += sizeof(uint32_t);
-		memcpy(target + offset, (void*)&hits_align_info.ptr->score1, 4*sizeof(uint16_t));
+		memcpy(target + offset, (void*)&hits_align_info.ptr->score1, 4 * sizeof(uint16_t));
 		offset += 4 * sizeof(uint16_t);
 		memcpy(target + offset, (void*)&hits_align_info.ptr->strand, sizeof(bool));
 
 		return target;
-	} // ~MatchResults::toBinString
-};
+	} // ~Read::matchesToBinString
 
-/**
- * Wrapper of a Reads' record and its Match results
- */
-struct Read {
-	int id = 0; // number of the read in the reads file
+	// deserialize matches from string
+	void unmarshallString(std::string matchStr);
 
-	std::string header;
-	std::string sequence;
-	std::string quality; // "" (fasta) | "xxx..." (fastq)
-	std::string format = "fasta"; // fasta | fastq
-
-	// calculated
-	std::string sequenceInt; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
-	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
-
-	MatchResults matches;
-
-	Read() {}
-	Read(int id, std::string header, std::string sequence, std::string quality, std::string format) :
-		id(id), header(header), sequence(sequence), quality(quality), format(format) 
-	{
-		validate();
-		sequenceToInt();
-	}
-
-	~Read() {}
-
-	// convert sequence to "sequenceInt" and populate "ambiguous_nt"
-	void sequenceToInt() {
-		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
-		{
-			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
-			sequenceInt.append(1, nt_table[(int)*it]);
-			if (c == 0) { // ambiguous nt
-				ambiguous_nt.push_back(sequenceInt.size() - 1); // i.e. add current position to the vector
-			}
-		}
-	}
-
-	void validate() {
-		if (sequence.size() > READLEN)
-		{
-			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
-				startColor, "\033[0m", __LINE__, __FILE__, READLEN);
-			fprintf(stderr, "  Please check your reads or contact the authors.\n");
-			exit(EXIT_FAILURE);
-		}
-	} // ~validate
+	// deserialize matches from JSON
+	void unmarshallJson(std::string jsonStr);
 }; // ~struct Read
 
 /**
  * Queue for Reads' records. Concurrently accessed by the Reader (producer) and the Processors (consumers)
  */
-struct ReadsQueue {
-	std::queue<Read> recs;
+class ReadsQueue {
+	int id;
+	std::queue<Read> recs; // shared: Reader & Processors, Writer & Processors
 	int capacity; // max size of the queue
-	int queueSizeAvr; // average size of the queue
-	bool doneAdding; // flag indicating no more records will be added
+//	int queueSizeAvr; // average size of the queue
+	bool doneAdding; // flag indicating no more records will be added. Shared.
+	int numPushed = 0; // shared
+	int numPopped = 0; // shared
+	int numPushers; // counter of threads that push reads on this queue. Used to calculate if the pushing is over.
+
 	std::mutex lock;
 	std::condition_variable cv;
-	int numPushed = 0;
-	int numPopped = 0;
 
-	ReadsQueue(int capacity) : capacity(capacity), doneAdding(false) {}
-
-	~ReadsQueue() {}
+public:
+	ReadsQueue(int id, int capacity, int numPushers) 
+		: id(id), capacity(capacity), doneAdding(false), numPushers(numPushers) {}
+	~ReadsQueue() { 
+		printf("Destructor called on queue %d  recs.size= %d pushed: %d  popped: %d\n", 
+			id, recs.size(), numPushed, numPopped); 
+	}
 
 	void push(Read & readsrec) {
 		std::unique_lock<std::mutex> l(lock);
 		cv.wait(l, [this] {return recs.size() < capacity;});
 		recs.push(readsrec);
-//		l.unlock();
 		++numPushed;
+//		l.unlock();
 		cv.notify_one();
 	}
 
@@ -362,29 +405,29 @@ struct ReadsQueue {
 		cv.wait(l, [this] { return doneAdding || !recs.empty();}); //  if False - keep waiting, else - proceed.
 		Read rec;
 		if (!recs.empty()) {
+			//		printf("%d Recs.size: %d\n", id, recs.size());
 			rec = recs.front();
 			recs.pop();
+			++numPopped;
+			if (numPopped % 10000 == 0)
+				printf("\rThread %d Pushed: %d Popped: %d", std::this_thread::get_id(), numPushed, numPopped);
 		}
-//		l.unlock(); // probably redundant. The lock will be released when function returns
-		++numPopped;
-		if (numPopped % 10000 == 0)
-			printf("\rThread %d Pushed: %d Popped: %d", std::this_thread::get_id(), numPushed, numPopped);
+		//	l.unlock(); // probably redundant. The lock is released when function returns
 		cv.notify_one();
 		return rec;
 	}
 
 	void mDoneAdding() {
 		std::lock_guard<std::mutex> l(lock);
-		doneAdding = true;
+		--numPushers;
+		if (numPushers == 0)
+			doneAdding = true;
 		cv.notify_one(); // otherwise pop can stuck not knowing the adding stopped
 	}
-}; // ~struct ReadsQueue
 
-// Queue for ReadStats objects ready to be written to disk
-struct WriteQueue {
-	WriteQueue(){}
-	~WriteQueue() {}
-};
+	bool isDone() { return doneAdding && recs.empty(); }
+}; // ~class ReadsQueue
+
 
 // Queue for Reads IDs used to synchronize ordering of the records in Reads file and ReadStats file
 struct ReadWriterCounterQueue {
@@ -392,21 +435,53 @@ struct ReadWriterCounterQueue {
 	~ReadWriterCounterQueue() {}
 };
 
+class KeyValueDatabase {
+public:
+	KeyValueDatabase(std::string kvdbPath) {
+		// init and open key-value database for read matches
+		options.IncreaseParallelism();
+		options.compression = rocksdb::kXpressCompression;
+		options.create_if_missing = true;
+		rocksdb::Status s = rocksdb::DB::Open(options, kvdbPath, &kvdb);
+		assert(s.ok());
+	}
+	~KeyValueDatabase() { delete kvdb; }
+
+	void put(std::string key, std::string val)
+	{
+		rocksdb::Status s = kvdb->Put(rocksdb::WriteOptions(), key, val);
+	}
+
+	std::string get(std::string key)
+	{
+		std::string val;
+		rocksdb::Status s = kvdb->Get(rocksdb::ReadOptions(), key, &val);
+		return val;
+	}
+private:
+	rocksdb::DB* kvdb;
+	rocksdb::Options options;
+};
+
 // reads Reads and ReadStats files, generates Read objects and pushes them onto ReadsQueue
 class Reader {
 public:
-	Reader(int id, ReadsQueue & readQueue, std::string & readsfile) : id(id), readQueue(readQueue), readsfile(readsfile) {}
+	Reader(int id, ReadsQueue & readQueue, std::string & readsfile, KeyValueDatabase & kvdb, int loopCount)
+		: id(id), readQueue(readQueue), readsfile(readsfile), kvdb(kvdb), loopCount(loopCount) {}
 	void operator()() { read(); }
 	void read();
 private:
 	int id;
+	int loopCount; // counter of processing iterations.
 	ReadsQueue & readQueue; // shared with Processor
 	std::string & readsfile;
+	KeyValueDatabase & kvdb; // key-value database path (from Options)
 };
 
 class Writer {
 public:
-	Writer(int id, ReadsQueue & writeQueue) : id(id), writeQueue(writeQueue) {}
+	Writer(int id, ReadsQueue & writeQueue, KeyValueDatabase & kvdb)
+		: id(id), writeQueue(writeQueue), kvdb(kvdb) {}
 	~Writer() {}
 
 	void operator()() { write(); }
@@ -414,6 +489,7 @@ public:
 private:
 	int id;
 	ReadsQueue & writeQueue; // shared with Processor
+	KeyValueDatabase & kvdb; // key-value database path (from Options)
 };
 
 class Processor {
