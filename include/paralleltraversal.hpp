@@ -60,9 +60,8 @@
 	 @return bool
 	 @version Feb 15, 2016
   */
-bool
-check_file_format(
-	char* inputreads /**< pointer to query reads file */,
+bool check_file_format(
+	const char* inputreads /**< pointer to query reads file */,
 	char& filesig /**< first character of sequence label */);
 
 /*! @fn compute_read_stats()
@@ -159,11 +158,14 @@ const int QUEUE_SIZE_MAX = 10; // TODO: set through process options
 const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Change through process options.
 
 // Collective Statistics for all Reads. Encapsulates old 'compute_read_stats' logic and results
-struct ReadStatsAll {
+struct ReadStats {
+	Runopts & opts;
+
 	// Synchronized - Compute in worker thread (per read) - shared
 	uint32_t min_read_len = READLEN; // length of the shortest Read in the Reads file. 
 	uint32_t max_read_len; // length of the longest Read in the Reads file.
 	uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Computed in 'compute_lis_alignment' in a worker thread i.e. per read.
+	char filesig = '>';
 
 	// TODO: move to Readrec and get rid of this vector
 	//std::vector<bool> read_hits; // flags if a read was aligned i.e. match found. Each value represents a read. True when the read was matched/aligned.
@@ -181,13 +183,13 @@ struct ReadStatsAll {
 	off_t    full_file_size; // the size of the full reads file (in bytes).
 	uint64_t full_read_main; // total number of nucleotides in all reads.
 
-	ReadStatsAll() {}
-	ReadStatsAll(std::string & readsfile) {}
+	ReadStats(Runopts & opts): opts(opts) {}
 	
-	~ReadStatsAll() {}
+	~ReadStats() {}
 
 	// calculate statistics from readsfile see "compute_read_stats"
-	void calculate(std::string & readsfile) {}
+	void calculate();
+	bool check_file_format();
 	// called from Main thread once when 'number_total_read' is known
 	//void set_read_hits() {
 	//	read_hits.resize(2*number_total_read); // why twice the number of reads? Because original **reads array has 2 lines per read: header and sequence.
@@ -497,7 +499,7 @@ public:
 	Processor(int id, 
 		ReadsQueue & readQueue,
 		ReadsQueue & writeQueue,
-		ReadStatsAll & readstats,
+		ReadStats & readstats,
 		Index & index, 
 		std::function<void(Read)> callback
 	) :
@@ -514,9 +516,31 @@ private:
 	int id;
 	ReadsQueue & readQueue;
 	ReadsQueue & writeQueue;
-	ReadStatsAll & readstats;
+	ReadStats & readstats;
 	Index & index;
 	std::function<void(Read)> callback;
+};
+
+class Output {
+public:
+	Output(Runopts opts): opts(opts) {}
+	~Output(){}
+
+	void init();
+
+private:
+	Runopts & opts;
+	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
+	ofstream acceptedreads;
+	ofstream acceptedsam;
+	ofstream acceptedblast;
+
+	char *acceptedstrings;
+	char *acceptedstrings_sam;
+	char *acceptedstrings_blast;
+	char *logoutfile;
+	char *denovo_otus_file;
+	char *acceptedotumap_file;
 };
 
 // ~PARALLELTRAVERSAL_H

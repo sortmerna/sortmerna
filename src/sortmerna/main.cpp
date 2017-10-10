@@ -67,8 +67,8 @@ long unsigned int pagesize_gv = sysconf(_SC_PAGE_SIZE);
 long unsigned int maxpages_gv = 0;
 long unsigned int map_size_gv = pagesize_gv;
 bool map_size_set_gv = false;
-bool samout_gv = false;
-bool blastout_gv = false;
+bool samout_gv = false; // TODO: remove -> opts.samout
+bool blastout_gv = false; // TODO: remove -> opts.blastout
 vector<string> user_opts;
 bool blast_tabular = false;
 bool fastxout_gv = false;
@@ -232,12 +232,11 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 {
 	// parse the command line input
 	int narg = 1;
-	// reads input file
-	char* readsfile = NULL;
-	// aligned reads output file
-	char* ptr_filetype_ar = NULL;
-	// rejected reads output file
-	char* ptr_filetype_or = NULL;
+	
+	char* readsfile = NULL; // reads input file
+	char* ptr_filetype_ar = NULL; // aligned reads output file
+	char* ptr_filetype_or = NULL; // rejected reads output file
+
 	// SW alignment parameters
 	long match = 0;
 	long mismatch = 0;
@@ -258,14 +257,15 @@ Runopts processOptions(int argc, char**argv, bool dryrun)
 	bool best_gv_set = false;
 	bool have_reads = false;
 	bool have_reads_gz = false;
-	// this BOOL is set if the reads file or the reference file
-	// is empty
+	// this BOOL is set if the reads file or the reference file is empty
 	bool exit_early = false;
+
 	// vector of (FASTA file, index name) pairs for loading index
 	vector< pair<string, string> > myfiles;
+
 	// skip lengths for pass 1, pass 2 and pass 3 in first step of sortmerna 
 	// pipeline for each reference database searched
-	vector< vector<uint32_t> > skiplengths;
+	vector<vector<uint32_t>> skiplengths;
 
 #if defined(__APPLE__)
 	int sz[2] = { CTL_HW, HW_MEMSIZE };
@@ -2171,7 +2171,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			// output all hits in SAM format
 			else if (strcmp(myoption, "sam") == 0)
 			{
-				if (samout_gv)
+				if (samout)
 				{
 					fprintf(stderr, "\n  %sERROR%s: --sam has already been set once.\n\n",
 						startColor, "\033[0m");
@@ -2179,14 +2179,14 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 				}
 				else
 				{
-					samout_gv = true;
+					samout = true;
 					narg++;
 				}
 			}
 			// output all hits in BLAST format
 			else if (strcmp(myoption, "blast") == 0)
 			{
-				if (blastout_gv)
+				if (blastout)
 				{
 					fprintf(stderr, "\n  %sERROR%s: --blast [STRING] has already been set once.\n\n",
 						startColor, "\033[0m");
@@ -2249,7 +2249,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 							"'0' (human-readable) or '1' (tabular).\n\n", startColor, "\033[0m");
 						exit(EXIT_FAILURE);
 					}
-					blastout_gv = true;
+					blastout = true;
 					narg += 2;
 				}
 			}
@@ -2683,7 +2683,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// No output format has been chosen
-	else if (!(fastxout_gv || blastout_gv || samout_gv || otumapout_gv || logout_gv || de_novo_otu_gv))
+	else if (!(fastxout_gv || blastout || samout || otumapout_gv || logout_gv || de_novo_otu_gv))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] no output format has been chosen (fastx/sam/blast/otu_"
 			"map/log).\n\n", startColor, "\033[0m", __LINE__, __FILE__);
@@ -2701,7 +2701,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// Basename for non-aligned reads is mandatory
 	if (ptr_filetype_or != NULL)
 	{
-		if (!fastxout_gv && (blastout_gv || samout_gv))
+		if (!fastxout_gv && (blastout || samout))
 		{
 			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] option --other [STRING] can only be used together "
 				"with the --fastx option.\n\n", startColor, "\033[0m", __LINE__, __FILE__);
@@ -2719,14 +2719,14 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// If --num_alignments output was chosen, check an alignment format has also been chosen
-	if (num_alignments_gv_set && !(blastout_gv || samout_gv || fastxout_gv))
+	if (num_alignments_gv_set && !(blastout || samout || fastxout_gv))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --num_alignments [INT] has been set but no output "
 			"format has been chosen (--blast, --sam or --fastx).\n\n", startColor, "\033[0m", __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// If --best output was chosen, check an alignment format has also been chosen
-	if (best_gv_set && !(blastout_gv || samout_gv || otumapout_gv))
+	if (best_gv_set && !(blastout || samout || otumapout_gv))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] has been set but no output "
 			"format has been chosen (--blast or --sam or --otu_map).\n\n", startColor, "\033[0m", __LINE__, __FILE__);
@@ -2741,7 +2741,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 	// Option --print_all_reads can only be used with Blast-like tabular
 	// and SAM formats (not pairwise)
-	if (print_all_reads_gv && blastout_gv && !blast_tabular)
+	if (print_all_reads_gv && blastout && !blast_tabular)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --print_all_reads [BOOL] can only be used with BLAST-like "
 			"tabular format.\n\n", startColor, "\033[0m", __LINE__, __FILE__);
@@ -2812,7 +2812,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		// FASTA/FASTQ output, stop searching for
 		// alignments after the first match
-		if (fastxout_gv && !(blastout_gv || samout_gv || otumapout_gv || logout_gv || de_novo_otu_gv))
+		if (fastxout_gv && !(blastout || samout || otumapout_gv || logout_gv || de_novo_otu_gv))
 			num_alignments_gv = 1;
 		// output single best alignment from best candidate hits
 		else
@@ -2845,6 +2845,11 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		// if OTU-map is chosen, set default coverage to 0.97
 		if (otumapout_gv) align_cov = 0.97;
 		else align_cov = 0;
+	}
+
+	for (int i = 0; i < argc; i++) {
+		cmdline.append(argv[i]);
+		cmdline.append(" ");
 	}
 } // ~Runopts::process
 

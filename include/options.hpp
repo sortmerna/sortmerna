@@ -11,11 +11,11 @@
 #include <string>
 
 struct Runopts {
-	std::vector< std::pair<std::string, std::string> > indexfiles; // pairs: (Reference file, Index name)
-	std::vector< std::vector<uint32_t> > skiplengths;
+	std::vector<std::pair<std::string, std::string>> indexfiles; // pairs: (Reference file, Index name)
+	std::vector<std::vector<uint32_t>> skiplengths = { {1,1,1}, { 1,1,1 }, { 1,1,1 } }; // '--passes' e.g. [[1,1,1], [1,1,1], [1,1,1]]
 	std::string kvdbPath = "C:/a01_projects/clarity_genomics/data/kvdb"; // key-value database for match results
 
-	int num_cpus; // number of CPUs on this machine
+	int num_cpus = 1; // number of CPUs on this machine
 	int num_fread_threads = 1; // number of threads reading the Reads file.
 	int num_proc_threads = 4;  // '-a' number of threads to use for processing
 	std::string readsfile; // '--reads | --reads-gz' reads file path
@@ -49,6 +49,8 @@ struct Runopts {
 	bool fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
 	int32_t min_lis = -1; // '--min_lis' search all alignments having the first INT longest LIS
+
+	std::string cmdline;
 
 	Runopts(int argc, char**argv, bool dryrun) { process(argc, argv, dryrun); }
 	~Runopts() {}

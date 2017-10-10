@@ -119,11 +119,42 @@ void format_rev(char* start_read, char* end_read, char* myread, char filesig)
 	}
 }
 
-/* @function check_file_format()
+bool ReadStats::check_file_format()
+{
+	bool exit_early = false;
+#ifdef HAVE_LIBZ
+	// Check file format (if ZLIB supported)
+	gzFile fp = gzopen(opts.readsfile.c_str(), "r");
+	kseq_t *seq = kseq_init(fp);
+#else
+	FILE* fp = fopen(opts.readsfile.c_str(), "rb");
+	kseq_t *seq = kseq_init(fileno(fp));
+#endif
+	int l;
+	if ((l = kseq_read(seq)) >= 0)
+		filesig = seq->last_char;
+	else
+	{
+		fprintf(stderr, "  %sERROR%s: Line %d: %s unrecognized file format or empty file %s\n\n",
+			startColor, "\033[0m", __LINE__, __FILE__, opts.readsfile.c_str());
+		exit_early = true;
+	}
+	kseq_destroy(seq);
+#ifdef HAVE_LIBZ
+	gzclose(fp);
+#else
+	fclose(fp);
+#endif
+	return exit_early;
+}
+
+/* TODO: remove -> ReadStats::check_file_format
+ *
+ * @function check_file_format()
  * see documentation in paralleltraversal.hpp
  *
  * */
-bool check_file_format(char* inputreads, char& filesig)
+bool check_file_format(const char* inputreads, char& filesig)
 {
 	bool exit_early = false;
 #ifdef HAVE_LIBZ
@@ -157,11 +188,12 @@ bool check_file_format(char* inputreads, char& filesig)
  * see documentation in paralleltraversal.hpp
  *
  * */
-void compute_read_stats(char* inputreads,
+void compute_read_stats(
+	char* inputreads,
 	uint64_t& number_total_read,
 	uint64_t& full_read_main,
-	off_t& full_file_size)
-{
+	off_t& full_file_size
+) {
 #ifdef HAVE_LIBZ
 	// Count total number of reads and their combined length
 	// (if ZLIB is supported)
@@ -285,6 +317,191 @@ void Writer::write()
 		std::this_thread::get_id(), elapsed.count(), numPopped);
 }
 
+void Output::init()
+{
+// TODO: move to opts.validate ----------------------------------------------->
+	char filesig; // the comparing character used in parsing the reads file
+	opts.exit_early = ::check_file_format(opts.readsfile.c_str(), filesig);
+
+	// determine the suffix (fasta, fastq, ...) of aligned strings
+	char suffix[20] = "out";
+	const char *suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1).c_str();
+//	char *suff = strrchr(opts.readsfile.c_str(), '.');
+	if (suff != NULL && !opts.have_reads_gz)
+		strcpy(suffix, suff + 1);
+	else if (filesig == '>')
+		strcpy(suffix, "fasta");
+	else
+		strcpy(suffix, "fastq");
+	suff = NULL;
+// <--------------------------------------------------------------- opts.validate
+
+	// attach pid to output files
+	char pidStr[4000];
+	if (pid_gv)
+	{
+		int32_t pid = getpid();
+		sprintf(pidStr, "%d", pid);
+	}
+
+	// associate the streams with reference sequence file names
+	if (opts.ptr_filetype_ar != NULL)
+	{
+		if (fastxout_gv)
+		{
+			// fasta/fastq output
+			acceptedstrings = new char[1000]();
+			if (acceptedstrings == NULL)
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings\n",
+					startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			strcpy(acceptedstrings, opts.ptr_filetype_ar);
+			if (pid_gv)
+			{
+				strcat(acceptedstrings, "_");
+				strcat(acceptedstrings, pidStr);
+			}
+			strcat(acceptedstrings, ".");
+			strcat(acceptedstrings, suffix);
+
+			acceptedreads.open(acceptedstrings);
+			acceptedreads.close();
+		}
+
+		if (opts.samout)
+		{
+			// sam output
+			acceptedstrings_sam = new char[1000]();
+			if (acceptedstrings_sam == NULL)
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_sam\n",
+					startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			strcpy(acceptedstrings_sam, opts.ptr_filetype_ar);
+			if (pid_gv)
+			{
+				strcat(acceptedstrings_sam, "_");
+				strcat(acceptedstrings_sam, pidStr);
+			}
+			strcat(acceptedstrings_sam, ".sam");
+			acceptedsam.open(acceptedstrings_sam);
+			acceptedsam.close();
+		}
+
+		if (opts.blastout)
+		{
+			// blast output
+			acceptedstrings_blast = new char[1000]();
+			if (acceptedstrings_blast == NULL)
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
+					startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			strcpy(acceptedstrings_blast, opts.ptr_filetype_ar);
+			if (pid_gv)
+			{
+				strcat(acceptedstrings_blast, "_");
+				strcat(acceptedstrings_blast, pidStr);
+			}
+			strcat(acceptedstrings_blast, ".blast");
+			acceptedblast.open(acceptedstrings_blast);
+			acceptedblast.close();
+		}
+
+		if (logout_gv)
+		{
+			// statistics file output
+			ofstream logstream;
+			logoutfile = new char[1000]();
+			if (logoutfile == NULL)
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
+					startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			strcpy(logoutfile, opts.ptr_filetype_ar);
+			if (pid_gv)
+			{
+				strcat(logoutfile, "_");
+				strcat(logoutfile, pidStr);
+			}
+			strcat(logoutfile, ".log");
+
+			logstream.open(logoutfile);
+			logstream.close();
+		}
+
+		if (otumapout_gv)
+		{
+			// OTU map output file
+			ofstream otumap;
+			acceptedotumap_file = new char[1000]();
+			if (acceptedotumap_file == NULL)
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedotumap\n",
+					startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			strcpy(acceptedotumap_file, opts.ptr_filetype_ar);
+			if (pid_gv)
+			{
+				strcat(acceptedotumap_file, "_");
+				strcat(acceptedotumap_file, pidStr);
+			}
+			strcat(acceptedotumap_file, "_otus.txt");
+			otumap.open(acceptedotumap_file);
+			otumap.close();
+		}
+
+		if (de_novo_otu_gv)
+		{
+			ofstream denovo_otu;
+			denovo_otus_file = new char[1000]();
+			if (denovo_otus_file == NULL)
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for denovo_otus_file_name\n",
+					startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			strcpy(denovo_otus_file, opts.ptr_filetype_ar);
+			if (pid_gv)
+			{
+				strcat(denovo_otus_file, "_");
+				strcat(denovo_otus_file, pidStr);
+			}
+			strcat(denovo_otus_file, "_denovo.");
+			strcat(denovo_otus_file, suffix);
+
+			denovo_otu.open(denovo_otus_file);
+			denovo_otu.close();
+		}
+	}//~if ( ptr_filetype_ar != NULL ) 
+
+	if (opts.ptr_filetype_or != NULL)
+	{
+		if (fastxout_gv)
+		{
+			// output stream for other reads
+			ofstream otherreads;
+			// add suffix database name to accepted reads file
+			if (pid_gv)
+			{
+				strcat(opts.ptr_filetype_or, "_");
+				strcat(opts.ptr_filetype_or, pidStr);
+			}
+			strcat(opts.ptr_filetype_or, ".");
+			strcat(opts.ptr_filetype_or, suffix);
+			// create the other reads file
+			otherreads.open(opts.ptr_filetype_or);
+			otherreads.close();
+		}
+	}
+} // ~Output::init
+
 void paralleltraversal2(Runopts & opts)
 {
 	// TODO: Create N threads e.g. one per CPU core, or as set through process options, or subject to optimization
@@ -301,9 +518,13 @@ void paralleltraversal2(Runopts & opts)
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue(1, QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue(2, QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
-	ReadStatsAll readstats;
+	ReadStats readstats(opts);
 	Index index(opts);
 	index.load_stats();	
+	Output output(opts);
+	output.init();
+
+	opts.exit_early = readstats.check_file_format();
 	
 	// only search the forward xor reverse strand
 	int32_t max = 0;
@@ -396,6 +617,7 @@ void paralleltraversal(
 	// index for file_sections
 	uint32_t file_s = 0;
 	exit_early = check_file_format(inputreads, filesig);
+
 	// File format supported (FASTA or FASTQ), continue
 	if (!exit_early)
 	{
@@ -405,8 +627,10 @@ void paralleltraversal(
 			number_total_read,
 			full_read_main,
 			full_file_size);
+
 		// find the mean sequence length
 		mean_read_len = full_read_main / number_total_read;
+
 		// check there are an even number of reads for --paired-in
 		// and --paired-out options to work
 		if ((number_total_read % 2 != 0) && (pairedin_gv || pairedout_gv))
@@ -418,6 +642,7 @@ void paralleltraversal(
 			pairedin_gv = false;
 			pairedout_gv = false;
 		}
+
 		// setup for mmap
 		if (map_size_set_gv)
 		{
@@ -456,26 +681,31 @@ void paralleltraversal(
 				file_sections, (unsigned long int)partial_file_size);
 		}
 	}//~if (!exit_early)
+
+// Output -------------------------------------------------------------------->
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
-	ofstream acceptedreads;
-	ofstream acceptedsam;
-	ofstream acceptedblast;
+	ofstream acceptedreads; // TODO: move to Output
+	ofstream acceptedsam; // TODO: move to Output
+	ofstream acceptedblast; // TODO: move to Output
+
 	// determine the suffix (fasta, fastq, ...) of aligned strings
 	char suffix[20] = "out";
 	char *suff = strrchr(inputreads, '.');
-	if (suff != NULL && !have_reads_gz)  // AK and
+	if (suff != NULL && !have_reads_gz)
 		strcpy(suffix, suff + 1);
 	else if (filesig == '>')
 		strcpy(suffix, "fasta");
 	else
 		strcpy(suffix, "fastq");
 	suff = NULL;
-	char *acceptedstrings = NULL;
-	char *acceptedstrings_sam = NULL;
-	char *acceptedstrings_blast = NULL;
-	char *logoutfile = NULL;
-	char *denovo_otus_file = NULL;
-	char *acceptedotumap_file = NULL;
+
+	char *acceptedstrings = NULL; // --> Output
+	char *acceptedstrings_sam = NULL; // --> Output
+	char *acceptedstrings_blast = NULL; // --> Output
+	char *logoutfile = NULL; // --> Output
+	char *denovo_otus_file = NULL; // --> Output
+	char *acceptedotumap_file = NULL; // --> Output
+
 	// attach pid to output files
 	char pidStr[4000];
 	if (pid_gv)
@@ -483,6 +713,7 @@ void paralleltraversal(
 		int32_t pid = getpid();
 		sprintf(pidStr, "%d", pid);
 	}
+
 	// associate the streams with reference sequence file names
 	if (ptr_filetype_ar != NULL)
 	{
@@ -508,6 +739,7 @@ void paralleltraversal(
 			acceptedreads.open(acceptedstrings);
 			acceptedreads.close();
 		}
+
 		if (samout_gv)
 		{
 			// sam output
@@ -528,6 +760,7 @@ void paralleltraversal(
 			acceptedsam.open(acceptedstrings_sam);
 			acceptedsam.close();
 		}
+
 		if (blastout_gv)
 		{
 			// blast output
@@ -548,6 +781,7 @@ void paralleltraversal(
 			acceptedblast.open(acceptedstrings_blast);
 			acceptedblast.close();
 		}
+
 		if (logout_gv)
 		{
 			// statistics file output
@@ -570,6 +804,7 @@ void paralleltraversal(
 			logstream.open(logoutfile);
 			logstream.close();
 		}
+
 		if (otumapout_gv)
 		{
 			// OTU map output file
@@ -591,6 +826,7 @@ void paralleltraversal(
 			otumap.open(acceptedotumap_file);
 			otumap.close();
 		}
+
 		if (de_novo_otu_gv)
 		{
 			ofstream denovo_otu;
@@ -614,6 +850,7 @@ void paralleltraversal(
 			denovo_otu.close();
 		}
 	}//~if ( ptr_filetype_ar != NULL ) 
+
 	if (ptr_filetype_or != NULL)
 	{
 		if (fastxout_gv)
@@ -633,6 +870,8 @@ void paralleltraversal(
 			otherreads.close();
 		}
 	}
+// <----------------------------------------------------------- Output
+
 	// empty output files created, exit program
 	if (exit_early)
 	{
@@ -656,6 +895,7 @@ void paralleltraversal(
 		}
 		exit(EXIT_SUCCESS);
 	}
+
 	int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
 	{
 		int32_t l, k, m;
@@ -702,6 +942,7 @@ void paralleltraversal(
 	}
 	for (uint32_t i = 0; i < myfiles.size() - 1; i++)
 		skiplengths.push_back(skiplengths[0]);
+
 	// add header lines to SAM output file
 	load_index_stats(myfiles,
 		argv,
@@ -724,6 +965,7 @@ void paralleltraversal(
 		gumbel,
 		numbvs,
 		numseq);
+
 	// some info on chosen parameters
 	eprintf("  Parameters summary:\n");
 	eprintf("    Number of seeds = %d\n", seed_hits_gv);
@@ -805,6 +1047,7 @@ void paralleltraversal(
 		fprintf(bilan, "    Reads file = %s\n\n", inputreads);
 		fclose(bilan);
 	}
+
 	// pointer to the split read
 	// (the read which is split between any two file sections)
 	char* split_read = NULL;
@@ -816,6 +1059,7 @@ void paralleltraversal(
 	int32_t offset_pair_from_top = 0;
 	// map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
 	map<string, vector<string> > otu_map;
+
 	// Loop through all mmap'd read file sections
 	while (file_s < file_sections)
 	{

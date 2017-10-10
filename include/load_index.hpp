@@ -46,27 +46,28 @@ extern char nt_table[128];
  *    Each index file name follows a pattern <Name_Part> e.g. index1_0, index1_1 etc.
  */
 struct Index {
+	Runopts & opts;
+
 	// Index
-	char* ptr_dbindex; /**< pointer to index file name [1] */
-	string part_str; /**< index part number [1] */
-	kmer * lookup_tbl; /**< reference to L/2-mer look up table */
-	kmer_origin * positions_tbl; /**< reference to (L+1)-mer positions table */
-	uint32_t number_elements; /**< number of positions in (L+1)-mer positions table */
+	kmer * lookup_tbl = 0; /**< reference to L/2-mer look up table */
+	kmer_origin * positions_tbl = 0; /**< reference to (L+1)-mer positions table */
+	uint32_t number_elements = 0; /**< number of positions in (L+1)-mer positions table */
+//	uint32_t index_num; // currrently processing index number (DB file) Set in Main thread
+//	string part_str; /**< index part number [1] */
+//	char* ptr_dbindex; /**< pointer to index file name [1] i.e. indexfiles[index_num].second */
 	//uint32_t lnwin; /**< length of seed (sliding window L) */
 
-	uint32_t index_num; // currrently processing index number (DB file) Set in Main thread
-
 	// Index stats
-	vector< pair<string, string> > myfiles; /**< vector of (FASTA file, index name) pairs for loading index */
-	char** argv;   /**< command line for executing SortMeRNA */
-	int argc;      /**< number of arguments in command line for executing SortMeRNA */
-	bool yes_SQ;   /**< if true, include @SQ tags in SAM output */
-	char* acceptedstrings_sam; /**< pointer to output SAM file */
-	long _match;    /**< Smith-Waterman score for a match */
-	long _mismatch; /**< Smith-Waterman score for a mismatch */
-	long _gap_open; /**< Smith-Waterman score for gap opening */
-	long _gap_extension; /**< Smith-Waterman score for gap extension */
-	vector<vector<uint32_t>> skiplengths; /**< skiplengths, three intervals at which to place seeds on read (--passes option) */
+//	vector< pair<string, string> > myfiles; /**< vector of (FASTA file, index name) pairs for loading index */ opts
+//	char** argv = 0;   /**< command line for executing SortMeRNA */
+//	int argc = 0;      /**< number of arguments in command line for executing SortMeRNA */
+//	bool yes_SQ = false;   /**< if true, include @SQ tags in SAM output */
+	char* acceptedstrings_sam = 0; /**< pointer to output SAM file */
+	long _match = 0;    /**< Smith-Waterman score for a match */
+	long _mismatch = 0; /**< Smith-Waterman score for a mismatch */
+	long _gap_open = 0; /**< Smith-Waterman score for gap opening */
+	long _gap_extension = 0; /**< Smith-Waterman score for gap extension */
+//	vector<vector<uint32_t>> skiplengths; /**< skiplengths, three intervals at which to place seeds on read (--passes option) */ opts
 	vector<uint16_t> num_index_parts;      /**< number of index files. Ses 'load_stats' */
 	vector<vector<index_parts_stats> > index_parts_stats_vec; /**< statistics for index files */
 	vector<uint64_t> full_ref;   /**< corrected size of each reference index (for computing E-value) */
@@ -77,24 +78,36 @@ struct Index {
 	uint64_t number_total_read;      /**< total number of reads in input reads file */
 	vector<pair<double, double> > gumbel; /**< Gumbel parameters Lambda and K */
 	vector<uint64_t> numbvs; /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
+	vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
 	vector<uint64_t> numseq;  /**< total number of reference sequences in one complete reference database */
 
 	// References
-	char* ptr_dbfile; /**< pointer to reference database file */
-	char* buffer; /**< pointer to memory slot for storing reference database */
-	char** reference_seq; /**< array of pointers to sequences in buffer */
-	uint64_t* reference_seq_len; /**< array of lengths for each sequence in buffer */
-	uint64_t seq_part_size; /**< size of memory to allocate for buffer */
-	uint64_t numseq_part; /**< number of sequences in part of database indexed */
-	uint64_t start_part; /**< index of first sequence in current index */
-	bool load_for_search; /**< if true, compute sequence length; if false, only load sequence */
+	char* ptr_dbfile = 0; /**< pointer to reference database file */
+	char* buffer = 0; /**< pointer to memory slot for storing reference database */
+	char** reference_seq = 0; /**< array of pointers to sequences in buffer */
+	uint64_t * reference_seq_len = 0; /**< array of lengths for each sequence in buffer */
+	uint64_t seq_part_size = 0; /**< size of memory to allocate for buffer */
+	uint64_t numseq_part = 0; /**< number of sequences in part of database indexed */
+	uint64_t start_part = 0; /**< index of first sequence in current index */
+	bool load_for_search = 0; /**< if true, compute sequence length; if false, only load sequence */
 
-	Runopts & opts;
-
-	Index(Runopts & opts): opts(opts), num_index_parts(opts.indexfiles.size(), 0) {}
+	Index(Runopts & opts)
+		: opts(opts), 
+		num_index_parts(opts.indexfiles.size(), 0), 
+		full_ref(opts.indexfiles.size(), 0),
+		full_read(opts.indexfiles.size(), 0), /* ReadStats::full_read_main: total number of nucleotides in all reads <- compute_read_stats */
+		lnwin(opts.indexfiles.size(), 0),
+		partialwin(opts.indexfiles.size(), 0),
+		minimal_score(opts.indexfiles.size(), 0),
+		gumbel(opts.indexfiles.size(), std::pair<double, double>(-1.0, -1.0)),
+		numbvs(opts.indexfiles.size(), 0),
+		reads_matched_per_db(opts.indexfiles.size(), 0),
+		numseq(opts.indexfiles.size(), 0)
+	{}
 	~Index() {}
 
-	void load();
+	// args: index number and number of the part of the index
+	void load(uint32_t idx_num, uint32_t idx_part);
 	void load_stats();
 };
 
