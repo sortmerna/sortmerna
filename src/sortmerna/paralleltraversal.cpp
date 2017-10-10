@@ -146,6 +146,24 @@ bool ReadStats::check_file_format()
 	fclose(fp);
 #endif
 	return exit_early;
+} // ~ReadStats::check_file_format
+
+void ReadStats::calcSuffix()
+{
+	// determine the suffix (fasta, fastq, ...) of aligned strings
+//	char suffix[20] = "out";
+	const std::string suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1);
+	//	char *suff = strrchr(opts.readsfile.c_str(), '.');
+	if (suff.length() > 0 && !opts.have_reads_gz)
+		suffix.assign(suff);
+	//	strcpy(suffix, suff + 1);
+	else if (filesig == '>')
+		suffix.assign("fasta");
+	//	strcpy(suffix, "fasta");
+	else
+		suffix.assign("fastq");
+//		strcpy(suffix, "fastq");
+//	suff = NULL;
 }
 
 /* TODO: remove -> ReadStats::check_file_format
@@ -319,23 +337,6 @@ void Writer::write()
 
 void Output::init()
 {
-// TODO: move to opts.validate ----------------------------------------------->
-	char filesig; // the comparing character used in parsing the reads file
-	opts.exit_early = ::check_file_format(opts.readsfile.c_str(), filesig);
-
-	// determine the suffix (fasta, fastq, ...) of aligned strings
-	char suffix[20] = "out";
-	const char *suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1).c_str();
-//	char *suff = strrchr(opts.readsfile.c_str(), '.');
-	if (suff != NULL && !opts.have_reads_gz)
-		strcpy(suffix, suff + 1);
-	else if (filesig == '>')
-		strcpy(suffix, "fasta");
-	else
-		strcpy(suffix, "fastq");
-	suff = NULL;
-// <--------------------------------------------------------------- opts.validate
-
 	// attach pid to output files
 	char pidStr[4000];
 	if (pid_gv)
@@ -364,7 +365,7 @@ void Output::init()
 				strcat(acceptedstrings, pidStr);
 			}
 			strcat(acceptedstrings, ".");
-			strcat(acceptedstrings, suffix);
+			strcat(acceptedstrings, readstats.suffix.c_str());
 
 			acceptedreads.open(acceptedstrings);
 			acceptedreads.close();
@@ -474,7 +475,7 @@ void Output::init()
 				strcat(denovo_otus_file, pidStr);
 			}
 			strcat(denovo_otus_file, "_denovo.");
-			strcat(denovo_otus_file, suffix);
+			strcat(denovo_otus_file, readstats.suffix.c_str());
 
 			denovo_otu.open(denovo_otus_file);
 			denovo_otu.close();
@@ -494,7 +495,7 @@ void Output::init()
 				strcat(opts.ptr_filetype_or, pidStr);
 			}
 			strcat(opts.ptr_filetype_or, ".");
-			strcat(opts.ptr_filetype_or, suffix);
+			strcat(opts.ptr_filetype_or, readstats.suffix.c_str());
 			// create the other reads file
 			otherreads.open(opts.ptr_filetype_or);
 			otherreads.close();
@@ -504,7 +505,6 @@ void Output::init()
 
 void paralleltraversal2(Runopts & opts)
 {
-	// TODO: Create N threads e.g. one per CPU core, or as set through process options, or subject to optimization
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 	std::cout << "CPU cores on this machine: " << numCores << std::endl; // 8
 
@@ -520,11 +520,7 @@ void paralleltraversal2(Runopts & opts)
 	ReadsQueue writeQueue(2, QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
 	ReadStats readstats(opts);
 	Index index(opts);
-	index.load_stats();	
-	Output output(opts);
-	output.init();
-
-	opts.exit_early = readstats.check_file_format();
+	Output output(opts, readstats);
 	
 	// only search the forward xor reverse strand
 	int32_t max = 0;
@@ -540,6 +536,7 @@ void paralleltraversal2(Runopts & opts)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
 		{
+			index.load(index_num, idx_part);
 			// search the forward and/or reverse strands
 			for (int32_t strand = 0; strand < max; strand++)
 			{
@@ -943,7 +940,7 @@ void paralleltraversal(
 	for (uint32_t i = 0; i < myfiles.size() - 1; i++)
 		skiplengths.push_back(skiplengths[0]);
 
-	// add header lines to SAM output file
+	// add header lines to SAM output file. TODO: moved to Index::load_stats
 	load_index_stats(myfiles,
 		argv,
 		argc,
@@ -994,6 +991,7 @@ void paralleltraversal(
 	{
 		eprintf("    Current process pid = %d\n", getpid());
 	}
+
 	// output parameters to log file
 	if ((ptr_filetype_ar != NULL) && logout_gv)
 	{
@@ -1149,6 +1147,7 @@ void paralleltraversal(
 			num_alignments_x = new int32_t[strs];
 			for (uint64_t s = 0; s < strs; s++) num_alignments_x[s] = num_alignments_gv;
 		}
+
 		// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
 		for (uint16_t index_num = 0; index_num < (uint16_t)myfiles.size(); index_num++)
 		{
@@ -1166,6 +1165,7 @@ void paralleltraversal(
 				eprintf("    Gumbel K = %f\n", gumbel[index_num].second);
 				eprintf("    Minimal SW score based on E-value = %d\n", minimal_score[index_num]);
 			}
+
 			// for each partial file of burst trie index (part_0 .. part_x)
 			for (part = 0; part < num_index_parts[index_num]; part++)
 			{
@@ -2232,6 +2232,7 @@ void paralleltraversal(
 		delete[] reads;
 		reads = NULL;
 	}//~while ( file_s < file_sections )
+
 	// output OTU map to file
 	if (otumapout_gv)
 	{

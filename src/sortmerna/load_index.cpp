@@ -47,7 +47,242 @@ char nt_table[128] = {
 	4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
 };
 
-void Index::load(uint32_t idx_num, uint32_t idx_part) {}
+void Index::load(uint32_t idx_num, uint32_t idx_part) 
+{
+	// STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
+	std::string ptr_dbindex_str = opts.indexfiles[idx_num].second;
+	ifstream inkmer((char*)(ptr_dbindex_str + ".kmer_" + std::to_string(idx_part) + ".dat").c_str(), ios::in | ios::binary);
+
+	if (!inkmer.good())
+	{
+		fprintf(stderr, "\n  ERROR: The index '%s' does not exist.\n", (char*)(ptr_dbindex_str + ".kmer_" + std::to_string(idx_part) + ".dat").c_str());
+		fprintf(stderr, "  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
+		exit(EXIT_FAILURE);
+	}
+
+	uint32_t limit = 1 << lnwin[idx_num];
+	lookup_tbl = new kmer[limit]();
+
+	if (lookup_tbl == NULL)
+	{
+		fprintf(stderr, "\n  ERROR: failed to allocate memory for look-up table (paralleltraversal.cpp)\n\n");
+		exit(EXIT_FAILURE);
+	}
+
+	for (uint32_t i = 0; i < limit; i++)
+		inkmer.read(reinterpret_cast<char*>(&(lookup_tbl[i].count)), sizeof(uint32_t));
+	inkmer.close();
+
+	// STEP 2: load the burst tries ( bursttrief.dat, bursttrier.dat )
+	ifstream btrie((char*)(ptr_dbindex_str + ".bursttrie_" + std::to_string(idx_part) + ".dat").c_str(), ios::in | ios::binary);
+	if (!btrie.good())
+	{
+		fprintf(stderr, "\n  ERROR: The index '%s' does not exist.\n", (char*)(ptr_dbindex_str + ".bursttrie_" + std::to_string(idx_part) + ".dat").c_str());
+		fprintf(stderr, "  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// loop through all 9-mers
+	for (uint32_t i = 0; i < (uint32_t)(1 << lnwin[idx_num]); i++)
+	{
+		uint32_t sizeoftries[2] = { 0 };
+#ifdef see_binary_output
+		cout << "9-mer = " << i; //TESTING
+#endif
+								 // ptr to block of memory for two mini-burst tries
+		char *dst = NULL;
+		// the size of both mini-burst tries
+		for (int j = 0; j < 2; j++)
+		{
+			btrie.read(reinterpret_cast<char*>(&sizeoftries[j]), sizeof(uint32_t));
+#ifdef see_binary_output
+			if (j == 0) cout << "\tsizeoftrie f = " << sizeoftries[j]; //TESTING
+			else cout << "\tsizeoftrie r = " << sizeoftries[j]; //TESTING
+#endif 
+		}
+#ifdef see_binary_output
+		cout << "\tlookup_tbl[i].count = " << lookup_tbl[i].count << endl; //TESTING
+#endif
+																		   // allocate contiguous memory for both mini-burst tries if they exist
+		if (lookup_tbl[i].count != 0)
+		{
+			dst = new char[(sizeoftries[0] + sizeoftries[1])]();
+			if (dst == NULL)
+			{
+				fprintf(stderr, "  ERROR: failed to allocate memory for mini-burst tries (paralleltraversal.cpp)\n");
+				exit(EXIT_FAILURE);
+			}
+			// load 2 burst tries per 9-mer
+			for (int j = 0; j < 2; j++)
+			{
+				// mini-burst trie exists
+				if (sizeoftries[j] != 0)
+				{
+#ifdef see_binary_output
+					if (j == 0) cout << "forward burst-trie \n"; //TESTING
+					if (j == 1) cout << "reverse burst-trie \n"; //TESTING
+#endif
+					NodeElement newnode[4]; // create a root trie node
+					// copy the root trie node into the beginning of burst trie array
+					memcpy(dst, &newnode[0], sizeof(NodeElement) * 4);
+					memset(dst, 0, sizeof(NodeElement) * 4);
+					if (j == 0) lookup_tbl[i].trie_F = (NodeElement*)dst;
+					else lookup_tbl[i].trie_R = (NodeElement*)dst;
+					// queue to store the trie nodes as we create them
+					deque<NodeElement*> nodes;
+					nodes.push_back((NodeElement*)dst);
+					((NodeElement *&)dst) += 4;
+					// queue to store the flags of node elements given in the binary file
+					deque<char> flags;
+					// read the first trie node
+					for (int i = 0; i < 4; i++)
+					{
+						char tmp;
+						btrie.read(reinterpret_cast<char*>(&tmp), sizeof(char));
+						flags.push_back(tmp);
+#ifdef see_binary_output
+						cout << " " << (int)tmp; //TESTING
+#endif
+					}
+					// build the mini-burst trie
+					while (!nodes.empty())
+					{
+						// ptr to traverse each trie node
+						NodeElement* node = nodes.front();
+						// trie node elements
+						for (int i = 0; i < 4; i++)
+						{
+							unsigned char flag = flags.front();
+							// what does the node element point to
+							switch (flag)
+							{
+								// set values to 0
+							case 0:
+							{
+								node->flag = 0;
+								node->size = 0;
+								node->whichnode.trie = NULL;
+							}
+							break;
+							// trie node
+							case 1:
+							{
+								// read the trie node
+								for (int i = 0; i < 4; i++)
+								{
+									char tmp;
+									btrie.read(reinterpret_cast<char*>(&tmp), sizeof(char));
+#ifdef see_binary_output
+									cout << " " << (int)tmp; //TESTING
+#endif
+									flags.push_back(tmp);
+								}
+								node->flag = 1;
+								node->size = 0;
+								NodeElement newnode[4];
+								memcpy((NodeElement*)dst, &newnode[0], sizeof(NodeElement) * 4);
+								nodes.push_back((NodeElement*)dst);
+								node->whichnode.trie = (NodeElement*)dst;
+								((NodeElement *&)dst) += 4;
+							}
+							break;
+							// bucket
+							case 2:
+							{
+								uint32_t sizeofbucket = 0;
+								// read the bucket info
+								btrie.read(reinterpret_cast<char*>(&sizeofbucket), sizeof(uint32_t));
+#ifdef see_binary_output
+								cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
+#endif                      
+								char* bucket = new char[sizeofbucket]();
+								if (bucket == NULL)
+								{
+									fprintf(stderr, "\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n", startColor, "\033[0m");
+									exit(EXIT_FAILURE);
+								}
+								btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);
+								// copy the bucket into the burst trie array
+								memcpy((void*)dst, (void*)bucket, sizeofbucket);
+								delete[] bucket;
+								bucket = NULL;
+								// assign pointers from trie node to the bucket
+								node->flag = flag;
+								node->whichnode.bucket = dst;
+								node->size = sizeofbucket;
+								dst = ((char *)dst) + sizeofbucket;
+							}
+							break;
+							// ?
+							default:
+							{
+								fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n", startColor, "\033[0m", flag);
+								exit(EXIT_FAILURE);
+							}
+							break;
+							}
+							flags.pop_front();
+							node++;
+						}//~loop through 4 node elements in a trie node 
+#ifdef see_binary_output
+						cout << "\n"; //TESTING
+#endif            
+						nodes.pop_front();
+					}//~while !nodes.empty()
+				}//~if mini-burst trie exists
+				else
+				{
+					if (j == 0) lookup_tbl[i].trie_F = NULL;
+					else lookup_tbl[i].trie_R = NULL;
+				}
+			}//~for both mini-burst tries
+		}//~if ( sizeoftries != 0 )
+		else
+		{
+			lookup_tbl[i].trie_F = NULL;
+			lookup_tbl[i].trie_R = NULL;
+		}
+	}//~for all 9-mers in the look-up table
+	btrie.close();
+
+	// STEP 3: load the position reference tables (pos.dat)
+	ifstream inreff((char*)(ptr_dbindex_str + ".pos_" + std::to_string(idx_part) + ".dat").c_str(), ios::in | ios::binary);
+
+	if (!inreff.good())
+	{
+		fprintf(stderr, "\n  ERROR: The database name '%s' does not exist.\n\n", (char*)(ptr_dbindex_str + ".pos_" + std::to_string(idx_part) + ".dat").c_str());
+		exit(EXIT_FAILURE);
+	}
+
+	uint32_t size = 0;
+	inreff.read(reinterpret_cast<char*>(&number_elements), sizeof(uint32_t));
+	positions_tbl = new kmer_origin[number_elements]();
+
+	if (positions_tbl == NULL)
+	{
+		fprintf(stderr, "  ERROR: could not allocate memory for positions_tbl (main(), paralleltraversal.cpp)\n");
+		exit(EXIT_FAILURE);
+	}
+
+	for (uint32_t i = 0; i < number_elements; i++)
+	{
+		/* the number of positions */
+		inreff.read(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+		positions_tbl[i].size = size;
+		/* the sequence seq_pos array */
+		positions_tbl[i].arr = new seq_pos[size]();
+		if (positions_tbl[i].arr == NULL)
+		{
+			fprintf(stderr, "  ERROR: could not allocate memory for positions_tbl (paralleltraversal.cpp)\n");
+			exit(EXIT_FAILURE);
+		}
+		inreff.read(reinterpret_cast<char*>(positions_tbl[i].arr), sizeof(seq_pos)*size);
+	}
+
+	inreff.close();
+
+	return;
+} // ~Index::load
 
 void Index::load_stats()
 {
@@ -566,7 +801,7 @@ void load_index_stats(
 }//~load_index_stats()
 
 
-/*
+/* TODO: remove - moved to Index::load
  *
  * @function load index: read from binary file the L/2-mer look-up
  * tables, the 19-mer position tables and the mini-burst tries
@@ -574,8 +809,7 @@ void load_index_stats(
  * @version 1.0 Jan 16, 2013
  *
  *******************************************************************/
-void
-load_index(
+void load_index(
 	char* ptr_dbindex,
 	string part_str,
 	kmer*& lookup_tbl,

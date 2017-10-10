@@ -103,12 +103,14 @@ struct Index {
 		numbvs(opts.indexfiles.size(), 0),
 		reads_matched_per_db(opts.indexfiles.size(), 0),
 		numseq(opts.indexfiles.size(), 0)
-	{}
+	{
+		load_stats();
+	}
 	~Index() {}
 
 	// args: index number and number of the part of the index
 	void load(uint32_t idx_num, uint32_t idx_part);
-	void load_stats();
+	void load_stats(); // TODO: make private?
 };
 
  /*! @fn load_index_stats()

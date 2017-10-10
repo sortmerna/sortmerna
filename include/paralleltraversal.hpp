@@ -166,6 +166,7 @@ struct ReadStats {
 	uint32_t max_read_len; // length of the longest Read in the Reads file.
 	uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Computed in 'compute_lis_alignment' in a worker thread i.e. per read.
 	char filesig = '>';
+	std::string suffix;
 
 	// TODO: move to Readrec and get rid of this vector
 	//std::vector<bool> read_hits; // flags if a read was aligned i.e. match found. Each value represents a read. True when the read was matched/aligned.
@@ -183,13 +184,17 @@ struct ReadStats {
 	off_t    full_file_size; // the size of the full reads file (in bytes).
 	uint64_t full_read_main; // total number of nucleotides in all reads.
 
-	ReadStats(Runopts & opts): opts(opts) {}
+	ReadStats(Runopts & opts) : opts(opts) { 
+		calcSuffix();
+		opts.exit_early = check_file_format();
+	}
 	
 	~ReadStats() {}
 
 	// calculate statistics from readsfile see "compute_read_stats"
 	void calculate();
 	bool check_file_format();
+	void calcSuffix();
 	// called from Main thread once when 'number_total_read' is known
 	//void set_read_hits() {
 	//	read_hits.resize(2*number_total_read); // why twice the number of reads? Because original **reads array has 2 lines per read: header and sequence.
@@ -511,7 +516,7 @@ public:
 		callback(callback) {}
 
 	void operator()() { process(); }
-	void process();
+	void process(); // TODO: make private?
 private:
 	int id;
 	ReadsQueue & readQueue;
@@ -523,13 +528,14 @@ private:
 
 class Output {
 public:
-	Output(Runopts opts): opts(opts) {}
+	Output(Runopts & opts, ReadStats & readstats) : opts(opts), readstats(readstats) { init(); }
 	~Output(){}
 
-	void init();
+	void init(); // TODO: make private?
 
 private:
 	Runopts & opts;
+	ReadStats & readstats;
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
 	ofstream acceptedreads;
 	ofstream acceptedsam;
