@@ -76,7 +76,7 @@ struct Index {
 	vector<uint32_t> partialwin; /**< length of seed/2 */
 	vector<uint32_t> minimal_score; /**< minimal SW score in order to reach threshold E-value */
 	uint64_t number_total_read;      /**< total number of reads in input reads file */
-	vector<pair<double, double> > gumbel; /**< Gumbel parameters Lambda and K */
+	vector<pair<double, double>> gumbel; /**< Gumbel parameters Lambda and K */
 	vector<uint64_t> numbvs; /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
 	vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
 	vector<uint64_t> numseq;  /**< total number of reference sequences in one complete reference database */

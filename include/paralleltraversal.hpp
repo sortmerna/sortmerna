@@ -233,6 +233,7 @@ struct Read {
 	uint16_t max_SW_score = 0; // Max Smith-Waterman score
 	int32_t num_alignments = 0; // number of alignments to output per read
 	alignment_struct hits_align_info;
+	int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
 
 	Read(): hits_align_info(0,0,0,0,0) {
 		// create new instance of alignments
@@ -256,11 +257,12 @@ struct Read {
 		//hits_align_info.ptr->strand = 0;
 	}
 
-	Read(int id, std::string header, std::string sequence, std::string quality, std::string format) :
-		id(id), header(header), sequence(sequence), quality(quality), format(format) 
+	Read(Runopts & opts, int id, std::string header, std::string sequence, std::string quality, std::string format) 
+		: id(id), header(header), sequence(sequence), quality(quality), format(format) 
 	{
 		validate();
 		sequenceToInt();
+		initScoringMatrix(opts);
 	}
 
 	~Read() { 
@@ -270,6 +272,8 @@ struct Read {
 			delete hits_align_info.ptr; 
 		} 
 	}
+
+	void initScoringMatrix(Runopts & opts);
 
 	// convert sequence to "sequenceInt" and populate "ambiguous_nt"
 	void sequenceToInt() {
@@ -391,7 +395,7 @@ class ReadsQueue {
 	std::condition_variable cv;
 
 public:
-	ReadsQueue(int id, int capacity, int numPushers) 
+	ReadsQueue(int id, int capacity, int numPushers)
 		: id(id), capacity(capacity), doneAdding(false), numPushers(numPushers) {}
 	~ReadsQueue() { 
 		printf("Destructor called on queue %d  recs.size= %d pushed: %d  popped: %d\n", 
@@ -412,7 +416,7 @@ public:
 		cv.wait(l, [this] { return doneAdding || !recs.empty();}); //  if False - keep waiting, else - proceed.
 		Read rec;
 		if (!recs.empty()) {
-			//		printf("%d Recs.size: %d\n", id, recs.size());
+			// printf("%d Recs.size: %d\n", id, recs.size());
 			rec = recs.front();
 			recs.pop();
 			++numPopped;

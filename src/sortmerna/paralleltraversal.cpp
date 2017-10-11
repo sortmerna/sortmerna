@@ -252,6 +252,19 @@ void parallelTraversalJob(Read read)
 	;//printf("To be implemented");
 }
 
+void Read::initScoringMatrix(Runopts & opts)
+{
+	int32_t l, k, m;
+	// initialize Smith-Waterman scoring matrix for genome sequences
+	for (l = k = 0; l < 4; ++l)
+	{
+		for (m = 0; m < 4; ++m)
+			scoring_matrix[k++] = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
+		scoring_matrix[k++] = opts.score_N; // ambiguous base
+	}
+	for (m = 0; m < 5; ++m) scoring_matrix[k++] = opts.score_N; // ambiguous base
+}
+
 void Read::unmarshallString(std::string matchStr) {}
 
 void Read::unmarshallJson(std::string jsonStr) {}
@@ -281,7 +294,6 @@ void Reader::read() {
 					pushCount++;
 					//std::cout << "Pushed: " << rec.header << std::endl;
 				}
-				read = Read();
 				read.header = line;
 			}
 			else {
@@ -537,13 +549,13 @@ void paralleltraversal2(Runopts & opts)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
 		{
-			eprintf("    Loading index part %d/%u ... ", idx_part + 1, index.num_index_parts[index_num]);
+			eprintf("\tLoading index part %d/%u ... ", idx_part + 1, index.num_index_parts[index_num]);
 			auto t = std::chrono::high_resolution_clock::now();
 			index.load(index_num, idx_part);
 			refs.load(index_num, idx_part);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
-			eprintf(" done [%.2f sec]\n", elapsed.count());
+			eprintf("done [%.2f sec]\n", elapsed.count());
 
 			// search the forward and/or reverse strands
 			for (int32_t strand = 0; strand < max; strand++)
@@ -901,6 +913,8 @@ void paralleltraversal(
 		exit(EXIT_SUCCESS);
 	}
 
+	// Move to Read::scoring_matrix
+	// created/destroied in main thread. Accessed in Worker threads.
 	int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
 	{
 		int32_t l, k, m;
@@ -916,29 +930,29 @@ void paralleltraversal(
 
 	// the number of parts an index was divided into to fit into specified memory,
 	// for each reference database searched
-	uint32_t num_databases = myfiles.size();
+	uint32_t num_databases = myfiles.size(); // Index
 	// number of index parts per database
-	vector<uint16_t> num_index_parts(num_databases, 0);
+	vector<uint16_t> num_index_parts(num_databases, 0); // Index
 	// length correction for reference database per database
-	vector<uint64_t> full_ref(num_databases, 0);
+	vector<uint64_t> full_ref(num_databases, 0); // Index
 	// length correction for all reads per database
-	vector<uint64_t> full_read(num_databases, full_read_main);
+	vector<uint64_t> full_read(num_databases, full_read_main); // Index
 	// L-mer length per database
-	vector<uint32_t> lnwin(num_databases, 0);
+	vector<uint32_t> lnwin(num_databases, 0); // Index
 	// L/2-mer length per database
-	vector<uint32_t> partialwin(num_databases, 0);
+	vector<uint32_t> partialwin(num_databases, 0); // Index
 	// minimal SW score in order to reach threshold E-value
-	vector<uint32_t> minimal_score(num_databases, 0);
+	vector<uint32_t> minimal_score(num_databases, 0); // Index
 	// array of structs storing information on which sequences from the original FASTA file were added to each index part
-	vector<vector<index_parts_stats> > index_parts_stats_vec;
+	vector<vector<index_parts_stats> > index_parts_stats_vec; // Index
 	// Gumbel parameters lambda and K, respectively
-	vector<pair<double, double> > gumbel(num_databases, pair<double, double>(-1.0, -1.0));
+	vector<pair<double, double> > gumbel(num_databases, pair<double, double>(-1.0, -1.0)); // Index
 	// total number of full bitvectors in [w_1] reverse and [w_2] forward
-	vector<uint64_t> numbvs(num_databases, 0);
+	vector<uint64_t> numbvs(num_databases, 0); // Index
 	// total number of reads matched for each database in list --ref
-	vector<uint64_t> reads_matched_per_db(num_databases, 0);
+	vector<uint64_t> reads_matched_per_db(num_databases, 0); // Index
 	// number of reference sequences in each index FASTA file
-	vector<uint64_t> numseq(num_databases, 0);
+	vector<uint64_t> numseq(num_databases, 0); // Index
 	// set the same skiplengths for all reference files (if the user uses option --passes)
 	if (skiplengths.empty())
 	{
@@ -948,7 +962,8 @@ void paralleltraversal(
 	for (uint32_t i = 0; i < myfiles.size() - 1; i++)
 		skiplengths.push_back(skiplengths[0]);
 
-	// add header lines to SAM output file. TODO: moved to Index::load_stats
+	// TODO: moved to Index::load_stats
+	// add header lines to SAM output file.
 	load_index_stats(myfiles,
 		argv,
 		argc,
@@ -1250,17 +1265,20 @@ void paralleltraversal(
 				TIME(f);
 				eprintf(" done [%.2f sec]\n", (f - s));
 
-				eprintf("    Begin index search ... ");
 				// begin the parallel traversal
+				eprintf("    Begin index search ... ");
 				TIME(s);
-				uint32_t bit_vector_size = (partialwin[index_num] - 2) << 2;
-				uint32_t offset = (partialwin[index_num] - 3) << 2;
+
+				uint32_t bit_vector_size = (partialwin[index_num] - 2) << 2; // on each index part. Init in Main, accessed in Worker
+				uint32_t offset = (partialwin[index_num] - 3) << 2; // on each index part
+
 				// only search the forward xor reverse strand
 				int32_t max = 0;
 				forward_gv = true;
 				if (forward_gv ^ reverse_gv) max = 1;
 				// search both strands
 				else max = 2;
+
 				// search the forward and/or reverse strands
 				for (int32_t strand = 0; strand < max; strand++)
 				{
@@ -1271,6 +1289,8 @@ void paralleltraversal(
 #ifdef debug_align
 						cout << "readn = " << readn << endl; //TESTING
 #endif
+
+// parallelTraversalJob -------------------------------------------------------------------->
 			// for reverse reads
 						if (!forward_gv)
 						{
@@ -1286,6 +1306,7 @@ void paralleltraversal(
 								(min_lis_gv > 0) &&
 								(read_max_SW_score[readn] == num_best_hits_gv)) continue;
 						}
+
 						// read on integer alphabet {0,1,2,3}
 						char myread[READLEN] = "";
 						char* str = reads[readn];
@@ -1357,10 +1378,12 @@ void paralleltraversal(
 							}
 							*_myread = '\n';
 						}
+
 						// find the minimum sequence length
 						readlen < min_read_len ? min_read_len = readlen : min_read_len;
 						// find the maximum sequence length
 						readlen > max_read_len ? max_read_len = readlen : max_read_len;
+
 						// the read length is too short
 						if (readlen < lnwin[index_num])
 						{
@@ -1370,6 +1393,7 @@ void paralleltraversal(
 							fprintf(stderr, "by default it will not be searched\n ");
 							continue;
 						}
+
 						// create the reverse strand
 						if (!forward_gv)
 						{
@@ -1386,7 +1410,8 @@ void paralleltraversal(
 							while (*cp != '\n') cout << (int)*cp++;
 							cout << endl;
 #endif                      
-						}//~if (REVERSE)       
+						}//~if (REVERSE)
+
 						// array of positions of window hits on the reference sequence
 						vector< id_win > id_win_hits;
 						// number of windows hit to the reference sequence(s)
@@ -1597,6 +1622,7 @@ void paralleltraversal(
 							}//~for (each window)                
 						  //~while all three window skip lengths have not been tested, or a match has not been found
 						} while (search);
+
 						// the read didn't align (for --num_alignments [INT] option),
 						// output null alignment string
 						if (!read_hits[readn] && !forward_gv && (num_alignments_gv > -1))
@@ -1643,7 +1669,8 @@ void paralleltraversal(
 									}
 								}//~if print_all_reads_gv
 							}// allow writing to file 1 thread at a time
-						}//~if read didn't align                  
+						}//~if read didn't align
+// <---------------------------------------------------------------------------- parallelTraversalJob
 					}//~pragma omp for (each read)
 #pragma omp barrier    
 		  // search the reverse strand (default)
@@ -1717,10 +1744,12 @@ void paralleltraversal(
 				if (best_x != NULL) delete[] best_x;
 			}//~for all parts of the index            
 		}//~for all indexes (provided as a list using option --ref)
+
 		// clear array holding number of alignments output for each read
 		if (num_alignments_x != NULL) delete[] num_alignments_x;
 		delete[] read_max_SW_score;
 		eprintf("    Total number of reads mapped (incl. all reads file sections searched): %llu\n", total_reads_mapped);
+
 		// filter the sequences by %id and %query coverage, output them if --best INT
 		if (min_lis_gv > -1)
 		{
@@ -1757,6 +1786,7 @@ void paralleltraversal(
 							startColor, "\033[0m", __LINE__, __FILE__);
 						exit(EXIT_FAILURE);
 					}
+
 					// pointer to the start of every sequence in the buffer
 					char** reference_seq = new char*[(numseq_part << 1)]();
 					if (reference_seq == NULL)
@@ -1765,6 +1795,7 @@ void paralleltraversal(
 							startColor, "\033[0m", __LINE__, __FILE__);
 						exit(EXIT_FAILURE);
 					}
+
 					// length of every sequence in the buffer (is not required here)
 					uint64_t* reference_seq_len = NULL;
 					load_ref((char*)(myfiles[index_num].first).c_str(),
@@ -1775,6 +1806,7 @@ void paralleltraversal(
 						numseq_part,
 						start_part,
 						0);
+
 					// run through all the reads, output those which aligned
 					for (uint64_t readn = 1; readn < strs; readn += 2)
 					{
@@ -2066,7 +2098,8 @@ void paralleltraversal(
 											}
 											else read_qual = reads[readn + 1] - 2;
 										}
-									}//~if filesig == '@'    
+									}//~if filesig == '@'
+
 									if (blastout_gv)
 									{
 										uint32_t bitscore = (uint32_t)((float)((gumbel[index_num].first)*(ptr_alignment->score1) - log(gumbel[index_num].second)) / (float)log(2));
@@ -2120,6 +2153,7 @@ void paralleltraversal(
 					}
 				}//~for every database section
 			}//~for every database
+
 			// free alignment information for all aligned reads
 			for (uint64_t readn = 1; readn < strs; readn += 2)
 			{
@@ -2275,9 +2309,11 @@ void paralleltraversal(
 			acceptedotumap_file = NULL;
 		}
 	}
+
 	// free scoring matrix
 	free(scoring_matrix);
 	scoring_matrix = NULL;
+
 	// create a bilan (log file)
 	if ((ptr_filetype_ar != NULL) && logout_gv)
 	{
