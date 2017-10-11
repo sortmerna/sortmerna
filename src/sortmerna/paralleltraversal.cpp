@@ -520,6 +520,7 @@ void paralleltraversal2(Runopts & opts)
 	ReadsQueue writeQueue(2, QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
 	ReadStats readstats(opts);
 	Index index(opts);
+	References refs(opts, index);
 	Output output(opts, readstats);
 	
 	// only search the forward xor reverse strand
@@ -536,7 +537,14 @@ void paralleltraversal2(Runopts & opts)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
 		{
+			eprintf("    Loading index part %d/%u ... ", idx_part + 1, index.num_index_parts[index_num]);
+			auto t = std::chrono::high_resolution_clock::now();
 			index.load(index_num, idx_part);
+			refs.load(index_num, idx_part);
+			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+//			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
+			eprintf(" done [%.2f sec]\n", elapsed.count());
+
 			// search the forward and/or reverse strands
 			for (int32_t strand = 0; strand < max; strand++)
 			{
@@ -569,11 +577,11 @@ void paralleltraversal(
 	long gap_open,
 	long gap_extension,
 	long score_N,
-	vector< vector<uint32_t> >& skiplengths,
+	vector<vector<uint32_t>>& skiplengths,
 	int argc,
 	char **argv,
 	bool yes_SQ,
-	vector< pair<string, string> >& myfiles,
+	vector<pair<string, string>>& myfiles,
 	bool exit_early)
 {
 	// the offset from the start of the reads file for mmap
@@ -1129,18 +1137,18 @@ void paralleltraversal(
 		eprintf("  Time to load reads and set up pointers [%.2f sec]\n", (f - s));
 		// array of bits to represent all reads
 		// a bit representing an accepted read is set to 1
-		vector<bool> read_hits(strs, false);
+		vector<bool> read_hits(strs, false); // Read::hit
 		// array of bits to represent all reads
 		// a bit representing an accepted read with < %id 
 		// and < %coverage is set to 0
-		vector<bool> read_hits_denovo(strs, true);
+		vector<bool> read_hits_denovo(strs, true); // Read::hit_denovo
 		// array of uint16_t to represent all reads, if the read was aligned with a maximum SW score, its number of alignments is incremeted by 1
-		uint16_t *read_max_SW_score = new uint16_t[strs];
+		uint16_t *read_max_SW_score = new uint16_t[strs]; // Read::max_SW_score
 		memset(read_max_SW_score, 0, sizeof(uint16_t)*strs);
 		// map accessed by read number, storing a pair <index for smallest SSW score, pointer to array of num_best_hits_gv>
-		map<uint64_t, alignment_struct> read_hits_align_info;
+		map<uint64_t, alignment_struct> read_hits_align_info; // Read::hits_align_info
 		// number of alignments to output per read
-		int32_t *num_alignments_x = NULL;
+		int32_t *num_alignments_x = NULL; // Read::
 		// output num_alignments_gv alignments per read
 		if (num_alignments_gv > 0)
 		{
@@ -1180,25 +1188,30 @@ void paralleltraversal(
 					for (uint64_t s = 0; s < strs; s++)
 						best_x[s] = min_lis_gv;
 				}
+
 				// memory buffer to store the reference sequence database
-				char* buffer = NULL;
+				char* buffer = NULL; // References
 				// pointer to start of each sequence in buffer
-				char** reference_seq = NULL;
+				char** reference_seq = NULL; // References
 				// length of each sequence in buffer
-				uint64_t* reference_seq_len = NULL;
+				uint64_t* reference_seq_len = NULL; // References
+
 				// 9-mer look-up tables
-				kmer *lookup_tbl = NULL;
+				kmer *lookup_tbl = NULL; // Index
 				// 19-mer position look-up tables
-				kmer_origin* positions_tbl = NULL;
+				kmer_origin* positions_tbl = NULL; // Index
 				// number of elements in the table
-				uint32_t number_elements = 0;
-				uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size;
-				uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part;
-				uint64_t start_part = index_parts_stats_vec[index_num][part].start_part;
+				uint32_t number_elements = 0; // Index
+
+				uint64_t seq_part_size = index_parts_stats_vec[index_num][part].seq_part_size; // References::load
+				uint32_t numseq_part = index_parts_stats_vec[index_num][part].numseq_part; // References::load
+				uint64_t start_part = index_parts_stats_vec[index_num][part].start_part; // References::load
 #pragma omp master
 				{
 					// 2. load the index part (9-mer lookup table, mini-burst tries and positions table)
 					load_index((char*)(myfiles[index_num].second).c_str(), part_str, lookup_tbl, positions_tbl, number_elements, lnwin[index_num]);
+
+// References::load ------------------------------------------------------------------------------>
 					// block of memory to hold all ids + reference sequences
 					buffer = new char[(seq_part_size + 1)]();
 					if (buffer == NULL)
@@ -1232,8 +1245,11 @@ void paralleltraversal(
 						start_part,
 						1);
 				}
+// <------------------------------------------------------------ References::load
+
 				TIME(f);
 				eprintf(" done [%.2f sec]\n", (f - s));
+
 				eprintf("    Begin index search ... ");
 				// begin the parallel traversal
 				TIME(s);

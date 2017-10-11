@@ -30,6 +30,7 @@
  */
 
 #include "../include/load_index.hpp"
+#include <chrono>
 
  /*! @brief Map nucleotides to integers.
 
@@ -384,7 +385,7 @@ void Index::load_stats()
 			opts.skiplengths[index_num][2] = 3;
 		}
 
-		// get number of index parts 'num_index_parts'
+		// get number of index parts i.e. how many parts the index has
 		stats.read(reinterpret_cast<char*>(&num_index_parts[index_num]), sizeof(uint16_t));
 
 		vector<index_parts_stats> hold;
@@ -1054,7 +1055,128 @@ void load_index(
 }//~load_index()
 
 
-	/*
+void References::load(uint32_t idx_num, uint32_t idx_part)
+{
+	buffer = new char[(index.index_parts_stats_vec[idx_num][idx_part].seq_part_size + 1)]();
+	if (buffer == NULL)
+	{
+		fprintf(stderr, "    %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n", startColor, "\033[0m");
+		exit(EXIT_FAILURE);
+	}
+
+	uint32_t numseq_part = index.index_parts_stats_vec[idx_num][idx_part].numseq_part;
+	reference_seq = new char*[(numseq_part << 1)]();
+	if (reference_seq == NULL)
+	{
+		fprintf(stderr, "    %sERROR%s: Line %d: %s could not allocate memory for reference_seq\n",
+			startColor, "\033[0m", __LINE__, __FILE__);
+		exit(EXIT_FAILURE);
+	}
+
+	reference_seq_len = new uint64_t[numseq_part]();
+	if (reference_seq_len == NULL)
+	{
+		fprintf(stderr, "    %sERROR%s: Line %d: %s could not allocate memory for reference_seq_len\n",
+			startColor, "\033[0m", __LINE__, __FILE__);
+		exit(EXIT_FAILURE);
+	}
+
+	FILE *fp = fopen(opts.indexfiles[idx_num].first.c_str(), "r"); // open reference file
+	if (fp == NULL)
+	{
+		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not open file %s\n",
+			startColor, "\033[0m", __LINE__, __FILE__, opts.indexfiles[idx_num].first.c_str());
+		exit(EXIT_FAILURE);
+	}
+
+	// set the file pointer to the first sequence added to the index for this index file section
+	if (fseek(fp, index.index_parts_stats_vec[idx_num][idx_part].start_part, SEEK_SET) != 0)
+	{
+		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not locate the sequences used to construct the index.\n",
+			startColor, "\033[0m", __LINE__, __FILE__);
+		fprintf(stderr, "  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",
+			opts.indexfiles[idx_num].first.c_str());
+	}
+
+	// load references sequences into memory, skipping the new lines & spaces in the fasta format
+	uint64_t num_seq_read = 0;
+	char *s = buffer;
+	int i = 0;
+	int j = 0;
+	char c = fgetc(fp);
+	if (load_for_search)
+	{
+		do
+		{
+			// the tag
+			reference_seq[i++] = s;
+			while (c != '\n' && c != '\r')
+			{
+				*s++ = c;
+				c = fgetc(fp);
+			}
+			// new line
+			*s++ = c;
+			if (*s == '\n' || *s == '\r')
+			{
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA format "
+					"(there is an extra new line).", startColor, "\033[0m", __LINE__, __FILE__);
+				exit(EXIT_FAILURE);
+			}
+			// the sequence
+			reference_seq[i++] = s;
+			c = fgetc(fp);
+			do
+			{
+				if (c != '\n' && c != ' ' && c != '\r')
+				{
+					// keep record of ambiguous character for alignment
+					*s++ = nt_table[(int)c];
+					// record the sequence length as we read it
+					reference_seq_len[j]++;
+				}
+				c = fgetc(fp);
+			} while ((c != '>') && (c != EOF));
+			*s++ = '\n';
+			j++;
+			num_seq_read++;
+		} while ((num_seq_read != numseq_part) && (c != EOF));
+	}
+	else
+	{
+		do
+		{
+			// the tag
+			reference_seq[i++] = s;
+			while (c != '\n' && c != '\r')
+			{
+				*s++ = c;
+				c = fgetc(fp);
+			}
+			// new line
+			*s++ = c;
+			// the sequence
+			reference_seq[i++] = s;
+			c = fgetc(fp);
+			do
+			{
+				if (c != '\n' && c != ' ' && c != '\r')
+				{
+					// keep record of ambiguous character for alignment
+					*s++ = nt_table[(int)c];
+				}
+				c = fgetc(fp);
+			} while ((c != '>') && (c != EOF));
+			*s++ = '\n';
+			j++;
+			num_seq_read++;
+		} while ((num_seq_read != numseq_part) && (c != EOF));
+	}
+
+	fclose(fp);
+} // ~References::load
+
+	/* TODO: remove - moved to References::load
 	 *
 	 * @function load_ref: load fasta reference sequences into memory
 	 * for SW alignment
@@ -1063,14 +1185,16 @@ void load_index(
 	 *
 	 *******************************************************************/
 void
-load_ref(char* ptr_dbfile,
+load_ref(
+	char* ptr_dbfile,
 	char* buffer,
 	char** reference_seq,
 	uint64_t* reference_seq_len,
 	uint64_t seq_part_size,
 	uint64_t numseq_part,
 	uint64_t start_part,
-	bool load_for_search)
+	bool load_for_search
+) 
 {
 	FILE *fp = fopen(ptr_dbfile, "r");
 	if (fp == NULL)

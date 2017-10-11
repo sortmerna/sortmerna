@@ -68,8 +68,8 @@ struct Index {
 	long _gap_open = 0; /**< Smith-Waterman score for gap opening */
 	long _gap_extension = 0; /**< Smith-Waterman score for gap extension */
 //	vector<vector<uint32_t>> skiplengths; /**< skiplengths, three intervals at which to place seeds on read (--passes option) */ opts
-	vector<uint16_t> num_index_parts;      /**< number of index files. Ses 'load_stats' */
-	vector<vector<index_parts_stats> > index_parts_stats_vec; /**< statistics for index files */
+	vector<uint16_t> num_index_parts;      /**< number of parts each index file has i.e. each index can have multiple parts. See 'load_stats' */
+	vector<vector<index_parts_stats>> index_parts_stats_vec; /**< statistics for index files' parts */
 	vector<uint64_t> full_ref;   /**< corrected size of each reference index (for computing E-value) */
 	vector<uint64_t> full_read;  /**< corrected size of reads (for computing E-value) */
 	vector<uint32_t> lnwin;      /**< length of seed (sliding window L). Unique per DB. Const. Obtained in Main thread. Thread safe */
@@ -111,6 +111,27 @@ struct Index {
 	// args: index number and number of the part of the index
 	void load(uint32_t idx_num, uint32_t idx_part);
 	void load_stats(); // TODO: make private?
+}; // ~struct Index
+
+class References {
+public:
+	References(Runopts & opts, Index & index) : opts(opts), index(index) {}
+	~References() {}
+
+	void load(uint32_t idx_num, uint32_t idx_part);
+private:
+	Runopts & opts;
+	Index & index;
+	//	Index index; // TODO: move index here
+	uint16_t idx_num; // number of currently loaded index/reference file
+	//	char* ptr_dbfile; // opts
+	char* buffer; // holds sequences from a part of a reference file. Calculated after Index::load_stats is called.
+	char** reference_seq; // pointers to the start of every sequence in the '*buffer'
+	uint64_t* reference_seq_len; // lengths of the sequences in the '*buffer'
+	//uint64_t seq_part_size; // take directly from Index::index_parts_stats_vec
+	// uint64_t numseq_part; // take directly from Index::index_parts_stats_vec
+	//uint64_t start_part; // take from Index::index_parts_stats_vec
+	bool load_for_search;
 };
 
  /*! @fn load_index_stats()
