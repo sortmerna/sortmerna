@@ -50,16 +50,8 @@ if [ "$sig2" == ">" ]; then
 fi
 
 # merge the files
-echo "   Processing $1 .."
-perl -pe 's/\n/\t/ if $. %4' $1 > $3.READS1
-echo "   Processing $2 .."
-perl -pe 's/\n/\t/ if $. %4' $2 > $3.READS2
 echo "   Interleaving $1 and $2 .."
-paste -d '\n' $3.READS1 $3.READS2 | tr "\t" "\n" > $3
-
-rm $3.READS1 $3.READS2
+paste <(paste - - - - < $1) <(paste - - - - < $2) | tr '\t' '\n' > $3
 
 echo "   Done.
 "
-
-
