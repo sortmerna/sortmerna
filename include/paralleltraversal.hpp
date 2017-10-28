@@ -150,19 +150,14 @@ void paralleltraversal2(Runopts & opts);
 // "Producer-Consumer" concurrent pattern participants
 //
 
-const char FASTA_HEADER_START = '>';
-const char FASTQ_HEADER_START = '@';
-const char WIN_ENDLINE = '\r';
-const char LIN_ENDLINE = '\n';
-const int QUEUE_SIZE_MAX = 10; // TODO: set through process options
-const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Change through process options.
+
 
 // Collective Statistics for all Reads. Encapsulates old 'compute_read_stats' logic and results
-struct ReadStats {
+struct Readstats {
 	Runopts & opts;
 
 	// Synchronized - Compute in worker thread (per read) - shared
-	uint32_t min_read_len = READLEN; // length of the shortest Read in the Reads file. 
+	uint32_t min_read_len; // length of the shortest Read in the Reads file. 
 	uint32_t max_read_len; // length of the longest Read in the Reads file.
 	uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Computed in 'compute_lis_alignment' in a worker thread i.e. per read.
 	char filesig = '>';
@@ -184,15 +179,20 @@ struct ReadStats {
 	off_t    full_file_size; // the size of the full reads file (in bytes).
 	uint64_t full_read_main; // total number of nucleotides in all reads.
 
-	ReadStats(Runopts & opts) : opts(opts) { 
+	Readstats(Runopts & opts)
+		: 
+		opts(opts), 
+		min_read_len(READLEN),
+		max_read_len(0), 
+		total_reads_mapped(0)
+	{
 		calcSuffix();
 		opts.exit_early = check_file_format();
 	}
 	
-	~ReadStats() {}
+	~Readstats() {}
 
-	// calculate statistics from readsfile see "compute_read_stats"
-	void calculate();
+	void calculate(); // calculate statistics from readsfile see "compute_read_stats"
 	bool check_file_format();
 	void calcSuffix();
 	// called from Main thread once when 'number_total_read' is known
@@ -208,7 +208,7 @@ struct ReadStats {
 	//	read_max_SW_score = new uint16_t[2*number_total_read];
 	//	memset(read_max_SW_score, 0, sizeof(uint16_t)*(2*number_total_read));
 	//}
-};
+}; // ~struct Readstats
 
 
 /**
@@ -223,19 +223,35 @@ struct Read {
 	std::string format = "fasta"; // fasta | fastq
 
 	// calculated
-	std::string sequenceInt; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
+	std::string seq_int_str; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
+	bool reversed = false;
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
+	// store in database ------------>
 	// matching results
 	bool hit = false; // indicates that a match for this Read has been found
 	bool hit_denovo = true;
 	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
 	uint16_t max_SW_score = 0; // Max Smith-Waterman score
 	int32_t num_alignments = 0; // number of alignments to output per read
-	alignment_struct hits_align_info;
-	int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
+	uint32_t readhit = 0; // number of seeds matches between read and database. Total number of hits?
+	int32_t best = 0; // init with min_lis_gv
 
-	Read(): hits_align_info(0,0,0,0,0) {
+	// need custom destructor, copy constructor, and copy assignment
+	std::vector<id_win> id_win_hits; // array of positions of window hits on the reference sequence
+	alignment_struct2 hits_align_info;
+	std::vector<int8_t> scoring_matrix;
+	//int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
+	//int8_t* ss = new int8_t[25];
+	//std::unique_ptr<int8_t[]> scoring_matrix2(new int8_t[25]);
+	// <------------------------------ store in database
+
+	const char complement[4] = { '3','2','1','0' };
+
+
+	Read(): scoring_matrix(25,0) {
+		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
+		if (min_lis_gv > 0) best = min_lis_gv;
 		// create new instance of alignments
 		//hits_align_info.max_size = 0;
 		//hits_align_info.size = 0;
@@ -261,30 +277,53 @@ struct Read {
 		: id(id), header(header), sequence(sequence), quality(quality), format(format) 
 	{
 		validate();
-		sequenceToInt();
-		initScoringMatrix(opts);
+		seqToIntStr();
+//		initScoringMatrix(opts);
 	}
 
 	~Read() { 
-		if (hits_align_info.ptr != 0) {
+//		if (hits_align_info.ptr != 0) {
 			//	delete[] read.hits_align_info.ptr->cigar;
 			//	delete read.hits_align_info.ptr;
-			delete hits_align_info.ptr; 
-		} 
+//			delete hits_align_info.ptr; 
+//		}
+//		free(scoring_matrix);
+//		scoring_matrix = 0;
 	}
 
-	void initScoringMatrix(Runopts & opts);
+	// copy constructor
+	Read(const Read & that)
+	{}
+
+	// copy assignment
+	Read & operator=(const Read & that)
+	{
+		if (this != &that)
+		{}
+		return *this;
+	}
+
+//	void initScoringMatrix(Runopts & opts);
 
 	// convert sequence to "sequenceInt" and populate "ambiguous_nt"
-	void sequenceToInt() {
+	void seqToIntStr() {
 		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
 		{
 			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
-			sequenceInt.append(1, nt_table[(int)*it]);
+			seq_int_str.append(1, nt_table[(int)*it]);
 			if (c == 0) { // ambiguous nt
-				ambiguous_nt.push_back(sequenceInt.size() - 1); // i.e. add current position to the vector
+				ambiguous_nt.push_back(static_cast<UINT>(seq_int_str.size()) - 1); // i.e. add current position to the vector
 			}
 		}
+	}
+
+	// reverse complement the integer sequence
+	void revIntStr() {
+		std::reverse(seq_int_str.begin(), seq_int_str.end());
+		for (int i = 0; i < seq_int_str.length(); i++) {
+			seq_int_str[i] = complement[seq_int_str[i] - '0'];
+		}
+		reversed = true;
 	}
 
 	void validate() {
@@ -325,51 +364,26 @@ struct Read {
 		return sbuf.GetString();
 	} // ~Read::matchesToJsonString
 
-	std::string matchesToString() {
-		if (hits_align_info.ptr == 0)
+	// convert to binary string whatever needs to be stored in DB
+	std::string toString() {
+		if (hits_align_info.alignv.size() == 0)
 			return "";
 
-		// total size of this object
-		const uint32_t size =
-			3 * sizeof(bool)
-			+ sizeof(uint16_t)
-			+ sizeof(int32_t)
-			/* alignment_struct */
-			+ 4 * sizeof(uint32_t)
-			/* s_align */
-			+ hits_align_info.size * (
-				hits_align_info.ptr->cigarLen * (sizeof(uint32_t))
-				+ sizeof(uint32_t)
-				+ 4 * sizeof(int32_t)
-				+ sizeof(uint32_t)
-				+ 4 * sizeof(uint16_t)
-				+ sizeof(bool));
+		// hit, hit_denovo, null_align_output, max_SW_score, num_alignments, readhit, best
+		int bufsize = 3 * sizeof(hit) + sizeof(max_SW_score) + sizeof(num_alignments) + sizeof(readhit) + sizeof(best);
+		std::string buf(bufsize, 0);
+		int bufidx = 0;
+		char* pch = reinterpret_cast<char *>(&hit);
+		for (int i = 0; i < 4 * sizeof(bufsize); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
+		// id_win_hits
+		for (auto it = id_win_hits.begin(); it != id_win_hits.end(); ++it) buf.append(it->toString());
+		// hits_align_info
+		buf.append(hits_align_info.toString());
+		// std::vector<int8_t> scoring_matrix;
+		for (auto it = scoring_matrix.begin(); it != scoring_matrix.end(); ++it) buf.append(1, *it);
 
-		char *target = new char[size];
-		uint32_t offset = 0;
-		memcpy(target, (void*)&hit, 3 * sizeof(bool));
-		offset += 3 * sizeof(bool);
-		memcpy(target + offset, (void*)&max_SW_score, sizeof(uint16_t));
-		offset += sizeof(uint16_t);
-		memcpy(target + offset, (void*)&num_alignments, sizeof(int32_t));
-		offset += sizeof(int32_t);
-		memcpy(target + offset, (void*)&hits_align_info, 4 * sizeof(uint32_t));
-		offset += 4 * sizeof(uint32_t);
-		// cigar
-		memcpy(target + offset, (void*)&hits_align_info.ptr->cigar, hits_align_info.ptr->cigarLen * (sizeof(uint32_t)));
-		offset += hits_align_info.ptr->cigarLen * (sizeof(uint32_t));
-		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_seq, sizeof(uint32_t));
-		offset += sizeof(uint32_t);
-		memcpy(target + offset, (void*)&hits_align_info.ptr->ref_begin1, 4 * sizeof(int32_t));
-		offset += 4 * sizeof(int32_t);
-		memcpy(target + offset, (void*)&hits_align_info.ptr->readlen, sizeof(uint32_t));
-		offset += sizeof(uint32_t);
-		memcpy(target + offset, (void*)&hits_align_info.ptr->score1, 4 * sizeof(uint16_t));
-		offset += 4 * sizeof(uint16_t);
-		memcpy(target + offset, (void*)&hits_align_info.ptr->strand, sizeof(bool));
-
-		return target;
-	} // ~Read::matchesToBinString
+		return buf;
+	} // ~Read::toString
 
 	// deserialize matches from string
 	void unmarshallString(std::string matchStr);
@@ -398,7 +412,7 @@ public:
 	ReadsQueue(int id, int capacity, int numPushers)
 		: id(id), capacity(capacity), doneAdding(false), numPushers(numPushers) {}
 	~ReadsQueue() { 
-		printf("Destructor called on queue %d  recs.size= %d pushed: %d  popped: %d\n", 
+		printf("Destructor called on queue %d  recs.size= %zu pushed: %d  popped: %d\n", 
 			id, recs.size(), numPushed, numPopped); 
 	}
 
@@ -421,7 +435,11 @@ public:
 			recs.pop();
 			++numPopped;
 			if (numPopped % 10000 == 0)
-				printf("\rThread %d Pushed: %d Popped: %d", std::this_thread::get_id(), numPushed, numPopped);
+			{
+				stringstream ss;
+				ss << std::this_thread::get_id();
+				printf("\rThread %s Pushed: %d Popped: %d", ss.str().c_str(), numPushed, numPopped);
+			}
 		}
 		//	l.unlock(); // probably redundant. The lock is released when function returns
 		cv.notify_one();
@@ -440,7 +458,7 @@ public:
 }; // ~class ReadsQueue
 
 
-// Queue for Reads IDs used to synchronize ordering of the records in Reads file and ReadStats file
+// Queue for Reads IDs used to synchronize ordering of the records in Reads file and Readstats file
 struct ReadWriterCounterQueue {
 	ReadWriterCounterQueue(){}
 	~ReadWriterCounterQueue() {}
@@ -474,7 +492,7 @@ private:
 	rocksdb::Options options;
 };
 
-// reads Reads and ReadStats files, generates Read objects and pushes them onto ReadsQueue
+// reads Reads and Readstats files, generates Read objects and pushes them onto ReadsQueue
 class Reader {
 public:
 	Reader(int id, ReadsQueue & readQueue, std::string & readsfile, KeyValueDatabase & kvdb, int loopCount)
@@ -508,15 +526,19 @@ public:
 	Processor(int id, 
 		ReadsQueue & readQueue,
 		ReadsQueue & writeQueue,
-		ReadStats & readstats,
-		Index & index, 
-		std::function<void(Read)> callback
+		Readstats & readstats,
+		Index & index,
+		References & refs,
+		Output & output,
+		std::function<void(Readstats & readstats, Index & index, References & refs, Output & output, Read read)> callback
 	) :
 		id(id), 
 		readQueue(readQueue),
 		writeQueue(writeQueue),
 		readstats(readstats),
 		index(index),
+		refs(refs),
+		output(output),
 		callback(callback) {}
 
 	void operator()() { process(); }
@@ -525,32 +547,45 @@ private:
 	int id;
 	ReadsQueue & readQueue;
 	ReadsQueue & writeQueue;
-	ReadStats & readstats;
+	Readstats & readstats;
+	References & refs;
+	Output & output;
 	Index & index;
-	std::function<void(Read)> callback;
+	std::function<void(Readstats & readstats, Index & index, References & refs, Output & output, Read read)> callback;
 };
 
 class Output {
 public:
-	Output(Runopts & opts, ReadStats & readstats) : opts(opts), readstats(readstats) { init(); }
-	~Output(){}
-
-	void init(); // TODO: make private?
-
-private:
-	Runopts & opts;
-	ReadStats & readstats;
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
 	ofstream acceptedreads;
 	ofstream acceptedsam;
 	ofstream acceptedblast;
 
-	char *acceptedstrings;
-	char *acceptedstrings_sam;
-	char *acceptedstrings_blast;
-	char *logoutfile;
-	char *denovo_otus_file;
-	char *acceptedotumap_file;
-};
+	// file names
+	std::string acceptedstrings;
+	std::string acceptedstrings_sam; // used in Index::load_stats
+	std::string acceptedstrings_blast;
+	std::string logoutfile;
+	std::string denovo_otus_file;
+	std::string acceptedotumap_file;
+
+	Output(Runopts & opts, Readstats & readstats) 
+		: 
+		opts(opts), 
+		reads_matched_per_db(opts.indexfiles.size(), 0) 
+	{
+		init(readstats); 
+	}
+	~Output(){}
+
+	void init(Readstats & readstats); // TODO: make private?
+
+private:
+	Runopts & opts;
+
+	uint64_t total_reads_mapped = 0; // shared by Processor threads
+	uint64_t total_reads_mapped_cov = 0; // shared   total number of reads mapped passing E-value threshold and %id and/or %query coverage thresholds
+	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
+}; // ~class Output
 
 // ~PARALLELTRAVERSAL_H

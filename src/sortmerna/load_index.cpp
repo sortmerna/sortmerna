@@ -30,23 +30,10 @@
  */
 
 #include "../include/load_index.hpp"
+#include "paralleltraversal.hpp"
 #include <chrono>
 
- /*! @brief Map nucleotides to integers.
 
-	 Ambiguous letters map to 4.
-	 {A/a,C/c,G/g,T/t,U/u} = {0,1,2,3,3} respectively.
- */
-char nt_table[128] = {
-	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
-};
 
 void Index::load(uint32_t idx_num, uint32_t idx_part) 
 {
@@ -62,9 +49,9 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	}
 
 	uint32_t limit = 1 << lnwin[idx_num];
-	lookup_tbl = new kmer[limit]();
+	lookup_tbl.reserve(limit);// = new kmer[limit]();
 
-	if (lookup_tbl == NULL)
+	if (lookup_tbl.capacity() == 0)
 	{
 		fprintf(stderr, "\n  ERROR: failed to allocate memory for look-up table (paralleltraversal.cpp)\n\n");
 		exit(EXIT_FAILURE);
@@ -257,9 +244,9 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 
 	uint32_t size = 0;
 	inreff.read(reinterpret_cast<char*>(&number_elements), sizeof(uint32_t));
-	positions_tbl = new kmer_origin[number_elements]();
+	positions_tbl.reserve(number_elements); // = new kmer_origin[number_elements]();
 
-	if (positions_tbl == NULL)
+	if (positions_tbl.capacity() == 0)
 	{
 		fprintf(stderr, "  ERROR: could not allocate memory for positions_tbl (main(), paralleltraversal.cpp)\n");
 		exit(EXIT_FAILURE);
@@ -285,13 +272,13 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	return;
 } // ~Index::load
 
-void Index::load_stats()
+void Index::load_stats(Readstats & readstats, Output & output)
 {
 	ofstream acceptedsam;
 
 	if (opts.samout)
 	{
-		acceptedsam.open(acceptedstrings_sam);
+		acceptedsam.open(output.acceptedstrings_sam);
 		if (!acceptedsam.good())
 		{
 			fprintf(stderr, "  %sERROR%s: could not open SAM output file for writing.\n", startColor, "\033[0m");
@@ -464,21 +451,21 @@ void Index::load_stats()
 				+ background_freq_gv[3] * (log(background_freq_gv[3]) / log(2)));
 
 		// Length correction for Smith-Waterman alignment score
-		uint64_t expect_L = log((gumbel[index_num].second)*full_read[index_num] * full_ref[index_num]) / entropy_H_gv;
+		uint64_t expect_L = static_cast<uint64_t>(log((gumbel[index_num].second)*full_read[index_num] * full_ref[index_num]) / entropy_H_gv);
 
 		// correct the reads & databases sizes for E-value calculation
 		if (full_ref[index_num] > (expect_L*numseq[index_num]))
 			full_ref[index_num] -= (expect_L*numseq[index_num]);
 
-		full_read[index_num] -= (expect_L*number_total_read);
+		full_read[index_num] -= (expect_L * readstats.number_total_read);
 
 		// minimum score required to reach E-value
-		minimal_score[index_num] =
+		minimal_score[index_num] = static_cast<uint32_t>(
 			(log(evalue
 				/ ((double)(gumbel[index_num].second)
 					* full_ref[index_num]
 					* full_read[index_num])))
-			/ -(gumbel[index_num].first);
+			/ -(gumbel[index_num].first));
 
 		// SAM @SQ data
 		if (opts.samout)
@@ -738,7 +725,7 @@ void load_index_stats(
 				+ background_freq_gv[3] * (log(background_freq_gv[3]) / log(2)));
 
 		// Length correction for Smith-Waterman alignment score
-		uint64_t expect_L = log((gumbel[index_num].second)*full_read[index_num] * full_ref[index_num]) / entropy_H_gv;
+		uint64_t expect_L = static_cast<uint64_t>(log((gumbel[index_num].second)*full_read[index_num] * full_ref[index_num]) / entropy_H_gv);
 
 		// correct the reads & databases sizes for E-value calculation
 		if (full_ref[index_num] > (expect_L*numseq[index_num]))
@@ -1054,35 +1041,15 @@ void load_index(
 	return;
 }//~load_index()
 
-
+// compare 'load_ref'
 void References::load(uint32_t idx_num, uint32_t idx_part)
 {
-	buffer = new char[(index.index_parts_stats_vec[idx_num][idx_part].seq_part_size + 1)]();
-	if (buffer == NULL)
-	{
-		fprintf(stderr, "    %sERROR%s: could not allocate memory for reference sequence buffer (paralleltraversal.cpp)\n", startColor, "\033[0m");
-		exit(EXIT_FAILURE);
-	}
-
 	uint32_t numseq_part = index.index_parts_stats_vec[idx_num][idx_part].numseq_part;
-	reference_seq = new char*[(numseq_part << 1)]();
-	if (reference_seq == NULL)
-	{
-		fprintf(stderr, "    %sERROR%s: Line %d: %s could not allocate memory for reference_seq\n",
-			startColor, "\033[0m", __LINE__, __FILE__);
-		exit(EXIT_FAILURE);
-	}
 
-	reference_seq_len = new uint64_t[numseq_part]();
-	if (reference_seq_len == NULL)
-	{
-		fprintf(stderr, "    %sERROR%s: Line %d: %s could not allocate memory for reference_seq_len\n",
-			startColor, "\033[0m", __LINE__, __FILE__);
-		exit(EXIT_FAILURE);
-	}
+	//FILE *fp = fopen(opts.indexfiles[idx_num].first.c_str(), "r"); // open reference file
+	std::ifstream ifs(opts.indexfiles[idx_num].first, std::ios_base::in | std::ios_base::binary); // open reference file
 
-	FILE *fp = fopen(opts.indexfiles[idx_num].first.c_str(), "r"); // open reference file
-	if (fp == NULL)
+	if (!ifs.is_open())
 	{
 		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not open file %s\n",
 			startColor, "\033[0m", __LINE__, __FILE__, opts.indexfiles[idx_num].first.c_str());
@@ -1090,7 +1057,8 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 	}
 
 	// set the file pointer to the first sequence added to the index for this index file section
-	if (fseek(fp, index.index_parts_stats_vec[idx_num][idx_part].start_part, SEEK_SET) != 0)
+	//if (fseek(fp, index.index_parts_stats_vec[idx_num][idx_part].start_part, SEEK_SET) != 0)
+	if (ifs.seekg(index.index_parts_stats_vec[idx_num][idx_part].start_part))
 	{
 		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not locate the sequences used to construct the index.\n",
 			startColor, "\033[0m", __LINE__, __FILE__);
@@ -1098,83 +1066,41 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 			opts.indexfiles[idx_num].first.c_str());
 	}
 
-	// load references sequences into memory, skipping the new lines & spaces in the fasta format
+	// load references sequences, skipping the new lines & spaces in the fasta format
 	uint64_t num_seq_read = 0;
-	char *s = buffer;
-	int i = 0;
-	int j = 0;
-	char c = fgetc(fp);
-	if (load_for_search)
+	std::string line;
+
+	for ( int count=0; std::getline(ifs, line) && (num_seq_read != numseq_part); ++count ) 
 	{
-		do
+		if (line[0] == FASTA_HEADER_START)
 		{
-			// the tag
-			reference_seq[i++] = s;
-			while (c != '\n' && c != '\r')
-			{
-				*s++ = c;
-				c = fgetc(fp);
-			}
-			// new line
-			*s++ = c;
-			if (*s == '\n' || *s == '\r')
-			{
+			count = 0; // first line is header - skip
+		}
+		else 
+		{
+			++count;
+			if (count > 2) {
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA format "
 					"(there is an extra new line).", startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			// the sequence
-			reference_seq[i++] = s;
-			c = fgetc(fp);
-			do
-			{
-				if (c != '\n' && c != ' ' && c != '\r')
-				{
-					// keep record of ambiguous character for alignment
-					*s++ = nt_table[(int)c];
-					// record the sequence length as we read it
-					reference_seq_len[j]++;
-				}
-				c = fgetc(fp);
-			} while ((c != '>') && (c != EOF));
-			*s++ = '\n';
-			j++;
-			num_seq_read++;
-		} while ((num_seq_read != numseq_part) && (c != EOF));
+				
+			// line = removeWs(line); // remove whitespace from line probably
+			fix_ambiguous_char(line); // second line is sequence - store in buffer
+			buffer.push_back(line);
+		}
+		num_seq_read++;
 	}
-	else
-	{
-		do
-		{
-			// the tag
-			reference_seq[i++] = s;
-			while (c != '\n' && c != '\r')
-			{
-				*s++ = c;
-				c = fgetc(fp);
-			}
-			// new line
-			*s++ = c;
-			// the sequence
-			reference_seq[i++] = s;
-			c = fgetc(fp);
-			do
-			{
-				if (c != '\n' && c != ' ' && c != '\r')
-				{
-					// keep record of ambiguous character for alignment
-					*s++ = nt_table[(int)c];
-				}
-				c = fgetc(fp);
-			} while ((c != '>') && (c != EOF));
-			*s++ = '\n';
-			j++;
-			num_seq_read++;
-		} while ((num_seq_read != numseq_part) && (c != EOF));
-	}
-
-	fclose(fp);
 } // ~References::load
+
+void References::fix_ambiguous_char(std::string & seq)
+{
+	for (std::string::iterator it = seq.begin(); it != seq.end(); ++it)
+	{
+		if (*it != ' ')
+			*it = nt_table[(int)*it];
+	}
+}
 
 	/* TODO: remove - moved to References::load
 	 *
@@ -1184,8 +1110,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 	 * @version 1.0 June 12, 2013
 	 *
 	 *******************************************************************/
-void
-load_ref(
+void load_ref(
 	char* ptr_dbfile,
 	char* buffer,
 	char** reference_seq,

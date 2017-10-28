@@ -41,7 +41,7 @@
 void
 report_blast (ofstream &fileout,
                    s_align* a,
-                   char* read_name,
+                   const char* read_name,
                    char* read_seq,
                    char* read_qual,
                    char* ref_name,
@@ -58,7 +58,7 @@ report_blast (ofstream &fileout,
 void
 report_sam (ofstream &fileout,
                  s_align* a,
-                 char* read_name,
+                 const char* read_name,
                  char* read_seq,
                  char* read_qual,
                  char* ref_name,

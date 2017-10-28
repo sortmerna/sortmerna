@@ -56,6 +56,13 @@
 
 using namespace std;
 
+const char FASTA_HEADER_START = '>';
+const char FASTQ_HEADER_START = '@';
+const char WIN_ENDLINE = '\r';
+const char LIN_ENDLINE = '\n';
+const int QUEUE_SIZE_MAX = 10; // TODO: set through process options
+const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Change through process options.
+
 extern timeval t;
 
 /*! @brief Macro for timing */

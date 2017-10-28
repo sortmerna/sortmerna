@@ -37,8 +37,14 @@
 #include <algorithm>
 #include "traverse_bursttrie.hpp"
 #include "outputformats.hpp"
+#include "ssw.hpp"
 
 using namespace std;
+
+struct Read;
+struct Index;
+class References;
+class Output;
 
 /*! @brief Number of slots by which to dynamically
            increment the array storing all alignments
@@ -69,8 +75,7 @@ typedef pair<uint32_t,uint32_t> mypair;
     @param const pair<uint32_t,uint32_t> &b
     @return smallest integer of a and b, or a if a == b
 */
-inline bool
-smallest ( const mypair &a, const mypair &b );
+inline bool smallest ( const mypair &a, const mypair &b );
 
 /*! @fn largest()
     @brief Return the largest integer of two input integers
@@ -79,8 +84,7 @@ smallest ( const mypair &a, const mypair &b );
     @return 'a' goes before 'b' if a.first > b.first, otherwise
             'a'
 */
-bool
-largest ( const mypair &a, const mypair &b );
+bool largest ( const mypair &a, const mypair &b );
 
 /*! @fn find_lis()
  *  @brief Given a list of matching positions on the read, find the longest
@@ -105,12 +109,52 @@ struct alignment_struct
   uint32_t min_index;
   uint32_t max_index;
   s_align* ptr;
-  alignment_struct() {}
+  alignment_struct(): max_size(0), size(0), min_index(0), max_index(0), ptr(0) {}
   alignment_struct(uint32_t max_size,
                    uint32_t size,
                    uint32_t min,
                    uint32_t max,
                    s_align* p) : max_size(max_size), size(size), min_index(min), max_index(max), ptr(p) {}
+};
+
+struct alignment_struct2
+{
+	uint32_t max_size; // max size of s_align array
+	uint32_t size; // actual size of s_align array
+	uint32_t min_index;
+	uint32_t max_index;
+	std::vector<s_align2> alignv;
+
+	alignment_struct2() : max_size(0), size(0), min_index(0), max_index(0) {}
+	alignment_struct2(uint32_t max_size, uint32_t size,	uint32_t min, uint32_t max)
+		: max_size(max_size), size(size), min_index(min), max_index(max) {}
+
+	// copy constructor
+	alignment_struct2(const alignment_struct2 & that)
+	{}
+
+	// copy assignment
+	alignment_struct2 & operator=(const alignment_struct2 & that)
+	{
+		if (this != &that)
+		{		}
+		return *this;
+	}
+
+	// convert to binary string
+	std::string toString()
+	{
+		int bufsize = 4 * sizeof(max_size);
+		std::string buf(bufsize, 0);
+		int bufidx = 0;
+		// max_size, size, min_index, max_index
+		char * pch = reinterpret_cast<char *>(&max_size);
+		for (int i = 0; i < 4 * sizeof(max_size); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
+		// alignv
+		for (auto it = alignv.begin(); it < alignv.end(); ++it) buf.append(it->toString());
+
+		return buf;
+	}
 };
 
 /*! @fn compute_lis_alignment()
@@ -158,47 +202,55 @@ struct alignment_struct
     @param ofstream& acceptedsam
     @return none
 */
-void
-compute_lis_alignment(uint32_t size_ambiguous_nt /**< number of ambiguous nucleotides in a read */,
-                      uint32_t readhit /**< number of seeds matches between read and database */,
-                      vector< id_win >& id_win_hits /**< mini burst trie seed IDs for current window on read */,
-                      kmer_origin* positions_tbl /**< mini burst trie seed IDs pointing to (L+1)-mer positions in reference database */,
-                      uint16_t* read_max_SW_score /**< array storing number of times a read was aligned with maximum alignment score */,
-                      bool& search /**< if true, continue searching for seeds at lower granularity intervals across read */,
-                      int32_t* best_x /**< array storing number of candidate reference sequences to explore for read (based on min_lis) */,
-                      uint64_t readn /**< read number */,
-                      int32_t* num_alignments_x /**< array storing number of alignments output for read */,
-                      uint32_t readlen /**< length of read */,
-                      uint32_t lnwin_index_num /**< seed length (L) used to index reference database */,
-                      uint16_t index_num /**< reference database number */,
-                      uint64_t* reference_seq_len /**< array storing lengths of all reference sequences in an index */,
-                      char* myread /**< read sequence */,
-                      int32_t* ambiguous_nt /**< array storing positions of ambiguous nucleotides in read */,
-                      int8_t* scoring_matrix /**< Smith-Waterman scoring matrix */,
-                      char** reference_seq /**< array storing raw nucleotide reference sequences in an index */,
-                      long gap_open /**< Smith-Waterman gap open score */,
-                      long gap_extension /**< Smith-Waterman gap extension score */,
-                      uint32_t minimal_score_index_num /**< minimal Smith-Waterman score allowed based on E-value */,
-                      vector<bool>& read_hits /**< array storing a boolean for each read, 1 if a read was aligned, 0 otherwise */,
-                      uint64_t& total_reads_mapped /**< total number of reads aligned passing E-value threshold */,
-                      vector<uint64_t>& reads_matched_per_db /**< number of reads aligned per reference database (ex. 16S bacteria and 18S eukarya) */,
-                      uint16_t part /**< index part number */,
-                      map<uint64_t, alignment_struct >& read_hits_align_info /**< a map storing alignment information for each aligned read */,
-                      uint32_t max_SW_score /**< maximum achievable alignment score for read */,
-                      bool& read_to_count /**< flag to count only one alignment per read */,
-                      uint64_t& total_reads_mapped_cov /**< total number of reads mapped passing E-value threshold & %id and/or %query coverage thresholds */,
-                      vector<bool>& read_hits_denovo /**< array toring a boolean for each read, 1 if > %id and > %coverage threshold, 0 otherwise */,
-                      char filesig /**< @ or > depending on FASTQ or FASTA reads input file */,
-                      uint64_t strs /**< number of reads in input file */,
-                      uint32_t file_s /**< file section currently memory mapped */,
-                      uint32_t file_sections /**< total number of file sections to be memory mapped */,
-                      char** reads /**< array storing pointers to sequences in the memory mapped buffer */,
-                      char* finalnt /**< final character in memory map */,
-                      double gumbel_lambda_index_num /**< Lambda value for current index */,
-                      double gumbel_K_index_num /**< K value for current index */,
-                      uint64_t full_ref_index_num /**< size of all reference sequences in current index */,
-                      uint64_t full_read_index_num /**< size of all read sequences in current memory map */,
-                      ofstream& acceptedblast /**< output stream for aligned reads in BLAST format */,
-                      ofstream& acceptedsam /**< output stream for aligned reads in SAM format */);
+void compute_lis_alignment(
+	uint32_t size_ambiguous_nt /**< number of ambiguous nucleotides in a read */,
+	uint32_t readhit /**< number of seeds matches between read and database */,
+	vector< id_win >& id_win_hits /**< mini burst trie seed IDs for current window on read */,
+	kmer_origin* positions_tbl /**< mini burst trie seed IDs pointing to (L+1)-mer positions in reference database */,
+	uint16_t* read_max_SW_score /**< array storing number of times a read was aligned with maximum alignment score */,
+	bool& search /**< if true, continue searching for seeds at lower granularity intervals across read */,
+	int32_t* best_x /**< array storing number of candidate reference sequences to explore for read (based on min_lis) */,
+	uint64_t readn /**< read number */,
+	int32_t* num_alignments_x /**< array storing number of alignments output for read */,
+	uint32_t readlen /**< length of read */,
+	uint32_t lnwin_index_num /**< seed length (L) used to index reference database */,
+	uint16_t index_num /**< reference database number */,
+	uint64_t* reference_seq_len /**< array storing lengths of all reference sequences in an index */,
+	char* myread /**< read sequence */,
+	int32_t* ambiguous_nt /**< array storing positions of ambiguous nucleotides in read */,
+	int8_t* scoring_matrix /**< Smith-Waterman scoring matrix */,
+	char** reference_seq /**< array storing raw nucleotide reference sequences in an index */,
+	long gap_open /**< Smith-Waterman gap open score */,
+	long gap_extension /**< Smith-Waterman gap extension score */,
+	uint32_t minimal_score_index_num /**< minimal Smith-Waterman score allowed based on E-value */,
+	vector<bool>& read_hits /**< array storing a boolean for each read, 1 if a read was aligned, 0 otherwise */,
+	uint64_t& total_reads_mapped /**< total number of reads aligned passing E-value threshold */,
+	vector<uint64_t>& reads_matched_per_db /**< number of reads aligned per reference database (ex. 16S bacteria and 18S eukarya) */,
+	uint16_t part /**< index part number */,
+	map<uint64_t, alignment_struct >& read_hits_align_info /**< a map storing alignment information for each aligned read */,
+	uint32_t max_SW_score /**< maximum achievable alignment score for read */,
+	bool& read_to_count /**< flag to count only one alignment per read */,
+	uint64_t& total_reads_mapped_cov /**< total number of reads mapped passing E-value threshold & %id and/or %query coverage thresholds */,
+	vector<bool>& read_hits_denovo /**< array toring a boolean for each read, 1 if > %id and > %coverage threshold, 0 otherwise */,
+	char filesig /**< @ or > depending on FASTQ or FASTA reads input file */,
+	uint64_t strs /**< number of reads in input file */,
+	uint32_t file_s /**< file section currently memory mapped */,
+	uint32_t file_sections /**< total number of file sections to be memory mapped */,
+	char** reads /**< array storing pointers to sequences in the memory mapped buffer */,
+	char* finalnt /**< final character in memory map */,
+	double gumbel_lambda_index_num /**< Lambda value for current index */,
+	double gumbel_K_index_num /**< K value for current index */,
+	uint64_t full_ref_index_num /**< size of all reference sequences in current index */,
+	uint64_t full_read_index_num /**< size of all read sequences in current memory map */,
+	ofstream& acceptedblast /**< output stream for aligned reads in BLAST format */,
+	ofstream& acceptedsam /**< output stream for aligned reads in SAM format */
+);
 
-#endif
+void compute_lis_alignment2(
+	Read & read, Index & index,	References & refs, Output & output,
+	bool & search,
+	uint32_t max_SW_score,
+	bool& read_to_count
+);
+
+#endif // ~ALIGNMENT_H

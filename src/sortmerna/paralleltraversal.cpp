@@ -29,7 +29,7 @@
  *               Rob Knight       robknight@ucsd.edu
  */
 
-#include "../include/paralleltraversal.hpp"
+#include "paralleltraversal.hpp"
 #include "options.hpp"
 #include "ThreadPool.hpp"
 
@@ -119,7 +119,12 @@ void format_rev(char* start_read, char* end_read, char* myread, char filesig)
 	}
 }
 
-bool ReadStats::check_file_format()
+void Readstats::calculate()
+{
+	// TODO: implement
+} // ~Readstats::calculate
+
+bool Readstats::check_file_format()
 {
 	bool exit_early = false;
 #ifdef HAVE_LIBZ
@@ -146,9 +151,9 @@ bool ReadStats::check_file_format()
 	fclose(fp);
 #endif
 	return exit_early;
-} // ~ReadStats::check_file_format
+} // ~Readstats::check_file_format
 
-void ReadStats::calcSuffix()
+void Readstats::calcSuffix()
 {
 	// determine the suffix (fasta, fastq, ...) of aligned strings
 //	char suffix[20] = "out";
@@ -166,7 +171,7 @@ void ReadStats::calcSuffix()
 //	suff = NULL;
 }
 
-/* TODO: remove -> ReadStats::check_file_format
+/* TODO: remove -> Readstats::check_file_format
  *
  * @function check_file_format()
  * see documentation in paralleltraversal.hpp
@@ -246,24 +251,346 @@ void compute_read_stats(
 #endif
 }//~compute_read_stats()
 
-// Callback run in a Processor thread
-void parallelTraversalJob(Read read) 
-{
-	;//printf("To be implemented");
-}
 
-void Read::initScoringMatrix(Runopts & opts)
+// Callback run in a Processor thread
+void parallelTraversalJob(Readstats & readstats, Index & index, References & refs, Output & output, Read read)
 {
-	int32_t l, k, m;
-	// initialize Smith-Waterman scoring matrix for genome sequences
-	for (l = k = 0; l < 4; ++l)
+	// for reverse reads
+	if (!forward_gv)
 	{
-		for (m = 0; m < 4; ++m)
-			scoring_matrix[k++] = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
-		scoring_matrix[k++] = opts.score_N; // ambiguous base
+		// output the first num_alignments_gv alignments
+		if (num_alignments_gv > 0)
+		{
+			// all num_alignments_gv alignments have been output
+			if (read.num_alignments < 0) return;
+		}
+		// the maximum scoring alignment has been found, go to next read
+		// (unless all alignments are being output)
+		else if ((num_best_hits_gv > 0) &&	(min_lis_gv > 0) 
+			&& (read.max_SW_score == num_best_hits_gv))
+			return;
 	}
-	for (m = 0; m < 5; ++m) scoring_matrix[k++] = opts.score_N; // ambiguous base
-}
+
+// TODO: Delete --------------------------------------------------->
+	//char myread[READLEN] = ""; // sequence converted to integer alphabet (0,1,2,3)  read.seq_int_str
+	//const char* str = read.sequence.c_str();
+	//char* _myread = &myread[0];
+	// keep record of what position on the read an ambiguous char exists,
+	// the char at this position will be changed to '4' during
+	// sequence alignment
+	//int32_t ambiguous_nt[READLEN] = { 0 }; // Read::ambiguous_nt - vector
+	// size of ambiguous_nt
+	//uint32_t size_ambiguous_nt = 0;
+	// flag to count only 1 alignment per read
+	bool read_to_count = true; // passed directly to compute_lis_alignment. What's the point?
+	// length of read
+	//uint32_t readlen = 0;
+
+	// change the read into an integer alphabet -- FASTA
+	{
+		// block deleted. Moved to Reads::seq_int_str + Reads::seqToIntStr
+	}
+// <---------------------------------------------------------------- Delete
+
+	// find the minimum sequence length
+	if (read.sequence.size() < readstats.min_read_len) readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
+	// find the maximum sequence length
+	if (read.sequence.size()  > readstats.max_read_len) readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
+
+	// the read length is too short
+	if (read.sequence.size()  < index.lnwin[index.index_num])
+	{
+		fprintf(stderr, "\n  %sWARNING%s: At least one of the reads is shorter "
+			"than %u nucleotides, ", "\033[0;33m", "\033[0m",
+			index.lnwin[index.index_num]);
+		fprintf(stderr, "by default it will not be searched\n ");
+		return;
+	}
+
+	// create the reverse complement of the sequence
+	if (!forward_gv)
+	{
+		if (!read.reversed) read.revIntStr();
+	}//~if (REVERSE)
+
+	 // array of positions of window hits on the reference sequence
+	//vector< id_win > id_win_hits; // Read::id_win_hits
+	// number of windows hit to the reference sequence(s)
+	uint32_t readhit = 0;
+	uint32_t windowshift = index.opts.skiplengths[index.index_num][0];
+	// keep track of windows which have been already traversed in the burst trie
+	vector<bool> read_index_hits(read.sequence.size());
+	// Pass number (possible value 0,1,2)
+	uint32_t pass_n = 0;
+	// the maximum SW score attainable for this read
+	uint32_t max_SW_score = read.sequence.size() *index.opts.match;
+	// loop for each new Pass to granulate seed search intervals
+	bool search = true;
+	std::vector<MYBITSET> vbitwindowsf;
+	std::vector<MYBITSET> vbitwindowsr;
+
+	// TODO: these 2 lines needs to be calculated once per index part. Move to index or some new calculation object
+	uint32_t bit_vector_size = (index.partialwin[index.index_num] - 2) << 2; // on each index part. Init in Main, accessed in Worker
+	uint32_t offset = (index.partialwin[index.index_num] - 3) << 2; // on each index part
+
+	uint32_t minoccur = 0; // TODO: never updated. Always 0. What's the point?
+
+	do
+	{
+#ifdef debug_align
+		cout << "\tpass = " << pass_n << endl; //TESTING
+#endif          
+		uint32_t numwin = (read.sequence.size() - index.lnwin[index.index_num] + windowshift) / windowshift;
+		uint32_t read_index = 0;
+		// iterate over windows of the template string
+		for (uint32_t win_num = 0; win_num < numwin; win_num++)
+		{
+			// skip position, seed at this position has already been searched for in a previous Pass
+			if (read_index_hits[read_index]) goto check_score;
+			// search position, set search bit to true
+			else read_index_hits[read_index].flip();
+			{
+				// this flag it set to true if a match is found during
+				// subsearch 1(a), to skip subsearch 1(b)
+				bool accept_zero_kmer = false;
+				// ids for k-mers that hit the database
+				vector< id_win > id_hits; // TODO: why not to add directly to 'id_win_hits'?
+				vbitwindowsf.resize(bit_vector_size);
+				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
+				init_win_f(&read.seq_int_str[read_index + index.partialwin[index.index_num]],
+					&vbitwindowsf[0],
+					&vbitwindowsf[4],
+					index.numbvs[index.index_num]);
+				uint32_t keyf = 0;
+				char *keyf_ptr = &read.seq_int_str[read_index];
+				// build hash for first half windows (foward and reverse)
+				for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
+					(keyf <<= 2) |= (uint32_t)*keyf_ptr++;
+				// do traversal if the exact half window exists in the burst trie
+				if ((index.lookup_tbl[keyf].count > minoccur) && (index.lookup_tbl[keyf].trie_F != NULL))
+				{
+					/* subsearch (1)(a) d([p_1],[w_1]) = 0 and d([p_2],[w_2]) <= 1;
+					*
+					*  w = |------ [w_1] ------|------ [w_2] ------|
+					*  p = |------ [p_1] ------|------ [p_2] ----| (0/1 deletion in [p_2])
+					*              or
+					*    = |------ [p_1] ------|------ [p_2] ------| (0/1 match/substitution in [p_2])
+					*        or
+					*    = |------ [p_1] ------|------ [p_2] --------| (0/1 insertion in [p_2])
+					*
+					*/
+#ifdef debug_align
+					cout << "\tsearch forward mini-burst trie..\n"; //TESTING
+#endif                   
+					traversetrie_align(
+						index.lookup_tbl[keyf].trie_F,
+						0,
+						0,
+						// win2f_k1_ptr
+						&vbitwindowsf[0],
+						// win2f_k1_full
+						&vbitwindowsf[offset],
+						accept_zero_kmer,
+						id_hits,
+						read.id,
+						read_index,
+						index.partialwin[index.index_num]);
+#ifdef debug_align
+					cout << "\tdone!\n"; //TESTING
+#endif                      
+				}//~if exact half window exists in the burst trie                 
+				 // only search if an exact match has not been found
+				if (!accept_zero_kmer)
+				{
+					vbitwindowsr.resize(bit_vector_size);
+					std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
+					// build the first bitvector window
+					init_win_r(&read.seq_int_str[read_index + index.partialwin[index.index_num] - 1],
+						&vbitwindowsr[0],
+						&vbitwindowsr[4],
+						index.numbvs[index.index_num]);
+					uint32_t keyr = 0;
+					char *keyr_ptr = &read.seq_int_str[read_index + index.partialwin[index.index_num]];
+					// build hash for first half windows (foward and reverse)
+					for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
+						(keyr <<= 2) |= (uint32_t)*keyr_ptr++;
+					// continue subsearch (1)(b)
+					if ((index.lookup_tbl[keyr].count > minoccur) && (index.lookup_tbl[keyr].trie_R != NULL))
+					{
+						/* subsearch (1)(b) d([p_1],[w_1]) = 1 and d([p_2],[w_2]) = 0;
+						*
+						*  w =    |------ [w_1] ------|------ [w_2] -------|
+						*  p =      |------- [p_1] ---|--------- [p_2] ----| (1 deletion in [p_1])
+						*              or
+						*    =    |------ [p_1] ------|------ [p_2] -------| (1 match/substitution in [p_1])
+						*        or
+						*    = |------- [p_1] --------|---- [p_2] ---------| (1 insertion in [p_1])
+						*
+						*/
+#ifdef debug_align
+						cout << "\tsearch reverse mini-burst trie..\n"; //TESTING
+#endif                     
+						traversetrie_align(
+							index.lookup_tbl[keyr].trie_R,
+							0,
+							0,
+							/* win1r_k1_ptr */
+							&vbitwindowsr[0],
+							/* win1r_k1_full */
+							&vbitwindowsr[offset],
+							accept_zero_kmer,
+							id_hits,
+							read.id,
+							read_index,
+							index.partialwin[index.index_num]);
+#ifdef debug_align
+						cout << "\tdone!\n"; //TESTING
+#endif                        
+					}//~if exact half window exists in the reverse burst trie                    
+				}//~if (!accept_zero_kmer)                         
+				 // associate the ids with the read window number
+				if (!id_hits.empty())
+				{
+					for (uint32_t i = 0; i < id_hits.size(); i++)
+					{
+						read.id_win_hits.push_back(id_hits[i]);
+					}
+					readhit++;
+				}
+			}
+		check_score:
+			// continue read analysis if threshold seeds were matched
+			if (win_num == numwin - 1)
+			{
+				compute_lis_alignment2(
+					read, index, refs, output,
+					//size_ambiguous_nt, TODO: remove. Not used no more.
+					// readhit, Read::readhit
+					//id_win_hits,  Read::id_win_hits
+					//positions_tbl, Index
+					//read_max_SW_score, Read::max_SW_score
+					search, // signals alignment found - stop searching
+					//best_x, Read::best
+					// readn,  Read::id
+					//num_alignments_x,  Read::num_alignments
+					//readlen,  Read::sequence.lenght
+					//lnwin[index_num],  Index::lnwin
+					//index_num,  Index::index_num
+					//reference_seq_len, // References
+					//myread,  Read::seq_int_str
+					//ambiguous_nt,   Read::ambiguous_nt vector
+					//scoring_matrix, Read::scoring_matrix
+					//reference_seq,  References
+					//gap_open, Runopts::gap_open
+					//gap_extension, Runops
+					//minimal_score[index_num], Index
+					//read_hits,  Read::hit
+					//total_reads_mapped,  Output::
+					//reads_matched_per_db, Output::
+					//part, Index::part
+					//read_hits_align_info, Read::hits_align_info
+					max_SW_score,
+					read_to_count
+					//total_reads_mapped_cov, Output::
+					//read_hits_denovo,  Read::hit_denovo
+					//filesig, Read::
+					//strs,  total number of reads - no more
+					//file_s,  Mmap related
+					//file_sections, Mmap related
+					//reads, Read
+					//finalnt,  marks the end of mmap'd region
+					//gumbel[index_num].first,  Index::gambel
+					//gumbel[index_num].second, Index::gambel
+					//full_ref[index_num], Index::
+					//full_read[index_num], Index::
+					//acceptedblast,  Output::acceptedblast
+					//acceptedsam  OUtput::acceptedsam
+				);
+				// the read was not accepted at current window skip length,
+				// decrease the window skip length
+				if (search)
+				{
+					// last (3rd) Pass has been made
+					if (pass_n == 2) search = false;
+					else
+					{
+						// the next interval size equals to the current one, skip it
+						while ((pass_n < 3) &&
+							(index.opts.skiplengths[index.index_num][pass_n] == index.opts.skiplengths[index.index_num][pass_n + 1])) ++pass_n;
+						if (++pass_n > 2) search = false;
+						// set interval skip length for next Pass
+						else windowshift = index.opts.skiplengths[index.index_num][pass_n];
+					}
+				}
+				// do not offset final window on read
+				break;
+			}//~( win_num == NUMWIN-1 )
+			read_index += windowshift;
+		}//~for (each window)                
+		 //~while all three window skip lengths have not been tested, or a match has not been found
+	} while (search);
+
+	// the read didn't align (for --num_alignments [INT] option),
+	// output null alignment string
+	if (!read.hit && !forward_gv && (num_alignments_gv > -1))
+	{
+		// do not output read for de novo OTU clustering
+		// (it did not pass the E-value threshold)
+		if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
+		// output null alignment string
+		if (print_all_reads_gv)
+		{
+#pragma omp critical
+			{
+				s_align* null_alignment = NULL;
+				if (blastout_gv && blast_tabular)
+				{
+					report_blast(output.acceptedblast, // blast output file
+						null_alignment, // SW alignment cigar
+						read.header.c_str(), //reads[readn - 1] + 1, //read name
+						0, // read sequence (in integer format)
+						0, // read quality
+						0, // reference name
+						0, // reference sequence
+						0, // e-value score
+						0, // read length (to compute the masked regions)
+						0, // bitscore
+						0, // forward or reverse strand
+						0, // %id
+						0, // %query coverage
+						0, // number of mismatches
+						0); // number of gaps
+				}
+				if (samout_gv)
+				{
+					report_sam(output.acceptedsam, // sam output file
+						null_alignment, // SW alignment cigar
+						read.header.c_str(), //reads[readn - 1] + 1, // read name
+						0, // read sequence (in integer format)
+						0, // read quality
+						0, // reference name
+						0, // reference sequence
+						0, // read length (to compute the masked regions)
+						0, // forward or reverse strand
+						0); // edit distance
+				}
+			}//~if print_all_reads_gv
+		}// allow writing to file 1 thread at a time
+	}//~if read didn't align
+} // ~parallelTraversalJob
+
+//void Read::initScoringMatrix(Runopts & opts)
+//{
+//	int32_t l, k, m;
+	// initialize Smith-Waterman scoring matrix for genome sequences
+//	for (l = k = 0; l < 4; ++l)
+//	{
+//		for (m = 0; m < 4; ++m)
+//			scoring_matrix[k++] = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
+//		scoring_matrix[k++] = opts.score_N; // ambiguous base
+//	}
+//	for (m = 0; m < 5; ++m) scoring_matrix[k++] = opts.score_N; // ambiguous base
+//}
 
 void Read::unmarshallString(std::string matchStr) {}
 
@@ -276,11 +603,15 @@ void Reader::read() {
 
 	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		printf("failed to open %s\n", readsfile);
+		printf("failed to open %s\n", readsfile.c_str());
+		exit(EXIT_FAILURE);
 	}
 	else {
 		std::string line;
-		printf("Reader thread %d started\n", std::this_thread::get_id());
+		std::stringstream ss;
+		ss << std::this_thread::get_id();
+		printf("Reader thread %s started\n", ss.str().c_str());
+		ss.str(""); // clear the stream
 		auto t = std::chrono::high_resolution_clock::now();
 		for (;std::getline(ifs, line);) {
 			if (line[0] == FASTA_HEADER_START)
@@ -299,12 +630,14 @@ void Reader::read() {
 			else {
 				// remove whitespace from line probably
 				read.sequence += line;
+				read.seqToIntStr(); // convert sequence to integer string
 			}
 		} // ~for getline
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
-		printf("Reader thread %d done. Elapsed time: %d s Reads added: %d\n", 
-			std::this_thread::get_id(), elapsed.count(), pushCount);
+		ss << std::this_thread::get_id();
+		printf("Reader thread %s done. Elapsed time: %.2f sec Reads added: %d\n", 
+			ss.str().c_str(), elapsed.count(), pushCount);
 	}
 	ifs.close();
 } // ~Reader::read
@@ -314,40 +647,47 @@ void Processor::process()
 	Read read;
 	int countReads = 0;
 	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
-	printf("Processor thread %d started\n", std::this_thread::get_id());
+	std::stringstream ss;
+	ss << std::this_thread::get_id();
+	printf("Processor thread %s started\n", ss.str().c_str());
+	ss.str("");
 	for (;;) {
 		read = readQueue.pop();
 		// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
-		callback(read);
+		callback(readstats, index, refs, output, read);
 		writeQueue.push(read);
 		if (read.header == "") break;
 		countReads++;
 	}
 	writeQueue.mDoneAdding();
 	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
-	printf("Processor thread %d done. Processed %d reads\n", std::this_thread::get_id(), countReads);
+	ss << std::this_thread::get_id();
+	printf("Processor thread %s done. Processed %d reads\n", ss.str().c_str(), countReads);
 } // ~Processor::process
 
 // write read alignment results to disk using e.g. RocksDB
 void Writer::write()
 {
-	printf("Writer thread %d started\n", std::this_thread::get_id());
+	std::stringstream ss;
+	ss << std::this_thread::get_id();
+	printf("Writer thread %s started\n", ss.str().c_str());
+	ss.str("");
 	auto t = std::chrono::high_resolution_clock::now();
 	int numPopped = 0;
 	for (;;) {
 		Read read = writeQueue.pop();
 		++numPopped;
 		std::string matchResultsStr = read.matchesToJson();
-		std::string matchResultStrBin = read.matchesToString();
+		std::string matchResultStrBin = read.toString();
 		kvdb.put(std::to_string(read.id), matchResultsStr);
 		if (writeQueue.isDone()) break;
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-	printf("Writer thread %d done. Elapsed time: %d s Reads written: %d\n",
-		std::this_thread::get_id(), elapsed.count(), numPopped);
+	ss << std::this_thread::get_id();
+	printf("Writer thread %s done. Elapsed time: %.2f s Reads written: %d\n", ss.str().c_str(), elapsed.count(), numPopped);
 }
 
-void Output::init()
+void Output::init(Readstats & readstats)
 {
 	// attach pid to output files
 	char pidStr[4000];
@@ -363,21 +703,21 @@ void Output::init()
 		if (fastxout_gv)
 		{
 			// fasta/fastq output
-			acceptedstrings = new char[1000]();
-			if (acceptedstrings == NULL)
+			acceptedstrings.reserve(1000);
+			if (acceptedstrings.capacity() < 1000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			strcpy(acceptedstrings, opts.ptr_filetype_ar);
+			acceptedstrings.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				strcat(acceptedstrings, "_");
-				strcat(acceptedstrings, pidStr);
+				acceptedstrings.append("_");
+				acceptedstrings.append(pidStr);
 			}
-			strcat(acceptedstrings, ".");
-			strcat(acceptedstrings, readstats.suffix.c_str());
+			acceptedstrings.append(".");
+			acceptedstrings.append(readstats.suffix.c_str());
 
 			acceptedreads.open(acceptedstrings);
 			acceptedreads.close();
@@ -386,20 +726,20 @@ void Output::init()
 		if (opts.samout)
 		{
 			// sam output
-			acceptedstrings_sam = new char[1000]();
-			if (acceptedstrings_sam == NULL)
+			acceptedstrings_sam.reserve(1000);
+			if (acceptedstrings_sam.capacity() < 1000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_sam\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			strcpy(acceptedstrings_sam, opts.ptr_filetype_ar);
+			acceptedstrings_sam.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				strcat(acceptedstrings_sam, "_");
-				strcat(acceptedstrings_sam, pidStr);
+				acceptedstrings_sam.append("_");
+				acceptedstrings_sam.append(pidStr);
 			}
-			strcat(acceptedstrings_sam, ".sam");
+			acceptedstrings_sam.append(".sam");
 			acceptedsam.open(acceptedstrings_sam);
 			acceptedsam.close();
 		}
@@ -407,20 +747,20 @@ void Output::init()
 		if (opts.blastout)
 		{
 			// blast output
-			acceptedstrings_blast = new char[1000]();
-			if (acceptedstrings_blast == NULL)
+			acceptedstrings_blast.reserve(1000);
+			if (acceptedstrings_blast.capacity() < 10000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			strcpy(acceptedstrings_blast, opts.ptr_filetype_ar);
+			acceptedstrings_blast.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				strcat(acceptedstrings_blast, "_");
-				strcat(acceptedstrings_blast, pidStr);
+				acceptedstrings_blast.append("_");
+				acceptedstrings_blast.append(pidStr);
 			}
-			strcat(acceptedstrings_blast, ".blast");
+			acceptedstrings_blast.append(".blast");
 			acceptedblast.open(acceptedstrings_blast);
 			acceptedblast.close();
 		}
@@ -429,20 +769,20 @@ void Output::init()
 		{
 			// statistics file output
 			ofstream logstream;
-			logoutfile = new char[1000]();
-			if (logoutfile == NULL)
+			logoutfile.reserve(1000);
+			if (logoutfile.capacity() < 1000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			strcpy(logoutfile, opts.ptr_filetype_ar);
+			logoutfile.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				strcat(logoutfile, "_");
-				strcat(logoutfile, pidStr);
+				logoutfile.append("_");
+				logoutfile.append(pidStr);
 			}
-			strcat(logoutfile, ".log");
+			logoutfile.append(".log");
 
 			logstream.open(logoutfile);
 			logstream.close();
@@ -452,20 +792,20 @@ void Output::init()
 		{
 			// OTU map output file
 			ofstream otumap;
-			acceptedotumap_file = new char[1000]();
-			if (acceptedotumap_file == NULL)
+			acceptedotumap_file.reserve(1000);
+			if (acceptedotumap_file.capacity() < 1000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedotumap\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			strcpy(acceptedotumap_file, opts.ptr_filetype_ar);
+			acceptedotumap_file.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				strcat(acceptedotumap_file, "_");
-				strcat(acceptedotumap_file, pidStr);
+				acceptedotumap_file.append("_");
+				acceptedotumap_file.append(pidStr);
 			}
-			strcat(acceptedotumap_file, "_otus.txt");
+			acceptedotumap_file.append("_otus.txt");
 			otumap.open(acceptedotumap_file);
 			otumap.close();
 		}
@@ -473,21 +813,21 @@ void Output::init()
 		if (de_novo_otu_gv)
 		{
 			ofstream denovo_otu;
-			denovo_otus_file = new char[1000]();
-			if (denovo_otus_file == NULL)
+			denovo_otus_file.reserve(1000);
+			if (denovo_otus_file.capacity() < 1000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for denovo_otus_file_name\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-			strcpy(denovo_otus_file, opts.ptr_filetype_ar);
+			denovo_otus_file.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				strcat(denovo_otus_file, "_");
-				strcat(denovo_otus_file, pidStr);
+				denovo_otus_file.append("_");
+				denovo_otus_file.append(pidStr);
 			}
-			strcat(denovo_otus_file, "_denovo.");
-			strcat(denovo_otus_file, readstats.suffix.c_str());
+			denovo_otus_file.append("_denovo.");
+			denovo_otus_file.append(readstats.suffix.c_str());
 
 			denovo_otu.open(denovo_otus_file);
 			denovo_otu.close();
@@ -515,6 +855,7 @@ void Output::init()
 	}
 } // ~Output::init
 
+
 void paralleltraversal2(Runopts & opts)
 {
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
@@ -530,10 +871,10 @@ void paralleltraversal2(Runopts & opts)
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue(1, QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue(2, QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
-	ReadStats readstats(opts);
-	Index index(opts);
-	References refs(opts, index);
+	Readstats readstats(opts);
 	Output output(opts, readstats);
+	Index index(opts, readstats, output);
+	References refs(opts, index);
 	
 	// only search the forward xor reverse strand
 	int32_t max = 0;
@@ -569,7 +910,7 @@ void paralleltraversal2(Runopts & opts)
 				// add processor jobs
 				for (int i = 0; i < opts.num_proc_threads; i++)
 				{
-					tpool.addJob(Processor(i, readQueue, writeQueue, readstats, index, parallelTraversalJob));
+					tpool.addJob(Processor(i, readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
 				}
 				tpool.waitDone(); // wait until the jobs are done
 				++loopCount;
@@ -613,7 +954,7 @@ void paralleltraversal(
 	uint64_t total_reads_denovo_clustering = 0;
 	// the minimum occurrences of a (L/2)-mer required to allow
 	// search for a seed of length L in the burst tries
-	uint32_t minoccur = 0;
+	uint32_t minoccur = 0; // TODO: never updated i.e. always 0. What's the point?
 	// for timing different processes
 	double s, f;
 	// the comparing character used in parsing the reads file

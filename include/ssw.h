@@ -18,6 +18,7 @@
 #ifndef SSW_H
 #define SSW_H
 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -63,8 +64,6 @@ typedef struct {
     uint16_t cigarLen;
     bool strand;
 } s_align;
-
-
 
 #ifdef __cplusplus
 extern "C" {

@@ -69,6 +69,7 @@ protected:
 	void threadEntry(int i)
 	{
 		std::function <void(void)> job;
+		std::stringstream ss;
 
 		while (1)
 		{
@@ -83,13 +84,17 @@ protected:
 				{
 					// No jobs to do and shutting down
 //					std::cerr << "Thread " << std::this_thread::get_id() << " terminates" << std::endl;
-					printf("Thread %d terminates\n", std::this_thread::get_id());
+					ss << std::this_thread::get_id();
+					printf("Thread %s terminates\n", ss.str().c_str());
+					ss.str("");
 					--busy;
 					return;
 				}
 
 //				std::cerr << "Thread " << std::this_thread::get_id() << " running a job" << std::endl;
-				printf("Thread %d running a job\n", std::this_thread::get_id());
+				ss << std::this_thread::get_id();
+				printf("Thread %s running a job\n", ss.str().c_str());
+				ss.str("");
 				job = std::move(jobs_.front());
 				jobs_.pop();
 				++busy;
