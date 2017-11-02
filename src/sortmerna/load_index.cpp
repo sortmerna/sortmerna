@@ -49,16 +49,19 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	}
 
 	uint32_t limit = 1 << lnwin[idx_num];
-	lookup_tbl.reserve(limit);// = new kmer[limit]();
+//	lookup_tbl.reserve(limit);// = new kmer[limit]();
 
-	if (lookup_tbl.capacity() == 0)
+//	if (lookup_tbl.capacity() == 0)
+//	{
+//		fprintf(stderr, "\n  ERROR: failed to allocate memory for look-up table (paralleltraversal.cpp)\n\n");
+//		exit(EXIT_FAILURE);
+//	}
+
+	for (uint32_t i = 0; i < limit && !inkmer.eof(); i++)
 	{
-		fprintf(stderr, "\n  ERROR: failed to allocate memory for look-up table (paralleltraversal.cpp)\n\n");
-		exit(EXIT_FAILURE);
-	}
-
-	for (uint32_t i = 0; i < limit; i++)
+		lookup_tbl.push_back(kmer());
 		inkmer.read(reinterpret_cast<char*>(&(lookup_tbl[i].count)), sizeof(uint32_t));
+	}
 	inkmer.close();
 
 	// STEP 2: load the burst tries ( bursttrief.dat, bursttrier.dat )
@@ -255,6 +258,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	for (uint32_t i = 0; i < number_elements; i++)
 	{
 		/* the number of positions */
+		positions_tbl.push_back(kmer_origin());
 		inreff.read(reinterpret_cast<char*>(&size), sizeof(uint32_t));
 		positions_tbl[i].size = size;
 		/* the sequence seq_pos array */
@@ -1058,7 +1062,8 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 
 	// set the file pointer to the first sequence added to the index for this index file section
 	//if (fseek(fp, index.index_parts_stats_vec[idx_num][idx_part].start_part, SEEK_SET) != 0)
-	if (ifs.seekg(index.index_parts_stats_vec[idx_num][idx_part].start_part))
+	ifs.seekg(index.index_parts_stats_vec[idx_num][idx_part].start_part);
+	if (ifs.fail())
 	{
 		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not locate the sequences used to construct the index.\n",
 			startColor, "\033[0m", __LINE__, __FILE__);
@@ -1075,6 +1080,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 		if (line[0] == FASTA_HEADER_START)
 		{
 			count = 0; // first line is header - skip
+			num_seq_read++;
 		}
 		else 
 		{
@@ -1089,7 +1095,6 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 			fix_ambiguous_char(line); // second line is sequence - store in buffer
 			buffer.push_back(line);
 		}
-		num_seq_read++;
 	}
 } // ~References::load
 

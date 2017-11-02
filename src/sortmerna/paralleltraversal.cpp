@@ -300,10 +300,12 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 	// the read length is too short
 	if (read.sequence.size()  < index.lnwin[index.index_num])
 	{
-		fprintf(stderr, "\n  %sWARNING%s: At least one of the reads is shorter "
-			"than %u nucleotides, ", "\033[0;33m", "\033[0m",
-			index.lnwin[index.index_num]);
-		fprintf(stderr, "by default it will not be searched\n ");
+		std::stringstream ss;
+		ss << std::this_thread::get_id();
+		fprintf(stderr, "\n  %sWARNING%s: Processor thread: %s The read %d is shorter "
+			"than %u nucleotides, by default it will not be searched\n", "\033[0;33m", "\033[0m", 
+			ss.str().c_str(), read.id, index.lnwin[index.index_num]);
+		read.isValid = false;
 		return;
 	}
 
@@ -597,8 +599,6 @@ void Read::unmarshallString(std::string matchStr) {}
 void Read::unmarshallJson(std::string jsonStr) {}
 
 void Reader::read() {
-	Read read;
-	int id = 0;
 	int pushCount = 0;
 
 	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
@@ -608,31 +608,43 @@ void Reader::read() {
 	}
 	else {
 		std::string line;
+		int id = 0;
+		std::string hdr = "";
+		std::string seq = "";
 		std::stringstream ss;
 		ss << std::this_thread::get_id();
 		printf("Reader thread %s started\n", ss.str().c_str());
 		ss.str(""); // clear the stream
 		auto t = std::chrono::high_resolution_clock::now();
-		for (;std::getline(ifs, line);) {
-			if (line[0] == FASTA_HEADER_START)
+		// lastRec is to make one iteration past the EOF
+		for ( bool lastRec = false; ; ) 
+		{
+			if (!lastRec) std::getline(ifs, line);
+			if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
+			if (line[0] == FASTA_HEADER_START || lastRec)
 			{
-				if (read.header != "")
+				if (hdr != "")
 				{
-					read.id = id++;
+					++id;
 					if (loopCount > 0)
-						read.unmarshallJson(kvdb.get(std::to_string(read.id))); // get matches from Key-value database
+						Read::unmarshallJson(kvdb.get(std::to_string(id))); // get matches from Key-value database
+					Read read(id, hdr, seq, "", "", true);
 					readQueue.push(read);
-					pushCount++;
+					hdr = "";
+					++pushCount;
+
+					if (lastRec) break;
 					//std::cout << "Pushed: " << rec.header << std::endl;
 				}
-				read.header = line;
+				hdr = line;
 			}
 			else {
 				// remove whitespace from line probably
-				read.sequence += line;
-				read.seqToIntStr(); // convert sequence to integer string
+				seq += line;
+				if (ifs.eof()) lastRec = true; // push and break
 			}
 		} // ~for getline
+
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
 		ss << std::this_thread::get_id();
@@ -644,7 +656,6 @@ void Reader::read() {
 
 void Processor::process()
 {
-	Read read;
 	int countReads = 0;
 	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
 	std::stringstream ss;
@@ -652,10 +663,11 @@ void Processor::process()
 	printf("Processor thread %s started\n", ss.str().c_str());
 	ss.str("");
 	for (;;) {
-		read = readQueue.pop();
+		Read read = readQueue.pop();
 		// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
 		callback(readstats, index, refs, output, read);
-		writeQueue.push(read);
+		if (read.isValid)
+			writeQueue.push(read);
 		if (read.header == "") break;
 		countReads++;
 	}
@@ -748,7 +760,7 @@ void Output::init(Readstats & readstats)
 		{
 			// blast output
 			acceptedstrings_blast.reserve(1000);
-			if (acceptedstrings_blast.capacity() < 10000)
+			if (acceptedstrings_blast.capacity() < 1000)
 			{
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
 					startColor, "\033[0m", __LINE__, __FILE__);
@@ -867,10 +879,9 @@ void paralleltraversal2(Runopts & opts)
 		printf("WARN: Number of cores: %d is less than number allocated threads %d", numCores, numThreads);
 
 	ThreadPool tpool(numThreads);
-
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	ReadsQueue readQueue(1, QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue(2, QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
+	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
 	Readstats readstats(opts);
 	Output output(opts, readstats);
 	Index index(opts, readstats, output);
@@ -903,14 +914,14 @@ void paralleltraversal2(Runopts & opts)
 			{
 				for (int i = 0; i < opts.num_fread_threads; i++)
 				{
-					tpool.addJob(Reader(i, readQueue, opts.readsfile, kvdb, loopCount));
-					tpool.addJob(Writer(i, writeQueue, kvdb));
+					tpool.addJob(Reader("reader_" + std::to_string(i), readQueue, opts.readsfile, kvdb, loopCount));
+					tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
 				}
 
 				// add processor jobs
 				for (int i = 0; i < opts.num_proc_threads; i++)
 				{
-					tpool.addJob(Processor(i, readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
+					tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
 				}
 				tpool.waitDone(); // wait until the jobs are done
 				++loopCount;

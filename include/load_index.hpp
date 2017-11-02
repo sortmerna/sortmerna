@@ -94,7 +94,7 @@ struct Index {
 	std::vector<vector<index_parts_stats>> index_parts_stats_vec; /**< statistics for index files' parts */
 	std::vector<uint64_t> full_ref;   /**< corrected size of each reference index (for computing E-value) */
 	std::vector<uint64_t> full_read;  /**< corrected size of reads (for computing E-value) */
-	std::vector<uint32_t> lnwin;      /**< length of seed (sliding window L). Unique per DB. Const. Obtained in Main thread. Thread safe */
+	std::vector<uint32_t> lnwin;      /**< length of seed (sliding window L). Unique per DB. Const. Obtained in Main thread. Thread safe. Set by 'load_stats' */
 	std::vector<uint32_t> partialwin; /**< length of seed/2 */
 	std::vector<uint32_t> minimal_score; /**< minimal SW score in order to reach threshold E-value */
 	//uint64_t number_total_read;      /**< total number of reads in input reads file --> ReadStats */
@@ -129,6 +129,8 @@ struct Index {
 		numseq(opts.indexfiles.size(), 0)
 	{
 		load_stats(readstats, output);
+//		lookup_tbl = new kmer[(1 << lnwin)](); // init lookup_tbl
+		// init positions_tbl
 	}
 	~Index() {}
 
@@ -139,7 +141,7 @@ struct Index {
 
 class References {
 public:
-	References(Runopts & opts, Index & index) : opts(opts), index(index), buffer(10,0) {}
+	References(Runopts & opts, Index & index) : opts(opts), index(index) {}
 	~References() {}
 
 	void load(uint32_t idx_num, uint32_t idx_part);

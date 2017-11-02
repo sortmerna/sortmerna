@@ -216,6 +216,7 @@ struct Readstats {
  */
 struct Read {
 	int id = 0; // number of the read in the reads file
+	bool isValid = true;
 
 	std::string header;
 	std::string sequence;
@@ -273,8 +274,10 @@ struct Read {
 		//hits_align_info.ptr->strand = 0;
 	}
 
-	Read(Runopts & opts, int id, std::string header, std::string sequence, std::string quality, std::string format) 
-		: id(id), header(header), sequence(sequence), quality(quality), format(format) 
+	Read(int id, std::string header, std::string sequence, std::string quality, std::string format, bool isValid) 
+		: 
+		id(id), header(std::move(header)), sequence(sequence), 
+		quality(quality), format(format), isValid(isValid)
 	{
 		validate();
 		seqToIntStr();
@@ -386,17 +389,17 @@ struct Read {
 	} // ~Read::toString
 
 	// deserialize matches from string
-	void unmarshallString(std::string matchStr);
+	static void unmarshallString(std::string matchStr);
 
 	// deserialize matches from JSON
-	void unmarshallJson(std::string jsonStr);
+	static void unmarshallJson(std::string jsonStr);
 }; // ~struct Read
 
 /**
  * Queue for Reads' records. Concurrently accessed by the Reader (producer) and the Processors (consumers)
  */
 class ReadsQueue {
-	int id;
+	std::string id;
 	std::queue<Read> recs; // shared: Reader & Processors, Writer & Processors
 	int capacity; // max size of the queue
 //	int queueSizeAvr; // average size of the queue
@@ -409,18 +412,26 @@ class ReadsQueue {
 	std::condition_variable cv;
 
 public:
-	ReadsQueue(int id, int capacity, int numPushers)
-		: id(id), capacity(capacity), doneAdding(false), numPushers(numPushers) {}
+	ReadsQueue(std::string id, int capacity, int numPushers)
+		: 
+		id(id), 
+		capacity(capacity), 
+		doneAdding(false), 
+		numPushers(numPushers) 
+	{
+		printf("%s created\n", id.c_str());
+	}
 	~ReadsQueue() { 
-		printf("Destructor called on queue %d  recs.size= %zu pushed: %d  popped: %d\n", 
-			id, recs.size(), numPushed, numPopped); 
+		printf("Destructor called on %s  recs.size= %zu pushed: %d  popped: %d\n", 
+			id.c_str(), recs.size(), numPushed, numPopped); 
 	}
 
 	void push(Read & readsrec) {
 		std::unique_lock<std::mutex> l(lock);
 		cv.wait(l, [this] {return recs.size() < capacity;});
-		recs.push(readsrec);
+		recs.push(std::move(readsrec));
 		++numPushed;
+		printf("%s Pushed id: %d header: %s sequence: %s\n", id.c_str(), readsrec.id, readsrec.header.c_str(), readsrec.sequence.c_str());
 //		l.unlock();
 		cv.notify_one();
 	}
@@ -434,12 +445,12 @@ public:
 			rec = recs.front();
 			recs.pop();
 			++numPopped;
-			if (numPopped % 10000 == 0)
-			{
-				stringstream ss;
-				ss << std::this_thread::get_id();
-				printf("\rThread %s Pushed: %d Popped: %d", ss.str().c_str(), numPushed, numPopped);
-			}
+			//if (numPopped % 10000 == 0)
+			//{
+			printf("%s Popped id: %d header: %s sequence: %s\n", id.c_str(), rec.id, rec.header.c_str(), rec.sequence.c_str());
+//				printf("Thread %s Pushed: %d Popped: %d\n", ss.str().c_str(), numPushed, numPopped);
+				//printf("\rThread %s Pushed: %d Popped: %d", ss.str().c_str(), numPushed, numPopped);
+			//}
 		}
 		//	l.unlock(); // probably redundant. The lock is released when function returns
 		cv.notify_one();
@@ -495,12 +506,12 @@ private:
 // reads Reads and Readstats files, generates Read objects and pushes them onto ReadsQueue
 class Reader {
 public:
-	Reader(int id, ReadsQueue & readQueue, std::string & readsfile, KeyValueDatabase & kvdb, int loopCount)
+	Reader(std::string id, ReadsQueue & readQueue, std::string & readsfile, KeyValueDatabase & kvdb, int loopCount)
 		: id(id), readQueue(readQueue), readsfile(readsfile), kvdb(kvdb), loopCount(loopCount) {}
 	void operator()() { read(); }
 	void read();
 private:
-	int id;
+	std::string id;
 	int loopCount; // counter of processing iterations.
 	ReadsQueue & readQueue; // shared with Processor
 	std::string & readsfile;
@@ -509,21 +520,21 @@ private:
 
 class Writer {
 public:
-	Writer(int id, ReadsQueue & writeQueue, KeyValueDatabase & kvdb)
+	Writer(std::string id, ReadsQueue & writeQueue, KeyValueDatabase & kvdb)
 		: id(id), writeQueue(writeQueue), kvdb(kvdb) {}
 	~Writer() {}
 
 	void operator()() { write(); }
 	void write();
 private:
-	int id;
+	std::string id;
 	ReadsQueue & writeQueue; // shared with Processor
 	KeyValueDatabase & kvdb; // key-value database path (from Options)
 };
 
 class Processor {
 public:
-	Processor(int id, 
+	Processor(std::string id,
 		ReadsQueue & readQueue,
 		ReadsQueue & writeQueue,
 		Readstats & readstats,
@@ -544,7 +555,7 @@ public:
 	void operator()() { process(); }
 	void process(); // TODO: make private?
 private:
-	int id;
+	std::string id;
 	ReadsQueue & readQueue;
 	ReadsQueue & writeQueue;
 	Readstats & readstats;
