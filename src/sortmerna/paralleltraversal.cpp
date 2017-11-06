@@ -322,12 +322,11 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 	uint32_t windowshift = index.opts.skiplengths[index.index_num][0];
 	// keep track of windows which have been already traversed in the burst trie
 	vector<bool> read_index_hits(read.sequence.size());
-	// Pass number (possible value 0,1,2)
-	uint32_t pass_n = 0;
+	
+	uint32_t pass_n = 0; // Pass number (possible value 0,1,2)
 	// the maximum SW score attainable for this read
 	uint32_t max_SW_score = read.sequence.size() *index.opts.match;
-	// loop for each new Pass to granulate seed search intervals
-	bool search = true;
+
 	std::vector<MYBITSET> vbitwindowsf;
 	std::vector<MYBITSET> vbitwindowsr;
 
@@ -337,7 +336,8 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 
 	uint32_t minoccur = 0; // TODO: never updated. Always 0. What's the point?
 
-	do
+	// loop for each new Pass to granulate seed search intervals
+	for	(bool search = true; search; )
 	{
 #ifdef debug_align
 		cout << "\tpass = " << pass_n << endl; //TESTING
@@ -359,10 +359,12 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 				vector< id_win > id_hits; // TODO: why not to add directly to 'id_win_hits'?
 				vbitwindowsf.resize(bit_vector_size);
 				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
+
 				init_win_f(&read.seq_int_str[read_index + index.partialwin[index.index_num]],
 					&vbitwindowsf[0],
 					&vbitwindowsf[4],
 					index.numbvs[index.index_num]);
+
 				uint32_t keyf = 0;
 				char *keyf_ptr = &read.seq_int_str[read_index];
 				// build hash for first half windows (foward and reverse)
@@ -524,13 +526,12 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 						else windowshift = index.opts.skiplengths[index.index_num][pass_n];
 					}
 				}
-				// do not offset final window on read
-				break;
+				break; // do not offset final window on read
 			}//~( win_num == NUMWIN-1 )
 			read_index += windowshift;
 		}//~for (each window)                
 		 //~while all three window skip lengths have not been tested, or a match has not been found
-	} while (search);
+	}// while (search);
 
 	// the read didn't align (for --num_alignments [INT] option),
 	// output null alignment string
@@ -596,7 +597,10 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 
 void Read::unmarshallString(std::string matchStr) {}
 
-void Read::unmarshallJson(std::string jsonStr) {}
+void Read::unmarshallJson(KeyValueDatabase & kvdb)
+{
+	printf("Read::unmarshallJson: Not yet Implemented\n");
+}
 
 void Reader::read() {
 	int pushCount = 0;
@@ -609,8 +613,7 @@ void Reader::read() {
 	else {
 		std::string line;
 		int id = 0;
-		std::string hdr = "";
-		std::string seq = "";
+		Read read; // an empty read
 		std::stringstream ss;
 		ss << std::this_thread::get_id();
 		printf("Reader thread %s started\n", ss.str().c_str());
@@ -623,24 +626,23 @@ void Reader::read() {
 			if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
 			if (line[0] == FASTA_HEADER_START || lastRec)
 			{
-				if (hdr != "")
+				if (!read.isEmpty)
 				{
 					++id;
-					if (loopCount > 0)
-						Read::unmarshallJson(kvdb.get(std::to_string(id))); // get matches from Key-value database
-					Read read(id, hdr, seq, "", "", true);
+					read.init(kvdb);
 					readQueue.push(read);
-					hdr = "";
+					read.empty();
 					++pushCount;
 
 					if (lastRec) break;
 					//std::cout << "Pushed: " << rec.header << std::endl;
 				}
-				hdr = line;
+				read.header = line;
+				read.isEmpty = false;
 			}
 			else {
 				// remove whitespace from line probably
-				seq += line;
+				read.sequence += line;
 				if (ifs.eof()) lastRec = true; // push and break
 			}
 		} // ~for getline
@@ -664,11 +666,26 @@ void Processor::process()
 	ss.str("");
 	for (;;) {
 		Read read = readQueue.pop();
-		// std::cout << "Processor " << id << " Popped: " << rec.header << std::endl;
-		callback(readstats, index, refs, output, read);
+		if (read.isEmpty || !read.isValid)
+		{
+			if (readQueue.isDone()) break;
+			else continue;
+		}
+
+		// search the forward and/or reverse strands depending on Run options
+		int32_t max = 0;
+		index.opts.forward = true;
+		if (index.opts.forward ^ index.opts.reverse) max = 1; // only search the forward xor reverse strand
+		else max = 2; // search both strands
+		for (int32_t strand = 0; strand < max; strand++)
+		{
+			if (strand == 1)
+				read.revIntStr(); // reverse the sequence
+			callback(readstats, index, refs, output, read);
+		}
 		if (read.isValid)
 			writeQueue.push(read);
-		if (read.header == "") break;
+
 		countReads++;
 	}
 	writeQueue.mDoneAdding();
@@ -688,11 +705,16 @@ void Writer::write()
 	int numPopped = 0;
 	for (;;) {
 		Read read = writeQueue.pop();
+		if (!read.isValid || read.isEmpty)
+		{
+			if (writeQueue.isDone()) break;
+			else continue;
+		}
 		++numPopped;
 		std::string matchResultsStr = read.matchesToJson();
 		std::string matchResultStrBin = read.toString();
 		kvdb.put(std::to_string(read.id), matchResultsStr);
-		if (writeQueue.isDone()) break;
+		//if (writeQueue.isDone()) break;
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 	ss << std::this_thread::get_id();
@@ -886,12 +908,6 @@ void paralleltraversal2(Runopts & opts)
 	Output output(opts, readstats);
 	Index index(opts, readstats, output);
 	References refs(opts, index);
-	
-	// only search the forward xor reverse strand
-	int32_t max = 0;
-	forward_gv = true;
-	if (forward_gv ^ reverse_gv) max = 1;
-	else max = 2; // search both strands
 
 	int loopCount = 0; // counter of total number of processing iterations
 
@@ -909,23 +925,19 @@ void paralleltraversal2(Runopts & opts)
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 			eprintf("done [%.2f sec]\n", elapsed.count());
 
-			// search the forward and/or reverse strands
-			for (int32_t strand = 0; strand < max; strand++)
+			for (int i = 0; i < opts.num_fread_threads; i++)
 			{
-				for (int i = 0; i < opts.num_fread_threads; i++)
-				{
-					tpool.addJob(Reader("reader_" + std::to_string(i), readQueue, opts.readsfile, kvdb, loopCount));
-					tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
-				}
-
-				// add processor jobs
-				for (int i = 0; i < opts.num_proc_threads; i++)
-				{
-					tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
-				}
-				tpool.waitDone(); // wait until the jobs are done
-				++loopCount;
+				tpool.addJob(Reader("reader_" + std::to_string(i), readQueue, opts.readsfile, kvdb, loopCount));
+				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
 			}
+
+			// add processor jobs
+			for (int i = 0; i < opts.num_proc_threads; i++)
+			{
+				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
+			}
+
+			++loopCount;
 		} // ~for(idx_part)
 	} // ~for(index_num)
 } // ~paralleltraversal2

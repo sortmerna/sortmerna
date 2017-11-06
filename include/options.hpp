@@ -11,8 +11,11 @@
 #include <string>
 
 struct Runopts {
-	std::vector<std::pair<std::string, std::string>> indexfiles; // pairs: (Reference file, Index name)
-	std::vector<std::vector<uint32_t>> skiplengths = { {1,1,1}, { 1,1,1 }, { 1,1,1 } }; // '--passes' e.g. [[1,1,1], [1,1,1], [1,1,1]]
+	// required '--refs': Pairs (Reference file, Index name)
+	std::vector<std::pair<std::string, std::string>> indexfiles;
+	// optional '--passes': for each index file three intervals at which to place the seed on the read.
+	// init to 0 if '--passes' not provided. Set in Index::load_stats
+	std::vector<std::vector<uint32_t>> skiplengths;
 	std::string kvdbPath = "C:/a01_projects/clarity_genomics/data/kvdb"; // key-value database for match results
 
 	int num_cpus = 1; // number of CPUs on this machine
@@ -52,7 +55,17 @@ struct Runopts {
 
 	std::string cmdline;
 
-	Runopts(int argc, char**argv, bool dryrun) { process(argc, argv, dryrun); }
+	Runopts(int argc, char**argv, bool dryrun) 
+	{ 
+		process(argc, argv, dryrun);
+		if (skiplengths.empty())
+		{
+			for ( int i = 0; i < indexfiles.size(); ++i )
+			{
+				skiplengths.push_back({ 0,0,0 });
+			}
+		}
+	}
 	~Runopts() {}
 
 	void process(int argc, char**argv, bool dryrun);

@@ -53,6 +53,9 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/options.h"
 
+// forward
+//class KeyValueDatabase;
+
  /*! @fn check_file_format()
 	 @brief check input reads file format (FASTA, FASTQ or unrecognized)
 	 @param char* inputreads
@@ -150,6 +153,33 @@ void paralleltraversal2(Runopts & opts);
 // "Producer-Consumer" concurrent pattern participants
 //
 
+class KeyValueDatabase {
+public:
+	KeyValueDatabase(std::string kvdbPath) {
+		// init and open key-value database for read matches
+		options.IncreaseParallelism();
+		options.compression = rocksdb::kXpressCompression;
+		options.create_if_missing = true;
+		rocksdb::Status s = rocksdb::DB::Open(options, kvdbPath, &kvdb);
+		assert(s.ok());
+	}
+	~KeyValueDatabase() { delete kvdb; }
+
+	void put(std::string key, std::string val)
+	{
+		rocksdb::Status s = kvdb->Put(rocksdb::WriteOptions(), key, val);
+	}
+
+	std::string get(std::string key)
+	{
+		std::string val;
+		rocksdb::Status s = kvdb->Get(rocksdb::ReadOptions(), key, &val);
+		return val;
+	}
+private:
+	rocksdb::DB* kvdb;
+	rocksdb::Options options;
+};
 
 
 // Collective Statistics for all Reads. Encapsulates old 'compute_read_stats' logic and results
@@ -216,7 +246,8 @@ struct Readstats {
  */
 struct Read {
 	int id = 0; // number of the read in the reads file
-	bool isValid = true;
+	bool isValid; // flags the record is not valid
+	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
 
 	std::string header;
 	std::string sequence;
@@ -249,8 +280,8 @@ struct Read {
 
 	const char complement[4] = { '3','2','1','0' };
 
-
-	Read(): scoring_matrix(25,0) {
+	Read() : isValid(false), isEmpty(true), scoring_matrix(25, 0) 
+	{
 		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
 		if (min_lis_gv > 0) best = min_lis_gv;
 		// create new instance of alignments
@@ -274,10 +305,10 @@ struct Read {
 		//hits_align_info.ptr->strand = 0;
 	}
 
-	Read(int id, std::string header, std::string sequence, std::string quality, std::string format, bool isValid) 
+	Read(int id, std::string header, std::string sequence, std::string quality, std::string format) 
 		: 
 		id(id), header(std::move(header)), sequence(sequence), 
-		quality(quality), format(format), isValid(isValid)
+		quality(quality), format(format), isEmpty(false)
 	{
 		validate();
 		seqToIntStr();
@@ -296,14 +327,29 @@ struct Read {
 
 	// copy constructor
 	Read(const Read & that)
-	{}
+	{
+		id = that.id;
+		isValid = that.isValid;
+		isEmpty = that.isEmpty;
+		header = that.header;
+		sequence = that.sequence;
+		seq_int_str = that.seq_int_str;
+	}
 
 	// copy assignment
 	Read & operator=(const Read & that)
 	{
-		if (this != &that)
-		{}
-		return *this;
+		if (&that == this) return *this;
+
+		printf("Read copy assignment called\n");
+		id = that.id;
+		isValid = that.isValid;
+		isEmpty = that.isEmpty;
+		header = that.header;
+		sequence = that.sequence;
+		seq_int_str = that.seq_int_str;
+
+		return *this; // by convention always return *this
 	}
 
 //	void initScoringMatrix(Runopts & opts);
@@ -337,7 +383,23 @@ struct Read {
 			fprintf(stderr, "  Please check your reads or contact the authors.\n");
 			exit(EXIT_FAILURE);
 		}
+		isValid = true;
 	} // ~validate
+
+	void empty()
+	{
+		header = "";
+		sequence = "";
+		isValid = false;
+		isEmpty = true;
+	}
+
+	void init(KeyValueDatabase & kvdb)
+	{
+		validate();
+		seqToIntStr();
+		unmarshallJson(kvdb); // get matches from Key-value database
+	}
 
 
 	std::string matchesToJson() {
@@ -389,10 +451,10 @@ struct Read {
 	} // ~Read::toString
 
 	// deserialize matches from string
-	static void unmarshallString(std::string matchStr);
+	void unmarshallString(std::string matchStr);
 
-	// deserialize matches from JSON
-	static void unmarshallJson(std::string jsonStr);
+	// deserialize matches from JSON and populate the read
+	void unmarshallJson(KeyValueDatabase & kvdb);
 }; // ~struct Read
 
 /**
@@ -473,34 +535,6 @@ public:
 struct ReadWriterCounterQueue {
 	ReadWriterCounterQueue(){}
 	~ReadWriterCounterQueue() {}
-};
-
-class KeyValueDatabase {
-public:
-	KeyValueDatabase(std::string kvdbPath) {
-		// init and open key-value database for read matches
-		options.IncreaseParallelism();
-		options.compression = rocksdb::kXpressCompression;
-		options.create_if_missing = true;
-		rocksdb::Status s = rocksdb::DB::Open(options, kvdbPath, &kvdb);
-		assert(s.ok());
-	}
-	~KeyValueDatabase() { delete kvdb; }
-
-	void put(std::string key, std::string val)
-	{
-		rocksdb::Status s = kvdb->Put(rocksdb::WriteOptions(), key, val);
-	}
-
-	std::string get(std::string key)
-	{
-		std::string val;
-		rocksdb::Status s = kvdb->Get(rocksdb::ReadOptions(), key, &val);
-		return val;
-	}
-private:
-	rocksdb::DB* kvdb;
-	rocksdb::Options options;
 };
 
 // reads Reads and Readstats files, generates Read objects and pushes them onto ReadsQueue

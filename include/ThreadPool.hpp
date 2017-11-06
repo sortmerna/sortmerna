@@ -22,7 +22,7 @@ class ThreadPool
 {
 public:
 
-	ThreadPool(int numThreads) : shutdown_(false), busy()
+	ThreadPool(int numThreads) : shutdown_(false), busy(0)
 	{
 		// Create the specified number of threads
 		threads_.reserve(numThreads);
@@ -39,12 +39,7 @@ public:
 			shutdown_ = true;
 			cv_jobs.notify_all();
 		}
-
-		// Wait for all threads to stop
-//		std::cerr << "Joining threads" << std::endl;
-//		printf("Joining threads\n");
-		for (auto& thread : threads_)
-			thread.join();
+		joinAll();
 	}
 
 	/** 
@@ -64,6 +59,13 @@ public:
 		cv_done.wait(lock, [this]() { return jobs_.empty() && (busy == 0); });
 	}
 
+	// Wait for all threads to stop
+	void joinAll()
+	{
+		for (auto& thread : threads_)
+			thread.join();
+	}
+
 protected:
 
 	void threadEntry(int i)
@@ -71,7 +73,7 @@ protected:
 		std::function <void(void)> job;
 		std::stringstream ss;
 
-		while (1)
+		for (;;)
 		{
 			{
 				std::unique_lock <std::mutex> l(lock_);
@@ -85,7 +87,7 @@ protected:
 					// No jobs to do and shutting down
 //					std::cerr << "Thread " << std::this_thread::get_id() << " terminates" << std::endl;
 					ss << std::this_thread::get_id();
-					printf("Thread %s terminates\n", ss.str().c_str());
+					printf("Thread %s job done\n", ss.str().c_str());
 					ss.str("");
 					--busy;
 					return;
@@ -101,7 +103,7 @@ protected:
 			}
 
 			job(); // Do the job without holding any locks
-		}
+		} // ~for
 	} // ~threadEntry
 
 	std::mutex lock_;
@@ -110,6 +112,6 @@ protected:
 	bool shutdown_;
 	std::queue <std::function <void(void)>> jobs_;
 	std::vector <std::thread> threads_;
-	unsigned int busy;
+	unsigned int busy; // counter of running jobs jobs
 }; // ~class ThreadPool
 
