@@ -30,8 +30,13 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
+// TODO: BUG: if SMR headers moved down after 3rd party, 'timeval' struct gets 'redefined' - compiler error. That's a header mess bug.
+// SMR
 #include "options.hpp"
 #include "paralleltraversal.hpp"
+#include "common.hpp"
+
+// standard
 #include <limits>
 #include <dirent.h>
 
@@ -39,6 +44,10 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #endif
+
+// 3rd party
+#include "zlib.h"
+
 
 #if defined(_WIN32)
 const char DELIM = ';';

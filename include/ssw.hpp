@@ -1,3 +1,4 @@
+#pragma once
 /**
  * FILE: ssw.hpp
  * Created: Oct 28, 2017 Sat

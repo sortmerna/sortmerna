@@ -35,16 +35,12 @@
 #include <map>
 #include <queue>
 #include <algorithm>
+
 #include "traverse_bursttrie.hpp"
 #include "outputformats.hpp"
 #include "ssw.hpp"
 
 using namespace std;
-
-struct Read;
-struct Index;
-class References;
-class Output;
 
 /*! @brief Number of slots by which to dynamically
            increment the array storing all alignments
@@ -115,46 +111,6 @@ struct alignment_struct
                    uint32_t min,
                    uint32_t max,
                    s_align* p) : max_size(max_size), size(size), min_index(min), max_index(max), ptr(p) {}
-};
-
-struct alignment_struct2
-{
-	uint32_t max_size; // max size of s_align array
-	uint32_t size; // actual size of s_align array
-	uint32_t min_index;
-	uint32_t max_index;
-	std::vector<s_align2> alignv;
-
-	alignment_struct2() : max_size(0), size(0), min_index(0), max_index(0) {}
-	alignment_struct2(uint32_t max_size, uint32_t size,	uint32_t min, uint32_t max)
-		: max_size(max_size), size(size), min_index(min), max_index(max) {}
-
-	// copy constructor
-	alignment_struct2(const alignment_struct2 & that)
-	{}
-
-	// copy assignment
-	alignment_struct2 & operator=(const alignment_struct2 & that)
-	{
-		if (this != &that)
-		{		}
-		return *this;
-	}
-
-	// convert to binary string
-	std::string toString()
-	{
-		int bufsize = 4 * sizeof(max_size);
-		std::string buf(bufsize, 0);
-		int bufidx = 0;
-		// max_size, size, min_index, max_index
-		char * pch = reinterpret_cast<char *>(&max_size);
-		for (int i = 0; i < 4 * sizeof(max_size); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// alignv
-		for (auto it = alignv.begin(); it < alignv.end(); ++it) buf.append(it->toString());
-
-		return buf;
-	}
 };
 
 /*! @fn compute_lis_alignment()
@@ -244,13 +200,6 @@ void compute_lis_alignment(
 	uint64_t full_read_index_num /**< size of all read sequences in current memory map */,
 	ofstream& acceptedblast /**< output stream for aligned reads in BLAST format */,
 	ofstream& acceptedsam /**< output stream for aligned reads in SAM format */
-);
-
-void compute_lis_alignment2(
-	Read & read, Index & index,	References & refs, Output & output,
-	bool & search,
-	uint32_t max_SW_score,
-	bool& read_to_count
 );
 
 #endif // ~ALIGNMENT_H

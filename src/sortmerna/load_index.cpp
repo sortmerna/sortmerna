@@ -29,10 +29,14 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
-#include "../include/load_index.hpp"
-#include "paralleltraversal.hpp"
+
+#include <deque>
 #include <chrono>
 
+#include "load_index.hpp"
+#include "paralleltraversal.hpp"
+#include "index.hpp"
+#include "references.hpp"
 
 
 void Index::load(uint32_t idx_num, uint32_t idx_part) 
@@ -120,7 +124,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 					if (j == 0) lookup_tbl[i].trie_F = (NodeElement*)dst;
 					else lookup_tbl[i].trie_R = (NodeElement*)dst;
 					// queue to store the trie nodes as we create them
-					deque<NodeElement*> nodes;
+					std::deque<NodeElement*> nodes;
 					nodes.push_back((NodeElement*)dst);
 					((NodeElement *&)dst) += 4;
 					// queue to store the flags of node elements given in the binary file
@@ -1074,28 +1078,72 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 	// load references sequences, skipping the new lines & spaces in the fasta format
 	uint64_t num_seq_read = 0;
 	std::string line;
+	References::BaseRecord rec;
+	bool isFastq = true;
+	bool lastRec = false;
 
-	for ( int count=0; std::getline(ifs, line) && (num_seq_read != numseq_part); ++count ) 
+	//for ( int count=0, bool lastRec = false; std::getline(ifs, line) && (num_seq_read != numseq_part); ++count )
+	for ( int count = 0; num_seq_read != numseq_part; )
 	{
-		if (line[0] == FASTA_HEADER_START)
+		if (!lastRec) std::getline(ifs, line);
+
+		if (line.empty() && !lastRec)
 		{
-			count = 0; // first line is header - skip
-			num_seq_read++;
+			if (ifs.eof()) lastRec = true;
+			continue;
 		}
-		else 
+
+		if (lastRec)
+		{
+			if (!rec.isEmpty)
+			{
+				buffer.push_back(rec);
+				num_seq_read++;
+			}
+			break;
+		}
+
+		if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
+		// fastq: 0(header), 1(seq), 2(+), 3(quality)
+		// fasta: 0(header), 1(seq)
+		if ( line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START )
+		{
+			if (!rec.isEmpty)
+			{
+				buffer.push_back(rec); // push record created before this current header
+				rec.isEmpty = true;
+				num_seq_read++;
+				count = 0;
+			}
+
+			// start new record
+			rec.clear();
+			isFastq = (line[0] == FASTQ_HEADER_START);
+			rec.format = isFastq ? Format::FASTQ : Format::FASTA;
+			rec.header = line;
+			rec.isEmpty = false;
+		} // ~header or last record
+		else
 		{
 			++count;
-			if (count > 2) {
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA format "
+			if ((!isFastq && count > 1) || (isFastq && count > 3)) {
+				fprintf(stderr, "  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA/Q format "
 					"(there is an extra new line).", startColor, "\033[0m", __LINE__, __FILE__);
 				exit(EXIT_FAILURE);
 			}
-				
-			// line = removeWs(line); // remove whitespace from line probably
-			fix_ambiguous_char(line); // second line is sequence - store in buffer
-			buffer.push_back(line);
-		}
-	}
+			if (isFastq && line[0] == '+') continue;
+			if (isFastq && count == 3)
+			{
+				// line = removeWs(line); // remove whitespace from line 
+				rec.quality = line;
+				continue;
+			}
+			fix_ambiguous_char(line);
+			// remove whitespace from line probably
+			rec.sequence += line;
+		} // ~not header
+		if (ifs.eof()) lastRec = true; // push and break
+	} // ~for
 } // ~References::load
 
 void References::fix_ambiguous_char(std::string & seq)

@@ -30,8 +30,25 @@
  */
 
 #include "paralleltraversal.hpp"
+#include "load_index.hpp"
+#include "kseq.h"
+#include "kseq_load.hpp"
+#include "traverse_bursttrie.hpp"
+#include "alignment.hpp"
+#include "alignment2.hpp"
+#include "mmap.hpp"
+
 #include "options.hpp"
 #include "ThreadPool.hpp"
+#include "read.hpp"
+#include "readstats.hpp"
+#include "index.hpp"
+#include "references.hpp"
+#include "readsqueue.hpp"
+#include "kvdb.hpp"
+#include "processor.hpp"
+#include "reader.hpp"
+#include "writer.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -477,7 +494,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 					//best_x, Read::best
 					// readn,  Read::id
 					//num_alignments_x,  Read::num_alignments
-					//readlen,  Read::sequence.lenght
+					//readlen,  Read::sequence.length
 					//lnwin[index_num],  Index::lnwin
 					//index_num,  Index::index_num
 					//reference_seq_len, // References
@@ -503,8 +520,8 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 					//file_sections, Mmap related
 					//reads, Read
 					//finalnt,  marks the end of mmap'd region
-					//gumbel[index_num].first,  Index::gambel
-					//gumbel[index_num].second, Index::gambel
+					//gumbel[index_num].first,  Index::gambel[index_num].first
+					//gumbel[index_num].second, Index::gambel[index_num].second
 					//full_ref[index_num], Index::
 					//full_read[index_num], Index::
 					//acceptedblast,  Output::acceptedblast
@@ -664,7 +681,8 @@ void Processor::process()
 	ss << std::this_thread::get_id();
 	printf("Processor thread %s started\n", ss.str().c_str());
 	ss.str("");
-	for (;;) {
+	for (;;) 
+	{
 		Read read = readQueue.pop();
 		if (read.isEmpty || !read.isValid)
 		{
@@ -673,13 +691,13 @@ void Processor::process()
 		}
 
 		// search the forward and/or reverse strands depending on Run options
-		int32_t max = 0;
+		int32_t strandCount = 0;
 		index.opts.forward = true;
-		if (index.opts.forward ^ index.opts.reverse) max = 1; // only search the forward xor reverse strand
-		else max = 2; // search both strands
-		for (int32_t strand = 0; strand < max; strand++)
+		if (index.opts.forward ^ index.opts.reverse) strandCount = 1; // only search the forward xor reverse strand
+		else strandCount = 2; // search both strands
+		for (int32_t strand = 0; strand < strandCount; strand++)
 		{
-			if (strand == 1)
+			if ((strandCount == 1 && index.opts.reverse) || strand == 1)
 				read.revIntStr(); // reverse the sequence
 			callback(readstats, index, refs, output, read);
 		}
