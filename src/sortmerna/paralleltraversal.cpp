@@ -29,6 +29,10 @@
  *               Rob Knight       robknight@ucsd.edu
  */
 
+
+#include <algorithm>
+#include <locale>
+
 #include "paralleltraversal.hpp"
 #include "load_index.hpp"
 #include "kseq.h"
@@ -359,15 +363,18 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 #ifdef debug_align
 		cout << "\tpass = " << pass_n << endl; //TESTING
 #endif          
-		uint32_t numwin = (read.sequence.size() - index.lnwin[index.index_num] + windowshift) / windowshift;
-		uint32_t read_index = 0;
+		uint32_t numwin = (read.sequence.size() 
+			- index.lnwin[index.index_num] 
+			+ windowshift) / windowshift; // number of k-mer windows fit along the sequence
+
+		uint32_t win_index = 0; // index of the window's first char in the sequence e.g. 0, 18, 36 if window.length = 18
 		// iterate over windows of the template string
 		for (uint32_t win_num = 0; win_num < numwin; win_num++)
 		{
 			// skip position, seed at this position has already been searched for in a previous Pass
-			if (read_index_hits[read_index]) goto check_score;
+			if (read_index_hits[win_index]) goto check_score;
 			// search position, set search bit to true
-			else read_index_hits[read_index].flip();
+			else read_index_hits[win_index].flip();
 			{
 				// this flag it set to true if a match is found during
 				// subsearch 1(a), to skip subsearch 1(b)
@@ -377,16 +384,22 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 				vbitwindowsf.resize(bit_vector_size);
 				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
 
-				init_win_f(&read.seq_int_str[read_index + index.partialwin[index.index_num]],
+				init_win_f(&read.seq_int_str[win_index + index.partialwin[index.index_num]],
 					&vbitwindowsf[0],
 					&vbitwindowsf[4],
 					index.numbvs[index.index_num]);
 
 				uint32_t keyf = 0;
-				char *keyf_ptr = &read.seq_int_str[read_index];
+				char *keyf_ptr = &read.seq_int_str[win_index];
 				// build hash for first half windows (foward and reverse)
+				// hash is just a numeric value formed by the chars of a string consisting of '0','1','2','3'
+				// e.g. "2233012" -> b10.1011.1100.0110 = x2BC6 = 11206
 				for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
-					(keyf <<= 2) |= (uint32_t)*keyf_ptr++;
+				{
+					(keyf <<= 2) |= (uint32_t)(*keyf_ptr - '0');
+					++keyf_ptr;
+					//(keyf <<= 2) |= (uint32_t)*keyf_ptr++; // TODO: How did this work? And it did!
+				}
 				// do traversal if the exact half window exists in the burst trie
 				if ((index.lookup_tbl[keyf].count > minoccur) && (index.lookup_tbl[keyf].trie_F != NULL))
 				{
@@ -414,7 +427,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 						accept_zero_kmer,
 						id_hits,
 						read.id,
-						read_index,
+						win_index,
 						index.partialwin[index.index_num]);
 #ifdef debug_align
 					cout << "\tdone!\n"; //TESTING
@@ -426,15 +439,19 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 					vbitwindowsr.resize(bit_vector_size);
 					std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
 					// build the first bitvector window
-					init_win_r(&read.seq_int_str[read_index + index.partialwin[index.index_num] - 1],
+					init_win_r(&read.seq_int_str[win_index + index.partialwin[index.index_num] - 1],
 						&vbitwindowsr[0],
 						&vbitwindowsr[4],
 						index.numbvs[index.index_num]);
 					uint32_t keyr = 0;
-					char *keyr_ptr = &read.seq_int_str[read_index + index.partialwin[index.index_num]];
+					char *keyr_ptr = &read.seq_int_str[win_index + index.partialwin[index.index_num]];
 					// build hash for first half windows (foward and reverse)
 					for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
-						(keyr <<= 2) |= (uint32_t)*keyr_ptr++;
+					{
+						(keyr <<= 2) |= (uint32_t)(*keyr_ptr-'0');
+						++keyr_ptr;
+						//(keyr <<= 2) |= (uint32_t)*keyr_ptr++;
+					}
 					// continue subsearch (1)(b)
 					if ((index.lookup_tbl[keyr].count > minoccur) && (index.lookup_tbl[keyr].trie_R != NULL))
 					{
@@ -462,7 +479,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 							accept_zero_kmer,
 							id_hits,
 							read.id,
-							read_index,
+							win_index,
 							index.partialwin[index.index_num]);
 #ifdef debug_align
 						cout << "\tdone!\n"; //TESTING
@@ -545,7 +562,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 				}
 				break; // do not offset final window on read
 			}//~( win_num == NUMWIN-1 )
-			read_index += windowshift;
+			win_index += windowshift;
 		}//~for (each window)                
 		 //~while all three window skip lengths have not been tested, or a match has not been found
 	}// while (search);
@@ -619,56 +636,89 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 	printf("Read::unmarshallJson: Not yet Implemented\n");
 }
 
-void Reader::read() {
-	int pushCount = 0;
-
+void Reader::read()
+{
 	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
 		printf("failed to open %s\n", readsfile.c_str());
 		exit(EXIT_FAILURE);
 	}
-	else {
+	else 
+	{
 		std::string line;
-		int id = 0;
 		Read read; // an empty read
+		int id = 0; // read ID
+		bool isFastq = true;
+		bool lastRec = false; // lastRec is to make one iteration past the EOF
+
 		std::stringstream ss;
 		ss << std::this_thread::get_id();
 		printf("Reader thread %s started\n", ss.str().c_str());
 		ss.str(""); // clear the stream
 		auto t = std::chrono::high_resolution_clock::now();
-		// lastRec is to make one iteration past the EOF
-		for ( bool lastRec = false; ; ) 
+
+		for (int count = 0; ; ) // count lines in One record
 		{
 			if (!lastRec) std::getline(ifs, line);
-			if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
-			if (line[0] == FASTA_HEADER_START || lastRec)
+
+			if (line.empty() && !lastRec)
+			{
+				if (ifs.eof()) lastRec = true;
+				continue;
+			}
+
+			if (lastRec)
 			{
 				if (!read.isEmpty)
 				{
+					read.init(kvdb); // load alignment statistics from DB
+					readQueue.push(read);
 					++id;
+				}
+				break;
+			}
+
+			// remove whitespace in place (removes '\r' too)
+			line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+			//if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
+			// fastq: 0(header), 1(seq), 2(+), 3(quality)
+			// fasta: 0(header), 1(seq)
+			if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START )
+			{
+				if (!read.isEmpty)
+				{
 					read.init(kvdb);
 					readQueue.push(read);
-					read.empty();
-					++pushCount;
-
-					if (lastRec) break;
-					//std::cout << "Pushed: " << rec.header << std::endl;
+					++id;
+					count = 0;
 				}
+
+				// start new record
+				read.clear();
+				read.id = id;
+				isFastq = (line[0] == FASTQ_HEADER_START);
+				read.format = isFastq ? Format::FASTQ : Format::FASTA;
 				read.header = line;
 				read.isEmpty = false;
-			}
+			} // ~if header line
 			else {
-				// remove whitespace from line probably
+				++count;
+				if (isFastq && line[0] == '+') continue;
+				if (isFastq && count == 3)
+				{
+					read.quality = line;
+					continue;
+				}
 				read.sequence += line;
-				if (ifs.eof()) lastRec = true; // push and break
 			}
+			if (ifs.eof()) lastRec = true; // push and break
 		} // ~for getline
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
 		ss << std::this_thread::get_id();
 		printf("Reader thread %s done. Elapsed time: %.2f sec Reads added: %d\n", 
-			ss.str().c_str(), elapsed.count(), pushCount);
+			ss.str().c_str(), elapsed.count(), id+1);
 	}
 	ifs.close();
 } // ~Reader::read

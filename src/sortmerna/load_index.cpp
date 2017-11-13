@@ -32,6 +32,8 @@
 
 #include <deque>
 #include <chrono>
+#include <algorithm>
+#include <locale>
 
 #include "load_index.hpp"
 #include "paralleltraversal.hpp"
@@ -1075,14 +1077,13 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 			opts.indexfiles[idx_num].first.c_str());
 	}
 
-	// load references sequences, skipping the new lines & spaces in the fasta format
+	// load references sequences, skipping the empty lines & spaces
 	uint64_t num_seq_read = 0;
 	std::string line;
 	References::BaseRecord rec;
 	bool isFastq = true;
 	bool lastRec = false;
 
-	//for ( int count=0, bool lastRec = false; std::getline(ifs, line) && (num_seq_read != numseq_part); ++count )
 	for ( int count = 0; num_seq_read != numseq_part; )
 	{
 		if (!lastRec) std::getline(ifs, line);
@@ -1103,7 +1104,9 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 			break;
 		}
 
-		if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
+		// remove whitespace (removes '\r' too)
+		line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+		//if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
 		if ( line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START )
@@ -1138,15 +1141,15 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 				rec.quality = line;
 				continue;
 			}
-			fix_ambiguous_char(line);
-			// remove whitespace from line probably
+			convert_fix(line);
 			rec.sequence += line;
 		} // ~not header
 		if (ifs.eof()) lastRec = true; // push and break
 	} // ~for
 } // ~References::load
 
-void References::fix_ambiguous_char(std::string & seq)
+// convert sequence to numberical form and fix ambiguous chars
+void References::convert_fix(std::string & seq)
 {
 	for (std::string::iterator it = seq.begin(); it != seq.end(); ++it)
 	{

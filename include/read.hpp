@@ -171,9 +171,9 @@ public:
 	void seqToIntStr() {
 		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
 		{
-			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
+			char c = ('4' == nt_table[(int)*it]) ? '0' : nt_table[(int)*it];
 			seq_int_str.append(1, nt_table[(int)*it]);
-			if (c == 0) { // ambiguous nt
+			if (c == '0') { // ambiguous nt
 				ambiguous_nt.push_back(static_cast<UINT>(seq_int_str.size()) - 1); // i.e. add current position to the vector
 			}
 		}
@@ -199,10 +199,11 @@ public:
 		isValid = true;
 	} // ~validate
 
-	void empty()
+	void clear()
 	{
-		header = "";
-		sequence = "";
+		header.clear();
+		sequence.clear();
+		quality.clear();
 		isValid = false;
 		isEmpty = true;
 	}
