@@ -983,7 +983,7 @@ void compute_lis_alignment(uint32_t size_ambiguous_nt,
 }//~compute_alignment()
 
 void compute_lis_alignment2(
-	Read & read, Index & index, References & refs, Output & output,
+	Read & read, Index & index, References & refs, Readstats & readstats, Output & output,
 	bool & search,
 	uint32_t max_SW_score,
 	bool& read_to_count
@@ -1348,8 +1348,8 @@ void compute_lis_alignment2(
 									if (!read.hit)
 									{
 										read.hit = !read.hit; // read_hits[readn].flip()
-										output.total_reads_mapped++;
-										output.reads_matched_per_db[index.index_num]++;
+										readstats.total_reads_mapped++;
+										readstats.reads_matched_per_db[index.index_num]++;
 									}
 									// output (sam or blast-like) or update alignment information
 									bool strand = false;
@@ -1510,9 +1510,9 @@ void compute_lis_alignment2(
 													read.hits_align_info.max_index = smallest_score_index;
 												// decrement number of reads mapped to database
 												// with lower score
-												output.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--; // smallest_alignment->index_num
+												readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--; // smallest_alignment->index_num
 												// increment number of reads mapped to database with higher score
-												output.reads_matched_per_db[index.index_num]++;
+												readstats.reads_matched_per_db[index.index_num]++;
 												// free the old cigar
 												//free(smallest_alignment->cigar);
 												//smallest_alignment->cigar = NULL;
@@ -1698,7 +1698,7 @@ void compute_lis_alignment2(
 										// output it (SAM, BLAST and FASTA/Q)
 										if ((align_id_round >= align_id) &&	(align_cov_round >= align_cov) && read_to_count)
 										{
-											output.total_reads_mapped_cov++;
+											readstats.total_reads_mapped_cov++;
 											read_to_count = false;
 
 											// do not output read for de novo OTU clustering

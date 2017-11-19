@@ -57,12 +57,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	uint32_t limit = 1 << lnwin[idx_num];
 //	lookup_tbl.reserve(limit);// = new kmer[limit]();
 
-//	if (lookup_tbl.capacity() == 0)
-//	{
-//		fprintf(stderr, "\n  ERROR: failed to allocate memory for look-up table (paralleltraversal.cpp)\n\n");
-//		exit(EXIT_FAILURE);
-//	}
-
 	for (uint32_t i = 0; i < limit && !inkmer.eof(); i++)
 	{
 		lookup_tbl.push_back(kmer());
@@ -80,33 +74,24 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	}
 
 	// loop through all 9-mers
-	for (uint32_t i = 0; i < (uint32_t)(1 << lnwin[idx_num]); i++)
+	for (uint32_t i = 0; i < limit && !btrie.eof(); i++)
 	{
 		uint32_t sizeoftries[2] = { 0 };
-#ifdef see_binary_output
-		cout << "9-mer = " << i; //TESTING
-#endif
-								 // ptr to block of memory for two mini-burst tries
-		char *dst = NULL;
+		char *dst = NULL; // ptr to block of memory for two mini-burst tries
+
 		// the size of both mini-burst tries
 		for (int j = 0; j < 2; j++)
 		{
 			btrie.read(reinterpret_cast<char*>(&sizeoftries[j]), sizeof(uint32_t));
-#ifdef see_binary_output
-			if (j == 0) cout << "\tsizeoftrie f = " << sizeoftries[j]; //TESTING
-			else cout << "\tsizeoftrie r = " << sizeoftries[j]; //TESTING
-#endif 
 		}
-#ifdef see_binary_output
-		cout << "\tlookup_tbl[i].count = " << lookup_tbl[i].count << endl; //TESTING
-#endif
-																		   // allocate contiguous memory for both mini-burst tries if they exist
+
+		// allocate contiguous memory for both mini-burst tries if they exist
 		if (lookup_tbl[i].count != 0)
 		{
 			dst = new char[(sizeoftries[0] + sizeoftries[1])]();
 			if (dst == NULL)
 			{
-				fprintf(stderr, "  ERROR: failed to allocate memory for mini-burst tries (paralleltraversal.cpp)\n");
+				fprintf(stderr, "  ERROR: failed to allocate memory for mini-burst tries\n");
 				exit(EXIT_FAILURE);
 			}
 			// load 2 burst tries per 9-mer
@@ -115,10 +100,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 				// mini-burst trie exists
 				if (sizeoftries[j] != 0)
 				{
-#ifdef see_binary_output
-					if (j == 0) cout << "forward burst-trie \n"; //TESTING
-					if (j == 1) cout << "reverse burst-trie \n"; //TESTING
-#endif
 					NodeElement newnode[4]; // create a root trie node
 					// copy the root trie node into the beginning of burst trie array
 					memcpy(dst, &newnode[0], sizeof(NodeElement) * 4);
@@ -137,9 +118,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 						char tmp;
 						btrie.read(reinterpret_cast<char*>(&tmp), sizeof(char));
 						flags.push_back(tmp);
-#ifdef see_binary_output
-						cout << " " << (int)tmp; //TESTING
-#endif
 					}
 					// build the mini-burst trie
 					while (!nodes.empty())
@@ -158,7 +136,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 							{
 								node->flag = 0;
 								node->size = 0;
-								node->whichnode.trie = NULL;
+								node->nodetype.trie = NULL;
 							}
 							break;
 							// trie node
@@ -169,9 +147,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 								{
 									char tmp;
 									btrie.read(reinterpret_cast<char*>(&tmp), sizeof(char));
-#ifdef see_binary_output
-									cout << " " << (int)tmp; //TESTING
-#endif
 									flags.push_back(tmp);
 								}
 								node->flag = 1;
@@ -179,7 +154,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 								NodeElement newnode[4];
 								memcpy((NodeElement*)dst, &newnode[0], sizeof(NodeElement) * 4);
 								nodes.push_back((NodeElement*)dst);
-								node->whichnode.trie = (NodeElement*)dst;
+								node->nodetype.trie = (NodeElement*)dst;
 								((NodeElement *&)dst) += 4;
 							}
 							break;
@@ -189,9 +164,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 								uint32_t sizeofbucket = 0;
 								// read the bucket info
 								btrie.read(reinterpret_cast<char*>(&sizeofbucket), sizeof(uint32_t));
-#ifdef see_binary_output
-								cout << "\tsizeofbucket = " << sizeofbucket; //TESTING
-#endif                      
+
 								char* bucket = new char[sizeofbucket]();
 								if (bucket == NULL)
 								{
@@ -205,7 +178,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 								bucket = NULL;
 								// assign pointers from trie node to the bucket
 								node->flag = flag;
-								node->whichnode.bucket = dst;
+								node->nodetype.bucket = dst;
 								node->size = sizeofbucket;
 								dst = ((char *)dst) + sizeofbucket;
 							}
@@ -221,9 +194,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 							flags.pop_front();
 							node++;
 						}//~loop through 4 node elements in a trie node 
-#ifdef see_binary_output
-						cout << "\n"; //TESTING
-#endif            
 						nodes.pop_front();
 					}//~while !nodes.empty()
 				}//~if mini-burst trie exists
@@ -928,7 +898,7 @@ void load_index(
 							{
 								node->flag = 0;
 								node->size = 0;
-								node->whichnode.trie = NULL;
+								node->nodetype.trie = NULL;
 							}
 							break;
 							// trie node
@@ -949,7 +919,7 @@ void load_index(
 								NodeElement newnode[4];
 								memcpy((NodeElement*)dst, &newnode[0], sizeof(NodeElement) * 4);
 								nodes.push_back((NodeElement*)dst);
-								node->whichnode.trie = (NodeElement*)dst;
+								node->nodetype.trie = (NodeElement*)dst;
 								((NodeElement *&)dst) += 4;
 							}
 							break;
@@ -975,7 +945,7 @@ void load_index(
 								bucket = NULL;
 								// assign pointers from trie node to the bucket
 								node->flag = flag;
-								node->whichnode.bucket = dst;
+								node->nodetype.bucket = dst;
 								node->size = sizeofbucket;
 								dst = ((char *)dst) + sizeofbucket;
 							}
@@ -1153,7 +1123,7 @@ void References::convert_fix(std::string & seq)
 {
 	for (std::string::iterator it = seq.begin(); it != seq.end(); ++it)
 	{
-		if (*it != ' ')
+		if (*it != 32) // space
 			*it = nt_table[(int)*it];
 	}
 }

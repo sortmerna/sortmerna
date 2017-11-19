@@ -29,7 +29,7 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
-#include "../include/traverse_bursttrie.hpp"
+#include "traverse_bursttrie.hpp"
 
  /*! @brief The universal Levenshtein automaton for d=1.
 
@@ -96,7 +96,7 @@ void traversetrie_align(
 	MYBITSET *win_k1_full,
 	bool &accept_zero_kmer,
 	vector<id_win> &id_hits,
-	int64_t readn,
+	int64_t readn, // TODO: never used - remove?
 	uint32_t win_num,
 	uint32_t partialwin
 )
@@ -116,7 +116,7 @@ void traversetrie_align(
 			trie_t++;
 		}
 
-		// this node element points to a trie node or a bucket, continue traversing
+		// node points to a trie node or a bucket, continue traversing
 		else
 		{
 			if (depth < partialwin - 2)
@@ -142,7 +142,7 @@ void traversetrie_align(
 				// (1) the node element holds a pointer to another trie node
 				if (value == 1)
 				{
-					traversetrie_align(trie_t->whichnode.trie,
+					traversetrie_align(trie_t->nodetype.trie,
 						lev_t,
 						++depth,
 						win_k1_ptr,
@@ -174,7 +174,7 @@ void traversetrie_align(
 					// number of characters per entry
 					uint32_t s = partialwin - depth;
 
-					unsigned char* start_bucket = (unsigned char*)trie_t->whichnode.bucket;
+					unsigned char* start_bucket = (unsigned char*)trie_t->nodetype.bucket;
 					if (start_bucket == NULL)
 					{
 						fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");
@@ -312,7 +312,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
 		if (value == 1)
 		{
 			kmer_keep.push_back((char)get_char[i]); //TESTING
-			traversetrie_debug(trie_node->whichnode.trie, ++depth, total_entries, kmer_keep, partialwin);
+			traversetrie_debug(trie_node->nodetype.trie, ++depth, total_entries, kmer_keep, partialwin);
 			kmer_keep.pop_back();
 			--depth;
 		}
@@ -322,7 +322,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
 		{
 			kmer_keep.push_back((char)get_char[i]); //TESTING
 
-			unsigned char* start_bucket = (unsigned char*)trie_node->whichnode.bucket;
+			unsigned char* start_bucket = (unsigned char*)trie_node->nodetype.bucket;
 			if (start_bucket == NULL)
 			{
 				fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");

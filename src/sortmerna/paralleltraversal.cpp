@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <locale>
+#include <iomanip> // output formatting
 
 #include "paralleltraversal.hpp"
 #include "load_index.hpp"
@@ -63,6 +64,9 @@
 #else
 #define O_SMR_READ_BIN O_RDONLY
 #endif
+
+// forward
+void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & output);
 
  // see "heuristic 1" below
  //#define HEURISTIC1_OFF
@@ -140,58 +144,6 @@ void format_rev(char* start_read, char* end_read, char* myread, char filesig)
 	}
 }
 
-void Readstats::calculate()
-{
-	// TODO: implement
-} // ~Readstats::calculate
-
-bool Readstats::check_file_format()
-{
-	bool exit_early = false;
-#ifdef HAVE_LIBZ
-	// Check file format (if ZLIB supported)
-	gzFile fp = gzopen(opts.readsfile.c_str(), "r");
-	kseq_t *seq = kseq_init(fp);
-#else
-	FILE* fp = fopen(opts.readsfile.c_str(), "rb");
-	kseq_t *seq = kseq_init(fileno(fp));
-#endif
-	int l;
-	if ((l = kseq_read(seq)) >= 0)
-		filesig = seq->last_char;
-	else
-	{
-		fprintf(stderr, "  %sERROR%s: Line %d: %s unrecognized file format or empty file %s\n\n",
-			startColor, "\033[0m", __LINE__, __FILE__, opts.readsfile.c_str());
-		exit_early = true;
-	}
-	kseq_destroy(seq);
-#ifdef HAVE_LIBZ
-	gzclose(fp);
-#else
-	fclose(fp);
-#endif
-	return exit_early;
-} // ~Readstats::check_file_format
-
-void Readstats::calcSuffix()
-{
-	// determine the suffix (fasta, fastq, ...) of aligned strings
-//	char suffix[20] = "out";
-	const std::string suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1);
-	//	char *suff = strrchr(opts.readsfile.c_str(), '.');
-	if (suff.length() > 0 && !opts.have_reads_gz)
-		suffix.assign(suff);
-	//	strcpy(suffix, suff + 1);
-	else if (filesig == '>')
-		suffix.assign("fasta");
-	//	strcpy(suffix, "fasta");
-	else
-		suffix.assign("fastq");
-//		strcpy(suffix, "fastq");
-//	suff = NULL;
-}
-
 /* TODO: remove -> Readstats::check_file_format
  *
  * @function check_file_format()
@@ -251,7 +203,7 @@ void compute_read_stats(
 #endif
 	int l;
 	while ((l = kseq_read(seq)) >= 0) {
-		full_read_main += seq->seq.l;
+		full_read_main += seq->seq.l; // seq.l is sequence length
 		number_total_read++;
 		// compute size of all reads to store in memory
 		// + 7 (4 possible new lines, 2 symbols > or @ and +, space for comment)
@@ -359,10 +311,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 
 	// loop for each new Pass to granulate seed search intervals
 	for	(bool search = true; search; )
-	{
-#ifdef debug_align
-		cout << "\tpass = " << pass_n << endl; //TESTING
-#endif          
+	{  
 		uint32_t numwin = (read.sequence.size() 
 			- index.lnwin[index.index_num] 
 			+ windowshift) / windowshift; // number of k-mer windows fit along the sequence
@@ -396,7 +345,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 				// e.g. "2233012" -> b10.1011.1100.0110 = x2BC6 = 11206
 				for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
 				{
-					(keyf <<= 2) |= (uint32_t)(*keyf_ptr - '0');
+					(keyf <<= 2) |= (uint32_t)(*keyf_ptr);
 					++keyf_ptr;
 					//(keyf <<= 2) |= (uint32_t)*keyf_ptr++; // TODO: How did this work? And it did!
 				}
@@ -412,10 +361,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 					*        or
 					*    = |------ [p_1] ------|------ [p_2] --------| (0/1 insertion in [p_2])
 					*
-					*/
-#ifdef debug_align
-					cout << "\tsearch forward mini-burst trie..\n"; //TESTING
-#endif                   
+					*/   
 					traversetrie_align(
 						index.lookup_tbl[keyf].trie_F,
 						0,
@@ -428,11 +374,10 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 						id_hits,
 						read.id,
 						win_index,
-						index.partialwin[index.index_num]);
-#ifdef debug_align
-					cout << "\tdone!\n"; //TESTING
-#endif                      
-				}//~if exact half window exists in the burst trie                 
+						index.partialwin[index.index_num]
+					);        
+				}//~if exact half window exists in the burst trie
+
 				 // only search if an exact match has not been found
 				if (!accept_zero_kmer)
 				{
@@ -465,9 +410,6 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 						*    = |------- [p_1] --------|---- [p_2] ---------| (1 insertion in [p_1])
 						*
 						*/
-#ifdef debug_align
-						cout << "\tsearch reverse mini-burst trie..\n"; //TESTING
-#endif                     
 						traversetrie_align(
 							index.lookup_tbl[keyr].trie_R,
 							0,
@@ -481,9 +423,6 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 							read.id,
 							win_index,
 							index.partialwin[index.index_num]);
-#ifdef debug_align
-						cout << "\tdone!\n"; //TESTING
-#endif                        
 					}//~if exact half window exists in the reverse burst trie                    
 				}//~if (!accept_zero_kmer)                         
 				 // associate the ids with the read window number
@@ -501,7 +440,7 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 			if (win_num == numwin - 1)
 			{
 				compute_lis_alignment2(
-					read, index, refs, output,
+					read, index, refs, readstats, output,
 					//size_ambiguous_nt, TODO: remove. Not used no more.
 					// readhit, Read::readhit
 					//id_win_hits,  Read::id_win_hits
@@ -614,6 +553,9 @@ void parallelTraversalJob(Readstats & readstats, Index & index, References & ref
 			}//~if print_all_reads_gv
 		}// allow writing to file 1 thread at a time
 	}//~if read didn't align
+
+	if (de_novo_otu_gv && read.hit_denovo)
+		++readstats.total_reads_denovo_clustering;
 } // ~parallelTraversalJob
 
 //void Read::initScoringMatrix(Runopts & opts)
@@ -805,13 +747,6 @@ void Output::init(Readstats & readstats)
 		if (fastxout_gv)
 		{
 			// fasta/fastq output
-			acceptedstrings.reserve(1000);
-			if (acceptedstrings.capacity() < 1000)
-			{
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings\n",
-					startColor, "\033[0m", __LINE__, __FILE__);
-				exit(EXIT_FAILURE);
-			}
 			acceptedstrings.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
@@ -828,13 +763,6 @@ void Output::init(Readstats & readstats)
 		if (opts.samout)
 		{
 			// sam output
-			acceptedstrings_sam.reserve(1000);
-			if (acceptedstrings_sam.capacity() < 1000)
-			{
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_sam\n",
-					startColor, "\033[0m", __LINE__, __FILE__);
-				exit(EXIT_FAILURE);
-			}
 			acceptedstrings_sam.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
@@ -849,13 +777,6 @@ void Output::init(Readstats & readstats)
 		if (opts.blastout)
 		{
 			// blast output
-			acceptedstrings_blast.reserve(1000);
-			if (acceptedstrings_blast.capacity() < 1000)
-			{
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
-					startColor, "\033[0m", __LINE__, __FILE__);
-				exit(EXIT_FAILURE);
-			}
 			acceptedstrings_blast.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
@@ -871,13 +792,6 @@ void Output::init(Readstats & readstats)
 		{
 			// statistics file output
 			ofstream logstream;
-			logoutfile.reserve(1000);
-			if (logoutfile.capacity() < 1000)
-			{
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedstrings_blast\n",
-					startColor, "\033[0m", __LINE__, __FILE__);
-				exit(EXIT_FAILURE);
-			}
 			logoutfile.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
@@ -894,13 +808,6 @@ void Output::init(Readstats & readstats)
 		{
 			// OTU map output file
 			ofstream otumap;
-			acceptedotumap_file.reserve(1000);
-			if (acceptedotumap_file.capacity() < 1000)
-			{
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for acceptedotumap\n",
-					startColor, "\033[0m", __LINE__, __FILE__);
-				exit(EXIT_FAILURE);
-			}
 			acceptedotumap_file.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
@@ -915,13 +822,6 @@ void Output::init(Readstats & readstats)
 		if (de_novo_otu_gv)
 		{
 			ofstream denovo_otu;
-			denovo_otus_file.reserve(1000);
-			if (denovo_otus_file.capacity() < 1000)
-			{
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for denovo_otus_file_name\n",
-					startColor, "\033[0m", __LINE__, __FILE__);
-				exit(EXIT_FAILURE);
-			}
 			denovo_otus_file.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
@@ -1004,10 +904,13 @@ void paralleltraversal2(Runopts & opts)
 			{
 				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
 			}
-
 			++loopCount;
 		} // ~for(idx_part)
 	} // ~for(index_num)
+
+	tpool.waitAll(); // wait till processing is done
+
+	writeLog(opts, index, readstats, output);
 } // ~paralleltraversal2
 
 /*! @fn paralleltraversal() */
@@ -1511,7 +1414,7 @@ void paralleltraversal(
 	// file section
 	int32_t offset_pair_from_top = 0;
 	// map<reference sequence, vector<list of reads aligned to reference sequence> > otu_map
-	map<string, vector<string> > otu_map;
+	map<string, vector<string>> otu_map;
 
 	// Loop through all mmap'd read file sections
 	while (file_s < file_sections)
@@ -2477,6 +2380,7 @@ void paralleltraversal(
 										otu_map[ref_seq_str].push_back(read_seq_str);
 									}
 								}
+
 								// output alignment to SAM or Blast-like formats
 								if (samout_gv || blastout_gv)
 								{
@@ -2570,7 +2474,8 @@ void paralleltraversal(
 							}//~if alignment at current database and index part loaded in RAM
 							ptr_alignment++;
 						}//~for all best alignments
-					}//~for all reads         
+					}//~for all reads
+
 					// free buffer
 					if (buffer != NULL)
 					{
@@ -2612,7 +2517,8 @@ void paralleltraversal(
 			}
 			TIME(f);
 			if (samout_gv || blastout_gv) eprintf(" done [%.2f sec]\n", (f - s));
-		}// if (min_lis_gv > -1)      
+		}// if (min_lis_gv > -1)
+
 		if (align_cov || align_id)
 		{
 			eprintf("    Total number of reads mapped with");
@@ -2638,6 +2544,7 @@ void paralleltraversal(
 				exit(EXIT_FAILURE);
 			}
 		}
+
 		// output aligned and non-aligned reads to FASTA/FASTQ file
 		report_fasta(acceptedstrings,
 			ptr_filetype_or,
@@ -2647,6 +2554,7 @@ void paralleltraversal(
 			read_hits,
 			file_s,
 			finalnt);
+
 		// output aligned and non-aligned reads with < %id and
 		// < %coverage to FASTA/FASTQ file for de novo analysis
 		if (de_novo_otu_gv)
@@ -2791,6 +2699,7 @@ void paralleltraversal(
 		}
 	}
 	else if (otumapout_gv) otu_map.clear();
+
 	// free memory of accepted strings
 	if (acceptedstrings != NULL)
 	{
@@ -2814,3 +2723,63 @@ void paralleltraversal(
 	}
 	return;
 }//~paralleltraversal()
+
+void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & output)
+{
+	//FILE* bilan = fopen(output.logoutfile, "ab"); // output::logoutfile
+	output.logout.open(output.logoutfile, std::ofstream::binary | std::ofstream::app);
+
+	// output total number of reads
+	output.logout << " Results:\n";
+	output.logout << "    Total reads = " << readstats.number_total_read << "\n";
+	//fprintf(bilan, " Results:\n");
+	//fprintf(bilan, "    Total reads = %llu\n", readstats.number_total_read); // Readstats::number_total_read
+	if (de_novo_otu_gv)
+	{
+		// total_reads_denovo_clustering = sum of all reads that have read::hit_denovo == true
+		// either query DB or store in Readstats::total_reads_denovo_clustering
+		output.logout << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
+		//fprintf(bilan, "    Total reads for de novo clustering = %llu\n", total_reads_denovo_clustering);
+	}
+	// output total non-rrna + rrna reads
+	output.logout << std::setprecision(2) << std::fixed;
+	output.logout << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped 
+		<< " (" << (float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read) * 100 << ")\n";
+	output.logout << "    Total reads failing E-value threshold = "
+		<< readstats.number_total_read - readstats.total_reads_mapped
+		<< " ("	<< (1 - ((float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read))) * 100 << ")\n";
+	output.logout << "    Minimum read length = " << readstats.min_read_len << "\n";
+	output.logout << "    Maximum read length = " << readstats.max_read_len << "\n";
+	output.logout << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
+
+	output.logout << " By database:\n";
+	//fprintf(bilan, "    Total reads passing E-value threshold = %llu (%.2f%%)\n", 
+	//	readstats.total_reads_mapped, (float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read) * 100);
+	//fprintf(bilan, "    Total reads failing E-value threshold = %llu (%.2f%%)\n", 
+	//	readstats.number_total_read - readstats.total_reads_mapped, 
+	//	(1 - ((float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read))) * 100);
+	//fprintf(bilan, "    Minimum read length = %u\n", readstats.min_read_len);
+	//fprintf(bilan, "    Maximum read length = %u\n", readstats.max_read_len);
+	//fprintf(bilan, "    Mean read length = %u\n", readstats.full_read_main / readstats.number_total_read);
+	//fprintf(bilan, " By database:\n");
+	// output stats by database
+	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
+	{
+		output.logout << "    " << opts.indexfiles[index_num].first << "\t\t"
+			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100 << "\n";
+		//fprintf(bilan, "    %s\t\t%.2f%%\n", (char*)(opts.indexfiles[index_num].first).c_str(), 
+		//	(float)((float)reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100);
+	}
+
+	if (otumapout_gv)
+	{
+		output.logout << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov << "\n";
+		output.logout << " Total OTUs = " << readstats.otu_total << "\n"; // otu_map.size()
+		//fprintf(bilan, " Total reads passing %%id and %%coverage thresholds = %llu\n", total_reads_mapped_cov);
+		//fprintf(bilan, " Total OTUs = %lu\n", otu_map.size());
+	}
+	time_t q = time(0);
+	struct tm * now = localtime(&q);
+	output.logout << "\n " << asctime(now) << "\n";
+	output.logout.close();
+} // ~writeLog

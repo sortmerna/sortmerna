@@ -11,7 +11,7 @@
 #include "output.hpp"
 
 void compute_lis_alignment2(
-	Read & read, Index & index, References & refs, Output & output,
+	Read & read, Index & index, References & refs, Readstats & readstats, Output & output,
 	bool & search,
 	uint32_t max_SW_score,
 	bool& read_to_count

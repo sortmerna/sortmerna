@@ -16,6 +16,7 @@ public:
 	ofstream acceptedreads;
 	ofstream acceptedsam;
 	ofstream acceptedblast;
+	ofstream logout;
 
 	// file names
 	std::string acceptedstrings;
@@ -25,14 +26,9 @@ public:
 	std::string denovo_otus_file;
 	std::string acceptedotumap_file;
 
-	uint64_t total_reads_mapped = 0; // shared by Processor threads
-	uint64_t total_reads_mapped_cov = 0; // shared   total number of reads mapped passing E-value threshold and %id and/or %query coverage thresholds
-	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
-
 	Output(Runopts & opts, Readstats & readstats)
 		:
-		opts(opts),
-		reads_matched_per_db(opts.indexfiles.size(), 0)
+		opts(opts)
 	{
 		init(readstats);
 	}

@@ -15,7 +15,13 @@
 class Reader {
 public:
 	Reader(std::string id, ReadsQueue & readQueue, std::string & readsfile, KeyValueDatabase & kvdb, int loopCount)
-		: id(id), readQueue(readQueue), readsfile(readsfile), kvdb(kvdb), loopCount(loopCount) {}
+		: 
+		id(id), 
+		readQueue(readQueue), 
+		readsfile(readsfile), 
+		kvdb(kvdb),
+		loopCount(loopCount) 
+	{}
 	void operator()() { read(); }
 	void read();
 private:

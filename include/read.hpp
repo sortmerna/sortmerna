@@ -91,7 +91,7 @@ public:
 	//std::unique_ptr<int8_t[]> scoring_matrix2(new int8_t[25]);
 	// <------------------------------ store in database
 
-	const char complement[4] = { '3','2','1','0' };
+	const char complement[4] = { 3, 2, 1, 0 };
 
 	Read() : isValid(false), isEmpty(true), scoring_matrix(25, 0)
 	{
@@ -154,7 +154,7 @@ public:
 	{
 		if (&that == this) return *this;
 
-		printf("Read copy assignment called\n");
+		//printf("Read copy assignment called\n");
 		id = that.id;
 		isValid = that.isValid;
 		isEmpty = that.isEmpty;
@@ -171,9 +171,9 @@ public:
 	void seqToIntStr() {
 		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
 		{
-			char c = ('4' == nt_table[(int)*it]) ? '0' : nt_table[(int)*it];
-			seq_int_str.append(1, nt_table[(int)*it]);
-			if (c == '0') { // ambiguous nt
+			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
+			seq_int_str += nt_table[(int)*it];
+			if (c == 0) { // ambiguous nt
 				ambiguous_nt.push_back(static_cast<UINT>(seq_int_str.size()) - 1); // i.e. add current position to the vector
 			}
 		}
@@ -183,7 +183,8 @@ public:
 	void revIntStr() {
 		std::reverse(seq_int_str.begin(), seq_int_str.end());
 		for (int i = 0; i < seq_int_str.length(); i++) {
-			seq_int_str[i] = complement[seq_int_str[i] - '0'];
+			seq_int_str[i] = complement[(int)seq_int_str[i]]; // original: myread_rc[j] = complement[(int)*revcomp--]; paralleltraversal.cpp:975
+			//seq_int_str[i] = complement[seq_int_str[i] - '0'];
 		}
 		reversed = true;
 	}

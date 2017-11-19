@@ -62,7 +62,7 @@ struct NodeElement
 	{
 	   void* bucket;
 	   NodeElement* trie;
-	} whichnode;
+	} nodetype;
 
 	// current size (in bytes) of bucket
 	unsigned int size; 
@@ -74,11 +74,11 @@ struct NodeElement
 	char flag;
 };
 
-// the sequence number and index position at which a 19-mer exists on the reference sequence; these values *must* be positive
+// the reference sequence number and position at which a 19-mer exists on the sequence; these values *must* be positive
 struct seq_pos
 {
 	uint32_t pos; // position on the sequence
-	uint32_t seq; // the sequence
+	uint32_t seq; // the sequence number (in the original reference files?)
 };
 
 struct kmer_origin
