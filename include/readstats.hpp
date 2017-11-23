@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
+#include <map>
 
 #include "common.hpp"
 #include "options.hpp"
@@ -42,7 +44,9 @@ struct Readstats {
 	uint64_t full_read_main; // total number of nucleotides in all reads i.e. sum of length of All read sequences 'calculate'
 	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
 	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering. Synchronize? - only incremented by threads.
-	int otu_total; // total number of OTUs. TODO: Synchronize?
+
+	int otu_total; // total number of OTUs. TODO: Synchronize?, 
+	std::map<string, vector<string>> otu_map; // TODO: may be find a better place for this.
 
 	Readstats(Runopts & opts)
 		:

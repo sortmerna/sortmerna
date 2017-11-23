@@ -252,6 +252,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 	return;
 } // ~Index::load
 
+// prototype: load_index.cpp:load_index_stats
 void Index::load_stats(Readstats & readstats, Output & output)
 {
 	ofstream acceptedsam;

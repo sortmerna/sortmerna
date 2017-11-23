@@ -38,8 +38,7 @@
 #include "indexdb.hpp"
 
 
-void
-report_blast (
+void report_blast (
 	ofstream &fileout,
     s_align* a,
     const char* read_name,

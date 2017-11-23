@@ -64,6 +64,7 @@ const int QUEUE_SIZE_MAX = 10; // TODO: set through process options
 const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Change through process options.
 
 enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read
+enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
 
 extern timeval t;
 

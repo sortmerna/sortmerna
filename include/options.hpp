@@ -10,6 +10,8 @@
 #include <vector>
 #include <string>
 
+#include "common.hpp"
+
 struct Runopts {
 	// required '--refs': Pairs (Reference file, Index name)
 	std::vector<std::pair<std::string, std::string>> indexfiles;
@@ -52,10 +54,11 @@ struct Runopts {
 	bool fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
 	int32_t min_lis = -1; // '--min_lis' search all alignments having the first INT longest LIS
+	BlastFormat blastFormat = BlastFormat::TABULAR;
 
 	std::string cmdline;
 
-	Runopts(int argc, char**argv, bool dryrun) 
+	Runopts(int argc, char**argv, bool dryrun)
 	{ 
 		process(argc, argv, dryrun);
 		if (skiplengths.empty())

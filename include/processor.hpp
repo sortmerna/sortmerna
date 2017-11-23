@@ -20,7 +20,7 @@ public:
 		Index & index,
 		References & refs,
 		Output & output,
-		std::function<void(Readstats & readstats, Index & index, References & refs, Output & output, Read read)> callback
+		std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read read)> callback
 	) :
 		id(id),
 		readQueue(readQueue),
@@ -41,5 +41,5 @@ private:
 	References & refs;
 	Output & output;
 	Index & index;
-	std::function<void(Readstats & readstats, Index & index, References & refs, Output & output, Read read)> callback;
+	std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read read)> callback;
 };

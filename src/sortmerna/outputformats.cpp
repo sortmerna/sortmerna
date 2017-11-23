@@ -29,15 +29,395 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 #include "outputformats.hpp"
+#include "output.hpp"
+#include "references.hpp"
+#include "read.hpp"
+#include "ssw.hpp" // s_align2
 
 using namespace std;
 
 /** @file */
 
-// output Blast-like alignments (code modified from SSW-library)
+/**
+ * Prototype: paralleltraversal lines 1531..1555
+ * Calculate Mismatches, Gaps, and ID
+ *
+ * @param IN Refs  references
+ * @param IN Read
+ * @param IN alignIdx index into Read.hits_align_info.alignv
+ * @param OUT mismatches  calculated here for the given Read Alignment
+ * @param OUT gaps
+ * @param OUT id
+ */
+void Output::calcMismatchGapId(References & refs, Read & read, int alignIdx, uint32_t & mismatches, uint32_t & gaps, double & id)
+{
+	const char to_char[5] = { 'A','C','G','T','N' };
+
+	int32_t qb = read.hits_align_info.alignv[alignIdx].ref_begin1; //ptr_alignment->ref_begin1;
+	int32_t pb = read.hits_align_info.alignv[alignIdx].read_begin1; //->read_begin1;
+
+	std::string refseq = refs.buffer[read.hits_align_info.alignv[alignIdx].ref_seq].sequence;
+
+	for (uint32_t c2 = 0; c2 < read.hits_align_info.alignv[alignIdx].cigarLen; ++c2)
+	{
+		uint32_t letter = 0xf & read.hits_align_info.alignv[alignIdx].cigar[c2]; // 4 low bits
+		uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[alignIdx].cigar[c2]) >> 4; // high 28 bits i.e. 32-4=28
+		if (letter == 0)
+		{
+			for (uint32_t u = 0; u < length; ++u)
+			{
+				if ( (char)to_char[(int)refseq[qb]] != (char)to_char[(int)read.sequence[pb]] ) ++mismatches;
+				else ++id;
+				++qb;
+				++pb;
+			}
+		}
+		else if (letter == 1)
+		{
+			pb += length;
+			gaps += length;
+		}
+		else
+		{
+			qb += length;
+			gaps += length;
+		}
+	}
+} // ~Output::calcMismatchGapId
+
+void Output::report_blast
+	(
+		ofstream &fileout,
+		Index & index,
+		References & refs,
+		Read & read
+	)
+{
+	const char to_char[5] = { 'A','C','G','T','N' };
+	double id = 0;
+	uint32_t mismatches = 0;
+	uint32_t gaps = 0;
+
+	// iterate all alignments of the read
+	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
+	{
+		uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
+			* (read.hits_align_info.alignv[i].score1) - log(index.gumbel[index.index_num].second)) / (float)log(2));
+
+		double evalue_score = (double)(index.gumbel[index.index_num].second) * index.full_ref[index.index_num]
+			* index.full_read[index.index_num]
+			* std::exp(-(index.gumbel[index.index_num].first) * read.hits_align_info.alignv[i].score1);
+
+		std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
+		std::string refhead = refs.buffer[read.hits_align_info.alignv[i].ref_seq].header;
+
+		// Blast-like pairwise alignment (only for aligned reads)
+		if (index.opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
+		{
+			fileout << "Sequence ID: ";
+			//const char* tmp = read.hits_align_info.alignv[alignIdx].ref_seq; // ref_name
+			//while (*tmp != '\n') fileout << *tmp++;
+			fileout << refhead.substr(0, refhead.find(' ')); // print only start of the header till first space
+			fileout << endl;
+
+			fileout << "Query ID: ";
+			//tmp = read_name;
+			//while (*tmp != '\n') fileout << *tmp++;
+			fileout << read.header.substr(0, read.header.find(' '));
+			fileout << endl;
+
+			//fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
+			fileout << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
+			fileout.precision(3);
+			fileout << "Expect: " << evalue << "\t";
+
+			if (read.hits_align_info.alignv[i].strand) fileout << "strand: +\n\n";
+			else fileout << "strand: -\n\n";
+
+			if (read.hits_align_info.alignv[i].cigar.size() > 0)
+			{
+				uint32_t j, c = 0, left = 0, e = 0,
+					qb = read.hits_align_info.alignv[i].ref_begin1,
+					pb = read.hits_align_info.alignv[i].read_begin1; //mine
+
+				while (e < read.hits_align_info.alignv[i].cigarLen || left > 0)
+				{
+					int32_t count = 0;
+					int32_t q = qb;
+					int32_t p = pb;
+					fileout << "Target: ";
+					fileout.width(8);
+					fileout << q + 1 << "    ";
+					// process CIGAR
+					for (c = e; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					{
+						// 4 Low bits encode a Letter: M | D | S
+						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c]; // *(a->cigar + c)
+						// 28 High bits encode the number of occurencies e.g. 34
+						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4; // *(a->cigar + c)
+						uint32_t l = (count == 0 && left > 0) ? left : length;
+						for (j = 0; j < l; ++j)
+						{
+							if (letter == 1) fileout << "-";
+							else
+							{
+								//fileout << to_char[(int)*(refseq + q)];
+								fileout << to_char[(int)refseq[q]];
+								++q;
+							}
+							++count;
+							if (count == 60) goto step2;
+						}
+					}
+				step2:
+					fileout << "    " << q << "\n";
+					fileout.width(20);
+					fileout << " ";
+					q = qb;
+					count = 0;
+					for (c = e; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					{
+						//uint32_t letter = 0xf & *(a->cigar + c);
+						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+						uint32_t l = (count == 0 && left > 0) ? left : length;
+						for (j = 0; j < l; ++j)
+						{
+							if (letter == 0)
+							{
+								if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.sequence[p]]) fileout << "|";
+								else fileout << "*";
+								++q;
+								++p;
+							}
+							else
+							{
+								fileout << " ";
+								if (letter == 1) ++p;
+								else ++q;
+							}
+							++count;
+							if (count == 60)
+							{
+								qb = q;
+								goto step3;
+							}
+						}
+					}
+				step3:
+					p = pb;
+					fileout << "\nQuery: ";
+					fileout.width(9);
+					fileout << p + 1 << "    ";
+					count = 0;
+					for (c = e; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					{
+						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+						uint32_t l = (count == 0 && left > 0) ? left : length;
+						for (j = 0; j < l; ++j)
+						{
+							if (letter == 2) fileout << "-";
+							else
+							{
+								fileout << (char)to_char[(int)read.sequence[p]];
+								++p;
+							}
+							++count;
+							if (count == 60)
+							{
+								pb = p;
+								left = l - j - 1;
+								e = (left == 0) ? (c + 1) : c;
+								goto end;
+							}
+						}
+					}
+					e = c;
+					left = 0;
+				end:
+					fileout << "    " << p << "\n\n";
+				}
+			}
+		}
+		// Blast tabular m8 + optional columns for CIGAR and query coverage
+		else if (index.opts.blastFormat == BlastFormat::TABULAR)
+		{
+			// (1) Query
+			//while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
+			fileout << read.header.substr(0, read.header.find(' '));
+
+			// print null alignment for non-aligned read
+			if (print_all_reads_gv && (read.hits_align_info.alignv.size() == 0))
+			{
+				fileout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+				for (uint32_t l = 0; l < user_opts.size(); l++)
+				{
+					if (user_opts[l].compare("cigar") == 0)
+						fileout << "\t*";
+					else if (user_opts[l].compare("qcov") == 0)
+						fileout << "\t0";
+					else if (user_opts[l].compare("qstrand") == 0)
+						fileout << "\t*";
+					fileout << "\n";
+				}
+				return;
+			}
+
+			Output::calcMismatchGapId(refs, read, i, mismatches, gaps, id);
+
+			fileout << "\t";
+			// (2) Subject
+			//while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t')) fileout << (char)*ref_name++;
+			fileout << refhead.substr(0, refhead.find(' '));
+			fileout << "\t";
+			// (3) %id
+			fileout.precision(3);
+			fileout << id * 100 << "\t";
+			// (4) alignment length
+			fileout << (read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) << "\t";
+			// (5) mismatches
+			fileout << mismatches << "\t";
+			// (6) gap openings
+			fileout << gaps << "\t";
+			// (7) q.start
+			fileout << read.hits_align_info.alignv[i].read_begin1 + 1 << "\t";
+			// (8) q.end
+			fileout << read.hits_align_info.alignv[i].read_end1 + 1 << "\t";
+			// (9) s.start
+			fileout << read.hits_align_info.alignv[i].ref_begin1 + 1 << "\t";
+			// (10) s.end
+			fileout << read.hits_align_info.alignv[i].ref_end1 + 1 << "\t";
+			// (11) e-value
+			fileout << evalue << "\t";
+			// (12) bit score
+			fileout << bitscore;
+			// OPTIONAL columns
+			for (uint32_t l = 0; l < user_opts.size(); l++)
+			{
+				// output CIGAR string
+				if (user_opts[l].compare("cigar") == 0)
+				{
+					fileout << "\t";
+					// masked region at beginning of alignment
+					if (read.hits_align_info.alignv[i].read_begin1 != 0) fileout << read.hits_align_info.alignv[i].read_begin1 << "S";
+					for (int c = 0; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					{
+						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+						fileout << length;
+						if (letter == 0) fileout << "M";
+						else if (letter == 1) fileout << "I";
+						else fileout << "D";
+					}
+
+					uint32_t end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
+					// output the masked region at end of alignment
+					if (end_mask > 0) fileout << end_mask << "S";
+				}
+				// output % query coverage
+				else if (user_opts[l].compare("qcov") == 0)
+				{
+					fileout << "\t";
+					fileout.precision(3);
+					double coverage = abs(read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) 
+						/ read.hits_align_info.alignv[i].readlen;
+					fileout << coverage * 100; // (double)align_len / readlen
+				}
+				// output strand
+				else if (user_opts[l].compare("qstrand") == 0)
+				{
+					fileout << "\t";
+					if (read.hits_align_info.alignv[i].strand) fileout << "+";
+					else fileout << "-";
+				}
+			}
+			fileout << "\n";
+		}//~blast tabular m8
+	} // ~iterate all alignments
+} // ~ Output::report_blast
+
+void Output::report_sam
+	(
+		ofstream &fileout,
+		References & refs,
+		Read & read
+	)
+{
+	fileout << "Not implemented\n";
+#if 0
+	const char to_char[5] = { 'A','C','G','T','N' };
+	// (1) Query
+	//while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
+	fileout <<  read.header.substr(0, read.header.find(' '));
+	// read did not align, output null string
+	if (print_all_reads_gv && (a == NULL))
+	{
+		fileout << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
+		return;
+	}
+	// read aligned, output full alignment
+	uint32_t c;
+	// (2) flag
+	if (!strand) fileout << "\t16\t";
+	else fileout << "\t0\t";
+	// (3) Subject
+	while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t'))
+		fileout << (char)*ref_name++;
+	// (4) Ref start
+	fileout << "\t" << a->ref_begin1 + 1;
+	// (5) mapq
+	fileout << "\t" << 255 << "\t";
+	// (6) CIGAR
+	// output the masked region at beginning of alignment
+	if (a->read_begin1 != 0) fileout << a->read_begin1 << "S";
+
+	for (c = 0; c < a->cigarLen; ++c) {
+		uint32_t letter = 0xf & *(a->cigar + c);
+		uint32_t length = (0xfffffff0 & *(a->cigar + c)) >> 4;
+		fileout << length;
+		if (letter == 0) fileout << "M";
+		else if (letter == 1) fileout << "I";
+		else fileout << "D";
+	}
+	uint32_t end_mask = readlen - a->read_end1 - 1;
+	// output the masked region at end of alignment
+	if (end_mask > 0) fileout << end_mask << "S";
+	// (7) RNEXT, (8) PNEXT, (9) TLEN
+	fileout << "\t*\t0\t0\t";
+	// (10) SEQ
+	const char* ptr_read_seq = read_seq;
+	while (*ptr_read_seq != '\n') fileout << (char)to_char[(int)*ptr_read_seq++];
+	// (11) QUAL
+	fileout << "\t";
+	// reverse-complement strand
+	if (read_qual && !strand)
+	{
+		while (*read_qual != '\n') fileout << (char)*read_qual--;
+		// forward strand
+	}
+	else if (read_qual) {
+		while ((*read_qual != '\n') && (*read_qual != '\0')) fileout << (char)*read_qual++;
+		// FASTA read
+	}
+	else fileout << "*";
+
+	// (12) OPTIONAL FIELD: SW alignment score generated by aligner
+	fileout << "\tAS:i:" << a->score1;
+	// (13) OPTIONAL FIELD: edit distance to the reference
+	fileout << "\tNM:i:" << diff << "\n";
+#endif
+} // ~Output::report_sam
+
+
+/**
+ * output Blast-like alignments (code modified from SSW-library)
+ * writes one entry for a single alignment of the read i.e. to write all alignments 
+ * this function has to be called multiple times each time changing s_align* pointer.
+ */
 void report_blast(
 	ofstream &fileout,
-	s_align* a,
+	s_align* a, // pointer set to the alignment to be written
 	const char* read_name,
 	const char* read_seq,
 	const char* read_qual,
@@ -47,7 +427,7 @@ void report_blast(
 	uint32_t readlen,
 	uint32_t bitscore,
 	bool strand, // 1: forward aligned ; 0: reverse complement aligned
-	double id,
+	double id, // percentage of identical matches
 	double coverage,
 	uint32_t mismatches,
 	uint32_t gaps

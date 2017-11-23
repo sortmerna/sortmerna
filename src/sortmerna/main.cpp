@@ -2232,7 +2232,10 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 							if (opt.compare(*it) == 0)
 							{
 								if (opt.compare("0") == 0) blast_human_readable = true;
-								else if (opt.compare("1") == 0) blast_tabular = true;
+								else if (opt.compare("1") == 0) {
+									blast_tabular = true; // TODO: remove
+									blastFormat = BlastFormat::TABULAR;
+								}
 								match_found = true;
 								break;
 							}

@@ -46,7 +46,7 @@ struct Index {
 	std::vector<uint32_t> partialwin; /**< length of seed/2 */
 	std::vector<uint32_t> minimal_score; /**< minimal SW score in order to reach threshold E-value */
 										 //uint64_t number_total_read;      /**< total number of reads in input reads file --> ReadStats */
-	std::vector<pair<double, double>> gumbel; /**< Gumbel parameters Lambda and K */
+	std::vector<pair<double, double>> gumbel; // Gumbel parameters Lambda and K. Calculated in 'load_stats'
 	std::vector<uint64_t> numbvs; /**< number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
 	std::vector<uint64_t> numseq;  /**< total number of reference sequences in one complete reference database */
 

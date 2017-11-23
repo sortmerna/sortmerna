@@ -13,6 +13,8 @@
 
 #include "load_index.hpp"
 #include "kvdb.hpp"
+#include "traverse_bursttrie.hpp" // id_win
+#include "ssw.hpp" // s_align2
 
 
 struct alignment_struct2
