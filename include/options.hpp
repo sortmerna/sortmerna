@@ -29,11 +29,11 @@ struct Runopts {
 	char* ptr_filetype_ar = 0; // '--aligned' aligned reads output file
 	char* ptr_filetype_or = 0; // '--other' rejected reads output file
 	double evalue = -1.0; // '-e' E-value threshold
-	long match = 2; // '--match' SW score (positive integer) for a match
-	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch
+	long match = 2; // '--match' SW score (positive integer) for a match               TODO: change to int8_t
+	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch   TODO: change to int8_t
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
-	long score_N = 0; // '-N' SW penalty for ambiguous letters (N's)
+	long score_N = 0; // '-N' SW penalty for ambiguous letters (N's)                   TODO: change to int8_t
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 	bool exit_early = false; // flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
 	double align_cov = -1.0; // '--coverage' query coverage threshold (the alignment must still pass the E-value threshold)

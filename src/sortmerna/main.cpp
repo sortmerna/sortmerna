@@ -83,7 +83,7 @@ bool blast_tabular = false;
 bool fastxout_gv = false;
 bool otumapout_gv = false;
 int32_t min_lis_gv = -1;
-int32_t num_alignments_gv = -1;
+int32_t num_alignments_gv = -1; // default = 1 if '--num_alignments' not specified
 int32_t seed_hits_gv = -1;
 int32_t edges_gv = -1;
 bool full_search_gv = false;

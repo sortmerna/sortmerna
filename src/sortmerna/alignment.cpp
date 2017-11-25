@@ -989,9 +989,6 @@ void compute_lis_alignment2(
 	bool& read_to_count
 )
 {
-	// flag to check whether read was formatted to 0-4 alphabet
-	// for alignment allowing N's
-	bool read_edited = false;
 	// boolean set to true if SW alignment succeeded between
 	// the read and a candidate reference sequence
 	bool aligned = false;
@@ -1003,7 +1000,7 @@ void compute_lis_alignment2(
 	// STEP 1: the number of matching windows on the read to the
 	// reference database is greater than the threshold,
 	// continue analysis of read
-	if (read.readhit >= (uint32_t)seed_hits_gv)
+	if (read.readhit >= (uint32_t)seed_hits_gv) // default seed_hits_gv = 2
 	{
 		// map<seq, number of occurrences> most_frequent_seq_t
 		map<uint32_t, uint32_t> most_frequent_seq_t;
@@ -1058,7 +1055,7 @@ void compute_lis_alignment2(
 			if (min_lis_gv > 0)
 				cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
 #endif                             
-																					   // not enough window hits, try to collect more hits or go to next read
+			// not enough window hits, try to collect more hits or go to next read
 			if (max_occur < (uint32_t)seed_hits_gv) break;
 			// update number of reference sequences remaining to check
 			if ((min_lis_gv > 0) && aligned && (k > 0))
@@ -1145,7 +1142,7 @@ void compute_lis_alignment2(
 				if (vi_read.size() >= (uint32_t)seed_hits_gv)
 				{
 					vector<uint32_t> list;
-					find_lis(vi_read, list, read.id);
+					find_lis(vi_read, list, read.id); // TODO: read.id is not used in this function.
 #ifdef HEURISTIC1_OFF
 					uint32_t list_n = 0;
 					do
@@ -1254,59 +1251,12 @@ void compute_lis_alignment2(
 									align_length = read.sequence.length() + head + tail;
 								}
 							}
-							// edit read in numeric alphabet to include ambiguous characters in alignment
-							if (( read.ambiguous_nt.size() != 0) && !read_edited) // size_ambiguous_nt
-							{
-								read_edited = true;
 
-								if (!forward_gv)
-								{
-									for (uint32_t p = 0; p < read.ambiguous_nt.size(); p++)
-									{
-										read.seq_int_str[(read.sequence.length() - read.ambiguous_nt[p] - 1)] = 4;
-									}
-								}
-								else
-								{
-									for (uint32_t p = 0; p < read.ambiguous_nt.size(); p++) // size_ambiguous_nt
-									{
-										read.seq_int_str[read.ambiguous_nt[p]] = 4;
-									}
-								}
-							}
-#ifdef debug_align
-							//if ( forward_gv ) //TESTING
-							//{
-							cout << "\n\t\t\t\t\treadlen = " << readlen << endl;
-							cout << "\t\t\t\t\treflen = " << reflen << endl;
-							cout << "\t\t\t\t\tlcs_que_start = " << lcs_que_start << endl;
-							cout << "\t\t\t\t\tlcs_ref_start = " << lcs_ref_start << endl;
-							cout << "\t\t\t\t\talign_que_start = " << align_que_start << endl;
-							cout << "\t\t\t\t\talign_ref_start = " << align_ref_start << endl;
-							cout << "\t\t\t\t\thead = " << head << "; tail = " << tail << endl;
-							cout << "\t\t\t\t\talign_length = " << align_length << endl;
-							cout << "read tag: ";
-							char* tt = reads[readn - 1];
-							while (*tt != '\n') cout << (char)*tt++;
-							cout << endl;
-							cout << "read (starting from align_que_start): ";
-							tt = myread + align_que_start;
-							while (*tt != '\n') cout << (int)*tt++;
-							cout << endl;
-							cout << "ref tag: ";
-							tt = reference_seq[(2 * (int)max_seq)];
-							while (*tt != '\n') cout << (char)*tt++;
-							cout << endl;
-							cout << "ref (starting from align_ref_start-head): ";
-							tt = reference_seq[(2 * (int)max_seq) + 1] + align_ref_start - head;
-							while (*tt != '\n') cout << (int)*tt++;
-							cout << endl;
-							cout << "align_length-head-tail = " << (align_length - head - tail) << endl;
-							//}
-#endif                                                     
+							if (read.is04) read.flip34();
+                       
 							// create profile for read
 							s_profile* profile = 0;
-							profile = ssw_init((int8_t*)(read.seq_int_str.c_str() + align_que_start), (align_length - head - tail), &read.scoring_matrix[0], 5, 2);
+							profile = ssw_init((int8_t*)(&read.isequence[0] + align_que_start), (align_length - head - tail), &read.scoring_matrix[0], 5, 2);
 
 							s_align* result = 0;
 							//uint16_t filters = 0;
@@ -1633,7 +1583,7 @@ void compute_lis_alignment2(
 										double id = 0;
 										char to_char[5] = { 'A','C','G','T','N' };
 										const char* ref_seq_ptr = refs.buffer[(2 * (int)max_seq) + 1].sequence.c_str(); // reference_seq
-										const char* read_seq_ptr = read.seq_int_str.c_str(); // myread
+										const char* read_seq_ptr = read.isequence.c_str(); // myread
 										int32_t qb = result->ref_begin1;
 										int32_t pb = result->read_begin1;
 										uint32_t mismatches = 0;
@@ -1770,7 +1720,7 @@ void compute_lis_alignment2(
 												output.acceptedblast, //blast output file
 												result, //SW alignment cigar
 												read.header.c_str(), //read name
-												read.seq_int_str.c_str(), //read sequence  &read.seq_int_str[0]  read.seq_int_str.c_str()
+												read.isequence.c_str(), //read sequence  &read.isequence[0]  read.isequence.c_str()
 												read.quality.c_str(), //read quality  read.quality.c_str()
 												refs.buffer[max_seq].header.c_str(), //reference name
 												refs.buffer[max_seq].sequence.c_str(), //reference sequence
@@ -1789,7 +1739,7 @@ void compute_lis_alignment2(
 												output.acceptedsam, //sam output file
 												result, //SW alignment cigar
 												read.header.c_str(), //read name
-												read.seq_int_str.c_str(), //read sequence
+												read.isequence.c_str(), //read sequence
 												read.quality.c_str(), //read quality
 												refs.buffer[max_seq].header.c_str(), //reference name
 												refs.buffer[max_seq].sequence.c_str(), //reference sequence
@@ -1851,23 +1801,6 @@ void compute_lis_alignment2(
 		}//~for all of the reference sequence candidates
 	}//if ( readhitf || readhitr > ratio )
 
-	 // edit the read back onto 0-3 alphabet to search for seeds 
-	 // (seed search cannot proceed on 0-4 alphabet)
-	if ((read.ambiguous_nt.size() != 0) && read_edited)
-	{
-		if (!forward_gv)
-		{
-			for (uint32_t p = 0; p < read.ambiguous_nt.size(); p++)
-			{
-				read.seq_int_str[(read.sequence.length() - read.ambiguous_nt[p]) - 1] = 0;
-			}
-		}
-		else
-		{
-			for (uint32_t p = 0; p < read.ambiguous_nt.size(); p++)
-			{
-				read.seq_int_str[read.ambiguous_nt[p]] = 0;
-			}
-		}
-	}
+	if (read.is04) read.flip34();
+
 } // ~compute_lis_alignment2

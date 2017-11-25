@@ -15,6 +15,7 @@
 #include "kvdb.hpp"
 #include "traverse_bursttrie.hpp" // id_win
 #include "ssw.hpp" // s_align2
+#include "options.hpp"
 
 
 struct alignment_struct2
@@ -63,6 +64,8 @@ public:
 	int id = 0; // number of the read in the reads file
 	bool isValid; // flags the record is not valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
+	bool is03; // indicates Read::isequence is in 0..3 alphabet
+	bool is04; // indicates Read:iseqeunce is in 0..4 alphabet. Seed search cannot proceed on 0-4 alphabet
 
 	std::string header;
 	std::string sequence;
@@ -70,7 +73,7 @@ public:
 	Format format; // fasta | fastq
 
 	// calculated
-	std::string seq_int_str; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
+	std::string isequence; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
 	bool reversed = false;
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
@@ -87,37 +90,21 @@ public:
 	// need custom destructor, copy constructor, and copy assignment
 	std::vector<id_win> id_win_hits; // array of positions of window hits on the reference sequence
 	alignment_struct2 hits_align_info;
-	std::vector<int8_t> scoring_matrix;
+	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	//int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
-	//int8_t* ss = new int8_t[25];
-	//std::unique_ptr<int8_t[]> scoring_matrix2(new int8_t[25]);
 	// <------------------------------ store in database
 
 	const char complement[4] = { 3, 2, 1, 0 };
 
-	Read() : isValid(false), isEmpty(true), scoring_matrix(25, 0)
+	Read()
+		:
+		isValid(false),
+		isEmpty(true),
+		is03(false),
+		is04(false)
 	{
 		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
 		if (min_lis_gv > 0) best = min_lis_gv;
-		// create new instance of alignments
-		//hits_align_info.max_size = 0;
-		//hits_align_info.size = 0;
-		//hits_align_info.min_index = 0;
-		//hits_align_info.max_index = 0;
-		//hits_align_info.ptr = new s_align[1](); // see alignment.cpp
-		//hits_align_info.ptr->cigar = 0;
-		//hits_align_info.ptr->cigar = new uint32_t[1];
-		//hits_align_info.ptr->cigarLen = 0;
-		//hits_align_info.ptr->index_num = 0;
-		//hits_align_info.ptr->part = 0;
-		//hits_align_info.ptr->readlen = 0;
-		//hits_align_info.ptr->read_begin1 = 0;
-		//hits_align_info.ptr->read_end1 = 0;
-		//hits_align_info.ptr->ref_begin1 = 0;
-		//hits_align_info.ptr->ref_end1 = 0;
-		//hits_align_info.ptr->ref_seq = 0;
-		//hits_align_info.ptr->score1 = 0;
-		//hits_align_info.ptr->strand = 0;
 	}
 
 	Read(int id, std::string header, std::string sequence, std::string quality, Format format)
@@ -126,7 +113,7 @@ public:
 		quality(quality), format(format), isEmpty(false)
 	{
 		validate();
-		seqToIntStr();
+		//seqToIntStr();
 		//		initScoringMatrix(opts);
 	}
 
@@ -146,9 +133,25 @@ public:
 		id = that.id;
 		isValid = that.isValid;
 		isEmpty = that.isEmpty;
+		is03 = that.is03;
+		is04 = that.is04;
 		header = that.header;
 		sequence = that.sequence;
-		seq_int_str = that.seq_int_str;
+		quality = that.quality;
+		format = that.format;
+		isequence = that.isequence;
+		reversed = that.reversed;
+		ambiguous_nt = that.ambiguous_nt;
+		hit = that.hit;
+		hit_denovo = that.hit_denovo;
+		null_align_output = that.null_align_output;
+		max_SW_score = that.max_SW_score;
+		num_alignments = that.num_alignments;
+		readhit = that.readhit;
+		best = that.best;
+		id_win_hits = that.id_win_hits;
+		hits_align_info = that.hits_align_info;
+		scoring_matrix = that.scoring_matrix;
 	}
 
 	// copy assignment
@@ -160,33 +163,52 @@ public:
 		id = that.id;
 		isValid = that.isValid;
 		isEmpty = that.isEmpty;
+		is03 = that.is03;
+		is04 = that.is04;
 		header = that.header;
 		sequence = that.sequence;
-		seq_int_str = that.seq_int_str;
+		quality = that.quality;
+		format = that.format;
+		isequence = that.isequence;
+		reversed = that.reversed;
+		ambiguous_nt = that.ambiguous_nt;
+		hit = that.hit;
+		hit_denovo = that.hit_denovo;
+		null_align_output = that.null_align_output;
+		max_SW_score = that.max_SW_score;
+		num_alignments = that.num_alignments;
+		readhit = that.readhit;
+		best = that.best;
+		id_win_hits = that.id_win_hits;
+		hits_align_info = that.hits_align_info;
+		scoring_matrix = that.scoring_matrix;
 
 		return *this; // by convention always return *this
 	}
 
-	//	void initScoringMatrix(Runopts & opts);
+	void initScoringMatrix(Runopts & opts);
 
-	// convert sequence to "sequenceInt" and populate "ambiguous_nt"
-	void seqToIntStr() {
+	// convert char "sequence" to 0..3 alphabet "isequence", and populate "ambiguous_nt"
+	void seqToIntStr() 
+	{
 		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
 		{
 			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
-			seq_int_str += nt_table[(int)*it];
+			//isequence += nt_table[(int)*it];
+			isequence += c;
 			if (c == 0) { // ambiguous nt
-				ambiguous_nt.push_back(static_cast<UINT>(seq_int_str.size()) - 1); // i.e. add current position to the vector
+				ambiguous_nt.push_back(static_cast<UINT>(isequence.size()) - 1); // i.e. add current position to the vector
 			}
 		}
+		is03 = true;
 	}
 
 	// reverse complement the integer sequence
 	void revIntStr() {
-		std::reverse(seq_int_str.begin(), seq_int_str.end());
-		for (int i = 0; i < seq_int_str.length(); i++) {
-			seq_int_str[i] = complement[(int)seq_int_str[i]]; // original: myread_rc[j] = complement[(int)*revcomp--]; paralleltraversal.cpp:975
-			//seq_int_str[i] = complement[seq_int_str[i] - '0'];
+		std::reverse(isequence.begin(), isequence.end());
+		for (int i = 0; i < isequence.length(); i++) {
+			isequence[i] = complement[(int)isequence[i]]; // original: myread_rc[j] = complement[(int)*revcomp--]; paralleltraversal.cpp:975
+			//isequence[i] = complement[isequence[i] - '0'];
 		}
 		reversed = true;
 	}
@@ -211,11 +233,12 @@ public:
 		isEmpty = true;
 	}
 
-	void init(KeyValueDatabase & kvdb)
+	void init(Runopts & opts, KeyValueDatabase & kvdb)
 	{
 		validate();
 		seqToIntStr();
 		unmarshallJson(kvdb); // get matches from Key-value database
+		initScoringMatrix(opts);
 	}
 
 
@@ -272,4 +295,27 @@ public:
 
 	// deserialize matches from JSON and populate the read
 	void unmarshallJson(KeyValueDatabase & kvdb);
+
+	// flip isequence between 03 - 04 alphabets
+	void flip34()
+	{
+		int val = is03 ? 4 : 0;
+		if (ambiguous_nt.size() > 0) 
+		{
+			if (forward_gv)
+			{
+				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+				{
+					isequence[ambiguous_nt[p]] = val;
+				}
+			}
+			else
+			{
+				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+				{
+					isequence[(isequence.length() - ambiguous_nt[p]) - 1] = val;
+				}
+			}
+		}
+	} // ~flip34
 }; // ~class Read

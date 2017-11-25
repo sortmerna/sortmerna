@@ -247,7 +247,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 	}
 
 // TODO: Delete --------------------------------------------------->
-	//char myread[READLEN] = ""; // sequence converted to integer alphabet (0,1,2,3)  read.seq_int_str
+	//char myread[READLEN] = ""; // sequence converted to integer alphabet (0,1,2,3)  read.isequence
 	//const char* str = read.sequence.c_str();
 	//char* _myread = &myread[0];
 	// keep record of what position on the read an ambiguous char exists,
@@ -263,7 +263,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 
 	// change the read into an integer alphabet -- FASTA
 	{
-		// block deleted. Moved to Reads::seq_int_str + Reads::seqToIntStr
+		// block deleted. Moved to Reads::isequence + Reads::seqToIntStr
 	}
 // <---------------------------------------------------------------- Delete
 
@@ -293,7 +293,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 	 // array of positions of window hits on the reference sequence
 	//vector< id_win > id_win_hits; // Read::id_win_hits
 	// number of windows hit to the reference sequence(s)
-	uint32_t readhit = 0;
+	//uint32_t readhit = 0; read.readhit
 	uint32_t windowshift = index.opts.skiplengths[index.index_num][0];
 	// keep track of windows which have been already traversed in the burst trie
 	vector<bool> read_index_hits(read.sequence.size());
@@ -335,13 +335,13 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 				vbitwindowsf.resize(bit_vector_size);
 				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
 
-				init_win_f(&read.seq_int_str[win_index + index.partialwin[index.index_num]],
+				init_win_f(&read.isequence[win_index + index.partialwin[index.index_num]],
 					&vbitwindowsf[0],
 					&vbitwindowsf[4],
 					index.numbvs[index.index_num]);
 
 				uint32_t keyf = 0;
-				char *keyf_ptr = &read.seq_int_str[win_index];
+				char *keyf_ptr = &read.isequence[win_index];
 				// build hash for first half windows (foward and reverse)
 				// hash is just a numeric value formed by the chars of a string consisting of '0','1','2','3'
 				// e.g. "2233012" -> b10.1011.1100.0110 = x2BC6 = 11206
@@ -386,12 +386,12 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					vbitwindowsr.resize(bit_vector_size);
 					std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
 					// build the first bitvector window
-					init_win_r(&read.seq_int_str[win_index + index.partialwin[index.index_num] - 1],
+					init_win_r(&read.isequence[win_index + index.partialwin[index.index_num] - 1],
 						&vbitwindowsr[0],
 						&vbitwindowsr[4],
 						index.numbvs[index.index_num]);
 					uint32_t keyr = 0;
-					char *keyr_ptr = &read.seq_int_str[win_index + index.partialwin[index.index_num]];
+					char *keyr_ptr = &read.isequence[win_index + index.partialwin[index.index_num]];
 					// build hash for first half windows (foward and reverse)
 					for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
 					{
@@ -434,7 +434,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					{
 						read.id_win_hits.push_back(id_hits[i]);
 					}
-					readhit++;
+					read.readhit++;
 				}
 			}
 		check_score:
@@ -448,7 +448,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					//id_win_hits,  Read::id_win_hits
 					//positions_tbl, Index
 					//read_max_SW_score, Read::max_SW_score
-					search, // signals alignment found - stop searching
+					search, // returns False if the alignment is found -> stop searching
 					//best_x, Read::best
 					// readn,  Read::id
 					//num_alignments_x,  Read::num_alignments
@@ -456,7 +456,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					//lnwin[index_num],  Index::lnwin
 					//index_num,  Index::index_num
 					//reference_seq_len, // References
-					//myread,  Read::seq_int_str
+					//myread,  Read::isequence
 					//ambiguous_nt,   Read::ambiguous_nt vector
 					//scoring_matrix, Read::scoring_matrix
 					//reference_seq,  References
@@ -560,18 +560,23 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 		++readstats.total_reads_denovo_clustering;
 } // ~parallelTraversalJob
 
-//void Read::initScoringMatrix(Runopts & opts)
-//{
-//	int32_t l, k, m;
-	// initialize Smith-Waterman scoring matrix for genome sequences
-//	for (l = k = 0; l < 4; ++l)
-//	{
-//		for (m = 0; m < 4; ++m)
-//			scoring_matrix[k++] = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
-//		scoring_matrix[k++] = opts.score_N; // ambiguous base
-//	}
-//	for (m = 0; m < 5; ++m) scoring_matrix[k++] = opts.score_N; // ambiguous base
-//}
+// initialize Smith-Waterman scoring matrix for genome sequences
+void Read::initScoringMatrix(Runopts & opts)
+{
+	int l, k, m;
+	int8_t val = 0;
+	for (l = k = 0; l < 4; ++l)
+	{
+		for (m = 0; m < 4; ++m) {
+			val = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
+			scoring_matrix.push_back(val);
+		}
+		scoring_matrix.push_back(opts.score_N); // ambiguous base
+	}
+	for (m = 0; m < 5; ++m) {
+		scoring_matrix.push_back(opts.score_N); // ambiguous base
+	}
+}
 
 void Read::unmarshallString(std::string matchStr) {}
 
@@ -615,7 +620,7 @@ void Reader::read()
 			{
 				if (!read.isEmpty)
 				{
-					read.init(kvdb); // load alignment statistics from DB
+					read.init(opts, kvdb); // load alignment statistics from DB
 					readQueue.push(read);
 					++id;
 				}
@@ -631,7 +636,7 @@ void Reader::read()
 			{
 				if (!read.isEmpty)
 				{
-					read.init(kvdb);
+					read.init(opts, kvdb);
 					readQueue.push(read);
 					++id;
 					count = 0;
@@ -898,7 +903,7 @@ void paralleltraversal2(Runopts & opts)
 
 			for (int i = 0; i < opts.num_fread_threads; i++)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), readQueue, opts.readsfile, kvdb, loopCount));
+				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, opts.readsfile, kvdb, loopCount));
 				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
 			}
 
@@ -3010,7 +3015,7 @@ void writeAlignmentJob(
 			// format forward read from char to int
 			//if (read.hits_align_info.alignv[p].strand)
 			//{
-			//	format_forward(reads[readn], &myread[0], filesig); // read.seq_int_str
+			//	format_forward(reads[readn], &myread[0], filesig); // read.isequence
 			//}
 			// format reverse-complement read from char to int
 			//else
