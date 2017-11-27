@@ -992,11 +992,7 @@ void compute_lis_alignment2(
 	// boolean set to true if SW alignment succeeded between
 	// the read and a candidate reference sequence
 	bool aligned = false;
-#ifdef debug_align
-	cout << "\t\t\treadhit = " << readhit << endl;
-	cout << "\t\t\tseed_hits_gv = " << seed_hits_gv << endl;
-	cout << "\t\t\tnum_best_hits_gv = " << num_best_hits_gv << endl;
-#endif
+
 	// STEP 1: the number of matching windows on the read to the
 	// reference database is greater than the threshold,
 	// continue analysis of read
@@ -1007,6 +1003,7 @@ void compute_lis_alignment2(
 		map<uint32_t, uint32_t>::iterator map_it;
 		uint32_t max_seq = 0;
 		uint32_t max_occur = 0;
+
 		// STEP 2: for every reference sequence, compute the number of
 		// window hits belonging to it
 		for (uint32_t i = 0; i < read.id_win_hits.size(); i++)
@@ -1027,6 +1024,7 @@ void compute_lis_alignment2(
 				else most_frequent_seq_t[seq] = 1;
 			}
 		}
+
 		// <mypair> = <number of occurrences of a sequence, index of sequence>
 		vector<mypair> most_frequent_seq;
 		// copy list of occurrences from map to vector for sorting
@@ -1040,6 +1038,7 @@ void compute_lis_alignment2(
 		most_frequent_seq_t.clear();
 		// sort the highest scoring sequences to the head of the array
 		sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
+
 		// STEP 3: for each reference sequence candidate
 		// (starting from highest scoring)
 		for (uint32_t k = 0; k < most_frequent_seq.size(); k++)
@@ -1077,9 +1076,7 @@ void compute_lis_alignment2(
 			{
 				if (read.num_alignments <= 0) break;
 			}
-#ifdef debug_align
-			cout << "\t\t\t\tpassed all checks for ref sequence search.. " << endl; //TESTING
-#endif                                      
+
 			// STEP 4: collect all the genome positions belonging to the
 			// reference candidate from the table of positions computed
 			// during indexing
@@ -1151,11 +1148,6 @@ void compute_lis_alignment2(
 						// LIS long enough to perform Smith-Waterman alignment
 						if (list.size() >= (uint32_t)seed_hits_gv)
 						{
-#ifdef debug_align
-							cout << "\t\t\t\tLIS = " << list.size() << endl; //TESTING
-							for (uint32_t p = 0; p < list.size(); p++)
-								cout << "\t\t\t\tref: " << vi_read[list[p]].first << "\tread: " << vi_read[list[p]].second << endl;
-#endif
 #ifdef HEURISTIC1_OFF
 							lcs_ref_start = vi_read[list[list_n]].first;
 							lcs_que_start = vi_read[list[list_n]].second;
@@ -1283,249 +1275,151 @@ void compute_lis_alignment2(
 							{
 								if (result->score1 > index.minimal_score[index.index_num]) aligned = true;
 							}
+
 							// STEP 8: alignment succeeded, output (--all) or store (--best)
 							// the alignment and go to next alignment
 							if (aligned)
 							{
-#ifdef debug_align
-								cout << "\t\t\t\t\tscore = " << result->score1 << endl;
-								cout << "\t\t\t\t\taligned!\n"; //TESTING
-#endif
-#pragma omp critical
+								// read has not been yet mapped, set bit to true for this read
+								// (this is the _only_ place where read_hits must be modified)
+								if (!read.hit)
 								{
-									// read has not been yet mapped, set bit to true for this read
-									// (this is the _only_ place where read_hits must be modified)
-									if (!read.hit)
+									read.hit = true;
+									readstats.total_reads_mapped++;
+									readstats.reads_matched_per_db[index.index_num]++;
+								}
+
+								// output (sam or blast-like) or update alignment information
+								bool strand = false;
+								if (forward_gv) strand = true;
+								else strand = false;
+
+								// add the offset calculated by the LCS (from the beginning of the sequence)
+								// to the offset computed by SW alignment
+								result->ref_begin1 += (align_ref_start - head);
+								result->ref_end1 += (align_ref_start - head);
+								result->read_begin1 += align_que_start;
+								result->read_end1 += align_que_start;
+								result->readlen = read.sequence.length();
+
+								// update best alignment
+								if (min_lis_gv > -1)
+								{
+									result->index_num = index.index_num;
+									result->ref_seq = max_seq;
+									result->part = index.part;
+									result->strand = strand;
+
+									// an alignment for this read already exists
+									//if (alignment != read_hits_align_info.end())
+									if (read.hits_align_info.size > 0)
 									{
-										read.hit = !read.hit; // read_hits[readn].flip()
-										readstats.total_reads_mapped++;
-										readstats.reads_matched_per_db[index.index_num]++;
-									}
-									// output (sam or blast-like) or update alignment information
-									bool strand = false;
-									if (forward_gv) strand = true;
-									else strand = false;
-									// add the offset calculated by the LCS (from the beginning of the sequence)
-									// to the offset computed by SW alignment
-									result->ref_begin1 += (align_ref_start - head);
-									result->ref_end1 += (align_ref_start - head);
-									result->read_begin1 += align_que_start;
-									result->read_end1 += align_que_start;
-									result->readlen = read.sequence.length();
-									// update best alignment
-									if (min_lis_gv > -1)
-									{
-										result->index_num = index.index_num;
-										result->ref_seq = max_seq;
-										result->part = index.part;
-										result->strand = strand;
-										//map<uint64_t, alignment_struct>::iterator alignment = read_hits_align_info.find(readn);
-#ifdef DEBUG_BEST_N
-										cout << "\nreadn = " << readn << endl;
-										cout << "max_seq = " << (2 * max_seq) << endl;
-										cout << "result->score1 = " << result->score1 << endl;
-										cout << "index_num = " << result->index_num << endl;
-										cout << " part = " << result->part << endl;
-										cout << " read = ";
-										char* ttc = reads[readn - 1];
-										while (*ttc != '\n') cout << (char)*ttc++;
-										cout << endl;
-										cout << " refseq = ";
-										char* ttp = reference_seq[(2 * result->ref_seq)] + 1;
-										while (*ttp != '\n') cout << (char)*ttp++;
-										cout << endl;
-#endif
-										// an alignment for this read already exists
-										//if (alignment != read_hits_align_info.end())
-										if (read.hits_align_info.size > 0)
+										uint32_t smallest_score_index = read.hits_align_info.min_index;
+										uint32_t highest_score_index = read.hits_align_info.max_index;
+										uint32_t array_size = read.hits_align_info.size;
+										uint32_t array_max_size = read.hits_align_info.max_size;
+
+										// number of alignments stored per read < num_best_hits_gv, 
+										// add alignment to array without comparison to other members of array
+										if ((num_best_hits_gv == 0) || (array_size < (uint32_t)num_best_hits_gv))
 										{
-#ifdef DEBUG_BEST_N
-											cout << "alignment already exists.\n";
-#endif
-											uint32_t smallest_score_index = read.hits_align_info.min_index;
-											uint32_t highest_score_index = read.hits_align_info.max_index;
-											uint32_t array_size = read.hits_align_info.size;
-											uint32_t array_max_size = read.hits_align_info.max_size;
-#ifdef DEBUG_BEST_N
-											cout << "smallest_score_index = " << smallest_score_index << endl;
-											cout << "highest_score_index = " << highest_score_index << endl;
-											cout << "array_size = " << array_size << endl;
-											cout << "array_max_size = " << array_max_size << endl;
-											cout << "num_best_hits_gv = " << num_best_hits_gv << endl;
-#endif
-											// number of alignments stored per read < num_best_hits_gv, 
-											// add alignment to array without comparison to other members of array
-											if ((num_best_hits_gv == 0) || (array_size < (uint32_t)num_best_hits_gv))
-											{
-												// TODO: no need for this. The hits are in Vector now
-												//
-												// number of alignments stored per read == maximum number of alignments allowed, 
-												// resize array by another BEST_HITS_INCREMENT slots 
-												//if (array_size == array_max_size)
-												//{
-												//	uint32_t new_array_max_size = 0;
-												//	if ((num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= (uint32_t)num_best_hits_gv))
-												//		new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
-												//	else
-												//		new_array_max_size = num_best_hits_gv;
+											// TODO: no need for this. The hits are in Vector now
+											//
+											// number of alignments stored per read == maximum number of alignments allowed, 
+											// resize array by another BEST_HITS_INCREMENT slots 
+											//if (array_size == array_max_size)
+											//{
+											//	uint32_t new_array_max_size = 0;
+											//	if ((num_best_hits_gv == 0) || (array_size + BEST_HITS_INCREMENT <= (uint32_t)num_best_hits_gv))
+											//		new_array_max_size = array_max_size + BEST_HITS_INCREMENT;
+											//	else
+											//		new_array_max_size = num_best_hits_gv;
 //#ifdef DEBUG_BEST_N
-												//	cout << "\t\tresize array.\n";
-												//	cout << "\t\tnew_array_max_size =  " << new_array_max_size << endl;
+											//	cout << "\t\tresize array.\n";
+											//	cout << "\t\tnew_array_max_size =  " << new_array_max_size << endl;
 //#endif
-												//	s_align* bigger_alignment_array = new s_align[new_array_max_size]();
-												//	if (bigger_alignment_array == NULL)
-												//	{
-												//		fprintf(stderr, "\t  %sERROR%s: could not allocate memory for "
-												//			"alignment storage (s_align* bigger_alignment_array "
-												//			"in paralleltraversal.cpp\n", startColor, "\033[0m");
-												//		exit(EXIT_FAILURE);
-												//	}
-													// copy smaller array to larger memory slot
-												//	memcpy(bigger_alignment_array, &read.hits_align_info.alignv[0], sizeof(s_align)*array_max_size);
-													// delete smaller array memory
-												//	delete[] alignment->second.ptr;
-													// set pointer to new larger array
-												//	alignment->second.ptr = bigger_alignment_array;
-													// set new max_size
-												//	alignment->second.max_size = new_array_max_size;
-													// update maximum size of array for downstream computation
-												//	array_max_size = alignment->second.max_size;
-												//}
+											//	s_align* bigger_alignment_array = new s_align[new_array_max_size]();
+											//	if (bigger_alignment_array == NULL)
+											//	{
+											//		fprintf(stderr, "\t  %sERROR%s: could not allocate memory for "
+											//			"alignment storage (s_align* bigger_alignment_array "
+											//			"in paralleltraversal.cpp\n", startColor, "\033[0m");
+											//		exit(EXIT_FAILURE);
+											//	}
+												// copy smaller array to larger memory slot
+											//	memcpy(bigger_alignment_array, &read.hits_align_info.alignv[0], sizeof(s_align)*array_max_size);
+												// delete smaller array memory
+											//	delete[] alignment->second.ptr;
+												// set pointer to new larger array
+											//	alignment->second.ptr = bigger_alignment_array;
+												// set new max_size
+											//	alignment->second.max_size = new_array_max_size;
+												// update maximum size of array for downstream computation
+											//	array_max_size = alignment->second.max_size;
+											//}
 //#ifdef DEBUG_BEST_N
-												//cout << "\tadd new alignment to empty array slot.\n";
-												//cout << "\tarray_max_size = " << array_max_size << endl;
+											//cout << "\tadd new alignment to empty array slot.\n";
+											//cout << "\tarray_max_size = " << array_max_size << endl;
 //#endif
-												//s_align *smallest_alignment = &(read.hits_align_info.alignv[0]) + array_size;
-												//s_align *smallest_alignment = alignment->second.ptr + array_size;
-												//*smallest_alignment = *result;
-												// increment size of array
-												//alignment->second.size++;
-												//array_size++;
-												// all slots have been filled, find slot with smallest
-												// alignment score and set the smallest_score_index
-												// (this is not done when num_best_hits_gv == 0 since
-												// we want to output all alignments for some --min_lis)
-												if (array_size == (uint32_t)num_best_hits_gv)
-												{
-#ifdef DEBUG_BEST_N
-													cout << "\t\tfind new smallest_score_index of " << num_best_hits_gv << " slots.\n";
-#endif
-													uint32_t smallest_score = 1000000;
-													//s_align *this_alignment = alignment->second.ptr;
-													for (int p = 0; p < num_best_hits_gv; p++)
-													{
-														if (read.hits_align_info.alignv[p].score1  < smallest_score) // this_alignment[p].score1
-														{
-															smallest_score = read.hits_align_info.alignv[p].score1;
-															smallest_score_index = p;
-														}
-													}
-#ifdef DEBUG_BEST_N
-													cout << "\t\tnew smallest_score_index = " << smallest_score_index << endl;
-#endif
-													read.hits_align_info.min_index = smallest_score_index; // alignment->second.min_index
-												}
-
-												// update the index position of the first occurrence of the
-												// highest alignment score
-												if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
-													read.hits_align_info.max_index = array_size - 1;
-#ifdef DEBUG_BEST_N
-												cout << "\tmax_index = " << alignment->second.max_index << endl;
-#endif
-												// the maximum possible score for this read has been found
-												if (result->score1 == max_SW_score) read.max_SW_score++;
-#ifdef DEBUG_BEST_N
-												cout << "\tfree result.\n";
-#endif
-												// free result
-												free(result);
-												result = NULL;
-											}//~if (array_size < num_best_hits_gv)
-
-											 // all num_best_hits_gv slots have been filled,
-											 // replace the alignment having the lowest score
-											else if (result->score1 > read.hits_align_info.alignv[smallest_score_index].score1) // alignment->second.ptr
+											//s_align *smallest_alignment = &(read.hits_align_info.alignv[0]) + array_size;
+											//s_align *smallest_alignment = alignment->second.ptr + array_size;
+											//*smallest_alignment = *result;
+											// increment size of array
+											//alignment->second.size++;
+											//array_size++;
+											// all slots have been filled, find slot with smallest
+											// alignment score and set the smallest_score_index
+											// (this is not done when num_best_hits_gv == 0 since
+											// we want to output all alignments for some --min_lis)
+											if (array_size == (uint32_t)num_best_hits_gv)
 											{
-												// get the alignment with the smallest score
-												//s_align *smallest_alignment = (alignment->second.ptr) + smallest_score_index; // alignment->second.ptr
-#ifdef DEBUG_BEST_N
-												cout << "\treplace alignment with higher score.\n";
-												cout << "\tsmallest_alignment->score = " << smallest_alignment->score1 << endl;
-												cout << "\treplace alignment in an existing slot.\n";
-#endif
-												// update max_index to the position of the first occurrence
-												// of the highest scoring alignment
-												if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
-													read.hits_align_info.max_index = smallest_score_index;
-												// decrement number of reads mapped to database
-												// with lower score
-												readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--; // smallest_alignment->index_num
-												// increment number of reads mapped to database with higher score
-												readstats.reads_matched_per_db[index.index_num]++;
-												// free the old cigar
-												//free(smallest_alignment->cigar);
-												//smallest_alignment->cigar = NULL;
-												//*smallest_alignment = *result;
-												// result is a pointer to a single s_align struct
-												// copy s_align * result into a_align2 align:
-												s_align2 align;
-												for (int i = 0; i < result->cigarLen; i++)
-													align.cigar.push_back(*result->cigar++);
-												align.cigarLen = result->cigarLen;
-												align.index_num = result->index_num;
-												align.part = result->part;
-												align.readlen = result->readlen;
-												align.read_begin1 = result->read_begin1;
-												align.read_end1 = result->read_end1;
-												align.ref_begin1 = result->ref_begin1;
-												align.ref_end1 = result->ref_end1;
-												align.ref_seq = result->ref_seq;
-												align.score1 = result->score1;
-												align.strand = result->strand;
-												read.hits_align_info.alignv[smallest_score_index] = align; // *result
-
-												// find the new smallest_score_index
 												uint32_t smallest_score = 1000000;
 												//s_align *this_alignment = alignment->second.ptr;
 												for (int p = 0; p < num_best_hits_gv; p++)
 												{
-													//if (this_alignment[p].score1 < smallest_score)
-													if (read.hits_align_info.alignv[p].score1 < smallest_score)
+													if (read.hits_align_info.alignv[p].score1  < smallest_score) // this_alignment[p].score1
 													{
 														smallest_score = read.hits_align_info.alignv[p].score1;
 														smallest_score_index = p;
 													}
 												}
 #ifdef DEBUG_BEST_N
-												cout << "\nnew smallest_score_index = " << smallest_score_index << endl;
-#endif                                 
+												cout << "\t\tnew smallest_score_index = " << smallest_score_index << endl;
+#endif
 												read.hits_align_info.min_index = smallest_score_index; // alignment->second.min_index
-												// the maximum possible score for this read has been found
-												if (result->score1 == max_SW_score) read.max_SW_score++;
-												// free result, except the cigar (now new cigar)
-												free(result);
-												result = NULL;
 											}
-											else
-											{
-												// new alignment has a lower score, destroy it
-												if (result != NULL) free(result);
-											}
-										}
-										// an alignment for this read doesn't exist, add the first alignment
-										else
+
+											// update the index position of the first occurrence of the
+											// highest alignment score
+											if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
+												read.hits_align_info.max_index = array_size - 1;
+#ifdef DEBUG_BEST_N
+											cout << "\tmax_index = " << alignment->second.max_index << endl;
+#endif
+											// the maximum possible score for this read has been found
+											if (result->score1 == max_SW_score) read.max_SW_score++;
+#ifdef DEBUG_BEST_N
+											cout << "\tfree result.\n";
+#endif
+											// free result
+											free(result);
+											result = NULL;
+										}//~if (array_size < num_best_hits_gv)
+
+										// all num_best_hits_gv slots have been filled,
+										// replace the alignment having the lowest score
+										else if (result->score1 > read.hits_align_info.alignv[smallest_score_index].score1) // alignment->second.ptr
 										{
-//#ifdef DEBUG_BEST_N
-//											cout << "add first alignment.\n";
-//#endif                          
-											// maximum size of s_align array
-											uint32_t max_size = 0;
-											// create new instance of alignments
-											if ((num_best_hits_gv > 0) && (num_best_hits_gv < BEST_HITS_INCREMENT + 1))
-												max_size = num_best_hits_gv;
-											else max_size = BEST_HITS_INCREMENT;
-											//s_align *new_alignment = new s_align[max_size]();
+											// update max_index to the position of the first occurrence
+											// of the highest scoring alignment
+											if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
+												read.hits_align_info.max_index = smallest_score_index;
+											// decrement number of reads mapped to database
+											// with lower score
+											readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--; // smallest_alignment->index_num
+											// increment number of reads mapped to database with higher score
+											readstats.reads_matched_per_db[index.index_num]++;
+
 											s_align2 align;
 											for (int i = 0; i < result->cigarLen; i++)
 												align.cigar.push_back(*result->cigar++);
@@ -1540,124 +1434,134 @@ void compute_lis_alignment2(
 											align.ref_seq = result->ref_seq;
 											align.score1 = result->score1;
 											align.strand = result->strand;
-											read.hits_align_info.alignv.push_back(align); // *result
-//#ifdef DEBUG_BEST_N
-//											cout << "memory allocated for alignment array = "
-//												<< sizeof(s_align)*max_size << " bytes" << endl;
-//#endif
-											//if (new_alignment == NULL)
-											//{
-											//	fprintf(stderr, "\n  %sERROR%s: could not allocate memory for alignment "
-											//		"storage (paralleltraversal.cpp)\n", startColor, "\033[0m");
-											//	exit(EXIT_FAILURE);
-											//}
-											//else
-											//{
-											//	new_alignment[0] = *result;
-											//	alignment_struct tmp(max_size, 1, 0, 0, new_alignment);
-											//	read_hits_align_info.insert(pair<uint32_t, alignment_struct >(readn, tmp));
-											//}
-											// the maximum possible score for this read has been found
-											if (result->score1 == max_SW_score) read.max_SW_score++;
+											read.hits_align_info.alignv[smallest_score_index] = align; // *result
 
-											// free result, except the cigar
-											free(result);
-											result = NULL;
-#ifdef DEBUG_BEST_N
-											cout << "max_size = " << max_size << endl;
-											cout << "size = " << 1 << endl;
-											cout << "min_index = " << 0 << endl;
-											cout << "max_index = " << 0 << endl;
-											cout << "added.\n";
-#endif
-										}
-									}
-									// output the Nth alignment (set by --num_alignments [INT] parameter)
-									else if (num_alignments_gv > -1)
-									{
-										// update number of alignments to output per read
-										if (num_alignments_gv > 0) read.num_alignments--;
+											// find the new smallest_score_index
+											uint32_t smallest_score = 1000000;
 
-										// get the edit distance between reference and read (serves for
-										// SAM output and computing %id and %query coverage)
-										double id = 0;
-										char to_char[5] = { 'A','C','G','T','N' };
-										const char* ref_seq_ptr = refs.buffer[(2 * (int)max_seq) + 1].sequence.c_str(); // reference_seq
-										const char* read_seq_ptr = read.isequence.c_str(); // myread
-										int32_t qb = result->ref_begin1;
-										int32_t pb = result->read_begin1;
-										uint32_t mismatches = 0;
-										uint32_t gaps = 0;
-										for (uint32_t c2 = 0; c2 < result->cigarLen; ++c2)
-										{
-											uint32_t letter = 0xf & *(result->cigar + c2);
-											uint32_t length = (0xfffffff0 & *(result->cigar + c2)) >> 4;
-											if (letter == 0)
+											for (int p = 0; p < num_best_hits_gv; p++)
 											{
-												for (uint32_t p = 0; p < length; ++p)
+												if (read.hits_align_info.alignv[p].score1 < smallest_score)
 												{
-													if ((char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)]) ++mismatches;
-													else ++id;
-													++qb;
-													++pb;
+													smallest_score = read.hits_align_info.alignv[p].score1;
+													smallest_score_index = p;
 												}
 											}
-											else if (letter == 1)
-											{
-												pb += length;
-												gaps += length;
-											}
-											else
-											{
-												qb += length;
-												gaps += length;
-											}
+
+											read.hits_align_info.min_index = smallest_score_index; // alignment->second.min_index
+											// the maximum possible score for this read has been found
+											if (result->score1 == max_SW_score) read.max_SW_score++;
+											// free result, except the cigar (now new cigar)
+											free(result);
+											result = NULL;
 										}
-
-										int32_t align_len = abs(result->read_end1 + 1 - result->read_begin1);
-										int32_t total_pos = mismatches + gaps + id;
-										stringstream ss;
-										ss.precision(3);
-										ss << (double)id / total_pos << ' ' << (double)align_len / read.sequence.length();
-										double align_id_round = 0.0;
-										double align_cov_round = 0.0;
-										ss >> align_id_round >> align_cov_round;
-										//#define debug_id_cov
-#ifdef debug_id_cov
-										cout << "read tag: ";
-										char* tt = reads[readn - 1];
-										while (*tt != '\n') cout << (char)*tt++;
-										cout << endl;
-
-										cout << "ref tag: ";
-										tt = reference_seq[(2 * (int)max_seq)];
-										while (*tt != '\n') cout << (char)*tt++;
-										cout << endl;
-
-										cout << "align_len = " << align_len << endl;
-										cout << "id = " << id << endl;
-										cout << "Score = " << result->score1 << endl;
-										cout << "%id = " << (double)id / align_len << endl;
-										cout << "%cov = " << (double)align_len / readlen << endl;
-										cout << "align_cov = " << (double)align_cov << endl;
-										cout << "align_id = " << (double)align_id << endl << endl;
-										cout << "align_id_round = " << (double)align_id_round << endl;
-										cout << "align_cov_round = " << (double)align_cov_round << endl;
-#endif                                                        
-										// the alignment passed the %id and %query coverage threshold
-										// output it (SAM, BLAST and FASTA/Q)
-										if ((align_id_round >= align_id) &&	(align_cov_round >= align_cov) && read_to_count)
+										else
 										{
-											readstats.total_reads_mapped_cov++;
-											read_to_count = false;
-
-											// do not output read for de novo OTU clustering
-											// (it passed the %id/coverage thersholds)
-											if (de_novo_otu_gv) read.hit_denovo = !read.hit_denovo; // read_hits_denovo[readn].flip()
+											// new alignment has a lower score, destroy it
+											if (result != NULL) free(result);
 										}
+									}
+									// an alignment for this read doesn't exist, add the first alignment
+									else
+									{
+										// maximum size of s_align array
+										uint32_t max_size = 0;
+										// create new instance of alignments
+										if ((num_best_hits_gv > 0) && (num_best_hits_gv < BEST_HITS_INCREMENT + 1))
+											max_size = num_best_hits_gv;
+										else 
+											max_size = BEST_HITS_INCREMENT;
+
+										s_align2 align;
+										for (int i = 0; i < result->cigarLen; i++)
+											align.cigar.push_back(*result->cigar++);
+										align.cigarLen = result->cigarLen;
+										align.index_num = result->index_num;
+										align.part = result->part;
+										align.readlen = result->readlen;
+										align.read_begin1 = result->read_begin1;
+										align.read_end1 = result->read_end1;
+										align.ref_begin1 = result->ref_begin1;
+										align.ref_end1 = result->ref_end1;
+										align.ref_seq = result->ref_seq;
+										align.score1 = result->score1;
+										align.strand = result->strand;
+										read.hits_align_info.alignv.push_back(align); // *result
+
+										// the maximum possible score for this read has been found
+										if (result->score1 == max_SW_score) read.max_SW_score++;
+
+										// free result, except the cigar
+										free(result);
+										result = NULL;
+									}
+								}
+								// output the Nth alignment (set by --num_alignments [INT] parameter)
+								else if (num_alignments_gv > -1)
+								{
+									// update number of alignments to output per read
+									if (num_alignments_gv > 0) read.num_alignments--; // TODO: why decrement?
+
+									// get the edit distance between reference and read (serves for
+									// SAM output and computing %id and %query coverage)
+									double id = 0;
+									char to_char[5] = { 'A','C','G','T','N' };
+									const char* ref_seq_ptr = refs.buffer[(2 * (int)max_seq) + 1].sequence.c_str(); // reference_seq
+									const char* read_seq_ptr = read.isequence.c_str(); // myread
+									int32_t qb = result->ref_begin1;
+									int32_t pb = result->read_begin1;
+									uint32_t mismatches = 0;
+									uint32_t gaps = 0;
+
+									for (uint32_t c2 = 0; c2 < result->cigarLen; ++c2)
+									{
+										uint32_t letter = 0xf & *(result->cigar + c2);
+										uint32_t length = (0xfffffff0 & *(result->cigar + c2)) >> 4;
+										if (letter == 0)
+										{
+											for (uint32_t p = 0; p < length; ++p)
+											{
+												if ((char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)]) ++mismatches;
+												else ++id;
+												++qb;
+												++pb;
+											}
+										}
+										else if (letter == 1)
+										{
+											pb += length;
+											gaps += length;
+										}
+										else
+										{
+											qb += length;
+											gaps += length;
+										}
+									}
+
+									int32_t align_len = abs(result->read_end1 + 1 - result->read_begin1);
+									int32_t total_pos = mismatches + gaps + id;
+									stringstream ss;
+									ss.precision(3);
+									ss << (double)id / total_pos << ' ' << (double)align_len / read.sequence.length();
+									double align_id_round = 0.0;
+									double align_cov_round = 0.0;
+									ss >> align_id_round >> align_cov_round;
+
+									// the alignment passed the %id and %query coverage threshold
+									// output it (SAM, BLAST and FASTA/Q)
+									if ((align_id_round >= align_id) &&	(align_cov_round >= align_cov) && read_to_count)
+									{
+										readstats.total_reads_mapped_cov++;
+										read_to_count = false;
+
+										// do not output read for de novo OTU clustering
+										// (it passed the %id/coverage thersholds)
+										if (de_novo_otu_gv) read.hit_denovo = !read.hit_denovo; // read_hits_denovo[readn].flip()
+									}
 
 										// quality for FASTQ  TODO: no need for this block - no more mmap
-										const char* read_qual = read.quality.c_str();
+									const char* read_qual = read.quality.c_str();
 										//if (filesig == '@')
 										//if (read.format == Format::FASTA)
 										//{
@@ -1705,57 +1609,77 @@ void compute_lis_alignment2(
 										//	}
 										//} // ~Format::FASTA
 
-										if (blastout_gv)
-										{
-											// gumbel_lambda_index_num, gumbel_K_index_num
-											uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
-												* (result->score1) - log((index.gumbel[index.index_num].second))) / (float)log(2));
+									if (index.opts.blastout)
+									{
+										// gumbel_lambda_index_num, gumbel_K_index_num
+										uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
+											* (result->score1) - log((index.gumbel[index.index_num].second))) / (float)log(2));
 
-											double evalue_score = (double)(index.gumbel[index.index_num].second)
-												* index.full_ref[index.index_num]
-												* index.full_read[index.index_num]
-												* pow(EXP, (-(index.gumbel[index.index_num].first)*result->score1));
+										double evalue_score = (double)(index.gumbel[index.index_num].second)
+											* index.full_ref[index.index_num]
+											* index.full_read[index.index_num]
+											* pow(EXP, (-(index.gumbel[index.index_num].first)*result->score1));
 
-											report_blast(
-												output.acceptedblast, //blast output file
-												result, //SW alignment cigar
-												read.header.c_str(), //read name
-												read.isequence.c_str(), //read sequence  &read.isequence[0]  read.isequence.c_str()
-												read.quality.c_str(), //read quality  read.quality.c_str()
-												refs.buffer[max_seq].header.c_str(), //reference name
-												refs.buffer[max_seq].sequence.c_str(), //reference sequence
-												evalue_score, //e-value score (only for blast)
-												read.sequence.length(),
-												bitscore,
-												strand, //forward or reverse complement
-												(double)id / total_pos, // %id
-												(double)align_len / read.sequence.length(), // %query coverage
-												mismatches, //mismatches
-												gaps);
-										}
-										if (samout_gv)
-										{
-											report_sam(
-												output.acceptedsam, //sam output file
-												result, //SW alignment cigar
-												read.header.c_str(), //read name
-												read.isequence.c_str(), //read sequence
-												read.quality.c_str(), //read quality
-												refs.buffer[max_seq].header.c_str(), //reference name
-												refs.buffer[max_seq].sequence.c_str(), //reference sequence
-												read.sequence.length(), // readlen
-												strand, //forward or reverse complement
-												mismatches + gaps
-											);
-										}
-										// free alignment info
-										if (result != 0) free(result);
-									}//~if output all alignments
+										report_blast(
+											output.acceptedblast, //blast output file
+											result, //SW alignment cigar
+											read.header.c_str(), //read name
+											read.isequence.c_str(), //read sequence  &read.isequence[0]  read.isequence.c_str()
+											read.quality.c_str(), //read quality  read.quality.c_str()
+											refs.buffer[max_seq].header.c_str(), //reference name
+											refs.buffer[max_seq].sequence.c_str(), //reference sequence
+											evalue_score, //e-value score (only for blast)
+											read.sequence.length(),
+											bitscore,
+											strand, //forward or reverse complement
+											(double)id / total_pos, // %id
+											(double)align_len / read.sequence.length(), // %query coverage
+											mismatches, //mismatches
+											gaps);
+									}
 
-									 // continue to next read (do not need to collect more seeds using another pass)
-									search = false;
+									if (index.opts.samout)
+									{
+										report_sam(
+											output.acceptedsam, //sam output file
+											result, //SW alignment cigar
+											read.header.c_str(), //read name
+											read.isequence.c_str(), //read sequence
+											read.quality.c_str(), //read quality
+											refs.buffer[max_seq].header.c_str(), //reference name
+											refs.buffer[max_seq].sequence.c_str(), //reference sequence
+											read.sequence.length(), // readlen
+											strand, //forward or reverse complement
+											mismatches + gaps
+										);
+									}
 
-								}//~pragma omp critical
+									// add alignment information to the read. TODO: check how this affects the old logic
+									s_align2 align;
+									for (int i = 0; i < result->cigarLen; i++)
+										align.cigar.push_back(*result->cigar++);
+									align.cigarLen = result->cigarLen;
+									align.index_num = result->index_num;
+									align.part = result->part;
+									align.readlen = result->readlen;
+									align.read_begin1 = result->read_begin1;
+									align.read_end1 = result->read_end1;
+									align.ref_begin1 = result->ref_begin1;
+									align.ref_end1 = result->ref_end1;
+									align.ref_seq = result->ref_seq;
+									align.score1 = result->score1;
+									align.strand = result->strand;
+									read.hits_align_info.alignv.push_back(align);
+
+									// the maximum possible score for this read has been found
+									if (result->score1 == max_SW_score) read.max_SW_score++;
+
+									// free alignment info
+									if (result != 0) free(result);
+								}//~if output all alignments
+
+								// continue to next read (do not need to collect more seeds using another pass)
+								search = false;
 
 								 // maximum score possible for the read has been reached,
 								 // stop searching for further matches
@@ -1769,13 +1693,9 @@ void compute_lis_alignment2(
 									if (read.num_alignments <= 0) break; // num_alignments_x[readn]
 								}
 							}//~if read aligned
-							 // the read did not align, free alignment info
-							else
+							else // the read did not align
 							{
-#ifdef debug_align
-								cout << "\t\t\t\tnot aligned \n"; //TESTING
-#endif         
-								if (result != 0) free(result);
+								if (result != 0) free(result); // free alignment info
 							}
 						}//~if LIS long enough                               
 #ifdef HEURISTIC1_OFF

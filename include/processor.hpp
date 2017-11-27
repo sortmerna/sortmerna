@@ -41,5 +41,5 @@ private:
 	References & refs;
 	Output & output;
 	Index & index;
-	std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read read)> callback;
+	std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback;
 };

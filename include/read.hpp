@@ -237,7 +237,8 @@ public:
 	{
 		validate();
 		seqToIntStr();
-		unmarshallJson(kvdb); // get matches from Key-value database
+		//unmarshallJson(kvdb); // get matches from Key-value database
+		restoreFromDb(kvdb); // get matches from Key-value database
 		initScoringMatrix(opts);
 	}
 
@@ -269,7 +270,7 @@ public:
 		return sbuf.GetString();
 	} // ~Read::matchesToJsonString
 
-	  // convert to binary string whatever needs to be stored in DB
+	// convert to binary string whatever needs to be stored in DB
 	std::string toString() {
 		if (hits_align_info.alignv.size() == 0)
 			return "";
@@ -291,7 +292,7 @@ public:
 	} // ~Read::toString
 
 	  // deserialize matches from string
-	void unmarshallString(std::string matchStr);
+	void restoreFromDb(KeyValueDatabase & kvdb);
 
 	// deserialize matches from JSON and populate the read
 	void unmarshallJson(KeyValueDatabase & kvdb);
