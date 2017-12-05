@@ -9,7 +9,6 @@
 #include <iterator>
 
 typedef struct s_align2 {
-	uint16_t cigarLen; // need for serialization
 	std::vector<uint32_t> cigar;
 	uint32_t ref_seq;
 	int32_t ref_begin1;
@@ -21,37 +20,103 @@ typedef struct s_align2 {
 	uint16_t part;
 	uint16_t index_num;
 	bool strand;
-	s_align2() : cigarLen(0), cigar(10, 0), ref_seq(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0) {}
+
+	// default construct
+	s_align2() : cigar(10, 0), ref_seq(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0) {}
+
+	// construct from binary string
+	s_align2(std::string bstr)
+	{
+		size_t offset = 0;
+		size_t cigarlen = 0;
+
+		// cannot use copy/copy_n - VC error C4996: 'std::copy_n::_Unchecked_iterators
+		std::memcpy(static_cast<void*>(&cigarlen), bstr.data(), sizeof(cigarlen));
+		offset += sizeof(cigarlen);
+
+		cigar.assign(cigarlen, 0);
+		std::memcpy(static_cast<void*>(cigar.data()), bstr.data() + offset, cigarlen * sizeof(uint32_t));
+		offset += cigarlen * sizeof(uint32_t);
+		// ref_seq
+		std::memcpy(static_cast<void*>(&ref_seq), bstr.data() + offset, sizeof(ref_seq));
+		offset += sizeof(ref_seq);
+		// ref_begin1
+		std::memcpy(static_cast<void*>(&ref_begin1), bstr.data() + offset, sizeof(ref_begin1));
+		offset += sizeof(ref_begin1);
+		// ref_end1
+		std::memcpy(static_cast<void*>(&ref_end1), bstr.data() + offset, sizeof(ref_end1));
+		offset += sizeof(ref_end1);
+		// read_begin1
+		std::memcpy(static_cast<void*>(&read_begin1), bstr.data() + offset, sizeof(read_begin1));
+		offset += sizeof(read_begin1);
+		// read_end1
+		std::memcpy(static_cast<void*>(&read_end1), bstr.data() + offset, sizeof(read_end1));
+		offset += sizeof(read_end1);
+		// readlen
+		std::memcpy(static_cast<void*>(&readlen), bstr.data() + offset, sizeof(readlen));
+		offset += sizeof(readlen);
+		// score1
+		std::memcpy(static_cast<void*>(&score1), bstr.data() + offset, sizeof(score1));
+		offset += sizeof(score1);
+		// part
+		std::memcpy(static_cast<void*>(&part), bstr.data() + offset, sizeof(part));
+		offset += sizeof(part);
+		// index_num
+		std::memcpy(static_cast<void*>(&index_num), bstr.data() + offset, sizeof(index_num));
+		offset += sizeof(index_num);
+		// strand
+		std::memcpy(static_cast<void*>(&strand), bstr.data() + offset, sizeof(strand));
+		offset += sizeof(strand);
+	}
 
 	// convert to binary string
 	std::string toString()
 	{
-		size_t bufsize = sizeof(cigarLen) + cigar.size() * sizeof(uint32_t) + sizeof(ref_seq) + 4 * sizeof(ref_begin1) + sizeof(readlen) + 3 * sizeof(score1) + sizeof(strand);
-		std::string buf(bufsize, 0);
-		int bufidx = 0;
-
-		// cigarlen
-		char* pch = reinterpret_cast<char *>(&cigarLen);
-		for (int i = 0; i < sizeof(cigarLen); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
+		std::string buf;
+		// length of cigar
+		size_t cigarlen = cigar.size();
+		char* beginIt = static_cast<char*>(static_cast<void*>(&cigarlen));
+		std::copy_n(beginIt, sizeof(cigarlen), std::back_inserter(buf));
 		// cigar
-		pch = reinterpret_cast<char *>(cigar.data());
-		for (int i = 0; i < cigar.size() * sizeof(uint32_t); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// ref_seq
-		pch = reinterpret_cast<char *>(&ref_seq);
-		for (int i = 0; i < sizeof(ref_seq); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// ref_begin1, ref_end1, read_begin1, read_end1
-		pch = reinterpret_cast<char *>(&ref_begin1);
-		for (int i = 0; i < 4 * sizeof(ref_begin1); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// readlen
-		pch = reinterpret_cast<char *>(&readlen);
-		for (int i = 0; i < sizeof(readlen); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// score1, part, index_num
-		pch = reinterpret_cast<char *>(&score1);
-		for (int i = 0; i < 3 * sizeof(score1); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// strand
-		pch = reinterpret_cast<char *>(&strand);
-		for (int i = 0; i < sizeof(strand); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
+		beginIt = static_cast<char*>(static_cast<void*>(cigar.data()));
+		std::copy_n(beginIt, cigarlen * sizeof(cigar[0]), std::back_inserter(buf));
+		
+		beginIt = static_cast<char*>(static_cast<void*>(&ref_seq));
+		std::copy_n(beginIt, sizeof(ref_seq), std::back_inserter(buf)); // ref_seq
+		beginIt = static_cast<char*>(static_cast<void*>(&ref_begin1));
+		std::copy_n(beginIt, sizeof(ref_begin1), std::back_inserter(buf)); // ref_begin1
+		beginIt = static_cast<char*>(static_cast<void*>(&ref_end1));
+		std::copy_n(beginIt, sizeof(ref_end1), std::back_inserter(buf)); // ref_end1
+		beginIt = static_cast<char*>(static_cast<void*>(&read_begin1));
+		std::copy_n(beginIt, sizeof(read_begin1), std::back_inserter(buf)); // read_begin1
+		beginIt = static_cast<char*>(static_cast<void*>(&read_end1));
+		std::copy_n(beginIt, sizeof(read_end1), std::back_inserter(buf)); // read_end1
+		beginIt = static_cast<char*>(static_cast<void*>(&readlen));
+		std::copy_n(beginIt, sizeof(readlen), std::back_inserter(buf)); // readlen
+		beginIt = static_cast<char*>(static_cast<void*>(&score1));
+		std::copy_n(beginIt, sizeof(score1), std::back_inserter(buf)); // score1
+		beginIt = static_cast<char*>(static_cast<void*>(&part));
+		std::copy_n(beginIt, sizeof(part), std::back_inserter(buf)); // part
+		beginIt = static_cast<char*>(static_cast<void*>(&index_num));
+		std::copy_n(beginIt, sizeof(index_num), std::back_inserter(buf)); // index_num
+		beginIt = static_cast<char*>(static_cast<void*>(&strand));
+		std::copy_n(beginIt, sizeof(strand), std::back_inserter(buf)); // strand
 
 		return buf;
 	} // ~toString
-} s_align2; // ~typedef struct s_align2
+
+	// for serialization
+	size_t size() {
+		return sizeof(uint32_t) * cigar.size()
+			+ sizeof(ref_seq)
+			+ sizeof(ref_begin1)
+			+ sizeof(ref_end1)
+			+ sizeof(read_begin1)
+			+ sizeof(read_end1)
+			+ sizeof(readlen)
+			+ sizeof(score1)
+			+ sizeof(part)
+			+ sizeof(index_num)
+			+ sizeof(strand);
+	}
+} s_align2;

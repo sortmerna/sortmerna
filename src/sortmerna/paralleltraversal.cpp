@@ -2823,7 +2823,7 @@ void writeAlignmentJob(
 				readstats.total_reads_mapped_cov++;
 				// do not output read for de novo OTU construction
 				// (it passed the %id/coverage thresholds)
-				if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo != read.hit_denovo; // flip
+				if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
 				// fill OTU map with highest-scoring alignment for the read
 				if (otumapout_gv)
 				{

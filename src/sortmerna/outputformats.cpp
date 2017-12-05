@@ -58,7 +58,7 @@ void Output::calcMismatchGapId(References & refs, Read & read, int alignIdx, uin
 
 	std::string refseq = refs.buffer[read.hits_align_info.alignv[alignIdx].ref_seq].sequence;
 
-	for (uint32_t c2 = 0; c2 < read.hits_align_info.alignv[alignIdx].cigarLen; ++c2)
+	for (uint32_t c2 = 0; c2 < read.hits_align_info.alignv[alignIdx].cigar.size(); ++c2)
 	{
 		uint32_t letter = 0xf & read.hits_align_info.alignv[alignIdx].cigar[c2]; // 4 low bits
 		uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[alignIdx].cigar[c2]) >> 4; // high 28 bits i.e. 32-4=28
@@ -140,7 +140,7 @@ void Output::report_blast
 					qb = read.hits_align_info.alignv[i].ref_begin1,
 					pb = read.hits_align_info.alignv[i].read_begin1; //mine
 
-				while (e < read.hits_align_info.alignv[i].cigarLen || left > 0)
+				while (e < read.hits_align_info.alignv[i].cigar.size() || left > 0)
 				{
 					int32_t count = 0;
 					int32_t q = qb;
@@ -149,7 +149,7 @@ void Output::report_blast
 					fileout.width(8);
 					fileout << q + 1 << "    ";
 					// process CIGAR
-					for (c = e; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 					{
 						// 4 Low bits encode a Letter: M | D | S
 						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c]; // *(a->cigar + c)
@@ -175,7 +175,7 @@ void Output::report_blast
 					fileout << " ";
 					q = qb;
 					count = 0;
-					for (c = e; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 					{
 						//uint32_t letter = 0xf & *(a->cigar + c);
 						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
@@ -210,7 +210,7 @@ void Output::report_blast
 					fileout.width(9);
 					fileout << p + 1 << "    ";
 					count = 0;
-					for (c = e; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 					{
 						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
 						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
@@ -301,7 +301,7 @@ void Output::report_blast
 					fileout << "\t";
 					// masked region at beginning of alignment
 					if (read.hits_align_info.alignv[i].read_begin1 != 0) fileout << read.hits_align_info.alignv[i].read_begin1 << "S";
-					for (int c = 0; c < read.hits_align_info.alignv[i].cigarLen; ++c)
+					for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 					{
 						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
 						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;

@@ -1423,7 +1423,6 @@ void compute_lis_alignment2(
 											s_align2 align;
 											for (int i = 0; i < result->cigarLen; i++)
 												align.cigar.push_back(*result->cigar++);
-											align.cigarLen = result->cigarLen;
 											align.index_num = result->index_num;
 											align.part = result->part;
 											align.readlen = result->readlen;
@@ -1475,7 +1474,6 @@ void compute_lis_alignment2(
 										s_align2 align;
 										for (int i = 0; i < result->cigarLen; i++)
 											align.cigar.push_back(*result->cigar++);
-										align.cigarLen = result->cigarLen;
 										align.index_num = result->index_num;
 										align.part = result->part;
 										align.readlen = result->readlen;
@@ -1658,7 +1656,6 @@ void compute_lis_alignment2(
 									s_align2 align;
 									for (int i = 0; i < result->cigarLen; i++)
 										align.cigar.push_back(*result->cigar++);
-									align.cigarLen = result->cigarLen;
 									align.index_num = result->index_num;
 									align.part = result->part;
 									align.readlen = result->readlen;

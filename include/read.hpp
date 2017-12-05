@@ -8,9 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-
 #include "load_index.hpp"
 #include "kvdb.hpp"
 #include "traverse_bursttrie.hpp" // id_win
@@ -27,35 +24,18 @@ struct alignment_struct2
 	std::vector<s_align2> alignv;
 
 	alignment_struct2() : max_size(0), size(0), min_index(0), max_index(0) {}
+
+	alignment_struct2(std::string); // create from binary string
+
 	alignment_struct2(uint32_t max_size, uint32_t size, uint32_t min, uint32_t max)
 		: max_size(max_size), size(size), min_index(min), max_index(max) {}
 
-	// copy constructor
-	alignment_struct2(const alignment_struct2 & that)
-	{}
-
-	// copy assignment
-	alignment_struct2 & operator=(const alignment_struct2 & that)
-	{
-		if (this != &that)
-		{
-		}
-		return *this;
-	}
-
-	// convert to binary string
-	std::string toString()
-	{
-		int bufsize = 4 * sizeof(max_size);
-		std::string buf(bufsize, 0);
-		int bufidx = 0;
-		// max_size, size, min_index, max_index
-		char * pch = reinterpret_cast<char *>(&max_size);
-		for (int i = 0; i < 4 * sizeof(max_size); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// alignv
-		for (auto it = alignv.begin(); it < alignv.end(); ++it) buf.append(it->toString());
-
-		return buf;
+	std::string toString(); // convert to binary string
+	size_t getSize() { 
+		size_t ret = sizeof(max_size) + sizeof(size) + sizeof(min_index) + sizeof(max_index);
+		for (std::vector<s_align2>::iterator it = alignv.begin(); it != alignv.end(); ++it)
+			ret += it->size();
+		return ret;
 	}
 };
 
@@ -91,7 +71,6 @@ public:
 	std::vector<id_win> id_win_hits; // array of positions of window hits on the reference sequence
 	alignment_struct2 hits_align_info;
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
-	//int8_t* scoring_matrix = (int8_t*)calloc(25, sizeof(int8_t));
 	// <------------------------------ store in database
 
 	const char complement[4] = { 3, 2, 1, 0 };
@@ -242,54 +221,9 @@ public:
 		initScoringMatrix(opts);
 	}
 
+	std::string matchesToJson(); // convert to Json string to store in DB
 
-	std::string matchesToJson() {
-		rapidjson::StringBuffer sbuf;
-		rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
-
-		writer.StartObject();
-		writer.Key("hit");
-		writer.Bool(hit);
-		writer.Key("hit_denovo");
-		writer.Bool(hit_denovo);
-		writer.Key("null_align_output");
-		writer.Bool(null_align_output);
-		writer.Key("max_SW_score");
-		writer.Uint(max_SW_score);
-		writer.Key("num_alignments");
-		writer.Int(num_alignments);
-
-		writer.Key("hits_align_info");
-		writer.StartObject();
-		writer.String("max_size");
-		writer.Uint(10);
-		writer.EndObject();
-
-		writer.EndObject();
-
-		return sbuf.GetString();
-	} // ~Read::matchesToJsonString
-
-	// convert to binary string whatever needs to be stored in DB
-	std::string toString() {
-		if (hits_align_info.alignv.size() == 0)
-			return "";
-
-		// hit, hit_denovo, null_align_output, max_SW_score, num_alignments, readhit, best
-		int bufsize = 3 * sizeof(hit) + sizeof(max_SW_score) + sizeof(num_alignments) + sizeof(readhit) + sizeof(best);
-		std::string buf(bufsize, 0);
-		int bufidx = 0;
-		char* pch = reinterpret_cast<char *>(&hit);
-		for (int i = 0; i < 4 * sizeof(bufsize); ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
-		// id_win_hits
-		for (auto it = id_win_hits.begin(); it != id_win_hits.end(); ++it) buf.append(it->toString());
-		// hits_align_info
-		buf.append(hits_align_info.toString());
-		// std::vector<int8_t> scoring_matrix;
-		for (auto it = scoring_matrix.begin(); it != scoring_matrix.end(); ++it) buf.append(1, *it);
-
-		return buf;
-	} // ~Read::toString
+	std::string toString(); // convert to binary string to store in DB
 
 	  // deserialize matches from string
 	void restoreFromDb(KeyValueDatabase & kvdb);

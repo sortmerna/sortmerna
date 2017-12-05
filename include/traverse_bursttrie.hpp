@@ -32,8 +32,10 @@
 #ifndef TRAVERSE_BURSTTRIE_H
 #define TRAVERSE_BURSTTRIE_H
 
+
+#include <string>
+
 #include "bitvector.hpp"
-#include<string>
 
  // Universal Levenshtein table for k=1
 extern uint32_t table[4][16][14];
@@ -48,13 +50,28 @@ struct id_win
 	// the associated window number on the read 
 	uint32_t win;
 
+	id_win(){}
+	id_win(uint32_t id, uint32_t win) : id(id), win(win) {}
+
+	id_win(std::string str)
+	{
+		if (str.size() == sizeof(id) + sizeof(win))
+		{
+			std::memcpy(static_cast<void*>(&id), str.data(), sizeof(id));
+			std::memcpy(static_cast<void*>(&win), str.data()+sizeof(id), sizeof(win));
+		}
+		else
+		{
+			std::cout << "ERROR in id_win.fromString: string size " << str.size() << " not equal to " << sizeof(id) + sizeof(win) << " Cannot restore\n";
+			exit(1);
+		}
+	}
+
 	std::string toString()
 	{
-		int bufsize = 2 * sizeof(id);
-		std::string buf(bufsize, 0);
-		int bufidx = 0;
-		char * pch = reinterpret_cast<char *>(&id);
-		for (int i = 0; i < bufsize; ++i, ++pch, ++bufidx) buf[bufidx] = *pch;
+		std::string buf;
+		std::copy_n(static_cast<char*>(static_cast<void*>(&id)), sizeof(id), std::back_inserter(buf));
+		std::copy_n(static_cast<char*>(static_cast<void*>(&win)), sizeof(win), std::back_inserter(buf));
 		return buf;
 	}
 };
