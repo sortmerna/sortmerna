@@ -11,9 +11,9 @@
 
 void Reader::read()
 {
-	std::ifstream ifs(readsfile, std::ios_base::in | std::ios_base::binary);
+	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		printf("failed to open %s\n", readsfile.c_str());
+		printf("failed to open %s\n", opts.readsfile.c_str());
 		exit(EXIT_FAILURE);
 	}
 	else

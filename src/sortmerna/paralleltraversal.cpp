@@ -230,6 +230,9 @@ void compute_read_stats(
 // Callback run in a Processor thread
 void parallelTraversalJob(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)
 {
+	read.lastIndex = index.index_num;
+	read.lastPart = index.part;
+
 	// for reverse reads
 	if (!forward_gv)
 	{
@@ -246,26 +249,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 			return;
 	}
 
-// TODO: Delete --------------------------------------------------->
-	//char myread[READLEN] = ""; // sequence converted to integer alphabet (0,1,2,3)  read.isequence
-	//const char* str = read.sequence.c_str();
-	//char* _myread = &myread[0];
-	// keep record of what position on the read an ambiguous char exists,
-	// the char at this position will be changed to '4' during
-	// sequence alignment
-	//int32_t ambiguous_nt[READLEN] = { 0 }; // Read::ambiguous_nt - vector
-	// size of ambiguous_nt
-	//uint32_t size_ambiguous_nt = 0;
-	// flag to count only 1 alignment per read
 	bool read_to_count = true; // passed directly to compute_lis_alignment. What's the point?
-	// length of read
-	//uint32_t readlen = 0;
-
-	// change the read into an integer alphabet -- FASTA
-	{
-		// block deleted. Moved to Reads::isequence + Reads::seqToIntStr
-	}
-// <---------------------------------------------------------------- Delete
 
 	// find the minimum sequence length
 	if (read.sequence.size() < readstats.min_read_len) readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
@@ -599,7 +583,7 @@ void paralleltraversal2(Runopts & opts)
 
 			for (int i = 0; i < opts.num_fread_threads; i++)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, opts.readsfile, kvdb, loopCount));
+				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
 				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
 			}
 

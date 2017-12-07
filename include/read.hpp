@@ -58,6 +58,8 @@ public:
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
 	// store in database ------------>
+	int lastIndex; // last index number this read was aligned against. Set in Processor::callback
+	int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
 	bool hit = false; // indicates that a match for this Read has been found
 	bool hit_denovo = true;
@@ -80,7 +82,9 @@ public:
 		isValid(false),
 		isEmpty(true),
 		is03(false),
-		is04(false)
+		is04(false),
+		lastIndex(-1),
+		lastPart(-1)
 	{
 		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
 		if (min_lis_gv > 0) best = min_lis_gv;
@@ -121,6 +125,8 @@ public:
 		isequence = that.isequence;
 		reversed = that.reversed;
 		ambiguous_nt = that.ambiguous_nt;
+		lastIndex = that.lastIndex;
+		lastPart = that.lastPart;
 		hit = that.hit;
 		hit_denovo = that.hit_denovo;
 		null_align_output = that.null_align_output;
@@ -151,6 +157,8 @@ public:
 		isequence = that.isequence;
 		reversed = that.reversed;
 		ambiguous_nt = that.ambiguous_nt;
+		lastIndex = that.lastIndex;
+		lastPart = that.lastPart;
 		hit = that.hit;
 		hit_denovo = that.hit_denovo;
 		null_align_output = that.null_align_output;

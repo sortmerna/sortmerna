@@ -15,12 +15,11 @@
 // reads Reads and Readstats files, generates Read objects and pushes them onto ReadsQueue
 class Reader {
 public:
-	Reader(std::string id, Runopts & opts, ReadsQueue & readQueue, std::string & readsfile, KeyValueDatabase & kvdb, int loopCount)
+	Reader(std::string id, Runopts & opts, ReadsQueue & readQueue, KeyValueDatabase & kvdb, int loopCount)
 		: 
 		id(id),
 		opts(opts),
-		readQueue(readQueue), 
-		readsfile(readsfile), 
+		readQueue(readQueue),
 		kvdb(kvdb),
 		loopCount(loopCount) 
 	{}
@@ -29,7 +28,6 @@ public:
 private:
 	std::string id;
 	int loopCount; // counter of processing iterations.
-	std::string & readsfile;
 	Runopts & opts;
 	ReadsQueue & readQueue; // shared with Processor
 	KeyValueDatabase & kvdb; // key-value database

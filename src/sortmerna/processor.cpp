@@ -8,6 +8,8 @@
 void Processor::process()
 {
 	int countReads = 0;
+	int countProcessed = 0;
+	bool alreadyProcessed = false;
 	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") started" << std::endl;
 	std::stringstream ss;
 	ss << std::this_thread::get_id();
@@ -15,10 +17,12 @@ void Processor::process()
 	ss.str("");
 	for (;;)
 	{
-		Read read = readQueue.pop();
-		if (read.isEmpty || !read.isValid)
+		Read read = readQueue.pop(); // returns an empty read if queue is empty
+		alreadyProcessed = (read.lastIndex == index.index_num && read.lastPart == index.part);
+		if (alreadyProcessed) ++countProcessed;
+		if (read.isEmpty || !read.isValid || alreadyProcessed)
 		{
-			if (readQueue.isDone()) break;
+			if (readQueue.isDone()) { break; }
 			else continue;
 		}
 
@@ -39,7 +43,7 @@ void Processor::process()
 		countReads++;
 	}
 	writeQueue.mDoneAdding();
-	//	std::cout << "Processor " << id << " (" << std::this_thread::get_id() << ") done. Processed " << count << std::endl;
-	ss << std::this_thread::get_id();
-	printf("Processor thread %s done. Processed %d reads\n", ss.str().c_str(), countReads);
+
+	std::cout << "Processor thread " << std::this_thread::get_id() << " done. Processed " << countReads
+		<< " reads. Skipped (already processed) " << countProcessed << " reads\n";
 } // ~Processor::process

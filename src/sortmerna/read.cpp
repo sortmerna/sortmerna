@@ -124,6 +124,8 @@ std::string Read::toString()
 
 	// hit, hit_denovo, null_align_output, max_SW_score, num_alignments, readhit, best
 	std::string buf;
+	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&hit)), sizeof(hit), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&hit_denovo)), sizeof(hit_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
@@ -152,6 +154,12 @@ void Read::restoreFromDb(KeyValueDatabase & kvdb)
 	std::string bstr = kvdb.get(std::to_string(id));
 	if (bstr.size() == 0) return;
 	size_t offset = 0;
+
+	std::memcpy(static_cast<void*>(&lastIndex), bstr.data() + offset, sizeof(lastIndex));
+	offset += sizeof(lastIndex);
+
+	std::memcpy(static_cast<void*>(&lastPart), bstr.data() + offset, sizeof(lastPart));
+	offset += sizeof(lastPart);
 
 	std::memcpy(static_cast<void*>(&hit), bstr.data() + offset, sizeof(hit));
 	offset += sizeof(hit);
