@@ -25,8 +25,7 @@ void Reader::read()
 		bool lastRec = false; // lastRec is to make one iteration past the EOF
 
 		std::stringstream ss;
-		ss << std::this_thread::get_id();
-		printf("Reader thread %s started\n", ss.str().c_str());
+		ss << "Reader thread: " << std::this_thread::get_id() << " started\n";
 		ss.str(""); // clear the stream
 		auto t = std::chrono::high_resolution_clock::now();
 
@@ -88,9 +87,8 @@ void Reader::read()
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
-		ss << std::this_thread::get_id();
-		printf("Reader thread %s done. Elapsed time: %.2f sec Reads added: %d\n",
-			ss.str().c_str(), elapsed.count(), id + 1);
+		ss << "Reader thread %s" << std::this_thread::get_id() << " done. Elapsed time: %.2f" << elapsed.count() << " sec Reads added: " << id + 1 << std::endl;
+		std::cout << std::setprecision(2) << std::fixed << ss.str();
 	}
 	ifs.close();
 } // ~Reader::read

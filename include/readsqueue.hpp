@@ -8,6 +8,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <sstream>
 
 #include "read.hpp"
 
@@ -28,6 +29,8 @@ class ReadsQueue {
 	std::mutex lock;
 	std::condition_variable cv;
 
+	std::stringstream ss;
+
 public:
 	ReadsQueue(std::string id, int capacity, int numPushers)
 		:
@@ -36,11 +39,12 @@ public:
 		doneAdding(false),
 		numPushers(numPushers)
 	{
-		printf("%s created\n", id.c_str());
+		ss << id << " created\n";
+		std::cout << ss.str(); ss.str("");
 	}
 	~ReadsQueue() {
-		printf("Destructor called on %s  recs.size= %zu pushed: %d  popped: %d\n",
-			id.c_str(), recs.size(), numPushed, numPopped);
+		ss << "Destructor called on " << id << "  recs.size= " << recs.size() << " pushed: " << numPushed << "  popped: " << numPopped << std::endl;
+		std::cout << ss.str(); ss.str("");
 	}
 
 	void push(Read & readsrec) {
@@ -48,7 +52,8 @@ public:
 		cv.wait(l, [this] {return recs.size() < capacity;});
 		recs.push(std::move(readsrec));
 		++numPushed;
-		printf("%s Pushed id: %d header: %s sequence: %s\n", id.c_str(), readsrec.id, readsrec.header.c_str(), readsrec.sequence.c_str());
+		ss << id << " Pushed id: " << readsrec.id << " header: " << readsrec.header << " sequence: " << readsrec.sequence << std::endl;
+		std::cout << ss.str(); ss.str("");
 		//		l.unlock();
 		cv.notify_one();
 	}
@@ -64,7 +69,8 @@ public:
 			++numPopped;
 			//if (numPopped % 10000 == 0)
 			//{
-			printf("%s Popped id: %d header: %s sequence: %s\n", id.c_str(), rec.id, rec.header.c_str(), rec.sequence.c_str());
+			ss << id << " Popped id: " << rec.id << " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
+			std::cout << ss.str(); ss.str("");
 			//				printf("Thread %s Pushed: %d Popped: %d\n", ss.str().c_str(), numPushed, numPopped);
 			//printf("\rThread %s Pushed: %d Popped: %d", ss.str().c_str(), numPushed, numPopped);
 			//}

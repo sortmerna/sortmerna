@@ -47,3 +47,27 @@ void Processor::process()
 	std::cout << "Processor thread " << std::this_thread::get_id() << " done. Processed " << countReads
 		<< " reads. Skipped (already processed) " << countProcessed << " reads\n";
 } // ~Processor::process
+
+void ReportProcessor::process()
+{
+	int countReads = 0;
+	std::cout << "Report Processor thread " << std::this_thread::get_id() << " started\n";
+
+	for (;;)
+	{
+		Read read = readQueue.pop(); // returns an empty read if queue is empty
+
+		if (read.isEmpty || !read.isValid)
+		{
+			if (readQueue.isDone()) { break; }
+			else continue;
+		}
+
+		callback(index, refs, output, readstats, read);
+
+		countReads++;
+	}
+
+	std::cout << "Report Processor thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
+
+} // ~ReportProcessor::process

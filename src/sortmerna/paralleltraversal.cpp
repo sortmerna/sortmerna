@@ -67,8 +67,6 @@
 
 // forward
 void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & output);
-void writeAlignments(Runopts & opts, Index & index, References & refs, Readstats & readstats);
-void writeAlignmentJob(Index & index, References & refs, Output & output, Readstats & readstats, Read & read); // callback
 
  // see "heuristic 1" below
  //#define HEURISTIC1_OFF
@@ -260,10 +258,12 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 	if (read.sequence.size()  < index.lnwin[index.index_num])
 	{
 		std::stringstream ss;
-		ss << std::this_thread::get_id();
-		fprintf(stderr, "\n  %sWARNING%s: Processor thread: %s The read %d is shorter "
-			"than %u nucleotides, by default it will not be searched\n", "\033[0;33m", "\033[0m", 
-			ss.str().c_str(), read.id, index.lnwin[index.index_num]);
+		ss << "\n  "<< "\033[0;33m" << "WARNING" << "\033[0m" 
+			<<": Processor thread: " << std::this_thread::get_id() 
+			<< " The read: " << read.id  << " is shorter "
+			<< "than " << index.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
+		std::cout << ss.str(); ss.str("");
+
 		read.isValid = false;
 		return;
 	}
@@ -369,13 +369,16 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 				{
 					vbitwindowsr.resize(bit_vector_size);
 					std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
+
 					// build the first bitvector window
 					init_win_r(&read.isequence[win_index + index.partialwin[index.index_num] - 1],
 						&vbitwindowsr[0],
 						&vbitwindowsr[4],
 						index.numbvs[index.index_num]);
+
 					uint32_t keyr = 0;
 					char *keyr_ptr = &read.isequence[win_index + index.partialwin[index.index_num]];
+
 					// build hash for first half windows (foward and reverse)
 					for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
 					{
@@ -400,17 +403,16 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 							index.lookup_tbl[keyr].trie_R,
 							0,
 							0,
-							/* win1r_k1_ptr */
-							&vbitwindowsr[0],
-							/* win1r_k1_full */
-							&vbitwindowsr[offset],
+							&vbitwindowsr[0], /* win1r_k1_ptr */
+							&vbitwindowsr[offset], /* win1r_k1_full */
 							accept_zero_kmer,
 							id_hits,
 							read.id,
 							win_index,
 							index.partialwin[index.index_num]);
 					}//~if exact half window exists in the reverse burst trie                    
-				}//~if (!accept_zero_kmer)                         
+				}//~if (!accept_zero_kmer)
+
 				 // associate the ids with the read window number
 				if (!id_hits.empty())
 				{
@@ -421,54 +423,18 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					read.readhit++;
 				}
 			}
+
 		check_score:
 			// continue read analysis if threshold seeds were matched
 			if (win_num == numwin - 1)
 			{
 				compute_lis_alignment2(
 					read, index, refs, readstats, output,
-					//size_ambiguous_nt, TODO: remove. Not used no more.
-					// readhit, Read::readhit
-					//id_win_hits,  Read::id_win_hits
-					//positions_tbl, Index
-					//read_max_SW_score, Read::max_SW_score
 					search, // returns False if the alignment is found -> stop searching
-					//best_x, Read::best
-					// readn,  Read::id
-					//num_alignments_x,  Read::num_alignments
-					//readlen,  Read::sequence.length
-					//lnwin[index_num],  Index::lnwin
-					//index_num,  Index::index_num
-					//reference_seq_len, // References
-					//myread,  Read::isequence
-					//ambiguous_nt,   Read::ambiguous_nt vector
-					//scoring_matrix, Read::scoring_matrix
-					//reference_seq,  References
-					//gap_open, Runopts::gap_open
-					//gap_extension, Runops
-					//minimal_score[index_num], Index
-					//read_hits,  Read::hit
-					//total_reads_mapped,  Output::
-					//reads_matched_per_db, Output::
-					//part, Index::part
-					//read_hits_align_info, Read::hits_align_info
 					max_SW_score,
 					read_to_count
-					//total_reads_mapped_cov, Output::
-					//read_hits_denovo,  Read::hit_denovo
-					//filesig, Read::
-					//strs,  total number of reads - no more
-					//file_s,  Mmap related
-					//file_sections, Mmap related
-					//reads, Read
-					//finalnt,  marks the end of mmap'd region
-					//gumbel[index_num].first,  Index::gambel[index_num].first
-					//gumbel[index_num].second, Index::gambel[index_num].second
-					//full_ref[index_num], Index::
-					//full_read[index_num], Index::
-					//acceptedblast,  Output::acceptedblast
-					//acceptedsam  OUtput::acceptedsam
 				);
+
 				// the read was not accepted at current window skip length,
 				// decrease the window skip length
 				if (search)
@@ -499,6 +465,9 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
 		if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
+
+		// TODO: separate reporting from alignment
+#if 0
 		// output null alignment string
 		if (print_all_reads_gv)
 		{
@@ -538,6 +507,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 				}
 			}//~if print_all_reads_gv
 		}// allow writing to file 1 thread at a time
+#endif
 	}//~if read didn't align
 
 	if (de_novo_otu_gv && read.hit_denovo)
@@ -568,10 +538,10 @@ void paralleltraversal2(Runopts & opts)
 
 	// perform alignment
 	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
-	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
+	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
+		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; ++idx_part)
 		{
 			eprintf("\tLoading index part %d/%u ... ", idx_part + 1, index.num_index_parts[index_num]);
 			auto t = std::chrono::high_resolution_clock::now();
@@ -599,36 +569,6 @@ void paralleltraversal2(Runopts & opts)
 	tpool.waitAll(); // wait till processing is done
 
 	writeLog(opts, index, readstats, output);
-
-#if 0
-	// Write reports
-	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
-	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
-	{
-		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; idx_part++)
-		{
-			eprintf("\tLoading index part %d/%u ... ", idx_part + 1, index.num_index_parts[index_num]);
-			auto t = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part);
-			refs.load(index_num, idx_part);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
-			eprintf("done [%.2f sec]\n", elapsed.count());
-
-			for (int i = 0; i < opts.num_fread_threads; i++)
-			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), readQueue, opts.readsfile, kvdb, loopCount));
-			}
-
-			// add processor jobs
-			for (int i = 0; i < opts.num_proc_threads; i++)
-			{
-				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, writeAlignmentJob));
-			}
-			++loopCount;
-		} // ~for(idx_part)
-	} // ~for(index_num)
-#endif
 } // ~paralleltraversal2
 
 /*! @fn paralleltraversal() */
@@ -1611,47 +1551,8 @@ void paralleltraversal(
 								// continue read analysis if threshold seeds were matched
 								if (win_num == numwin - 1)
 								{
-									compute_lis_alignment(size_ambiguous_nt,
-										readhit,
-										id_win_hits,
-										positions_tbl,
-										read_max_SW_score,
-										search,
-										best_x,
-										readn,
-										num_alignments_x,
-										readlen,
-										lnwin[index_num],
-										index_num,
-										reference_seq_len,
-										myread,
-										ambiguous_nt,
-										scoring_matrix,
-										reference_seq,
-										gap_open,
-										gap_extension,
-										minimal_score[index_num],
-										read_hits,
-										total_reads_mapped,
-										reads_matched_per_db,
-										part,
-										read_hits_align_info,
-										max_SW_score,
-										read_to_count,
-										total_reads_mapped_cov,
-										read_hits_denovo,
-										filesig,
-										strs,
-										file_s,
-										file_sections,
-										reads,
-										finalnt,
-										gumbel[index_num].first,
-										gumbel[index_num].second,
-										full_ref[index_num],
-										full_read[index_num],
-										acceptedblast,
-										acceptedsam);
+									//compute_lis_alignment(size_ambiguous_nt,...);
+
 									// the read was not accepted at current window skip length,
 									// decrease the window skip length
 									if (search)
@@ -2508,423 +2409,3 @@ void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & out
 	output.logout << "\n " << asctime(now) << "\n";
 	output.logout.close();
 } // ~writeLog
-
-void writeAlignments(Runopts & opts, Index & index, References & refs, Readstats & readstats)
-{
-
-	if (samout_gv || blastout_gv)
-		std::cout << "    Writing alignments ... \n";
-          
-	//TIME(s);
-	// loop through all databases
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
-		// loop through each section of a database
-		for (uint16_t part = 0; part < index.num_index_parts[index_num]; part++)
-		{
-			//uint64_t seq_part_size = index.index_parts_stats_vec[index.index_num][index.part].seq_part_size;
-			//uint32_t numseq_part = index.index_parts_stats_vec[index.index_num][index.part].numseq_part;
-			//uint64_t start_part = index.index_parts_stats_vec[index.index_num][index.part].start_part;
-                
-			// block of memory to hold all ids + reference sequences
-			//char* buffer = new char[(seq_part_size + 1)](); // References::buffer  index.index_parts_stats_vec[index.index_num][index.part].seq_part_size
-			//if (buffer == NULL)
-			//{
-			//	fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for reference sequence buffer\n",
-			//		startColor, "\033[0m", __LINE__, __FILE__);
-			//	exit(EXIT_FAILURE);
-			//}
-
-			// pointer to the start of every sequence in the buffer
-			//char** reference_seq = new char*[(numseq_part << 1)](); // index.index_parts_stats_vec[index.index_num][index.part].numseq_part;
-			//if (reference_seq == NULL)
-			//{
-			//	fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not allocate memory for reference_seq\n",
-			//		startColor, "\033[0m", __LINE__, __FILE__);
-			//	exit(EXIT_FAILURE);
-			//}
-
-			// length of every sequence in the buffer (is not required here)
-			//uint64_t* reference_seq_len = NULL;
-			//load_ref((char*)(myfiles[index_num].first).c_str(),
-			//	buffer,
-			//	reference_seq,
-			//	reference_seq_len,
-			//	seq_part_size,
-			//	numseq_part,
-			//	start_part,
-			//	0);
-
-			// run through all the reads, output those which aligned
-			//for (uint64_t readn = 1; readn < strs; readn += 2)
-			//writeAlignmentJob
-			for (int readn = 0; readn < readstats.number_total_read; ++readn) {} //~for all reads
-
-			 // free buffer
-			//if (buffer != NULL)
-			//{
-			//	delete[] buffer;
-			//	buffer = NULL;
-			//}
-			// free pointers to reference sequences
-			//if (reference_seq != NULL)
-			//{
-			//	delete[] reference_seq;
-			//	reference_seq = NULL;
-			//}
-		}//~for every database section
-	}//~for every database
-
-	 // free alignment information for all aligned reads
-	//for (uint64_t readn = 1; readn < strs; readn += 2)
-	//{
-	//	map<uint64_t, alignment_struct >::iterator alignment = read_hits_align_info.find(readn);
-		// this read does not have any alignment
-	//	if (alignment != read_hits_align_info.end())
-	//	{
-	//		s_align* ptr_alignment = alignment->second.ptr;
-	//		for (uint32_t p = 0; p < alignment->second.size; p++)
-	//		{
-	//			free(ptr_alignment->cigar);
-	//			ptr_alignment->cigar = NULL;
-	//			if (p + 1 < (uint32_t)num_best_hits_gv)
-	//			{
-	//				ptr_alignment++;
-					// check whether an alignment exists
-	//				if (ptr_alignment->cigar == NULL) break;
-	//			}
-	//		}
-			// free memory for all alignments of this read
-	//		delete[] alignment->second.ptr;
-	//		alignment->second.ptr = NULL;
-	//	}
-	//}
-	//TIME(f);
-	if (samout_gv || blastout_gv) 
-		std::cout << " Done ... \n";
-		//eprintf(" done [%.2f sec]\n", (f - s));
-} // ~writeAlignments
-
-void writeAlignmentJob(
-	Index & index, 
-	References & refs, 
-	Output & output, 
-	Readstats & readstats, 
-	Read & read
-	)
-{
-	// TODO: remove this part. [jenya's message of 20171121 8:47]
-	//map<uint64_t, alignment_struct >::iterator alignment = read_hits_align_info.find(readn); // 
-	// this read does not have any alignment
-	//if (alignment == read_hits_align_info.end())
-	//if (read.hits_align_info.alignv.size() == 0)
-	//{
-		// (output NULL alignment only once)
-	//	if ((index.index_num == 0) && (index.part == 0))
-	//	{
-			// do not output this read for de novo clustering
-			// (it did not pass the E-value threshold)
-	//		if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo != read.hit_denovo; // flip read_hits_denovo[readn]
-			// output null string for read alignment
-	//		if (print_all_reads_gv)
-	//		{
-	//			s_align* null_alignment = NULL;
-	//			if (blastout_gv && blast_tabular)
-	//			{
-	//				report_blast(
-	//					output.acceptedblast, // blast output file
-	//					null_alignment, // SW alignment cigar
-	//					read.header.c_str(), //read name
-	//					0, // read sequence (in integer format)
-	//					0, // read quality
-	//					0, // reference name
-	//					0, // reference sequence
-	//					0, // e-value score
-	//					0, // read length (to compute the masked regions)
-	//					0, // bitscore
-	//					0, // forward or reverse strand
-	//					0, // %id
-	//					0, // %query coverage
-	//					0, // number of mismatches
-	//					0 // number of gaps
-	//				);
-	//			}
-	//			if (samout_gv)
-	//			{
-	//				report_sam(
-	//					output.acceptedsam, // sam output file
-	//					null_alignment, // SW alignment cigar
-	//					read.header.c_str(), // read name
-	//					0, // read sequence (in integer format)
-	//					0, // read quality
-	//					0, // reference name
-	//					0, // reference sequence
-	//					0, // read length (to compute the masked regions)
-	//					0, // forward or reverse strand
-	//					0 // edit distance
-	//				);
-	//			}
-	//		}
-	//	}
-		// go to next read
-		//continue;
-	//	return;
-	//} // ~ if read has no alignment information
-
-	// get all alignments for this read
-	//s_align* ptr_alignment = alignment->second.ptr; // &read.hits_align_info.alignv[0];
-	//if (ptr_alignment == NULL)
-	//{
-	//	fprintf(stderr, "  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
-	//	exit(EXIT_FAILURE);
-	//}
-
-	// OTU-map: index of alignment holding maximum SW score
-	uint32_t index_max_score = read.hits_align_info.max_index;
-	// loop through all of the best alignments for this read
-	//for (uint32_t p = 0; p < alignment->second.size; p++)
-	for (uint32_t p = 0; p < read.hits_align_info.alignv.size(); ++p)
-	{
-		// continue loop if the reference sequence in this alignment
-		// belongs to the database section currently loaded into RAM
-		if ((read.hits_align_info.alignv[p].index_num == index.index_num) && (read.hits_align_info.alignv[p].part == index.part))
-		{
-			// format read & get read length
-			//char myread[READLEN];
-			uint32_t readlen = read.hits_align_info.alignv[p].readlen;
-			// format forward read from char to int
-			//if (read.hits_align_info.alignv[p].strand)
-			//{
-			//	format_forward(reads[readn], &myread[0], filesig); // read.isequence
-			//}
-			// format reverse-complement read from char to int
-			//else
-			//{
-			//	char* end_read = NULL;
-				// FASTA
-			//	if (filesig == '>')
-			//	{
-					// if split-read (for file_s > 0)
-					// note: the split-read contains two reads (a pair, in case reads are paired) that
-					//   are located at another address space than the contiguous memory mapped
-					//   section of reads
-			//		if ((readn < 4) && (file_s > 0))
-			//		{
-			//			end_read = reads[readn];
-			//			while (*end_read != '\0') end_read++;
-			//			if (*end_read == '\0') end_read--; //account for '\0'
-			//			if (*end_read == '\n' || *end_read == '\r') end_read--; //account for '\n'
-			//		}
-					// last read in the partial file section
-			//		else if (readn >= (strs - 2))
-			//		{
-			//			end_read = reads[readn];
-						// if processing last file section, the final read will end with '\0'
-			//			if (file_s == file_sections - 1)
-			//			{
-			//				while (*end_read++ != '\0');
-							// back-track 3 nucleotides (\n\0_)
-			//				if (*(end_read - 2) == '\n' || *(end_read - 2) == '\r') end_read--;
-							// back-track 2 nucleotides (\0_)
-			//				end_read -= 2;
-			//			}
-						// if processing a file section > 0 and < last file section, the final read will end with '>' (beginning of split-read)
-			//			else
-			//			{
-			//				while (*end_read++ != '>');
-							// back-track 3 nucleotides (\n>_)
-			//				end_read -= 3;
-			//			}
-			//		}
-					// all other reads
-			//		else end_read = reads[readn + 1] - 2;
-			//	}
-				// FASTQ
-			//	else end_read = reads[readn] + readlen - 1;
-			//	format_rev(reads[readn], end_read, &myread[0], filesig);
-			////~reverse-complement read
-
-			 // get the edit distance between reference and read
-			char to_char[5] = { 'A','C','G','T','N' };
-			double id = 0;
-			uint32_t mismatches = 0;
-			uint32_t gaps = 0;
-
-			uint32_t ref_seq = read.hits_align_info.alignv[p].ref_seq; // ptr_alignment->ref_seq;
-			//char* ref_seq_ptr = read.hits_align_info.alignv[p].ref_seq[0]; // reference_seq[(2 * ref_seq) + 1]
-			//char* read_seq_ptr = myread;
-			int32_t qb = read.hits_align_info.alignv[p].ref_begin1; //ptr_alignment->ref_begin1;
-			int32_t pb = read.hits_align_info.alignv[p].read_begin1; //->read_begin1;
-                
-			Output::calcMismatchGapId(refs, read, p, mismatches, gaps, id);
-			//for (uint32_t c2 = 0; c2 < ptr_alignment->cigarLen; ++c2)
-			//for (uint32_t c2 = 0; c2 < read.hits_align_info.alignv[p].cigarLen; ++c2)
-			//{
-				//uint32_t letter = 0xf & *(ptr_alignment->cigar + c2);
-				//uint32_t length = (0xfffffff0 & *(ptr_alignment->cigar + c2)) >> 4;
-			//	uint32_t letter = 0xf & read.hits_align_info.alignv[p].cigar[c2];
-			//	uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[p].cigar[c2]) >> 4;
-			//	if (letter == 0)
-			//	{
-			//		for (uint32_t u = 0; u < length; ++u)
-			//		{
-			//			if ((char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)]) ++mismatches;
-			//			else ++id;
-			//			++qb;
-			//			++pb;
-			//		}
-			//	}
-			//	else if (letter == 1)
-			//	{
-			//		pb += length;
-			//		gaps += length;
-			//	}
-			//	else
-			//	{
-			//		qb += length;
-			//		gaps += length;
-			//	}
-			//}
-
-			//int32_t align_len = abs(ptr_alignment->read_end1 + 1 - ptr_alignment->read_begin1);
-			int32_t align_len = abs(read.hits_align_info.alignv[p].read_end1 + 1 - read.hits_align_info.alignv[p].read_begin1);
-			int32_t total_pos = mismatches + gaps + id;
-			stringstream ss;
-			ss.precision(3);
-			ss << (double)id / total_pos << ' ' << (double)align_len / read.hits_align_info.alignv[p].readlen;
-			double align_id_round = 0.0;
-			double align_cov_round = 0.0;
-			ss >> align_id_round >> align_cov_round;
-                
-			// alignment with the highest SW score passed
-			// %id and %coverage thresholds
-			if ((p == index_max_score) &&
-				(align_id_round >= align_id) &&
-				(align_cov_round >= align_cov))
-			{
-				// increment number of reads passing identity
-				// and coverage threshold
-				readstats.total_reads_mapped_cov++;
-				// do not output read for de novo OTU construction
-				// (it passed the %id/coverage thresholds)
-				if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
-				// fill OTU map with highest-scoring alignment for the read
-				if (otumapout_gv)
-				{
-					// reference sequence identifier for mapped read
-					//char ref_seq_arr[4000] = "";
-					//char* ref_seq_arr_ptr = ref_seq_arr;
-					//char* ref_seq_id_ptr = reference_seq[(2 * ref_seq)] + 1;
-					//while ((*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') && (*ref_seq_id_ptr != '\r')) 
-					//	*ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
-					//string ref_seq_str = ref_seq_arr;
-					std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
-					string ref_seq_str = refhead.substr(0, refhead.find(' '));
-
-					// read identifier
-					//char read_seq_arr[4000] = "";
-					//char* read_seq_arr_ptr = read_seq_arr;
-					//char* read_seq_id_ptr = reads[readn - 1] + 1;
-					//while ((*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') && (*read_seq_id_ptr != '\r')) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
-					//string read_seq_str = read_seq_arr;
-					string read_seq_str = read.header.substr(0, read.header.find(' '));
-					readstats.otu_map[ref_seq_str].push_back(read_seq_str);
-				}
-			}
-
-			// output alignment to SAM or Blast-like formats
-			if (samout_gv || blastout_gv)
-			{
-				// quality for FASTQ
-				//char* read_qual = NULL;
-				//if (read.format == Format::FASTA)
-				//{
-					// forward
-					//if (ptr_alignment->strand)
-				//	if (read.hits_align_info.alignv[p].strand)
-				//	{
-						// if second part of split read or last read in file
-				//		if (((readn == 3) && (file_s > 0)) || (readn >= (strs - 2)))
-				//		{
-				//			read_qual = reads[readn];
-				//			int8_t numnewlines = 0;
-				//			while (numnewlines < 2) { if (*read_qual++ == '\n' || *read_qual++ == '\r') numnewlines++; }
-				//		}
-				//		else read_qual = reads[readn + 1] - read.hits_align_info.alignv[p].readlen - 1;
-				//	}
-					// reverse-complement
-				//	else
-				//	{
-						// if second part of split read or last read in file
-				//		if (((readn == 3) && (file_s > 0)) || (readn >= (strs - 2)))
-				//		{
-				//			read_qual = reads[readn];
-
-							// last file section
-				//			if (file_s == file_sections - 1)
-				//			{
-				//				while (*read_qual != '\0') read_qual++;
-				//				if (*(read_qual - 3) == '\n' || *(read_qual - 3) == '\r') read_qual--;
-								// account for '\n\0'
-				//				read_qual -= 2;
-				//			}
-							// file section > 0 and < last file section
-				//			else
-				//			{
-				//				while (read_qual != finalnt) read_qual++;
-				//				read_qual--;
-				//			}
-				//		}
-				//		else read_qual = reads[readn + 1] - 2;
-				//	}
-				//}//~if filesig == '@'
-
-				if (blastout_gv)
-				{
-					uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
-						* (read.hits_align_info.alignv[p].score1) - log(index.gumbel[index.index_num].second)) / (float)log(2));
-
-					double evalue_score = (double)(index.gumbel[index.index_num].second) * index.full_ref[index.index_num] 
-						* index.full_read[index.index_num] 
-						* std::exp(-(index.gumbel[index.index_num].first) * read.hits_align_info.alignv[p].score1);
-					
-					Output::report_blast(output.acceptedblast, index, refs, read);
-					//report_blast(
-					//	output.acceptedblast, //blast output file
-					//	read.hits_align_info.alignv[p], //SW alignment cigar  ptr_alignment
-					//	reads[readn - 1] + 1, //read name
-					//	myread, //read sequence (in integer format)
-					//	read_qual, //read quality
-					//	reference_seq[(2 * ref_seq)] + 1, //reference name
-					//	reference_seq[(2 * ref_seq) + 1], //reference sequence
-					//	evalue_score, //e-value score
-					//	read.hits_align_info.alignv[p].readlen, //read length (to compute the masked regions)
-					//	bitscore,
-					//	ptr_alignment->strand,
-					//	(double)id / total_pos, // %id
-					//	(double)align_len / read.hits_align_info.alignv[p].readlen, // %query coverage
-					//	mismatches,
-					//	gaps
-					//);
-				}
-				if (samout_gv)
-				{
-					Output::report_sam(output.acceptedblast, refs, read);
-					//report_sam(
-					//	acceptedsam, //sam output file
-					//	ptr_alignment, //SW alignment cigar
-					//	reads[readn - 1] + 1, //read name
-					//	myread,//read sequence (in integer format)
-					//	read_qual, //read quality
-					//	reference_seq[(2 * ref_seq)] + 1, //reference name
-					//	reference_seq[(2 * ref_seq) + 1], //reference sequence
-					//	read.hits_align_info.alignv[p].readlen, //read length (to compute the masked regions)
-					//	ptr_alignment->strand,
-					//	mismatches + gaps //edit distance
-					//);
-				}
-			}//~if (samout_gv || blastout_gv)
-		}//~if alignment at current database and index part loaded in RAM
-		//ptr_alignment++;
-	}//~for all best alignments
-} // ~writeAlignmentJob

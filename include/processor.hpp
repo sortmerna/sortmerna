@@ -20,7 +20,8 @@ public:
 		Index & index,
 		References & refs,
 		Output & output,
-		std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback
+		//std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback
+		void(*callback)(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)
 	) :
 		id(id),
 		readQueue(readQueue),
@@ -32,8 +33,9 @@ public:
 		callback(callback) {}
 
 	void operator()() { process(); }
-	void process(); // TODO: make private?
-private:
+	virtual void process(); // TODO: make private?
+
+protected:
 	std::string id;
 	ReadsQueue & readQueue;
 	ReadsQueue & writeQueue;
@@ -41,5 +43,25 @@ private:
 	References & refs;
 	Output & output;
 	Index & index;
-	std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback;
+	//std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback;
+	void (*callback)(Index & index, References & refs, Output & output, Readstats & readstats, Read & read);
+};
+
+class ReportProcessor:Processor {
+public:
+	ReportProcessor(
+		std::string id,
+		ReadsQueue & readQueue,
+		ReadsQueue & writeQueue,
+		Readstats & readstats,
+		Index & index,
+		References & refs,
+		Output & output,
+		void(*callback)(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)
+		//std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback
+	)
+		: Processor(id, readQueue, writeQueue, readstats, index, refs, output, callback) {}
+
+	using Processor::operator(); // otherwise explicitely generated () operator overrides superclass () operator
+	void process();
 };

@@ -45,21 +45,26 @@ public:
 
 	void init(Readstats & readstats); // TODO: make private?
 
-	static void report_blast(
+	void report_blast(
 		ofstream & fileout,
 		Index & index,
 		References & refs,
 		Read & read
 	);
 
-	static void report_sam(
+	void report_sam(
 		ofstream & fileout,
 		References & refs,
 		Read & read
 	);
 
-	static void calcMismatchGapId(References & refs, Read & read, int alignIdx, uint32_t & mismatches, uint32_t & gaps, double & id);
+	void calcMismatchGapId(References & refs, Read & read, int alignIdx, uint32_t & mismatches, uint32_t & gaps, double & id);
+	void openfiles();
+	void closefiles();
 
 private:
 	Runopts & opts;
 }; // ~class Output
+
+
+void generateReports(Runopts opts);

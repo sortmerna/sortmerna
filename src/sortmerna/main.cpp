@@ -35,6 +35,7 @@
 #include "options.hpp"
 #include "paralleltraversal.hpp"
 #include "common.hpp"
+#include "output.hpp"
 
 // standard
 #include <limits>
@@ -2900,7 +2901,8 @@ int main(int argc, char** argv)
 #else
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
-	paralleltraversal2(opts);
+	//paralleltraversal2(opts);
+	generateReports(opts);
 #endif
 	return 0;
 }//~main()

@@ -14,6 +14,7 @@
 #include <queue>
 #include <functional>
 #include <chrono>
+#include <atomic>
 
 /**
 *  all the pool threads are initially in a waiting state until jobs are available for execution.
@@ -86,25 +87,29 @@ protected:
 				if (jobs_.empty()) // only get here on shutdown = true
 				{
 					// No jobs to do and shutting down
-//					std::cerr << "Thread " << std::this_thread::get_id() << " terminates" << std::endl;
-					ss << std::this_thread::get_id();
-					printf("Thread %s job done\n", ss.str().c_str());
-					ss.str("");
+					ss << "Thread  " << std::this_thread::get_id() << " job done\n";
+					std::cout << ss.str(); ss.str("");
+					//ss << std::this_thread::get_id();
+					//printf("Thread %s job done\n", ss.str().c_str());
+					//ss.str("");
 					return;
 				}
 
-//				std::cerr << "Thread " << std::this_thread::get_id() << " running a job" << std::endl;
-				ss << std::this_thread::get_id();
-				printf("Thread %s running a job\n", ss.str().c_str());
-				ss.str("");
+				ss << "Thread " << std::this_thread::get_id() << " running a job\n";
+				std::cout << ss.str(); ss.str("");
+				//printf("Thread %s running a job\n", ss.str().c_str());
 				job = std::move(jobs_.front());
 				jobs_.pop();
 				++busy;
 			}
+			// mutex 'l' released here
 
 			job(); // Do the job without holding any locks
 			--busy;
-			cv_done.notify_one(); // whithout this main thread calling 'waitAll' hangs forever
+			cv_done.notify_one(); // whithout this main thread hangs forever after calling 'waitAll'
+			ss << "ThreadPool::busy= " << unsigned(busy) << " jobs_.empty= " << jobs_.empty() << std::endl;
+			std::cout << ss.str();
+			ss.str("");
 			//printf("ThreadPool::busy= %d jobs_.empty= %d\n", unsigned(busy), jobs_.empty());
 		} // ~for
 	} // ~threadEntry
