@@ -9,6 +9,7 @@
 
 // SMR
 #include "read.hpp"
+#include "references.hpp"
 
 /**
  * construct from the binary string stored in DB
@@ -211,3 +212,57 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 {
 	printf("Read::unmarshallJson: Not yet Implemented\n");
 }
+
+
+
+/**
+* Prototype: paralleltraversal lines 1531..1555
+* Calculate Mismatches, Gaps, and ID
+*
+* @param IN Refs  references
+* @param IN Read
+* @param IN alignIdx index into Read.hits_align_info.alignv
+* @param OUT mismatches  calculated here for the given Read Alignment
+* @param OUT gaps
+* @param OUT id
+*/
+void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id)
+{
+	const char to_char[5] = { 'A','C','G','T','N' };
+
+	if (alignIdx >= hits_align_info.alignv.size()) return; // index exceeds the size of the alignment vector
+
+	mismatches = 0, gaps = 0, id = 0;
+
+	int32_t qb = hits_align_info.alignv[alignIdx].ref_begin1; // index of the first char in the reference matched part
+	int32_t pb = hits_align_info.alignv[alignIdx].read_begin1; // index of the first char in the read matched part
+
+	std::string refseq = refs.buffer[hits_align_info.alignv[alignIdx].ref_seq].sequence;
+
+	for (uint32_t c2 = 0; c2 < hits_align_info.alignv[alignIdx].cigar.size(); ++c2)
+	{
+		uint32_t letter = 0xf & hits_align_info.alignv[alignIdx].cigar[c2]; // 4 low bits
+		uint32_t length = (0xfffffff0 & hits_align_info.alignv[alignIdx].cigar[c2]) >> 4; // high 28 bits i.e. 32-4=28
+		if (letter == 0)
+		{
+			for (uint32_t u = 0; u < length; ++u)
+			{
+				//if ((char)to_char[(int)refseq[qb]] != (char)to_char[(int)isequence[pb]]) ++mismatches;
+				if (refseq[qb] != isequence[pb]) ++mismatches;
+				else ++id;
+				++qb;
+				++pb;
+			}
+		}
+		else if (letter == 1)
+		{
+			pb += length;
+			gaps += length;
+		}
+		else
+		{
+			qb += length;
+			gaps += length;
+		}
+	}
+} // ~Read::calcMismatchGapId

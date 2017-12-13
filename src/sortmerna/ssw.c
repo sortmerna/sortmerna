@@ -918,17 +918,6 @@ s_align* ssw_align(
 	refLen = r->ref_end1 - r->ref_begin1 + 1;
 	readLen = r->read_end1 - r->read_begin1 + 1;
 	band_width = abs(refLen - readLen) + 1;
-	//printf("band_width = %d\n",band_width); //TESTING
-	//printf("readLen = %d\n",readLen); //TESTING
-	//printf("refLen = %d\n",refLen); //TESTING
-	//printf("r->score1 = %u\n",r->score1); //TESTING
-	//printf("r->ref_begin1 = %d\n",r->ref_begin1); //TESTING
-	//printf("r->read_begin1 = %d\n",r->read_begin1); //TESTING
-	//printf("ref = %d\n",(int)*ref);
-	//printf("ref-1 = %d\n",(int)*(ref-1));
-	//printf("ref+r->ref_begin1 = %s\n",ref + r->ref_begin1);//TESTING
-	//printf("prof->read + ->read_begin1 = %s\n",prof->read + r->read_begin1);//TESTING
-
 
 	path = banded_sw(ref + r->ref_begin1, prof->read + r->read_begin1, refLen, readLen, r->score1, weight_gapO, weight_gapE, band_width, prof->mat, prof->n);
 
@@ -1144,14 +1133,6 @@ void ssw_write(FILE** fileout,
 			int32_t end_mask = readlen - (a->read_begin1) - len_align;
 			if (end_mask > 0) //output the masked region at end of alignment
 				fprintf(*fileout, "%dS", end_mask);
-
-			//printf("a->read_begin1 = %d\n",a->read_begin1); //TESTING
-			//printf("a->read_end1 = %d\n",a->read_end1); //TESTING
-			//printf("readlen = %d\n", readlen); //TESTING
-			//printf("cigarlen = %d\n",len_align); //TESTING
-			//printf("end_mask = %d\n\n",end_mask); //TESTING
-			//printf("read_end1 - read_begin1 = %d\n",((a->read_end1)-(a->read_begin1)+1)); //TESTING
-			//printf("cigar length = %d\n\n",len_align); //TESTING
 
 			/* (7) RNEXT, (8) PNEXT, (9) TLEN */
 			fprintf(*fileout, "\t*\t0\t0\t");

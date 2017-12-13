@@ -79,8 +79,9 @@ void Readstats::calculate()
 			// skip empty line
 			if (!line.empty())
 			{
-				// remove whitespace in place (removes '\r' too)
-				line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+				// right-trim whitespace in place (removes '\r' too)
+				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+				//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
 				// fastq: 0(header), 1(seq), 2(+), 3(quality)
 				// fasta: 0(header), 1(seq)
 				if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)

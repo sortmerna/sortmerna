@@ -56,8 +56,9 @@ public:
 	// wait till no jobs running
 	void ThreadPool::waitAll()
 	{
-		std::unique_lock<std::mutex> lock(job_done_lock);
-		cv_done.wait(lock, [this] { return busy == 0; });
+		std::unique_lock<std::mutex> doneLock(job_done_lock);
+		//while (busy.load() != 0 && !jobs_.empty()) cv_done.wait(doneLock);
+		cv_done.wait(doneLock, [this] { return busy.load() == 0 && jobs_.empty(); }); // worked OK
 		//lock.unlock();
 	}
 
@@ -78,26 +79,22 @@ protected:
 		for (;;)
 		{
 			{
-				std::unique_lock <std::mutex> l(job_queue_lock);
+				std::unique_lock <std::mutex> jqLock(job_queue_lock);
 
 				// while no jobs and no shutdown - just keep waiting.
-				while (!shutdown_ && jobs_.empty())
-					cv_jobs.wait(l);
+				while (!shutdown_.load() && jobs_.empty())	cv_jobs.wait(jqLock); // this works
+				//cv_jobs.wait(jqLock, [this] { return !shutdown_ && jobs_.empty(); }); // this doesn't
 
 				if (jobs_.empty()) // only get here on shutdown = true
 				{
 					// No jobs to do and shutting down
 					ss << "Thread  " << std::this_thread::get_id() << " job done\n";
 					std::cout << ss.str(); ss.str("");
-					//ss << std::this_thread::get_id();
-					//printf("Thread %s job done\n", ss.str().c_str());
-					//ss.str("");
 					return;
 				}
 
 				ss << "Thread " << std::this_thread::get_id() << " running a job\n";
 				std::cout << ss.str(); ss.str("");
-				//printf("Thread %s running a job\n", ss.str().c_str());
 				job = std::move(jobs_.front());
 				jobs_.pop();
 				++busy;
@@ -107,10 +104,8 @@ protected:
 			job(); // Do the job without holding any locks
 			--busy;
 			cv_done.notify_one(); // whithout this main thread hangs forever after calling 'waitAll'
-			ss << "ThreadPool::busy= " << unsigned(busy) << " jobs_.empty= " << jobs_.empty() << std::endl;
-			std::cout << ss.str();
-			ss.str("");
-			//printf("ThreadPool::busy= %d jobs_.empty= %d\n", unsigned(busy), jobs_.empty());
+			ss << "ThreadPool::busy= " << busy << " jobs_.empty= " << jobs_.empty() << std::endl;
+			std::cout << ss.str(); ss.str("");
 		} // ~for
 	} // ~threadEntry
 

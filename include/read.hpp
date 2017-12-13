@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm> // std::find_if
 
 #include "load_index.hpp"
 #include "kvdb.hpp"
@@ -14,6 +15,7 @@
 #include "ssw.hpp" // s_align2
 #include "options.hpp"
 
+class References; // forward
 
 struct alignment_struct2
 {
@@ -261,4 +263,11 @@ public:
 			}
 		}
 	} // ~flip34
+
+	void calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id);
+	std::string getSeqId() {
+		std::string id = header.substr(0, header.find(' '));
+		id.erase(id.begin(), std::find_if(id.begin(), id.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+		return id;
+	}
 }; // ~class Read

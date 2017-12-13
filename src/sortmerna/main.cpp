@@ -2876,33 +2876,20 @@ void Runopts::process(int argc, char**argv, bool dryrun)
  */
 int main(int argc, char** argv)
 {
-#ifdef OLD_LOGIC
-	processOptions(argc, argv);
-	// 3. For each window, traverse in parallel the Burst trie/reverse and
-	// LEV(k), outputting all reads with edit distance <= k between the
-	// window.
-
-	paralleltraversal(
-		readsfile,
-		have_reads_gz,
-		ptr_filetype_ar,
-		ptr_filetype_or,
-		match,
-		mismatch,
-		gap_open,
-		gap_extension,
-		score_N,
-		skiplengths,
-		argc,
-		argv,
-		yes_SQ,
-		myfiles,
-		exit_early);
-#else
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
-	//paralleltraversal2(opts);
-	generateReports(opts);
-#endif
+
+	enum ALIGN_REPORT { align, report, both };
+	ALIGN_REPORT alirep = report;
+	std::stringstream ss;
+	ss << "ALIGN_REPORT: " << alirep << std::endl;
+	std:cout << ss.str();
+	switch (alirep)
+	{
+	case align: paralleltraversal2(opts); break;
+	case report: generateReports(opts); break;
+	case both: paralleltraversal2(opts); generateReports(opts); break;
+	}
+
 	return 0;
 }//~main()

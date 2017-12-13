@@ -1076,7 +1076,8 @@ void References::load(uint32_t idx_num, uint32_t idx_part)
 		}
 
 		// remove whitespace (removes '\r' too)
-		line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+		//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
 		//if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove trailing '\r'
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)

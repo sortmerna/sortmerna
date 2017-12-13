@@ -20,7 +20,7 @@ void Reader::read()
 	{
 		std::string line;
 		Read read; // an empty read
-		int id = 0; // read ID
+		int read_id = 0; // read ID
 		bool isFastq = true;
 		bool lastRec = false; // lastRec is to make one iteration past the EOF
 
@@ -45,13 +45,18 @@ void Reader::read()
 				{
 					read.init(opts, kvdb); // load alignment statistics from DB
 					readQueue.push(read);
-					++id;
+					++read_id;
 				}
 				break;
 			}
 
-			// remove whitespace in place (removes '\r' too)
-			line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+			// left trim space and '>' or '@'
+			//line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+			// right-trim whitespace in place (removes '\r' too)
+			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+			// removes all space
+			//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+
 			// fastq: 0(header), 1(seq), 2(+), 3(quality)
 			// fasta: 0(header), 1(seq)
 			if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)
@@ -60,13 +65,13 @@ void Reader::read()
 				{
 					read.init(opts, kvdb);
 					readQueue.push(read);
-					++id;
+					++read_id;
 					count = 0;
 				}
 
 				// start new record
 				read.clear();
-				read.id = id;
+				read.id = read_id;
 				isFastq = (line[0] == FASTQ_HEADER_START);
 				read.format = isFastq ? Format::FASTQ : Format::FASTA;
 				read.header = line;
@@ -87,8 +92,9 @@ void Reader::read()
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
-		ss << "Reader thread %s" << std::this_thread::get_id() << " done. Elapsed time: %.2f" << elapsed.count() << " sec Reads added: " << id + 1 << std::endl;
-		std::cout << std::setprecision(2) << std::fixed << ss.str();
+		ss << this->id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
+			<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id << std::endl;
+		std::cout << ss.str();
 	}
 	ifs.close();
 } // ~Reader::read

@@ -48,8 +48,8 @@ public:
 	}
 
 	void push(Read & readsrec) {
-		std::unique_lock<std::mutex> l(lock);
-		cv.wait(l, [this] {return recs.size() < capacity;});
+		std::unique_lock<std::mutex> queueLock(lock);
+		cv.wait(queueLock, [this] {return recs.size() < capacity;});
 		recs.push(std::move(readsrec));
 		++numPushed;
 		ss << id << " Pushed id: " << readsrec.id << " header: " << readsrec.header << " sequence: " << readsrec.sequence << std::endl;
@@ -59,11 +59,10 @@ public:
 	}
 
 	Read pop() {
-		std::unique_lock<std::mutex> l(lock);
-		cv.wait(l, [this] { return doneAdding || !recs.empty();}); //  if False - keep waiting, else - proceed.
+		std::unique_lock<std::mutex> queueLock(lock);
+		cv.wait(queueLock, [this] { return doneAdding || !recs.empty();}); //  if False - keep waiting, else - proceed.
 		Read rec;
 		if (!recs.empty()) {
-			// printf("%d Recs.size: %d\n", id, recs.size());
 			rec = recs.front();
 			recs.pop();
 			++numPopped;

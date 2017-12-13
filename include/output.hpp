@@ -46,19 +46,20 @@ public:
 	void init(Readstats & readstats); // TODO: make private?
 
 	void report_blast(
-		ofstream & fileout,
 		Index & index,
 		References & refs,
 		Read & read
 	);
 
 	void report_sam(
-		ofstream & fileout,
 		References & refs,
 		Read & read
 	);
 
-	void calcMismatchGapId(References & refs, Read & read, int alignIdx, uint32_t & mismatches, uint32_t & gaps, double & id);
+	void report_fasta();
+	void report_denovo();
+	void report_biom();
+
 	void openfiles();
 	void closefiles();
 

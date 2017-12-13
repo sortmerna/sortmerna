@@ -22,7 +22,7 @@ typedef struct s_align2 {
 	bool strand;
 
 	// default construct
-	s_align2() : cigar(10, 0), ref_seq(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0) {}
+	s_align2() : ref_seq(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0) {}
 
 	// construct from binary string
 	s_align2(std::string bstr)

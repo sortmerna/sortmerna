@@ -5,6 +5,7 @@
 */
 
 #include <vector>
+#include <algorithm>
 
 #include "options.hpp"
 #include "index.hpp"
@@ -26,6 +27,12 @@ public:
 			sequence.clear();
 			quality.clear();
 			isEmpty = true;
+		}
+
+		std::string getId() {
+			std::string id = header.substr(0, header.find(' '));
+			id.erase(id.begin(), std::find_if(id.begin(), id.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+			return id;
 		}
 	};
 

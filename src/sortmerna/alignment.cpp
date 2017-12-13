@@ -100,12 +100,14 @@ void find_lis(
 }
 
 
-void compute_lis_alignment2(
-	Read & read, Index & index, References & refs, Readstats & readstats, Output & output,
-	bool & search,
-	uint32_t max_SW_score,
-	bool& read_to_count
-)
+void compute_lis_alignment2
+	(
+		Read & read, Index & index, References & refs, 
+		Readstats & readstats, Output & output,
+		bool & search,
+		uint32_t max_SW_score,
+		bool& read_to_count
+	)
 {
 	// boolean set to true if SW alignment succeeded between
 	// the read and a candidate reference sequence
@@ -166,14 +168,10 @@ void compute_lis_alignment2(
 			if ((num_best_hits_gv != 0) && (read.max_SW_score == num_best_hits_gv)) break;
 			max_occur = most_frequent_seq[k].first;
 			max_seq = most_frequent_seq[k].second;
-#ifdef debug_align
-			cout << "\t\t\t\tmax_occur = " << max_occur << endl; //TESTING
-			cout << "\t\t\t\tmax_seq = " << max_seq << endl; //TESTING
-			if (min_lis_gv > 0)
-				cout << "\t\t\t\tbest_x[" << readn << "] = " << best_x[readn] << endl; //TESTING
-#endif                             
+              
 			// not enough window hits, try to collect more hits or go to next read
 			if (max_occur < (uint32_t)seed_hits_gv) break;
+
 			// update number of reference sequences remaining to check
 			if ((min_lis_gv > 0) && aligned && (k > 0))
 			{
@@ -181,13 +179,13 @@ void compute_lis_alignment2(
 				// has a lower seed count than the previous one
 				if (max_occur < most_frequent_seq[k - 1].first)
 				{
-#pragma omp critical
 					{
 						read.best--;
 					}
 					if (read.best < 1) break;
 				}
 			}
+
 			// check if the maximum number of alignments per read
 			// (--num_alignments INT) have been output
 			if (num_alignments_gv > 0)
@@ -229,9 +227,7 @@ void compute_lis_alignment2(
 			uint32_t lcs_ref_start = 0;
 			uint32_t lcs_que_start = 0;
 			uint32_t begin = it3->first;
-#ifdef debug_align
-			cout << "\t\t\t\tnumber of seed hits for this ref seq = " << hits_on_genome.size() << endl; //TESTING
-#endif                                
+                       
 			while (it3 != hits_on_genome.end())
 			{
 				uint32_t stop = begin + read.sequence.length() - index.lnwin[index.index_num] + 1; // lnwin_index_num
@@ -417,12 +413,12 @@ void compute_lis_alignment2(
 								result->read_begin1 += align_que_start;
 								result->read_end1 += align_que_start;
 								result->readlen = read.sequence.length();
+								result->ref_seq = max_seq; // TODO: Monitor - moved here from (min_lis_gv > -1)
 
 								// update best alignment
 								if (min_lis_gv > -1)
 								{
 									result->index_num = index.index_num;
-									result->ref_seq = max_seq;
 									result->part = index.part;
 									result->strand = strand;
 
@@ -473,15 +469,17 @@ void compute_lis_alignment2(
 
 										// all num_best_hits_gv slots have been filled,
 										// replace the alignment having the lowest score
-										else if (result->score1 > read.hits_align_info.alignv[smallest_score_index].score1) // alignment->second.ptr
+										else if (result->score1 > read.hits_align_info.alignv[smallest_score_index].score1)
 										{
 											// update max_index to the position of the first occurrence
 											// of the highest scoring alignment
 											if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
 												read.hits_align_info.max_index = smallest_score_index;
+
 											// decrement number of reads mapped to database
 											// with lower score
-											readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--; // smallest_alignment->index_num
+											readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--;
+
 											// increment number of reads mapped to database with higher score
 											readstats.reads_matched_per_db[index.index_num]++;
 
@@ -624,53 +622,6 @@ void compute_lis_alignment2(
 										if (de_novo_otu_gv) read.hit_denovo = !read.hit_denovo; // read_hits_denovo[readn].flip()
 									}
 
-									// TODO: separate reports from alignment. Move to a separate call.
-#if 0
-									if (index.opts.blastout)
-									{
-										// gumbel_lambda_index_num, gumbel_K_index_num
-										uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
-											* (result->score1) - log((index.gumbel[index.index_num].second))) / (float)log(2));
-
-										double evalue_score = (double)(index.gumbel[index.index_num].second)
-											* index.full_ref[index.index_num]
-											* index.full_read[index.index_num]
-											* pow(EXP, (-(index.gumbel[index.index_num].first)*result->score1));
-
-										report_blast(
-											output.acceptedblast, //blast output file
-											result, //SW alignment cigar
-											read.header.c_str(), //read name
-											read.isequence.c_str(), //read sequence  &read.isequence[0]  read.isequence.c_str()
-											read.quality.c_str(), //read quality  read.quality.c_str()
-											refs.buffer[max_seq].header.c_str(), //reference name
-											refs.buffer[max_seq].sequence.c_str(), //reference sequence
-											evalue_score, //e-value score (only for blast)
-											read.sequence.length(),
-											bitscore,
-											strand, //forward or reverse complement
-											(double)id / total_pos, // %id
-											(double)align_len / read.sequence.length(), // %query coverage
-											mismatches, //mismatches
-											gaps);
-									}
-
-									if (index.opts.samout)
-									{
-										report_sam(
-											output.acceptedsam, //sam output file
-											result, //SW alignment cigar
-											read.header.c_str(), //read name
-											read.isequence.c_str(), //read sequence
-											read.quality.c_str(), //read quality
-											refs.buffer[max_seq].header.c_str(), //reference name
-											refs.buffer[max_seq].sequence.c_str(), //reference sequence
-											read.sequence.length(), // readlen
-											strand, //forward or reverse complement
-											mismatches + gaps
-										);
-									}
-#endif
 									// add alignment information to the read. TODO: check how this affects the old logic
 									s_align2 align;
 									for (int i = 0; i < result->cigarLen; i++)
