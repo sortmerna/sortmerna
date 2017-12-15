@@ -358,7 +358,7 @@ void compute_lis_alignment2
 								}
 							}
 
-							if (read.is04) read.flip34();
+							if (read.is04) read.flip34(index.opts);
                        
 							// create profile for read
 							s_profile* profile = 0;
@@ -388,6 +388,10 @@ void compute_lis_alignment2
 								if (result->score1 > index.minimal_score[index.index_num]) aligned = true;
 							}
 
+							result->index_num = index.index_num;
+							result->part = index.part;
+							result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
+
 							// STEP 8: alignment succeeded, output (--all) or store (--best)
 							// the alignment and go to next alignment
 							if (aligned)
@@ -401,11 +405,6 @@ void compute_lis_alignment2
 									readstats.reads_matched_per_db[index.index_num]++;
 								}
 
-								// output (sam or blast-like) or update alignment information
-								bool strand = false;
-								if (forward_gv) strand = true;
-								else strand = false;
-
 								// add the offset calculated by the LCS (from the beginning of the sequence)
 								// to the offset computed by SW alignment
 								result->ref_begin1 += (align_ref_start - head);
@@ -418,10 +417,6 @@ void compute_lis_alignment2
 								// update best alignment
 								if (min_lis_gv > -1)
 								{
-									result->index_num = index.index_num;
-									result->part = index.part;
-									result->strand = strand;
-
 									// an alignment for this read already exists
 									//if (alignment != read_hits_align_info.end())
 									if (read.hits_align_info.size > 0)
@@ -641,8 +636,7 @@ void compute_lis_alignment2
 									// the maximum possible score for this read has been found
 									if (result->score1 == max_SW_score) read.max_SW_score++;
 
-									// free alignment info
-									if (result != 0) free(result);
+									if (result != 0) free(result); // free alignment info
 								}//~if output all alignments
 
 								// continue to next read (do not need to collect more seeds using another pass)
@@ -688,6 +682,6 @@ void compute_lis_alignment2
 		}//~for all of the reference sequence candidates
 	}//if ( readhitf || readhitr > ratio )
 
-	if (read.is04) read.flip34();
+	if (read.is04) read.flip34(index.opts);
 
 } // ~compute_lis_alignment2

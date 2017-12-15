@@ -28,14 +28,18 @@ void Processor::process()
 
 		// search the forward and/or reverse strands depending on Run options
 		int32_t strandCount = 0;
-		index.opts.forward = true;
-		if (index.opts.forward ^ index.opts.reverse) strandCount = 1; // only search the forward xor reverse strand
-		else strandCount = 2; // search both strands
+		index.opts.forward = true; // TODO: this discards the possiblity of forward = false
+		if (index.opts.forward ^ index.opts.reverse)
+			strandCount = 1; // only search the forward xor reverse strand
+		else 
+			strandCount = 2; // search both strands. The default when neither -F or -R were specified
+
 		for (int32_t strand = 0; strand < strandCount; strand++)
 		{
-			if ((strandCount == 1 && index.opts.reverse) || strand == 1)
+			if (!index.opts.forward && !read.reversed)
 				read.revIntStr(); // reverse the sequence
 			callback(index, refs, output, readstats, read);
+			index.opts.forward = false;
 		}
 		if (read.isValid)
 			writeQueue.push(read);

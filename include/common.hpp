@@ -149,10 +149,10 @@ extern bool logout_gv;
 extern bool de_novo_otu_gv;
 
 /*! @brief Search forward strand */
-extern bool forward_gv;
+//extern bool forward_gv;
 
 /*! @brief Search reverse strand */
-extern bool reverse_gv;
+//extern bool reverse_gv;
 
 /*! @brief OTU-picking option: output OTU map.
 

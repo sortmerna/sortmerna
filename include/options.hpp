@@ -24,8 +24,6 @@ struct Runopts {
 	int num_fread_threads = 1; // number of threads reading the Reads file.
 	int num_proc_threads = 4;  // '-a' number of threads to use for processing
 	std::string readsfile; // '--reads | --reads-gz' reads file path
-	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
-	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
 	char* ptr_filetype_ar = 0; // '--aligned' aligned reads output file
 	char* ptr_filetype_or = 0; // '--other' rejected reads output file
 	double evalue = -1.0; // '-e' E-value threshold
@@ -34,7 +32,6 @@ struct Runopts {
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
 	long score_N = 0; // '-N' SW penalty for ambiguous letters (N's)                   TODO: change to int8_t
-	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 	bool exit_early = false; // flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
 	double align_cov = -1.0; // '--coverage' query coverage threshold (the alignment must still pass the E-value threshold)
 
@@ -58,6 +55,12 @@ struct Runopts {
 
 	std::string cmdline;
 
+	enum ALIGN_REPORT { align, report, both };
+	ALIGN_REPORT alirep = align;
+
+	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
+	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
+
 	Runopts(int argc, char**argv, bool dryrun)
 	{ 
 		process(argc, argv, dryrun);
@@ -71,5 +74,63 @@ struct Runopts {
 	}
 	~Runopts() {}
 
+private:
+	// SW alignment parameters
+	bool match_set = false;
+	bool mismatch_set = false;
+	bool gap_open_set = false;
+	bool gap_ext_set = false;
+	bool full_search_set = false;
+	bool passes_set = false;
+	bool edges_set = false;
+	bool match_ambiguous_N_gv = false;
+	bool min_lis_gv_set = false;
+	bool num_alignments_gv_set = false;
+	bool best_gv_set = false;
+	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
+
+private:
+	// Functions
 	void process(int argc, char**argv, bool dryrun);
+	void optReads(char **argv, int &narg);
+	void optReadsGz(char **argv, int &narg);
+	void optRef(char **argv, int &narg);
+	void optAligned(char **argv, int &narg);
+	void optOther(char **argv, int &narg);
+	void optLog(char **argv, int &narg);
+	void optDeNovoOtu(char **argv, int &narg);
+	void optOtuMap(char **argv, int &narg);
+	void optPrintAllReads(char **argv, int &narg);
+	void optPid(char **argv, int &narg);
+	void optPairedIn(char **argv, int &narg);
+	void optPairedOut(char **argv, int &narg);
+	void optMatch(char **argv, int &narg);
+	void optMismatch(char **argv, int &narg);
+	void optGapOpen(char **argv, int &narg);
+	void optGapExt(char **argv, int &narg);
+	void optNumSeeds(char **argv, int &narg);
+	void optFastx(char **argv, int &narg);
+	void optSam(char **argv, int &narg);
+	void optBlast(char **argv, int &narg);
+	void optMinLis(char **argv, int &narg);
+	void optBest(char **argv, int &narg);
+	void optNumAlignments(char **argv, int &narg);
+	void optEdges(char **argv, int &narg);
+	void optFullSearch(char **argv, int &narg);
+	void optSQ(char **argv, int &narg);
+	void optPasses(char **argv, int &narg);
+	void optId(char **argv, int &narg);
+	void optCoverage(char **argv, int &narg);
+	void optVersion(char **argv, int &narg);
+	void optReport(char **argv, int &narg);
+	void optUnknown(char **argv, int &narg, char * opt);
+	void opt_a_NumCpus(char **argv, int &narg);
+	void opt_e_Evalue(char **argv, int &narg);
+	void opt_F_ForwardOnly(char **argv, int &narg);
+	void opt_R_ReverseOnly(char **argv, int &narg);
+	void opt_h_Help();
+	void opt_v_Verbose(int & narg);
+	void opt_N_MatchAmbiguous(char **argv, int &narg);
+	void opt_m_MemMapSize(char **argv, int &narg);
+	void opt_Default(char **argv, int &narg);
 };

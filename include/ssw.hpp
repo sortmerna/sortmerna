@@ -19,7 +19,7 @@ typedef struct s_align2 {
 	uint16_t score1;
 	uint16_t part;
 	uint16_t index_num;
-	bool strand;
+	bool strand; // flags whether this alignment was done on a forward (true) or reverse-complement (false) read. "if (opts.forward) strand = true;"
 
 	// default construct
 	s_align2() : ref_seq(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0) {}

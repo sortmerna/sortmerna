@@ -242,12 +242,12 @@ public:
 	void unmarshallJson(KeyValueDatabase & kvdb);
 
 	// flip isequence between 03 - 04 alphabets
-	void flip34()
+	void flip34(Runopts & opts)
 	{
 		int val = is03 ? 4 : 0;
 		if (ambiguous_nt.size() > 0) 
 		{
-			if (forward_gv)
+			if (opts.forward)
 			{
 				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
 				{
