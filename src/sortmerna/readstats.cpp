@@ -10,6 +10,7 @@
 #include <algorithm> // remove_if
 #include <iomanip> // output formatting
 #include <locale> // isspace
+#include <sstream>
 
 // 3rd party
 #include "zlib.h"
@@ -49,7 +50,7 @@ void Readstats::calculate2()
 	if (l == -2)
 	{
 		fprintf(stderr, "  %sERROR%s: Line %d: %s could not read reads file - %s\n\n",
-			startColor, "\033[0m", __LINE__, __FILE__, strerror(errno));
+			startColor, endColor, __LINE__, __FILE__, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	kseq_destroy(seq);
@@ -62,9 +63,12 @@ void Readstats::calculate2()
 
 void Readstats::calculate()
 {
+	std::stringstream ss;
+
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		std::cout << "Failed to open Reads file: " << opts.readsfile << "\n";
+		ss << "Failed to open Reads file: " << opts.readsfile << "\n";
+		std::cout << ss.str(); ss.str("");
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -92,8 +96,10 @@ void Readstats::calculate()
 				else {
 					++count;
 					if (count > 3) {
-						std::cout << "Unexpected number of lines: " << count << " in a single Read. Total reads processed: " 
-							<< number_total_read <<" Exiting...\n";
+						ss << "Unexpected number of lines: " << count 
+							<< " in a single Read. Total reads processed: " << number_total_read 
+							<< " Exiting...\n";
+						std::cout << ss.str(); ss.str("");
 						exit(EXIT_FAILURE);
 					}
 					if (isFastq && (line[0] == '+' || count == 3)) continue; // fastq.quality
@@ -105,8 +111,10 @@ void Readstats::calculate()
 		} // ~for getline
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-		std::cout << std::setprecision(2) << std::fixed;
-		std::cout << "Readstats::calculate done. Elapsed time: " << elapsed.count() << " sec. Reads processed: " << number_total_read << std::endl;
+		ss << std::setprecision(2) << std::fixed 
+			<< "Readstats::calculate done. Elapsed time: " << elapsed.count() 
+			<< " sec. Reads processed: " << number_total_read << std::endl;
+		std::cout << ss.str(); ss.str("");
 	}
 	ifs.close();
 } // ~Readstats::calculate
@@ -128,7 +136,7 @@ bool Readstats::check_file_format()
 	else
 	{
 		fprintf(stderr, "  %sERROR%s: Line %d: %s unrecognized file format or empty file %s\n\n",
-			startColor, "\033[0m", __LINE__, __FILE__, opts.readsfile.c_str());
+			startColor, endColor, __LINE__, __FILE__, opts.readsfile.c_str());
 		exit_early = true;
 	}
 	kseq_destroy(seq);

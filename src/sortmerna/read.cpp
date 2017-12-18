@@ -149,11 +149,11 @@ std::string Read::toString()
 	return buf;
 } // ~Read::toString
 
-void Read::restoreFromDb(KeyValueDatabase & kvdb)
+bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 {
 	int id_win_hits_len = 0;
 	std::string bstr = kvdb.get(std::to_string(id));
-	if (bstr.size() == 0) return;
+	if (bstr.size() == 0) { isRestored = false; return isRestored; }
 	size_t offset = 0;
 
 	std::memcpy(static_cast<void*>(&lastIndex), bstr.data() + offset, sizeof(lastIndex));
@@ -206,6 +206,9 @@ void Read::restoreFromDb(KeyValueDatabase & kvdb)
 	alignment_struct2 alignstruct(hits_align_info_str);
 	hits_align_info = alignstruct;
 	offset += hits_align_info_size;
+
+	isRestored = true;
+	return isRestored;
 } // ~Read::restoreFromDb
 
 void Read::unmarshallJson(KeyValueDatabase & kvdb)

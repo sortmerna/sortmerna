@@ -100,7 +100,7 @@ void find_lis(
 }
 
 
-void compute_lis_alignment2
+void compute_lis_alignment
 	(
 		Read & read, Index & index, References & refs, 
 		Readstats & readstats, Output & output,
@@ -365,7 +365,6 @@ void compute_lis_alignment2
 							profile = ssw_init((int8_t*)(&read.isequence[0] + align_que_start), (align_length - head - tail), &read.scoring_matrix[0], 5, 2);
 
 							s_align* result = 0;
-							//uint16_t filters = 0;
 
 							result = ssw_align(
 								profile,
@@ -563,8 +562,8 @@ void compute_lis_alignment2
 									// SAM output and computing %id and %query coverage)
 									double id = 0;
 									char to_char[5] = { 'A','C','G','T','N' };
-									const char* ref_seq_ptr = refs.buffer[(2 * (int)max_seq) + 1].sequence.c_str(); // reference_seq
-									const char* read_seq_ptr = read.isequence.c_str(); // myread
+									const char* ref_seq_ptr = refs.buffer[max_seq].sequence.data(); // reference_seq  [(2 * (int)max_seq) + 1]
+									const char* read_seq_ptr = read.isequence.data(); // myread
 									int32_t qb = result->ref_begin1;
 									int32_t pb = result->read_begin1;
 									uint32_t mismatches = 0;
@@ -684,4 +683,4 @@ void compute_lis_alignment2
 
 	if (read.is04) read.flip34(index.opts);
 
-} // ~compute_lis_alignment2
+} // ~compute_lis_alignment

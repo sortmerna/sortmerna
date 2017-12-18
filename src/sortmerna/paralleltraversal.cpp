@@ -338,7 +338,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 			// continue read analysis if threshold seeds were matched
 			if (win_num == numwin - 1)
 			{
-				compute_lis_alignment2(
+				compute_lis_alignment(
 					read, index, refs, readstats, output,
 					search, // returns False if the alignment is found -> stop searching
 					max_SW_score,

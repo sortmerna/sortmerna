@@ -255,20 +255,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part)
 // prototype: load_index.cpp:load_index_stats
 void Index::load_stats(Readstats & readstats, Output & output)
 {
-	ofstream acceptedsam;
-
-	if (opts.samout)
-	{
-		acceptedsam.open(output.acceptedstrings_sam);
-		if (!acceptedsam.good())
-		{
-			fprintf(stderr, "  %sERROR%s: could not open SAM output file for writing.\n", startColor, "\033[0m");
-			exit(EXIT_FAILURE);
-		}
-		// @HD header
-		else acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
-	}
-
 	// create and initialize scoring matrix
 	long alphabetSize = 4;
 	long **scoring_matrix = new long *[alphabetSize];
@@ -448,9 +434,12 @@ void Index::load_stats(Readstats & readstats, Output & output)
 					* full_read[index_num])))
 			/ -(gumbel[index_num].first));
 
+
+		// TODO: move to Output::writeSamHeader
 		// SAM @SQ data
 		if (opts.samout)
 		{
+#if 0
 			// number of nucleotide sequences in the reference file
 			uint32_t num_sq = 0;
 			stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
@@ -464,29 +453,18 @@ void Index::load_stats(Readstats & readstats, Output & output)
 				// the sequence id string
 				std::string s(len_id + 1, 0); // AK
 				std::vector<char> vs(s.begin(), s.end());
-				//        char s[len_id+1];
-				//        memset(s,0,len_id+1);
 				stats.read(reinterpret_cast<char*>(&vs[0]), sizeof(char)*len_id);
 				// the length of the sequence itself
 				uint32_t len_seq = 0;
 				stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
-				// @SQ header
+				 @SQ header
 				if (opts.yes_SQ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
 			}
+#endif
 		}
 
 		stats.close();
 	} // ~for loop indices
-
-	if (opts.samout)
-	{
-		// @PG to sam file
-		acceptedsam << "@PG\tID:sortmerna\tVN:1.0\tCL:";
-		acceptedsam << opts.cmdline;
-//		for (int j = 0; j < opts.argc; j++) acceptedsam << argv[j] << " ";
-		acceptedsam << endl;
-		acceptedsam.close();
-	}//~if samout
 
 	 // free memory
 	for (long i = 0; i < alphabetSize; i++)

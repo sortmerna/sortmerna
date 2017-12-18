@@ -12,7 +12,6 @@
 #include "common.hpp"
 #include "options.hpp"
 #include "readstats.hpp"
-//#include "read.hpp"
 
 // forward
 struct Index;
@@ -43,8 +42,6 @@ public:
 	}
 	~Output() {}
 
-	void init(Readstats & readstats); // TODO: make private?
-
 	void report_blast(
 		Index & index,
 		References & refs,
@@ -56,12 +53,17 @@ public:
 		Read & read
 	);
 
+	void writeSamHeader();
+
 	void report_fasta();
 	void report_denovo();
 	void report_biom();
 
 	void openfiles();
 	void closefiles();
+
+private:
+	void init(Readstats & readstats);
 
 private:
 	Runopts & opts;

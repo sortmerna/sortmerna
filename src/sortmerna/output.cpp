@@ -389,6 +389,42 @@ void Output::report_blast
 } // ~ Output::report_blast
 
 
+void Output::writeSamHeader()
+{
+	acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
+
+	// TODO: this line is taken from "Index::load_stats". To be finished (20171215).
+#if 0
+	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
+	{
+		//@SQ header
+		if (opts.yes_SQ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
+		// number of nucleotide sequences in the reference file
+		uint32_t num_sq = 0;
+		stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
+
+		// loop through each @SQ
+		for (uint32_t j = 0; j < num_sq; j++)
+		{
+			// length of the sequence id
+			uint32_t len_id = 0;
+			stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
+			// the sequence id string
+			std::string s(len_id + 1, 0); // AK
+			std::vector<char> vs(s.begin(), s.end());
+			stats.read(reinterpret_cast<char*>(&vs[0]), sizeof(char)*len_id);
+			// the length of the sequence itself
+			uint32_t len_seq = 0;
+			stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
+			//		 @SQ header
+			if (opts.yes_SQ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
+		} // ~for
+	} // ~for
+#endif
+	acceptedsam << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
+
+} // ~Output::writeSamHeader
+
 void Output::report_sam
 (
 	References & refs,
@@ -398,8 +434,7 @@ void Output::report_sam
 	const char to_char[5] = { 'A','C','G','T','N' };
 
 	// (1) Query
-	//while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
-	acceptedsam << read.header.substr(0, read.header.find(' '));
+	acceptedsam << read.getSeqId();
 	// read did not align, output null string
 	if (print_all_reads_gv && (read.hits_align_info.alignv.size() == 0))
 	{
@@ -415,9 +450,7 @@ void Output::report_sam
 		if (!read.hits_align_info.alignv[i].strand) acceptedsam << "\t16\t";
 		else acceptedsam << "\t0\t";
 		// (3) Subject
-		//while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t'))
-		//	fileout << (char)*ref_name++;
-		acceptedsam << refs.buffer[read.hits_align_info.alignv[i].ref_seq].header.substr(0, read.header.find(' '));
+		acceptedsam << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 		// (4) Ref start
 		acceptedsam << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1; // a->ref_begin1
 		// (5) mapq
@@ -442,21 +475,17 @@ void Output::report_sam
 		// (7) RNEXT, (8) PNEXT, (9) TLEN
 		acceptedsam << "\t*\t0\t0\t";
 		// (10) SEQ
-		//const char* ptr_read_seq = read_seq;
-		//while (*ptr_read_seq != '\n') fileout << (char)to_char[(int)*ptr_read_seq++];
 		acceptedsam << read.sequence;
 		// (11) QUAL
 		acceptedsam << "\t";
 		// reverse-complement strand
 		if (read.quality.size() > 0 && !read.hits_align_info.alignv[i].strand)
 		{
-			//while (*read_qual != '\n') acceptedsam << (char)*read_qual--;
 			std::reverse(read.quality.begin(), read.quality.end());
 			acceptedsam << read.quality;
 		}
 		else if (read.quality.size() > 0) // forward strand
 		{
-			//while ((*read_qual != '\n') && (*read_qual != '\0')) fileout << (char)*read_qual++;
 			acceptedsam << read.quality;
 			// FASTA read
 		}
@@ -489,7 +518,15 @@ void Output::report_biom(){}
 void Output::openfiles()
 {
 	if (opts.blastout) acceptedblast.open(acceptedstrings_blast);
-	if (opts.samout) acceptedsam.open(acceptedstrings_sam);
+
+	if (opts.samout) { 
+		acceptedsam.open(acceptedstrings_sam);
+		if (!acceptedsam.good())
+		{
+			fprintf(stderr, "  %sERROR%s: could not open SAM output file for writing.\n", startColor, endColor);
+			exit(EXIT_FAILURE);
+		}
+	}
 }
 
 void Output::closefiles()
@@ -519,6 +556,7 @@ void generateReports(Runopts opts)
 	References refs(opts, index);
 
 	output.openfiles();
+	if (index.opts.samout) output.writeSamHeader();
 
 	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)

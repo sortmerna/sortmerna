@@ -10,7 +10,7 @@
 #include "references.hpp"
 #include "output.hpp"
 
-void compute_lis_alignment2(
+void compute_lis_alignment(
 	Read & read, Index & index, References & refs, Readstats & readstats, Output & output,
 	bool & search,
 	uint32_t max_SW_score,

@@ -20,7 +20,7 @@ void Reader::read()
 	{
 		std::string line;
 		Read read; // an empty read
-		int read_id = 0; // read ID
+		unsigned int read_id = 0; // read ID
 		bool isFastq = true;
 		bool lastRec = false; // lastRec is to make one iteration past the EOF
 
@@ -43,7 +43,7 @@ void Reader::read()
 			{
 				if (!read.isEmpty)
 				{
-					read.init(opts, kvdb); // load alignment statistics from DB
+					read.init(opts, kvdb, read_id); // load alignment statistics from DB
 					readQueue.push(read);
 					++read_id;
 				}
@@ -63,7 +63,7 @@ void Reader::read()
 			{
 				if (!read.isEmpty)
 				{
-					read.init(opts, kvdb);
+					read.init(opts, kvdb, read_id);
 					readQueue.push(read);
 					++read_id;
 					count = 0;
@@ -71,7 +71,6 @@ void Reader::read()
 
 				// start new record
 				read.clear();
-				read.id = read_id;
 				isFastq = (line[0] == FASTQ_HEADER_START);
 				read.format = isFastq ? Format::FASTQ : Format::FASTA;
 				read.header = line;

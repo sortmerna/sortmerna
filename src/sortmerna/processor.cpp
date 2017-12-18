@@ -18,7 +18,7 @@ void Processor::process()
 	for (;;)
 	{
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
-		alreadyProcessed = (read.lastIndex == index.index_num && read.lastPart == index.part);
+		alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 		if (alreadyProcessed) ++countProcessed;
 		if (read.isEmpty || !read.isValid || alreadyProcessed)
 		{

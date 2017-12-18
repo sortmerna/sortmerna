@@ -39,15 +39,25 @@ struct alignment_struct2
 			ret += it->size();
 		return ret;
 	}
+
+	void clear()
+	{
+		max_size = 0;
+		size = 0;
+		min_index = 0;
+		max_index = 0;
+		alignv.clear();
+	}
 };
 
 class Read {
 public:
-	int id = 0; // number of the read in the reads file
+	unsigned int id; // number of the read in the reads file. Store in Database.
 	bool isValid; // flags the record is not valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
 	bool is03; // indicates Read::isequence is in 0..3 alphabet
 	bool is04; // indicates Read:iseqeunce is in 0..4 alphabet. Seed search cannot proceed on 0-4 alphabet
+	bool isRestored; // flags the read is restored from Database. See 'Read::restoreFromDb'
 
 	std::string header;
 	std::string sequence;
@@ -60,8 +70,8 @@ public:
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
 	// store in database ------------>
-	int lastIndex; // last index number this read was aligned against. Set in Processor::callback
-	int lastPart; // last part number this read was aligned against.  Set in Processor::callback
+	unsigned int lastIndex; // last index number this read was aligned against. Set in Processor::callback
+	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
 	bool hit = false; // indicates that a match for this Read has been found
 	bool hit_denovo = true;
@@ -81,12 +91,14 @@ public:
 
 	Read()
 		:
+		id(0),
 		isValid(false),
 		isEmpty(true),
 		is03(false),
 		is04(false),
-		lastIndex(-1),
-		lastPart(-1)
+		isRestored(false),
+		lastIndex(0),
+		lastPart(0)
 	{
 		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
 		if (min_lis_gv > 0) best = min_lis_gv;
@@ -120,6 +132,7 @@ public:
 		isEmpty = that.isEmpty;
 		is03 = that.is03;
 		is04 = that.is04;
+		isRestored = that.isRestored;
 		header = that.header;
 		sequence = that.sequence;
 		quality = that.quality;
@@ -152,6 +165,7 @@ public:
 		isEmpty = that.isEmpty;
 		is03 = that.is03;
 		is04 = that.is04;
+		isRestored = that.isRestored;
 		header = that.header;
 		sequence = that.sequence;
 		quality = that.quality;
@@ -196,8 +210,7 @@ public:
 	void revIntStr() {
 		std::reverse(isequence.begin(), isequence.end());
 		for (int i = 0; i < isequence.length(); i++) {
-			isequence[i] = complement[(int)isequence[i]]; // original: myread_rc[j] = complement[(int)*revcomp--]; paralleltraversal.cpp:975
-			//isequence[i] = complement[isequence[i] - '0'];
+			isequence[i] = complement[(int)isequence[i]];
 		}
 		reversed = true;
 	}
@@ -215,15 +228,37 @@ public:
 
 	void clear()
 	{
+		id = 0;
+		isValid = false;
+		isEmpty = true;
+		is03 = false;
+		is04 = false;
 		header.clear();
 		sequence.clear();
 		quality.clear();
-		isValid = false;
-		isEmpty = true;
+		isequence.clear();
+		reversed = false;
+		ambiguous_nt.clear();
+		isRestored = false;
+		lastIndex = 0;
+		lastPart = 0;
+		hit = false;
+		hit_denovo = true;
+		null_align_output = false;
+		max_SW_score = 0;
+		num_alignments = 0;
+		readhit = 0;
+		best = 0;
+		id_win_hits.clear();
+		hits_align_info.clear();
+		scoring_matrix.clear();
 	}
 
-	void init(Runopts & opts, KeyValueDatabase & kvdb)
+	void init(Runopts & opts, KeyValueDatabase & kvdb, unsigned int readId)
 	{
+		id = readId;
+		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
+		if (min_lis_gv > 0) best = min_lis_gv;
 		validate();
 		seqToIntStr();
 		//unmarshallJson(kvdb); // get matches from Key-value database
@@ -236,7 +271,7 @@ public:
 	std::string toString(); // convert to binary string to store in DB
 
 	  // deserialize matches from string
-	void restoreFromDb(KeyValueDatabase & kvdb);
+	bool restoreFromDb(KeyValueDatabase & kvdb);
 
 	// deserialize matches from JSON and populate the read
 	void unmarshallJson(KeyValueDatabase & kvdb);

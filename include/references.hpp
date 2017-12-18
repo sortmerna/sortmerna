@@ -36,13 +36,14 @@ public:
 		}
 	};
 
+	std::vector<BaseRecord> buffer; // Container for references TODO: change name?
+
 	References(Runopts & opts, Index & index) : opts(opts), index(index) {}
 	~References() {}
 
 	void load(uint32_t idx_num, uint32_t idx_part); // load refrences into the buffer given index number and index part
 	void convert_fix(std::string & seq); // convert sequence to numberical form and fix ambiguous chars
 
-	std::vector<BaseRecord> buffer; // Container for references TODO: change name?
 private:
 	Runopts & opts;
 	Index & index;
