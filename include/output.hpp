@@ -10,13 +10,14 @@
 #include <string>
 
 #include "common.hpp"
-#include "options.hpp"
-#include "readstats.hpp"
 
 // forward
 struct Index;
 class References;
 class Read;
+class Refstats;
+struct Readstats;
+struct Runopts;
 
 class Output {
 public:
@@ -24,26 +25,25 @@ public:
 	ofstream acceptedreads;
 	ofstream acceptedsam;
 	ofstream acceptedblast;
-	ofstream logout;
+	ofstream logstream;
 
 	// file names
 	std::string acceptedstrings;
 	std::string acceptedstrings_sam; // used in Index::load_stats
 	std::string acceptedstrings_blast;
-	std::string logoutfile;
+	std::string logfile;
 	std::string denovo_otus_file;
 	std::string acceptedotumap_file;
 
 	Output(Runopts & opts, Readstats & readstats)
-		:
-		opts(opts)
 	{
-		init(readstats);
+		init(opts, readstats);
 	}
 	~Output() {}
 
 	void report_blast(
-		Index & index,
+		Runopts & opts,
+		Refstats & refstats,
 		References & refs,
 		Read & read
 	);
@@ -53,21 +53,19 @@ public:
 		Read & read
 	);
 
-	void writeSamHeader();
+	void writeSamHeader(Runopts & opts);
 
 	void report_fasta();
 	void report_denovo();
 	void report_biom();
 
-	void openfiles();
+	void openfiles(Runopts & opts);
 	void closefiles();
 
 private:
-	void init(Readstats & readstats);
+	void init(Runopts & opts, Readstats & readstats);
 
-private:
-	Runopts & opts;
 }; // ~class Output
 
 
-void generateReports(Runopts opts);
+void generateReports(Runopts & opts);

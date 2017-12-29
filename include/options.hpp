@@ -44,7 +44,7 @@ struct Runopts {
 	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file (interleaved reads only, see Section 4.2.4 of User Manual)
 	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file (interleaved reads only, see Section 4.2.4 of User Manual)
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
-	bool logout = false; // '--log' output overall statistics
+	bool doLog = false; // '--log' output overall statistics
 	bool print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
 	bool samout = false; // '--sam' output SAM alignment (for aligned reads only)
 	bool blastout = false; // '--blast' output alignments in various Blast-like formats

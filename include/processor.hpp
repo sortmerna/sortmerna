@@ -4,64 +4,108 @@
 * Created: Nov 06, 2017 Mon
 */
 #include <string>
+#include <functional>
 
-#include "readsqueue.hpp"
-#include "readstats.hpp"
-#include "output.hpp"
-#include "index.hpp"
-#include "references.hpp"
+//#include "processor.hpp"
+//#include "readstats.hpp"
+//#include "refstats.hpp"
+//#include "output.hpp"
+
+// forward
+class Read;
+class ReadsQueue;
+struct Runopts;
+struct Index;
+class References;
+class Output;
+struct Readstats;
+class Refstats;
 
 class Processor {
 public:
-	Processor(std::string id,
+	Processor(
+		std::string id,
 		ReadsQueue & readQueue,
 		ReadsQueue & writeQueue,
-		Readstats & readstats,
-		Index & index,
-		References & refs,
-		Output & output,
-		//std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback
-		void(*callback)(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)
+		Runopts & opts, 
+		Index & index, 
+		References & refs, 
+		Output & output, 
+		Readstats & readstats, 
+		Refstats & refstats,
+		//std::function<void(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)> callback
+		void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)
 	) :
 		id(id),
 		readQueue(readQueue),
 		writeQueue(writeQueue),
-		readstats(readstats),
+		opts(opts),
 		index(index),
 		refs(refs),
 		output(output),
-		callback(callback) {}
+		readstats(readstats),
+		refstats(refstats),
+		callback(callback) 
+	{}
 
-	void operator()() { process(); }
-	virtual void process(); // TODO: make private?
+	void operator()() { run(); }
+
+protected:
+	void run();
+	//std::function<void(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)> callback;
+	void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read);
 
 protected:
 	std::string id;
 	ReadsQueue & readQueue;
 	ReadsQueue & writeQueue;
-	Readstats & readstats;
-	References & refs;
-	Output & output;
-	Index & index;
-	//std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback;
-	void (*callback)(Index & index, References & refs, Output & output, Readstats & readstats, Read & read);
+	Runopts & opts; 
+	Index & index; 
+	References & refs; 
+	Output & output; 
+	Readstats & readstats; 
+	Refstats & refstats;
 };
 
-class ReportProcessor:Processor {
+class ReportProcessor {
 public:
 	ReportProcessor(
 		std::string id,
 		ReadsQueue & readQueue,
-		ReadsQueue & writeQueue,
-		Readstats & readstats,
-		Index & index,
-		References & refs,
-		Output & output,
-		void(*callback)(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)
-		//std::function<void(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)> callback
-	)
-		: Processor(id, readQueue, writeQueue, readstats, index, refs, output, callback) {}
+		Runopts & opts, 
+		Index & index, 
+		References & refs, 
+		Output & output, 
+		Readstats & readstats, 
+		Refstats & refstats,
+		void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)
+	) :
+		id(id),
+		readQueue(readQueue),
+		opts(opts),
+		index(index),
+		refs(refs),
+		output(output),
+		readstats(readstats),
+		refstats(refstats),
+		callback(callback)
+	{}
 
-	using Processor::operator(); // otherwise explicitely generated () operator overrides superclass () operator
-	void process();
+	void operator()() { run(); }
+	//using Processor::operator(); // otherwise explicitely generated () operator overrides superclass () operator
+	//using Processor::process;
+protected:
+	void run();
+	void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read);
+
+protected:
+	std::string id;
+	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
+	ReadsQueue & readQueue;
+	Runopts & opts; 
+	Index & index;
+	References & refs;
+	Output & output;
+	Readstats & readstats;
+	Refstats & refstats;
 };

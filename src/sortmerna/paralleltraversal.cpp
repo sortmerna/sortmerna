@@ -47,6 +47,7 @@
 #include "ThreadPool.hpp"
 #include "read.hpp"
 #include "readstats.hpp"
+#include "refstats.hpp"
 #include "index.hpp"
 #include "references.hpp"
 #include "readsqueue.hpp"
@@ -54,6 +55,7 @@
 #include "processor.hpp"
 #include "reader.hpp"
 #include "writer.hpp"
+#include "output.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -146,13 +148,20 @@ void format_rev(char* start_read, char* end_read, char* myread, char filesig)
 
 
 // Callback run in a Processor thread
-void parallelTraversalJob(Index & index, References & refs, Output & output, Readstats & readstats, Read & read)
+void parallelTraversalJob(
+	Runopts & opts, 
+	Index & index, 
+	References & refs, 
+	Output & output, 
+	Readstats & readstats, 
+	Refstats & refstats, 
+	Read & read)
 {
 	read.lastIndex = index.index_num;
 	read.lastPart = index.part;
 
 	// for reverse reads
-	if (!index.opts.forward)
+	if (!opts.forward)
 	{
 		// output the first num_alignments_gv alignments
 		if (num_alignments_gv > 0)
@@ -176,32 +185,32 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 		readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// the read length is too short
-	if (read.sequence.size()  < index.lnwin[index.index_num])
+	if (read.sequence.size()  < refstats.lnwin[index.index_num])
 	{
 		std::stringstream ss;
 		ss << "\n  " << "\033[0;33m" << "WARNING" << "\033[0m"
 			<< ": Processor thread: " << std::this_thread::get_id()
 			<< " The read: " << read.id << " is shorter "
-			<< "than " << index.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
+			<< "than " << refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
 		std::cout << ss.str(); ss.str("");
 
 		read.isValid = false;
 		return;
 	}
 
-	uint32_t windowshift = index.opts.skiplengths[index.index_num][0];
+	uint32_t windowshift = opts.skiplengths[index.index_num][0];
 	// keep track of windows which have been already traversed in the burst trie
 	vector<bool> read_index_hits(read.sequence.size());
 
 	uint32_t pass_n = 0; // Pass number (possible value 0,1,2)
-	uint32_t max_SW_score = read.sequence.size() *index.opts.match; // the maximum SW score attainable for this read
+	uint32_t max_SW_score = read.sequence.size() *opts.match; // the maximum SW score attainable for this read
 
 	std::vector<MYBITSET> vbitwindowsf;
 	std::vector<MYBITSET> vbitwindowsr;
 
 	// TODO: these 2 lines need to be calculated once per index part. Move to index or some new calculation object
-	uint32_t bit_vector_size = (index.partialwin[index.index_num] - 2) << 2; // on each index part. Init in Main, accessed in Worker
-	uint32_t offset = (index.partialwin[index.index_num] - 3) << 2; // on each index part
+	uint32_t bit_vector_size = (refstats.partialwin[index.index_num] - 2) << 2; // on each index part. Init in Main, accessed in Worker
+	uint32_t offset = (refstats.partialwin[index.index_num] - 3) << 2; // on each index part
 
 	uint32_t minoccur = 0; // TODO: never updated. Always 0. What's the point?
 
@@ -209,7 +218,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 	for (bool search = true; search; )
 	{
 		uint32_t numwin = (read.sequence.size()
-			- index.lnwin[index.index_num]
+			- refstats.lnwin[index.index_num]
 			+ windowshift) / windowshift; // number of k-mer windows fit along the sequence
 
 		uint32_t win_index = 0; // index of the window's first char in the sequence e.g. 0, 18, 36 if window.length = 18
@@ -229,17 +238,17 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 				vbitwindowsf.resize(bit_vector_size);
 				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
 
-				init_win_f(&read.isequence[win_index + index.partialwin[index.index_num]],
+				init_win_f(&read.isequence[win_index + refstats.partialwin[index.index_num]],
 					&vbitwindowsf[0],
 					&vbitwindowsf[4],
-					index.numbvs[index.index_num]);
+					refstats.numbvs[index.index_num]);
 
 				uint32_t keyf = 0;
 				char *keyf_ptr = &read.isequence[win_index];
 				// build hash for first half windows (foward and reverse)
 				// hash is just a numeric value formed by the chars of a string consisting of '0','1','2','3'
 				// e.g. "2233012" -> b10.1011.1100.0110 = x2BC6 = 11206
-				for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
+				for (uint32_t g = 0; g < refstats.partialwin[index.index_num]; g++)
 				{
 					(keyf <<= 2) |= (uint32_t)(*keyf_ptr);
 					++keyf_ptr;
@@ -270,7 +279,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 						id_hits,
 						read.id,
 						win_index,
-						index.partialwin[index.index_num]
+						refstats.partialwin[index.index_num]
 					);
 				}//~if exact half window exists in the burst trie
 
@@ -281,16 +290,16 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
 
 					// build the first bitvector window
-					init_win_r(&read.isequence[win_index + index.partialwin[index.index_num] - 1],
+					init_win_r(&read.isequence[win_index + refstats.partialwin[index.index_num] - 1],
 						&vbitwindowsr[0],
 						&vbitwindowsr[4],
-						index.numbvs[index.index_num]);
+						refstats.numbvs[index.index_num]);
 
 					uint32_t keyr = 0;
-					char *keyr_ptr = &read.isequence[win_index + index.partialwin[index.index_num]];
+					char *keyr_ptr = &read.isequence[win_index + refstats.partialwin[index.index_num]];
 
 					// build hash for first half windows (foward and reverse)
-					for (uint32_t g = 0; g < index.partialwin[index.index_num]; g++)
+					for (uint32_t g = 0; g < refstats.partialwin[index.index_num]; g++)
 					{
 						(keyr <<= 2) |= (uint32_t)(*keyr_ptr); //  - '0'
 						++keyr_ptr;
@@ -319,7 +328,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 							id_hits,
 							read.id,
 							win_index,
-							index.partialwin[index.index_num]);
+							refstats.partialwin[index.index_num]);
 					}//~if exact half window exists in the reverse burst trie                    
 				}//~if (!accept_zero_kmer)
 
@@ -339,7 +348,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 			if (win_num == numwin - 1)
 			{
 				compute_lis_alignment(
-					read, index, refs, readstats, output,
+					read, opts, index, refs, readstats, refstats, output,
 					search, // returns False if the alignment is found -> stop searching
 					max_SW_score,
 					read_to_count
@@ -355,10 +364,10 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 					{
 						// the next interval size equals to the current one, skip it
 						while ((pass_n < 3) &&
-							(index.opts.skiplengths[index.index_num][pass_n] == index.opts.skiplengths[index.index_num][pass_n + 1])) ++pass_n;
+							(opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1])) ++pass_n;
 						if (++pass_n > 2) search = false;
 						// set interval skip length for next Pass
-						else windowshift = index.opts.skiplengths[index.index_num][pass_n];
+						else windowshift = opts.skiplengths[index.index_num][pass_n];
 					}
 				}
 				break; // do not offset final window on read
@@ -370,7 +379,7 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 
 	// the read didn't align (for --num_alignments [INT] option),
 	// output null alignment string
-	if (!read.hit && !index.opts.forward && (num_alignments_gv > -1))
+	if (!read.hit && !opts.forward && (num_alignments_gv > -1))
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
@@ -384,22 +393,28 @@ void parallelTraversalJob(Index & index, References & refs, Output & output, Rea
 
 void paralleltraversal(Runopts & opts)
 {
+	std::stringstream ss;
+
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
-	std::cout << "CPU cores on this machine: " << numCores << std::endl; // 8
+	ss << "CPU cores on this machine: " << numCores << std::endl; // 8
+	std::cout << ss.str(); ss.str("");
 
 	// Init thread pool with the given number of threads
 	int numThreads = 2 * opts.num_fread_threads + opts.num_proc_threads;
-	if (numThreads > numCores)
-		printf("WARN: Number of cores: %d is less than number allocated threads %d", numCores, numThreads);
+	if (numThreads > numCores) {
+		ss << "WARN: Number of cores: " << numCores << " is less than number allocated threads " << numThreads << std::endl;
+		std::cout << ss.str(); ss.str("");
+	}
 
 	ThreadPool tpool(numThreads);
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
 	Readstats readstats(opts);
+	Refstats refstats(opts, readstats);
 	Output output(opts, readstats);
-	Index index(opts, readstats, output);
-	References refs(opts, index);
+	Index index;
+	References refs;
 
 	int loopCount = 0; // counter of total number of processing iterations
 
@@ -408,12 +423,12 @@ void paralleltraversal(Runopts & opts)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; ++idx_part)
+		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			eprintf("\tLoading index part %d/%u ... ", idx_part + 1, index.num_index_parts[index_num]);
+			eprintf("\tLoading index part %d/%u ... ", idx_part + 1, refstats.num_index_parts[index_num]);
 			auto t = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part);
-			refs.load(index_num, idx_part);
+			index.load(index_num, idx_part, opts, refstats);
+			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 			eprintf("done [%.2f sec]\n", elapsed.count());
@@ -427,59 +442,52 @@ void paralleltraversal(Runopts & opts)
 			// add processor jobs
 			for (int i = 0; i < opts.num_proc_threads; i++)
 			{
-				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, parallelTraversalJob));
+				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, opts, index, refs, output, readstats, refstats, parallelTraversalJob));
 			}
 			++loopCount;
+
+			tpool.waitAll(); // wait till all reads are processed against the current part
+			index.clear();
+			refs.clear();
+			writeQueue.reset(opts.num_proc_threads);
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	tpool.waitAll(); // wait till processing is done
-
 	writeLog(opts, index, readstats, output);
-} // ~paralleltraversal2
+} // ~paralleltraversal
 
 void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & output)
 {
 	//FILE* bilan = fopen(output.logoutfile, "ab"); // output::logoutfile
-	output.logout.open(output.logoutfile, std::ofstream::binary | std::ofstream::app);
+	output.logstream.open(output.logfile, std::ofstream::binary | std::ofstream::app);
 
 	// output total number of reads
-	output.logout << " Results:\n";
-	output.logout << "    Total reads = " << readstats.number_total_read << "\n";
-	//fprintf(bilan, " Results:\n");
-	//fprintf(bilan, "    Total reads = %llu\n", readstats.number_total_read); // Readstats::number_total_read
+	output.logstream << " Results:\n";
+	output.logstream << "    Total reads = " << readstats.number_total_read << "\n";
 	if (de_novo_otu_gv)
 	{
 		// total_reads_denovo_clustering = sum of all reads that have read::hit_denovo == true
 		// either query DB or store in Readstats::total_reads_denovo_clustering
-		output.logout << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
+		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
 		//fprintf(bilan, "    Total reads for de novo clustering = %llu\n", total_reads_denovo_clustering);
 	}
 	// output total non-rrna + rrna reads
-	output.logout << std::setprecision(2) << std::fixed;
-	output.logout << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped 
+	output.logstream << std::setprecision(2) << std::fixed;
+	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped
 		<< " (" << (float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read) * 100 << ")\n";
-	output.logout << "    Total reads failing E-value threshold = "
+	output.logstream << "    Total reads failing E-value threshold = "
 		<< readstats.number_total_read - readstats.total_reads_mapped
 		<< " ("	<< (1 - ((float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read))) * 100 << ")\n";
-	output.logout << "    Minimum read length = " << readstats.min_read_len << "\n";
-	output.logout << "    Maximum read length = " << readstats.max_read_len << "\n";
-	output.logout << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
+	output.logstream << "    Minimum read length = " << readstats.min_read_len << "\n";
+	output.logstream << "    Maximum read length = " << readstats.max_read_len << "\n";
+	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
 
-	output.logout << " By database:\n";
-	//fprintf(bilan, "    Total reads passing E-value threshold = %llu (%.2f%%)\n", 
-	//	readstats.total_reads_mapped, (float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read) * 100);
-	//fprintf(bilan, "    Total reads failing E-value threshold = %llu (%.2f%%)\n", 
-	//	readstats.number_total_read - readstats.total_reads_mapped, 
-	//	(1 - ((float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read))) * 100);
-	//fprintf(bilan, "    Minimum read length = %u\n", readstats.min_read_len);
-	//fprintf(bilan, "    Maximum read length = %u\n", readstats.max_read_len);
-	//fprintf(bilan, "    Mean read length = %u\n", readstats.full_read_main / readstats.number_total_read);
-	//fprintf(bilan, " By database:\n");
+	output.logstream << " By database:\n";
+
 	// output stats by database
 	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
 	{
-		output.logout << "    " << opts.indexfiles[index_num].first << "\t\t"
+		output.logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
 			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100 << "\n";
 		//fprintf(bilan, "    %s\t\t%.2f%%\n", (char*)(opts.indexfiles[index_num].first).c_str(), 
 		//	(float)((float)reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100);
@@ -487,13 +495,11 @@ void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & out
 
 	if (otumapout_gv)
 	{
-		output.logout << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov << "\n";
-		output.logout << " Total OTUs = " << readstats.otu_total << "\n"; // otu_map.size()
-		//fprintf(bilan, " Total reads passing %%id and %%coverage thresholds = %llu\n", total_reads_mapped_cov);
-		//fprintf(bilan, " Total OTUs = %lu\n", otu_map.size());
+		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov << "\n";
+		output.logstream << " Total OTUs = " << readstats.otu_total << "\n"; // otu_map.size()
 	}
 	time_t q = time(0);
 	struct tm * now = localtime(&q);
-	output.logout << "\n " << asctime(now) << "\n";
-	output.logout.close();
+	output.logstream << "\n " << asctime(now) << "\n";
+	output.logstream.close();
 } // ~writeLog

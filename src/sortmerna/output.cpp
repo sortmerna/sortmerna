@@ -2,6 +2,9 @@
 * FILE: output.cpp
 * Created: Nov 26, 2017 Sun
 */
+#include "unistd.h"
+#include <iomanip>
+
 #include "output.hpp"
 #include "ThreadPool.hpp"
 #include "kvdb.hpp"
@@ -10,18 +13,22 @@
 #include "references.hpp"
 #include "reader.hpp"
 #include "processor.hpp"
+#include "readstats.hpp"
+#include "read.hpp"
+#include "options.hpp"
+#include "refstats.hpp"
 
 
 // forward
-void writeAlignmentJob(Index & index, References & refs, Output & output, Readstats & readstats, Read & read); // callback
+void writeAlignmentJob(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read); // callback
 
-void Output::init(Readstats & readstats)
+void Output::init(Runopts & opts, Readstats & readstats)
 {
 	// attach pid to output files
 	char pidStr[4000];
 	if (pid_gv)
 	{
-		int32_t pid = getpid();
+		int32_t pid = _getpid();
 		sprintf(pidStr, "%d", pid);
 	}
 
@@ -72,19 +79,19 @@ void Output::init(Readstats & readstats)
 			acceptedblast.close();
 		}
 
-		if (logout_gv)
+		// don't touch the log if only reports are generated
+		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
 		{
 			// statistics file output
-			ofstream logstream;
-			logoutfile.assign(opts.ptr_filetype_ar);
+			logfile.assign(opts.ptr_filetype_ar);
 			if (pid_gv)
 			{
-				logoutfile.append("_");
-				logoutfile.append(pidStr);
+				logfile.append("_");
+				logfile.append(pidStr);
 			}
-			logoutfile.append(".log");
+			logfile.append(".log");
 
-			logstream.open(logoutfile);
+			logstream.open(logfile);
 			logstream.close();
 		}
 
@@ -143,7 +150,8 @@ void Output::init(Readstats & readstats)
 
 void Output::report_blast
 (
-	Index & index,
+	Runopts & opts,
+	Refstats & refstats,
 	References & refs,
 	Read & read
 )
@@ -156,21 +164,21 @@ void Output::report_blast
 	// iterate all alignments of the read
 	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
 	{
-		uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
-			* (read.hits_align_info.alignv[i].score1) - log(index.gumbel[index.index_num].second)) / (float)log(2));
+		uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
+			* (read.hits_align_info.alignv[i].score1) - log(refstats.gumbel[refs.num].second)) / (float)log(2));
 
 		//double evalue_score = (double)gumbel_K_index_num * full_ref_index_num * full_read_index_num
 		// * pow(EXP, (-gumbel_lambda_index_num * result->score1));
-		double evalue_score = (double)index.gumbel[index.index_num].second 
-			* index.full_ref[index.index_num]
-			* index.full_read[index.index_num]
-			* std::exp(-index.gumbel[index.index_num].first * read.hits_align_info.alignv[i].score1);
+		double evalue_score = (double)refstats.gumbel[refs.num].second 
+			* refstats.full_ref[refs.num]
+			* refstats.full_read[refs.num]
+			* std::exp(-refstats.gumbel[refs.num].first * read.hits_align_info.alignv[i].score1);
 
 		std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
 		std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 
 		// Blast-like pairwise alignment (only for aligned reads)
-		if (index.opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
+		if (opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
 		{
 			acceptedblast << "Sequence ID: ";
 			acceptedblast << ref_id; // print only start of the header till first space
@@ -294,7 +302,7 @@ void Output::report_blast
 			}
 		}
 		// Blast tabular m8 + optional columns for CIGAR and query coverage
-		else if (index.opts.blastFormat == BlastFormat::TABULAR)
+		else if (opts.blastFormat == BlastFormat::TABULAR)
 		{
 			// (1) Query
 			acceptedblast << read.getSeqId(); // part of the header till first space
@@ -389,7 +397,7 @@ void Output::report_blast
 } // ~ Output::report_blast
 
 
-void Output::writeSamHeader()
+void Output::writeSamHeader(Runopts & opts)
 {
 	acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
 
@@ -446,7 +454,7 @@ void Output::report_sam
 	// iterate read alignments
 	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
 	{
-		// (2) flag
+		// (2) flag Forward/Reversed
 		if (!read.hits_align_info.alignv[i].strand) acceptedsam << "\t16\t";
 		else acceptedsam << "\t0\t";
 		// (3) Subject
@@ -515,7 +523,7 @@ void Output::report_biom(){}
 /**
  * open streams for writing
  */
-void Output::openfiles()
+void Output::openfiles(Runopts & opts)
 {
 	if (opts.blastout) acceptedblast.open(acceptedstrings_blast);
 
@@ -536,7 +544,7 @@ void Output::closefiles()
 }
 
 // called from main. TODO: move into a class?
-void generateReports(Runopts opts)
+void generateReports(Runopts & opts)
 {
 	int N_READ_THREADS = 1;
 	int N_PROC_THREADS = 1;
@@ -552,23 +560,24 @@ void generateReports(Runopts opts)
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // Not used for Reports
 	Readstats readstats(opts);
 	Output output(opts, readstats);
-	Index index(opts, readstats, output);
-	References refs(opts, index);
+	Index index;
+	Refstats refstats(opts, readstats);
+	References refs;
 
-	output.openfiles();
-	if (index.opts.samout) output.writeSamHeader();
+	output.openfiles(opts);
+	if (opts.samout) output.writeSamHeader(opts);
 
 	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < index.num_index_parts[index_num]; ++idx_part)
+		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "Loading index part " << idx_part+1 << "/" << index.num_index_parts[index_num] << "  ... ";
+			ss << "Loading index part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
 			auto t = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part);
-			refs.load(index_num, idx_part);
+			index.load(index_num, idx_part, opts, refstats);
+			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
 			std::cout << ss.str(); ss.str("");
@@ -581,22 +590,27 @@ void generateReports(Runopts opts)
 			// add processor jobs
 			for (int i = 0; i < N_PROC_THREADS; ++i)
 			{
-				tpool.addJob(ReportProcessor("proc_" + std::to_string(i), readQueue, writeQueue, readstats, index, refs, output, writeAlignmentJob));
+				tpool.addJob(ReportProcessor("proc_" + std::to_string(i), readQueue, opts, index, refs, output, readstats, refstats, writeAlignmentJob));
 			}
 			++loopCount;
+			tpool.waitAll(); // wait till processing is done on one index part
+			index.clear();
+			refs.clear();
+			writeQueue.reset(N_PROC_THREADS);
 		} // ~for(idx_part)
 	} // ~for(index_num)
-	tpool.waitAll(); // wait till processing is done
 	output.closefiles();
 	std::cout << "Done generateReports\n";
 } // ~generateReports
 
 // called on each read
 void writeAlignmentJob(
-	Index & index,
-	References & refs,
-	Output & output,
-	Readstats & readstats,
+	Runopts & opts, 
+	Index & index, 
+	References & refs, 
+	Output & output, 
+	Readstats & readstats, 
+	Refstats & refstats, 
 	Read & read
 )
 {
@@ -764,28 +778,19 @@ void writeAlignmentJob(
 				// increment number of reads passing identity
 				// and coverage threshold
 				readstats.total_reads_mapped_cov++;
+
 				// do not output read for de novo OTU construction
 				// (it passed the %id/coverage thresholds)
 				if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
-																						   // fill OTU map with highest-scoring alignment for the read
+
+				// fill OTU map with highest-scoring alignment for the read
 				if (otumapout_gv)
 				{
 					// reference sequence identifier for mapped read
-					//char ref_seq_arr[4000] = "";
-					//char* ref_seq_arr_ptr = ref_seq_arr;
-					//char* ref_seq_id_ptr = reference_seq[(2 * ref_seq)] + 1;
-					//while ((*ref_seq_id_ptr != ' ') && (*ref_seq_id_ptr != '\n') && (*ref_seq_id_ptr != '\r')) 
-					//	*ref_seq_arr_ptr++ = *ref_seq_id_ptr++;
-					//string ref_seq_str = ref_seq_arr;
 					std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
 					string ref_seq_str = refhead.substr(0, refhead.find(' '));
 
 					// read identifier
-					//char read_seq_arr[4000] = "";
-					//char* read_seq_arr_ptr = read_seq_arr;
-					//char* read_seq_id_ptr = reads[readn - 1] + 1;
-					//while ((*read_seq_id_ptr != ' ') && (*read_seq_id_ptr != '\n') && (*read_seq_id_ptr != '\r')) *read_seq_arr_ptr++ = *read_seq_id_ptr++;
-					//string read_seq_str = read_seq_arr;
 					string read_seq_str = read.header.substr(0, read.header.find(' '));
 					readstats.otu_map[ref_seq_str].push_back(read_seq_str);
 				}
@@ -838,50 +843,21 @@ void writeAlignmentJob(
 				//	}
 				//}//~if filesig == '@'
 
-				if (index.opts.blastout)
+				if (opts.blastout)
 				{
-					uint32_t bitscore = (uint32_t)((float)((index.gumbel[index.index_num].first)
-						* (read.hits_align_info.alignv[p].score1) - log(index.gumbel[index.index_num].second)) / (float)log(2));
+					uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[index.index_num].first)
+						* (read.hits_align_info.alignv[p].score1) - log(refstats.gumbel[index.index_num].second)) / (float)log(2));
 
-					double evalue_score = (double)(index.gumbel[index.index_num].second) * index.full_ref[index.index_num]
-						* index.full_read[index.index_num]
-						* std::exp(-(index.gumbel[index.index_num].first) * read.hits_align_info.alignv[p].score1);
+					double evalue_score = (double)(refstats.gumbel[index.index_num].second) * refstats.full_ref[index.index_num]
+						* refstats.full_read[index.index_num]
+						* std::exp(-(refstats.gumbel[index.index_num].first) * read.hits_align_info.alignv[p].score1);
 
-					output.report_blast(index, refs, read);
-					//report_blast(
-					//	output.acceptedblast, //blast output file
-					//	read.hits_align_info.alignv[p], //SW alignment cigar  ptr_alignment
-					//	reads[readn - 1] + 1, //read name
-					//	myread, //read sequence (in integer format)
-					//	read_qual, //read quality
-					//	reference_seq[(2 * ref_seq)] + 1, //reference name
-					//	reference_seq[(2 * ref_seq) + 1], //reference sequence
-					//	evalue_score, //e-value score
-					//	read.hits_align_info.alignv[p].readlen, //read length (to compute the masked regions)
-					//	bitscore,
-					//	ptr_alignment->strand,
-					//	(double)id / total_pos, // %id
-					//	(double)align_len / read.hits_align_info.alignv[p].readlen, // %query coverage
-					//	mismatches,
-					//	gaps
-					//);
+					output.report_blast(opts, refstats, refs, read);
 				}
 
-				if (index.opts.samout)
+				if (opts.samout)
 				{
 					output.report_sam(refs, read);
-					//report_sam(
-					//	acceptedsam, //sam output file
-					//	ptr_alignment, //SW alignment cigar
-					//	reads[readn - 1] + 1, //read name
-					//	myread,//read sequence (in integer format)
-					//	read_qual, //read quality
-					//	reference_seq[(2 * ref_seq)] + 1, //reference name
-					//	reference_seq[(2 * ref_seq) + 1], //reference sequence
-					//	read.hits_align_info.alignv[p].readlen, //read length (to compute the masked regions)
-					//	ptr_alignment->strand,
-					//	mismatches + gaps //edit distance
-					//);
 				}
 			//}//~if (samout_gv || blastout_gv)
 		}//~if alignment at current database and index part loaded in RAM

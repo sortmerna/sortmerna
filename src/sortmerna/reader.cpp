@@ -3,7 +3,13 @@
  * Created: Nov 26, 2017 Sun
  */
 
+#include <string>
 #include <locale> // std::isspace
+#include <fstream> // std::ifstream
+#include <sstream> // std::stringstream
+#include <chrono> // std::chrono
+#include <ios> // std::ios_base
+#include <iomanip> // std::precision
 
 #include "reader.hpp"
 
@@ -11,9 +17,12 @@
 
 void Reader::read()
 {
+	std::stringstream ss;
+
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		printf("failed to open %s\n", opts.readsfile.c_str());
+		ss << "failed to open " << opts.readsfile.c_str() << std::endl;
+		std::cout << ss.str(); ss.str("");
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -24,9 +33,8 @@ void Reader::read()
 		bool isFastq = true;
 		bool lastRec = false; // lastRec is to make one iteration past the EOF
 
-		std::stringstream ss;
-		ss << "Reader thread: " << std::this_thread::get_id() << " started\n";
-		ss.str(""); // clear the stream
+		ss << id << " thread: " << std::this_thread::get_id() << " started\n";
+		std::cout << ss.str(); ss.str("");
 		auto t = std::chrono::high_resolution_clock::now();
 
 		for (int count = 0; ; ) // count lines in a single record
@@ -91,9 +99,9 @@ void Reader::read()
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
-		ss << this->id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
+		ss << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
 			<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id << std::endl;
-		std::cout << ss.str();
+		std::cout << ss.str(); ss.str("");
 	}
 	ifs.close();
 } // ~Reader::read

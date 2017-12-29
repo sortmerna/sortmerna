@@ -5,13 +5,17 @@
 * Wrapper of a Reads' record and its Match results
 */
 
-#include "read.hpp"
-#include "index.hpp"
-#include "references.hpp"
-#include "output.hpp"
+// forward
+class Read;
+struct Runopts;
+struct Index;
+class References;
+class Output;
+struct Readstats;
+class Refstats;
 
 void compute_lis_alignment(
-	Read & read, Index & index, References & refs, Readstats & readstats, Output & output,
+	Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats, Output & output,
 	bool & search,
 	uint32_t max_SW_score,
 	bool& read_to_count

@@ -29,11 +29,14 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
-#ifndef TRAVERSE_BURSTTRIE_H
-#define TRAVERSE_BURSTTRIE_H
+#pragma once
 
 
 #include <string>
+#include <iostream> // std::cout
+#include <cstring> // std::memcpy
+#include <algorithm> // std::copy_n
+#include <cstdint> // uint32_t
 
 #include "bitvector.hpp"
 
@@ -111,4 +114,3 @@ traversetrie_align(
 	uint32_t win_num /**< sliding window (seed) number on read */,
 	uint32_t partialwin /**< */
 );
-#endif

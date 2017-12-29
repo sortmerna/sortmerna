@@ -35,23 +35,23 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <string>
-#include <bitset>
+//#include <string>
+//#include <bitset>
 #include <vector>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <cstdlib>
-#include <stdio.h>
-#include <cmath>
+//#include <iostream>
+//#include <sstream>
+//#include <fstream>
+//#include <cstdlib>
+//#include <stdio.h>
+//#include <cmath>
 #include <sys/time.h>
-#include <set>
-#include <stdint.h>
-#include <inttypes.h>
-#include <unistd.h>   // lseek
-#include <fcntl.h>    // file checking, open/close
-#include <sys/mman.h> 
-#include <errno.h>
+//#include <set>
+//#include <stdint.h>
+//#include <inttypes.h>
+//#include <unistd.h>   // lseek
+//#include <fcntl.h>    // file checking, open/close
+//#include <sys/mman.h> 
+//#include <errno.h>
 #include "config.h"
 
 using namespace std;
@@ -65,6 +65,21 @@ const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Ch
 
 enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
+
+/*! @brief Map nucleotides to integers.
+Ambiguous letters map to 4.
+{A/a,C/c,G/g,T/t,U/u} = {0,1,2,3,3} respectively.
+*/
+const char nt_table[128] = {
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
+};
 
 extern timeval t;
 
@@ -137,7 +152,7 @@ extern bool pairedin_gv;
 extern bool pairedout_gv;
 
 /*! @brief Output log file */
-extern bool logout_gv;
+//extern bool logout_gv;
 
 /*! @brief OTU-picking option: output candidate reads for 
 	de novo clustering.

@@ -6,7 +6,7 @@
  * Collective Statistics for all Reads. Encapsulates old 'compute_read_stats' logic and results
  */
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <map>

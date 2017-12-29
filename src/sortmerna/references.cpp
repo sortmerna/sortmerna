@@ -2,6 +2,12 @@
  * FILE: references.cpp
  * Created: Dec 23, 2017 Sat
  */
+#include <fstream>
+#include <cctype> // std::isspace
+#include <ios>
+#include <cstdint>
+#include <locale>
+#include <cctype> // std::isspace
 
 #include "references.hpp"
 #include "refstats.hpp"
@@ -9,7 +15,7 @@
 #include "common.hpp"
 
 // prototype: 'load_ref'
-void References::load(uint32_t idx_num, uint32_t idx_part, Refstats & refstats, Runopts & opts)
+void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
 	uint32_t numseq_part = refstats.index_parts_stats_vec[idx_num][idx_part].numseq_part;
 

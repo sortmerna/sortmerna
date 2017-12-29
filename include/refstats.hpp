@@ -8,8 +8,9 @@
 #include <vector>
 #include <utility> // std::pair
 
+#include "indexdb.hpp" // index_parts_stats;
+
 // forward
-struct index_parts_stats;
 struct Readstats;
 struct Runopts;
 

@@ -40,6 +40,10 @@
 // standard
 #include <limits>
 #include <dirent.h>
+#include <unistd.h>
+#include <sstream>
+#include <iostream>
+#include <fcntl.h>
 
 #ifdef __APPLE__
 #include <sys/types.h>
@@ -67,7 +71,7 @@ int numcpu_gv = -1;
 bool verbose = false;
 bool pairedin_gv = false;
 bool pairedout_gv = false;
-bool logout_gv = false;
+//bool logout_gv = false;
 bool de_novo_otu_gv = false;
 bool print_all_reads_gv = false;
 long unsigned int pagesize_gv = sysconf(_SC_PAGE_SIZE);
@@ -240,13 +244,13 @@ void Runopts::optReads(char **argv, int &narg)
 	if (have_reads_gz)
 	{
 		fprintf(stderr, "\n %sERROR%s: option --reads-gz has also been set, only one of "
-			"--reads-gz or --reads is permitted\n", startColor, "\033[0m");
+			"--reads-gz or --reads is permitted\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: a path to a reads FASTA/FASTQ file "
-			"must be given after the option --reads\n", startColor, "\033[0m");
+			"must be given after the option --reads\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -274,7 +278,7 @@ void Runopts::optReads(char **argv, int &narg)
 		else
 		{
 			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				"%s.\n\n", startColor, "\033[0m", argv[narg + 1], strerror(errno));
+				"%s.\n\n", startColor, endColor, argv[narg + 1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -285,13 +289,13 @@ void Runopts::optReadsGz(char **argv, int &narg)
 	if (have_reads)
 	{
 		fprintf(stderr, "\n %sERROR%s: option --reads has also been set, only one of "
-			"--reads or --reads-gz is permitted\n", startColor, "\033[0m");
+			"--reads or --reads-gz is permitted\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: a path to a reads FASTA/FASTQ compressed (.zip, .gz) file "
-			"must be given after the option --reads-gz\n", startColor, "\033[0m");
+			"must be given after the option --reads-gz\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -319,7 +323,7 @@ void Runopts::optReadsGz(char **argv, int &narg)
 		else
 		{
 			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				"%s.\n\n", startColor, "\033[0m", argv[narg + 1], strerror(errno));
+				"%s.\n\n", startColor, endColor, argv[narg + 1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -330,7 +334,7 @@ void Runopts::optRef(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --ref must be followed by at least one entry "
-			"(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n", startColor, "\033[0m");
+			"(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	// path exists, check path
@@ -352,7 +356,7 @@ void Runopts::optRef(char **argv, int &narg)
 			if (*ptr == '\0')
 			{
 				fprintf(stderr, "   %sERROR%s: the FASTA reference file name %s must be followed "
-					" by an index name.\n\n", startColor, "\033[0m", fastafile);
+					" by an index name.\n\n", startColor, endColor, fastafile);
 				exit(EXIT_FAILURE);
 			}
 			ptr++; //skip the ',' delimiter
@@ -509,9 +513,7 @@ void Runopts::optOther(char **argv, int &narg)
 		}
 		else
 		{
-			fprintf(stderr, "\n  %sERROR%s: the --other %s directory could not be "
-				"opened, please check it exists.\n\n", startColor,
-				"\033[0m", dir);
+			fprintf(stderr, "\n  %sERROR%s: the --other %s directory could not be opened, please check it exists.\n\n", startColor, endColor, dir);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -519,15 +521,14 @@ void Runopts::optOther(char **argv, int &narg)
 
 void Runopts::optLog(char **argv, int &narg)
 {
-	if (logout_gv)
+	if (doLog)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --log has already been set once.\n",
-			startColor, "\033[0m");
+		fprintf(stderr, "\n  %sERROR%s: --log has already been set once.\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		logout_gv = true;
+		doLog = true;
 		narg++;
 	}
 } // ~Runopts::optLog
@@ -536,8 +537,7 @@ void Runopts::optDeNovoOtu(char **argv, int &narg)
 {
 	if (de_novo_otu_gv)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --de_novo_otu has already been set once.\n",
-			startColor, "\033[0m");
+		fprintf(stderr, "\n  %sERROR%s: --de_novo_otu has already been set once.\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -1454,7 +1454,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// No output format has been chosen
-	else if (!(fastxout_gv || blastout || samout || otumapout_gv || logout_gv || de_novo_otu_gv))
+	else if (!(fastxout_gv || blastout || samout || otumapout_gv || doLog || de_novo_otu_gv))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] no output format has been chosen (fastx/sam/blast/otu_"
 			"map/log).\n\n", startColor, "\033[0m", __LINE__, __FILE__);
@@ -1583,7 +1583,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		// FASTA/FASTQ output, stop searching for
 		// alignments after the first match
-		if (fastxout_gv && !(blastout || samout || otumapout_gv || logout_gv || de_novo_otu_gv))
+		if (fastxout_gv && !(blastout || samout || otumapout_gv || doLog || de_novo_otu_gv))
 			num_alignments_gv = 1;
 		// output single best alignment from best candidate hits
 		else

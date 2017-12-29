@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -35,8 +36,7 @@ public:
 	{
 		{
 			// Unblock any threads and tell them to stop
-			std::unique_lock <std::mutex> l(job_queue_lock);
-
+			std::lock_guard <std::mutex> lmjq(job_queue_lock);
 			shutdown_ = true;
 			cv_jobs.notify_all();
 		}
@@ -48,18 +48,17 @@ public:
 	 */
 	void addJob(std::function <void(void)> func)
 	{
-		std::unique_lock <std::mutex> l(job_queue_lock);
+		std::lock_guard <std::mutex> lmjQ(job_queue_lock);
 		jobs_.emplace(std::move(func));
 		cv_jobs.notify_one();
 	}
 
 	// wait till no jobs running
-	void ThreadPool::waitAll()
+	void waitAll()
 	{
-		std::unique_lock<std::mutex> doneLock(job_done_lock);
-		//while (busy.load() != 0 && !jobs_.empty()) cv_done.wait(doneLock);
-		cv_done.wait(doneLock, [this] { return busy.load() == 0 && jobs_.empty(); }); // worked OK
-		//lock.unlock();
+		std::unique_lock<std::mutex> lmjD(job_done_lock);
+		//while (busy.load() != 0 && !jobs_.empty()) cv_done.wait(lmJobDone);
+		cv_done.wait(lmjD, [this] { return busy.load() == 0 && jobs_.empty(); }); // works
 	}
 
 	// Wait for all threads to stop
@@ -79,11 +78,11 @@ protected:
 		for (;;)
 		{
 			{
-				std::unique_lock <std::mutex> jqLock(job_queue_lock);
+				std::unique_lock <std::mutex> lockmJobQueue(job_queue_lock);
 
 				// while no jobs and no shutdown - just keep waiting.
-				while (!shutdown_.load() && jobs_.empty())	cv_jobs.wait(jqLock); // this works
-				//cv_jobs.wait(jqLock, [this] { return !shutdown_ && jobs_.empty(); }); // this doesn't
+				while (!shutdown_.load() && jobs_.empty())	cv_jobs.wait(lockmJobQueue); // this works
+				//cv_jobs.wait(jqLock, [this] { return !shutdown_.load() && jobs_.empty(); });
 
 				if (jobs_.empty()) // only get here on shutdown = true
 				{
@@ -103,14 +102,14 @@ protected:
 
 			job(); // Do the job without holding any locks
 			--busy;
-			cv_done.notify_one(); // whithout this main thread hangs forever after calling 'waitAll'
-			ss << "ThreadPool::busy= " << busy << " jobs_.empty= " << jobs_.empty() << std::endl;
+			cv_done.notify_one(); // whithout this the main thread hangs forever after calling 'waitAll'
+			ss << "ThreadPool::busy= " << busy << " jobs.empty= " << jobs_.empty() << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for
 	} // ~threadEntry
 
-	std::mutex job_queue_lock;
-	std::mutex job_done_lock;
+	std::mutex job_queue_lock; // lock for pop/push on jobs_
+	std::mutex job_done_lock; // lock for checking jobs_.empty and shutdown
 	std::condition_variable cv_jobs;
 	std::condition_variable cv_done;
 	std::atomic_bool shutdown_;

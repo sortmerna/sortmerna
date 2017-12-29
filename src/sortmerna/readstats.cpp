@@ -11,6 +11,9 @@
 #include <iomanip> // output formatting
 #include <locale> // isspace
 #include <sstream>
+#include <fstream> // std::ifstream
+#include <iostream> // std::cout
+#include <ios>
 
 // 3rd party
 #include "zlib.h"

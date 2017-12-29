@@ -29,10 +29,15 @@
  *               Rob Knight       robknight@ucsd.edu
  */
 
+#include <sstream>
+
 #include "alignment.hpp"
 #include "alignment2.hpp"
 #include "read.hpp"
 #include "index.hpp"
+#include "refstats.hpp"
+#include "references.hpp"
+#include "readstats.hpp"
 
 
 bool
@@ -102,8 +107,7 @@ void find_lis(
 
 void compute_lis_alignment
 	(
-		Read & read, Index & index, References & refs, 
-		Readstats & readstats, Output & output,
+		Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats, Output & output,
 		bool & search,
 		uint32_t max_SW_score,
 		bool& read_to_count
@@ -230,7 +234,7 @@ void compute_lis_alignment
                        
 			while (it3 != hits_on_genome.end())
 			{
-				uint32_t stop = begin + read.sequence.length() - index.lnwin[index.index_num] + 1; // lnwin_index_num
+				uint32_t stop = begin + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // lnwin_index_num
 				bool push = false;
 				while ((it3 != hits_on_genome.end()) && (it3->first <= stop))
 				{
@@ -358,7 +362,7 @@ void compute_lis_alignment
 								}
 							}
 
-							if (read.is04) read.flip34(index.opts);
+							if (read.is04) read.flip34(opts);
                        
 							// create profile for read
 							s_profile* profile = 0;
@@ -370,10 +374,10 @@ void compute_lis_alignment
 								profile,
 								(int8_t*)refs.buffer[max_seq].sequence.c_str() + align_ref_start - head, // TODO: review this
 								align_length,
-								index.opts.gap_open,
-								index.opts.gap_extension,
+								opts.gap_open,
+								opts.gap_extension,
 								2,
-								index.minimal_score[index.index_num], // minimal_score_index_num
+								refstats.minimal_score[index.index_num], // minimal_score_index_num
 								0,
 								0
 							);
@@ -384,7 +388,7 @@ void compute_lis_alignment
 							// check alignment satisfies all thresholds
 							if (result != 0)
 							{
-								if (result->score1 > index.minimal_score[index.index_num]) aligned = true;
+								if (result->score1 > refstats.minimal_score[index.index_num]) aligned = true;
 							}
 
 							result->index_num = index.index_num;
@@ -681,6 +685,6 @@ void compute_lis_alignment
 		}//~for all of the reference sequence candidates
 	}//if ( readhitf || readhitr > ratio )
 
-	if (read.is04) read.flip34(index.opts);
+	if (read.is04) read.flip34(opts);
 
 } // ~compute_lis_alignment
