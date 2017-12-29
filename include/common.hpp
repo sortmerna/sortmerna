@@ -86,10 +86,8 @@ extern timeval t;
 /*! @brief Macro for timing */
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
-extern bool verbose;
-
 /*! @brief Print function for verbose mode */
-#define eprintf(format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+#define eprintf(format, ...) do {if (false) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
 
 /*! @brief start color text red */
 #define startColor "\033[0;31m"
@@ -130,10 +128,7 @@ extern bool verbose;
 #define READLEN 30000
 
 /*! @brief Number of threads to launch */
-extern int32_t numcpu_gv;
-
-/*! @brief Verbose mode */
-extern bool verbose;
+//extern int32_t numcpu_gv;
 
 /*! @brief Both reads are output to --aligned file
 
@@ -141,7 +136,7 @@ extern bool verbose;
 	does not (eg. the second read covers a hypervariable region),
 	then put both reads into --aligned file
 */
-extern bool pairedin_gv;
+//extern bool pairedin_gv;
 
 /*! @brief Both reads are output to --other file
 
@@ -149,7 +144,7 @@ extern bool pairedin_gv;
 	does not (eg. the second read covers a hypervariable region),
 	then put both reads into --other file
 */
-extern bool pairedout_gv;
+//extern bool pairedout_gv;
 
 /*! @brief Output log file */
 //extern bool logout_gv;
@@ -161,7 +156,7 @@ extern bool pairedout_gv;
 	threshold but have < %%id and < %%coverage scores for de 
 	novo OTU-picking.
 */
-extern bool de_novo_otu_gv;
+//extern bool de_novo_otu_gv;
 
 /*! @brief Search forward strand */
 //extern bool forward_gv;
@@ -185,7 +180,7 @@ extern bool de_novo_otu_gv;
 	ref_2 read_6 read_3
 	..
 */
-extern bool otumapout_gv;
+//extern bool otumapout_gv;
 
 /*! @brief Include process ID in output file names.
 
@@ -193,42 +188,25 @@ extern bool otumapout_gv;
 	process ID to the output filenames (eg. --aligned
 	and --other).
 */
-extern bool pid_gv;
+//extern bool pid_gv;
 
 /*! @brief Size of partial section of reads file to mmap. */
-extern long unsigned int map_size_gv;
+//extern long unsigned int map_size_gv;
 
 /*! @brief if true, load reads using mmap */
-extern bool map_size_set_gv;
+//extern bool map_size_set_gv;
 
 /*! @brief SAM output. */
-extern bool samout_gv;
+//extern bool samout_gv;
 
 /*! @brief Activate BLAST-like alignment output. */
-extern bool blastout_gv;
-
-/*! @brief Vector of strings to store result from option --blast STRING. 
-	
-	+ --blast '0': output pairwise alignments\n
-	+ --blast '1': output classical BLAST tabular format,
-				   the fields are:
-				   queryId, subjectId, percIdentity, alnLength,
-				   mismatchCount, gapOpenCount, queryStart, queryEnd,
-				   subjectStart, subjectEnd, eVal, bitScore\n
-
-	+ --blast '1 cigar': classical tabular format + column for CIGAR string\n
-	+ --blast '1 cigar qcov': classical tabular format + column for CIGAR string
-			   	 and % query coverage\n
-    + --blast '1 cigar qcov strand' : classical tabular format + columns for CIGAR string,
-    			 % query coverage and strand\n
-*/
-extern std::vector<std::string> user_opts;
+//extern bool blastout_gv;
 
 /*! @brief Output alignments in BLAST-like tabular format. */
-extern bool blast_tabular;
+//extern bool blast_tabular;
 
 /*! @brief Activate FASTA/Q output. */
-extern bool fastxout_gv;
+//extern bool fastxout_gv;
 
 /*! @brief Number of alignments to search based on the LIS 
 	prior to outputting them.
@@ -250,10 +228,10 @@ extern bool fastxout_gv;
 
 	@image html min_lis_small.png "Figure 1: Illustration of options --min_lis INT, --best INT and --num_alignments INT for SortMeRNA"
 */
-extern int32_t min_lis_gv;
+//extern int32_t min_lis_gv;
 
 /*! @brief Number of best alignments per read to output */
-extern int32_t num_best_hits_gv;
+//extern int32_t num_best_hits_gv;
 
 /*! @brief Number of alignments to output
 
@@ -262,7 +240,7 @@ extern int32_t num_best_hits_gv;
 	many alignments (specified by --min_lis INT) prior
 	to outputting the best ones.
 */
-extern int32_t num_alignments_gv;
+//extern int32_t num_alignments_gv;
 
 /*! @brief Number of seed hits to find before searching 
 	for candidate LIS.
@@ -273,7 +251,7 @@ extern int32_t num_alignments_gv;
 	matches required in order to continue to the next step
 	of searching for the LIS.
 */
-extern int32_t seed_hits_gv;
+//extern int32_t seed_hits_gv;
 
 /*! @brief Number or percent (if followed by %) of nucleotides 
 	to add to each edge of the alignment region prior to SSW 
@@ -286,30 +264,21 @@ extern int32_t seed_hits_gv;
 	sequence region where alignment will be carried out,
 	to allow for extra insertions & deletions.
 */
-extern int32_t edges_gv;
+//extern int32_t edges_gv;
 
 /*! @brief Interpret option --edges as percent */
-extern bool as_percent_gv;
+//extern bool as_percent_gv;
 
 /*! @brief Flag to turn off heuristic for stopping index 
 	search after finding a 0-error match, instead collect 
 	all 0-error and 1-error matches.
 */
-extern bool full_search_gv;
-
-/*! @brief E-value threshold */
-extern double evalue;
-
-/*! @brief OTU-picking option: minimum %%id to keep alignment */
-extern double align_id;
-
-/*! @brief OTU-picking option: minimum %%coverage to keep alignment */
-extern double align_cov;
+//extern bool full_search_gv;
 
 /*! @brief If true, print all reads in SAM and/or BLAST 
 	output (aligned and non-aligned)
 */
-extern bool print_all_reads_gv;
+//extern bool print_all_reads_gv;
 
 #endif
 

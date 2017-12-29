@@ -39,239 +39,6 @@ using namespace std;
 /** @file */
 
 
-/**
- * output Blast-like alignments (code modified from SSW-library)
- * writes one entry for a single alignment of the read i.e. to write all alignments 
- * this function has to be called multiple times each time changing s_align* pointer.
- */
-void report_blast(
-	ofstream &fileout,
-	s_align* a, // pointer set to the alignment to be written
-	const char* read_name,
-	const char* read_seq,
-	const char* read_qual,
-	const char* ref_name,
-	const char* ref_seq,
-	double evalue,
-	uint32_t readlen,
-	uint32_t bitscore,
-	bool strand, // 1: forward aligned ; 0: reverse complement aligned
-	double id, // percentage of identical matches
-	double coverage,
-	uint32_t mismatches,
-	uint32_t gaps
-)
-{
-	char to_char[5] = { 'A','C','G','T','N' };
-
-	// Blast-like pairwise alignment (only for aligned reads)
-	if (!blast_tabular)
-	{
-		fileout << "Sequence ID: ";
-		const char* tmp = ref_name;
-		while (*tmp != '\n') fileout << *tmp++;
-		fileout << endl;
-
-		fileout << "Query ID: ";
-		tmp = read_name;
-		while (*tmp != '\n') fileout << *tmp++;
-		fileout << endl;
-
-		fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
-		fileout.precision(3);
-		fileout << "Expect: " << evalue << "\t";
-		if (strand) fileout << "strand: +\n\n";
-		else fileout << "strand: -\n\n";
-		if (a->cigar)
-		{
-			uint32_t i, c = 0, left = 0, e = 0, qb = a->ref_begin1, pb = a->read_begin1; //mine
-			while (e < a->cigarLen || left > 0)
-			{
-				int32_t count = 0;
-				int32_t q = qb;
-				int32_t p = pb;
-				fileout << "Target: ";
-				fileout.width(8);
-				fileout << q + 1 << "    ";
-				for (c = e; c < a->cigarLen; ++c)
-				{
-					uint32_t letter = 0xf & *(a->cigar + c);
-					uint32_t length = (0xfffffff0 & *(a->cigar + c)) >> 4;
-					uint32_t l = (count == 0 && left > 0) ? left : length;
-					for (i = 0; i < l; ++i)
-					{
-						if (letter == 1) fileout << "-";
-						else
-						{
-							fileout << to_char[(int)*(ref_seq + q)];
-							++q;
-						}
-						++count;
-						if (count == 60) goto step2;
-					}
-				}
-			step2:
-				fileout << "    " << q << "\n";
-				fileout.width(20);
-				fileout << " ";
-				q = qb;
-				count = 0;
-				for (c = e; c < a->cigarLen; ++c)
-				{
-					uint32_t letter = 0xf & *(a->cigar + c);
-					uint32_t length = (0xfffffff0 & *(a->cigar + c)) >> 4;
-					uint32_t l = (count == 0 && left > 0) ? left : length;
-					for (i = 0; i < l; ++i)
-					{
-						if (letter == 0)
-						{
-							if ((char)to_char[(int)*(ref_seq + q)] == (char)to_char[(int)*(read_seq + p)]) fileout << "|";
-							else fileout << "*";
-							++q;
-							++p;
-						}
-						else
-						{
-							fileout << " ";
-							if (letter == 1) ++p;
-							else ++q;
-						}
-						++count;
-						if (count == 60)
-						{
-							qb = q;
-							goto step3;
-						}
-					}
-				}
-			step3:
-				p = pb;
-				fileout << "\nQuery: ";
-				fileout.width(9);
-				fileout << p + 1 << "    ";
-				count = 0;
-				for (c = e; c < a->cigarLen; ++c)
-				{
-					uint32_t letter = 0xf & *(a->cigar + c);
-					uint32_t length = (0xfffffff0 & *(a->cigar + c)) >> 4;
-					uint32_t l = (count == 0 && left > 0) ? left : length;
-					for (i = 0; i < l; ++i)
-					{
-						if (letter == 2) fileout << "-";
-						else
-						{
-							fileout << (char)to_char[(int)*(read_seq + p)];
-							++p;
-						}
-						++count;
-						if (count == 60)
-						{
-							pb = p;
-							left = l - i - 1;
-							e = (left == 0) ? (c + 1) : c;
-							goto end;
-						}
-					}
-				}
-				e = c;
-				left = 0;
-			end:
-				fileout << "    " << p << "\n\n";
-			}
-		}
-	}
-	// Blast tabular m8 + optional columns for CIGAR and query coverage
-	else
-	{
-		// (1) Query
-		while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
-
-		// print null alignment for non-aligned read
-		if (print_all_reads_gv && (a == NULL))
-		{
-			fileout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
-			for (uint32_t l = 0; l < user_opts.size(); l++)
-			{
-				if (user_opts[l].compare("cigar") == 0)
-					fileout << "\t*";
-				else if (user_opts[l].compare("qcov") == 0)
-					fileout << "\t0";
-				else if (user_opts[l].compare("qstrand") == 0)
-					fileout << "\t*";
-				fileout << "\n";
-			}
-			return;
-		}
-
-		fileout << "\t";
-		// (2) Subject
-		while ((*ref_name != ' ') && (*ref_name != '\n') && (*ref_name != '\t')) fileout << (char)*ref_name++;
-		fileout << "\t";
-		// (3) %id
-		fileout.precision(3);
-		fileout << id * 100 << "\t";
-		// (4) alignment length
-		fileout << (a->read_end1 - a->read_begin1 + 1) << "\t";
-		// (5) mismatches
-		fileout << mismatches << "\t";
-		// (6) gap openings
-		fileout << gaps << "\t";
-		// (7) q.start
-		fileout << a->read_begin1 + 1 << "\t";
-		// (8) q.end
-		fileout << a->read_end1 + 1 << "\t";
-		// (9) s.start
-		fileout << a->ref_begin1 + 1 << "\t";
-		// (10) s.end
-		fileout << a->ref_end1 + 1 << "\t";
-		// (11) e-value
-		fileout << evalue << "\t";
-		// (12) bit score
-		fileout << bitscore;
-		// OPTIONAL columns
-		for (uint32_t l = 0; l < user_opts.size(); l++)
-		{
-			// output CIGAR string
-			if (user_opts[l].compare("cigar") == 0)
-			{
-				fileout << "\t";
-				// masked region at beginning of alignment
-				if (a->read_begin1 != 0) fileout << a->read_begin1 << "S";
-				for (int c = 0; c < a->cigarLen; ++c)
-				{
-					uint32_t letter = 0xf & *(a->cigar + c);
-					uint32_t length = (0xfffffff0 & *(a->cigar + c)) >> 4;
-					fileout << length;
-					if (letter == 0) fileout << "M";
-					else if (letter == 1) fileout << "I";
-					else fileout << "D";
-				}
-
-				uint32_t end_mask = readlen - a->read_end1 - 1;
-				// output the masked region at end of alignment
-				if (end_mask > 0) fileout << end_mask << "S";
-			}
-			// output % query coverage
-			else if (user_opts[l].compare("qcov") == 0)
-			{
-				fileout << "\t";
-				fileout.precision(3);
-				fileout << coverage * 100;
-			}
-			// output strand
-			else if (user_opts[l].compare("qstrand") == 0)
-			{
-				fileout << "\t";
-				if (strand) fileout << "+";
-				else fileout << "-";
-			}
-		}
-		fileout << "\n";
-	}//~blast tabular m8
-
-	return;
-} // ~report_blast
-
 // output SAM alignments (code modified from SSW-library)
 void report_sam(
 	ofstream &fileout,
@@ -286,11 +53,12 @@ void report_sam(
 	uint32_t diff
 )
 {
+#if 0
 	const char to_char[5] = { 'A','C','G','T','N' };
 	// (1) Query
 	while ((*read_name != ' ') && (*read_name != '\n') && (*read_name != '\t')) fileout << (char)*read_name++;
 	// read did not align, output null string
-	if (print_all_reads_gv && (a == NULL))
+	if (opts.print_all_reads && (a == NULL))
 	{
 		fileout << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
@@ -347,6 +115,7 @@ void report_sam(
 	fileout << "\tNM:i:" << diff << "\n";
 
 	return;
+#endif
 } // ~report_sam
 
 
@@ -362,15 +131,16 @@ void report_fasta(
 	char* finalnt
 )
 {
+#if 0
 	// for timing different processes
 	double s, f;
 	// output accepted reads
-	if ((ptr_filetype_ar != NULL) && fastxout_gv)
+	if ((ptr_filetype_ar != NULL) && fastxout)
 	{
 		eprintf("    Writing aligned FASTA/FASTQ ... ");
 		TIME(s);
 		ofstream acceptedreads;
-		if (fastxout_gv)
+		if (fastxout)
 			acceptedreads.open(acceptedstrings, ios::app | ios::binary);
 		// pair-ended reads
 		if (pairedin_gv || pairedout_gv)
@@ -589,6 +359,7 @@ void report_fasta(
 		eprintf(" done [%.2f sec]\n", (f - s));
 	}//~if ( ptr_filetype_or != NULL )  
 	return;
+#endif
 } // ~report_fasta
 
 void report_denovo(
@@ -600,6 +371,7 @@ void report_denovo(
 	char *finalnt
 )
 {
+#if 0
 	// for timing different processes
 	double s, f;
 
@@ -612,7 +384,7 @@ void report_denovo(
 		ofstream denovoreads(denovo_otus_file, ios::app | ios::binary);
 
 		// pair-ended reads
-		if (pairedin_gv || pairedout_gv)
+		if (opts.pairedin || opts.pairedout)
 		{
 			// loop through every read, output accepted reads
 			for (uint64_t i = 1; i < strs; i += 4)
@@ -620,7 +392,7 @@ void report_denovo(
 				char* begin_read = reads[i - 1];
 
 				// either both reads are accepted, or one is accepted and pairedin_gv
-				if ((read_hits_denovo[i] || read_hits_denovo[i + 1]) && pairedin_gv)
+				if ((read_hits_denovo[i] || read_hits_denovo[i + 1]) && opts.pairedin)
 				{
 					char* end_read = NULL;
 					if (file_s > 0)
@@ -716,6 +488,7 @@ void report_denovo(
 	}//~if ( ptr_filetype_ar != NULL )
 
 	return;
+#endif
 } // ~report_denovo
 
 

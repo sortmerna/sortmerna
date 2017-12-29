@@ -120,7 +120,7 @@ void compute_lis_alignment
 	// STEP 1: the number of matching windows on the read to the
 	// reference database is greater than the threshold,
 	// continue analysis of read
-	if (read.readhit >= (uint32_t)seed_hits_gv) // default seed_hits_gv = 2
+	if (read.readhit >= (uint32_t)opts.seed_hits) // default seed_hits_gv = 2
 	{
 		// map<seq, number of occurrences> most_frequent_seq_t
 		map<uint32_t, uint32_t> most_frequent_seq_t;
@@ -156,7 +156,7 @@ void compute_lis_alignment
 		{
 			// pass candidate reference sequences for further analyses
 			// only if they have enough seed hits
-			if (map_it->second >= (uint32_t)seed_hits_gv)
+			if (map_it->second >= (uint32_t)opts.seed_hits)
 				most_frequent_seq.push_back(mypair(map_it->second, map_it->first));
 		}
 		most_frequent_seq_t.clear();
@@ -169,15 +169,15 @@ void compute_lis_alignment
 		{
 			// the maximum scoring alignment has been found,
 			// do not search for anymore alignments
-			if ((num_best_hits_gv != 0) && (read.max_SW_score == num_best_hits_gv)) break;
+			if ((opts.num_best_hits != 0) && (read.max_SW_score == opts.num_best_hits)) break;
 			max_occur = most_frequent_seq[k].first;
 			max_seq = most_frequent_seq[k].second;
               
 			// not enough window hits, try to collect more hits or go to next read
-			if (max_occur < (uint32_t)seed_hits_gv) break;
+			if (max_occur < (uint32_t)opts.seed_hits) break;
 
 			// update number of reference sequences remaining to check
-			if ((min_lis_gv > 0) && aligned && (k > 0))
+			if ((opts.min_lis > 0) && aligned && (k > 0))
 			{
 				// only decrement best_x if the next ref sequence to check
 				// has a lower seed count than the previous one
@@ -192,7 +192,7 @@ void compute_lis_alignment
 
 			// check if the maximum number of alignments per read
 			// (--num_alignments INT) have been output
-			if (num_alignments_gv > 0)
+			if (opts.num_alignments > 0)
 			{
 				if (read.num_alignments <= 0) break;
 			}
@@ -254,7 +254,7 @@ void compute_lis_alignment
 				aligned = false;
 #endif                              
 				// enough windows at this position on genome to search for LIS
-				if (vi_read.size() >= (uint32_t)seed_hits_gv)
+				if (vi_read.size() >= (uint32_t)opts.seed_hits)
 				{
 					vector<uint32_t> list;
 					find_lis(vi_read, list, read.id); // TODO: read.id is not used in this function.
@@ -264,7 +264,7 @@ void compute_lis_alignment
 					{
 #endif                                      
 						// LIS long enough to perform Smith-Waterman alignment
-						if (list.size() >= (uint32_t)seed_hits_gv)
+						if (list.size() >= (uint32_t)opts.seed_hits)
 						{
 #ifdef HEURISTIC1_OFF
 							lcs_ref_start = vi_read[list[list_n]].first;
@@ -282,10 +282,10 @@ void compute_lis_alignment
 							uint32_t align_length = 0;
 							uint32_t reflen = refs.buffer[max_seq].sequence.length(); // reference_seq_len[max_seq]
 							uint32_t edges = 0;
-							if (as_percent_gv)
-								edges = (((double)edges_gv / 100.0)*read.sequence.length()); // readlen
+							if (opts.as_percent)
+								edges = (((double)opts.edges / 100.0)*read.sequence.length()); // readlen
 							else
-								edges = edges_gv;
+								edges = opts.edges;
 							// part of the read hangs off (or matches exactly) the beginning of the reference seq
 							//            ref |-----------------------------------|
 							// que |-------------------|
@@ -418,7 +418,7 @@ void compute_lis_alignment
 								result->ref_seq = max_seq; // TODO: Monitor - moved here from (min_lis_gv > -1)
 
 								// update best alignment
-								if (min_lis_gv > -1)
+								if (opts.min_lis > -1)
 								{
 									// an alignment for this read already exists
 									//if (alignment != read_hits_align_info.end())
@@ -431,17 +431,17 @@ void compute_lis_alignment
 
 										// number of alignments stored per read < num_best_hits_gv, 
 										// add alignment to array without comparison to other members of array
-										if ((num_best_hits_gv == 0) || (array_size < (uint32_t)num_best_hits_gv))
+										if ((opts.num_best_hits == 0) || (array_size < (uint32_t)opts.num_best_hits))
 										{
 											// all slots have been filled, find slot with smallest
 											// alignment score and set the smallest_score_index
 											// (this is not done when num_best_hits_gv == 0 since
 											// we want to output all alignments for some --min_lis)
-											if (array_size == (uint32_t)num_best_hits_gv)
+											if (array_size == (uint32_t)opts.num_best_hits)
 											{
 												uint32_t smallest_score = 1000000;
 												//s_align *this_alignment = alignment->second.ptr;
-												for (int p = 0; p < num_best_hits_gv; p++)
+												for (int p = 0; p < opts.num_best_hits; p++)
 												{
 													if (read.hits_align_info.alignv[p].score1  < smallest_score) // this_alignment[p].score1
 													{
@@ -500,7 +500,7 @@ void compute_lis_alignment
 											// find the new smallest_score_index
 											uint32_t smallest_score = 1000000;
 
-											for (int p = 0; p < num_best_hits_gv; p++)
+											for (int p = 0; p < opts.num_best_hits; p++)
 											{
 												if (read.hits_align_info.alignv[p].score1 < smallest_score)
 												{
@@ -528,8 +528,8 @@ void compute_lis_alignment
 										// maximum size of s_align array
 										uint32_t max_size = 0;
 										// create new instance of alignments
-										if ((num_best_hits_gv > 0) && (num_best_hits_gv < BEST_HITS_INCREMENT + 1))
-											max_size = num_best_hits_gv;
+										if ((opts.num_best_hits > 0) && (opts.num_best_hits < BEST_HITS_INCREMENT + 1))
+											max_size = opts.num_best_hits;
 										else 
 											max_size = BEST_HITS_INCREMENT;
 
@@ -557,10 +557,10 @@ void compute_lis_alignment
 									}
 								}
 								// output the Nth alignment (set by --num_alignments [INT] parameter)
-								else if (num_alignments_gv > -1)
+								else if (opts.num_alignments > -1)
 								{
 									// update number of alignments to output per read
-									if (num_alignments_gv > 0) read.num_alignments--; // TODO: why decrement?
+									if (opts.num_alignments > 0) read.num_alignments--; // TODO: why decrement?
 
 									// get the edit distance between reference and read (serves for
 									// SAM output and computing %id and %query coverage)
@@ -610,14 +610,14 @@ void compute_lis_alignment
 
 									// the alignment passed the %id and %query coverage threshold
 									// output it (SAM, BLAST and FASTA/Q)
-									if ((align_id_round >= align_id) &&	(align_cov_round >= align_cov) && read_to_count)
+									if ((align_id_round >= opts.align_id) && (align_cov_round >= opts.align_cov) && read_to_count)
 									{
 										readstats.total_reads_mapped_cov++;
 										read_to_count = false;
 
 										// do not output read for de novo OTU clustering
 										// (it passed the %id/coverage thersholds)
-										if (de_novo_otu_gv) read.hit_denovo = !read.hit_denovo; // read_hits_denovo[readn].flip()
+										if (opts.de_novo_otu) read.hit_denovo = !read.hit_denovo; // read_hits_denovo[readn].flip()
 									}
 
 									// add alignment information to the read. TODO: check how this affects the old logic
@@ -647,11 +647,11 @@ void compute_lis_alignment
 
 								 // maximum score possible for the read has been reached,
 								 // stop searching for further matches
-								if ((num_best_hits_gv != 0) && (read.max_SW_score == num_best_hits_gv)) break;
+								if ((opts.num_best_hits != 0) && (read.max_SW_score == opts.num_best_hits)) break;
 
 								// stop search after the first num_alignments_gv alignments
 								// for this read
-								if (num_alignments_gv > 0)
+								if (opts.num_alignments > 0)
 								{
 									// go to next read (do not search for further alignments)
 									if (read.num_alignments <= 0) break; // num_alignments_x[readn]

@@ -100,8 +100,8 @@ public:
 		lastIndex(0),
 		lastPart(0)
 	{
-		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
-		if (min_lis_gv > 0) best = min_lis_gv;
+		//if (opts.num_alignments > 0) num_alignments = opts.num_alignments;
+		//if (min_lis_gv > 0) best = min_lis_gv;
 	}
 
 	Read(int id, std::string header, std::string sequence, std::string quality, Format format)
@@ -257,8 +257,8 @@ public:
 	void init(Runopts & opts, KeyValueDatabase & kvdb, unsigned int readId)
 	{
 		id = readId;
-		if (num_alignments_gv > 0) num_alignments = num_alignments_gv;
-		if (min_lis_gv > 0) best = min_lis_gv;
+		if (opts.num_alignments > 0) num_alignments = opts.num_alignments;
+		if (opts.min_lis > 0) best = opts.min_lis;
 		validate();
 		seqToIntStr();
 		//unmarshallJson(kvdb); // get matches from Key-value database

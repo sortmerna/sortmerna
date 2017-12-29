@@ -59,7 +59,7 @@ struct Readstats {
 	~Readstats() {}
 
 	void calculate(); // calculate statistics from readsfile
-	void calculate2(); // old version - copy of 'compute_read_stats'
+	void calculate2(Runopts & opts); // old version - copy of 'compute_read_stats'
 	bool check_file_format();
 	void calcSuffix();
 }; // ~struct Readstats

@@ -39,6 +39,8 @@
 #include <cstdint> // uint32_t
 
 #include "bitvector.hpp"
+#include "options.hpp"
+
 
  // Universal Levenshtein table for k=1
 extern uint32_t table[4][16][14];
@@ -101,8 +103,7 @@ struct id_win
 	@param uint32_t partialwin
 	@return none
 */
-void
-traversetrie_align(
+void traversetrie_align(
 	NodeElement *trie_t /**< root node to mini burst trie */,
 	uint32_t lev_t /**< initial Levenshtein automaton state */,
 	unsigned char depth /**< trie node depth */,
@@ -112,5 +113,6 @@ traversetrie_align(
 	vector< id_win > &id_hits /**< vector storing IDs of all candidate L-mers (matching in mini burst trie) */,
 	int64_t readn /**< read number */,
 	uint32_t win_num /**< sliding window (seed) number on read */,
-	uint32_t partialwin /**< */
+	uint32_t partialwin, /**< */
+	Runopts & opts
 );

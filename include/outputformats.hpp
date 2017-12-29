@@ -38,24 +38,6 @@
 #include "indexdb.hpp"
 
 
-void report_blast (
-	ofstream &fileout,
-    s_align* a,
-    const char* read_name,
-    const char* read_seq,
-    const char* read_qual,
-    const char* ref_name,
-    const char* ref_seq,
-    double evalue,
-    uint32_t readlen,
-    uint32_t bitscore,
-    bool strand,
-    double id,
-    double coverage,
-    uint32_t mismatches,
-    uint32_t gaps
-);
-
 void
 report_sam (
 	ofstream &fileout,

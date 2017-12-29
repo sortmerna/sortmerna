@@ -26,6 +26,7 @@ public:
 	ofstream acceptedsam;
 	ofstream acceptedblast;
 	ofstream logstream;
+	ofstream denovoreads;
 
 	// file names
 	std::string acceptedstrings;
@@ -49,14 +50,15 @@ public:
 	);
 
 	void report_sam(
+		Runopts & opts,
 		References & refs,
 		Read & read
 	);
 
 	void writeSamHeader(Runopts & opts);
 
-	void report_fasta();
-	void report_denovo();
+	void report_fasta(Runopts & opts, Read & read);
+	void report_denovo(Runopts & opts, Read & read);
 	void report_biom();
 
 	void openfiles(Runopts & opts);

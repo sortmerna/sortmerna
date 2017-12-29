@@ -26,7 +26,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 {
 	// attach pid to output files
 	char pidStr[4000];
-	if (pid_gv)
+	if (opts.pid)
 	{
 		int32_t pid = _getpid();
 		sprintf(pidStr, "%d", pid);
@@ -35,11 +35,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	// associate the streams with reference sequence file names
 	if (opts.ptr_filetype_ar != NULL)
 	{
-		if (fastxout_gv)
+		if (opts.fastxout)
 		{
 			// fasta/fastq output
 			acceptedstrings.assign(opts.ptr_filetype_ar);
-			if (pid_gv)
+			if (opts.pid)
 			{
 				acceptedstrings.append("_");
 				acceptedstrings.append(pidStr);
@@ -55,7 +55,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		{
 			// sam output
 			acceptedstrings_sam.assign(opts.ptr_filetype_ar);
-			if (pid_gv)
+			if (opts.pid)
 			{
 				acceptedstrings_sam.append("_");
 				acceptedstrings_sam.append(pidStr);
@@ -69,7 +69,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		{
 			// blast output
 			acceptedstrings_blast.assign(opts.ptr_filetype_ar);
-			if (pid_gv)
+			if (opts.pid)
 			{
 				acceptedstrings_blast.append("_");
 				acceptedstrings_blast.append(pidStr);
@@ -84,7 +84,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		{
 			// statistics file output
 			logfile.assign(opts.ptr_filetype_ar);
-			if (pid_gv)
+			if (opts.pid)
 			{
 				logfile.append("_");
 				logfile.append(pidStr);
@@ -95,12 +95,12 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			logstream.close();
 		}
 
-		if (otumapout_gv)
+		if (opts.otumapout)
 		{
 			// OTU map output file
 			ofstream otumap;
 			acceptedotumap_file.assign(opts.ptr_filetype_ar);
-			if (pid_gv)
+			if (opts.pid)
 			{
 				acceptedotumap_file.append("_");
 				acceptedotumap_file.append(pidStr);
@@ -110,11 +110,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			otumap.close();
 		}
 
-		if (de_novo_otu_gv)
+		if (opts.de_novo_otu)
 		{
 			ofstream denovo_otu;
 			denovo_otus_file.assign(opts.ptr_filetype_ar);
-			if (pid_gv)
+			if (opts.pid)
 			{
 				denovo_otus_file.append("_");
 				denovo_otus_file.append(pidStr);
@@ -129,12 +129,12 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 	if (opts.ptr_filetype_or != NULL)
 	{
-		if (fastxout_gv)
+		if (opts.fastxout)
 		{
 			// output stream for other reads
 			ofstream otherreads;
 			// add suffix database name to accepted reads file
-			if (pid_gv)
+			if (opts.pid)
 			{
 				strcat(opts.ptr_filetype_or, "_");
 				strcat(opts.ptr_filetype_or, pidStr);
@@ -308,16 +308,16 @@ void Output::report_blast
 			acceptedblast << read.getSeqId(); // part of the header till first space
 
 			// print null alignment for non-aligned read
-			if (print_all_reads_gv && (read.hits_align_info.alignv.size() == 0))
+			if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
 			{
 				acceptedblast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
-				for (uint32_t l = 0; l < user_opts.size(); l++)
+				for (uint32_t l = 0; l < opts.blastops.size(); l++)
 				{
-					if (user_opts[l].compare("cigar") == 0)
+					if (opts.blastops[l].compare("cigar") == 0)
 						acceptedblast << "\t*";
-					else if (user_opts[l].compare("qcov") == 0)
+					else if (opts.blastops[l].compare("qcov") == 0)
 						acceptedblast << "\t0";
-					else if (user_opts[l].compare("qstrand") == 0)
+					else if (opts.blastops[l].compare("qstrand") == 0)
 						acceptedblast << "\t*";
 					acceptedblast << "\n";
 				}
@@ -352,10 +352,10 @@ void Output::report_blast
 			// (12) bit score
 			acceptedblast << bitscore;
 			// OPTIONAL columns
-			for (uint32_t l = 0; l < user_opts.size(); l++)
+			for (uint32_t l = 0; l < opts.blastops.size(); l++)
 			{
 				// output CIGAR string
-				if (user_opts[l].compare("cigar") == 0)
+				if (opts.blastops[l].compare("cigar") == 0)
 				{
 					acceptedblast << "\t";
 					// masked region at beginning of alignment
@@ -375,7 +375,7 @@ void Output::report_blast
 					if (end_mask > 0) acceptedblast << end_mask << "S";
 				}
 				// output % query coverage
-				else if (user_opts[l].compare("qcov") == 0)
+				else if (opts.blastops[l].compare("qcov") == 0)
 				{
 					acceptedblast << "\t";
 					acceptedblast.precision(3);
@@ -384,7 +384,7 @@ void Output::report_blast
 					acceptedblast << coverage * 100; // (double)align_len / readlen
 				}
 				// output strand
-				else if (user_opts[l].compare("qstrand") == 0)
+				else if (opts.blastops[l].compare("qstrand") == 0)
 				{
 					acceptedblast << "\t";
 					if (read.hits_align_info.alignv[i].strand) acceptedblast << "+";
@@ -435,6 +435,7 @@ void Output::writeSamHeader(Runopts & opts)
 
 void Output::report_sam
 (
+	Runopts & opts,
 	References & refs,
 	Read & read
 )
@@ -444,7 +445,7 @@ void Output::report_sam
 	// (1) Query
 	acceptedsam << read.getSeqId();
 	// read did not align, output null string
-	if (print_all_reads_gv && (read.hits_align_info.alignv.size() == 0))
+	if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
 	{
 		acceptedsam << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
@@ -510,13 +511,362 @@ void Output::report_sam
 	} // ~for read.alignments
 } // ~Output::report_sam
 
-void Output::report_fasta()
+/* prototype outputformats.cpp:report_fasta */
+void Output::report_fasta(Runopts & opts, Read & read)
 {
+#if 0
+	std::stringstream ss;
+	double s, f; // for timing different processes
 
-}
+	// output accepted reads
+	if ((opts.ptr_filetype_ar != NULL) && opts.fastxout)
+	{
+		ss << "    Writing aligned FASTA/FASTQ ... ";
+		std::cout << ss.str(); ss.str("");
 
-void Output::report_denovo()
-{}
+		TIME(s);
+		if (opts.fastxout)
+			acceptedreads.open(acceptedstrings, ios::app | ios::binary);
+
+		// pair-ended reads
+		if (opts.pairedin || opts.pairedout)
+		{
+			// loop through every read, output accepted reads
+			//for (uint64_t i = 1; i < strs; i += 4)
+			//{
+				char* begin_read = reads[i - 1];
+				// either both reads are accepted, or one is accepted and pairedin
+				if ((read_hits[i] && read_hits[i + 2]) ||
+					((read_hits[i] || read_hits[i + 2]) && pairedin))
+				{
+					char* end_read = NULL;
+					if (file_s > 0)
+					{
+						// first read (of split-read + paired-read)
+						if (i == 1)
+						{
+							end_read = reads[3];
+							while (*end_read != '\0') end_read++;
+						}
+						// all reads except the last one
+						else if ((i + 4) < strs) end_read = reads[i + 3];
+						// last read
+						else end_read = finalnt;
+					}
+					else
+					{
+						// all reads except the last one
+						if ((i + 4) < strs) end_read = reads[i + 3];
+						// last read
+						else end_read = finalnt;
+					}
+					// output aligned read
+					if (fastxout_gv)
+					{
+						if (acceptedreads.is_open())
+						{
+							while (begin_read != end_read) acceptedreads << (char)*begin_read++;
+							if (*end_read == '\n') acceptedreads << "\n";
+						}
+						else
+						{
+							fprintf(stderr, "  %sERROR%s: [Line %d: %s] file %s could not be opened for writing.\n\n",
+								"\033[0;31m", "\033[0m", __LINE__, __FILE__, acceptedstrings);
+							exit(EXIT_FAILURE);
+						}
+					}
+				}//~the read was accepted
+			//}//~for all reads
+		}//~if paired-in or paired-out
+		 // regular or pair-ended reads don't need to go into the same file
+		else
+		{
+			// loop through every read, output accepted reads
+			//for (uint64_t i = 1; i < strs; i += 2)
+			//{
+				char* begin_read = reads[i - 1];
+				// the read was accepted
+				if (read_hits[i])
+				{
+					char* end_read = NULL;
+					// split-read and paired-read exist at a different location in memory than the mmap
+					if (file_s > 0)
+					{
+						// first read (of split-read + paired-read)
+						if (i == 1)
+							end_read = reads[2];
+						// second read (of split-read + paired-read)
+						else if (i == 3)
+						{
+							end_read = reads[3];
+							while (*end_read != '\0')
+								end_read++;
+						}
+						// all reads except the last one
+						else if ((i + 2) < strs)
+							end_read = reads[i + 1];
+						// last read
+						else
+							end_read = finalnt;
+					}
+					// the first (and possibly only) file part, all reads are in mmap
+					else
+					{
+						if ((i + 2) < strs)
+							end_read = reads[i + 1];
+						else
+							end_read = finalnt;
+					}
+					// output aligned read
+					if (opts.fastxout)
+					{
+						if (acceptedreads.is_open())
+						{
+							while (begin_read != end_read)
+								acceptedreads << (char)*begin_read++;
+							if (*end_read == '\n')
+								acceptedreads << "\n";
+						}
+						else
+						{
+							fprintf(stderr, "  %sERROR%s: file %s (acceptedstrings) could not be "
+								"opened for writing.\n\n", "\033[0;31m", acceptedstrings, "\033[0m");
+							exit(EXIT_FAILURE);
+						}
+					}
+				} //~if read was accepted
+			}//~for all reads
+		}//~if not paired-in or paired-out
+		if (acceptedreads.is_open()) acceptedreads.close();
+		TIME(f);
+		eprintf(" done [%.2f sec]\n", (f - s));
+	}//~if ( ptr_filetype_ar != NULL )
+
+	 // output other reads
+	if ((opts.ptr_filetype_or != NULL) && opts.fastxout)
+	{
+		eprintf("    Writing not-aligned FASTA/FASTQ ... ");
+		TIME(s);
+		ofstream otherreads(ptr_filetype_or, ios::app | ios::binary);
+		// pair-ended reads
+		if (opts.pairedin || opts.pairedout)
+		{
+			// loop through every read, output accepted reads
+			for (uint64_t i = 1; i < strs; i += 4)
+			{
+				char* begin_read = reads[i - 1];
+				// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
+				if ((!read_hits[i] && !read_hits[i + 2]) ||
+					((read_hits[i] ^ (read_hits[i + 2]) && opts.pairedout)))
+				{
+					if (otherreads.is_open())
+					{
+						char* end_read = NULL;
+						if (file_s > 0)
+						{
+							// first read (of split-read + paired-read)
+							if (i == 1)
+							{
+								end_read = reads[3];
+								while (*end_read != '\0') end_read++;
+							}
+							// all reads except the last one
+							else if ((i + 4) < strs) end_read = reads[i + 3];
+							// last read
+							else end_read = finalnt;
+						}
+						else
+						{
+							// all reads except the last one
+							if ((i + 4) < strs) end_read = reads[i + 3];
+							// last read
+							else end_read = finalnt;
+						}
+
+						while (begin_read != end_read) otherreads << (char)*begin_read++;
+						if (*end_read == '\n') otherreads << "\n";
+					}
+					else
+					{
+						fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", ptr_filetype_or, "\033[0m");
+						exit(EXIT_FAILURE);
+					}
+				}//~the read was accepted
+			//}//~for all reads
+		}//~if (pairedin_gv || pairedout_gv)    
+		 // output reads single
+		else
+		{
+			// loop through every read, output non-accepted reads
+			for (uint64_t i = 1; i < strs; i += 2)
+			{
+				char* begin_read = reads[i - 1];
+				// the read was accepted
+				if (!read_hits[i])
+				{
+					// accepted reads file output
+					if (otherreads.is_open())
+					{
+						char* end_read = NULL;
+						// split-read and paired-read exist at a different location in memory than the mmap
+						if (file_s > 0)
+						{
+							// first read (of split-read + paired-read)
+							if (i == 1) end_read = reads[2];
+							// second read (of split-read + paired-read)
+							else if (i == 3)
+							{
+								end_read = reads[3];
+								while (*end_read != '\0') end_read++;
+							}
+							// all reads except the last one
+							else if ((i + 2) < strs) end_read = reads[i + 1];
+							// last read
+							else end_read = finalnt;
+						}
+						// the first (and possibly only) file part, all reads are in mmap
+						else
+						{
+							if ((i + 2) < strs) end_read = reads[i + 1];
+							else end_read = finalnt;
+						}
+						while (begin_read != end_read) otherreads << (char)*begin_read++;
+						if (*end_read == '\n') otherreads << "\n";
+					}
+					else
+					{
+						fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", ptr_filetype_or, "\033[0m");
+						exit(EXIT_FAILURE);
+					}
+				}
+			}//~for all reads
+		}/// if (pairedin_gv || pairedout_gv)
+		if (otherreads.is_open()) otherreads.close();
+		TIME(f);
+		eprintf(" done [%.2f sec]\n", (f - s));
+	}//~if ( ptr_filetype_or != NULL )  
+	return;
+#endif
+} // ~Output::report_fasta
+
+void Output::report_denovo(Runopts & opts, Read & read)
+{
+#if 0
+	// for timing different processes
+	double s, f;
+
+	// output reads with < id% alignment (passing E-value) for de novo clustering
+	if (denovo_otus_file != NULL)
+	{
+		eprintf("    Writing de novo FASTA/FASTQ ... ");
+		TIME(s);
+
+		denovoreads.open(denovo_otus_file, ios::app | ios::binary);
+
+		// pair-ended reads
+		if (opts.pairedin || opts.pairedout)
+		{
+			// loop through every read, output accepted reads
+			for (uint64_t i = 1; i < strs; i += 4)
+			{
+				char* begin_read = reads[i - 1];
+
+				// either both reads are accepted, or one is accepted and pairedin_gv
+				if ((read_hits_denovo[i] || read_hits_denovo[i + 1]) && opts.pairedin)
+				{
+					char* end_read = NULL;
+					if (file_s > 0)
+					{
+						// first read (of split-read + paired-read)
+						if (i == 1)
+						{
+							end_read = reads[3];
+							while (*end_read != '\0') end_read++;
+						}
+						// all reads except the last one
+						else if ((i + 4) < strs) end_read = reads[i + 3];
+						// last read
+						else end_read = finalnt;
+					}
+					else
+					{
+						// all reads except the last one
+						if ((i + 4) < strs) end_read = reads[i + 3];
+						// last read
+						else end_read = finalnt;
+					}
+
+					// output aligned read
+					if (denovoreads.is_open())
+					{
+						while (begin_read != end_read) denovoreads << (char)*begin_read++;
+						if (*end_read == '\n') denovoreads << "\n";
+					}
+					else
+					{
+						fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file, "\033[0m");
+						exit(EXIT_FAILURE);
+					}
+				}//~the read was accepted
+			}//~for all reads
+		}//~if paired-in or paired-out
+		 /// regular or pair-ended reads don't need to go into the same file
+		else
+		{
+			/// loop through every read, output accepted reads
+			for (uint64_t i = 1; i < strs; i += 2)
+			{
+				char* begin_read = reads[i - 1];
+
+				/// the read was accepted
+				if (read_hits_denovo[i])
+				{
+					char* end_read = NULL;
+					/// split-read and paired-read exist at a different location in memory than the mmap
+					if (file_s > 0)
+					{
+						/// first read (of split-read + paired-read)
+						if (i == 1) end_read = reads[2];
+						/// second read (of split-read + paired-read)
+						else if (i == 3)
+						{
+							end_read = reads[3];
+							while (*end_read != '\0') end_read++;
+						}
+						/// all reads except the last one
+						else if ((i + 2) < strs) end_read = reads[i + 1];
+						/// last read
+						else end_read = finalnt;
+					}
+					/// the first (and possibly only) file part, all reads are in mmap
+					else
+					{
+						if ((i + 2) < strs) end_read = reads[i + 1];
+						else end_read = finalnt;
+					}
+
+					/// output aligned read
+					if (denovoreads.is_open())
+					{
+						while (begin_read != end_read) denovoreads << (char)*begin_read++;
+						if (*end_read == '\n') denovoreads << "\n";
+					}
+					else
+					{
+						fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file, "\033[0m");
+						exit(EXIT_FAILURE);
+					}
+				} //~if read was accepted
+			}//~for all reads
+		}//~if not paired-in or paired-out
+
+		if (denovoreads.is_open()) denovoreads.close();
+
+		TIME(f);
+		eprintf(" done [%.2f sec]\n", (f - s));
+	}//~if ( ptr_filetype_ar != NULL )
+#endif
+} // ~Output::report_denovo
 
 void Output::report_biom(){}
 
@@ -772,8 +1122,8 @@ void writeAlignmentJob(
 			// alignment with the highest SW score passed
 			// %id and %coverage thresholds
 			if ((p == index_max_score) &&
-				(align_id_round >= align_id) &&
-				(align_cov_round >= align_cov))
+				(align_id_round >= opts.align_id) &&
+				(align_cov_round >= opts.align_cov))
 			{
 				// increment number of reads passing identity
 				// and coverage threshold
@@ -781,10 +1131,10 @@ void writeAlignmentJob(
 
 				// do not output read for de novo OTU construction
 				// (it passed the %id/coverage thresholds)
-				if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
+				if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
 
 				// fill OTU map with highest-scoring alignment for the read
-				if (otumapout_gv)
+				if (opts.otumapout)
 				{
 					// reference sequence identifier for mapped read
 					std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
@@ -857,7 +1207,7 @@ void writeAlignmentJob(
 
 				if (opts.samout)
 				{
-					output.report_sam(refs, read);
+					output.report_sam(opts, refs, read);
 				}
 			//}//~if (samout_gv || blastout_gv)
 		}//~if alignment at current database and index part loaded in RAM

@@ -29,6 +29,7 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
+#include "options.hpp"
 #include "traverse_bursttrie.hpp"
 
  /*! @brief The universal Levenshtein automaton for d=1.
@@ -98,7 +99,8 @@ void traversetrie_align(
 	vector<id_win> &id_hits,
 	int64_t readn, // TODO: never used - remove?
 	uint32_t win_num,
-	uint32_t partialwin
+	uint32_t partialwin,
+	Runopts & opts
 )
 {
 	uint16_t lev_t_trie_pivot = lev_t;
@@ -151,7 +153,8 @@ void traversetrie_align(
 						id_hits,
 						readn,
 						win_num,
-						partialwin
+						partialwin,
+						opts
 					);
 
 					// go to next window on the read (0-error match found)
@@ -232,7 +235,7 @@ void traversetrie_align(
 										accept_zero_kmer = true;
 
 										// turn off heuristic to stop search after finding 0-error match
-										if (full_search_gv) accept_zero_kmer = false;
+										if (opts.full_search) accept_zero_kmer = false;
 									}
 								}
 							}//~last 3 characters in entry

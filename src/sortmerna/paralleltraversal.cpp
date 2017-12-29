@@ -41,7 +41,6 @@
 #include "traverse_bursttrie.hpp"
 #include "alignment.hpp"
 #include "alignment2.hpp"
-#include "mmap.hpp"
 
 #include "options.hpp"
 #include "ThreadPool.hpp"
@@ -164,14 +163,14 @@ void parallelTraversalJob(
 	if (!opts.forward)
 	{
 		// output the first num_alignments_gv alignments
-		if (num_alignments_gv > 0)
+		if (opts.num_alignments > 0)
 		{
 			// all num_alignments_gv alignments have been output
 			if (read.num_alignments < 0) return;
 		}
 		// the maximum scoring alignment has been found, go to next read
 		// (unless all alignments are being output)
-		else if (num_best_hits_gv > 0 && min_lis_gv > 0	&& read.max_SW_score == num_best_hits_gv)
+		else if (opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_score == opts.num_best_hits)
 			return;
 	}
 
@@ -279,7 +278,8 @@ void parallelTraversalJob(
 						id_hits,
 						read.id,
 						win_index,
-						refstats.partialwin[index.index_num]
+						refstats.partialwin[index.index_num],
+						opts
 					);
 				}//~if exact half window exists in the burst trie
 
@@ -328,7 +328,8 @@ void parallelTraversalJob(
 							id_hits,
 							read.id,
 							win_index,
-							refstats.partialwin[index.index_num]);
+							refstats.partialwin[index.index_num], 
+							opts);
 					}//~if exact half window exists in the reverse burst trie                    
 				}//~if (!accept_zero_kmer)
 
@@ -379,14 +380,14 @@ void parallelTraversalJob(
 
 	// the read didn't align (for --num_alignments [INT] option),
 	// output null alignment string
-	if (!read.hit && !opts.forward && (num_alignments_gv > -1))
+	if (!read.hit && !opts.forward && (opts.num_alignments > -1))
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
-		if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
+		if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
 	}//~if read didn't align
 
-	if (de_novo_otu_gv && read.hit_denovo)
+	if (opts.de_novo_otu && read.hit_denovo)
 		++readstats.total_reads_denovo_clustering;
 } // ~parallelTraversalJob
 
@@ -464,7 +465,7 @@ void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & out
 	// output total number of reads
 	output.logstream << " Results:\n";
 	output.logstream << "    Total reads = " << readstats.number_total_read << "\n";
-	if (de_novo_otu_gv)
+	if (opts.de_novo_otu)
 	{
 		// total_reads_denovo_clustering = sum of all reads that have read::hit_denovo == true
 		// either query DB or store in Readstats::total_reads_denovo_clustering
@@ -493,7 +494,7 @@ void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & out
 		//	(float)((float)reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100);
 	}
 
-	if (otumapout_gv)
+	if (opts.otumapout)
 	{
 		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov << "\n";
 		output.logstream << " Total OTUs = " << readstats.otu_total << "\n"; // otu_map.size()

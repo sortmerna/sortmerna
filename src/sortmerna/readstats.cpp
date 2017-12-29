@@ -28,7 +28,7 @@
  *
  * prototype: paralleltraversal.cpp:compute_read_stats
  */
-void Readstats::calculate2()
+void Readstats::calculate2(Runopts & opts)
 {
 #ifdef HAVE_LIBZ
 	// Count total number of reads and their combined length
@@ -47,7 +47,7 @@ void Readstats::calculate2()
 		number_total_read++;
 		// compute size of all reads to store in memory
 		// + 7 (4 possible new lines, 2 symbols > or @ and +, space for comment)
-		if (!map_size_set_gv)
+		if (!opts.map_size_set)
 			full_file_size += (seq->name.l + seq->comment.l + seq->seq.l + seq->qual.l + 7);
 	}
 	if (l == -2)
