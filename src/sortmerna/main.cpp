@@ -418,8 +418,7 @@ void Runopts::optAligned(char **argv, int &narg)
 {
 	if ((argv[narg + 1] == NULL) || (argv[narg + 1][0] == '-'))
 	{
-		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option --aligned "
-			"[STRING]\n", startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option --aligned [STRING]\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -439,7 +438,7 @@ void Runopts::optAligned(char **argv, int &narg)
 
 		if (DIR *dir_p = opendir(dir))
 		{
-			ptr_filetype_ar = argv[narg + 1];
+			filetype_ar.assign(argv[narg + 1]);
 			narg += 2;
 			closedir(dir_p);
 		}
@@ -478,7 +477,7 @@ void Runopts::optOther(char **argv, int &narg)
 
 		if (DIR *dir_p = opendir(dir))
 		{
-			ptr_filetype_or = argv[narg + 1];
+			filetype_or.assign(argv[narg + 1]);
 			narg += 2;
 			closedir(dir_p);
 		}
@@ -859,7 +858,7 @@ void Runopts::optMinLis(char **argv, int &narg)
 		exit(EXIT_FAILURE);
 	}
 	// min_lis_gv has already been set
-	else if (min_lis_gv_set)
+	else if (min_lis_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] has been set twice, please "
 			"verify your choice.\n\n", startColor, endColor);
@@ -875,7 +874,7 @@ void Runopts::optMinLis(char **argv, int &narg)
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
-		min_lis_gv_set = true;
+		min_lis_set = true;
 	}
 } // ~Runopts::optMinLis
 
@@ -887,8 +886,8 @@ void Runopts::optBest(char **argv, int &narg)
 			"as input (ex. --best 2).\n\n", startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
-	// best_gv_set has already been set
-	else if (best_gv_set)
+	// best_set has already been set
+	else if (best_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --best [INT] has been set twice, please "
 			"verify your choice.\n\n", startColor, endColor);
@@ -903,7 +902,7 @@ void Runopts::optBest(char **argv, int &narg)
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
-		best_gv_set = true;
+		best_set = true;
 	}
 } // ~Runopts::optBest
 
@@ -1192,9 +1191,9 @@ void Runopts::opt_v_Verbose(int & narg)
 void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
 {
 	// match ambiguous N's
-	if (!match_ambiguous_N_gv)
+	if (!match_ambiguous_N)
 	{
-		match_ambiguous_N_gv = true;
+		match_ambiguous_N = true;
 		score_N = atoi(argv[narg + 1]);
 		narg += 2;
 	}
@@ -1374,7 +1373,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		printlist();
 	}
 	// Basename for aligned reads is mandatory
-	if (ptr_filetype_ar == NULL)
+	if (filetype_ar.size() == 0)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
 			startColor, endColor, __LINE__, __FILE__);
@@ -1398,7 +1397,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// Basename for non-aligned reads is mandatory
-	if (ptr_filetype_or != NULL)
+	if (filetype_or.size() != 0)
 	{
 		if (!fastxout && (blastout || samout))
 		{
@@ -1425,7 +1424,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// If --best output was chosen, check an alignment format has also been chosen
-	if (best_gv_set && !(blastout || samout || otumapout))
+	if (best_set && !(blastout || samout || otumapout))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] has been set but no output "
 			"format has been chosen (--blast or --sam or --otu_map).\n\n", startColor, endColor, __LINE__, __FILE__);
@@ -1448,7 +1447,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 	// Only one of these options is allowed (--best outputs one alignment,
 	// --num_alignments outputs > 1 alignments)
-	if (best_gv_set && num_alignments_set)
+	if (best_set && num_alignments_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] and --num_alignments [INT] cannot "
 			"be set together. \n", startColor, endColor, __LINE__, __FILE__);
@@ -1457,7 +1456,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"output the first INT alignments).\n\n");
 	}
 	// Option --min_lis [INT] can only accompany --best [INT]
-	if (min_lis_gv_set && num_alignments_set)
+	if (min_lis_set && num_alignments_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --min_lis [INT] and --num_alignments [INT] cannot "
 			"be set together. \n", startColor, endColor, __LINE__, __FILE__);
@@ -1466,7 +1465,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 	// Option --mis_lis INT accompanies --best INT, cannot be set alone
-	if (min_lis_gv_set && !best_gv_set)
+	if (min_lis_set && !best_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --min_lis [INT] must be set together with --best "
 			"[INT].\n\n", startColor, endColor, __LINE__, __FILE__);
@@ -1505,9 +1504,9 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (!mismatch_set) mismatch = -3;
 	if (!gap_open_set) gap_open = 5;
 	if (!gap_ext_set) gap_extension = 2;
-	if (!match_ambiguous_N_gv) score_N = mismatch;
+	if (!match_ambiguous_N) score_N = mismatch;
 	// default method for searching alignments
-	if (!best_gv_set && !num_alignments_set)
+	if (!best_set && !num_alignments_set)
 	{
 		// FASTA/FASTQ output, stop searching for
 		// alignments after the first match
@@ -1522,7 +1521,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 	// default minimum LIS used for setting the number of
 	// alignments to search prior to outputting --best INT
-	if (best_gv_set && !min_lis_gv_set) min_lis = 2;
+	if (best_set && !min_lis_set) min_lis = 2;
 	// default number of seed hits before searching for candidate LIS
 	if (seed_hits < 0) seed_hits = 2;
 	// default number of nucleotides to add to each edge of an alignment

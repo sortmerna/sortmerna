@@ -8,6 +8,7 @@
 #include <fstream>
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 #include "common.hpp"
 
@@ -27,6 +28,8 @@ public:
 	ofstream acceptedblast;
 	ofstream logstream;
 	ofstream denovoreads;
+	ofstream otherreads;
+	ofstream biomout;
 
 	// file names
 	std::string acceptedstrings;
@@ -35,6 +38,7 @@ public:
 	std::string logfile;
 	std::string denovo_otus_file;
 	std::string acceptedotumap_file;
+	std::string biomfile;
 
 	Output(Runopts & opts, Readstats & readstats)
 	{
@@ -57,8 +61,8 @@ public:
 
 	void writeSamHeader(Runopts & opts);
 
-	void report_fasta(Runopts & opts, Read & read);
-	void report_denovo(Runopts & opts, Read & read);
+	void report_fasta(Runopts & opts, std::vector<Read> & reads);
+	void report_denovo(Runopts & opts, std::vector<Read> & reads);
 	void report_biom();
 
 	void openfiles(Runopts & opts);

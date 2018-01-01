@@ -33,12 +33,12 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 
 	// associate the streams with reference sequence file names
-	if (opts.ptr_filetype_ar != NULL)
+	if (opts.filetype_ar.size() != 0)
 	{
 		if (opts.fastxout)
 		{
 			// fasta/fastq output
-			acceptedstrings.assign(opts.ptr_filetype_ar);
+			acceptedstrings = opts.filetype_ar;
 			if (opts.pid)
 			{
 				acceptedstrings.append("_");
@@ -54,7 +54,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.samout)
 		{
 			// sam output
-			acceptedstrings_sam.assign(opts.ptr_filetype_ar);
+			acceptedstrings_sam = opts.filetype_ar;
 			if (opts.pid)
 			{
 				acceptedstrings_sam.append("_");
@@ -68,7 +68,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.blastout)
 		{
 			// blast output
-			acceptedstrings_blast.assign(opts.ptr_filetype_ar);
+			acceptedstrings_blast = opts.filetype_ar;
 			if (opts.pid)
 			{
 				acceptedstrings_blast.append("_");
@@ -83,7 +83,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
 		{
 			// statistics file output
-			logfile.assign(opts.ptr_filetype_ar);
+			logfile = opts.filetype_ar;
 			if (opts.pid)
 			{
 				logfile.append("_");
@@ -99,7 +99,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		{
 			// OTU map output file
 			ofstream otumap;
-			acceptedotumap_file.assign(opts.ptr_filetype_ar);
+			acceptedotumap_file = opts.filetype_ar;
 			if (opts.pid)
 			{
 				acceptedotumap_file.append("_");
@@ -113,7 +113,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.de_novo_otu)
 		{
 			ofstream denovo_otu;
-			denovo_otus_file.assign(opts.ptr_filetype_ar);
+			denovo_otus_file = opts.filetype_ar;
 			if (opts.pid)
 			{
 				denovo_otus_file.append("_");
@@ -127,7 +127,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 	}//~if ( ptr_filetype_ar != NULL ) 
 
-	if (opts.ptr_filetype_or != NULL)
+	if (opts.filetype_or.size() != 0)
 	{
 		if (opts.fastxout)
 		{
@@ -136,13 +136,13 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			// add suffix database name to accepted reads file
 			if (opts.pid)
 			{
-				strcat(opts.ptr_filetype_or, "_");
-				strcat(opts.ptr_filetype_or, pidStr);
+				opts.filetype_or += "_";
+				opts.filetype_or += pidStr;
 			}
-			strcat(opts.ptr_filetype_or, ".");
-			strcat(opts.ptr_filetype_or, readstats.suffix.c_str());
+			opts.filetype_or += ".";
+			opts.filetype_or += readstats.suffix;
 			// create the other reads file
-			otherreads.open(opts.ptr_filetype_or);
+			otherreads.open(opts.filetype_or);
 			otherreads.close();
 		}
 	}
@@ -511,15 +511,18 @@ void Output::report_sam
 	} // ~for read.alignments
 } // ~Output::report_sam
 
-/* prototype outputformats.cpp:report_fasta */
-void Output::report_fasta(Runopts & opts, Read & read)
+/* 
+ * prototype outputformats.cpp:report_fasta
+ *
+ * @param reads: 1 or 2 reads (if paired)
+ */
+void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 {
-#if 0
 	std::stringstream ss;
-	double s, f; // for timing different processes
+	double s, f; // for timing
 
 	// output accepted reads
-	if ((opts.ptr_filetype_ar != NULL) && opts.fastxout)
+	if ((opts.filetype_ar.size() != 0) && opts.fastxout)
 	{
 		ss << "    Writing aligned FASTA/FASTQ ... ";
 		std::cout << ss.str(); ss.str("");
@@ -531,234 +534,110 @@ void Output::report_fasta(Runopts & opts, Read & read)
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
 		{
-			// loop through every read, output accepted reads
-			//for (uint64_t i = 1; i < strs; i += 4)
-			//{
-				char* begin_read = reads[i - 1];
-				// either both reads are accepted, or one is accepted and pairedin
-				if ((read_hits[i] && read_hits[i + 2]) ||
-					((read_hits[i] || read_hits[i + 2]) && pairedin))
-				{
-					char* end_read = NULL;
-					if (file_s > 0)
-					{
-						// first read (of split-read + paired-read)
-						if (i == 1)
-						{
-							end_read = reads[3];
-							while (*end_read != '\0') end_read++;
-						}
-						// all reads except the last one
-						else if ((i + 4) < strs) end_read = reads[i + 3];
-						// last read
-						else end_read = finalnt;
-					}
-					else
-					{
-						// all reads except the last one
-						if ((i + 4) < strs) end_read = reads[i + 3];
-						// last read
-						else end_read = finalnt;
-					}
-					// output aligned read
-					if (fastxout_gv)
-					{
-						if (acceptedreads.is_open())
-						{
-							while (begin_read != end_read) acceptedreads << (char)*begin_read++;
-							if (*end_read == '\n') acceptedreads << "\n";
-						}
-						else
-						{
-							fprintf(stderr, "  %sERROR%s: [Line %d: %s] file %s could not be opened for writing.\n\n",
-								"\033[0;31m", "\033[0m", __LINE__, __FILE__, acceptedstrings);
-							exit(EXIT_FAILURE);
-						}
-					}
-				}//~the read was accepted
-			//}//~for all reads
-		}//~if paired-in or paired-out
-		 // regular or pair-ended reads don't need to go into the same file
-		else
-		{
-			// loop through every read, output accepted reads
-			//for (uint64_t i = 1; i < strs; i += 2)
-			//{
-				char* begin_read = reads[i - 1];
-				// the read was accepted
-				if (read_hits[i])
-				{
-					char* end_read = NULL;
-					// split-read and paired-read exist at a different location in memory than the mmap
-					if (file_s > 0)
-					{
-						// first read (of split-read + paired-read)
-						if (i == 1)
-							end_read = reads[2];
-						// second read (of split-read + paired-read)
-						else if (i == 3)
-						{
-							end_read = reads[3];
-							while (*end_read != '\0')
-								end_read++;
-						}
-						// all reads except the last one
-						else if ((i + 2) < strs)
-							end_read = reads[i + 1];
-						// last read
-						else
-							end_read = finalnt;
-					}
-					// the first (and possibly only) file part, all reads are in mmap
-					else
-					{
-						if ((i + 2) < strs)
-							end_read = reads[i + 1];
-						else
-							end_read = finalnt;
-					}
-					// output aligned read
-					if (opts.fastxout)
-					{
-						if (acceptedreads.is_open())
-						{
-							while (begin_read != end_read)
-								acceptedreads << (char)*begin_read++;
-							if (*end_read == '\n')
-								acceptedreads << "\n";
-						}
-						else
-						{
-							fprintf(stderr, "  %sERROR%s: file %s (acceptedstrings) could not be "
-								"opened for writing.\n\n", "\033[0;31m", acceptedstrings, "\033[0m");
-							exit(EXIT_FAILURE);
-						}
-					}
-				} //~if read was accepted
-			}//~for all reads
-		}//~if not paired-in or paired-out
-		if (acceptedreads.is_open()) acceptedreads.close();
-		TIME(f);
-		eprintf(" done [%.2f sec]\n", (f - s));
-	}//~if ( ptr_filetype_ar != NULL )
-
-	 // output other reads
-	if ((opts.ptr_filetype_or != NULL) && opts.fastxout)
-	{
-		eprintf("    Writing not-aligned FASTA/FASTQ ... ");
-		TIME(s);
-		ofstream otherreads(ptr_filetype_or, ios::app | ios::binary);
-		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
-		{
-			// loop through every read, output accepted reads
-			for (uint64_t i = 1; i < strs; i += 4)
+			// either both reads are accepted, or one is accepted and pairedin
+			if ((reads[0].hit && reads[1].hit) ||
+				((reads[0].hit || reads[1].hit) && opts.pairedin))
 			{
-				char* begin_read = reads[i - 1];
-				// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
-				if ((!read_hits[i] && !read_hits[i + 2]) ||
-					((read_hits[i] ^ (read_hits[i + 2]) && opts.pairedout)))
+				// output aligned read
+				if (opts.fastxout)
 				{
-					if (otherreads.is_open())
+					if (acceptedreads.is_open())
 					{
-						char* end_read = NULL;
-						if (file_s > 0)
-						{
-							// first read (of split-read + paired-read)
-							if (i == 1)
-							{
-								end_read = reads[3];
-								while (*end_read != '\0') end_read++;
-							}
-							// all reads except the last one
-							else if ((i + 4) < strs) end_read = reads[i + 3];
-							// last read
-							else end_read = finalnt;
-						}
-						else
-						{
-							// all reads except the last one
-							if ((i + 4) < strs) end_read = reads[i + 3];
-							// last read
-							else end_read = finalnt;
-						}
-
-						while (begin_read != end_read) otherreads << (char)*begin_read++;
-						if (*end_read == '\n') otherreads << "\n";
+						for (Read read: reads)
+							acceptedreads << read.header << std::endl << read.sequence << std::endl;
 					}
 					else
 					{
-						fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", ptr_filetype_or, "\033[0m");
-						exit(EXIT_FAILURE);
-					}
-				}//~the read was accepted
-			//}//~for all reads
-		}//~if (pairedin_gv || pairedout_gv)    
-		 // output reads single
-		else
-		{
-			// loop through every read, output non-accepted reads
-			for (uint64_t i = 1; i < strs; i += 2)
-			{
-				char* begin_read = reads[i - 1];
-				// the read was accepted
-				if (!read_hits[i])
-				{
-					// accepted reads file output
-					if (otherreads.is_open())
-					{
-						char* end_read = NULL;
-						// split-read and paired-read exist at a different location in memory than the mmap
-						if (file_s > 0)
-						{
-							// first read (of split-read + paired-read)
-							if (i == 1) end_read = reads[2];
-							// second read (of split-read + paired-read)
-							else if (i == 3)
-							{
-								end_read = reads[3];
-								while (*end_read != '\0') end_read++;
-							}
-							// all reads except the last one
-							else if ((i + 2) < strs) end_read = reads[i + 1];
-							// last read
-							else end_read = finalnt;
-						}
-						// the first (and possibly only) file part, all reads are in mmap
-						else
-						{
-							if ((i + 2) < strs) end_read = reads[i + 1];
-							else end_read = finalnt;
-						}
-						while (begin_read != end_read) otherreads << (char)*begin_read++;
-						if (*end_read == '\n') otherreads << "\n";
-					}
-					else
-					{
-						fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", ptr_filetype_or, "\033[0m");
+						fprintf(stderr, "  %sERROR%s: [Line %d: %s] file %s could not be opened for writing.\n\n",
+							"\033[0;31m", "\033[0m", __LINE__, __FILE__, acceptedstrings);
 						exit(EXIT_FAILURE);
 					}
 				}
-			}//~for all reads
+			}//~the read was accepted
+		}//~if paired-in or paired-out
+		else // regular or pair-ended reads don't need to go into the same file
+		{
+			// the read was accepted
+			if (reads[0].hit)
+			{
+				// output aligned read
+				if (opts.fastxout)
+				{
+					if (acceptedreads.is_open())
+					{
+						acceptedreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
+					}
+					else
+					{
+						fprintf(stderr, "  %sERROR%s: file %s (acceptedstrings) could not be "
+							"opened for writing.\n\n", "\033[0;31m", acceptedstrings, "\033[0m");
+						exit(EXIT_FAILURE);
+					}
+				}
+			} //~if read was accepted
+		}//~if not paired-in or paired-out
+		if (acceptedreads.is_open()) acceptedreads.close();
+		TIME(f);
+		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
+	}//~if ( ptr_filetype_ar != NULL )
+
+	 // output other reads
+	if ((opts.filetype_or.size() != 0) && opts.fastxout)
+	{
+		ss << "    Writing not-aligned FASTA/FASTQ ... "; std::cout << ss.str(); ss.str("");
+		TIME(s);
+		otherreads.open(opts.filetype_or, ios::app | ios::binary);
+		// pair-ended reads
+		if (opts.pairedin || opts.pairedout)
+		{
+			// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
+			if ((!reads[0].hit && !reads[1].hit) ||
+				((reads[0].hit ^ reads[1].hit) && opts.pairedout))
+			{
+				if (otherreads.is_open())
+				{
+					for (Read read : reads)
+						otherreads << read.header << std::endl << read.sequence << std::endl;
+				}
+				else
+				{
+					fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", opts.filetype_or.c_str(), "\033[0m");
+					exit(EXIT_FAILURE);
+				}
+			}//~the read was accepted
+		}//~if (pairedin_gv || pairedout_gv)
+		else // output reads single
+		{
+			// the read was accepted
+			if (!reads[0].hit)
+			{
+				// accepted reads file output
+				if (otherreads.is_open())
+				{
+					acceptedreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				}
+				else
+				{
+					fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", opts.filetype_or.c_str(), "\033[0m");
+					exit(EXIT_FAILURE);
+				}
+			}
 		}/// if (pairedin_gv || pairedout_gv)
 		if (otherreads.is_open()) otherreads.close();
 		TIME(f);
-		eprintf(" done [%.2f sec]\n", (f - s));
-	}//~if ( ptr_filetype_or != NULL )  
-	return;
-#endif
+		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
+	}//~if ( opts.fastxout )  
 } // ~Output::report_fasta
 
-void Output::report_denovo(Runopts & opts, Read & read)
+void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 {
-#if 0
-	// for timing different processes
-	double s, f;
+	std::stringstream ss;
+	double s, f; // for timing
 
 	// output reads with < id% alignment (passing E-value) for de novo clustering
-	if (denovo_otus_file != NULL)
+	if (denovo_otus_file.size() != 0)
 	{
-		eprintf("    Writing de novo FASTA/FASTQ ... ");
+		ss << "    Writing de novo FASTA/FASTQ ... "; std::cout << ss.str(); ss.str("");
 		TIME(s);
 
 		denovoreads.open(denovo_otus_file, ios::app | ios::binary);
@@ -766,109 +645,68 @@ void Output::report_denovo(Runopts & opts, Read & read)
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
 		{
-			// loop through every read, output accepted reads
-			for (uint64_t i = 1; i < strs; i += 4)
+			// either both reads are accepted, or one is accepted and pairedin_gv
+			if (reads[0].hit_denovo || reads[1].hit_denovo && opts.pairedin)
 			{
-				char* begin_read = reads[i - 1];
-
-				// either both reads are accepted, or one is accepted and pairedin_gv
-				if ((read_hits_denovo[i] || read_hits_denovo[i + 1]) && opts.pairedin)
+				// output aligned read
+				if (denovoreads.is_open())
 				{
-					char* end_read = NULL;
-					if (file_s > 0)
-					{
-						// first read (of split-read + paired-read)
-						if (i == 1)
-						{
-							end_read = reads[3];
-							while (*end_read != '\0') end_read++;
-						}
-						// all reads except the last one
-						else if ((i + 4) < strs) end_read = reads[i + 3];
-						// last read
-						else end_read = finalnt;
-					}
-					else
-					{
-						// all reads except the last one
-						if ((i + 4) < strs) end_read = reads[i + 3];
-						// last read
-						else end_read = finalnt;
-					}
-
-					// output aligned read
-					if (denovoreads.is_open())
-					{
-						while (begin_read != end_read) denovoreads << (char)*begin_read++;
-						if (*end_read == '\n') denovoreads << "\n";
-					}
-					else
-					{
-						fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file, "\033[0m");
-						exit(EXIT_FAILURE);
-					}
-				}//~the read was accepted
-			}//~for all reads
+					for (Read read : reads)
+						denovoreads << read.header << std::endl << read.sequence << std::endl;
+				}
+				else
+				{
+					fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file.c_str(), "\033[0m");
+					exit(EXIT_FAILURE);
+				}
+			}//~the read was accepted
 		}//~if paired-in or paired-out
-		 /// regular or pair-ended reads don't need to go into the same file
-		else
+		else // regular or pair-ended reads don't need to go into the same file
 		{
-			/// loop through every read, output accepted reads
-			for (uint64_t i = 1; i < strs; i += 2)
+			// the read was accepted
+			if (reads[0].hit_denovo)
 			{
-				char* begin_read = reads[i - 1];
-
-				/// the read was accepted
-				if (read_hits_denovo[i])
+				// output aligned read
+				if (denovoreads.is_open())
 				{
-					char* end_read = NULL;
-					/// split-read and paired-read exist at a different location in memory than the mmap
-					if (file_s > 0)
-					{
-						/// first read (of split-read + paired-read)
-						if (i == 1) end_read = reads[2];
-						/// second read (of split-read + paired-read)
-						else if (i == 3)
-						{
-							end_read = reads[3];
-							while (*end_read != '\0') end_read++;
-						}
-						/// all reads except the last one
-						else if ((i + 2) < strs) end_read = reads[i + 1];
-						/// last read
-						else end_read = finalnt;
-					}
-					/// the first (and possibly only) file part, all reads are in mmap
-					else
-					{
-						if ((i + 2) < strs) end_read = reads[i + 1];
-						else end_read = finalnt;
-					}
-
-					/// output aligned read
-					if (denovoreads.is_open())
-					{
-						while (begin_read != end_read) denovoreads << (char)*begin_read++;
-						if (*end_read == '\n') denovoreads << "\n";
-					}
-					else
-					{
-						fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file, "\033[0m");
-						exit(EXIT_FAILURE);
-					}
-				} //~if read was accepted
-			}//~for all reads
+					denovoreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				}
+				else
+				{
+					fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file.c_str(), "\033[0m");
+					exit(EXIT_FAILURE);
+				}
+			} //~if read was accepted
 		}//~if not paired-in or paired-out
 
 		if (denovoreads.is_open()) denovoreads.close();
 
 		TIME(f);
-		eprintf(" done [%.2f sec]\n", (f - s));
+		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
 	}//~if ( ptr_filetype_ar != NULL )
-#endif
 } // ~Output::report_denovo
 
-void Output::report_biom(){}
+void Output::report_biom(){
+
+	biomout.open(biomfile, ios::in);
+
+	if (biomout.is_open())
+	{
+		biomout << "\"id:\"null,";
+		biomout << "\"format\": \"Biological Observation Matrix 1.0.0\",";
+		biomout << "\"format_url\": \"http://biom-format.org/documentation/format_versions/biom-1.0.html\"";
+		biomout << "\"type\": \"OTU table\",";
+		biomout << "\"generated_by\": \"SortMeRNA v2.0\",";
+		biomout << "\"date\": \"\",";
+		biomout << "\"rows\":[";
+		biomout << "\"matrix_type\": \"sparse\",";
+		biomout << "\"matrix_element_type\": \"int\",";
+		biomout << "\"shape\":";
+		biomout << "\"data\":";
+
+		biomout.close();
+	}
+} // ~Output::report_biom
 
 /**
  * open streams for writing
