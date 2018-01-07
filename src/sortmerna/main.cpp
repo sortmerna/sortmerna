@@ -53,6 +53,8 @@
 // 3rd party
 #include "zlib.h"
 
+// forward
+void runPostProcessor(Runopts & opts);
 
 #if defined(_WIN32)
 const char DELIM = ';';
@@ -1563,11 +1565,21 @@ int main(int argc, char** argv)
 {
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
+
 	switch (opts.alirep)
 	{
-	case Runopts::ALIGN_REPORT::align: paralleltraversal(opts); break;
-	case Runopts::ALIGN_REPORT::report: generateReports(opts); break;
-	case Runopts::ALIGN_REPORT::both: paralleltraversal(opts); generateReports(opts); break;
+	case Runopts::ALIGN_REPORT::align: 
+		paralleltraversal(opts);
+		runPostProcessor(opts);
+		break;
+	case Runopts::ALIGN_REPORT::report: 
+		generateReports(opts); 
+		break;
+	case Runopts::ALIGN_REPORT::both: 
+		paralleltraversal(opts);
+		runPostProcessor(opts);
+		generateReports(opts); 
+		break;
 	}
 
 	return 0;

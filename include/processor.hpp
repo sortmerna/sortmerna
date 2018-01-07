@@ -1,15 +1,13 @@
 #pragma once
 /**
-* FILE: processor.hpp
-* Created: Nov 06, 2017 Mon
-*/
+ * FILE: processor.hpp
+ * Created: Nov 06, 2017 Mon
+ *
+ * Callable objects designed to be run in threads
+ */
 #include <string>
+#include <vector>
 #include <functional>
-
-//#include "processor.hpp"
-//#include "readstats.hpp"
-//#include "refstats.hpp"
-//#include "output.hpp"
 
 // forward
 class Read;
@@ -21,6 +19,9 @@ class Output;
 struct Readstats;
 class Refstats;
 
+/* 
+ * performs alignment
+ */
 class Processor {
 public:
 	Processor(
@@ -65,28 +66,59 @@ protected:
 	Output & output; 
 	Readstats & readstats; 
 	Refstats & refstats;
-};
+}; // ~class Processor
 
+/* performs post-alignment tasks like calculating statistics */
+class PostProcessor {
+public:
+	PostProcessor(
+		std::string id,
+		ReadsQueue & readQueue,
+		Runopts & opts,
+		References & refs,
+		Readstats & readstats,
+		void(*callback)(Read & read, Readstats & readstats, References & refs, Runopts & opts)
+	) :
+		id(id),
+		readQueue(readQueue),
+		opts(opts),
+		refs(refs),
+		readstats(readstats),
+		callback(callback)
+	{}
+
+	void operator()() { run(); }
+
+protected:
+	void run();
+	void(*callback)(Read & read, Readstats & readstats, References & refs, Runopts & opts);
+
+protected:
+	std::string id;
+	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
+	ReadsQueue & readQueue;
+	Runopts & opts;
+	References & refs;
+	Readstats & readstats;
+}; // ~class PostProcessor
+
+/* generates output after alignment and post-processing are done */
 class ReportProcessor {
 public:
 	ReportProcessor(
 		std::string id,
 		ReadsQueue & readQueue,
-		Runopts & opts, 
-		Index & index, 
+		Runopts & opts,
 		References & refs, 
 		Output & output, 
-		Readstats & readstats, 
 		Refstats & refstats,
-		void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)
+		void(*callback)(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output)
 	) :
 		id(id),
 		readQueue(readQueue),
 		opts(opts),
-		index(index),
 		refs(refs),
 		output(output),
-		readstats(readstats),
 		refstats(refstats),
 		callback(callback)
 	{}
@@ -96,16 +128,14 @@ public:
 	//using Processor::process;
 protected:
 	void run();
-	void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read);
+	void(*callback)(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output);
 
 protected:
 	std::string id;
-	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
 	ReadsQueue & readQueue;
+	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
 	Runopts & opts; 
-	Index & index;
 	References & refs;
-	Output & output;
-	Readstats & readstats;
 	Refstats & refstats;
-};
+	Output & output;
+}; // ~class ReportProcessor

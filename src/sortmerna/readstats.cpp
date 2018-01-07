@@ -21,48 +21,8 @@
 
 // SMR
 #include "readstats.hpp"
+#include "kvdb.hpp"
 
-
-/**
- * TODO: get rid of kseq, Use stream instead of file. Use Reader for reading.
- *
- * prototype: paralleltraversal.cpp:compute_read_stats
- */
-void Readstats::calculate2(Runopts & opts)
-{
-#ifdef HAVE_LIBZ
-	// Count total number of reads and their combined length
-	// (if ZLIB is supported)
-	gzFile fp = gzopen(opts.readsfile.c_str(), "r"); // inputreads
-	kseq_t *seq = kseq_init(fp);
-#else
-	// Count total number of reads and their combined length
-	// (if ZLIB is not supported)
-	FILE* fp = fopen(inputreads, "rb");
-	kseq_t *seq = kseq_init(fileno(fp));
-#endif
-	int l;
-	while ((l = kseq_read(seq)) >= 0) {
-		full_read_main += seq->seq.l;
-		number_total_read++;
-		// compute size of all reads to store in memory
-		// + 7 (4 possible new lines, 2 symbols > or @ and +, space for comment)
-		if (!opts.map_size_set)
-			full_file_size += (seq->name.l + seq->comment.l + seq->seq.l + seq->qual.l + 7);
-	}
-	if (l == -2)
-	{
-		fprintf(stderr, "  %sERROR%s: Line %d: %s could not read reads file - %s\n\n",
-			startColor, endColor, __LINE__, __FILE__, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	kseq_destroy(seq);
-#ifdef HAVE_LIBZ
-	gzclose(fp);
-#else
-	fclose(fp);
-#endif
-} // ~Readstats::calculate
 
 void Readstats::calculate()
 {
@@ -161,4 +121,68 @@ void Readstats::calcSuffix()
 		suffix.assign("fasta");
 	else
 		suffix.assign("fastq");
+}
+
+std::string Readstats::toString()
+{
+	std::string buf;
+	std::copy_n(static_cast<char*>(static_cast<void*>(&min_read_len)), sizeof(min_read_len), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&max_read_len)), sizeof(max_read_len), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_mapped)), sizeof(total_reads_mapped), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_mapped_cov)), sizeof(total_reads_mapped_cov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_denovo_clustering)), sizeof(total_reads_denovo_clustering), std::back_inserter(buf));
+
+	// vector reads_matched_per_db
+	size_t reads_matched_per_db_size = reads_matched_per_db.size();
+	std::copy_n(static_cast<char*>(static_cast<void*>(&reads_matched_per_db_size)), sizeof(reads_matched_per_db_size), std::back_inserter(buf));
+	for (auto entry: reads_matched_per_db)
+		std::copy_n(static_cast<char*>(static_cast<void*>(&entry)), sizeof(entry), std::back_inserter(buf));
+
+	return buf;
+}
+
+bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
+{
+	bool ret = false;
+	std::string bstr = kvdb.get("Readstats");
+	if (bstr.size() == 0) { return ret; }
+	size_t offset = 0;
+	std::stringstream ss;
+
+	std::memcpy(static_cast<void*>(&min_read_len), bstr.data() + offset, sizeof(min_read_len));
+	offset += sizeof(min_read_len);
+
+	std::memcpy(static_cast<void*>(&max_read_len), bstr.data() + offset, sizeof(max_read_len));
+	offset += sizeof(max_read_len);
+
+	std::memcpy(static_cast<void*>(&total_reads_mapped), bstr.data() + offset, sizeof(total_reads_mapped));
+	offset += sizeof(total_reads_mapped);
+
+	std::memcpy(static_cast<void*>(&total_reads_mapped_cov), bstr.data() + offset, sizeof(total_reads_mapped_cov));
+	offset += sizeof(total_reads_mapped_cov);
+
+	std::memcpy(static_cast<void*>(&total_reads_denovo_clustering), bstr.data() + offset, sizeof(total_reads_denovo_clustering));
+	offset += sizeof(total_reads_denovo_clustering);
+
+	size_t reads_matched_per_db_size = 0;
+	std::memcpy(static_cast<void*>(&reads_matched_per_db_size), bstr.data() + offset, sizeof(reads_matched_per_db_size));
+	offset += sizeof(reads_matched_per_db_size);
+	if (reads_matched_per_db_size == reads_matched_per_db.size()) 
+	{
+		for (std::vector<uint64_t>::iterator it = reads_matched_per_db.begin(); it != reads_matched_per_db.end(); ++it)
+		{
+			std::memcpy(static_cast<void*>(&*it), bstr.data() + offset, sizeof(uint64_t));
+			offset += sizeof(uint64_t);
+		}
+		ret = true;
+	}
+	else
+	{
+		ss << "Readstats::restoreFromDb: reads_matched_per_db.size stored in DB: " << reads_matched_per_db_size 
+			<< " doesn't match the number of reference files: "	<< reads_matched_per_db.size() << std::endl;
+		std::cout << ss.str(); ss.str("");
+		ret = false;
+	}
+
+	return ret;
 }

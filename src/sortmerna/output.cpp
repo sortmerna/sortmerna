@@ -20,7 +20,7 @@
 
 
 // forward
-void writeAlignmentJob(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read); // callback
+void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output); // callback
 
 void Output::init(Runopts & opts, Readstats & readstats)
 {
@@ -549,7 +549,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 					else
 					{
 						fprintf(stderr, "  %sERROR%s: [Line %d: %s] file %s could not be opened for writing.\n\n",
-							"\033[0;31m", "\033[0m", __LINE__, __FILE__, acceptedstrings);
+							"\033[0;31m", "\033[0m", __LINE__, __FILE__, acceptedstrings.c_str());
 						exit(EXIT_FAILURE);
 					}
 				}
@@ -570,7 +570,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 					else
 					{
 						fprintf(stderr, "  %sERROR%s: file %s (acceptedstrings) could not be "
-							"opened for writing.\n\n", "\033[0;31m", acceptedstrings, "\033[0m");
+							"opened for writing.\n\n", "\033[0;31m", acceptedstrings.c_str(), "\033[0m");
 						exit(EXIT_FAILURE);
 					}
 				}
@@ -622,7 +622,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 					exit(EXIT_FAILURE);
 				}
 			}
-		}/// if (pairedin_gv || pairedout_gv)
+		} // ~ if (pairedin_gv || pairedout_gv)
 		if (otherreads.is_open()) otherreads.close();
 		TIME(f);
 		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
@@ -755,7 +755,7 @@ void generateReports(Runopts & opts)
 	output.openfiles(opts);
 	if (opts.samout) output.writeSamHeader(opts);
 
-	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
+	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index
@@ -778,7 +778,7 @@ void generateReports(Runopts & opts)
 			// add processor jobs
 			for (int i = 0; i < N_PROC_THREADS; ++i)
 			{
-				tpool.addJob(ReportProcessor("proc_" + std::to_string(i), readQueue, opts, index, refs, output, readstats, refstats, writeAlignmentJob));
+				tpool.addJob(ReportProcessor("proc_" + std::to_string(i), readQueue, opts, refs, output, refstats, reportsJob));
 			}
 			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part
@@ -790,265 +790,3 @@ void generateReports(Runopts & opts)
 	output.closefiles();
 	std::cout << "Done generateReports\n";
 } // ~generateReports
-
-// called on each read
-void writeAlignmentJob(
-	Runopts & opts, 
-	Index & index, 
-	References & refs, 
-	Output & output, 
-	Readstats & readstats, 
-	Refstats & refstats, 
-	Read & read
-)
-{
-	// TODO: remove this part. [jenya's message of 20171121 8:47]
-	//map<uint64_t, alignment_struct >::iterator alignment = read_hits_align_info.find(readn); // 
-	// this read does not have any alignment
-	//if (alignment == read_hits_align_info.end())
-	//if (read.hits_align_info.alignv.size() == 0)
-	//{
-	// (output NULL alignment only once)
-	//	if ((index.index_num == 0) && (index.part == 0))
-	//	{
-	// do not output this read for de novo clustering
-	// (it did not pass the E-value threshold)
-	//		if (de_novo_otu_gv && read.hit_denovo) read.hit_denovo != read.hit_denovo; // flip read_hits_denovo[readn]
-	// output null string for read alignment
-	//		if (print_all_reads_gv)
-	//		{
-	//			s_align* null_alignment = NULL;
-	//			if (blastout_gv && blast_tabular)
-	//			{
-	//				report_blast(
-	//					output.acceptedblast, // blast output file
-	//					null_alignment, // SW alignment cigar
-	//					read.header.c_str(), //read name
-	//					0, // read sequence (in integer format)
-	//					0, // read quality
-	//					0, // reference name
-	//					0, // reference sequence
-	//					0, // e-value score
-	//					0, // read length (to compute the masked regions)
-	//					0, // bitscore
-	//					0, // forward or reverse strand
-	//					0, // %id
-	//					0, // %query coverage
-	//					0, // number of mismatches
-	//					0 // number of gaps
-	//				);
-	//			}
-	//			if (samout_gv)
-	//			{
-	//				report_sam(
-	//					output.acceptedsam, // sam output file
-	//					null_alignment, // SW alignment cigar
-	//					read.header.c_str(), // read name
-	//					0, // read sequence (in integer format)
-	//					0, // read quality
-	//					0, // reference name
-	//					0, // reference sequence
-	//					0, // read length (to compute the masked regions)
-	//					0, // forward or reverse strand
-	//					0 // edit distance
-	//				);
-	//			}
-	//		}
-	//	}
-	// go to next read
-	//continue;
-	//	return;
-	//} // ~ if read has no alignment information
-
-	// get all alignments for this read
-	//s_align* ptr_alignment = alignment->second.ptr; // &read.hits_align_info.alignv[0];
-	//if (ptr_alignment == NULL)
-	//{
-	//	fprintf(stderr, "  ERROR: s_align* ptr_alignment == NULL, this should not be possible.\n");
-	//	exit(EXIT_FAILURE);
-	//}
-
-	// OTU-map: index of alignment holding maximum SW score
-	uint32_t index_max_score = read.hits_align_info.max_index;
-	// loop through all of the best alignments for this read
-	//for (uint32_t p = 0; p < alignment->second.size; p++)
-	for (uint32_t p = 0; p < read.hits_align_info.alignv.size(); ++p)
-	{
-		// continue loop if the reference sequence in this alignment
-		// belongs to the database section currently loaded into RAM
-		if ((read.hits_align_info.alignv[p].index_num == index.index_num) && (read.hits_align_info.alignv[p].part == index.part))
-		{
-			// format read & get read length
-			//char myread[READLEN];
-			uint32_t readlen = read.hits_align_info.alignv[p].readlen;
-			// format forward read from char to int
-			//if (read.hits_align_info.alignv[p].strand)
-			//{
-			//	format_forward(reads[readn], &myread[0], filesig); // read.isequence
-			//}
-			// format reverse-complement read from char to int
-			//else
-			//{
-			//	char* end_read = NULL;
-			// FASTA
-			//	if (filesig == '>')
-			//	{
-			// if split-read (for file_s > 0)
-			// note: the split-read contains two reads (a pair, in case reads are paired) that
-			//   are located at another address space than the contiguous memory mapped
-			//   section of reads
-			//		if ((readn < 4) && (file_s > 0))
-			//		{
-			//			end_read = reads[readn];
-			//			while (*end_read != '\0') end_read++;
-			//			if (*end_read == '\0') end_read--; //account for '\0'
-			//			if (*end_read == '\n' || *end_read == '\r') end_read--; //account for '\n'
-			//		}
-			// last read in the partial file section
-			//		else if (readn >= (strs - 2))
-			//		{
-			//			end_read = reads[readn];
-			// if processing last file section, the final read will end with '\0'
-			//			if (file_s == file_sections - 1)
-			//			{
-			//				while (*end_read++ != '\0');
-			// back-track 3 nucleotides (\n\0_)
-			//				if (*(end_read - 2) == '\n' || *(end_read - 2) == '\r') end_read--;
-			// back-track 2 nucleotides (\0_)
-			//				end_read -= 2;
-			//			}
-			// if processing a file section > 0 and < last file section, the final read will end with '>' (beginning of split-read)
-			//			else
-			//			{
-			//				while (*end_read++ != '>');
-			// back-track 3 nucleotides (\n>_)
-			//				end_read -= 3;
-			//			}
-			//		}
-			// all other reads
-			//		else end_read = reads[readn + 1] - 2;
-			//	}
-			// FASTQ
-			//	else end_read = reads[readn] + readlen - 1;
-			//	format_rev(reads[readn], end_read, &myread[0], filesig);
-			////~reverse-complement read
-
-			// get the edit distance between reference and read
-			char to_char[5] = { 'A','C','G','T','N' };
-			uint32_t id = 0;
-			uint32_t mismatches = 0;
-			uint32_t gaps = 0;
-
-			uint32_t ref_seq = read.hits_align_info.alignv[p].ref_seq; // ptr_alignment->ref_seq;
-																	   //char* ref_seq_ptr = read.hits_align_info.alignv[p].ref_seq[0]; // reference_seq[(2 * ref_seq) + 1]
-																	   //char* read_seq_ptr = myread;
-			int32_t qb = read.hits_align_info.alignv[p].ref_begin1; //ptr_alignment->ref_begin1;
-			int32_t pb = read.hits_align_info.alignv[p].read_begin1; //->read_begin1;
-
-			read.calcMismatchGapId(refs, p, mismatches, gaps, id);
-
-			//int32_t align_len = abs(ptr_alignment->read_end1 + 1 - ptr_alignment->read_begin1);
-			int32_t align_len = abs(read.hits_align_info.alignv[p].read_end1 + 1 - read.hits_align_info.alignv[p].read_begin1);
-			int32_t total_pos = mismatches + gaps + id;
-			stringstream ss;
-			ss.precision(3);
-			ss << (double)id / total_pos << ' ' << (double)align_len / read.hits_align_info.alignv[p].readlen;
-			double align_id_round = 0.0;
-			double align_cov_round = 0.0;
-			ss >> align_id_round >> align_cov_round;
-
-			// alignment with the highest SW score passed
-			// %id and %coverage thresholds
-			if ((p == index_max_score) &&
-				(align_id_round >= opts.align_id) &&
-				(align_cov_round >= opts.align_cov))
-			{
-				// increment number of reads passing identity
-				// and coverage threshold
-				readstats.total_reads_mapped_cov++;
-
-				// do not output read for de novo OTU construction
-				// (it passed the %id/coverage thresholds)
-				if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
-
-				// fill OTU map with highest-scoring alignment for the read
-				if (opts.otumapout)
-				{
-					// reference sequence identifier for mapped read
-					std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
-					string ref_seq_str = refhead.substr(0, refhead.find(' '));
-
-					// read identifier
-					string read_seq_str = read.header.substr(0, read.header.find(' '));
-					readstats.otu_map[ref_seq_str].push_back(read_seq_str);
-				}
-			}
-
-			// output alignment to SAM or Blast-like formats
-			//if (samout_gv || blastout_gv)
-			//{
-				// quality for FASTQ
-				//char* read_qual = NULL;
-				//if (read.format == Format::FASTA)
-				//{
-				// forward
-				//if (ptr_alignment->strand)
-				//	if (read.hits_align_info.alignv[p].strand)
-				//	{
-				// if second part of split read or last read in file
-				//		if (((readn == 3) && (file_s > 0)) || (readn >= (strs - 2)))
-				//		{
-				//			read_qual = reads[readn];
-				//			int8_t numnewlines = 0;
-				//			while (numnewlines < 2) { if (*read_qual++ == '\n' || *read_qual++ == '\r') numnewlines++; }
-				//		}
-				//		else read_qual = reads[readn + 1] - read.hits_align_info.alignv[p].readlen - 1;
-				//	}
-				// reverse-complement
-				//	else
-				//	{
-				// if second part of split read or last read in file
-				//		if (((readn == 3) && (file_s > 0)) || (readn >= (strs - 2)))
-				//		{
-				//			read_qual = reads[readn];
-
-				// last file section
-				//			if (file_s == file_sections - 1)
-				//			{
-				//				while (*read_qual != '\0') read_qual++;
-				//				if (*(read_qual - 3) == '\n' || *(read_qual - 3) == '\r') read_qual--;
-				// account for '\n\0'
-				//				read_qual -= 2;
-				//			}
-				// file section > 0 and < last file section
-				//			else
-				//			{
-				//				while (read_qual != finalnt) read_qual++;
-				//				read_qual--;
-				//			}
-				//		}
-				//		else read_qual = reads[readn + 1] - 2;
-				//	}
-				//}//~if filesig == '@'
-
-				if (opts.blastout)
-				{
-					uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[index.index_num].first)
-						* (read.hits_align_info.alignv[p].score1) - log(refstats.gumbel[index.index_num].second)) / (float)log(2));
-
-					double evalue_score = (double)(refstats.gumbel[index.index_num].second) * refstats.full_ref[index.index_num]
-						* refstats.full_read[index.index_num]
-						* std::exp(-(refstats.gumbel[index.index_num].first) * read.hits_align_info.alignv[p].score1);
-
-					output.report_blast(opts, refstats, refs, read);
-				}
-
-				if (opts.samout)
-				{
-					output.report_sam(opts, refs, read);
-				}
-			//}//~if (samout_gv || blastout_gv)
-		}//~if alignment at current database and index part loaded in RAM
-		 //ptr_alignment++;
-	}//~for all best alignments
-} // ~writeAlignmentJob

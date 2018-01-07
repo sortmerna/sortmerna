@@ -66,9 +66,6 @@
 #define O_SMR_READ_BIN O_RDONLY
 #endif
 
-// forward
-void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & output);
-
  // see "heuristic 1" below
  //#define HEURISTIC1_OFF
 
@@ -453,54 +450,6 @@ void paralleltraversal(Runopts & opts)
 			writeQueue.reset(opts.num_proc_threads);
 		} // ~for(idx_part)
 	} // ~for(index_num)
-
-	writeLog(opts, index, readstats, output);
+	// write readstats to store
+	kvdb.put("Readstats", readstats.toString());
 } // ~paralleltraversal
-
-void writeLog(Runopts & opts, Index & index, Readstats & readstats, Output & output)
-{
-	//FILE* bilan = fopen(output.logoutfile, "ab"); // output::logoutfile
-	output.logstream.open(output.logfile, std::ofstream::binary | std::ofstream::app);
-
-	// output total number of reads
-	output.logstream << " Results:\n";
-	output.logstream << "    Total reads = " << readstats.number_total_read << "\n";
-	if (opts.de_novo_otu)
-	{
-		// total_reads_denovo_clustering = sum of all reads that have read::hit_denovo == true
-		// either query DB or store in Readstats::total_reads_denovo_clustering
-		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
-		//fprintf(bilan, "    Total reads for de novo clustering = %llu\n", total_reads_denovo_clustering);
-	}
-	// output total non-rrna + rrna reads
-	output.logstream << std::setprecision(2) << std::fixed;
-	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped
-		<< " (" << (float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read) * 100 << ")\n";
-	output.logstream << "    Total reads failing E-value threshold = "
-		<< readstats.number_total_read - readstats.total_reads_mapped
-		<< " ("	<< (1 - ((float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read))) * 100 << ")\n";
-	output.logstream << "    Minimum read length = " << readstats.min_read_len << "\n";
-	output.logstream << "    Maximum read length = " << readstats.max_read_len << "\n";
-	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
-
-	output.logstream << " By database:\n";
-
-	// output stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
-		output.logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
-			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100 << "\n";
-		//fprintf(bilan, "    %s\t\t%.2f%%\n", (char*)(opts.indexfiles[index_num].first).c_str(), 
-		//	(float)((float)reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100);
-	}
-
-	if (opts.otumapout)
-	{
-		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov << "\n";
-		output.logstream << " Total OTUs = " << readstats.otu_total << "\n"; // otu_map.size()
-	}
-	time_t q = time(0);
-	struct tm * now = localtime(&q);
-	output.logstream << "\n " << asctime(now) << "\n";
-	output.logstream.close();
-} // ~writeLog

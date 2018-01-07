@@ -14,6 +14,9 @@
 #include "common.hpp"
 #include "options.hpp"
 
+// forward
+class KeyValueDatabase;
+
 struct Readstats {
 	Runopts & opts;
 
@@ -34,8 +37,10 @@ struct Readstats {
 	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
 	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering. Synchronize? - only incremented by threads.
 
-	int otu_total; // total number of OTUs. TODO: Synchronize?, 
-	std::map<string, vector<string>> otu_map; // TODO: may be find a better place for this.
+	// CLustering of reads around references by similarity i.e. 
+	// {ref: [read,read,...], ref: [read,read...], ...}
+	// calculated after alignment is done on all reads
+	std::map<string, vector<string>> otu_map;
 
 	Readstats(Runopts & opts)
 		:
@@ -48,18 +53,18 @@ struct Readstats {
 		full_file_size(0),
 		full_read_main(0),
 		reads_matched_per_db(opts.indexfiles.size(), 0),
-		total_reads_denovo_clustering(0),
-		otu_total(0)
+		total_reads_denovo_clustering(0)
 	{
 		calcSuffix();
 		opts.exit_early = check_file_format();
-		calculate();
+		calculate(); // number_total_read only
 	}
 
 	~Readstats() {}
 
 	void calculate(); // calculate statistics from readsfile
-	void calculate2(Runopts & opts); // old version - copy of 'compute_read_stats'
 	bool check_file_format();
 	void calcSuffix();
+	std::string toString();
+	bool restoreFromDb(KeyValueDatabase & kvdb);
 }; // ~struct Readstats
