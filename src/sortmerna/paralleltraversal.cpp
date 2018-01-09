@@ -218,19 +218,21 @@ void parallelTraversalJob(
 			+ windowshift) / windowshift; // number of k-mer windows fit along the sequence
 
 		uint32_t win_index = 0; // index of the window's first char in the sequence e.g. 0, 18, 36 if window.length = 18
-		// iterate over windows of the template string
+		// iterate the windows
 		for (uint32_t win_num = 0; win_num < numwin; win_num++)
 		{
 			// skip position, seed at this position has already been searched for in a previous Pass
-			if (read_index_hits[win_index]) goto check_score;
+			//if (read_index_hits[win_index]) goto check_score;
 			// search position, set search bit to true
-			else read_index_hits[win_index].flip();
+			//else read_index_hits[win_index].flip();
+			if (!read_index_hits[win_index])
 			{
+				read_index_hits[win_index].flip();
 				// this flag it set to true if a match is found during
 				// subsearch 1(a), to skip subsearch 1(b)
 				bool accept_zero_kmer = false;
 				// ids for k-mers that hit the database
-				vector< id_win > id_hits; // TODO: why not to add directly to 'id_win_hits'?
+				vector<id_win> id_hits; // TODO: why not to add directly to 'id_win_hits'? - because id_win_hits may contain hits from different index parts.
 				vbitwindowsf.resize(bit_vector_size);
 				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
 
@@ -248,8 +250,8 @@ void parallelTraversalJob(
 				{
 					(keyf <<= 2) |= (uint32_t)(*keyf_ptr);
 					++keyf_ptr;
-					//(keyf <<= 2) |= (uint32_t)*keyf_ptr++; // TODO: How did this work? And it did!
 				}
+
 				// do traversal if the exact half window exists in the burst trie
 				if ((index.lookup_tbl[keyf].count > minoccur) && (index.lookup_tbl[keyf].trie_F != NULL))
 				{
@@ -278,9 +280,9 @@ void parallelTraversalJob(
 						refstats.partialwin[index.index_num],
 						opts
 					);
-				}//~if exact half window exists in the burst trie
+				} //~if exact half window exists in the burst trie
 
-					// only search if an exact match has not been found
+				// only search if an exact match has not been found
 				if (!accept_zero_kmer)
 				{
 					vbitwindowsr.resize(bit_vector_size);
@@ -330,7 +332,7 @@ void parallelTraversalJob(
 					}//~if exact half window exists in the reverse burst trie                    
 				}//~if (!accept_zero_kmer)
 
-					// associate the ids with the read window number
+				// associate the ids with the read window number
 				if (!id_hits.empty())
 				{
 					for (uint32_t i = 0; i < id_hits.size(); i++)

@@ -135,11 +135,12 @@ std::string Read::toString()
 	std::copy_n(static_cast<char*>(static_cast<void*>(&readhit)), sizeof(readhit), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&best)), sizeof(best), std::back_inserter(buf));
 
-	// id_win_hits vector
+	// id_win_hits vector - TODO: remove?
+#if 0
 	size_t id_win_hits_size = id_win_hits.size();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&id_win_hits_size)), sizeof(id_win_hits_size), std::back_inserter(buf)); // add vector size
 	for (auto it = id_win_hits.begin(); it != id_win_hits.end(); ++it) buf += it->toString(); // add values
-
+#endif
 	// hits_align_info
 	std::string hits_align_info_str = hits_align_info.toString();
 	size_t hits_align_info_size = hits_align_info_str.length();
@@ -183,7 +184,8 @@ bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&best), bstr.data() + offset, sizeof(best));
 	offset += sizeof(best);
 
-	// std::vector<id_win> id_win_hits
+	// std::vector<id_win> id_win_hits TODO: remove?
+#if 0
 	size_t id_win_hits_size = 0;
 	std::memcpy(static_cast<void*>(&id_win_hits_size), bstr.data() + offset, sizeof(id_win_hits_size));
 	offset += sizeof(id_win_hits_size);
@@ -197,7 +199,7 @@ bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 		offset += (sizeof(id_win::id) + sizeof(id_win::win));
 		id_win_str.clear();
 	}
-
+#endif
 	// alignment_struct2 hits_align_info
 	size_t hits_align_info_size = 0;
 	std::memcpy(static_cast<void*>(&hits_align_info_size), bstr.data() + offset, sizeof(hits_align_info_size));
@@ -250,7 +252,6 @@ void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatc
 		{
 			for (uint32_t u = 0; u < length; ++u)
 			{
-				//if ((char)to_char[(int)refseq[qb]] != (char)to_char[(int)isequence[pb]]) ++mismatches;
 				if (refseq[qb] != isequence[pb]) ++mismatches;
 				else ++id;
 				++qb;

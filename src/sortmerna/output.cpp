@@ -161,238 +161,243 @@ void Output::report_blast
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 
+	// TODO: iterating all alignments for each reference part is an overhead. Alignments are pre-ordered, 
+	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
+	//       only that range.
 	// iterate all alignments of the read
 	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
 	{
-		uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
-			* (read.hits_align_info.alignv[i].score1) - log(refstats.gumbel[refs.num].second)) / (float)log(2));
-
-		//double evalue_score = (double)gumbel_K_index_num * full_ref_index_num * full_read_index_num
-		// * pow(EXP, (-gumbel_lambda_index_num * result->score1));
-		double evalue_score = (double)refstats.gumbel[refs.num].second 
-			* refstats.full_ref[refs.num]
-			* refstats.full_read[refs.num]
-			* std::exp(-refstats.gumbel[refs.num].first * read.hits_align_info.alignv[i].score1);
-
-		std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
-		std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
-
-		// Blast-like pairwise alignment (only for aligned reads)
-		if (opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
+		if (read.hits_align_info.alignv[i].index_num == refs.num 
+			&& read.hits_align_info.alignv[i].part == refs.part)
 		{
-			acceptedblast << "Sequence ID: ";
-			acceptedblast << ref_id; // print only start of the header till first space
-			acceptedblast << endl;
+			uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
+				* (read.hits_align_info.alignv[i].score1) - log(refstats.gumbel[refs.num].second)) / (float)log(2));
 
-			acceptedblast << "Query ID: ";
-			acceptedblast << read.getSeqId();
-			acceptedblast << endl;
+			double evalue_score = (double)refstats.gumbel[refs.num].second
+				* refstats.full_ref[refs.num]
+				* refstats.full_read[refs.num]
+				* std::exp(-refstats.gumbel[refs.num].first * read.hits_align_info.alignv[i].score1);
 
-			//fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
-			acceptedblast << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
-			acceptedblast.precision(3);
-			acceptedblast << "Expect: " << evalue_score << "\t";
+			std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
+			std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 
-			if (read.hits_align_info.alignv[i].strand) acceptedblast << "strand: +\n\n";
-			else acceptedblast << "strand: -\n\n";
-
-			if (read.hits_align_info.alignv[i].cigar.size() > 0)
+			// Blast-like pairwise alignment (only for aligned reads)
+			if (opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
 			{
-				uint32_t j, c = 0, left = 0, e = 0,
-					qb = read.hits_align_info.alignv[i].ref_begin1,
-					pb = read.hits_align_info.alignv[i].read_begin1; //mine
+				acceptedblast << "Sequence ID: ";
+				acceptedblast << ref_id; // print only start of the header till first space
+				acceptedblast << endl;
 
-				while (e < read.hits_align_info.alignv[i].cigar.size() || left > 0)
+				acceptedblast << "Query ID: ";
+				acceptedblast << read.getSeqId();
+				acceptedblast << endl;
+
+				//fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
+				acceptedblast << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
+				acceptedblast.precision(3);
+				acceptedblast << "Expect: " << evalue_score << "\t";
+
+				if (read.hits_align_info.alignv[i].strand) acceptedblast << "strand: +\n\n";
+				else acceptedblast << "strand: -\n\n";
+
+				if (read.hits_align_info.alignv[i].cigar.size() > 0)
 				{
-					int32_t count = 0;
-					int32_t q = qb;
-					int32_t p = pb;
-					acceptedblast << "Target: ";
-					acceptedblast.width(8);
-					acceptedblast << q + 1 << "    ";
-					// process CIGAR
-					for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+					uint32_t j, c = 0, left = 0, e = 0,
+						qb = read.hits_align_info.alignv[i].ref_begin1,
+						pb = read.hits_align_info.alignv[i].read_begin1; //mine
+
+					while (e < read.hits_align_info.alignv[i].cigar.size() || left > 0)
 					{
-						// 4 Low bits encode a Letter: M | D | S
-						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-						// 28 High bits encode the number of occurencies e.g. 34
-						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-						uint32_t l = (count == 0 && left > 0) ? left : length;
-						for (j = 0; j < l; ++j)
+						int32_t count = 0;
+						int32_t q = qb;
+						int32_t p = pb;
+						acceptedblast << "Target: ";
+						acceptedblast.width(8);
+						acceptedblast << q + 1 << "    ";
+						// process CIGAR
+						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 						{
-							if (letter == 1) acceptedblast << "-";
-							else
+							// 4 Low bits encode a Letter: M | D | S
+							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+							// 28 High bits encode the number of occurencies e.g. 34
+							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t l = (count == 0 && left > 0) ? left : length;
+							for (j = 0; j < l; ++j)
 							{
-								acceptedblast << to_char[(int)refseq[q]];
-								++q;
-							}
-							++count;
-							if (count == 60) goto step2;
-						}
-					}
-				step2:
-					acceptedblast << "    " << q << "\n";
-					acceptedblast.width(20);
-					acceptedblast << " ";
-					q = qb;
-					count = 0;
-					for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
-					{
-						//uint32_t letter = 0xf & *(a->cigar + c);
-						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-						uint32_t l = (count == 0 && left > 0) ? left : length;
-						for (j = 0; j < l; ++j)
-						{
-							if (letter == 0)
-							{
-								if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.sequence[p]]) acceptedblast << "|";
-								else acceptedblast << "*";
-								++q;
-								++p;
-							}
-							else
-							{
-								acceptedblast << " ";
-								if (letter == 1) ++p;
-								else ++q;
-							}
-							++count;
-							if (count == 60)
-							{
-								qb = q;
-								goto step3;
+								if (letter == 1) acceptedblast << "-";
+								else
+								{
+									acceptedblast << to_char[(int)refseq[q]];
+									++q;
+								}
+								++count;
+								if (count == 60) goto step2;
 							}
 						}
-					}
-				step3:
-					p = pb;
-					acceptedblast << "\nQuery: ";
-					acceptedblast.width(9);
-					acceptedblast << p + 1 << "    ";
-					count = 0;
-					for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
-					{
-						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-						uint32_t l = (count == 0 && left > 0) ? left : length;
-						for (j = 0; j < l; ++j)
+					step2:
+						acceptedblast << "    " << q << "\n";
+						acceptedblast.width(20);
+						acceptedblast << " ";
+						q = qb;
+						count = 0;
+						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 						{
-							if (letter == 2) acceptedblast << "-";
-							else
+							//uint32_t letter = 0xf & *(a->cigar + c);
+							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t l = (count == 0 && left > 0) ? left : length;
+							for (j = 0; j < l; ++j)
 							{
-								acceptedblast << (char)to_char[(int)read.sequence[p]];
-								++p;
-							}
-							++count;
-							if (count == 60)
-							{
-								pb = p;
-								left = l - j - 1;
-								e = (left == 0) ? (c + 1) : c;
-								goto end;
+								if (letter == 0)
+								{
+									if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.sequence[p]]) acceptedblast << "|";
+									else acceptedblast << "*";
+									++q;
+									++p;
+								}
+								else
+								{
+									acceptedblast << " ";
+									if (letter == 1) ++p;
+									else ++q;
+								}
+								++count;
+								if (count == 60)
+								{
+									qb = q;
+									goto step3;
+								}
 							}
 						}
+					step3:
+						p = pb;
+						acceptedblast << "\nQuery: ";
+						acceptedblast.width(9);
+						acceptedblast << p + 1 << "    ";
+						count = 0;
+						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+						{
+							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t l = (count == 0 && left > 0) ? left : length;
+							for (j = 0; j < l; ++j)
+							{
+								if (letter == 2) acceptedblast << "-";
+								else
+								{
+									acceptedblast << (char)to_char[(int)read.sequence[p]];
+									++p;
+								}
+								++count;
+								if (count == 60)
+								{
+									pb = p;
+									left = l - j - 1;
+									e = (left == 0) ? (c + 1) : c;
+									goto end;
+								}
+							}
+						}
+						e = c;
+						left = 0;
+					end:
+						acceptedblast << "    " << p << "\n\n";
 					}
-					e = c;
-					left = 0;
-				end:
-					acceptedblast << "    " << p << "\n\n";
 				}
 			}
-		}
-		// Blast tabular m8 + optional columns for CIGAR and query coverage
-		else if (opts.blastFormat == BlastFormat::TABULAR)
-		{
-			// (1) Query
-			acceptedblast << read.getSeqId(); // part of the header till first space
-
-			// print null alignment for non-aligned read
-			if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
+			// Blast tabular m8 + optional columns for CIGAR and query coverage
+			else if (opts.blastFormat == BlastFormat::TABULAR)
 			{
-				acceptedblast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+				// (1) Query
+				acceptedblast << read.getSeqId(); // part of the header till first space
+
+												  // print null alignment for non-aligned read
+				if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
+				{
+					acceptedblast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+					for (uint32_t l = 0; l < opts.blastops.size(); l++)
+					{
+						if (opts.blastops[l].compare("cigar") == 0)
+							acceptedblast << "\t*";
+						else if (opts.blastops[l].compare("qcov") == 0)
+							acceptedblast << "\t0";
+						else if (opts.blastops[l].compare("qstrand") == 0)
+							acceptedblast << "\t*";
+						acceptedblast << "\n";
+					}
+					return;
+				}
+
+				read.calcMismatchGapId(refs, i, mismatches, gaps, id);
+				int32_t total_pos = mismatches + gaps + id;
+
+				acceptedblast << "\t";
+				// (2) Subject
+				acceptedblast << ref_id << "\t";
+				// (3) %id
+				acceptedblast.precision(3);
+				acceptedblast << (double)id / (mismatches + gaps + id) * 100 << "\t";
+				// (4) alignment length
+				acceptedblast << (read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) << "\t";
+				// (5) mismatches
+				acceptedblast << mismatches << "\t";
+				// (6) gap openings
+				acceptedblast << gaps << "\t";
+				// (7) q.start
+				acceptedblast << read.hits_align_info.alignv[i].read_begin1 + 1 << "\t";
+				// (8) q.end
+				acceptedblast << read.hits_align_info.alignv[i].read_end1 + 1 << "\t";
+				// (9) s.start
+				acceptedblast << read.hits_align_info.alignv[i].ref_begin1 + 1 << "\t";
+				// (10) s.end
+				acceptedblast << read.hits_align_info.alignv[i].ref_end1 + 1 << "\t";
+				// (11) e-value
+				acceptedblast << evalue_score << "\t";
+				// (12) bit score
+				acceptedblast << bitscore;
+				// OPTIONAL columns
 				for (uint32_t l = 0; l < opts.blastops.size(); l++)
 				{
+					// output CIGAR string
 					if (opts.blastops[l].compare("cigar") == 0)
-						acceptedblast << "\t*";
-					else if (opts.blastops[l].compare("qcov") == 0)
-						acceptedblast << "\t0";
-					else if (opts.blastops[l].compare("qstrand") == 0)
-						acceptedblast << "\t*";
-					acceptedblast << "\n";
-				}
-				return;
-			}
-
-			read.calcMismatchGapId(refs, i, mismatches, gaps, id);
-			int32_t total_pos = mismatches + gaps + id;
-
-			acceptedblast << "\t";
-			// (2) Subject
-			acceptedblast << ref_id << "\t";
-			// (3) %id
-			acceptedblast.precision(3);
-			acceptedblast << (double)id / (mismatches + gaps + id) * 100 << "\t";
-			// (4) alignment length
-			acceptedblast << (read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) << "\t";
-			// (5) mismatches
-			acceptedblast << mismatches << "\t";
-			// (6) gap openings
-			acceptedblast << gaps << "\t";
-			// (7) q.start
-			acceptedblast << read.hits_align_info.alignv[i].read_begin1 + 1 << "\t";
-			// (8) q.end
-			acceptedblast << read.hits_align_info.alignv[i].read_end1 + 1 << "\t";
-			// (9) s.start
-			acceptedblast << read.hits_align_info.alignv[i].ref_begin1 + 1 << "\t";
-			// (10) s.end
-			acceptedblast << read.hits_align_info.alignv[i].ref_end1 + 1 << "\t";
-			// (11) e-value
-			acceptedblast << evalue_score << "\t";
-			// (12) bit score
-			acceptedblast << bitscore;
-			// OPTIONAL columns
-			for (uint32_t l = 0; l < opts.blastops.size(); l++)
-			{
-				// output CIGAR string
-				if (opts.blastops[l].compare("cigar") == 0)
-				{
-					acceptedblast << "\t";
-					// masked region at beginning of alignment
-					if (read.hits_align_info.alignv[i].read_begin1 != 0) acceptedblast << read.hits_align_info.alignv[i].read_begin1 << "S";
-					for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 					{
-						uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-						uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-						acceptedblast << length;
-						if (letter == 0) acceptedblast << "M";
-						else if (letter == 1) acceptedblast << "I";
-						else acceptedblast << "D";
-					}
+						acceptedblast << "\t";
+						// masked region at beginning of alignment
+						if (read.hits_align_info.alignv[i].read_begin1 != 0) acceptedblast << read.hits_align_info.alignv[i].read_begin1 << "S";
+						for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+						{
+							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							acceptedblast << length;
+							if (letter == 0) acceptedblast << "M";
+							else if (letter == 1) acceptedblast << "I";
+							else acceptedblast << "D";
+						}
 
-					uint32_t end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
-					// output the masked region at end of alignment
-					if (end_mask > 0) acceptedblast << end_mask << "S";
+						uint32_t end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
+						// output the masked region at end of alignment
+						if (end_mask > 0) acceptedblast << end_mask << "S";
+					}
+					// output % query coverage
+					else if (opts.blastops[l].compare("qcov") == 0)
+					{
+						acceptedblast << "\t";
+						acceptedblast.precision(3);
+						double coverage = abs(read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1)
+							/ read.hits_align_info.alignv[i].readlen;
+						acceptedblast << coverage * 100; // (double)align_len / readlen
+					}
+					// output strand
+					else if (opts.blastops[l].compare("qstrand") == 0)
+					{
+						acceptedblast << "\t";
+						if (read.hits_align_info.alignv[i].strand) acceptedblast << "+";
+						else acceptedblast << "-";
+					}
 				}
-				// output % query coverage
-				else if (opts.blastops[l].compare("qcov") == 0)
-				{
-					acceptedblast << "\t";
-					acceptedblast.precision(3);
-					double coverage = abs(read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1)
-						/ read.hits_align_info.alignv[i].readlen;
-					acceptedblast << coverage * 100; // (double)align_len / readlen
-				}
-				// output strand
-				else if (opts.blastops[l].compare("qstrand") == 0)
-				{
-					acceptedblast << "\t";
-					if (read.hits_align_info.alignv[i].strand) acceptedblast << "+";
-					else acceptedblast << "-";
-				}
-			}
-			acceptedblast << "\n";
-		}//~blast tabular m8
+				acceptedblast << "\n";
+			}//~blast tabular m8
+		}
 	} // ~iterate all alignments
 } // ~ Output::report_blast
 
@@ -455,59 +460,62 @@ void Output::report_sam
 	// iterate read alignments
 	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
 	{
-		// (2) flag Forward/Reversed
-		if (!read.hits_align_info.alignv[i].strand) acceptedsam << "\t16\t";
-		else acceptedsam << "\t0\t";
-		// (3) Subject
-		acceptedsam << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
-		// (4) Ref start
-		acceptedsam << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1; // a->ref_begin1
-		// (5) mapq
-		acceptedsam << "\t" << 255 << "\t";
-		// (6) CIGAR
-		// output the masked region at beginning of alignment
-		if (read.hits_align_info.alignv[i].read_begin1 != 0) 
-			acceptedsam << read.hits_align_info.alignv[i].read_begin1 << "S";
+		if (read.hits_align_info.alignv[i].index_num == refs.num && read.hits_align_info.alignv[i].part == refs.part)
+		{
+			// (2) flag Forward/Reversed
+			if (!read.hits_align_info.alignv[i].strand) acceptedsam << "\t16\t";
+			else acceptedsam << "\t0\t";
+			// (3) Subject
+			acceptedsam << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
+			// (4) Ref start
+			acceptedsam << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1; // a->ref_begin1
+																				  // (5) mapq
+			acceptedsam << "\t" << 255 << "\t";
+			// (6) CIGAR
+			// output the masked region at beginning of alignment
+			if (read.hits_align_info.alignv[i].read_begin1 != 0)
+				acceptedsam << read.hits_align_info.alignv[i].read_begin1 << "S";
 
-		for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
-		{
-			uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-			uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-			acceptedsam << length;
-			if (letter == 0) acceptedsam << "M";
-			else if (letter == 1) acceptedsam << "I";
-			else acceptedsam << "D";
-		}
-		uint32_t end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1; // readlen - a->read_end1
-		// output the masked region at end of alignment
-		if (end_mask > 0) acceptedsam << end_mask << "S";
-		// (7) RNEXT, (8) PNEXT, (9) TLEN
-		acceptedsam << "\t*\t0\t0\t";
-		// (10) SEQ
-		acceptedsam << read.sequence;
-		// (11) QUAL
-		acceptedsam << "\t";
-		// reverse-complement strand
-		if (read.quality.size() > 0 && !read.hits_align_info.alignv[i].strand)
-		{
-			std::reverse(read.quality.begin(), read.quality.end());
-			acceptedsam << read.quality;
-		}
-		else if (read.quality.size() > 0) // forward strand
-		{
-			acceptedsam << read.quality;
-			// FASTA read
-		}
-		else acceptedsam << "*";
+			for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+			{
+				uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+				uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+				acceptedsam << length;
+				if (letter == 0) acceptedsam << "M";
+				else if (letter == 1) acceptedsam << "I";
+				else acceptedsam << "D";
+			}
+			uint32_t end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1; // readlen - a->read_end1
+																									 // output the masked region at end of alignment
+			if (end_mask > 0) acceptedsam << end_mask << "S";
+			// (7) RNEXT, (8) PNEXT, (9) TLEN
+			acceptedsam << "\t*\t0\t0\t";
+			// (10) SEQ
+			acceptedsam << read.sequence;
+			// (11) QUAL
+			acceptedsam << "\t";
+			// reverse-complement strand
+			if (read.quality.size() > 0 && !read.hits_align_info.alignv[i].strand)
+			{
+				std::reverse(read.quality.begin(), read.quality.end());
+				acceptedsam << read.quality;
+			}
+			else if (read.quality.size() > 0) // forward strand
+			{
+				acceptedsam << read.quality;
+				// FASTA read
+			}
+			else acceptedsam << "*";
 
-		// (12) OPTIONAL FIELD: SW alignment score generated by aligner
-		acceptedsam << "\tAS:i:" << read.hits_align_info.alignv[i].score1;
-		// (13) OPTIONAL FIELD: edit distance to the reference
-		uint32_t mismatches = 0;
-		uint32_t gaps = 0;
-		uint32_t id = 0;
-		read.calcMismatchGapId(refs, i, mismatches, gaps, id);
-		acceptedsam << "\tNM:i:" << mismatches + gaps << "\n";
+			// (12) OPTIONAL FIELD: SW alignment score generated by aligner
+			acceptedsam << "\tAS:i:" << read.hits_align_info.alignv[i].score1;
+			// (13) OPTIONAL FIELD: edit distance to the reference
+			uint32_t mismatches = 0;
+			uint32_t gaps = 0;
+			uint32_t id = 0;
+			read.calcMismatchGapId(refs, i, mismatches, gaps, id);
+			acceptedsam << "\tNM:i:" << mismatches + gaps << "\n";
+		}
 	} // ~for read.alignments
 } // ~Output::report_sam
 
@@ -748,7 +756,6 @@ void generateReports(Runopts & opts)
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // Not used for Reports
 	Readstats readstats(opts);
 	Output output(opts, readstats);
-	Index index;
 	Refstats refstats(opts, readstats);
 	References refs;
 
@@ -764,7 +771,6 @@ void generateReports(Runopts & opts)
 			ss << "Loading index part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
 			auto t = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part, opts, refstats);
 			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
@@ -778,11 +784,10 @@ void generateReports(Runopts & opts)
 			// add processor jobs
 			for (int i = 0; i < N_PROC_THREADS; ++i)
 			{
-				tpool.addJob(ReportProcessor("proc_" + std::to_string(i), readQueue, opts, refs, output, refstats, reportsJob));
+				tpool.addJob(ReportProcessor("report_proc_" + std::to_string(i), readQueue, opts, refs, output, refstats, reportsJob));
 			}
 			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part
-			index.clear();
 			refs.clear();
 			writeQueue.reset(N_PROC_THREADS);
 		} // ~for(idx_part)

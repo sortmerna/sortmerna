@@ -81,8 +81,10 @@ public:
 	uint32_t readhit = 0; // number of seeds matches between read and database. Total number of hits?
 	int32_t best = 0; // init with min_lis_gv
 
-	// need custom destructor, copy constructor, and copy assignment
-	std::vector<id_win> id_win_hits; // array of positions of window hits on the reference sequence
+	// array of positions of window hits on the reference sequence in given index/part. 
+	// Only used during alignment on a particular index/part. No need to store.
+	// Reset on each new index part
+	std::vector<id_win> id_win_hits;
 	alignment_struct2 hits_align_info;
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <------------------------------ store in database

@@ -44,7 +44,7 @@ void reportsJob(
 			output.report_sam(opts, refs, read);
 		}
 	} // ~for reads
-} // ~writeAlignmentJob
+} // ~reportsJob
 
 /* 
  * Calculate:
@@ -56,7 +56,7 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 {
 	// OTU-map: index of alignment holding maximum SW score
 	uint32_t index_max_score = read.hits_align_info.max_index;
-	// loop through all of the best alignments for this read
+	// loop all the alignments of this read
 	for (uint32_t p = 0; p < read.hits_align_info.alignv.size(); ++p)
 	{
 		// continue loop if the reference sequence in this alignment

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FILE: processor.cpp
  * Created: Nov 26, 2017 Sun
  *
@@ -84,7 +84,7 @@ void PostProcessor::run()
 	int countReads = 0;
 	std::stringstream ss;
 
-	ss << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started\n";
+	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started\n";
 	std::cout << ss.str(); ss.str("");
 
 	for (;!readQueue.isDone(); countReads++)
@@ -96,7 +96,7 @@ void PostProcessor::run()
 		callback(read, readstats, refs, opts);
 	}
 
-	ss << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
+	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
 	std::cout << ss.str(); ss.str("");
 } // ~PostProcessor::run
 
@@ -129,7 +129,7 @@ void ReportProcessor::run()
 	ss << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
 	std::cout << ss.str(); ss.str("");
 
-} // ~ReportProcessor::process
+} // ~ReportProcessor::run
 
 void runPostProcessor(Runopts & opts)
 {
@@ -171,7 +171,7 @@ void runPostProcessor(Runopts & opts)
 			// add processor jobs
 			for (int i = 0; i < N_PROC_THREADS; ++i)
 			{
-				tpool.addJob(PostProcessor("proc_" + std::to_string(i), readQueue, opts, refs, readstats, computeStats));
+				tpool.addJob(PostProcessor("postproc_" + std::to_string(i), readQueue, opts, refs, readstats, computeStats));
 			}
 			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part

@@ -1230,7 +1230,7 @@ void Runopts::optReport(char **argv, int &narg)
 	{
 	case 0: alirep = align; break;
 	case 1: alirep = report; break;
-	case 2: alirep = both; break;
+	case 2: alirep = all; break;
 	}
 
 	ss << "ALIGN_REPORT: " << alirep << std::endl;
@@ -1575,7 +1575,7 @@ int main(int argc, char** argv)
 	case Runopts::ALIGN_REPORT::report: 
 		generateReports(opts); 
 		break;
-	case Runopts::ALIGN_REPORT::both: 
+	case Runopts::ALIGN_REPORT::all: 
 		paralleltraversal(opts);
 		runPostProcessor(opts);
 		generateReports(opts); 

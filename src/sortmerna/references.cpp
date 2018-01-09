@@ -17,6 +17,8 @@
 // prototype: 'load_ref'
 void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
+	num = idx_num;
+	part = idx_part;
 	uint32_t numseq_part = refstats.index_parts_stats_vec[idx_num][idx_part].numseq_part;
 
 	std::ifstream ifs(opts.indexfiles[idx_num].first, std::ios_base::in | std::ios_base::binary); // open reference file

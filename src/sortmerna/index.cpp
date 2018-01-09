@@ -256,8 +256,6 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 	inreff.close();
 	index_num = idx_num;
 	part = idx_part;
-
-	return;
 } // ~Index::load
 
 void Index::clear()
