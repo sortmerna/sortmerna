@@ -63,7 +63,7 @@ struct Runopts {
 	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 
-	enum ALIGN_REPORT { align, report, all };
+	enum ALIGN_REPORT { align, postproc, report, all };
 	ALIGN_REPORT alirep = align;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 

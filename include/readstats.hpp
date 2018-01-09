@@ -4,6 +4,7 @@
  * Created: Nov 06, 2017 Mon
  *
  * Collective Statistics for all Reads. Encapsulates old 'compute_read_stats' logic and results
+ * Some statistics computed during Alignment, and some in Post-processing
  */
 
 #include <cstdint>

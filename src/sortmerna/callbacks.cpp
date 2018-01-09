@@ -106,5 +106,5 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 				//if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
 			}
 		}//~if alignment at current database and index part loaded in RAM
-	}//~for all best alignments
+	}//~for all alignments
 } // ~computeStats

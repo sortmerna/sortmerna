@@ -77,7 +77,7 @@ void Processor::run()
 	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads
 		<< " reads. Skipped (already processed) " << countProcessed << " reads\n";
 	std::cout << ss.str(); ss.str("");
-} // ~Processor::process
+} // ~Processor::run
 
 void PostProcessor::run()
 {
@@ -176,9 +176,11 @@ void runPostProcessor(Runopts & opts)
 			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part
 			refs.clear();
+			readQueue.reset(N_READ_THREADS);
 		} // ~for(idx_part)
 	} // ~for(index_num)
 	writeLog(opts, readstats);
+	kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
 	std::cout << "runPostProcessor: Done \n";
 } // ~runPostProcessor
 
