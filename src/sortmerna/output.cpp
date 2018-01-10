@@ -468,8 +468,8 @@ void Output::report_sam
 			// (3) Subject
 			acceptedsam << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 			// (4) Ref start
-			acceptedsam << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1; // a->ref_begin1
-																				  // (5) mapq
+			acceptedsam << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1;
+			// (5) mapq
 			acceptedsam << "\t" << 255 << "\t";
 			// (6) CIGAR
 			// output the masked region at beginning of alignment
@@ -485,8 +485,9 @@ void Output::report_sam
 				else if (letter == 1) acceptedsam << "I";
 				else acceptedsam << "D";
 			}
-			uint32_t end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1; // readlen - a->read_end1
-																									 // output the masked region at end of alignment
+
+			uint32_t end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1;
+			// output the masked region at end of alignment
 			if (end_mask > 0) acceptedsam << end_mask << "S";
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
 			acceptedsam << "\t*\t0\t0\t";

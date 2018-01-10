@@ -32,17 +32,19 @@
  /** @file */
 
 #include <time.h>
-#include <string.h>
+#include <string>
+#include <vector>
+#include <deque>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
+
 #include "indexdb.hpp"
 #include "cmph.h"
-#include <iomanip>
-#include <sstream>
-#include <vector>
 #include <sys/stat.h> //for creating tmp dir
-#include <deque>
 
 #if defined(_WIN32)
 #include <Winsock.h>
@@ -710,7 +712,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
 void load_index(kmer* lookup_table, char* outfile)
 {
 	// output the mini-burst tries
-	ofstream btrie(outfile, ofstream::binary);
+	std::ofstream btrie(outfile, ofstream::binary);
 
 	uint32_t sizeoftries[2] = { 0 };
 
@@ -768,7 +770,7 @@ void load_index(kmer* lookup_table, char* outfile)
 				}
 
 				// queue of node elements for breadth-first traversal
-				deque<NodeElement*> nodes;
+				std::deque<NodeElement*> nodes;
 
 				// load first set of NodeElements into the queue & write to file
 				for (int i = 0; i < 4; i++)
@@ -1501,10 +1503,10 @@ int main(int argc, char** argv)
 	// build index for each pair in --ref list
 	for (int newindex = 0; newindex < (int)myfiles.size(); newindex++)
 	{
-		vector< pair<string, uint32_t> > sam_sq_header;
+		std::vector< std::pair<std::string, uint32_t> > sam_sq_header;
 		// vector of structs storing information on which sequences from 
 		// the original FASTA file were added to each index part
-		vector<index_parts_stats> index_parts_stats_vec;
+		std::vector<index_parts_stats> index_parts_stats_vec;
 
 		// FASTA reference sequences input file
 		FILE *fp = fopen((char*)(myfiles[newindex].first).c_str(), "r");
@@ -1589,8 +1591,8 @@ int main(int argc, char** argv)
 				nt = fgetc(fp);
 			}
 			// add sequence name and length to sam_header_
-			string s(read_header);
-			sam_sq_header.push_back(pair<string, uint32_t>(s, len));
+			std::string s(read_header);
+			sam_sq_header.push_back(std::pair<std::string, uint32_t>(s, len));
 			if (nt != EOF) ungetc(nt, fp);
 			full_len += len;
 			if (len < pread_gv)
@@ -1668,7 +1670,7 @@ int main(int argc, char** argv)
 			memset(lookup_table, 0, (1 << lnwin_gv) * sizeof(kmer));
 
 			// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
-			vector<bool> incremented_by_forward((1 << lnwin_gv));
+			std::vector<bool> incremented_by_forward((1 << lnwin_gv));
 
 			// total size of index so far in bytes
 			index_size = 0;
@@ -2293,12 +2295,12 @@ int main(int argc, char** argv)
 		  // Load constructed index part to binary file
 
 		  // covert part number into a string
-			stringstream prt_str;
+			std::stringstream prt_str;
 			prt_str << part;
-			string part_str = prt_str.str();
+			std::string part_str = prt_str.str();
 			eprintf("      temporary file was here: %s\n", keys_str);
 			// 1. load the kmer 'count' variable /index/kmer.dat
-			ofstream oskmer((char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), ios::binary);
+			std::ofstream oskmer((char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), ios::binary);
 			eprintf("      writing kmer data to %s\n", (myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str());
 			index_parts_stats thispart;
 			thispart.start_part = start_part;
@@ -2319,7 +2321,7 @@ int main(int argc, char** argv)
 			load_index(lookup_table, (char*)(myfiles[newindex].second + ".bursttrie_" +
 				part_str + ".dat").c_str());
 			// 3. 19-mer position look up tables
-			ofstream ospos((char*)(myfiles[newindex].second + ".pos_" +
+			std::ofstream ospos((char*)(myfiles[newindex].second + ".pos_" +
 				part_str + ".dat").c_str(), ios::binary);
 			eprintf("      writing position lookup table to %s\n",
 				(myfiles[newindex].second + ".pos_" + part_str + ".dat").c_str());
@@ -2358,7 +2360,7 @@ int main(int argc, char** argv)
 		if (index_size != 0)
 		{
 			eprintf("      writing nucleotide distribution statistics to %s\n", (myfiles[newindex].second + ".stats").c_str());
-			ofstream stats((char*)(myfiles[newindex].second + ".stats").c_str(), ios::binary);
+			std::ofstream stats((char*)(myfiles[newindex].second + ".stats").c_str(), std::ios::binary);
 			if (!stats.good())
 			{
 				fprintf(stderr, "\n  %sERROR%s: The file '%s' cannot be created: %s\n\n",

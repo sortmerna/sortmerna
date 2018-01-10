@@ -452,6 +452,6 @@ void paralleltraversal(Runopts & opts)
 			writeQueue.reset(opts.num_proc_threads);
 		} // ~for(idx_part)
 	} // ~for(index_num)
-	// write readstats to store
+	// store readstats calculated in alignment
 	kvdb.put("Readstats", readstats.toString());
 } // ~paralleltraversal
