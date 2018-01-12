@@ -28,15 +28,15 @@ typedef struct s_align2 {
 	s_align2(std::string bstr)
 	{
 		size_t offset = 0;
-		size_t cigarlen = 0;
+		size_t len = 0; // cigar, refname length
 
 		// cannot use copy/copy_n - VC error C4996: 'std::copy_n::_Unchecked_iterators
-		std::memcpy(static_cast<void*>(&cigarlen), bstr.data(), sizeof(cigarlen));
-		offset += sizeof(cigarlen);
+		std::memcpy(static_cast<void*>(&len), bstr.data(), sizeof(len));
+		offset += sizeof(len);
 
-		cigar.assign(cigarlen, 0);
-		std::memcpy(static_cast<void*>(cigar.data()), bstr.data() + offset, cigarlen * sizeof(uint32_t));
-		offset += cigarlen * sizeof(uint32_t);
+		cigar.assign(len, 0);
+		std::memcpy(static_cast<void*>(cigar.data()), bstr.data() + offset, len * sizeof(uint32_t));
+		offset += len * sizeof(uint32_t);
 		// ref_seq
 		std::memcpy(static_cast<void*>(&ref_seq), bstr.data() + offset, sizeof(ref_seq));
 		offset += sizeof(ref_seq);
@@ -99,8 +99,9 @@ typedef struct s_align2 {
 		std::copy_n(beginIt, sizeof(part), std::back_inserter(buf)); // part
 		beginIt = static_cast<char*>(static_cast<void*>(&index_num));
 		std::copy_n(beginIt, sizeof(index_num), std::back_inserter(buf)); // index_num
+		// strand
 		beginIt = static_cast<char*>(static_cast<void*>(&strand));
-		std::copy_n(beginIt, sizeof(strand), std::back_inserter(buf)); // strand
+		std::copy_n(beginIt, sizeof(strand), std::back_inserter(buf));
 
 		return buf;
 	} // ~toString

@@ -21,7 +21,7 @@ struct Runopts {
 
 	int numcpu = -1; // '-a' number of threads to use TODO: remove (see num_proc_threads)
 	int num_fread_threads = 1; // number of threads reading the Reads file.
-	int num_proc_threads = 4;  // '-a' number of threads to use for processing
+	int num_proc_threads = 8;  // '-a' number of threads to use for processing
 
 	long match = 2; // '--match' SW score (positive integer) for a match               TODO: change to int8_t
 	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch   TODO: change to int8_t

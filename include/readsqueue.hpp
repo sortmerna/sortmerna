@@ -53,9 +53,9 @@ public:
 		recs.push(std::move(rec));
 		++numPushed;
 
-		ss << id << " Pushed id: " << rec.id << " Index: " << rec.lastIndex << " Part: " << rec.lastPart 
-			<< " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
-		std::cout << ss.str(); ss.str("");
+		//ss << id << " Pushed id: " << rec.id << " Index: " << rec.lastIndex << " Part: " << rec.lastPart 
+		//	<< " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
+		//std::cout << ss.str(); ss.str("");
 
 		cvQueue.notify_one();
 	}
@@ -70,9 +70,9 @@ public:
 			++numPopped;
 			//if (numPopped % 10000 == 0)
 			//{
-			ss << id << " Popped id: " << rec.id << " Index: " << rec.lastIndex << " Part: " << rec.lastPart 
-				<< " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
-			std::cout << ss.str(); ss.str("");
+			//ss << id << " Popped id: " << rec.id << " Index: " << rec.lastIndex << " Part: " << rec.lastPart 
+			//	<< " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
+			//std::cout << ss.str(); ss.str("");
 			//}
 		}
 		cvQueue.notify_one();

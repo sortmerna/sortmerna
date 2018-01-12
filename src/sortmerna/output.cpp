@@ -769,7 +769,7 @@ void generateReports(Runopts & opts)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "Loading index part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+			ss << "Loading index " << index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
 			auto t = std::chrono::high_resolution_clock::now();
 			refs.load(index_num, idx_part, opts, refstats);
@@ -791,6 +791,7 @@ void generateReports(Runopts & opts)
 			tpool.waitAll(); // wait till processing is done on one index part
 			refs.clear();
 			writeQueue.reset(N_PROC_THREADS);
+			readQueue.reset(N_READ_THREADS);
 		} // ~for(idx_part)
 	} // ~for(index_num)
 	output.closefiles();

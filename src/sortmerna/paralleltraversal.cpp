@@ -419,20 +419,27 @@ void paralleltraversal(Runopts & opts)
 	int loopCount = 0; // counter of total number of processing iterations
 
 	// perform alignment
+	auto starts = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed;
 	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			eprintf("\tLoading index part %d/%u ... ", idx_part + 1, refstats.num_index_parts[index_num]);
-			auto t = std::chrono::high_resolution_clock::now();
+			ss << "\tLoading index " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
+			std::cout << ss.str(); ss.str("");
+
+			starts = std::chrono::high_resolution_clock::now();
 			index.load(index_num, idx_part, opts, refstats);
 			refs.load(index_num, idx_part, opts, refstats);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
+			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
-			eprintf("done [%.2f sec]\n", elapsed.count());
 
+			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec\n";
+			std::cout << ss.str(); ss.str("");
+
+			starts = std::chrono::high_resolution_clock::now();
 			for (int i = 0; i < opts.num_fread_threads; i++)
 			{
 				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
@@ -450,6 +457,12 @@ void paralleltraversal(Runopts & opts)
 			index.clear();
 			refs.clear();
 			writeQueue.reset(opts.num_proc_threads);
+			readQueue.reset(1);
+
+			elapsed = std::chrono::high_resolution_clock::now() - starts;
+			ss << "Processed index " << index_num << " Part: " << idx_part + 1 
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)
 	// store readstats calculated in alignment

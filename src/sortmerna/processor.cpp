@@ -40,8 +40,8 @@ void Processor::run()
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
 		alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
-		ss << "Processor: " << id << " Popped read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
-		std::cout << ss.str(); ss.str("");
+		//ss << "Processor: " << id << " Popped read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
+		//std::cout << ss.str(); ss.str("");
 
 		if (read.isEmpty || !read.isValid || alreadyProcessed) {
 			if (alreadyProcessed) ++countProcessed;
@@ -65,8 +65,8 @@ void Processor::run()
 		}
 
 		if (read.isValid && !read.isEmpty) {
-			ss << "Processor: " << id << " Pushing read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
-			std::cout << ss.str(); ss.str("");
+			//ss << "Processor: " << id << " Pushing read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
+			//std::cout << ss.str(); ss.str("");
 			writeQueue.push(read);
 		}
 

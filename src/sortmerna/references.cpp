@@ -93,7 +93,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		} // ~header or last record
 		else
 		{
-			++count;
+			++count; // count non-header lines
 			if ((!isFastq && count > 1) || (isFastq && count > 3)) {
 				fprintf(stderr, "  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA/Q format "
 					"(there is an extra new line).", startColor, "\033[0m", __LINE__, __FILE__);
