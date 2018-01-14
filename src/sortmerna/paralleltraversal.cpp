@@ -460,7 +460,7 @@ void paralleltraversal(Runopts & opts)
 			readQueue.reset(1);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << "Processed index " << index_num << " Part: " << idx_part + 1 
+			ss << "    Done index " << index_num << " Part: " << idx_part + 1 
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)

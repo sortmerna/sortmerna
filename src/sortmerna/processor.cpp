@@ -138,7 +138,7 @@ void runPostProcessor(Runopts & opts)
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << "runPostProcessor Thread: " << std::this_thread::get_id() << std::endl;
+	ss << "\trunPostProcessor Thread: " << std::this_thread::get_id() << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -155,13 +155,15 @@ void runPostProcessor(Runopts & opts)
 		// iterate parts of reference files
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "runPostProcessor: Loading reference part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+			ss << "\trunPostProcessor: Loading reference " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
-			auto t = std::chrono::high_resolution_clock::now();
+			auto starts = std::chrono::high_resolution_clock::now(); // index loading start
 			refs.load(index_num, idx_part, opts, refstats);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
 			std::cout << ss.str(); ss.str("");
+
+			starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			for (int i = 0; i < N_READ_THREADS; ++i)
 			{
@@ -177,11 +179,16 @@ void runPostProcessor(Runopts & opts)
 			tpool.waitAll(); // wait till processing is done on one index part
 			refs.clear();
 			readQueue.reset(N_READ_THREADS);
+
+			elapsed = std::chrono::high_resolution_clock::now() - starts;
+			ss << "    Done reference " << index_num << " Part: " << idx_part + 1
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)
 	writeLog(opts, readstats);
 	kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
-	std::cout << "runPostProcessor: Done \n";
+	std::cout << "\trunPostProcessor: Done \n";
 } // ~runPostProcessor
 
 void writeLog(Runopts & opts, Readstats & readstats)

@@ -41,6 +41,8 @@ void Readstats::calculate()
 
 		auto t = std::chrono::high_resolution_clock::now();
 
+		std::cout << "Readstats::calculate starting ...   ";
+
 		for (int count = 0; std::getline(ifs, line); ) // count lines in One record
 		{
 			// skip empty line

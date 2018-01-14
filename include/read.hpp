@@ -303,7 +303,9 @@ public:
 
 	void calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id);
 	std::string getSeqId() {
+		// part of the header from start till first space.
 		std::string id = header.substr(0, header.find(' '));
+		// remove '>' or '@'
 		id.erase(id.begin(), std::find_if(id.begin(), id.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 		return id;
 	}

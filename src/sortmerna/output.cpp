@@ -308,10 +308,10 @@ void Output::report_blast
 			// Blast tabular m8 + optional columns for CIGAR and query coverage
 			else if (opts.blastFormat == BlastFormat::TABULAR)
 			{
-				// (1) Query
-				acceptedblast << read.getSeqId(); // part of the header till first space
+				// (1) Query ID
+				acceptedblast << read.getSeqId();
 
-												  // print null alignment for non-aligned read
+				// print null alignment for non-aligned read
 				if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
 				{
 					acceptedblast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
@@ -447,10 +447,14 @@ void Output::report_sam
 {
 	const char to_char[5] = { 'A','C','G','T','N' };
 
+	if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
+		return;
+
 	// (1) Query
 	acceptedsam << read.getSeqId();
+
 	// read did not align, output null string
-	if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
+	if (opts.print_all_reads && read.hits_align_info.alignv.size() == 0)
 	{
 		acceptedsam << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
@@ -748,7 +752,7 @@ void generateReports(Runopts & opts)
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << "generateReports called. Thread: " << std::this_thread::get_id() << std::endl;
+	ss << "\tgenerateReports called. Thread: " << std::this_thread::get_id() << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -769,13 +773,15 @@ void generateReports(Runopts & opts)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "Loading index " << index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+			ss << "\tLoading reference " << index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
-			auto t = std::chrono::high_resolution_clock::now();
+			auto starts = std::chrono::high_resolution_clock::now();
 			refs.load(index_num, idx_part, opts, refstats);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t; // ~20 sec Debug/Win
+			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
 			std::cout << ss.str(); ss.str("");
+
+			starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			for (int i = 0; i < N_READ_THREADS; ++i)
 			{
@@ -792,8 +798,13 @@ void generateReports(Runopts & opts)
 			refs.clear();
 			writeQueue.reset(N_PROC_THREADS);
 			readQueue.reset(N_READ_THREADS);
+
+			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
+			ss << "   Done reference " << index_num << " Part: " << idx_part + 1
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)
 	output.closefiles();
-	std::cout << "Done generateReports\n";
+	std::cout << "\tDone generateReports\n";
 } // ~generateReports
