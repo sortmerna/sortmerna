@@ -33,6 +33,7 @@
 
 
 #include <string>
+#include <vector>
 #include <iostream> // std::cout
 #include <cstring> // std::memcpy
 #include <algorithm> // std::copy_n
@@ -110,7 +111,7 @@ void traversetrie_align(
 	MYBITSET *win_k1_ptr /**< pointer to start of forward L/2-mer bitvector */,
 	MYBITSET *win_k1_full /**< pointer to start of structure storing all bitvectors */,
 	bool &accept_zero_kmer /**< if true, if a match is found during forward subsearch, then skip reverse subsearch */,
-	vector< id_win > &id_hits /**< vector storing IDs of all candidate L-mers (matching in mini burst trie) */,
+	std::vector< id_win > &id_hits /**< vector storing IDs of all candidate L-mers (matching in mini burst trie) */,
 	int64_t readn /**< read number */,
 	uint32_t win_num /**< sliding window (seed) number on read */,
 	uint32_t partialwin, /**< */

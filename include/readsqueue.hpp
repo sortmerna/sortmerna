@@ -68,12 +68,12 @@ public:
 			rec = recs.front();
 			recs.pop();
 			++numPopped;
-			//if (numPopped % 10000 == 0)
-			//{
-			//ss << id << " Popped id: " << rec.id << " Index: " << rec.lastIndex << " Part: " << rec.lastPart 
+			if (numPopped % 100000 == 0)
+			{
+				ss << id << " Popped id: " << rec.id << "\r"; //" Index: " << rec.lastIndex << " Part: " << rec.lastPart
 			//	<< " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
-			//std::cout << ss.str(); ss.str("");
-			//}
+				std::cout << ss.str(); ss.str("");
+			}
 		}
 		cvQueue.notify_one();
 		return rec;

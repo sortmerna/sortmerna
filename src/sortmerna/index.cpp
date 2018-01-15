@@ -50,7 +50,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 {
 	// STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
 	std::string idxfile = opts.indexfiles[idx_num].second + ".kmer_" + std::to_string(idx_part) + ".dat";
-	std::ifstream inkmer(idxfile, ios::in | ios::binary);
+	std::ifstream inkmer(idxfile, std::ios::in | std::ios::binary);
 
 	if (!inkmer.good())
 	{
@@ -70,7 +70,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 
 	// STEP 2: load the burst tries ( bursttrief.dat, bursttrier.dat )
 	std::string btriefile = opts.indexfiles[idx_num].second + ".bursttrie_" + std::to_string(idx_part) + ".dat";
-	std::ifstream btrie(btriefile, ios::in | ios::binary);
+	std::ifstream btrie(btriefile, std::ios::in | std::ios::binary);
 	if (!btrie.good())
 	{
 		fprintf(stderr, "\n  ERROR: The index '%s' does not exist.\n", btriefile.c_str()); // (char*)
@@ -116,7 +116,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 					nodes.push_back((NodeElement*)dst);
 					((NodeElement *&)dst) += 4;
 					// queue to store the flags of node elements given in the binary file
-					deque<char> flags;
+					std::deque<char> flags;
 					// read the first trie node
 					for (int i = 0; i < 4; i++)
 					{
@@ -219,7 +219,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 
 	// STEP 3: load the position reference tables (pos.dat)
 	std::string posfile = opts.indexfiles[idx_num].second + ".pos_" + std::to_string(idx_part) + ".dat";
-	std::ifstream inreff(posfile, ios::in | ios::binary);
+	std::ifstream inreff(posfile, std::ios::in | std::ios::binary);
 
 	if (!inreff.good())
 	{

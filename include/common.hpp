@@ -35,33 +35,14 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-//#include <string>
-//#include <bitset>
-#include <vector>
-//#include <iostream>
-//#include <sstream>
-//#include <fstream>
-//#include <cstdlib>
-//#include <stdio.h>
-//#include <cmath>
 #include <sys/time.h>
-//#include <set>
-//#include <stdint.h>
-//#include <inttypes.h>
-//#include <unistd.h>   // lseek
-//#include <fcntl.h>    // file checking, open/close
-//#include <sys/mman.h> 
-//#include <errno.h>
 #include "config.h"
-
-using namespace std;
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
 const char WIN_ENDLINE = '\r';
 const char LIN_ENDLINE = '\n';
-const int QUEUE_SIZE_MAX = 10; // TODO: set through process options
-const int NUM_PROC_THREADS = 3; // Default number of reads processor threads. Change through process options.
+const int QUEUE_SIZE_MAX = 10; // TODO: move to process options?
 
 enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
@@ -90,195 +71,21 @@ extern timeval t;
 #define eprintf(format, ...) do {if (false) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
 
 /*! @brief start color text red */
+#if defined(_WIN32)
+#define startColor ""
+#define endColor ""
+#else
 #define startColor "\033[0;31m"
-
 /*! @brief end color text color */
 #define endColor "\033[0m"
+#endif
 
-// DEBUG: memory map
-// output information during the splitting of 
-// (output piped to stdout)
-//#define debug_mmap
 
-// DEBUG: seeds
-// for constructing an LIS and the Smith-Waterman 
-// alignment using the LIS 
-// (output piped to stdout)
-//#define debug_align
-
-// DEBUG: writing alignments to files
-//#define debug_output
-
-// DEBUG: binary burst trie
-// output the writing of mini-burst tries into binary
-// during indexdb_rna and also for reading from binary
-// to re-construct the mini-burst tries in sortmerna 
-// (both will be actived with this define statement).
-// Will require C++11 compiler suppport, add -std=c++0x 
-// to CXXFLAGS & CFLAGS in Makefile
-// (piped to stdout)
-//#define see_binary_output
-
-// DEBUG: code to store the --best INT alignments
-//#define DEBUG_BEST_N
 
 /*! @brief Maximum length of input reads
 	(not limited to this length algorithmically)
 */
 #define READLEN 30000
-
-/*! @brief Number of threads to launch */
-//extern int32_t numcpu_gv;
-
-/*! @brief Both reads are output to --aligned file
-
-	If one of the paired reads aligns and the second
-	does not (eg. the second read covers a hypervariable region),
-	then put both reads into --aligned file
-*/
-//extern bool pairedin_gv;
-
-/*! @brief Both reads are output to --other file
-
-	If one of the paired reads aligns and the second
-	does not (eg. the second read covers a hypervariable region),
-	then put both reads into --other file
-*/
-//extern bool pairedout_gv;
-
-/*! @brief Output log file */
-//extern bool logout_gv;
-
-/*! @brief OTU-picking option: output candidate reads for 
-	de novo clustering.
-
-	Output reads (to FASTA/FASTQ file) that pass the E-value 
-	threshold but have < %%id and < %%coverage scores for de 
-	novo OTU-picking.
-*/
-//extern bool de_novo_otu_gv;
-
-/*! @brief Search forward strand */
-//extern bool forward_gv;
-
-/*! @brief Search reverse strand */
-//extern bool reverse_gv;
-
-/*! @brief OTU-picking option: output OTU map.
-
-	Create an OTU map where each line:\n
-		+ is tab-separated,\n
-		+ the first column represents the OTU ID
-		  (reference sequence ID),\n
-		+ the remaining columns are read IDs
-		  mapping to the reference ID with
-		  E-value passing threshold, >= %id 
-		  and >= %coverage scores.\n
-
-	Example:\n
-	ref_1 read_1 read_2 read_10\n
-	ref_2 read_6 read_3
-	..
-*/
-//extern bool otumapout_gv;
-
-/*! @brief Include process ID in output file names.
-
-	Setting the flag --pid will append the master
-	process ID to the output filenames (eg. --aligned
-	and --other).
-*/
-//extern bool pid_gv;
-
-/*! @brief Size of partial section of reads file to mmap. */
-//extern long unsigned int map_size_gv;
-
-/*! @brief if true, load reads using mmap */
-//extern bool map_size_set_gv;
-
-/*! @brief SAM output. */
-//extern bool samout_gv;
-
-/*! @brief Activate BLAST-like alignment output. */
-//extern bool blastout_gv;
-
-/*! @brief Output alignments in BLAST-like tabular format. */
-//extern bool blast_tabular;
-
-/*! @brief Activate FASTA/Q output. */
-//extern bool fastxout_gv;
-
-/*! @brief Number of alignments to search based on the LIS 
-	prior to outputting them.
-
-	This illustration shows the behavior of using --min_lis INT
-	to control the output of --best INT vs. using the option
-	--num_alignments INT.
-
-	The option --min_lis INT specifies the minimum number of
-	references sequences having the longest LIS to search for
-	alignments.
-
-	As an example, choosing --best 2 --min_lis 2 will force
-	the algorithm to search alignments for candidates
-	ref #1, #2, #3, #4 and #5 prior to outputting the
-	two best alignments (ref #1 and ref #3) for the read
-	in this diagram. Candidate reference sequences are
-	found using the LIS.
-
-	@image html min_lis_small.png "Figure 1: Illustration of options --min_lis INT, --best INT and --num_alignments INT for SortMeRNA"
-*/
-//extern int32_t min_lis_gv;
-
-/*! @brief Number of best alignments per read to output */
-//extern int32_t num_best_hits_gv;
-
-/*! @brief Number of alignments to output
-
-	This option outputs the first --num_alignments INT
-	alignments found, unlike --best INT which searches
-	many alignments (specified by --min_lis INT) prior
-	to outputting the best ones.
-*/
-//extern int32_t num_alignments_gv;
-
-/*! @brief Number of seed hits to find before searching 
-	for candidate LIS.
-
-	Prior to alignment, SortMeRNA searches for short k-mers 
-	(default length 18) between the read and the reference
-	database. This option sets the minimum number of k-mer
-	matches required in order to continue to the next step
-	of searching for the LIS.
-*/
-//extern int32_t seed_hits_gv;
-
-/*! @brief Number or percent (if followed by %) of nucleotides 
-	to add to each edge of the alignment region prior to SSW 
-	extension.
-
-	SortMeRNA uses the LIS to find candidate regions between
-	reference sequences and the read for performing
-	Smith-Waterman alignment. This option allows
-	to add nucleotides to both ends of the reference
-	sequence region where alignment will be carried out,
-	to allow for extra insertions & deletions.
-*/
-//extern int32_t edges_gv;
-
-/*! @brief Interpret option --edges as percent */
-//extern bool as_percent_gv;
-
-/*! @brief Flag to turn off heuristic for stopping index 
-	search after finding a 0-error match, instead collect 
-	all 0-error and 1-error matches.
-*/
-//extern bool full_search_gv;
-
-/*! @brief If true, print all reads in SAM and/or BLAST 
-	output (aligned and non-aligned)
-*/
-//extern bool print_all_reads_gv;
 
 #endif
 

@@ -23,13 +23,13 @@ struct Runopts;
 class Output {
 public:
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
-	ofstream acceptedreads;
-	ofstream acceptedsam;
-	ofstream acceptedblast;
-	ofstream logstream;
-	ofstream denovoreads;
-	ofstream otherreads;
-	ofstream biomout;
+	std::ofstream acceptedreads;
+	std::ofstream acceptedsam;
+	std::ofstream acceptedblast;
+	std::ofstream logstream;
+	std::ofstream denovoreads;
+	std::ofstream otherreads;
+	std::ofstream biomout;
 
 	// file names
 	std::string acceptedstrings;

@@ -32,7 +32,8 @@
 #ifndef OUTPUTFORMATS_H
 #define OUTPUTFORMATS_H
 
-#include <istream>
+#include <fstream>
+#include <vector>
 
 //! SIMD Smith-Waterman alignment library
 #include "indexdb.hpp"
@@ -40,7 +41,7 @@
 
 void
 report_sam (
-	ofstream &fileout,
+	std::ofstream &fileout,
     s_align* a,
     const char* read_name,
     const char* read_seq,
@@ -59,7 +60,7 @@ report_fasta (
     char* ptr_filetype_ar,
     char** reads,
     uint64_t strs,
-    vector<bool>& read_hits,
+    std::vector<bool>& read_hits,
     uint32_t file_s,
     char* finalnt
 );
@@ -69,7 +70,7 @@ report_denovo(
 	char *denovo_otus_file,
     char **reads,
     uint64_t strs,
-    vector<bool>& read_hits_denovo,
+    std::vector<bool>& read_hits_denovo,
     uint32_t file_s,
     char *finalnt
 );

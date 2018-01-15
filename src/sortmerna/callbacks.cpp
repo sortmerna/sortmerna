@@ -87,7 +87,7 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 			{
 				// increment number of reads passing identity
 				// and coverage threshold
-				readstats.total_reads_mapped_cov++;
+				readstats.increment_total_reads_mapped_cov(); // thread safe
 
 				// fill OTU map with highest-scoring alignment for the read
 				if (opts.otumapout)
@@ -98,7 +98,7 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 
 					// read identifier
 					std::string read_seq_str = read.header.substr(0, read.header.find(' '));
-					readstats.otu_map[ref_seq_str].push_back(read_seq_str);
+					readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
 				}
 
 				// TODO: this check is already performed during alignment (paralleltraversalJob and compute_lis_alignment). Is it necessary here?

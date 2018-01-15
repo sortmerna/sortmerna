@@ -4,6 +4,7 @@
 */
 #include "unistd.h"
 #include <iomanip>
+#include <fstream>
 
 #include "output.hpp"
 #include "ThreadPool.hpp"
@@ -98,7 +99,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.otumapout)
 		{
 			// OTU map output file
-			ofstream otumap;
+			std::ofstream otumap;
 			acceptedotumap_file = opts.filetype_ar;
 			if (opts.pid)
 			{
@@ -112,7 +113,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 		if (opts.de_novo_otu)
 		{
-			ofstream denovo_otu;
+			std::ofstream denovo_otu;
 			denovo_otus_file = opts.filetype_ar;
 			if (opts.pid)
 			{
@@ -132,7 +133,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.fastxout)
 		{
 			// output stream for other reads
-			ofstream otherreads;
+			std::ofstream otherreads;
 			// add suffix database name to accepted reads file
 			if (opts.pid)
 			{
@@ -186,11 +187,11 @@ void Output::report_blast
 			{
 				acceptedblast << "Sequence ID: ";
 				acceptedblast << ref_id; // print only start of the header till first space
-				acceptedblast << endl;
+				acceptedblast << std::endl;
 
 				acceptedblast << "Query ID: ";
 				acceptedblast << read.getSeqId();
-				acceptedblast << endl;
+				acceptedblast << std::endl;
 
 				//fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
 				acceptedblast << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
@@ -447,15 +448,14 @@ void Output::report_sam
 {
 	const char to_char[5] = { 'A','C','G','T','N' };
 
-	if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
-		return;
-
-	// (1) Query
-	acceptedsam << read.getSeqId();
+	//if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
+	//	return;
 
 	// read did not align, output null string
 	if (opts.print_all_reads && read.hits_align_info.alignv.size() == 0)
 	{
+		// (1) Query
+		acceptedsam << read.getSeqId();
 		acceptedsam << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
 	}
@@ -466,6 +466,8 @@ void Output::report_sam
 	{
 		if (read.hits_align_info.alignv[i].index_num == refs.num && read.hits_align_info.alignv[i].part == refs.part)
 		{
+			// (1) Query
+			acceptedsam << read.getSeqId();
 			// (2) flag Forward/Reversed
 			if (!read.hits_align_info.alignv[i].strand) acceptedsam << "\t16\t";
 			else acceptedsam << "\t0\t";
@@ -542,7 +544,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 
 		TIME(s);
 		if (opts.fastxout)
-			acceptedreads.open(acceptedstrings, ios::app | ios::binary);
+			acceptedreads.open(acceptedstrings, std::ios::app | std::ios::binary);
 
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
@@ -599,7 +601,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	{
 		ss << "    Writing not-aligned FASTA/FASTQ ... "; std::cout << ss.str(); ss.str("");
 		TIME(s);
-		otherreads.open(opts.filetype_or, ios::app | ios::binary);
+		otherreads.open(opts.filetype_or, std::ios::app | std::ios::binary);
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
 		{
@@ -653,7 +655,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 		ss << "    Writing de novo FASTA/FASTQ ... "; std::cout << ss.str(); ss.str("");
 		TIME(s);
 
-		denovoreads.open(denovo_otus_file, ios::app | ios::binary);
+		denovoreads.open(denovo_otus_file, std::ios::app | std::ios::binary);
 
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
@@ -669,7 +671,8 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 				}
 				else
 				{
-					fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file.c_str(), "\033[0m");
+					ss << "  " << "\033[0;31m" << "ERROR" << denovo_otus_file << ": file " << "\033[0m"
+						" (denovoreads) could not be opened for writing.\n\n"; std::cout << ss.str(); ss.str("");
 					exit(EXIT_FAILURE);
 				}
 			}//~the read was accepted
@@ -686,7 +689,8 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 				}
 				else
 				{
-					fprintf(stderr, "  %sERROR%s: file %s (denovoreads) could not be opened for writing.\n\n", "\033[0;31m", denovo_otus_file.c_str(), "\033[0m");
+					ss << "  " << denovo_otus_file <<"ERROR" << startColor << ": file " << endColor
+						<<" (denovoreads) could not be opened for writing.\n\n"; std::cout << ss.str(); ss.str("");
 					exit(EXIT_FAILURE);
 				}
 			} //~if read was accepted
@@ -701,7 +705,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 
 void Output::report_biom(){
 
-	biomout.open(biomfile, ios::in);
+	biomout.open(biomfile, std::ios::in);
 
 	if (biomout.is_open())
 	{

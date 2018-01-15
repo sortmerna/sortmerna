@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <mutex>
 
 #include "common.hpp"
 #include "options.hpp"
@@ -38,10 +39,13 @@ struct Readstats {
 	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
 	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering. Synchronize? - only incremented by threads.
 
-	// CLustering of reads around references by similarity i.e. 
+	// Clustering of reads around references by similarity i.e. 
 	// {ref: [read,read,...], ref: [read,read...], ...}
 	// calculated after alignment is done on all reads
-	std::map<string, vector<string>> otu_map;
+	std::map<std::string, std::vector<std::string>> otu_map;
+
+	std::mutex total_reads_mapped_cov_lock; // mutex for total_reads_mapped_cov
+	std::mutex otu_map_lock; // mutex for otu_map
 
 	Readstats(Runopts & opts)
 		:
@@ -68,4 +72,6 @@ struct Readstats {
 	void calcSuffix();
 	std::string toString();
 	bool restoreFromDb(KeyValueDatabase & kvdb);
+	void pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str);
+	void increment_total_reads_mapped_cov();
 }; // ~struct Readstats

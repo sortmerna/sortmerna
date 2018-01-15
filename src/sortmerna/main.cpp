@@ -1483,13 +1483,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"filtering alignments passing the E-value threshold.\n\n");
 		exit(EXIT_FAILURE);
 	}
-	// reads input is in compressed format and mmap was chosen
-	if (map_size_set && have_reads_gz)
-	{
-		fprintf(stderr, "\n  %sWARNING%s: [Line %d: %s] loading compressed reads using memory map "
-			"is not possible. Using default buffer I/O.\n", "\033[0;33m", endColor, __LINE__, __FILE__);
-		map_size_set = false;
-	}
+
 	// the list of arguments is correct, welcome the user!
 	if (verbose) welcome();
 	// if neither strand was selected for search, search both
@@ -1571,13 +1565,16 @@ int main(int argc, char** argv)
 	{
 	case Runopts::ALIGN_REPORT::align: 
 		paralleltraversal(opts);
-		runPostProcessor(opts);
 		break;
 	case Runopts::ALIGN_REPORT::postproc:
 		runPostProcessor(opts);
 		break;
 	case Runopts::ALIGN_REPORT::report: 
 		generateReports(opts); 
+		break;
+	case Runopts::ALIGN_REPORT::alipost:
+		paralleltraversal(opts);
+		runPostProcessor(opts);
 		break;
 	case Runopts::ALIGN_REPORT::all: 
 		paralleltraversal(opts);

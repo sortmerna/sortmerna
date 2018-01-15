@@ -87,13 +87,14 @@ void PostProcessor::run()
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started\n";
 	std::cout << ss.str(); ss.str("");
 
-	for (;!readQueue.isDone(); countReads++)
+	for (;!readQueue.isDone();)
 	{
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
 
 		if (read.isEmpty || !read.isValid)	continue;
 
 		callback(read, readstats, refs, opts);
+		++countReads;
 	}
 
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
@@ -134,7 +135,7 @@ void ReportProcessor::run()
 void runPostProcessor(Runopts & opts)
 {
 	int N_READ_THREADS = 1;
-	int N_PROC_THREADS = 1;
+	int N_PROC_THREADS = 1; // opts.num_proc_threads
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 

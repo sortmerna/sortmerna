@@ -29,6 +29,9 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
+#include <vector>
+#include <cstdint>
+
 #include "options.hpp"
 #include "traverse_bursttrie.hpp"
 
@@ -96,7 +99,7 @@ void traversetrie_align(
 	MYBITSET *win_k1_ptr,
 	MYBITSET *win_k1_full,
 	bool &accept_zero_kmer,
-	vector<id_win> &id_hits,
+	std::vector<id_win> &id_hits,
 	int64_t readn, // TODO: never used - remove?
 	uint32_t win_num,
 	uint32_t partialwin,

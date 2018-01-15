@@ -54,7 +54,6 @@ struct Runopts {
 	bool blastout = false; // '--blast' output alignments in various Blast-like formats
 	bool fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
-	bool map_size_set = false; // TODO: remove - mmap related - not used
 	bool pid = false;
 	bool as_percent = false;
 	bool full_search = false;
@@ -63,7 +62,7 @@ struct Runopts {
 	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 
-	enum ALIGN_REPORT { align, postproc, report, all };
+	enum ALIGN_REPORT { align, postproc, report, alipost, all };
 	ALIGN_REPORT alirep = align;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 
