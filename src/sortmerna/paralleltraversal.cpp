@@ -40,7 +40,6 @@
 #include "kseq_load.hpp"
 #include "traverse_bursttrie.hpp"
 #include "alignment.hpp"
-#include "alignment2.hpp"
 
 #include "options.hpp"
 #include "ThreadPool.hpp"

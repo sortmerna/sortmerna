@@ -32,7 +32,6 @@
 #include <sstream>
 
 #include "alignment.hpp"
-#include "alignment2.hpp"
 #include "read.hpp"
 #include "index.hpp"
 #include "refstats.hpp"

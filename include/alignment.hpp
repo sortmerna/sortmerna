@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file alignment.hpp
  * @brief Function and variable definitions for alignment.cpp
@@ -29,15 +30,21 @@
  *               Rob Knight       robknight@ucsd.edu
  */
 
-#ifndef ALIGNMENT_H
-#define ALIGNMENT_H
-
 #include <map>
 #include <queue>
 #include <algorithm>
 
 #include "traverse_bursttrie.hpp"
 #include "ssw.hpp"
+
+ // forward
+class Read;
+struct Runopts;
+struct Index;
+class References;
+class Output;
+struct Readstats;
+class Refstats;
 
 using namespace std;
 
@@ -112,5 +119,9 @@ struct alignment_struct
                    s_align* p) : max_size(max_size), size(size), min_index(min), max_index(max), ptr(p) {}
 };
 
-
-#endif // ~ALIGNMENT_H
+void compute_lis_alignment(
+	Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats, Output & output,
+	bool & search,
+	uint32_t max_SW_score,
+	bool& read_to_count
+);
