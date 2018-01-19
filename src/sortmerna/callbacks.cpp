@@ -24,11 +24,14 @@ void reportsJob(
 	Output & output
 )
 {
-	if (opts.fastxout) {
+	// only needs one loop through all read, no reference file dependency
+	if (opts.fastxout && refs.num == 0 && refs.part == 0) 
+	{
 		output.report_fasta(opts, reads);
 	}
 
-	if (opts.de_novo_otu) {
+	// only needs one loop through all read, no reference file dependency
+	if (opts.de_novo_otu && refs.num == 0 && refs.part == 0) {
 		output.report_denovo(opts, reads);
 	}
 

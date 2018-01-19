@@ -184,7 +184,7 @@ void parallelTraversalJob(
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])
 	{
 		std::stringstream ss;
-		ss << "\n  " << "\033[0;33m" << "WARNING" << "\033[0m"
+		ss << "\n  " << "\033[0;33m" << "WARNING" << endColor
 			<< ": Processor thread: " << std::this_thread::get_id()
 			<< " The read: " << read.id << " is shorter "
 			<< "than " << refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
@@ -343,7 +343,7 @@ void parallelTraversalJob(
 				}
 			}
 
-		check_score:
+		//check_score:
 			// continue read analysis if threshold seeds were matched
 			if (win_num == numwin - 1)
 			{

@@ -57,7 +57,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		if (!stats.good())
 		{
 			fprintf(stderr, "\n  %sERROR%s: The index '%s' does not exist.\n", startColor,
-				"\033[0m", (char*)(opts.indexfiles[index_num].second + ".stats").c_str());
+				endColor, (char*)(opts.indexfiles[index_num].second + ".stats").c_str());
 			fprintf(stderr, "  Make sure you have constructed your index using the command `indexdb'. "
 				"See `indexdb -h' for help.\n\n");
 			exit(EXIT_FAILURE);
@@ -78,7 +78,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		if (fastafile == NULL)
 		{
 			fprintf(stderr, "    %sERROR%s: could not open FASTA reference file: %s .\n",
-				startColor, "\033[0m", opts.indexfiles[index_num].first.c_str());
+				startColor, endColor, opts.indexfiles[index_num].first.c_str());
 			exit(EXIT_FAILURE);
 		}
 
@@ -89,7 +89,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		if (sz != filesize)
 		{
 			fprintf(stderr, "    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n",
-				startColor, "\033[0m", (char*)(opts.indexfiles[index_num].first).c_str());
+				startColor, endColor, (char*)(opts.indexfiles[index_num].first).c_str());
 			fprintf(stderr, "    does not appear to be the same FASTA file (%s) used to build the index %s.\n",
 				fastafile_name, (char*)(opts.indexfiles[index_num].second).c_str());
 			fprintf(stderr, "    Check your --ref list of files and corresponding indexes.\n\n");

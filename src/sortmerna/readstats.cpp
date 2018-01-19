@@ -119,7 +119,7 @@ void Readstats::calcSuffix()
 	const std::string suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1);
 	if (suff.length() > 0 && !opts.have_reads_gz)
 		suffix.assign(suff);
-	else if (filesig == '>')
+	else if (filesig == FASTA_HEADER_START)
 		suffix.assign("fasta");
 	else
 		suffix.assign("fastq");

@@ -40,8 +40,8 @@
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
-const char WIN_ENDLINE = '\r';
-const char LIN_ENDLINE = '\n';
+//const char WIN_ENDLINE = '\r';
+//const char UNI_ENDLINE = '\n';
 const int QUEUE_SIZE_MAX = 10; // TODO: move to process options?
 
 enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read

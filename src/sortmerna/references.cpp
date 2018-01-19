@@ -3,11 +3,12 @@
  * Created: Dec 23, 2017 Sat
  */
 #include <fstream>
+#include <sstream>
+#include <iostream>
 #include <cctype> // std::isspace
 #include <ios>
 #include <cstdint>
 #include <locale>
-#include <cctype> // std::isspace
 
 #include "references.hpp"
 #include "refstats.hpp"
@@ -17,6 +18,7 @@
 // prototype: 'load_ref'
 void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
+	std::stringstream ss;
 	num = idx_num;
 	part = idx_part;
 	uint32_t numseq_part = refstats.index_parts_stats_vec[idx_num][idx_part].numseq_part;
@@ -25,20 +27,21 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 
 	if (!ifs.is_open())
 	{
-		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not open file %s\n",
-			startColor, "\033[0m", __LINE__, __FILE__, opts.indexfiles[idx_num].first.c_str());
+		ss << "  " << startColor << "ERROR" << endColor  << ": [Line " << __LINE__ << ": " << __FILE__ 
+			<< "] could not open file " << opts.indexfiles[idx_num].first  << std::endl;
+		std::cerr << ss.str(); ss.str("");
 		exit(EXIT_FAILURE);
 	}
 
 	// set the file pointer to the first sequence added to the index for this index file section
-	//if (fseek(fp, index.index_parts_stats_vec[idx_num][idx_part].start_part, SEEK_SET) != 0)
 	ifs.seekg(refstats.index_parts_stats_vec[idx_num][idx_part].start_part);
 	if (ifs.fail())
 	{
-		fprintf(stderr, "  %sERROR%s: [Line %d: %s] could not locate the sequences used to construct the index.\n",
-			startColor, "\033[0m", __LINE__, __FILE__);
-		fprintf(stderr, "  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: %s.\n",
-			opts.indexfiles[idx_num].first.c_str());
+		ss << "  " << startColor << "ERROR" << endColor << ": [Line " << __LINE__ << ": " << __FILE__
+			<< "] could not locate the sequences used to construct the index" << std::endl
+			<< "  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: " 
+			<< opts.indexfiles[idx_num].first << std::endl;
+		std::cerr << ss.str(); ss.str("");
 	}
 
 	// load references sequences, skipping the empty lines & spaces
@@ -93,19 +96,23 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		} // ~header or last record
 		else
 		{
-			++count; // count non-header lines
-			if ((!isFastq && count > 1) || (isFastq && count > 3)) {
-				fprintf(stderr, "  %sERROR%s: [Line %d: %s] your reference sequences are not in FASTA/Q format "
-					"(there is an extra new line).", startColor, "\033[0m", __LINE__, __FILE__);
+			if (isFastq && count > 3) 
+			{
+				ss << "  " << startColor << "ERROR" << endColor << " too many lines (> 4) for FASTQ file" << std::endl;
+				std::cerr << ss.str(); ss.str("");
 				exit(EXIT_FAILURE);
 			}
+
+			++count; // count the four FASTQ lines
+
 			if (isFastq && line[0] == '+') continue;
+
 			if (isFastq && count == 3)
 			{
-				// line = removeWs(line); // remove whitespace from line 
 				rec.quality = line;
 				continue;
 			}
+
 			convert_fix(line);
 			rec.sequence += line;
 		} // ~not header
@@ -113,7 +120,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 	} // ~for
 } // ~References::load
 
-  // convert sequence to numberical form and fix ambiguous chars
+  // convert sequence to numerical form and fix ambiguous chars
 void References::convert_fix(std::string & seq)
 {
 	for (std::string::iterator it = seq.begin(); it != seq.end(); ++it)

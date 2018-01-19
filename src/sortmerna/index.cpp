@@ -1,6 +1,6 @@
 /**
- * @file preprocess_data.cpp
- * @brief Load data (reads) using mmap.
+ * @file index.cpp
+ * @brief Representation of indexed reference information.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
  * @copyright 2012-16 Bonsai Bioinformatics Research Group
@@ -173,7 +173,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 								char* bucket = new char[sizeofbucket]();
 								if (bucket == NULL)
 								{
-									fprintf(stderr, "\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n", startColor, "\033[0m");
+									fprintf(stderr, "\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n", startColor, endColor);
 									exit(EXIT_FAILURE);
 								}
 								btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);
@@ -191,7 +191,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 							// ?
 							default:
 							{
-								fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n", startColor, "\033[0m", flag);
+								fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n", startColor, endColor, flag);
 								exit(EXIT_FAILURE);
 							}
 							break;

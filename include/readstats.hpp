@@ -29,7 +29,7 @@ struct Readstats {
 	uint64_t total_reads_mapped; // Set in 'compute_lis_alignment2'
 	// total number of reads mapped passing E - value threshold and %id and/or %query coverage thresholds
 	uint64_t total_reads_mapped_cov; // Set in 'compute_lis_alignment2'
-	char filesig = '>';
+	char filesig = FASTA_HEADER_START;
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
 	// Non-synchronized

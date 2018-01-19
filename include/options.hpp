@@ -13,7 +13,7 @@
 #include "common.hpp"
 
 struct Runopts {
-	std::string kvdbPath = "C:/a01_projects/clarity_genomics/data/kvdb"; // key-value database for alignment results
+	std::string kvdbPath; // '-d' (opt_d_KeyValDatabase) key-value database for alignment results
 	std::string readsfile; // '--reads | --reads-gz' reads file path
 	std::string filetype_ar; // '--aligned' aligned reads output file
 	std::string filetype_or; // '--other' rejected reads output file
@@ -45,8 +45,8 @@ struct Runopts {
 
 	bool forward = false; // '-F' search only the forward strand
 	bool reverse = false; // '-R' search only the reverse-complementary strand
-	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file (interleaved reads only, see Section 4.2.4 of User Manual)
-	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file (interleaved reads only, see Section 4.2.4 of User Manual)
+	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file. Only Fasta/q and De-novo reporting.
+	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file. Only Fasta/q and De-novo reporting.
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
 	bool doLog = false; // '--log' output overall statistics
 	bool print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
@@ -61,6 +61,7 @@ struct Runopts {
 	bool verbose; /* Verbose mode */
 	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
+	bool interactive = false; // start interactive session
 
 	enum ALIGN_REPORT { align, postproc, report, alipost, all };
 	ALIGN_REPORT alirep = align;
@@ -144,6 +145,7 @@ private:
 	void optCoverage(char **argv, int &narg);
 	void optVersion(char **argv, int &narg);
 	void optReport(char **argv, int &narg);
+	void optInteractive(char **argv, int &narg); // interactive session
 	void optUnknown(char **argv, int &narg, char * opt);
 	void opt_e_Evalue(char **argv, int &narg);
 	void opt_a_NumCpus(char **argv, int &narg);
@@ -152,5 +154,6 @@ private:
 	void opt_h_Help();
 	void opt_v_Verbose(int & narg);
 	void opt_N_MatchAmbiguous(char **argv, int &narg);
+	void opt_d_KeyValDatabase(char **argv, int &narg); // Key-Value Database directory path (kvdbPath)
 	void opt_Default(char **argv, int &narg);
 };

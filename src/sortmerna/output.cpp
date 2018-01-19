@@ -1,6 +1,33 @@
 /**
-* FILE: output.cpp
-* Created: Nov 26, 2017 Sun
+* @FILE: output.cpp
+* @Created: Nov 26, 2017 Sun
+* @brief Object for outputting results in various formats
+* @parblock
+* SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
+* @copyright 2012-16 Bonsai Bioinformatics Research Group
+* @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+*
+* SortMeRNA is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* SortMeRNA is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public License
+* along with SortMeRNA.  If not, see <http://www.gnu.org/licenses/>.
+* @endparblock
+*
+* @contributors Jenya Kopylova, jenya.kopylov@gmail.com
+*               Laurent Noé, laurent.noe@lifl.fr
+*               Pierre Pericard, pierre.pericard@lifl.fr
+*               Daniel McDonald, wasade@gmail.com
+*               Mikaël Salson, mikael.salson@lifl.fr
+*               Hélène Touzet, helene.touzet@lifl.fr
+*               Rob Knight, robknight@ucsd.edu
 */
 #include "unistd.h"
 #include <iomanip>
@@ -39,45 +66,45 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.fastxout)
 		{
 			// fasta/fastq output
-			acceptedstrings = opts.filetype_ar;
+			fastaOutFile = opts.filetype_ar;
 			if (opts.pid)
 			{
-				acceptedstrings.append("_");
-				acceptedstrings.append(pidStr);
+				fastaOutFile.append("_");
+				fastaOutFile.append(pidStr);
 			}
-			acceptedstrings.append(".");
-			acceptedstrings.append(readstats.suffix.c_str());
+			fastaOutFile.append(".");
+			fastaOutFile.append(readstats.suffix);
 
-			acceptedreads.open(acceptedstrings);
-			acceptedreads.close();
+			fastaout.open(fastaOutFile);
+			fastaout.close();
 		}
 
 		if (opts.samout)
 		{
 			// sam output
-			acceptedstrings_sam = opts.filetype_ar;
+			samoutFile = opts.filetype_ar;
 			if (opts.pid)
 			{
-				acceptedstrings_sam.append("_");
-				acceptedstrings_sam.append(pidStr);
+				samoutFile.append("_");
+				samoutFile.append(pidStr);
 			}
-			acceptedstrings_sam.append(".sam");
-			acceptedsam.open(acceptedstrings_sam);
-			acceptedsam.close();
+			samoutFile.append(".sam");
+			samout.open(samoutFile);
+			samout.close();
 		}
 
 		if (opts.blastout)
 		{
 			// blast output
-			acceptedstrings_blast = opts.filetype_ar;
+			blastoutFile = opts.filetype_ar;
 			if (opts.pid)
 			{
-				acceptedstrings_blast.append("_");
-				acceptedstrings_blast.append(pidStr);
+				blastoutFile.append("_");
+				blastoutFile.append(pidStr);
 			}
-			acceptedstrings_blast.append(".blast");
-			acceptedblast.open(acceptedstrings_blast);
-			acceptedblast.close();
+			blastoutFile.append(".blast");
+			blastout.open(blastoutFile);
+			blastout.close();
 		}
 
 		// don't touch the log if only reports are generated
@@ -100,14 +127,14 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		{
 			// OTU map output file
 			std::ofstream otumap;
-			acceptedotumap_file = opts.filetype_ar;
+			otumapFile = opts.filetype_ar;
 			if (opts.pid)
 			{
-				acceptedotumap_file.append("_");
-				acceptedotumap_file.append(pidStr);
+				otumapFile.append("_");
+				otumapFile.append(pidStr);
 			}
-			acceptedotumap_file.append("_otus.txt");
-			otumap.open(acceptedotumap_file);
+			otumapFile.append("_otus.txt");
+			otumap.open(otumapFile);
 			otumap.close();
 		}
 
@@ -121,7 +148,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 				denovo_otus_file.append(pidStr);
 			}
 			denovo_otus_file.append("_denovo.");
-			denovo_otus_file.append(readstats.suffix.c_str());
+			denovo_otus_file.append(readstats.suffix);
 
 			denovo_otu.open(denovo_otus_file);
 			denovo_otu.close();
@@ -133,7 +160,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.fastxout)
 		{
 			// output stream for other reads
-			std::ofstream otherreads;
+			std::ofstream fastaNonAlignOut;
 			// add suffix database name to accepted reads file
 			if (opts.pid)
 			{
@@ -143,8 +170,8 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			opts.filetype_or += ".";
 			opts.filetype_or += readstats.suffix;
 			// create the other reads file
-			otherreads.open(opts.filetype_or);
-			otherreads.close();
+			fastaNonAlignOut.open(opts.filetype_or);
+			fastaNonAlignOut.close();
 		}
 	}
 } // ~Output::init
@@ -185,21 +212,21 @@ void Output::report_blast
 			// Blast-like pairwise alignment (only for aligned reads)
 			if (opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
 			{
-				acceptedblast << "Sequence ID: ";
-				acceptedblast << ref_id; // print only start of the header till first space
-				acceptedblast << std::endl;
+				blastout << "Sequence ID: ";
+				blastout << ref_id; // print only start of the header till first space
+				blastout << std::endl;
 
-				acceptedblast << "Query ID: ";
-				acceptedblast << read.getSeqId();
-				acceptedblast << std::endl;
+				blastout << "Query ID: ";
+				blastout << read.getSeqId();
+				blastout << std::endl;
 
 				//fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
-				acceptedblast << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
-				acceptedblast.precision(3);
-				acceptedblast << "Expect: " << evalue_score << "\t";
+				blastout << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
+				blastout.precision(3);
+				blastout << "Expect: " << evalue_score << "\t";
 
-				if (read.hits_align_info.alignv[i].strand) acceptedblast << "strand: +\n\n";
-				else acceptedblast << "strand: -\n\n";
+				if (read.hits_align_info.alignv[i].strand) blastout << "strand: +\n\n";
+				else blastout << "strand: -\n\n";
 
 				if (read.hits_align_info.alignv[i].cigar.size() > 0)
 				{
@@ -212,9 +239,9 @@ void Output::report_blast
 						int32_t count = 0;
 						int32_t q = qb;
 						int32_t p = pb;
-						acceptedblast << "Target: ";
-						acceptedblast.width(8);
-						acceptedblast << q + 1 << "    ";
+						blastout << "Target: ";
+						blastout.width(8);
+						blastout << q + 1 << "    ";
 						// process CIGAR
 						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 						{
@@ -225,10 +252,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 1) acceptedblast << "-";
+								if (letter == 1) blastout << "-";
 								else
 								{
-									acceptedblast << to_char[(int)refseq[q]];
+									blastout << to_char[(int)refseq[q]];
 									++q;
 								}
 								++count;
@@ -236,9 +263,9 @@ void Output::report_blast
 							}
 						}
 					step2:
-						acceptedblast << "    " << q << "\n";
-						acceptedblast.width(20);
-						acceptedblast << " ";
+						blastout << "    " << q << "\n";
+						blastout.width(20);
+						blastout << " ";
 						q = qb;
 						count = 0;
 						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
@@ -251,14 +278,14 @@ void Output::report_blast
 							{
 								if (letter == 0)
 								{
-									if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.sequence[p]]) acceptedblast << "|";
-									else acceptedblast << "*";
+									if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.sequence[p]]) blastout << "|";
+									else blastout << "*";
 									++q;
 									++p;
 								}
 								else
 								{
-									acceptedblast << " ";
+									blastout << " ";
 									if (letter == 1) ++p;
 									else ++q;
 								}
@@ -272,9 +299,9 @@ void Output::report_blast
 						}
 					step3:
 						p = pb;
-						acceptedblast << "\nQuery: ";
-						acceptedblast.width(9);
-						acceptedblast << p + 1 << "    ";
+						blastout << "\nQuery: ";
+						blastout.width(9);
+						blastout << p + 1 << "    ";
 						count = 0;
 						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 						{
@@ -283,10 +310,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 2) acceptedblast << "-";
+								if (letter == 2) blastout << "-";
 								else
 								{
-									acceptedblast << (char)to_char[(int)read.sequence[p]];
+									blastout << (char)to_char[(int)read.sequence[p]];
 									++p;
 								}
 								++count;
@@ -302,7 +329,7 @@ void Output::report_blast
 						e = c;
 						left = 0;
 					end:
-						acceptedblast << "    " << p << "\n\n";
+						blastout << "    " << p << "\n\n";
 					}
 				}
 			}
@@ -310,21 +337,21 @@ void Output::report_blast
 			else if (opts.blastFormat == BlastFormat::TABULAR)
 			{
 				// (1) Query ID
-				acceptedblast << read.getSeqId();
+				blastout << read.getSeqId();
 
 				// print null alignment for non-aligned read
 				if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
 				{
-					acceptedblast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+					blastout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
 					for (uint32_t l = 0; l < opts.blastops.size(); l++)
 					{
 						if (opts.blastops[l].compare("cigar") == 0)
-							acceptedblast << "\t*";
+							blastout << "\t*";
 						else if (opts.blastops[l].compare("qcov") == 0)
-							acceptedblast << "\t0";
+							blastout << "\t0";
 						else if (opts.blastops[l].compare("qstrand") == 0)
-							acceptedblast << "\t*";
-						acceptedblast << "\n";
+							blastout << "\t*";
+						blastout << "\n";
 					}
 					return;
 				}
@@ -332,71 +359,71 @@ void Output::report_blast
 				read.calcMismatchGapId(refs, i, mismatches, gaps, id);
 				int32_t total_pos = mismatches + gaps + id;
 
-				acceptedblast << "\t";
+				blastout << "\t";
 				// (2) Subject
-				acceptedblast << ref_id << "\t";
+				blastout << ref_id << "\t";
 				// (3) %id
-				acceptedblast.precision(3);
-				acceptedblast << (double)id / (mismatches + gaps + id) * 100 << "\t";
+				blastout.precision(3);
+				blastout << (double)id / (mismatches + gaps + id) * 100 << "\t";
 				// (4) alignment length
-				acceptedblast << (read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) << "\t";
+				blastout << (read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) << "\t";
 				// (5) mismatches
-				acceptedblast << mismatches << "\t";
+				blastout << mismatches << "\t";
 				// (6) gap openings
-				acceptedblast << gaps << "\t";
+				blastout << gaps << "\t";
 				// (7) q.start
-				acceptedblast << read.hits_align_info.alignv[i].read_begin1 + 1 << "\t";
+				blastout << read.hits_align_info.alignv[i].read_begin1 + 1 << "\t";
 				// (8) q.end
-				acceptedblast << read.hits_align_info.alignv[i].read_end1 + 1 << "\t";
+				blastout << read.hits_align_info.alignv[i].read_end1 + 1 << "\t";
 				// (9) s.start
-				acceptedblast << read.hits_align_info.alignv[i].ref_begin1 + 1 << "\t";
+				blastout << read.hits_align_info.alignv[i].ref_begin1 + 1 << "\t";
 				// (10) s.end
-				acceptedblast << read.hits_align_info.alignv[i].ref_end1 + 1 << "\t";
+				blastout << read.hits_align_info.alignv[i].ref_end1 + 1 << "\t";
 				// (11) e-value
-				acceptedblast << evalue_score << "\t";
+				blastout << evalue_score << "\t";
 				// (12) bit score
-				acceptedblast << bitscore;
+				blastout << bitscore;
 				// OPTIONAL columns
 				for (uint32_t l = 0; l < opts.blastops.size(); l++)
 				{
 					// output CIGAR string
 					if (opts.blastops[l].compare("cigar") == 0)
 					{
-						acceptedblast << "\t";
+						blastout << "\t";
 						// masked region at beginning of alignment
-						if (read.hits_align_info.alignv[i].read_begin1 != 0) acceptedblast << read.hits_align_info.alignv[i].read_begin1 << "S";
+						if (read.hits_align_info.alignv[i].read_begin1 != 0) blastout << read.hits_align_info.alignv[i].read_begin1 << "S";
 						for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 						{
 							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
 							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-							acceptedblast << length;
-							if (letter == 0) acceptedblast << "M";
-							else if (letter == 1) acceptedblast << "I";
-							else acceptedblast << "D";
+							blastout << length;
+							if (letter == 0) blastout << "M";
+							else if (letter == 1) blastout << "I";
+							else blastout << "D";
 						}
 
 						uint32_t end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
 						// output the masked region at end of alignment
-						if (end_mask > 0) acceptedblast << end_mask << "S";
+						if (end_mask > 0) blastout << end_mask << "S";
 					}
 					// output % query coverage
 					else if (opts.blastops[l].compare("qcov") == 0)
 					{
-						acceptedblast << "\t";
-						acceptedblast.precision(3);
+						blastout << "\t";
+						blastout.precision(3);
 						double coverage = abs(read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1)
 							/ read.hits_align_info.alignv[i].readlen;
-						acceptedblast << coverage * 100; // (double)align_len / readlen
+						blastout << coverage * 100; // (double)align_len / readlen
 					}
 					// output strand
 					else if (opts.blastops[l].compare("qstrand") == 0)
 					{
-						acceptedblast << "\t";
-						if (read.hits_align_info.alignv[i].strand) acceptedblast << "+";
-						else acceptedblast << "-";
+						blastout << "\t";
+						if (read.hits_align_info.alignv[i].strand) blastout << "+";
+						else blastout << "-";
 					}
 				}
-				acceptedblast << "\n";
+				blastout << "\n";
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
@@ -405,7 +432,7 @@ void Output::report_blast
 
 void Output::writeSamHeader(Runopts & opts)
 {
-	acceptedsam << "@HD\tVN:1.0\tSO:unsorted\n";
+	samout << "@HD\tVN:1.0\tSO:unsorted\n";
 
 	// TODO: this line is taken from "Index::load_stats". To be finished (20171215).
 #if 0
@@ -435,7 +462,7 @@ void Output::writeSamHeader(Runopts & opts)
 		} // ~for
 	} // ~for
 #endif
-	acceptedsam << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
+	samout << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
 
 } // ~Output::writeSamHeader
 
@@ -455,8 +482,8 @@ void Output::report_sam
 	if (opts.print_all_reads && read.hits_align_info.alignv.size() == 0)
 	{
 		// (1) Query
-		acceptedsam << read.getSeqId();
-		acceptedsam << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
+		samout << read.getSeqId();
+		samout << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
 	}
 
@@ -467,61 +494,61 @@ void Output::report_sam
 		if (read.hits_align_info.alignv[i].index_num == refs.num && read.hits_align_info.alignv[i].part == refs.part)
 		{
 			// (1) Query
-			acceptedsam << read.getSeqId();
+			samout << read.getSeqId();
 			// (2) flag Forward/Reversed
-			if (!read.hits_align_info.alignv[i].strand) acceptedsam << "\t16\t";
-			else acceptedsam << "\t0\t";
+			if (!read.hits_align_info.alignv[i].strand) samout << "\t16\t";
+			else samout << "\t0\t";
 			// (3) Subject
-			acceptedsam << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
+			samout << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 			// (4) Ref start
-			acceptedsam << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1;
+			samout << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1;
 			// (5) mapq
-			acceptedsam << "\t" << 255 << "\t";
+			samout << "\t" << 255 << "\t";
 			// (6) CIGAR
 			// output the masked region at beginning of alignment
 			if (read.hits_align_info.alignv[i].read_begin1 != 0)
-				acceptedsam << read.hits_align_info.alignv[i].read_begin1 << "S";
+				samout << read.hits_align_info.alignv[i].read_begin1 << "S";
 
 			for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
 			{
 				uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
 				uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
-				acceptedsam << length;
-				if (letter == 0) acceptedsam << "M";
-				else if (letter == 1) acceptedsam << "I";
-				else acceptedsam << "D";
+				samout << length;
+				if (letter == 0) samout << "M";
+				else if (letter == 1) samout << "I";
+				else samout << "D";
 			}
 
 			uint32_t end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1;
 			// output the masked region at end of alignment
-			if (end_mask > 0) acceptedsam << end_mask << "S";
+			if (end_mask > 0) samout << end_mask << "S";
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
-			acceptedsam << "\t*\t0\t0\t";
+			samout << "\t*\t0\t0\t";
 			// (10) SEQ
-			acceptedsam << read.sequence;
+			samout << read.sequence;
 			// (11) QUAL
-			acceptedsam << "\t";
+			samout << "\t";
 			// reverse-complement strand
 			if (read.quality.size() > 0 && !read.hits_align_info.alignv[i].strand)
 			{
 				std::reverse(read.quality.begin(), read.quality.end());
-				acceptedsam << read.quality;
+				samout << read.quality;
 			}
 			else if (read.quality.size() > 0) // forward strand
 			{
-				acceptedsam << read.quality;
+				samout << read.quality;
 				// FASTA read
 			}
-			else acceptedsam << "*";
+			else samout << "*";
 
 			// (12) OPTIONAL FIELD: SW alignment score generated by aligner
-			acceptedsam << "\tAS:i:" << read.hits_align_info.alignv[i].score1;
+			samout << "\tAS:i:" << read.hits_align_info.alignv[i].score1;
 			// (13) OPTIONAL FIELD: edit distance to the reference
 			uint32_t mismatches = 0;
 			uint32_t gaps = 0;
 			uint32_t id = 0;
 			read.calcMismatchGapId(refs, i, mismatches, gaps, id);
-			acceptedsam << "\tNM:i:" << mismatches + gaps << "\n";
+			samout << "\tNM:i:" << mismatches + gaps << "\n";
 		}
 	} // ~for read.alignments
 } // ~Output::report_sam
@@ -534,18 +561,10 @@ void Output::report_sam
 void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 {
 	std::stringstream ss;
-	double s, f; // for timing
 
 	// output accepted reads
-	if ((opts.filetype_ar.size() != 0) && opts.fastxout)
+	if (opts.fastxout && fastaout.is_open())
 	{
-		ss << "    Writing aligned FASTA/FASTQ ... ";
-		std::cout << ss.str(); ss.str("");
-
-		TIME(s);
-		if (opts.fastxout)
-			acceptedreads.open(acceptedstrings, std::ios::app | std::ios::binary);
-
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
 		{
@@ -556,17 +575,8 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				// output aligned read
 				if (opts.fastxout)
 				{
-					if (acceptedreads.is_open())
-					{
-						for (Read read: reads)
-							acceptedreads << read.header << std::endl << read.sequence << std::endl;
-					}
-					else
-					{
-						fprintf(stderr, "  %sERROR%s: [Line %d: %s] file %s could not be opened for writing.\n\n",
-							"\033[0;31m", "\033[0m", __LINE__, __FILE__, acceptedstrings.c_str());
-						exit(EXIT_FAILURE);
-					}
+					for (Read read: reads)
+						fastaout << read.header << std::endl << read.sequence << std::endl;
 				}
 			}//~the read was accepted
 		}//~if paired-in or paired-out
@@ -578,30 +588,15 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				// output aligned read
 				if (opts.fastxout)
 				{
-					if (acceptedreads.is_open())
-					{
-						acceptedreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
-					}
-					else
-					{
-						fprintf(stderr, "  %sERROR%s: file %s (acceptedstrings) could not be "
-							"opened for writing.\n\n", "\033[0;31m", acceptedstrings.c_str(), "\033[0m");
-						exit(EXIT_FAILURE);
-					}
+					fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
 				}
 			} //~if read was accepted
 		}//~if not paired-in or paired-out
-		if (acceptedreads.is_open()) acceptedreads.close();
-		TIME(f);
-		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
 	}//~if ( ptr_filetype_ar != NULL )
 
-	 // output other reads
-	if ((opts.filetype_or.size() != 0) && opts.fastxout)
+	// output other reads
+	if (opts.fastxout && fastaNonAlignOut.is_open())
 	{
-		ss << "    Writing not-aligned FASTA/FASTQ ... "; std::cout << ss.str(); ss.str("");
-		TIME(s);
-		otherreads.open(opts.filetype_or, std::ios::app | std::ios::binary);
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
 		{
@@ -609,16 +604,8 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			if ((!reads[0].hit && !reads[1].hit) ||
 				((reads[0].hit ^ reads[1].hit) && opts.pairedout))
 			{
-				if (otherreads.is_open())
-				{
-					for (Read read : reads)
-						otherreads << read.header << std::endl << read.sequence << std::endl;
-				}
-				else
-				{
-					fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", opts.filetype_or.c_str(), "\033[0m");
-					exit(EXIT_FAILURE);
-				}
+				for (Read read : reads)
+					fastaNonAlignOut << read.header << std::endl << read.sequence << std::endl;
 			}//~the read was accepted
 		}//~if (pairedin_gv || pairedout_gv)
 		else // output reads single
@@ -626,37 +613,19 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			// the read was accepted
 			if (!reads[0].hit)
 			{
-				// accepted reads file output
-				if (otherreads.is_open())
-				{
-					acceptedreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
-				}
-				else
-				{
-					fprintf(stderr, "  %sERROR%s: file %s could not be opened for writing.\n\n", "\033[0;31m", opts.filetype_or.c_str(), "\033[0m");
-					exit(EXIT_FAILURE);
-				}
+				fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
 			}
 		} // ~ if (pairedin_gv || pairedout_gv)
-		if (otherreads.is_open()) otherreads.close();
-		TIME(f);
-		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
-	}//~if ( opts.fastxout )  
+	} //~if ( opts.fastxout )  
 } // ~Output::report_fasta
 
 void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 {
 	std::stringstream ss;
-	double s, f; // for timing
 
 	// output reads with < id% alignment (passing E-value) for de novo clustering
 	if (denovo_otus_file.size() != 0)
 	{
-		ss << "    Writing de novo FASTA/FASTQ ... "; std::cout << ss.str(); ss.str("");
-		TIME(s);
-
-		denovoreads.open(denovo_otus_file, std::ios::app | std::ios::binary);
-
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
 		{
@@ -664,17 +633,8 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 			if (reads[0].hit_denovo || reads[1].hit_denovo && opts.pairedin)
 			{
 				// output aligned read
-				if (denovoreads.is_open())
-				{
-					for (Read read : reads)
-						denovoreads << read.header << std::endl << read.sequence << std::endl;
-				}
-				else
-				{
-					ss << "  " << "\033[0;31m" << "ERROR" << denovo_otus_file << ": file " << "\033[0m"
-						" (denovoreads) could not be opened for writing.\n\n"; std::cout << ss.str(); ss.str("");
-					exit(EXIT_FAILURE);
-				}
+				for (Read read : reads)
+					denovoreads << read.header << std::endl << read.sequence << std::endl;
 			}//~the read was accepted
 		}//~if paired-in or paired-out
 		else // regular or pair-ended reads don't need to go into the same file
@@ -683,24 +643,10 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 			if (reads[0].hit_denovo)
 			{
 				// output aligned read
-				if (denovoreads.is_open())
-				{
-					denovoreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
-				}
-				else
-				{
-					ss << "  " << denovo_otus_file <<"ERROR" << startColor << ": file " << endColor
-						<<" (denovoreads) could not be opened for writing.\n\n"; std::cout << ss.str(); ss.str("");
-					exit(EXIT_FAILURE);
-				}
+				denovoreads << reads[0].header << std::endl << reads[0].sequence << std::endl;
 			} //~if read was accepted
 		}//~if not paired-in or paired-out
-
-		if (denovoreads.is_open()) denovoreads.close();
-
-		TIME(f);
-		ss << " done [" << std::setprecision(2) << (f - s) << " sec]\n"; std::cout << ss.str(); ss.str("");
-	}//~if ( ptr_filetype_ar != NULL )
+	}//~if ( denovo_otus_file set )
 } // ~Output::report_denovo
 
 void Output::report_biom(){
@@ -730,22 +676,69 @@ void Output::report_biom(){
  */
 void Output::openfiles(Runopts & opts)
 {
-	if (opts.blastout) acceptedblast.open(acceptedstrings_blast);
+	std::stringstream ss;
 
-	if (opts.samout) { 
-		acceptedsam.open(acceptedstrings_sam);
-		if (!acceptedsam.good())
+	if (opts.blastout) {
+		blastout.open(blastoutFile);
+		if (!blastout.good())
 		{
-			fprintf(stderr, "  %sERROR%s: could not open SAM output file for writing.\n", startColor, endColor);
+			ss << "  " << startColor << "ERROR" << endColor << ": could not open BLAST output file for writing.\n";
+			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}
 	}
-}
+
+	if (opts.samout) {
+		samout.open(samoutFile);
+		if (!samout.good())
+		{
+			ss << "  " << startColor  << "ERROR" << endColor  << ": could not open SAM output file for writing.\n";
+			std::cerr << ss.str(); ss.str("");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (opts.fastxout) {
+		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
+		if (!fastaout.good())
+		{
+			ss << "  " << startColor << "ERROR" << endColor << ": could not open FASTA/Q output file for writing.\n";
+			std::cerr << ss.str(); ss.str("");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (opts.fastxout && opts.filetype_or.size() != 0)
+	{
+		fastaNonAlignOut.open(opts.filetype_or, std::ios::app | std::ios::binary);
+		if (!fastaNonAlignOut.good())
+		{
+			ss << "  " << startColor << "ERROR" << endColor << ": could not open FASTA/Q Non-aligned output file for writing.\n";
+			std::cerr << ss.str(); ss.str("");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (denovo_otus_file.size() != 0)
+	{
+		denovoreads.open(denovo_otus_file, std::ios::app | std::ios::binary);
+		if (!denovoreads.good())
+		{
+			ss << "  " << startColor << "ERROR" << denovo_otus_file << ": file " << endColor
+				" (denovoreads) could not be opened for writing.\n\n";
+			std::cerr << ss.str(); ss.str("");
+			exit(EXIT_FAILURE);
+		}
+	}
+} // ~Output::openfiles
 
 void Output::closefiles()
 {
-	if (acceptedblast.is_open()) acceptedblast.close();
-	if (acceptedsam.is_open()) acceptedsam.close();
+	if (blastout.is_open()) blastout.close();
+	if (samout.is_open()) samout.close();
+	if (fastaout.is_open()) fastaout.close();
+	if (fastaNonAlignOut.is_open()) fastaNonAlignOut.close();
+	if (denovoreads.is_open()) denovoreads.close();
 }
 
 // called from main. TODO: move into a class?
@@ -807,8 +800,10 @@ void generateReports(Runopts & opts)
 			ss << "   Done reference " << index_num << " Part: " << idx_part + 1
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
 			std::cout << ss.str(); ss.str("");
+			if (!opts.blastout && !opts.samout)	goto done1;
 		} // ~for(idx_part)
 	} // ~for(index_num)
+done1:
 	output.closefiles();
 	std::cout << "\tDone generateReports\n";
 } // ~generateReports

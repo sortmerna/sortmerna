@@ -38,43 +38,4 @@
 //! SIMD Smith-Waterman alignment library
 #include "indexdb.hpp"
 
-
-void
-report_sam (
-	std::ofstream &fileout,
-    s_align* a,
-    const char* read_name,
-    const char* read_seq,
-    const char* read_qual,
-    const char* ref_name,
-    const char* ref_seq,
-    uint32_t readlen,
-    bool strand,
-    uint32_t diff
-);
-
-void
-report_fasta (
-	char* acceptedstrings,
-    char* ptr_filetype_or,
-    char* ptr_filetype_ar,
-    char** reads,
-    uint64_t strs,
-    std::vector<bool>& read_hits,
-    uint32_t file_s,
-    char* finalnt
-);
-
-void
-report_denovo(
-	char *denovo_otus_file,
-    char **reads,
-    uint64_t strs,
-    std::vector<bool>& read_hits_denovo,
-    uint32_t file_s,
-    char *finalnt
-);
-
-void report_biom (char* biomfile);
-
 #endif

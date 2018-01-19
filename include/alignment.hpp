@@ -37,7 +37,6 @@
 #include <algorithm>
 
 #include "traverse_bursttrie.hpp"
-#include "outputformats.hpp"
 #include "ssw.hpp"
 
 using namespace std;

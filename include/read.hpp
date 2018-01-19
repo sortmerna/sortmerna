@@ -221,7 +221,7 @@ public:
 		if (sequence.size() > READLEN)
 		{
 			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
-				startColor, "\033[0m", __LINE__, __FILE__, READLEN);
+				startColor, endColor, __LINE__, __FILE__, READLEN);
 			fprintf(stderr, "  Please check your reads or contact the authors.\n");
 			exit(EXIT_FAILURE);
 		}

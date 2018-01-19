@@ -36,6 +36,7 @@
 #include "paralleltraversal.hpp"
 #include "common.hpp"
 #include "output.hpp"
+#include "cmd.hpp"
 
 // standard
 #include <limits>
@@ -446,7 +447,7 @@ void Runopts::optAligned(char **argv, int &narg)
 		}
 		else
 		{
-			fprintf(stderr, "\n  %sERROR%s: the --aligned [STRING] directory "
+			fprintf(stderr, "\n  %sERROR%s: the --aligned <STRING> directory "
 				"%s could not be opened: %s.\n\n", startColor, endColor,
 				dir, strerror(errno));
 			exit(EXIT_FAILURE);
@@ -590,8 +591,7 @@ void Runopts::optPairedOut(char **argv, int &narg)
 {
 	if (pairedout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --paired_out has already been set once.\n",
-			startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: --paired_out has already been set once.\n",	startColor, endColor);
 		exit(EXIT_FAILURE);
 	}
 	else if (pairedin)
@@ -1207,6 +1207,13 @@ void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
 	}
 } // ~Runopts::opt_N_MatchAmbiguous
 
+// Required parameter
+void Runopts::opt_d_KeyValDatabase(char **argv, int &narg)
+{
+	kvdbPath.assign(argv[narg + 1]); // e.g. "C:/a01_projects/clarity_genomics/data/kvdb"
+	narg += 2;
+} // ~Runopts::opt_d_KeyValDatabase
+
 
 void Runopts::opt_Default(char **argv, int &narg)
 {
@@ -1222,7 +1229,7 @@ void Runopts::optReport(char **argv, int &narg)
 	sscanf(argv[narg + 1], "%d", &reportingOpt);
 
 	if (reportingOpt > 2) {
-		ss << "Optiong report " << reportingOpt << " Can only take values: 0,1,2 Defaulting to 0 ... \n";
+		ss << "Optiong report " << reportingOpt << " Can only take values: 0,1,2,3 Defaulting to 0 ... \n";
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -1239,6 +1246,13 @@ void Runopts::optReport(char **argv, int &narg)
 
 	narg += 2;
 } // ~Runopts::optReport
+
+// interactive session '--cmd'
+void Runopts::optInteractive(char **argv, int &narg)
+{
+	interactive = true;
+	++narg;
+} // ~Runopts::optInteractive
 
 
 void Runopts::process(int argc, char**argv, bool dryrun)
@@ -1342,17 +1356,17 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			else if (strcmp(opt, "full_search") == 0) optFullSearch(argv, narg);
 			// do not output SQ tags in the SAM file
 			else if (strcmp(opt, "SQ") == 0) optSQ(argv, narg);
-			// --passes option
-			else if (strcmp(opt, "passes") == 0) optPasses(argv, narg);
+			else if (strcmp(opt, "passes") == 0) optPasses(argv, narg); // --passes
 			else if (strcmp(opt, "id") == 0) optId(argv, narg);
 			else if (strcmp(opt, "coverage") == 0) optCoverage(argv, narg);
-			// the version number
-			else if (strcmp(opt, "version") == 0) optVersion(argv, narg);
+			else if (strcmp(opt, "version") == 0) optVersion(argv, narg); // version number
 			else if (strcmp(opt, "report") == 0) optReport(argv, narg);
+			else if (strcmp(opt, "cmd") == 0) optInteractive(argv, narg); // '--cmd' interactive session
 			else optUnknown(argv, narg, opt);
 		}
 		break;
 		case 'a': opt_a_NumCpus(argv, narg); break;
+		case 'd': opt_d_KeyValDatabase(argv, narg); break; // required
 		case 'e': opt_e_Evalue(argv, narg);	break;
 		case 'F': opt_F_ForwardOnly(argv, narg); break;
 		case 'R': opt_R_ReverseOnly(argv, narg); break;
@@ -1561,26 +1575,33 @@ int main(int argc, char** argv)
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
 
-	switch (opts.alirep)
+	if (opts.interactive) {
+		CmdSession cmd;
+		cmd.run(opts);
+	}
+	else
 	{
-	case Runopts::ALIGN_REPORT::align: 
-		paralleltraversal(opts);
-		break;
-	case Runopts::ALIGN_REPORT::postproc:
-		runPostProcessor(opts);
-		break;
-	case Runopts::ALIGN_REPORT::report: 
-		generateReports(opts); 
-		break;
-	case Runopts::ALIGN_REPORT::alipost:
-		paralleltraversal(opts);
-		runPostProcessor(opts);
-		break;
-	case Runopts::ALIGN_REPORT::all: 
-		paralleltraversal(opts);
-		runPostProcessor(opts);
-		generateReports(opts); 
-		break;
+		switch (opts.alirep)
+		{
+		case Runopts::ALIGN_REPORT::align:
+			paralleltraversal(opts);
+			break;
+		case Runopts::ALIGN_REPORT::postproc:
+			runPostProcessor(opts);
+			break;
+		case Runopts::ALIGN_REPORT::report:
+			generateReports(opts);
+			break;
+		case Runopts::ALIGN_REPORT::alipost:
+			paralleltraversal(opts);
+			runPostProcessor(opts);
+			break;
+		case Runopts::ALIGN_REPORT::all:
+			paralleltraversal(opts);
+			runPostProcessor(opts);
+			generateReports(opts);
+			break;
+		}
 	}
 
 	return 0;
