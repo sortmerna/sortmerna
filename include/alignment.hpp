@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @file alignment.hpp
+ * @FILE: alignment.hpp
  * @brief Function and variable definitions for alignment.cpp
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA

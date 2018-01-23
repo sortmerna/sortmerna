@@ -35,7 +35,6 @@
 #include <iomanip> // output formatting
 
 #include "paralleltraversal.hpp"
-#include "load_index.hpp"
 #include "kseq.h"
 #include "kseq_load.hpp"
 #include "traverse_bursttrie.hpp"
@@ -55,9 +54,9 @@
 #include "writer.hpp"
 #include "output.hpp"
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+//#ifdef _OPENMP
+//#include <omp.h>
+//#endif
 
 #if defined(_WIN32)
 #define O_SMR_READ_BIN O_RDONLY | O_BINARY
@@ -79,78 +78,19 @@
 	  <tr><td>3 (T)</td> <td>0 (A)</td></tr>
 	 </table>
   */
-char complement[4] = { 3,2,1,0 };
-
-/* @function format_forward()
- * format the forward read into a string on same alphabet without '\n'
- *
- * */
-void format_forward(char* read_seq, char* myread, char filesig)
-{
-	// FASTA
-	if (filesig == '>')
-	{
-		while ((*read_seq != '\0') && (*read_seq != '>'))
-		{
-			if (*read_seq != '\n' || *read_seq != '\r') *myread++ = nt_table[(int)*read_seq];
-			read_seq++;
-		}
-		*myread = '\n'; // end of read marked by newline
-	}
-	// FASTQ
-	else
-	{
-		while (*read_seq != '\n' &&  *read_seq != '\r') { *myread++ = nt_table[(int)*read_seq++]; }
-		*myread = '\n'; //end of read marked by newline
-	}
-}
-
-/* @function format_rev()
- * format the reverse-complement read into a string without '\n'
- *
- * */
-void format_rev(char* start_read, char* end_read, char* myread, char filesig)
-{
-	int8_t rc_table[128] = {
-	  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 3, 4, 2, 4, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 3, 4, 2, 4, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4, 4,
-	  4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
-	};
-
-	// FASTA
-	if (filesig == '>')
-	{
-		while (end_read != start_read)
-		{
-			if (*end_read != '\n' && *end_read != '\r') *myread++ = rc_table[(int)*end_read];
-			end_read--;
-		}
-		*myread++ = rc_table[(int)*end_read];
-		*myread = '\n';
-	}
-	// FASTQ
-	else
-	{
-		while (*end_read != '\n' && *end_read != '\r') { *myread++ = rc_table[(int)*end_read--]; }
-		*myread = '\n';
-	}
-}
-
+//char complement[4] = { 3,2,1,0 };
 
 // Callback run in a Processor thread
-void parallelTraversalJob(
-	Runopts & opts, 
-	Index & index, 
-	References & refs, 
-	Output & output, 
-	Readstats & readstats, 
-	Refstats & refstats, 
-	Read & read)
+void parallelTraversalJob
+	(
+		Runopts & opts, 
+		Index & index, 
+		References & refs, 
+		Output & output, 
+		Readstats & readstats, 
+		Refstats & refstats, 
+		Read & read
+	)
 {
 	read.lastIndex = index.index_num;
 	read.lastPart = index.part;
@@ -175,6 +115,7 @@ void parallelTraversalJob(
 	// find the minimum sequence length
 	if (read.sequence.size() < readstats.min_read_len)
 		readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
+
 	// find the maximum sequence length
 	if (read.sequence.size()  > readstats.max_read_len)
 		readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
@@ -342,7 +283,6 @@ void parallelTraversalJob(
 				}
 			}
 
-		//check_score:
 			// continue read analysis if threshold seeds were matched
 			if (win_num == numwin - 1)
 			{
