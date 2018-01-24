@@ -46,6 +46,7 @@ const int QUEUE_SIZE_MAX = 10; // TODO: move to process options?
 
 enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
+enum class CompressionType { XPRESS, ZLIB };
 
 /*! @brief Map nucleotides to integers.
 Ambiguous letters map to 4.

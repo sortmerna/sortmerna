@@ -53,10 +53,10 @@ set(SMR_SRCS
 #message("${SMR_SRCS}")
 
 if(WIN32)
-	add_library(zlib STATIC IMPORTED)
-	set_target_properties(zlib PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
-	set_target_properties(zlib PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
-	set_target_properties(zlib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
+	add_library(z STATIC IMPORTED)
+	set_target_properties(z PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
+	set_target_properties(z PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
+	set_target_properties(z PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
 
 	add_library(rocksdb STATIC IMPORTED)
 	set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
@@ -108,11 +108,10 @@ if(WIN32)
 	target_link_libraries(
 		sortmerna
 		alp
-		zlib
-#		optimized ${ZLIB_LIB_RELEASE}/zlibstatic.lib
-#		debug ${ZLIB_LIB_DEBUG}/zlibstaticd.lib
+		z
 		rocksdb
 		Rpcrt4.lib
+		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
 else()
 	target_link_libraries(
