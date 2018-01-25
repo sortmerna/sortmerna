@@ -56,7 +56,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	char pidStr[4000];
 	if (opts.pid)
 	{
-		int32_t pid = _getpid();
+		int32_t pid = getpid();
 		sprintf(pidStr, "%d", pid);
 	}
 

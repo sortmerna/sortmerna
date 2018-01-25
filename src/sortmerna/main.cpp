@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
+#include <cstring> // strerror, strrchr, memcpy, strcpy, strpbrk
 #include <fcntl.h>
 
 #ifdef __APPLE__
