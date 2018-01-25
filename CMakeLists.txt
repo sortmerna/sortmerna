@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(sortmerna CXX C)
 
-set(CMAKE_CXX_STANDARD 11) #14
+set(CMAKE_CXX_STANDARD 14)
 
 #option(WITH_OPENMP "build with OpenMP support. On Nix-systems only i.e. No Windows for now" ON)
 
