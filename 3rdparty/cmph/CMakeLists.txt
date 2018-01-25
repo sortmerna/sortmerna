@@ -5,7 +5,7 @@
 # CMake file for sortmerna/cmph
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(cmph CXX)
 
 #AUX_SOURCE_DIRECTORY(${CMAKE_SOURCE_DIR}/cmph CMPH_SRCS)

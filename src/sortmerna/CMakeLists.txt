@@ -5,7 +5,7 @@
 # CMake file for sortmerna/src/sortmerna
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.5)
 project(sortmerna CXX)
 
 set(CMAKE_CXX_STANDARD 11) #14
