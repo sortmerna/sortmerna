@@ -35,11 +35,10 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	#endif()
 endif()
 
-set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
+message("CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+message("EXTRA_CXX_FLAGS_RELEASE: ${EXTRA_CXX_FLAGS_RELEASE}")
 
-# variables used by RocksDB
-#set(ENV{THIRDPARTY_HOME} ${CMAKE_SOURCE_DIR}/3rdparty)
-#set(ZLIB_ROOT_DIR ${EXTERNAL_DEPS}/zlib/dist)
+set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
 
 ## download zlib
 if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
