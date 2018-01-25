@@ -201,7 +201,7 @@ public:
 			//isequence += nt_table[(int)*it];
 			isequence += c;
 			if (c == 0) { // ambiguous nt
-				ambiguous_nt.push_back(static_cast<UINT>(isequence.size()) - 1); // i.e. add current position to the vector
+				ambiguous_nt.push_back(static_cast<int>(isequence.size()) - 1); // i.e. add current position to the vector
 			}
 		}
 		is03 = true;
