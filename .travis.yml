@@ -15,12 +15,12 @@ before_install:
   - conda update --yes conda
   - conda config --add channels https://conda.anaconda.org/biobuilds
 install:
-  - conda create --yes -n env_name python=3.5 numpy scipy zlib cmake
+  - conda create --yes -n env_name python=3.5 numpy scipy zlib cmake rocksdb rapidjson
   - source activate env_name
   - pip install scikit-bio==0.2.3
 script:
   - mkdir -p build/Release; pushd build/Release
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
   - make
   - popd
   - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"; cd tests
