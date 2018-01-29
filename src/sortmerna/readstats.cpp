@@ -102,7 +102,7 @@ bool Readstats::check_file_format()
 	else
 	{
 		fprintf(stderr, "  %sERROR%s: Line %d: %s unrecognized file format or empty file %s\n\n",
-			startColor, endColor, __LINE__, __FILE__, opts.readsfile.c_str());
+			RED, COLOFF, __LINE__, __FILE__, opts.readsfile.c_str());
 		exit_early = true;
 	}
 	kseq_destroy(seq);

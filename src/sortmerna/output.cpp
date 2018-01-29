@@ -682,7 +682,7 @@ void Output::openfiles(Runopts & opts)
 		blastout.open(blastoutFile);
 		if (!blastout.good())
 		{
-			ss << "  " << startColor << "ERROR" << endColor << ": could not open BLAST output file for writing.\n";
+			ss << "  " << RED << "ERROR" << COLOFF << ": could not open BLAST output file for writing.\n";
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}
@@ -692,7 +692,7 @@ void Output::openfiles(Runopts & opts)
 		samout.open(samoutFile);
 		if (!samout.good())
 		{
-			ss << "  " << startColor  << "ERROR" << endColor  << ": could not open SAM output file for writing.\n";
+			ss << "  " << RED  << "ERROR" << COLOFF  << ": could not open SAM output file for writing.\n";
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}
@@ -702,7 +702,7 @@ void Output::openfiles(Runopts & opts)
 		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
 		if (!fastaout.good())
 		{
-			ss << "  " << startColor << "ERROR" << endColor << ": could not open FASTA/Q output file for writing.\n";
+			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q output file for writing.\n";
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}
@@ -713,7 +713,7 @@ void Output::openfiles(Runopts & opts)
 		fastaNonAlignOut.open(opts.filetype_or, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())
 		{
-			ss << "  " << startColor << "ERROR" << endColor << ": could not open FASTA/Q Non-aligned output file for writing.\n";
+			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q Non-aligned output file for writing.\n";
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}
@@ -724,7 +724,7 @@ void Output::openfiles(Runopts & opts)
 		denovoreads.open(denovo_otus_file, std::ios::app | std::ios::binary);
 		if (!denovoreads.good())
 		{
-			ss << "  " << startColor << "ERROR" << denovo_otus_file << ": file " << endColor
+			ss << "  " << RED << "ERROR" << denovo_otus_file << ": file " << COLOFF
 				" (denovoreads) could not be opened for writing.\n\n";
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);

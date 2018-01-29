@@ -27,7 +27,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 
 	if (!ifs.is_open())
 	{
-		ss << "  " << startColor << "ERROR" << endColor  << ": [Line " << __LINE__ << ": " << __FILE__ 
+		ss << "  " << RED << "ERROR" << COLOFF  << ": [Line " << __LINE__ << ": " << __FILE__ 
 			<< "] could not open file " << opts.indexfiles[idx_num].first  << std::endl;
 		std::cerr << ss.str(); ss.str("");
 		exit(EXIT_FAILURE);
@@ -37,7 +37,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 	ifs.seekg(refstats.index_parts_stats_vec[idx_num][idx_part].start_part);
 	if (ifs.fail())
 	{
-		ss << "  " << startColor << "ERROR" << endColor << ": [Line " << __LINE__ << ": " << __FILE__
+		ss << "  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__
 			<< "] could not locate the sequences used to construct the index" << std::endl
 			<< "  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: " 
 			<< opts.indexfiles[idx_num].first << std::endl;
@@ -98,7 +98,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		{
 			if (isFastq && count > 3) 
 			{
-				ss << "  " << startColor << "ERROR" << endColor << " too many lines (> 4) for FASTQ file" << std::endl;
+				ss << "  " << RED << "ERROR" << COLOFF << " too many lines (> 4) for FASTQ file" << std::endl;
 				std::cerr << ss.str(); ss.str("");
 				exit(EXIT_FAILURE);
 			}

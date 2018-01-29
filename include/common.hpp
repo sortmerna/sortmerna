@@ -73,12 +73,17 @@ extern timeval t;
 
 /*! @brief start color text red */
 #if defined(_WIN32)
-#define startColor ""
-#define endColor ""
+#define RED ""
+#define COLOFF ""
+#define BOLD ""
+#define UNDL "" // underline
+#define GREEN ""
 #else
-#define startColor "\033[0;31m"
-/*! @brief end color text color */
-#define endColor "\033[0m"
+#define RED "\033[0;31m"
+#define COLOFF "\033[0m" // color off
+#define BOLD "\033[1m"
+#define UNDL "\033[4m"
+#define GREEN "\033[0;32m"
 #endif
 
 

@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include "read.hpp"
+#include "concurrentqueue.h"
 
 
 /**
@@ -18,7 +19,11 @@
  */
 class ReadsQueue {
 	std::string id;
+#ifdef LOCKQUEUE
 	std::queue<Read> recs; // shared: Reader & Processors, Writer & Processors
+#else
+	moodycamel::ConcurrentQueue<Read> recs; // lockless queue
+#endif
 	int capacity; // max size of the queue
 	//int queueSizeAvr; // average size of the queue
 	bool doneAdding; // flag indicating no more records will be added. Shared.
@@ -36,34 +41,48 @@ public:
 		:
 		id(id),
 		capacity(capacity),
+#ifndef LOCKQUEUE
+		recs(capacity), // set initial capacity
+#endif
 		doneAdding(false),
 		numPushers(numPushers)
 	{
 		ss << id << " created\n";
 		std::cout << ss.str(); ss.str("");
 	}
+
 	~ReadsQueue() {
-		ss << "Destructor called on " << id << "  recs.size= " << recs.size() << " pushed: " << numPushed << "  popped: " << numPopped << std::endl;
+#ifdef LOCKQUEUE
+		size_t recsize = recs.size();
+#else
+		size_t recsize = recs.size_approx();
+#endif
+		ss << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed << "  popped: " << numPopped << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
 	void push(Read & rec) {
+#ifdef LOCKQEUEU
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] {return recs.size() < capacity;});
 		recs.push(std::move(rec));
-		++numPushed;
 
 		//ss << id << " Pushed id: " << rec.id << " Index: " << rec.lastIndex << " Part: " << rec.lastPart 
 		//	<< " header: " << rec.header << " sequence: " << rec.sequence << std::endl;
 		//std::cout << ss.str(); ss.str("");
 
 		cvQueue.notify_one();
+#else
+		recs.enqueue(rec);
+#endif
+		++numPushed;
 	}
 
 	Read pop() {
+		Read rec;
+#ifdef LOCKQEUEU
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] { return doneAdding || !recs.empty();}); //  if False - keep waiting, else - proceed.
-		Read rec;
 		if (!recs.empty()) {
 			rec = recs.front();
 			recs.pop();
@@ -76,6 +95,10 @@ public:
 			}
 		}
 		cvQueue.notify_one();
+#else
+		bool found = recs.try_dequeue(rec);
+		if (found) ++numPopped;
+#endif
 		return rec;
 	}
 
@@ -88,7 +111,13 @@ public:
 	}
 
 	// done when no more adding and no records
-	bool isDone() { return doneAdding && recs.empty(); }
+	bool isDone() {
+#ifdef LOCKQEUEU
+		return doneAdding && recs.empty();
+#else
+		return doneAdding && recs.size_approx() == 0;
+#endif
+	}
 
 	// call from main thread when no other threads running
 	void reset(int nPushers) {

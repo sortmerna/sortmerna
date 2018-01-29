@@ -10,8 +10,6 @@ project(sortmerna CXX C)
 
 set(CMAKE_CXX_STANDARD 14)
 
-#option(WITH_OPENMP "build with OpenMP support. On Nix-systems only i.e. No Windows for now" ON)
-
 #include(ExternalProject)
 message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}") # 'GNU' on Ubuntu
 message("CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
@@ -24,15 +22,6 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_CXX_FLAGS_RELEASE}")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
 	endif()
-
-	#if(WITH_OPENMP AND NOT WIN32)
-	#	find_package(OpenMP)
-	#	if(OPENMP_FOUND)
-	#		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${OpenMP_C_FLAGS}")
-	#		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS}")
-	#	endif(OPENMP_FOUND)
-	#	set(HAVE_OPENMP "${OPENMP_FOUND}")
-	#endif()
 endif()
 
 message("CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
@@ -66,7 +55,14 @@ if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/dirent)
 	execute_process(COMMAND git clone --depth 1 https://github.com/tronkko/dirent
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 )
-endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/dirent)
+endif()
+
+## Download concurrentqueue
+if(NOT EXISTS ${EXTERNAL_DEPS}/concurrentqueue)
+	execute_process(COMMAND git clone --depth 1 https://github.com/cameron314/concurrentqueue
+		WORKING_DIRECTORY ${EXTERNAL_DEPS}
+	)
+endif()
 
 ## mman for Windows TODO: not used any longer. Remove.
 #if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
@@ -96,31 +92,11 @@ endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/dirent)
 #	)
 #endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 
-## build zlib
-#if(WIN32)
-#	add_subdirectory(${EXTERNAL_DEPS}/zlib)
-#endif(WIN32)
-
-## build rocksdb
-#if(WIN32)
-#	add_subdirectory(${EXTERNAL_DEPS}/rocksdb)
-#endif(WIN32)
-
-## build rapidjson
-#if(WIN32)
-#	add_subdirectory(${EXTERNAL_DEPS}/rapidjson)
-#endif(WIN32)
-
 ## build cmph
 add_subdirectory(${EXTERNAL_DEPS}/cmph)
 
 ## build alp
 add_subdirectory(${EXTERNAL_DEPS}/alp)
-
-## build mman-win32  TODO: not used any longer. Remove.
-#if(WIN32)
-#	add_subdirectory(${EXTERNAL_DEPS}/mman-win32)
-#endif(WIN32)
 
 ## build winapi
 if(WIN32)

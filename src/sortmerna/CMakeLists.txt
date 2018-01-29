@@ -86,10 +86,12 @@ if(WIN32)
 #		${ROCKSDB_INCLUDE_DIR}
 		${EXTERNAL_DEPS}/rapidjson/include
 		${EXTERNAL_DEPS}/dirent/include
+		${EXTERNAL_DEPS}/concurrentqueue
 		${CMAKE_SOURCE_DIR}/include
 	)
 else()
 	target_include_directories(sortmerna PRIVATE
+		${EXTERNAL_DEPS}/concurrentqueue
 		${CMAKE_SOURCE_DIR}/include
 	)
 endif()

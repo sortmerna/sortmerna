@@ -1,6 +1,8 @@
-/**
+﻿/**
  * FILE: reader.cpp
  * Created: Nov 26, 2017 Sun
+ * 
+ * Processes Reads file, creates Read objects, and pushes them to a queue for further pick−up by Processor
  */
 
 #include <string>
@@ -21,7 +23,7 @@ void Reader::read()
 
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		ss << "failed to open " << opts.readsfile.c_str() << std::endl;
+		ss << "failed to open " << opts.readsfile << std::endl;
 		std::cout << ss.str(); ss.str("");
 		exit(EXIT_FAILURE);
 	}

@@ -144,7 +144,7 @@ private:
 	void optId(char **argv, int &narg);
 	void optCoverage(char **argv, int &narg);
 	void optVersion(char **argv, int &narg);
-	void optReport(char **argv, int &narg);
+	void optTask(char **argv, int &narg);
 	void optInteractive(char **argv, int &narg); // interactive session
 	void optUnknown(char **argv, int &narg, char * opt);
 	void opt_e_Evalue(char **argv, int &narg);

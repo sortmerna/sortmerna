@@ -56,7 +56,7 @@ load_reads(char* inputreads,
   raw = new char[full_file_size]();
   if ( raw == NULL )
   {
-    ss << "    " << startColor << "ERROR" << endColor << ": [Line " << __LINE__ << ": " << __FILE__
+    ss << "    " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__
 		<< "] could not allocate memory for reference sequence buffer\n";
 	std::cout << ss.str(); ss.str("");
     exit(EXIT_FAILURE);
@@ -66,7 +66,7 @@ load_reads(char* inputreads,
   char** reads = new char*[number_total_read*2]();
   if ( reads == NULL )
   {
-    ss << "\n  " << startColor << "ERROR" << endColor << ": [Line " << __LINE__ << ": " << __FILE__ 
+    ss << "\n  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__ 
 		<<"] cannot allocate memory for reads\n\n";
 	std::cout << ss.str(); ss.str("");
     exit(EXIT_FAILURE);
@@ -126,7 +126,7 @@ load_reads(char* inputreads,
   /* TEST */
   if (l == -2)
   {
-    ss << "  " << startColor << "ERROR" << endColor << ": [Line " << __LINE__ << ": " << __FILE__ 
+    ss << "  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__ 
 		<<"] could not read reads file - " << strerror(errno) << "\n\n";
 	std::cout << ss.str(); ss.str("");
     exit(EXIT_FAILURE);    

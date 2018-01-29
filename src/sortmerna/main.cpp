@@ -79,21 +79,25 @@ timeval t;
  */
 void welcome()
 {
-	printf("\n  Program:     SortMeRNA version %s\n", version_num.c_str());
-	printf("  Copyright:    2012-17 Bonsai Bioinformatics Research Group:\n");
-	printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n");
-	printf("                2014-17 Knight Lab:\n");
-	printf("                Department of Pediatrics, UCSD, La Jolla\n");
-	printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-	printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-	printf("                See the GNU Lesser General Public License for more details.\n");
-	printf("  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com \n");
-	printf("                Laurent Noé      laurent.noe@lifl.fr\n");
-	printf("                Pierre Pericard  pierre.pericard@lifl.fr\n");
-	printf("                Daniel McDonald  wasade@gmail.com\n");
-	printf("                Mikaël Salson    mikael.salson@lifl.fr\n");
-	printf("                Hélène Touzet    helene.touzet@lifl.fr\n");
-	printf("                Rob Knight       robknight@ucsd.edu\n\n");
+	std::stringstream ss;
+
+	ss << "\n  Program:     SortMeRNA version " << version_num << std::endl
+		<< "  Copyright:    2012-17 Bonsai Bioinformatics Research Group:" << std::endl
+		<< "                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe" << std::endl
+		<< "                2014-17 Knight Lab:" << std::endl
+		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl
+		<< "  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the" << std::endl
+		<< "                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl
+		<< "                See the GNU Lesser General Public License for more details." << std::endl
+		<< "  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com " << std::endl
+		<< "                Laurent Noé      laurent.noe@lifl.fr" << std::endl
+		<< "                Pierre Pericard  pierre.pericard@lifl.fr" << std::endl
+		<< "                Daniel McDonald  wasade@gmail.com" << std::endl
+		<< "                Mikaël Salson    mikael.salson@lifl.fr" << std::endl
+		<< "                Hélène Touzet    helene.touzet@lifl.fr" << std::endl
+		<< "                Rob Knight       robknight@ucsd.edu\n" << std::endl;
+
+	std::cout << ss.str();
 }
 
 
@@ -105,112 +109,161 @@ void welcome()
  */
 void printlist()
 {
-	printf("\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:\n");
+	std::stringstream ss;
+
+	ss << "\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output −d kvdb_path [OPTIONS]:" << std::endl
 #ifdef HAVE_LIBZ
-	printf("  OR\n");
-	printf("  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:\n");
+	<< "  OR" << std::endl
+	<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output −d kvdb_path [OPTIONS]:" << std::endl
 #endif
-	printf("\n  -------------------------------------------------------------------------------------------------------------\n");
-	printf("  | parameter          value           description                                                    default |\n");
-	printf("  -------------------------------------------------------------------------------------------------------------\n");
-	printf("     %s--ref%s             %sSTRING,STRING%s   FASTA reference file, index file                               %smandatory%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[0;32m", endColor);
-	printf("                                         (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
-	printf("                                         If passing multiple reference files, separate \n");
-	printf("                                         them using the delimiter ':',\n");
-	printf("                                         (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-	printf("     %s--reads%s           %sSTRING%s          FASTA/FASTQ raw reads file                                     %smandatory%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[0;32m", endColor);
+	<< "\n  -------------------------------------------------------------------------------------------------------------" << std::endl
+	<< "  | parameter          value           description                                                    default |" << std::endl
+	<< "  -------------------------------------------------------------------------------------------------------------" << std::endl
+	<< "     " << BOLD << "--ref" << COLOFF << "             " << UNDL << "STRING,STRING" << COLOFF 
+	<< "   FASTA reference file, index file                               " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "                                         (ex. --ref /path/to/file1.fasta,/path/to/index1)" << std::endl
+	<< "                                         If passing multiple reference files, separate " << std::endl
+	<< "                                         them using the delimiter ':' (Linux) or ';' (Windows)," << std::endl
+	<< "                                         (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)" << std::endl
+	<< "     " << BOLD << "--reads" << COLOFF << "           " << UNDL << "STRING" << COLOFF
+	<< "          FASTA/FASTQ raw reads file                                     " << GREEN << "mandatory" << COLOFF << std::endl
 #ifdef HAVE_LIBZ
-	printf("       OR\n");
-	printf("     %s--reads-gz%s        %sSTRING%s          FASTA/FASTQ compressed (with gzip) reads file                  %smandatory%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[0;32m", endColor);
+	<< "       OR" << std::endl
+	<< "     " << BOLD << "--reads-gz" << COLOFF << "        " << UNDL << "STRING" << COLOFF
+	<< "          FASTA/FASTQ compressed (with gzip) reads file                  " << GREEN << "mandatory" << COLOFF << std::endl
 #endif
-	printf("     %s--aligned%s         %sSTRING%s          aligned reads filepath + base file name                        %smandatory%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[0;32m", endColor);
-	printf("                                         (appropriate extension will be added)\n\n");
-	printf("   [COMMON OPTIONS]: \n");
-	printf("     %s--other%s           %sSTRING%s          rejected reads filepath + base file name\n", "\033[1m", endColor, "\033[4m", endColor);
-	printf("                                         (appropriate extension will be added)\n");
-	printf("     %s--fastx%s           %sBOOL%s            output FASTA/FASTQ file                                        %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         (for aligned and/or rejected reads)\n");
-	printf("     %s--sam%s             %sBOOL%s            output SAM alignment                                           %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         (for aligned reads only)\n");
-	printf("     %s--SQ%s              %sBOOL%s            add SQ tags to the SAM file                                    %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s--blast%s           %sSTRING%s          output alignments in various Blast-like formats                \n", "\033[1m", endColor, "\033[4m", endColor);
-	printf("                                        '0' - pairwise\n");
-	printf("                                        '1' - tabular (Blast -m 8 format)\n");
-	printf("                                        '1 cigar' - tabular + column for CIGAR \n");
-	printf("                                        '1 cigar qcov' - tabular + columns for CIGAR\n");
-	printf("                                                         and query coverage\n");
-	printf("                                        '1 cigar qcov qstrand' - tabular + columns for CIGAR,\n");
-	printf("                                                                query coverage and strand\n");
-	printf("     %s--log%s             %sBOOL%s            output overall statistics                                      %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
+	<< "     " << BOLD << "--aligned" << COLOFF << "         " << UNDL << "STRING" << COLOFF
+	<< "          aligned reads filepath + base file name                        " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "                                         (appropriate extension will be added)\n" << std::endl
+	<< "     " << BOLD << "-d"        << COLOFF << "         " << UNDL << "STRING" << COLOFF
+	<< "          key−value store location (folder)                        " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "     " << BOLD << "--task"    << COLOFF << "          " << UNDL << "INT" << COLOFF
+	<< "     Task: 0 (align) default, 1 (post−process), 2 (report), 3 (align and post−proc), 4 (all)" << std::endl
+	<< "   [COMMON OPTIONS]: " << std::endl
+	<< "     " << BOLD << "--other"   << COLOFF << "           " << UNDL << "STRING" << COLOFF
+	<< "          rejected reads filepath + base file name" << std::endl
+	<< "                                         (appropriate extension will be added)" << std::endl
+	<< "     " << BOLD << "--fastx"   << COLOFF << "           " << UNDL << "BOOL" << COLOFF
+	<< "            output FASTA/FASTQ file                                        " << UNDL << "off" << COLOFF << std::endl
+	<< "                                         (for aligned and/or rejected reads)" << std::endl
+	<< "     " << BOLD << "--sam"     << COLOFF << "             " << UNDL << "BOOL" << COLOFF 
+	<< "            output SAM alignment                                          " << UNDL << "off" << COLOFF << std::endl
+	<< "                                         (for aligned reads only)" << std::endl
+	<< "     " << BOLD << "--SQ"      << COLOFF <<"              " << UNDL << "BOOL" << COLOFF 
+	<< "            add SQ tags to the SAM file                                    " << UNDL << "off" << COLOFF << std::endl
+	<< "     " << BOLD << "--blast"   << COLOFF << "           " << UNDL << "STRING" << COLOFF 
+	<< "          output alignments in various Blast-like formats                " << std::endl
+	<< "                                        '0' - pairwise" << std::endl
+	<< "                                        '1' - tabular (Blast -m 8 format)" << std::endl
+	<< "                                        '1 cigar' - tabular + column for CIGAR " << std::endl
+	<< "                                        '1 cigar qcov' - tabular + columns for CIGAR" << std::endl
+	<< "                                                         and query coverage" << std::endl
+	<< "                                        '1 cigar qcov qstrand' - tabular + columns for CIGAR," << std::endl
+	<< "                                                                query coverage and strand" << std::endl
+	<< "     " << BOLD << "--log" << COLOFF << "             " << UNDL << "BOOL" << COLOFF
+	<< "            output overall statistics                                      " << UNDL << "off" << COLOFF << std::endl
 #ifdef NOMASK_option
-	printf("     %s--no-mask%s         %sBOOL%s            do not mask low occurrence (L/2)-mers when searching           %son%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                       for seeds of length L\n");
+<< "     " << BOLD << "--no-mask" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
+<< "            do not mask low occurrence (L/2)-mers when searching           " << UNDL << "on" << COLOFF << std::endl
+<< "                                       for seeds of length L\n" << std::endl
 #endif
-	printf("     %s--num_alignments%s  %sINT%s             report first INT alignments per read reaching E-value          %s-1%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                        (--num_alignments 0 signifies all alignments will be output)\n");
-	printf("       %sor%s (default)\n", "\033[31m", endColor);
-	printf("     %s--best%s            %sINT%s             report INT best alignments per read reaching E-value           %s1%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         by searching --min_lis INT candidate alignments\n");
-	printf("                                        (--best 0 signifies all candidate alignments will be searched)\n");
-	printf("     %s--min_lis%s         %sINT%s             search all alignments having the first INT longest LIS         %s2%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         LIS stands for Longest Increasing Subsequence, it is \n");
-	printf("                                         computed using seeds' positions to expand hits into\n");
-	printf("                                         longer matches prior to Smith-Waterman alignment. \n");
-	printf("     %s--print_all_reads%s %sBOOL%s            output null alignment strings for non-aligned reads            %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         to SAM and/or BLAST tabular files\n");
-	printf("     %s--paired_in%s       %sBOOL%s            both paired-end reads go in --aligned fasta/q file             %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                        (interleaved reads only, see Section 4.2.4 of User Manual)\n");
-	printf("     %s--paired_out%s      %sBOOL%s            both paired-end reads go in --other fasta/q file               %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);\
-		printf("                                        (interleaved reads only, see Section 4.2.4 of User Manual)\n");
-	printf("     %s--match %s          %sINT%s             SW score (positive integer) for a match                        %s2%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s--mismatch%s        %sINT%s             SW penalty (negative integer) for a mismatch                   %s-3%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s--gap_open%s        %sINT%s             SW penalty (positive integer) for introducing a gap            %s5%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s--gap_ext%s         %sINT%s             SW penalty (positive integer) for extending a gap              %s2%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s-N%s                %sINT%s             SW penalty for ambiguous letters (N's)                         %sscored as --mismatch%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s-F%s                %sBOOL%s            search only the forward strand                                 %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s-R%s                %sBOOL%s            search only the reverse-complementary strand                   %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s-a%s                %sINT%s             number of threads to use                                       %s1%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("     %s-e%s                %sDOUBLE%s          E-value threshold                                              %s1%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	// RAM cannot support 1GB default
-	//if (1073741824 / pagesize_gv > maxpages_gv / 2)
-	//	printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap             %s%lu%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", ((pagesize_gv*(maxpages_gv / 2)) / 1048576), endColor);
-	// RAM can support at least 1GB default
-	//else
-	//	printf("     %s-m%s                %sINT%s             INT Mbytes for loading reads in memory with mmap               %s[suggested: 1024]%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	//printf("                                        (maximum -m INT is %lu)\n", (((maxpages_gv / 2)*pagesize_gv) / 1048576));
-	printf("                                        (NOTE: If this option is chosen, reads will be loaded using\n");
-	printf("                                         mmap rather than the default generic stream buffer; if the\n");
-	printf("                                         input reads are in compressed format, this option will be\n");
-	printf("                                         ignored; loading reads with mmap can be faster and is\n");
-	printf("                                         recommended for large files which cannot fit into\n");
-	printf("                                         available RAM)\n");
-	printf("     %s-v%s                %sBOOL%s            verbose                                                        %soff%s\n\n\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("   [OTU PICKING OPTIONS]: \n");
-	printf("     %s--id%s              %sDOUBLE%s          %%id similarity threshold (the alignment must                   %s0.97%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         still pass the E-value threshold)\n");
-	printf("     %s--coverage%s        %sDOUBLE%s          %%query coverage threshold (the alignment must                  %s0.97%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         still pass the E-value threshold)\n");
-	printf("     %s--de_novo_otu%s     %sBOOL%s            FASTA/FASTQ file for reads matching database < %%id             %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         (set using --id) and < %%cov (set using --coverage) \n");
-	printf("                                         (alignment must still pass the E-value threshold)\n");
-	printf("     %s--otu_map%s         %sBOOL%s            output OTU map (input to QIIME's make_otu_table.py)            %soff%s\n\n\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): \n");
-	printf("    %s--passes%s           %sINT,INT,INT%s     three intervals at which to place the seed on the read         %sL,L/2,3%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         (L is the seed length set in ./indexdb_rna)\n");
-	printf("    %s--edges%s            %sINT%s             number (or percent if INT followed by %% sign) of               %s4%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         nucleotides to add to each edge of the read\n");
-	printf("                                         prior to SW local alignment \n");
-	printf("    %s--num_seeds%s        %sINT%s             number of seeds matched before searching                       %s2%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         for candidate LIS \n");
-	printf("    %s--full_search%s      %sBOOL%s            search for all 0-error and 1-error seed                        %soff%s\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("                                         matches in the index rather than stopping\n");
-	printf("                                         after finding a 0-error match (<1%% gain in\n");
-	printf("                                         sensitivity with up four-fold decrease in speed)\n");
-	printf("    %s--pid%s              %sBOOL%s            add pid to output file names                                   %soff%s\n\n\n", "\033[1m", endColor, "\033[4m", endColor, "\033[4m", endColor);
-	printf("   [HELP]:\n");
-	printf("     %s-h%s                %sBOOL%s            help\n", "\033[1m", endColor, "\033[4m", endColor);
-	printf("     %s--version%s         %sBOOL%s            SortMeRNA version number\n\n\n", "\033[1m", endColor, "\033[4m", endColor);
-	printf("     %s--report%s          %sINT%s     Report generation: 0 (no reports - only align), 1 (only report), 2 (both align and report)\n\n\n", "\033[1m", endColor, "\033[4m", endColor);
+	<< "     " << BOLD << "--num_alignments" << COLOFF << "  " << UNDL << "INT" << COLOFF
+	<< "             report first INT alignments per read reaching E-value          " << UNDL << "-1" << COLOFF << std::endl
+	<< "                                        (--num_alignments 0 signifies all alignments will be output)" << std::endl
+	<< "       " << COLOFF << "or" << RED << " (default)" << std::endl
+	<< "     " << BOLD << "--best" << COLOFF << "            " << UNDL << "INT" << COLOFF
+	<< "             report INT best alignments per read reaching E-value           " << UNDL << "1" << COLOFF << std::endl
+	<< "                                         by searching --min_lis INT candidate alignments" << std::endl
+	<< "                                        (--best 0 signifies all candidate alignments will be searched)" << std::endl
+	<< "     " << BOLD << "--min_lis" << COLOFF << "         " << UNDL << "INT" << COLOFF
+	<< "             search all alignments having the first INT longest LIS         " << UNDL << "2" << COLOFF << std::endl
+	<< "                                         LIS stands for Longest Increasing Subsequence, it is " << std::endl
+	<< "                                         computed using seeds' positions to expand hits into" << std::endl
+	<< "                                         longer matches prior to Smith-Waterman alignment. " << std::endl
+	<< "     " << BOLD << "--print_all_reads" << COLOFF << " " << UNDL << "BOOL" << COLOFF
+	<< "            output null alignment strings for non-aligned reads            " << UNDL << "off" << COLOFF << std::endl
+	<< "                                         to SAM and/or BLAST tabular files" << std::endl
+	<< "     " << BOLD << "--paired_in" << COLOFF << "       " << UNDL << "BOOL" << COLOFF
+	<< "            both paired-end reads go in --aligned fasta/q file             " << UNDL << "off" << COLOFF << std::endl
+	<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)" << std::endl
+	<< "     " << BOLD << "--paired_out" << COLOFF << "      " << UNDL << "BOOL" << COLOFF
+	<< "            both paired-end reads go in --other fasta/q file               " << UNDL << "off" << COLOFF << std::endl
+	<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)" << std::endl
+	<< "     " << BOLD << "--match " << COLOFF << "          " << UNDL << "INT" << COLOFF
+	<< "             SW score (positive integer) for a match                        " << UNDL << "2" << COLOFF << std::endl
+	<< "     " << BOLD << "--mismatch" << COLOFF << "        " << UNDL << "INT" << COLOFF
+	<< "             SW penalty (negative integer) for a mismatch                   " << UNDL << "-3" << COLOFF << std::endl
+	<< "     " << BOLD << "--gap_open" << COLOFF << "        " << UNDL << "INT" << COLOFF
+	<< "             SW penalty (positive integer) for introducing a gap            " << UNDL << "5" << COLOFF << std::endl
+	<< "     " << BOLD << "--gap_ext" << COLOFF << "         " << UNDL << "INT" << COLOFF
+	<< "             SW penalty (positive integer) for extending a gap              " << UNDL << "2" << COLOFF << std::endl
+	<< "     " << BOLD << "-N" << COLOFF << "                " << UNDL << "INT" << COLOFF
+	<< "             SW penalty for ambiguous letters (N's)                         " << UNDL << "scored as --mismatch" << COLOFF << std::endl
+	<< "     " << BOLD << "-F" << COLOFF << "                " << UNDL << "BOOL" << COLOFF
+	<< "            search only the forward strand                                 " << UNDL << "off" << COLOFF << std::endl
+	<< "     " << BOLD << "-R" << COLOFF << "                " << UNDL << "BOOL" << COLOFF
+	<< "            search only the reverse-complementary strand                   " << UNDL << "off" << COLOFF << std::endl
+	<< "     " << BOLD << "-a" << COLOFF << "                " << UNDL << "INT" << COLOFF
+	<< "             number of threads to use                                       " << UNDL << "1" << COLOFF << std::endl
+	<< "     " << BOLD << "-e" << COLOFF << "                " << UNDL << "DOUBLE" << COLOFF
+	<< "          E-value threshold                                              " << UNDL << "1" << COLOFF << std::endl
+// RAM cannot support 1GB default
+//if (1073741824 / pagesize_gv > maxpages_gv / 2)
+//	<< "     " << BOLD << "-m" << COLOFF << "                " << UNDL << "INT"<< COLOFF 
+//	<<"             INT Mbytes for loading reads in memory with mmap             " << UNDL << ((pagesize_gv*(maxpages_gv / 2)) / 1048576) << COLOFF << std::endl
+// RAM can support at least 1GB default
+//else
+//	<< "     " << BOLD << "-m" << COLOFF << "                " << UNDL << "INT" << COLOFF 
+//	<< "             INT Mbytes for loading reads in memory with mmap               " << UNDL << "[suggested: 1024]" << COLOFF << std::endl
+//	<< "                                        (maximum -m INT is " << (((maxpages_gv / 2)*pagesize_gv) / 1048576) << ")" << std::endl
+	<< "                                        (NOTE: If this option is chosen, reads will be loaded using" << std::endl
+	<< "                                         mmap rather than the default generic stream buffer; if the" << std::endl
+	<< "                                         input reads are in compressed format, this option will be" << std::endl
+	<< "                                         ignored; loading reads with mmap can be faster and is" << std::endl
+	<< "                                         recommended for large files which cannot fit into" << std::endl
+	<< "                                         available RAM)" << std::endl
+	<< "     " << BOLD << "-v" << COLOFF << "                " << UNDL << "BOOL" << COLOFF
+	<< "            verbose                                                        " << UNDL << "off" << COLOFF << std::endl << std::endl << std::endl
+	<< "   [OTU PICKING OPTIONS]: \n" << std::endl
+	<< "     " << BOLD << "--id" << COLOFF << "              " << UNDL << "DOUBLE" << COLOFF
+	<< "          %%id similarity threshold (the alignment must                   " << UNDL << "0.97" << COLOFF << std::endl
+	<< "                                         still pass the E-value threshold)\n" << std::endl
+	<< "     " << BOLD << "--coverage" << COLOFF << "        " << UNDL << "DOUBLE" << COLOFF
+	<< "          %%query coverage threshold (the alignment must                  " << UNDL << "0.97" << COLOFF << std::endl
+	<< "                                         still pass the E-value threshold)\n" << std::endl
+	<< "     " << BOLD << "--de_novo_otu" << COLOFF << "     " << UNDL << "BOOL" << COLOFF
+	<< "            FASTA/FASTQ file for reads matching database < %%id             " << UNDL << "off" << COLOFF << std::endl
+	<< "                                         (set using --id) and < %%cov (set using --coverage) " << std::endl
+	<< "                                         (alignment must still pass the E-value threshold)" << std::endl
+	<< "     " << BOLD << "--otu_map" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
+	<< "            output OTU map (input to QIIME's make_otu_table.py)            " << UNDL << "off" << COLOFF << std::endl << std::endl << std::endl
+	<< "   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): " << std::endl
+	<< "    " << BOLD << "--passes" << COLOFF << "           " << UNDL << "INT,INT,INT" << COLOFF
+	<< "     three intervals at which to place the seed on the read         " << UNDL << "L,L/2,3" << COLOFF << std::endl
+	<< "                                         (L is the seed length set in ./indexdb_rna)" << std::endl
+	<< "    " << BOLD << "--edges" << COLOFF << "            " << UNDL << "INT" << COLOFF
+	<< "             number (or percent if INT followed by %% sign) of               " << UNDL << "4" << COLOFF << std::endl
+	<< "                                         nucleotides to add to each edge of the read" << std::endl
+	<< "                                         prior to SW local alignment " << std::endl
+	<< "    " << BOLD << "--num_seeds" << COLOFF << "        " << UNDL << "INT" << COLOFF
+	<< "             number of seeds matched before searching                       " << UNDL << "2" << COLOFF << std::endl
+	<< "                                         for candidate LIS " << std::endl
+	<< "    " << BOLD << "--full_search" << COLOFF << "      " << UNDL << "BOOL" << COLOFF
+	<< "            search for all 0-error and 1-error seed                        " << UNDL << "off" << COLOFF << std::endl
+	<< "                                         matches in the index rather than stopping" << std::endl
+	<< "                                         after finding a 0-error match (<1%% gain in" << std::endl
+	<< "                                         sensitivity with up four-fold decrease in speed)" << std::endl
+	<< "    " << BOLD << "--pid" << COLOFF << "              " << UNDL << "BOOL" << COLOFF
+	<< "            add pid to output file names                                   " << UNDL << "off" << COLOFF << std::endl
+	<< "    " << BOLD << "--cmd" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
+	<< "          launch an interactive session (command prompt)" << std::endl
+	<< std::endl
+	<< "   [HELP]:" << std::endl
+	<< "    " << BOLD << "-h" << COLOFF << "                " << UNDL << "BOOL" << COLOFF << "            help" << std::endl
+	<< "    " << BOLD << "--version" << COLOFF << "         " << UNDL << "BOOL" << COLOFF 
+	<< "            SortMeRNA version number" << std::endl << std::endl << std::endl
+	<< std::endl 
+	<< std::endl;
 	exit(EXIT_FAILURE);
 }//~printlist()
 
@@ -219,13 +272,13 @@ void Runopts::optReads(char **argv, int &narg)
 	if (have_reads_gz)
 	{
 		fprintf(stderr, "\n %sERROR%s: option --reads-gz has also been set, only one of "
-			"--reads-gz or --reads is permitted\n", startColor, endColor);
+			"--reads-gz or --reads is permitted\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: a path to a reads FASTA/FASTQ file "
-			"must be given after the option --reads\n", startColor, endColor);
+			"must be given after the option --reads\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -253,7 +306,7 @@ void Runopts::optReads(char **argv, int &narg)
 		else
 		{
 			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				"%s.\n\n", startColor, endColor, argv[narg + 1], strerror(errno));
+				"%s.\n\n", RED, COLOFF, argv[narg + 1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -264,13 +317,13 @@ void Runopts::optReadsGz(char **argv, int &narg)
 	if (have_reads)
 	{
 		fprintf(stderr, "\n %sERROR%s: option --reads has also been set, only one of "
-			"--reads or --reads-gz is permitted\n", startColor, endColor);
+			"--reads or --reads-gz is permitted\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: a path to a reads FASTA/FASTQ compressed (.zip, .gz) file "
-			"must be given after the option --reads-gz\n", startColor, endColor);
+			"must be given after the option --reads-gz\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -298,7 +351,7 @@ void Runopts::optReadsGz(char **argv, int &narg)
 		else
 		{
 			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				"%s.\n\n", startColor, endColor, argv[narg + 1], strerror(errno));
+				"%s.\n\n", RED, COLOFF, argv[narg + 1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -309,7 +362,7 @@ void Runopts::optRef(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --ref must be followed by at least one entry "
-			"(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n", startColor, endColor);
+			"(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// path exists, check path
@@ -331,7 +384,7 @@ void Runopts::optRef(char **argv, int &narg)
 			if (*ptr == '\0')
 			{
 				fprintf(stderr, "   %sERROR%s: the FASTA reference file name %s must be followed "
-					" by an index name.\n\n", startColor, endColor, fastafile);
+					" by an index name.\n\n", RED, COLOFF, fastafile);
 				exit(EXIT_FAILURE);
 			}
 			ptr++; //skip the ',' delimiter
@@ -350,7 +403,7 @@ void Runopts::optRef(char **argv, int &narg)
 			else
 			{
 				fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-					" %s.\n\n", startColor, endColor, fastafile, strerror(errno));
+					" %s.\n\n", RED, COLOFF, fastafile, strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
@@ -381,12 +434,12 @@ void Runopts::optRef(char **argv, int &narg)
 				if (ptr_end != NULL)
 					fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
 						"'%s' could not be opened. The full directory path must be "
-						"provided (ex. no '~'). \n\n", startColor, endColor,
+						"provided (ex. no '~'). \n\n", RED, COLOFF,
 						dir, ptr_end + 1);
 				else
 					fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
 						"'%s' could not be opened. The full directory path must be "
-						"provided (ex. no '~'). \n\n", startColor, endColor,
+						"provided (ex. no '~'). \n\n", RED, COLOFF,
 						dir, indexfile);
 
 				exit(EXIT_FAILURE);
@@ -399,13 +452,13 @@ void Runopts::optRef(char **argv, int &narg)
 				{
 					fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered "
 						"twice in the list. It will be searched twice. "
-						"\n\n", "\033[0;33m", endColor, fastafile);
+						"\n\n", "\033[0;33m", COLOFF, fastafile);
 				}
 				else if ((indexfiles[i].second).compare(indexfile) == 0)
 				{
 					fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered "
 						"twice in the list. It will be searched twice.\n\n", "\033[0;33m",
-						endColor, indexfile);
+						COLOFF, indexfile);
 				}
 			}
 
@@ -422,7 +475,7 @@ void Runopts::optAligned(char **argv, int &narg)
 {
 	if ((argv[narg + 1] == NULL) || (argv[narg + 1][0] == '-'))
 	{
-		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option --aligned [STRING]\n", startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option --aligned [STRING]\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -449,7 +502,7 @@ void Runopts::optAligned(char **argv, int &narg)
 		else
 		{
 			fprintf(stderr, "\n  %sERROR%s: the --aligned <STRING> directory "
-				"%s could not be opened: %s.\n\n", startColor, endColor,
+				"%s could not be opened: %s.\n\n", RED, COLOFF,
 				dir, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
@@ -461,7 +514,7 @@ void Runopts::optOther(char **argv, int &narg)
 	if ((argv[narg + 1] == NULL) || (argv[narg + 1][0] == '-'))
 	{
 		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option "
-			"--other [STRING]\n", startColor, endColor);
+			"--other [STRING]\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -487,7 +540,7 @@ void Runopts::optOther(char **argv, int &narg)
 		}
 		else
 		{
-			fprintf(stderr, "\n  %sERROR%s: the --other %s directory could not be opened, please check it exists.\n\n", startColor, endColor, dir);
+			fprintf(stderr, "\n  %sERROR%s: the --other %s directory could not be opened, please check it exists.\n\n", RED, COLOFF, dir);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -497,7 +550,7 @@ void Runopts::optLog(char **argv, int &narg)
 {
 	if (doLog)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --log has already been set once.\n", startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: --log has already been set once.\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -511,7 +564,7 @@ void Runopts::optDeNovoOtu(char **argv, int &narg)
 {
 	if (de_novo_otu)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --de_novo_otu has already been set once.\n", startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: --de_novo_otu has already been set once.\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -526,7 +579,7 @@ void Runopts::optOtuMap(char **argv, int &narg)
 	if (otumapout)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --otu_map has already been set once.\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -541,7 +594,7 @@ void Runopts::optPrintAllReads(char **argv, int &narg)
 	if (print_all_reads)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --print_all_reads has already been set once.\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -556,7 +609,7 @@ void Runopts::optPid(char **argv, int &narg)
 	if (pid)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --pid has already been set once.\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -571,14 +624,14 @@ void Runopts::optPairedIn(char **argv, int &narg)
 	if (pairedin)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --paired_in has already been set once.\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else if (pairedout)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --paired_out has been set, please choose "
 			"one or the other, or use the default option.\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -592,13 +645,13 @@ void Runopts::optPairedOut(char **argv, int &narg)
 {
 	if (pairedout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --paired_out has already been set once.\n",	startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: --paired_out has already been set once.\n",	RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else if (pairedin)
 	{
 		fprintf(stderr, "\n %sERROR%s: --paired_in has been set, please choose one "
-			"or the other, or use the default option.\n", startColor, endColor);
+			"or the other, or use the default option.\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -613,7 +666,7 @@ void Runopts::optMatch(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --match [INT] requires a positive integer as "
-			"input (ex. --match 2).\n", startColor, endColor);
+			"input (ex. --match 2).\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set match
@@ -626,7 +679,7 @@ void Runopts::optMatch(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: --match [INT] has been set twice, please "
-			"verify your choice\n\n", startColor, endColor);
+			"verify your choice\n\n", RED, COLOFF);
 		printlist();
 	}
 } // ~Runopts::optMatch
@@ -636,7 +689,7 @@ void Runopts::optMismatch(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --mismatch [INT] requires a negative integer "
-			"input (ex. --mismatch -2)\n", startColor, endColor);
+			"input (ex. --mismatch -2)\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set mismatch
@@ -646,7 +699,7 @@ void Runopts::optMismatch(char **argv, int &narg)
 		if (mismatch > 0)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --mismatch [INT] requires a negative "
-				"integer input (ex. --mismatch -2)\n", startColor, endColor);
+				"integer input (ex. --mismatch -2)\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -655,7 +708,7 @@ void Runopts::optMismatch(char **argv, int &narg)
 	else
 	{
 		printf("\n  %sERROR%s: --mismatch [INT] has been set twice, please verify "
-			"your choice\n\n", startColor, endColor);
+			"your choice\n\n", RED, COLOFF);
 		printlist();
 	}
 } // ~Runopts::optMismatch
@@ -665,7 +718,7 @@ void Runopts::optGapOpen(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --gap_open [INT] requires a positive integer "
-			"as input (ex. --gap_open 5)\n", startColor, endColor);
+			"as input (ex. --gap_open 5)\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set gap open
@@ -675,7 +728,7 @@ void Runopts::optGapOpen(char **argv, int &narg)
 		if (gap_open < 0)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --gap_open [INT] requires a positive "
-				"integer as input (ex. --gap_open 5)\n", startColor, endColor);
+				"integer as input (ex. --gap_open 5)\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -684,7 +737,7 @@ void Runopts::optGapOpen(char **argv, int &narg)
 	else
 	{
 		printf("\n  %sERROR%s: --gap_open [INT] has been set twice, please verify "
-			"your choice\n\n", startColor, endColor);
+			"your choice\n\n", RED, COLOFF);
 		printlist();
 	}
 } // ~Runopts::optGapOpen
@@ -694,7 +747,7 @@ void Runopts::optGapExt(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] requires a positive integer "
-			"as input (ex. --gap_ext 2)\n", startColor, endColor);
+			"as input (ex. --gap_ext 2)\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set gap extend
@@ -704,7 +757,7 @@ void Runopts::optGapExt(char **argv, int &narg)
 		if (gap_extension < 0)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] requires a positive "
-				"integer as input (ex. --gap_ext 2)\n", startColor, endColor);
+				"integer as input (ex. --gap_ext 2)\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -713,7 +766,7 @@ void Runopts::optGapExt(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] has been set twice, please "
-			"verify your choice\n\n", startColor, endColor);
+			"verify your choice\n\n", RED, COLOFF);
 		printlist();
 	}
 } // ~Runopts::optGapExt
@@ -723,7 +776,7 @@ void Runopts::optNumSeeds(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] requires a positive integer "
-			"as input (ex. --num_seeds 6)\n", startColor, endColor);
+			"as input (ex. --num_seeds 6)\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set number of seeds
@@ -734,7 +787,7 @@ void Runopts::optNumSeeds(char **argv, int &narg)
 		if (seed_hits <= 0)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] requires a positive "
-				"integer (>0) as input (ex. --num_seeds 6)\n", startColor, endColor);
+				"integer (>0) as input (ex. --num_seeds 6)\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -742,7 +795,7 @@ void Runopts::optNumSeeds(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] has been set twice, please "
-			"verify your choice\n\n", startColor, endColor);
+			"verify your choice\n\n", RED, COLOFF);
 		printlist();
 	}
 } // ~Runopts::optNumSeeds
@@ -753,7 +806,7 @@ void Runopts::optFastx(char **argv, int &narg)
 	if (fastxout)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --fastx has already been set once.\n\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -768,7 +821,7 @@ void Runopts::optSam(char **argv, int &narg)
 	if (samout)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --sam has already been set once.\n\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -783,7 +836,7 @@ void Runopts::optBlast(char **argv, int &narg)
 	if (blastout)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --blast [STRING] has already been set once.\n\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -828,7 +881,7 @@ void Runopts::optBlast(char **argv, int &narg)
 			if (!match_found)
 			{
 				fprintf(stderr, "\n  %sERROR%s: `%s` is not supported in --blast [STRING].\n\n",
-					startColor, endColor, opt.c_str());
+					RED, COLOFF, opt.c_str());
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -836,14 +889,14 @@ void Runopts::optBlast(char **argv, int &narg)
 		if (blast_human_readable && (blastops.size() > 1))
 		{
 			fprintf(stderr, "\n  %sERROR%s: for human-readable format, --blast [STRING] cannot contain "
-				"more fields than '0'.\n\n", startColor, endColor);
+				"more fields than '0'.\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		// both human-readable and tabular format options have been chosen
 		if (blast_human_readable && blastFormat == BlastFormat::TABULAR)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --blast [STRING] can only have one of the options "
-				"'0' (human-readable) or '1' (tabular).\n\n", startColor, endColor);
+				"'0' (human-readable) or '1' (tabular).\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		blastout = true;
@@ -857,14 +910,14 @@ void Runopts::optMinLis(char **argv, int &narg)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] requires an integer (>=0) as "
 			"input (ex. --min_lis 2) (note: 0 signifies to search all high scoring "
-			"reference sequences).\n\n", startColor, endColor);
+			"reference sequences).\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// min_lis_gv has already been set
 	else if (min_lis_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] has been set twice, please "
-			"verify your choice.\n\n", startColor, endColor);
+			"verify your choice.\n\n", RED, COLOFF);
 		printlist();
 	}
 	else
@@ -873,7 +926,7 @@ void Runopts::optMinLis(char **argv, int &narg)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] must be >= 0 (0 signifies "
 				"to search all high scoring reference sequences).\n\n",
-				startColor, endColor);
+				RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -886,14 +939,14 @@ void Runopts::optBest(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --best [INT] requires an integer (> 0) "
-			"as input (ex. --best 2).\n\n", startColor, endColor);
+			"as input (ex. --best 2).\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// best_set has already been set
 	else if (best_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --best [INT] has been set twice, please "
-			"verify your choice.\n\n", startColor, endColor);
+			"verify your choice.\n\n", RED, COLOFF);
 		printlist();
 	}
 	else
@@ -901,7 +954,7 @@ void Runopts::optBest(char **argv, int &narg)
 		if ((sscanf(argv[narg + 1], "%d", &num_best_hits) != 1))
 		{
 			fprintf(stderr, "\n  %sERROR%s: could not read --best [INT] as integer.\n\n",
-				startColor, endColor);
+				RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -915,13 +968,13 @@ void Runopts::optNumAlignments(char **argv, int &narg)
 	if (argv[narg + 1] == NULL)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --num_alignments [INT] requires an integer "
-			"(>=0) as input (ex. --num_alignments 2) (note: 0 signifies to output all alignments).\n\n", startColor, endColor);
+			"(>=0) as input (ex. --num_alignments 2) (note: 0 signifies to output all alignments).\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// --num_alignments has already been set
 	else if (num_alignments_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s:--num_alignments [INT] has been set twice, please verify your command parameters.\n\n", startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s:--num_alignments [INT] has been set twice, please verify your command parameters.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set number of alignments to output reaching the E-value
@@ -931,7 +984,7 @@ void Runopts::optNumAlignments(char **argv, int &narg)
 		if (num_alignments < 0)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --num_alignments [INT] must be >= 0 (0 signifies to output all alignments).\n\n",
-				startColor, endColor);
+				RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -945,7 +998,7 @@ void Runopts::optEdges(char **argv, int &narg)
 	if (edges_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --edges [INT]%% has already been set once.\n\n",
-			startColor, endColor);
+			RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -961,7 +1014,7 @@ void Runopts::optEdges(char **argv, int &narg)
 		if (edges < 1 || edges > 10)
 		{
 			fprintf(stderr, "\n  %sERROR%s: --edges [INT]%% requires a positive integer "
-				"between 0-10 as input (ex. --edges 4).\n", startColor, endColor);
+				"between 0-10 as input (ex. --edges 4).\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 
@@ -974,7 +1027,7 @@ void Runopts::optFullSearch(char **argv, int &narg)
 	if (full_search_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: BOOL --full_search has been set twice, please "
-			"verify your choice.\n\n", startColor, endColor);
+			"verify your choice.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -990,7 +1043,7 @@ void Runopts::optSQ(char **argv, int &narg)
 	if (yes_SQ)
 	{
 		fprintf(stderr, "\n  %sERROR%s: BOOL --SQ has been set twice, please verify "
-			"your choice.\n\n", startColor, endColor);
+			"your choice.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -1005,7 +1058,7 @@ void Runopts::optPasses(char **argv, int &narg)
 	if (passes_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: --passes [INT,INT,INT] has been set twice, "
-			"please verify your choice.\n\n", startColor, endColor);
+			"please verify your choice.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	// set passes
@@ -1019,7 +1072,7 @@ void Runopts::optPasses(char **argv, int &narg)
 		{
 			fprintf(stderr, "\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
 				"must contain positive integers where 0<INT<(shortest read length)."
-				"\n\n", startColor, endColor);
+				"\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		t = (int)strtol(strtok(NULL, ","), &end, 10);
@@ -1028,7 +1081,7 @@ void Runopts::optPasses(char **argv, int &narg)
 		{
 			fprintf(stderr, "\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
 				"must contain positive integers where 0<INT<(shortest read length). "
-				"\n\n", startColor, endColor);
+				"\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		t = (int)strtol(strtok(NULL, ","), &end, 10);
@@ -1037,7 +1090,7 @@ void Runopts::optPasses(char **argv, int &narg)
 		{
 			fprintf(stderr, "\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
 				"must contain positive integers where 0<INT<(shortest read length)."
-				"\n\n", startColor, endColor);
+				"\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 
@@ -1056,7 +1109,7 @@ void Runopts::optId(char **argv, int &narg)
 			(align_id < 0) || (align_id > 1))
 		{
 			fprintf(stderr, "\n  %sERROR%s: --id [DOUBLE] must be a positive float "
-				"with value 0<=id<=1.\n\n", startColor, endColor);
+				"with value 0<=id<=1.\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -1064,7 +1117,7 @@ void Runopts::optId(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: --id [DOUBLE] has been set twice, please "
-			"verify your command parameters.\n\n", startColor, endColor);
+			"verify your command parameters.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optId
@@ -1078,7 +1131,7 @@ void Runopts::optCoverage(char **argv, int &narg)
 			(align_cov < 0) || (align_cov > 1))
 		{
 			fprintf(stderr, "\n  %sERROR%s: --coverage [DOUBLE] must be a positive "
-				"float with value 0<=id<=1.\n\n", startColor, endColor);
+				"float with value 0<=id<=1.\n\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -1086,7 +1139,7 @@ void Runopts::optCoverage(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: --coverage [DOUBLE] has been set twice, please "
-			"verify your command parameters.\n\n", startColor, endColor);
+			"verify your command parameters.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optCoverage
@@ -1100,7 +1153,7 @@ void Runopts::optVersion(char **argv, int &narg)
 void Runopts::optUnknown(char **argv, int &narg, char * opt)
 {
 	fprintf(stderr, "\n  %sERROR%s: option --%s is not an option.\n\n",
-		startColor, endColor, opt);
+		RED, COLOFF, opt);
 	printlist();
 } // ~Runopts::optUnknown
 
@@ -1114,27 +1167,31 @@ void Runopts::opt_a_NumCpus(char **argv, int &narg)
 	}
 	else
 	{
-		printf("\n  %sERROR%s: -a [INT] has been set twice, please verify your command parameters.\n\n", startColor, endColor);
+		printf("\n  %sERROR%s: -a [INT] has been set twice, please verify your command parameters.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_a_NumCpus
 
 void Runopts::opt_e_Evalue(char **argv, int &narg)
 {
+	std::stringstream ss;
+
 	// E-value
 	if (argv[narg + 1] == NULL)
 	{
-		fprintf(stderr, "\n  %sERROR%s: -e [DOUBLE] requires a positive double "
-			"as input (ex. --e 1e-5)\n", startColor, endColor);
+		ss << "\n  " << RED << "ERROR" << COLOFF 
+			<< ": -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)" << std::endl;
+		std::cerr << ss.str();
 		exit(EXIT_FAILURE);
 	}
+
 	if (evalue < 0)
 	{
 		sscanf(argv[narg + 1], "%lf", &evalue);
 		if (evalue < 0)
 		{
 			fprintf(stderr, "\n  %sERROR%s: -e [DOUBLE] requires a positive double "
-				"as input (ex. --e 1e-5)\n", startColor, endColor);
+				"as input (ex. --e 1e-5)\n", RED, COLOFF);
 			exit(EXIT_FAILURE);
 		}
 		narg += 2;
@@ -1142,7 +1199,7 @@ void Runopts::opt_e_Evalue(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: -e [DOUBLE] has been set twice, please verify "
-			"your command parameters.\n\n", startColor, endColor);
+			"your command parameters.\n\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_e_Evalue
@@ -1158,7 +1215,7 @@ void Runopts::opt_F_ForwardOnly(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: BOOL -F has been set more than once, please check "
-			"your command parameters.\n", startColor, endColor);
+			"your command parameters.\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_F_ForwardOnly
@@ -1174,7 +1231,7 @@ void Runopts::opt_R_ReverseOnly(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: BOOL -R has been set more than once, please check "
-			"your command parameters.\n", startColor, endColor);
+			"your command parameters.\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_R_ReverseOnly
@@ -1203,7 +1260,7 @@ void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
 	else
 	{
 		fprintf(stderr, "\n  %sERROR%s: BOOL -N has been set more than once, please "
-			"check your command parameters.\n", startColor, endColor);
+			"check your command parameters.\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_N_MatchAmbiguous
@@ -1211,6 +1268,17 @@ void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
 // Required parameter
 void Runopts::opt_d_KeyValDatabase(char **argv, int &narg)
 {
+	std::stringstream ss;
+
+	// E-value
+	if (argv[narg + 1] == NULL)
+	{
+		ss << "\n  " << RED << "ERROR" << COLOFF
+			<< ": -d [STRING] requires a folder path for key-value database (ex. -d /var/data/kvdb)" << std::endl;
+		std::cerr << ss.str();
+		exit(EXIT_FAILURE);
+	}
+
 	kvdbPath.assign(argv[narg + 1]); // e.g. "C:/a01_projects/clarity_genomics/data/kvdb"
 	narg += 2;
 } // ~Runopts::opt_d_KeyValDatabase
@@ -1218,23 +1286,26 @@ void Runopts::opt_d_KeyValDatabase(char **argv, int &narg)
 
 void Runopts::opt_Default(char **argv, int &narg)
 {
-	fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] '%c' is not one of the options.\n",
-		startColor, endColor, __LINE__, __FILE__, argv[narg][1]);
+	std::stringstream ss;
+	ss << "\n  "<< RED << "ERROR" << COLOFF << ": [Line " << __LINE__ <<": "<< __FILE__ 
+		<< "] '" << argv[narg][1] << "' is not one of the options." << std::endl;
+	std::cerr << ss.str(); ss.str("");
 	printlist();
 } // ~Runopts::opt_Default
 
-void Runopts::optReport(char **argv, int &narg)
+/* Processing task */
+void Runopts::optTask(char **argv, int &narg)
 {
 	std::stringstream ss;
-	int reportingOpt = 0;
-	sscanf(argv[narg + 1], "%d", &reportingOpt);
+	int taskOpt = 0;
+	sscanf(argv[narg + 1], "%d", &taskOpt);
 
-	if (reportingOpt > 2) {
-		ss << "Optiong report " << reportingOpt << " Can only take values: 0,1,2,3 Defaulting to 0 ... \n";
+	if (taskOpt > 2) {
+		ss << "Optiong report " << taskOpt << " Can only take values: 0,1,2,3 Defaulting to 0 ... " << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
-	switch (reportingOpt)
+	switch (taskOpt)
 	{
 	case 0: alirep = align; break;
 	case 1: alirep = postproc; break;
@@ -1269,7 +1340,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	size_t len = sizeof(size);
 	if (sysctl(sz, namelen, &size, &len, NULL, 0) < 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: sysctl (main.cpp)\n", startColor, endColor);
+		fprintf(stderr, "\n  %sERROR%s: sysctl (main.cpp)\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 	//else
@@ -1288,7 +1359,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		verbose = true;
 		welcome();
-		fprintf(stderr, "  For help or more information on usage, type `./sortmerna %s-h%s'\n\n", "\033[1m", endColor);
+		fprintf(stderr, "  For help or more information on usage, type `./sortmerna %s-h%s'\n\n", BOLD, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 
@@ -1361,7 +1432,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			else if (strcmp(opt, "id") == 0) optId(argv, narg);
 			else if (strcmp(opt, "coverage") == 0) optCoverage(argv, narg);
 			else if (strcmp(opt, "version") == 0) optVersion(argv, narg); // version number
-			else if (strcmp(opt, "report") == 0) optReport(argv, narg);
+			else if (strcmp(opt, "task") == 0) optTask(argv, narg);
 			else if (strcmp(opt, "cmd") == 0) optInteractive(argv, narg); // '--cmd' interactive session
 			else optUnknown(argv, narg, opt);
 		}
@@ -1387,14 +1458,14 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] a reads file (--reads file.{fa/fq}) and a "
 			"reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) "
-			"are mandatory input.\n\n", startColor, endColor, __LINE__, __FILE__);
+			"are mandatory input.\n\n", RED, COLOFF, __LINE__, __FILE__);
 		printlist();
 	}
 	// Basename for aligned reads is mandatory
 	if (filetype_ar.size() == 0)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
-			startColor, endColor, __LINE__, __FILE__);
+			RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// No output format has been chosen
@@ -1402,14 +1473,14 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		fprintf(stderr, 
 			"\n  %sERROR%s: [Line %d: %s] no output format has been chosen (fastx/sam/blast/otu_map/log).\n\n", 
-			startColor, endColor, __LINE__, __FILE__);
+			RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!fastxout && (pairedin || pairedout))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] options --paired_in and --paired_out "
-			"must be accompanied by option --fastx.\n", startColor, endColor, __LINE__, __FILE__);
+			"must be accompanied by option --fastx.\n", RED, COLOFF, __LINE__, __FILE__);
 		fprintf(stderr, "  These BOOLs are for FASTA and FASTQ output files, for "
 			"maintaining paired reads together.\n");
 		exit(EXIT_FAILURE);
@@ -1420,7 +1491,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		if (!fastxout && (blastout || samout))
 		{
 			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] option --other [STRING] can only be used together "
-				"with the --fastx option.\n\n", startColor, endColor, __LINE__, __FILE__);
+				"with the --fastx option.\n\n", RED, COLOFF, __LINE__, __FILE__);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -1428,7 +1499,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (otumapout && num_alignments_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --otu_map cannot be set together with "
-			"--num_alignments [INT].\n", startColor, endColor, __LINE__, __FILE__);
+			"--num_alignments [INT].\n", RED, COLOFF, __LINE__, __FILE__);
 		fprintf(stderr, "  The option --num_alignments [INT] doesn't keep track of "
 			"the best alignment which is required for constructing an OTU map.\n");
 		fprintf(stderr, "  Use --otu_map with --best [INT] instead.\n\n");
@@ -1438,21 +1509,21 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (num_alignments_set && !(blastout || samout || fastxout))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --num_alignments [INT] has been set but no output "
-			"format has been chosen (--blast, --sam or --fastx).\n\n", startColor, endColor, __LINE__, __FILE__);
+			"format has been chosen (--blast, --sam or --fastx).\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// If --best output was chosen, check an alignment format has also been chosen
 	if (best_set && !(blastout || samout || otumapout))
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] has been set but no output "
-			"format has been chosen (--blast or --sam or --otu_map).\n\n", startColor, endColor, __LINE__, __FILE__);
+			"format has been chosen (--blast or --sam or --otu_map).\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// Check gap extend score < gap open score
 	if (gap_extension > gap_open)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --gap_ext [INT] must be less than --gap_open [INT].\n\n",
-			startColor, endColor, __LINE__, __FILE__);
+			RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// Option --print_all_reads can only be used with Blast-like tabular
@@ -1460,7 +1531,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (print_all_reads && blastout && blastFormat != BlastFormat::TABULAR)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --print_all_reads [BOOL] can only be used with BLAST-like "
-			"tabular format.\n\n", startColor, endColor, __LINE__, __FILE__);
+			"tabular format.\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// Only one of these options is allowed (--best outputs one alignment,
@@ -1468,7 +1539,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (best_set && num_alignments_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] and --num_alignments [INT] cannot "
-			"be set together. \n", startColor, endColor, __LINE__, __FILE__);
+			"be set together. \n", RED, COLOFF, __LINE__, __FILE__);
 		fprintf(stderr, "  (--best [INT] will search INT highest scoring reference sequences "
 			"and output a single best alignment, whereas --num_alignments [INT] will "
 			"output the first INT alignments).\n\n");
@@ -1477,7 +1548,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (min_lis_set && num_alignments_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --min_lis [INT] and --num_alignments [INT] cannot "
-			"be set together. \n", startColor, endColor, __LINE__, __FILE__);
+			"be set together. \n", RED, COLOFF, __LINE__, __FILE__);
 		fprintf(stderr, "  --min_lis [INT] can only be used with --best [INT] (refer to "
 			"the User manual on this option).\n\n");
 		exit(EXIT_FAILURE);
@@ -1486,14 +1557,14 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (min_lis_set && !best_set)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --min_lis [INT] must be set together with --best "
-			"[INT].\n\n", startColor, endColor, __LINE__, __FILE__);
+			"[INT].\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
 	// %id and %coverage can only be used with --otu_map
 	if (((align_id > 0) || (align_cov > 0)) && !otumapout)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --id [INT] and --coverage [INT] can only be used "
-			"together with --otu_map.\n", startColor, endColor, __LINE__, __FILE__);
+			"together with --otu_map.\n", RED, COLOFF, __LINE__, __FILE__);
 		fprintf(stderr, "  These two options are used for constructing the OTU map by "
 			"filtering alignments passing the E-value threshold.\n\n");
 		exit(EXIT_FAILURE);
@@ -1565,8 +1636,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 
 
 /*! @fn main()
-	@brief main function, parses command line arguments and launches the
-	main paralleltraversal function
+	@brief main function, parses command line arguments and launches the processing
 	@param int argc
 	@param char** argv
 	@return none

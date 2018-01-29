@@ -6,6 +6,7 @@
 */
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <algorithm> // std::find_if
 
@@ -217,11 +218,13 @@ public:
 	}
 
 	void validate() {
+		std::stringstream ss;
 		if (sequence.size() > READLEN)
 		{
-			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your reads is > %d nt \n",
-				startColor, endColor, __LINE__, __FILE__, READLEN);
-			fprintf(stderr, "  Please check your reads or contact the authors.\n");
+			ss << "\n  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": "<< __FILE__ 
+				<< "] at least one of your reads is > " << READLEN << " nt " << std::endl
+				<< "  Please check your reads or contact the authors." << std::endl;
+			std::cerr << ss.str();
 			exit(EXIT_FAILURE);
 		}
 		isValid = true;
