@@ -188,6 +188,9 @@ void Output::report_blast
 	uint32_t id = 0;
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
+	const char MATCH = '|';
+	const char MISMATCH = '*';
+	const char INDEL = '-';
 
 	// TODO: iterating all alignments for each reference part is an overhead. Alignments are pre-ordered, 
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
@@ -220,7 +223,6 @@ void Output::report_blast
 				blastout << read.getSeqId();
 				blastout << std::endl;
 
-				//fileout << "Score: " << a->score1 << " bits (" << bitscore << ")\t";
 				blastout << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
 				blastout.precision(3);
 				blastout << "Expect: " << evalue_score << "\t";
@@ -252,7 +254,7 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 1) blastout << "-";
+								if (letter == 1) blastout << INDEL; // mark indel
 								else
 								{
 									blastout << to_char[(int)refseq[q]];
@@ -278,8 +280,8 @@ void Output::report_blast
 							{
 								if (letter == 0)
 								{
-									if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.sequence[p]]) blastout << "|";
-									else blastout << "*";
+									if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.isequence[p]]) blastout << MATCH; // mark match
+									else blastout << MISMATCH; // mark mismatch
 									++q;
 									++p;
 								}
@@ -310,10 +312,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 2) blastout << "-";
+								if (letter == 2) blastout << INDEL; // mark indel
 								else
 								{
-									blastout << (char)to_char[(int)read.sequence[p]];
+									blastout << to_char[(int)read.isequence[p]];
 									++p;
 								}
 								++count;
@@ -744,8 +746,8 @@ void Output::closefiles()
 // called from main. TODO: move into a class?
 void generateReports(Runopts & opts)
 {
-	int N_READ_THREADS = 1;
-	int N_PROC_THREADS = 1;
+	int N_READ_THREADS = opts.num_read_thread_rep;
+	int N_PROC_THREADS = opts.num_proc_thread_rep;
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 

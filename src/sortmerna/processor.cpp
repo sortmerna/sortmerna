@@ -134,8 +134,8 @@ void ReportProcessor::run()
 
 void runPostProcessor(Runopts & opts)
 {
-	int N_READ_THREADS = 1;
-	int N_PROC_THREADS = 1; // opts.num_proc_threads
+	int N_READ_THREADS = opts.num_read_thread_pp;
+	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 

@@ -19,9 +19,15 @@ struct Runopts {
 	std::string filetype_or; // '--other' rejected reads output file
 	std::string cmdline;
 
-	int numcpu = -1; // '-a' number of threads to use TODO: remove (see num_proc_threads)
-	int num_fread_threads = 1; // number of threads reading the Reads file.
-	int num_proc_threads = 8;  // '-a' number of threads to use for processing
+	int num_read_thread = 1; // number of threads reading the Reads file.
+	int num_write_thread = 1; // number of threads writing to Key-value database
+	int num_proc_thread = 0; // '-a' number of threads to use for alignment, post-processing, reporting
+
+	int num_read_thread_pp = 1; // number of post-processing read threads
+	int num_proc_thread_pp = 1; // number of post-processing processor threads
+
+	int num_read_thread_rep = 1; // number of report reader threads
+	int num_proc_thread_rep = 1; // number of report processor threads
 
 	long match = 2; // '--match' SW score (positive integer) for a match               TODO: change to int8_t
 	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch   TODO: change to int8_t
@@ -147,8 +153,11 @@ private:
 	void optTask(char **argv, int &narg);
 	void optInteractive(char **argv, int &narg); // interactive session
 	void optUnknown(char **argv, int &narg, char * opt);
+	void opt_threads(char **argv, int &narg);
+	void opt_threads_pp(char **argv, int &narg); // post-proc threads --thpp 1:1
+	void opt_threads_rep(char **argv, int &narg); // report threads --threp 1:1 
+	void opt_a_numProcThreads(char **argv, int &narg);
 	void opt_e_Evalue(char **argv, int &narg);
-	void opt_a_NumCpus(char **argv, int &narg);
 	void opt_F_ForwardOnly(char **argv, int &narg);
 	void opt_R_ReverseOnly(char **argv, int &narg);
 	void opt_h_Help();

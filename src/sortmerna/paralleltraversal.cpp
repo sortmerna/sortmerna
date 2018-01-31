@@ -339,16 +339,26 @@ void paralleltraversal(Runopts & opts)
 	std::cout << ss.str(); ss.str("");
 
 	// Init thread pool with the given number of threads
-	int numThreads = 2 * opts.num_fread_threads + opts.num_proc_threads;
-	if (numThreads > numCores) {
-		ss << "WARN: Number of cores: " << numCores << " is less than number allocated threads " << numThreads << std::endl;
-		std::cout << ss.str(); ss.str("");
+	int numProcThread = 0;
+	if (opts.num_proc_thread == 0) {
+		numProcThread = numCores; // default
 	}
+	else
+		numProcThread = opts.num_proc_thread; // set using '--thread'
+
+	int numThreads = opts.num_read_thread + opts.num_write_thread + numProcThread;
+
+	ss << "Number of cores: " << numCores 
+		<< " Read threads:  " << opts.num_read_thread
+		<< " Write threads: " << opts.num_write_thread
+		<< " Processor threads: " << numProcThread
+		<< std::endl;
+	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(numThreads);
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, 1); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, opts.num_proc_threads); // shared: Processor pushes, Writer pops
+	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, opts.num_read_thread); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, numProcThread); // shared: Processor pushes, Writer pops
 	Readstats readstats(opts);
 	Refstats refstats(opts, readstats);
 	Output output(opts, readstats);
@@ -379,14 +389,18 @@ void paralleltraversal(Runopts & opts)
 			std::cout << ss.str(); ss.str("");
 
 			starts = std::chrono::high_resolution_clock::now();
-			for (int i = 0; i < opts.num_fread_threads; i++)
+			for (int i = 0; i < opts.num_read_thread; i++)
 			{
 				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+			}
+
+			for (int i = 0; i < opts.num_write_thread; i++)
+			{
 				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
 			}
 
 			// add processor jobs
-			for (int i = 0; i < opts.num_proc_threads; i++)
+			for (int i = 0; i < numProcThread; i++)
 			{
 				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, opts, index, refs, output, readstats, refstats, parallelTraversalJob));
 			}
@@ -395,7 +409,7 @@ void paralleltraversal(Runopts & opts)
 			tpool.waitAll(); // wait till all reads are processed against the current part
 			index.clear();
 			refs.clear();
-			writeQueue.reset(opts.num_proc_threads);
+			writeQueue.reset(opts.num_proc_thread);
 			readQueue.reset(1);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;

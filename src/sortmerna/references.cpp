@@ -130,6 +130,25 @@ void References::convert_fix(std::string & seq)
 	}
 }
 
+std::string References::convertChar(int idx)
+{
+	std::stringstream ss;
+	std::string chstr;
+	const char nt_map[5] = { 'A', 'C', 'G', 'T', 'N' };
+	for (std::string::iterator it = buffer[idx].sequence.begin(); it != buffer[idx].sequence.end(); ++it)
+	{
+		if (*it < 5)
+			chstr += nt_map[(int)*it];
+		else
+		{
+			ss << "ERROR: string is not in numeric format. Encountered character: " << *it << std::endl;
+			std::cerr << ss.str();
+			exit(EXIT_FAILURE);
+		}
+	}
+	return chstr;
+}
+
 void References::clear()
 {
 	buffer.clear(); // TODO: is this enough?

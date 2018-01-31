@@ -116,30 +116,44 @@ void printlist()
 	<< "  OR" << std::endl
 	<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output −d kvdb_path [OPTIONS]:" << std::endl
 #endif
-	<< "\n  -------------------------------------------------------------------------------------------------------------" << std::endl
+	<< std::endl
+	<< "  -------------------------------------------------------------------------------------------------------------" << std::endl
 	<< "  | parameter          value           description                                                    default |" << std::endl
 	<< "  -------------------------------------------------------------------------------------------------------------" << std::endl
 	<< "     " << BOLD << "--ref" << COLOFF << "             " << UNDL << "STRING,STRING" << COLOFF 
-	<< "   FASTA reference file, index file                               " << GREEN << "mandatory" << COLOFF << std::endl
-	<< "                                         (ex. --ref /path/to/file1.fasta,/path/to/index1)" << std::endl
-	<< "                                         If passing multiple reference files, separate " << std::endl
-	<< "                                         them using the delimiter ':' (Linux) or ';' (Windows)," << std::endl
-	<< "                                         (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)" << std::endl
+	<< "   FASTA reference file:index file                               " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1)" 
+	<< std::endl
+	<< "                                       If passing multiple reference files, separate them" 
+	<< std::endl
+	<< "                                       using the delimiter ':' (Linux) or ';' (Windows)," 
+	<< std::endl
+	<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)" 
+	<< std::endl
 	<< "     " << BOLD << "--reads" << COLOFF << "           " << UNDL << "STRING" << COLOFF
-	<< "          FASTA/FASTQ raw reads file                                     " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "          FASTA/FASTQ raw reads file                                     " << GREEN << "mandatory" << COLOFF
+	<< std::endl
 #ifdef HAVE_LIBZ
 	<< "       OR" << std::endl
 	<< "     " << BOLD << "--reads-gz" << COLOFF << "        " << UNDL << "STRING" << COLOFF
-	<< "          FASTA/FASTQ compressed (with gzip) reads file                  " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "          FASTA/FASTQ compressed (with gzip) reads file                  " << GREEN << "mandatory" << COLOFF
+	<< std::endl
 #endif
 	<< "     " << BOLD << "--aligned" << COLOFF << "         " << UNDL << "STRING" << COLOFF
-	<< "          aligned reads filepath + base file name                        " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "          aligned reads filepath + base file name                        " << GREEN << "mandatory" << COLOFF
+	<< std::endl
 	<< "                                         (appropriate extension will be added)\n" << std::endl
 	<< "     " << BOLD << "-d"        << COLOFF << "         " << UNDL << "STRING" << COLOFF
-	<< "          key−value store location (folder)                        " << GREEN << "mandatory" << COLOFF << std::endl
+	<< "          key−value store location (folder path)                        " << GREEN << "mandatory" << COLOFF << std::endl
 	<< "     " << BOLD << "--task"    << COLOFF << "          " << UNDL << "INT" << COLOFF
 	<< "     Task: 0 (align) default, 1 (post−process), 2 (report), 3 (align and post−proc), 4 (all)" << std::endl
 	<< "   [COMMON OPTIONS]: " << std::endl
+	<< "     " << BOLD << "--threads" << COLOFF << "                " << UNDL << "INT:INT:INT" << COLOFF
+	<< "          number of Read:Write:Process threads to use                                       " << UNDL << "1:1:numCores" << COLOFF << std::endl
+	<< "     " << BOLD << "--thpp" << COLOFF << "                " << UNDL << "INT:INT:INT" << COLOFF
+	<< "          number of Post-Processing Read:Process threads to use                             " << UNDL << "1:1" << COLOFF << std::endl
+	<< "     " << BOLD << "--threp" << COLOFF << "                " << UNDL << "INT:INT:INT" << COLOFF
+	<< "          number of Report Read:Process threads to use                                      " << UNDL << "1:1" << COLOFF << std::endl
 	<< "     " << BOLD << "--other"   << COLOFF << "           " << UNDL << "STRING" << COLOFF
 	<< "          rejected reads filepath + base file name" << std::endl
 	<< "                                         (appropriate extension will be added)" << std::endl
@@ -359,116 +373,117 @@ void Runopts::optReadsGz(char **argv, int &narg)
 
 void Runopts::optRef(char **argv, int &narg)
 {
+	std::stringstream ss;
+
 	if (argv[narg + 1] == NULL)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --ref must be followed by at least one entry "
-			"(ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n", RED, COLOFF);
+		ss << "\n  " << RED << "ERROR" << COLOFF 
+			<< ": --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)" 
+			<< std::endl << std::endl;
+		std::cerr << ss.str(); ss.str("");
 		exit(EXIT_FAILURE);
 	}
-	// path exists, check path
-	else
+
+	// check path
+	char *ptr = argv[narg + 1];
+	while (*ptr != '\0')
 	{
-		char *ptr = argv[narg + 1];
-		while (*ptr != '\0')
+		// get the FASTA file path + name
+		char fastafile[2000];
+		char *ptr_fastafile = fastafile;
+
+		// the reference database FASTA file
+		while (*ptr != ',' && *ptr != '\0')
 		{
-			// get the FASTA file path + name
-			char fastafile[2000];
-			char *ptr_fastafile = fastafile;
+			*ptr_fastafile++ = *ptr++;
+		}
+		*ptr_fastafile = '\0';
+		if (*ptr == '\0')
+		{
+			fprintf(stderr, "   %sERROR%s: the FASTA reference file name %s must be followed "
+				" by an index name.\n\n", RED, COLOFF, fastafile);
+			exit(EXIT_FAILURE);
+		}
+		ptr++; //skip the ',' delimiter
 
-			// the reference database FASTA file
-			while (*ptr != ',' && *ptr != '\0')
-			{
-				*ptr_fastafile++ = *ptr++;
-			}
-			*ptr_fastafile = '\0';
-			if (*ptr == '\0')
-			{
-				fprintf(stderr, "   %sERROR%s: the FASTA reference file name %s must be followed "
-					" by an index name.\n\n", RED, COLOFF, fastafile);
-				exit(EXIT_FAILURE);
-			}
-			ptr++; //skip the ',' delimiter
+				// check reference FASTA file exists & is not empty
+		if (FILE *file = fopen(fastafile, "rb"))
+		{
+			// get file size
+			fseek(file, 0, SEEK_END);
+			size_t filesize = ftell(file);
+			if (!filesize) exit_early = true;
+			// reset file pointer to start of file
+			fseek(file, 0, SEEK_SET);
+			fclose(file);
+		}
+		else
+		{
+			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
+				" %s.\n\n", RED, COLOFF, fastafile, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 
-				   // check reference FASTA file exists & is not empty
-			if (FILE *file = fopen(fastafile, "rb"))
-			{
-				// get file size
-				fseek(file, 0, SEEK_END);
-				size_t filesize = ftell(file);
-				if (!filesize) exit_early = true;
-				// reset file pointer to start of file
-				fseek(file, 0, SEEK_SET);
-				fclose(file);
-			}
-			else
-			{
-				fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-					" %s.\n\n", RED, COLOFF, fastafile, strerror(errno));
-				exit(EXIT_FAILURE);
-			}
+		// get the index path + name
+		char indexfile[2000];
+		char *ptr_indexfile = indexfile;
+		// the reference database index name
+		while (*ptr != DELIM && *ptr != '\0') *ptr_indexfile++ = *ptr++;
+		*ptr_indexfile = '\0';
+		if (*ptr != '\0') ptr++; //skip the ':' delimiter
 
-			// get the index path + name
-			char indexfile[2000];
-			char *ptr_indexfile = indexfile;
-			// the reference database index name
-			while (*ptr != DELIM && *ptr != '\0') *ptr_indexfile++ = *ptr++;
-			*ptr_indexfile = '\0';
-			if (*ptr != '\0') ptr++; //skip the ':' delimiter
+									// check the directory where to write the index exists
+		char dir[500];
+		char *ptr_end = strrchr(indexfile, '/');
+		if (ptr_end != NULL)
+		{
+			memcpy(dir, indexfile, (ptr_end - indexfile));
+			dir[(int)(ptr_end - indexfile)] = '\0';
+		}
+		else
+		{
+			strcpy(dir, "./");
+		}
 
-									 // check the directory where to write the index exists
-			char dir[500];
-			char *ptr_end = strrchr(indexfile, '/');
+		if (DIR *dir_p = opendir(dir)) closedir(dir_p);
+		else
+		{
 			if (ptr_end != NULL)
-			{
-				memcpy(dir, indexfile, (ptr_end - indexfile));
-				dir[(int)(ptr_end - indexfile)] = '\0';
-			}
+				fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
+					"'%s' could not be opened. The full directory path must be "
+					"provided (ex. no '~'). \n\n", RED, COLOFF,
+					dir, ptr_end + 1);
 			else
+				fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
+					"'%s' could not be opened. The full directory path must be "
+					"provided (ex. no '~'). \n\n", RED, COLOFF,
+					dir, indexfile);
+
+			exit(EXIT_FAILURE);
+		}
+
+		// check index file names are distinct
+		for (int i = 0; i < (int)indexfiles.size(); i++)
+		{
+			if ((indexfiles[i].first).compare(fastafile) == 0)
 			{
-				strcpy(dir, "./");
+				fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered "
+					"twice in the list. It will be searched twice. "
+					"\n\n", "\033[0;33m", COLOFF, fastafile);
 			}
-
-			if (DIR *dir_p = opendir(dir)) closedir(dir_p);
-			else
+			else if ((indexfiles[i].second).compare(indexfile) == 0)
 			{
-				if (ptr_end != NULL)
-					fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
-						"'%s' could not be opened. The full directory path must be "
-						"provided (ex. no '~'). \n\n", RED, COLOFF,
-						dir, ptr_end + 1);
-				else
-					fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
-						"'%s' could not be opened. The full directory path must be "
-						"provided (ex. no '~'). \n\n", RED, COLOFF,
-						dir, indexfile);
-
-				exit(EXIT_FAILURE);
+				fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered "
+					"twice in the list. It will be searched twice.\n\n", "\033[0;33m",
+					COLOFF, indexfile);
 			}
+		}
 
-			// check index file names are distinct
-			for (int i = 0; i < (int)indexfiles.size(); i++)
-			{
-				if ((indexfiles[i].first).compare(fastafile) == 0)
-				{
-					fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered "
-						"twice in the list. It will be searched twice. "
-						"\n\n", "\033[0;33m", COLOFF, fastafile);
-				}
-				else if ((indexfiles[i].second).compare(indexfile) == 0)
-				{
-					fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered "
-						"twice in the list. It will be searched twice.\n\n", "\033[0;33m",
-						COLOFF, indexfile);
-				}
-			}
+		indexfiles.push_back(pair<string, string>(fastafile, indexfile));
 
-			indexfiles.push_back(pair<string, string>(fastafile, indexfile));
+	}//~while (*ptr != '\0')
 
-		}//~while (*ptr != '\0')
-
-		narg += 2;
-
-	}//~else
+	narg += 2;
 } // ~Runopts::optRef
 
 void Runopts::optAligned(char **argv, int &narg)
@@ -833,75 +848,88 @@ void Runopts::optSam(char **argv, int &narg)
 
 void Runopts::optBlast(char **argv, int &narg)
 {
+	std::stringstream ss;
+
 	if (blastout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --blast [STRING] has already been set once.\n\n",
-			RED, COLOFF);
+		ss << std::endl << "  " << RED << "ERROR" << COLOFF 
+			<< ": --blast [STRING] has already been set once." 
+			<< std::endl << std::endl;
+		std::cerr << ss.str();
 		exit(EXIT_FAILURE);
 	}
-	else
+
+	std::string str(argv[narg + 1]);
+	// split blast options into vector by space
+	std::istringstream iss(str);
+	do
 	{
-		string str(argv[narg + 1]);
-		// split blast options into vector by space
-		istringstream iss(str);
-		do
+		std::string s;
+		iss >> s;
+		blastops.push_back(s);
+	} while (iss);
+
+	// remove the end of file entry
+	blastops.pop_back();
+	bool blast_human_readable = false;
+	std::vector<std::string> supported_opts;
+	supported_opts.push_back("0");
+	supported_opts.push_back("1");
+	supported_opts.push_back("cigar");
+	supported_opts.push_back("qstrand");
+	supported_opts.push_back("qcov");
+	// check user options are supported
+	for (uint32_t i = 0; i < blastops.size(); i++)
+	{
+		bool match_found = false;
+		string opt = blastops[i];
+		vector<string>::iterator it;
+		for (it = supported_opts.begin(); it != supported_opts.end(); ++it)
 		{
-			string s;
-			iss >> s;
-			blastops.push_back(s);
-		} while (iss);
-		// remove the end of file entry
-		blastops.pop_back();
-		bool blast_human_readable = false;
-		vector<string> supported_opts;
-		supported_opts.push_back("0");
-		supported_opts.push_back("1");
-		supported_opts.push_back("cigar");
-		supported_opts.push_back("qstrand");
-		supported_opts.push_back("qcov");
-		// check user options are supported
-		for (uint32_t i = 0; i < blastops.size(); i++)
-		{
-			bool match_found = false;
-			string opt = blastops[i];
-			vector<string>::iterator it;
-			for (it = supported_opts.begin(); it != supported_opts.end(); ++it)
+			if (opt.compare(*it) == 0)
 			{
-				if (opt.compare(*it) == 0)
-				{
-					if (opt.compare("0") == 0) blast_human_readable = true;
-					else if (opt.compare("1") == 0) {
-						//blast_tabular = true; // TODO: remove
-						blastFormat = BlastFormat::TABULAR;
-					}
-					match_found = true;
-					break;
+				if (opt.compare("0") == 0) {
+					blast_human_readable = true;
+					blastFormat = BlastFormat::REGULAR;
 				}
-			}
-			if (!match_found)
-			{
-				fprintf(stderr, "\n  %sERROR%s: `%s` is not supported in --blast [STRING].\n\n",
-					RED, COLOFF, opt.c_str());
-				exit(EXIT_FAILURE);
+				else if (opt.compare("1") == 0) {
+					blastFormat = BlastFormat::TABULAR;
+				}
+				match_found = true;
+				break;
 			}
 		}
-		// more than 1 field with blast human-readable format given
-		if (blast_human_readable && (blastops.size() > 1))
+		if (!match_found)
 		{
-			fprintf(stderr, "\n  %sERROR%s: for human-readable format, --blast [STRING] cannot contain "
-				"more fields than '0'.\n\n", RED, COLOFF);
+			ss << std::endl << "  " << RED << "ERROR" << COLOFF 
+				<< ": `" << opt << "` is not supported in --blast [STRING]." 
+				<< std::endl << std::endl;
+			std::cerr << ss.str();
 			exit(EXIT_FAILURE);
 		}
-		// both human-readable and tabular format options have been chosen
-		if (blast_human_readable && blastFormat == BlastFormat::TABULAR)
-		{
-			fprintf(stderr, "\n  %sERROR%s: --blast [STRING] can only have one of the options "
-				"'0' (human-readable) or '1' (tabular).\n\n", RED, COLOFF);
-			exit(EXIT_FAILURE);
-		}
-		blastout = true;
-		narg += 2;
 	}
+	// more than 1 field with blast human-readable format given
+	if (blast_human_readable && (blastops.size() > 1))
+	{
+		ss << std::endl << "  " << RED << "ERROR" << COLOFF 
+			<< ": for human-readable format, --blast [STRING] can only contain"
+			"a single field '0'." << std::endl << std::endl;
+		std::cerr << ss.str();
+		exit(EXIT_FAILURE);
+	}
+	// both human-readable and tabular format options have been chosen
+	if (blast_human_readable && blastFormat == BlastFormat::TABULAR)
+	{
+		ss << std::endl << "  " << RED << "ERROR" << COLOFF 
+			<< ": --blast [STRING] can only have one of the options "
+			"'0' (human-readable) or '1' (tabular)." 
+			<< std::endl << std::endl;
+		std::cerr << ss.str();
+		exit(EXIT_FAILURE);
+	}
+
+	blastout = true;
+	narg += 2;
 } // ~Runopts::optBlast
 
 void Runopts::optMinLis(char **argv, int &narg)
@@ -1152,25 +1180,11 @@ void Runopts::optVersion(char **argv, int &narg)
 
 void Runopts::optUnknown(char **argv, int &narg, char * opt)
 {
-	fprintf(stderr, "\n  %sERROR%s: option --%s is not an option.\n\n",
-		RED, COLOFF, opt);
+	std::stringstream ss;
+	ss << "\n  " << RED << "ERROR" << COLOFF << ": option --" << opt << " not recognized" << std::endl << std::endl;
+	std::cout << ss.str();
 	printlist();
 } // ~Runopts::optUnknown
-
-void Runopts::opt_a_NumCpus(char **argv, int &narg)
-{
-	// the number of cpus has been set twice
-	if (numcpu == -1)
-	{
-		numcpu = atof(argv[narg + 1]);
-		narg += 2;
-	}
-	else
-	{
-		printf("\n  %sERROR%s: -a [INT] has been set twice, please verify your command parameters.\n\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-} // ~Runopts::opt_a_NumCpus
 
 void Runopts::opt_e_Evalue(char **argv, int &narg)
 {
@@ -1265,12 +1279,113 @@ void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
 	}
 } // ~Runopts::opt_N_MatchAmbiguous
 
+/* Number Processor threads to use */ 
+void Runopts::opt_a_numProcThreads(char **argv, int &narg)
+{
+	std::stringstream ss;
+
+	if (argv[narg + 1] == NULL)
+	{
+		ss << "\n  " << RED << "ERROR" << COLOFF
+			<< ": -a [INT] requires an integer for number of Processor threads (ex. -a 8)" << std::endl;
+		std::cerr << ss.str();
+		exit(EXIT_FAILURE);
+	}
+
+	num_proc_thread = atoi(argv[narg + 1]);
+	narg += 2;
+} // ~Runopts::opt_a_numProcThreads
+
+ /* Number of threads to use */
+void Runopts::opt_threads(char **argv, int &narg)
+{
+	std::stringstream ss;
+
+	if (argv[narg + 1] == NULL)
+	{
+		ss << "\n  " << RED << "ERROR" << COLOFF
+			<< ": --threads [INT:INT:INT] requires 3 integers for number of "
+			<< "Read:Write:Processor threads (ex. --threads 1:1:8)" << std::endl;
+		std::cerr << ss.str(); ss.str("");
+		exit(EXIT_FAILURE);
+	}
+
+	std::istringstream strm(argv[narg + 1]);
+	std::string tok;
+	for ( int i=0 ; std::getline(strm, tok, ':'); ++i )
+	{
+		switch (i)
+		{
+		case 0: num_read_thread = std::stoi(tok); break;
+		case 1: num_write_thread = std::stoi(tok); break;
+		case 2: num_proc_thread = std::stoi(tok); break;
+		}
+	}
+
+	narg += 2;
+} // ~Runopts::opt_threads
+
+
+void Runopts::opt_threads_pp(char **argv, int &narg)
+{
+	std::stringstream ss;
+
+	if (argv[narg + 1] == NULL)
+	{
+		ss << "\n  " << RED << "ERROR" << COLOFF
+			<< ": --thpp [INT:INT] requires 2 integers for number of "
+			<< "Read:Processor threads (ex. --thpp 1:1)" << std::endl;
+		std::cerr << ss.str(); ss.str("");
+		exit(EXIT_FAILURE);
+	}
+
+	std::istringstream strm(argv[narg + 1]);
+	std::string tok;
+	for (int i = 0; std::getline(strm, tok, ':'); ++i)
+	{
+		switch (i)
+		{
+		case 0: num_read_thread_pp = std::stoi(tok); break;
+		case 1: num_proc_thread_pp = std::stoi(tok); break;
+		}
+	}
+
+	narg += 2;
+} // ~Runopts::opt_threads_pp
+
+
+void Runopts::opt_threads_rep(char **argv, int &narg)
+{
+	std::stringstream ss;
+
+	if (argv[narg + 1] == NULL)
+	{
+		ss << "\n  " << RED << "ERROR" << COLOFF
+			<< ": --threp [INT:INT] requires 2 integers for number of "
+			<< "Read:Processor threads (ex. --threp 1:1)" << std::endl;
+		std::cerr << ss.str(); ss.str("");
+		exit(EXIT_FAILURE);
+	}
+
+	std::istringstream strm(argv[narg + 1]);
+	std::string tok;
+	for (int i = 0; std::getline(strm, tok, ':'); ++i)
+	{
+		switch (i)
+		{
+		case 0: num_read_thread_rep = std::stoi(tok); break;
+		case 1: num_proc_thread_rep = std::stoi(tok); break;
+		}
+	}
+
+	narg += 2;
+} // ~Runopts::opt_threads_rep
+
 // Required parameter
 void Runopts::opt_d_KeyValDatabase(char **argv, int &narg)
 {
 	std::stringstream ss;
 
-	// E-value
 	if (argv[narg + 1] == NULL)
 	{
 		ss << "\n  " << RED << "ERROR" << COLOFF
@@ -1434,10 +1549,14 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			else if (strcmp(opt, "version") == 0) optVersion(argv, narg); // version number
 			else if (strcmp(opt, "task") == 0) optTask(argv, narg);
 			else if (strcmp(opt, "cmd") == 0) optInteractive(argv, narg); // '--cmd' interactive session
+			// threads
+			else if (strcmp(opt, "thread") == 0) opt_threads(argv, narg); // '--thread 1:1:8' num alignment threads
+			else if (strcmp(opt, "thpp") == 0) opt_threads_pp(argv, narg); // '--thpp 1:1' num post-proc threads
+			else if (strcmp(opt, "threp") == 0) opt_threads_rep(argv, narg); // '--threp 1:1' num report threads
 			else optUnknown(argv, narg, opt);
 		}
 		break;
-		case 'a': opt_a_NumCpus(argv, narg); break;
+		case 'a': opt_a_numProcThreads(argv, narg); break;
 		case 'd': opt_d_KeyValDatabase(argv, narg); break; // required
 		case 'e': opt_e_Evalue(argv, narg);	break;
 		case 'F': opt_F_ForwardOnly(argv, narg); break;
@@ -1445,7 +1564,6 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		case 'h': opt_h_Help(); break;
 		case 'v': opt_v_Verbose(narg); break;
 		case 'N': opt_N_MatchAmbiguous(argv, narg); break;
-		//case 'm': opt_m_MemMapSize(argv, narg); break; // TODO: remove
 		default: opt_Default(argv, narg);
 		}//~switch
 	}//~while ( narg < argc )
