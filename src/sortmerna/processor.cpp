@@ -59,7 +59,7 @@ void Processor::run()
 		for (int32_t strand = 0; strand < strandCount; strand++)
 		{
 			if (!opts.forward && !read.reversed)
-				read.revIntStr(); // reverse the sequence
+				read.revIntStr(); // reverse-complement the sequence
 			callback(opts, index, refs, output, readstats, refstats, read);
 			opts.forward = false;
 		}

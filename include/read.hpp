@@ -66,7 +66,7 @@ public:
 
 	// calculated
 	std::string isequence; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
-	bool reversed = false;
+	bool reversed = false; // indicates the read is reverse-complement i.e. 'revIntStr' was applied
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
 	// store in database ------------>
@@ -89,7 +89,7 @@ public:
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <------------------------------ store in database
 
-	const char complement[4] = { 3, 2, 1, 0 };
+	const char complement[4] = { 3, 2, 1, 0 }; // A <-> T, C <-> G
 
 	Read()
 		:
@@ -214,7 +214,7 @@ public:
 		for (int i = 0; i < isequence.length(); i++) {
 			isequence[i] = complement[(int)isequence[i]];
 		}
-		reversed = true;
+		reversed = !reversed;
 	}
 
 	void validate() {

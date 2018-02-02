@@ -185,12 +185,14 @@ void Output::report_blast
 )
 {
 	const char to_char[5] = { 'A','C','G','T','N' };
-	uint32_t id = 0;
-	uint32_t mismatches = 0;
-	uint32_t gaps = 0;
 	const char MATCH = '|';
 	const char MISMATCH = '*';
 	const char INDEL = '-';
+
+	uint32_t id = 0;
+	uint32_t mismatches = 0;
+	uint32_t gaps = 0;
+	char strandmark = '+';
 
 	// TODO: iterating all alignments for each reference part is an overhead. Alignments are pre-ordered, 
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
@@ -212,8 +214,17 @@ void Output::report_blast
 			std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
 			std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 
+			if (read.hits_align_info.alignv[i].strand) {
+				if (read.reversed) read.revIntStr(); // reverse to forward strand
+				strandmark = '+';
+			}
+			else {
+				if (!read.reversed) read.revIntStr(); // reverse-complement the read
+				strandmark = '-';
+			}
+
 			// Blast-like pairwise alignment (only for aligned reads)
-			if (opts.blastFormat == BlastFormat::REGULAR) // TODO: global - fix
+			if (opts.blastFormat == BlastFormat::REGULAR)
 			{
 				blastout << "Sequence ID: ";
 				blastout << ref_id; // print only start of the header till first space
@@ -227,14 +238,13 @@ void Output::report_blast
 				blastout.precision(3);
 				blastout << "Expect: " << evalue_score << "\t";
 
-				if (read.hits_align_info.alignv[i].strand) blastout << "strand: +\n\n";
-				else blastout << "strand: -\n\n";
+				blastout << "strand: " << strandmark << std::endl << std::endl;
 
 				if (read.hits_align_info.alignv[i].cigar.size() > 0)
 				{
 					uint32_t j, c = 0, left = 0, e = 0,
 						qb = read.hits_align_info.alignv[i].ref_begin1,
-						pb = read.hits_align_info.alignv[i].read_begin1; //mine
+						pb = read.hits_align_info.alignv[i].read_begin1;
 
 					while (e < read.hits_align_info.alignv[i].cigar.size() || left > 0)
 					{
@@ -421,11 +431,12 @@ void Output::report_blast
 					else if (opts.blastops[l].compare("qstrand") == 0)
 					{
 						blastout << "\t";
-						if (read.hits_align_info.alignv[i].strand) blastout << "+";
-						else blastout << "-";
+						blastout << strandmark;
+						//if (read.hits_align_info.alignv[i].strand) blastout << "+";
+						//else blastout << "-";
 					}
 				}
-				blastout << "\n";
+				blastout << std::endl;
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
