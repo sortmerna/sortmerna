@@ -23,6 +23,7 @@
 // SMR
 #include "readstats.hpp"
 #include "kvdb.hpp"
+#include "gzip.hpp"
 
 
 void Readstats::calculate()
@@ -39,12 +40,13 @@ void Readstats::calculate()
 	{
 		std::string line;
 		bool isFastq = true;
+		Gzip gzip(opts);
 
 		auto t = std::chrono::high_resolution_clock::now();
 
 		std::cout << "Readstats::calculate starting ...   ";
 
-		for (int count = 0; std::getline(ifs, line); ) // count lines in One record
+		for (int count = 0; gzip.getline(ifs, line) != RL_END; ) // std::getline count lines in One record
 		{
 			// skip empty line
 			if (!line.empty())
