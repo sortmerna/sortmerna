@@ -31,6 +31,7 @@ set(SMR_SRCS
 	bitvector.cpp
 	callbacks.cpp
 	cmd.cpp
+	gzip.cpp
 	index.cpp
 	kseq_load.cpp
 	main.cpp

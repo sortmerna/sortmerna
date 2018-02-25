@@ -82,7 +82,7 @@ extern timeval t;
 #else
 #define RED    "\033[0;31m"
 #define GREEN  "\033[0;32m"
-#define YELLOW "\033[0;33m\"
+#define YELLOW "\033[0;33m"
 #define BOLD   "\033[1m"
 #define UNDL   "\033[4m" // underline
 #define COLOFF "\033[0m" // color off

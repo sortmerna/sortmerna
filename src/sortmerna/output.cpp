@@ -643,7 +643,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 		if (opts.pairedin || opts.pairedout)
 		{
 			// either both reads are accepted, or one is accepted and pairedin_gv
-			if (reads[0].hit_denovo || reads[1].hit_denovo && opts.pairedin)
+			if ( opts.pairedin && (reads[0].hit_denovo || reads[1].hit_denovo) )
 			{
 				// output aligned read
 				for (Read read : reads)
