@@ -124,10 +124,10 @@ void parallelTraversalJob
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])
 	{
 		std::stringstream ss;
-		ss << "\n  " << "\033[0;33m" << "WARNING" << COLOFF
-			<< ": Processor thread: " << std::this_thread::get_id()
-			<< " The read: " << read.id << " is shorter "
-			<< "than " << refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
+		ss << "\n  " << YELLOW << "WARNING" << COLOFF
+			<< __FILE__ << ":" << __LINE__ << ": Processor thread: " << std::this_thread::get_id()
+			<< " The read: " << read.id << " is shorter than "
+			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
 		std::cout << ss.str(); ss.str("");
 
 		read.isValid = false;
@@ -335,16 +335,20 @@ void paralleltraversal(Runopts & opts)
 	std::stringstream ss;
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
-	ss << "CPU cores on this machine: " << numCores << std::endl; // 8
-	std::cout << ss.str(); ss.str("");
 
 	// Init thread pool with the given number of threads
 	int numProcThread = 0;
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
+		ss << "paralleltraversal: Using default number of Processor threads = num CPU cores: " << numCores << std::endl; // 8
+		std::cout << ss.str(); ss.str("");
 	}
 	else
+	{
 		numProcThread = opts.num_proc_thread; // set using '--thread'
+		ss << "paralleltraversal: Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
+		std::cout << ss.str(); ss.str("");
+	}
 
 	int numThreads = opts.num_read_thread + opts.num_write_thread + numProcThread;
 
@@ -376,7 +380,7 @@ void paralleltraversal(Runopts & opts)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "\tLoading index " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
+			ss << std::endl << "    Loading index " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
 			std::cout << ss.str(); ss.str("");
 
 			starts = std::chrono::high_resolution_clock::now();
@@ -409,12 +413,12 @@ void paralleltraversal(Runopts & opts)
 			tpool.waitAll(); // wait till all reads are processed against the current part
 			index.clear();
 			refs.clear();
-			writeQueue.reset(opts.num_proc_thread);
-			readQueue.reset(1);
+			writeQueue.reset(numProcThread);
+			readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << "    Done index " << index_num << " Part: " << idx_part + 1 
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+			ss << "    paralleltraversal: Done index " << index_num << " Part: " << idx_part + 1 
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)

@@ -25,8 +25,7 @@ void Reader::read()
 
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		ss << "failed to open " << opts.readsfile << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::cerr << __FILE__ << ":" << __LINE__ << " failed to open " << opts.readsfile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -42,18 +41,19 @@ void Reader::read()
 		std::cout << ss.str(); ss.str("");
 		auto t = std::chrono::high_resolution_clock::now();
 
-		for (int count = 0; ; ) // count lines in a single record
+		// read lines from the files and create read objects
+		for (int count = 0, stat = 0; ; ) // count lines in a single record
 		{
-			if (!lastRec) gzip.getline(ifs, line); // std::getline(ifs, line)
-
-			if (line.empty() && !lastRec)
+			stat = gzip.getline(ifs, line);
+			if (stat == RL_ERR)
 			{
-				if (ifs.eof()) lastRec = true;
-				continue;
+				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				exit(1);
 			}
 
-			if (lastRec)
+			if (stat == RL_END)
 			{
+				// push the last ready read object to the queue
 				if (!read.isEmpty)
 				{
 					read.init(opts, kvdb, read_id); // load alignment statistics from DB
@@ -73,9 +73,9 @@ void Reader::read()
 			// fastq: 0(header), 1(seq), 2(+), 3(quality)
 			// fasta: 0(header), 1(seq)
 			if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)
-			{
+			{ // add header -->
 				if (!read.isEmpty)
-				{
+				{ // push previous read object to queue
 					read.init(opts, kvdb, read_id);
 					readQueue.push(read);
 					++read_id;
@@ -89,7 +89,8 @@ void Reader::read()
 				read.header = line;
 				read.isEmpty = false;
 			} // ~if header line
-			else {
+			else 
+			{ // add sequence -->
 				++count;
 				if (isFastq && line[0] == '+') continue;
 				if (isFastq && count == 3)
@@ -99,7 +100,7 @@ void Reader::read()
 				}
 				read.sequence += line;
 			}
-			if (ifs.eof()) lastRec = true; // push and break
+			//if (ifs.eof()) lastRec = true; // push and break
 		} // ~for getline
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;

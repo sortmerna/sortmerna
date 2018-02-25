@@ -14,7 +14,7 @@
 void Writer::write()
 {
 	std::stringstream ss;
-	ss << "Writer " << id << " thread " << std::this_thread::get_id() << " started\n";
+	ss << "Writer " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	auto t = std::chrono::high_resolution_clock::now();

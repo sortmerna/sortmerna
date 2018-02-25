@@ -87,12 +87,12 @@ protected:
 				if (jobs_.empty()) // only get here on shutdown = true
 				{
 					// No jobs to do and shutting down
-					ss << "Thread  " << std::this_thread::get_id() << " job done\n";
+					ss << "Thread  " << std::this_thread::get_id() << " job done" << std::endl;
 					std::cout << ss.str(); ss.str("");
 					return;
 				}
 
-				ss << "Thread " << std::this_thread::get_id() << " running a job\n";
+				ss << "Thread " << std::this_thread::get_id() << " running a job" << std::endl;
 				std::cout << ss.str(); ss.str("");
 				job = std::move(jobs_.front());
 				jobs_.pop();

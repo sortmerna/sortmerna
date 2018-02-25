@@ -11,7 +11,9 @@
 
 #include "gzip.hpp"
 
-
+/* 
+ * return values: RL_OK (0) | RL_END (1)  | RL_ERR (-1)
+ */
 int Gzip::getline(std::ifstream & ifs, std::string & line)
 {
 	char* line_end = 0;
@@ -64,7 +66,12 @@ int Gzip::getline(std::ifstream & ifs, std::string & line)
 		} // ~for !line_ready
 	}
 	else
+	{
+		if (ifs.eof()) return RL_END;
+
 		std::getline(ifs, line);
+		//if (ifs.fail()) return RL_ERR;
+	}
 
 	return RL_OK;
 } // ~Gzip::getline

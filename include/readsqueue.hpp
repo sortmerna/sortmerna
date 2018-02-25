@@ -19,17 +19,16 @@
  */
 class ReadsQueue {
 	std::string id;
+	int capacity; // max size of the queue
+	int numPushed; // shared
+	int numPopped; // shared
+	int numPushers; // counter of threads that push reads on this queue. Flags when the pushing is over.
+	//int queueSizeAvr; // average size of the queue
 #ifdef LOCKQUEUE
 	std::queue<Read> recs; // shared: Reader & Processors, Writer & Processors
 #else
 	moodycamel::ConcurrentQueue<Read> recs; // lockless queue
 #endif
-	int capacity; // max size of the queue
-	//int queueSizeAvr; // average size of the queue
-	bool doneAdding; // flag indicating no more records will be added. Shared.
-	int numPushed = 0; // shared
-	int numPopped = 0; // shared
-	int numPushers; // counter of threads that push reads on this queue. Used to calculate if the pushing is over.
 
 	std::mutex qlock; // lock for push/pop on queue
 	std::condition_variable cvQueue;
@@ -41,13 +40,14 @@ public:
 		:
 		id(id),
 		capacity(capacity),
+		numPushed(0),
+		numPopped(0),
+		numPushers(numPushers),
 #ifndef LOCKQUEUE
-		recs(capacity), // set initial capacity
+		recs(capacity) // set initial capacity
 #endif
-		doneAdding(false),
-		numPushers(numPushers)
 	{
-		ss << id << " created\n";
+		ss << id << " created" << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -105,25 +105,24 @@ public:
 	void mDoneAdding() {
 		std::lock_guard<std::mutex> lmq(qlock);
 		--numPushers;
-		if (numPushers == 0)
-			doneAdding = true;
+		ss << "ReadsQueue: " << id << " mDoneAdding. numPushers: " << numPushers << std::endl; std::cout << ss.str(); ss.str("");
 		cvQueue.notify_one(); // otherwise pop can stuck not knowing the adding stopped
 	}
 
 	// done when no more adding and no records
 	bool isDone() {
+		std::lock_guard<std::mutex> lmq(qlock);
 #ifdef LOCKQEUEU
-		return doneAdding && recs.empty();
+		return numPushers == 0 && recs.empty();
 #else
-		return doneAdding && recs.size_approx() == 0;
+		return numPushers == 0 && recs.size_approx() == 0;
 #endif
+		cvQueue.notify_one(); // otherwise pop can stuck not knowing the adding stopped
 	}
 
 	// call from main thread when no other threads running
 	void reset(int nPushers) {
-		//std::lock_guard<std::mutex> lmq(qlock);
-		doneAdding = false;
 		numPushers = nPushers;
-		//cvQueue.notify_one();
+		ss << "ReadsQueue id: " << id << " reset. numPushers: " << numPushers << std::endl; std::cout << ss.str(); ss.str("");
 	}
 }; // ~class ReadsQueue
