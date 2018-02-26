@@ -277,15 +277,65 @@ We tested the build using `Visual Studio 15 2017 Win64` and `Visual Studio 14 20
 
 (1) Download and Install VS Community edition from [Visual Studio community website](https://www.visualstudio.com/vs/community/)
 
-(2) Install CMake and Git
+(2) Install CMake
 
-(3) Clone the GIt repository
+CMake can be installed using either Windows Installer or binaries from archive.
+Download binary distributions from [here](https://cmake.org/download/)
+
+If you choose portable binaries (not the installer) e.g. cmake-3.11.0-rc1-win64-x64.zip,
+just download and extract the archive in a directory of your choice e.g.
+
+```
+C:\libs\cmake-3.11.0-rc1-win64-x64\
+	bin\
+	doc\
+	man\
+	share\
+```
+
+The `bin` directory above contains `cmake.exe` and `cmake-gui.exe`. Add the `bin` directory to your PATH
+Start `cmd` and
+
+```
+set PATH=C:\libs\cmake-3.11.0-rc1-win64-x64\bin;%PATH%
+cmake --version
+cmake-gui
+```
+
+(3) Install Git for Windows
+
+Download binary distribution either portable or the installer from [here](https://git-scm.com/download/win)
+
+The portable distribution is a self-extracting archive that can be installed in a directory of your choice e.g.
+
+```
+C:\libs\git-2.16.2-64\
+	bin\
+	cmd\
+	dev\
+	etc\
+	mingw64\
+	tmp\
+	usr\
+```
+You can use either `bash.exe` or native Windows CMD `cmd.exe'.
+
+If you choose to work directly with CMD, add the following to your path:
+
+```
+set GIT_HOME=C:\libs\git-2.16.2-64
+set PATH=%GIT_HOME%\bin;%GIT_HOME%\usr\bin;%GIT_HOME%\mingw64\bin;%PATH%
+
+git --version
+```
+
+(4) Clone the GIt repository
 
 ```
 git clone https://github.com/biocore/sortmerna.git
 ```
 
-(4) Open Win CMD (command shell)
+(4) Prepare the build files:
 
 ```
 mkdir %SMR_HOME%\build
