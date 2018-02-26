@@ -24,10 +24,6 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 	* [Linux OS](#linux-os)
 	* [Mac OS](#mac-os)
 	* [Windows OS](#windows-os)
-* [Install compilers, ZLIB and autoconf](#install-compilers-zlib-and-autoconf)
-	* [Clang for Mac OS](#clang-for-mac-os)
-	* [GCC and Zlib though MacPorts](#gcc-and-zlib-though-macports)
-	* [autoconf](#autoconf)
 * [Tests](#tests)
 * [Third-party libraries](#third-party-libraries)
 * [Wrappers and packages](#wrappers-and-packages)
@@ -38,6 +34,7 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 * [Taxonomies](#taxonomies)
 * [Citation](#citation)
 * [Contributors](#contributors)
+* [References](#references)
 
 
 # Support
@@ -82,67 +79,151 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 
 # SortMeRNA Compilation
 
-CMake is used for build files generation and should be installed prior the build.
-CMake distributions are available for all major operating systems.
-Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+	CMake is used for generating the build files and should be installed prior the build.
+	CMake distributions are available for all major operating systems.
+	Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 ## Linux OS
 
-(1) Check your GCC compiler is version 4.0 or above:
+	We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
 
-```bash
-gcc --version
-```
+(1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
-(2) Generate the build files:
+	```bash
+	gcc --version
+		gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
+	```
 
-```bash
-mkdir -p $SMR_HOME/build/Release
-pushd $SMR_HOME/build/Release
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
-```
-`$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
+(2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
 
-The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
+	```
+	sudo apt update
+	sudo apt install cmake
+	sudo apt install git
+	suod apt install zlib
+	sudo apt install rocksdb
+	sudo apt install rapidjson
+	```
+	
+(3) Clone the Git repository
+
+	'''
+	'''
+	
+(2) Generate the build files using CMake:
+
+	```bash
+	mkdir -p $SMR_HOME/build/Release
+	pushd $SMR_HOME/build/Release
+	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+	```
+
+	NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
+
+	The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
 (3) Compile and build executables:
 
-```bash
-make
-```
+	```bash
+	make
+	```
 
-The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-Simply add the build binaries to the PATH e.g.
-`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+	The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
+	Simply add the build binaries to the PATH e.g.
+	`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
 
 
 ## Mac OS
 
-(1) Perform the same steps as described above for Linux.
+	We tested the build on macOS 10.13 High Sierra (64-bit).
+	We recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages required to build SortmeRNA.
+	The build can be performed using either Clang or GCC.
 
-Note: If the compiler is Clang, you will not have access to multithreading.
+(1) Install Homebrew:
 
-(2) If the compiler is LLVM-GCC, you will need to change it
-(see [Deprecation and Removal Notice](https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/WhatsNewXcode/Articles/xcode_5_0.html)).
+	```bash
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" [1]
+	
+	brew --version
+	brew help
+	```
+	
+(2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
 
-To set your compiler to Clang (see [instructions](#set-clang-compiler-for-mac-os))
-or the original GCC compiler (see [instructions](#set-gcc-compiler-for-mac-os)).
+	```bash
+	brew install cmake
+	brew install git
+	brew install zlib
+	brew install rocksdb
+	brew install rapidjson
+	```
+
+(3) Clone the GIt repository
+
+	```
+	git clone https://github.com/biocore/sortmerna.git
+	```
+
+(4) Generate the build files:
+
+	```bash
+	mkdir -p $SMR_HOME/build/Release
+	pushd $SMR_HOME/build/Release
+	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+		-- The CXX compiler identification is AppleClang 9.0.0.9000039
+		-- The C compiler identification is AppleClang 9.0.0.9000039
+		-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++
+		-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ -- works
+		-- Detecting CXX compiler ABI info
+		-- Detecting CXX compiler ABI info - done
+		-- Detecting CXX compile features
+		-- Detecting CXX compile features - done
+		-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc
+		-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc -- works
+		-- Detecting C compiler ABI info
+		-- Detecting C compiler ABI info - done
+		-- Detecting C compile features
+		-- Detecting C compile features - done
+		CMAKE_CXX_COMPILER_ID = AppleClang
+		CMAKE_CONFIGURATION_TYPES =
+		CMAKE_CXX_FLAGS_RELEASE: -O3 -DNDEBUG
+		EXTRA_CXX_FLAGS_RELEASE: -pthread
+		Cloning into 'concurrentqueue'...
+		Checking out files: 100% (1613/1613), done.
+		-- Configuring done
+		-- Generating done
+		-- Build files have been written to: /Users/bc/sortmerna/build/Release
+	```
+
+	Note: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
+
+	CMake will perform necessary system check-ups, dependencies, and generate Makefile.
+
+(5) Compile and build executables:
+
+	```bash
+	make
+	```
+
+	The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
+	Simply add the build binaries to the PATH e.g.
+	`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
 
 
 ### Set Clang compiler for Mac OS
 
 (1) Check if you have Clang installed:
 
-```bash
-clang --version
-```
+	```bash
+	clang --version
+	```
 
 (2a) If Clang is installed, set your compiler to Clang:
 
-```bash
-export CC=clang
-export CXX=clang++
-```
+	```bash
+	export CC=clang
+	export CXX=clang++
+	```
 
 (2b) If Clang is not installed, see [Clang for Mac OS](#clang-for-mac-os)
 for installation instructions.
@@ -151,125 +232,96 @@ for installation instructions.
 
 (1) Check if you have GCC installed:
 
-```bash
-gcc --version
-```
+	```bash
+	gcc --version
+	```
 
 (2a) If GCC is installed, set your compiler to GCC:
 
-```bash
-export CC=gcc-mp-4.8
-export CXX=g++-mp-4.8
-```
+	```bash
+	export CC=gcc-mp-5.4
+	export CXX=g++-mp-5.4
+	```
 
-(2b) If GCC is not installed, see [Install GCC through MacPorts](#gcc-and-zlib-though-macPorts)
-for installation instructions.
+(2b) If GCC is not installed, it can be installed through Homebrew or MacPorts.
 
-(3) Next, if you would like zlib support (reading compressed .zip and .gz FASTA/FASTQ files), Zlib
-should also be installed via MacPorts. See section [Install GCC and Zlib though MacPorts](#install-gcc-and-zlib-though-macports)
-for installation instructions.
-
-(4a) Assuming you have Zlib installed, run configure and make scripts
-(if compression feature wanted):
-
-```bash
-./configure --with-zlib="/opt/local"
-make
-```
-
-(4b) Otherwise (if option to read compressed files is not wanted):
-
-```bash
-./configure --without-zlib
-make
-```
-
-You can define an alternative installation directory by
-specifying ```--prefix=/path/to/installation/dir``` to ```configure```.
-
-
-Install compilers, ZLIB and autoconf
-====================================
-
-NOTE: the Clang compiler on Mac (distributed through Xcode) does not support OpenMP (multithreading).
-A preliminary implementation of OpenMP for Clang has been made at "http://clang-omp.github.io"
-though has not been yet incorporated into the Clang mainline. The user may follow the
-steps outlined in the above link to install the version of Clang with multithreading support, 
-though this version has not yet been tested with SortMeRNA. Otherwise, the user is 
-recommended to install the original GCC compiler via MacPorts (contains full multithreading support).
+	```
+	brew tap homebrew/versions
+	brew install [flags] gcc54
+	```
+	
+	To list available flags
+	```
+	brew options gcc54
+	```
 
 Clang for Mac OS
 ----------------
 
-Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
-install the latest version of Clang supported with Xcode. 
+	Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
+	install the latest version of Clang supported with Xcode. 
 
-After installing Xcode, the Xcode command line tools may be installed via:
+	After installing Xcode, the Xcode command line tools may be installed via:
 
-Xcode -> Preferences -> Downloads
+	Xcode -> Preferences -> Downloads
 
-Under "Components", click to install "Command Line Tools"
-
-
-GCC and Zlib though MacPorts
-----------------------------
-
-Assuming you have MacPorts installed, type:
-
-```bash
-sudo port selfupdate
-sudo port install gcc48
-sudo port install zlib
-```
-
-After the installation, you should find the compiler installed in /opt/local/bin/gcc-mp-4.8 and /opt/local/bin/g++-mp-4.8
-as well as Zlib in /opt/local/lib/libz.dylib and /opt/local/include/zlib.h .
+	Under "Components", click to install "Command Line Tools"
 
 
 ## Windows OS
 
-MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
-Download and Install VS Community edition from [Visual Studio community website](https://www.visualstudio.com/vs/community/)
-The following assumes `Visual Studio 14 2015`.
+	MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
 
-Open Win CMD (command shell)
-```
-mkdir %SMR_HOME%\build
-pushd %SMR_HOME%\build
-cmake -G "Visual Studio 14 2015 Win64" ..
-```
-The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
-`%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
+	We tested the build using `Visual Studio 15 2017 Win64` and `Visual Studio 14 2015 Win64`
 
-Start Visual Studio and open Sortmerna solution
-`File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
+(1) Download and Install VS Community edition from [Visual Studio community website](https://www.visualstudio.com/vs/community/)
 
-Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
-In Solution explorer right-click `ALL_BUILD' and select `build` in pop-up menu.
+(2) Install CMake and Git
 
-Depending on the build type the binaries are generated in 
-`%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
+(3) Clone the GIt repository
+
+	```
+	git clone https://github.com/biocore/sortmerna.git
+	```
+
+(4) Open Win CMD (command shell)
+
+	```
+	mkdir %SMR_HOME%\build
+	pushd %SMR_HOME%\build
+	cmake -G "Visual Studio 15 2017 Win64" ..
+	```
+	
+	The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
+	`%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
+
+	Start Visual Studio and open Sortmerna solution
+	`File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
+
+	Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
+	In Solution explorer right-click `ALL_BUILD' and select `build` in pop-up menu.
+
+	Depending on the build type the binaries are generated in 
+	`%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
 
 Add sortmerna executables to PATH
-```
-set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
-```
-
-
+	```
+	set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
+	```
 
 Tests
 =====
 
-Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
+	Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
 
-Tests can be run with the following command:
-```
-python ./tests/test_sortmerna.py
-python ./tests/test_sortmerna_zlib.py
-```
-Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
+	Tests can be run with the following command:
+	```
+	python ./tests/test_sortmerna.py
+	python ./tests/test_sortmerna_zlib.py
+	```
+	Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
-Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
+	Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
 
 
 Third-party libraries
@@ -277,8 +329,6 @@ Third-party libraries
 Various features in SortMeRNA are dependent on third-party libraries, including:
 * [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
 * [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
-* [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml): FASTA/FASTQ parser (including compressed files)
-* [PARASAIL](https://github.com/jeffdaily/parasail): Pairwise Sequence Alignment Library
 
 Wrappers and Packages
 =====================
@@ -326,3 +376,10 @@ Contributors
 ============
 See [AUTHORS](./AUTHORS) for a list of contributors to this project.
 
+References
+==========
+
+1. Homebrew 
+	- [home](https://brew.sh/)
+	- [github](https://github.com/Homebrew)
+	
