@@ -79,13 +79,13 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 
 # SortMeRNA Compilation
 
-	CMake is used for generating the build files and should be installed prior the build.
-	CMake distributions are available for all major operating systems.
-	Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+&nbsp;&nbsp;&nbsp;&nbsp;CMake is used for generating the build files and should be installed prior the build.
+&nbsp;&nbsp;&nbsp;&nbsp;CMake distributions are available for all major operating systems.
+&nbsp;&nbsp;&nbsp;&nbsp;Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 ## Linux OS
 
-	We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
+&nbsp;&nbsp;&nbsp;&nbsp;We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
 
 (1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
@@ -119,9 +119,9 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
 	```
 
-	NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
+&nbsp;&nbsp;&nbsp;&nbsp;NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
-	The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
+&nbsp;&nbsp;&nbsp;&nbsp;The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
 (3) Compile and build executables:
 
