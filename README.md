@@ -79,13 +79,13 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 
 # SortMeRNA Compilation
 
-&nbsp;&nbsp;&nbsp;&nbsp;CMake is used for generating the build files and should be installed prior the build.
-&nbsp;&nbsp;&nbsp;&nbsp;CMake distributions are available for all major operating systems.
-&nbsp;&nbsp;&nbsp;&nbsp;Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+CMake is used for generating the build files and should be installed prior the build.
+CMake distributions are available for all major operating systems.
+Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 ## Linux OS
 
-&nbsp;&nbsp;&nbsp;&nbsp;We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
+We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
 
 (1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
@@ -119,9 +119,9 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
 	```
 
-&nbsp;&nbsp;&nbsp;&nbsp;NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
+NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
-&nbsp;&nbsp;&nbsp;&nbsp;The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
+The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
 (3) Compile and build executables:
 
@@ -129,102 +129,102 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 	make
 	```
 
-	The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-	Simply add the build binaries to the PATH e.g.
-	`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
+Simply add the build binaries to the PATH e.g.
+`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
 
 
 ## Mac OS
 
-	We tested the build on macOS 10.13 High Sierra (64-bit).
-	We recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages required to build SortmeRNA.
-	The build can be performed using either Clang or GCC.
+We tested the build on macOS 10.13 High Sierra (64-bit).
+We recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages required to build SortmeRNA.
+The build can be performed using either Clang or GCC.
 
 (1) Install Homebrew:
 
-	```bash
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" [1]
-	
-	brew --version
-	brew help
-	```
+```bash
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" [1]
+
+brew --version
+brew help
+```
 	
 (2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
 
-	```bash
-	brew install cmake
-	brew install git
-	brew install zlib
-	brew install rocksdb
-	brew install rapidjson
-	```
+```bash
+brew install cmake
+brew install git
+brew install zlib
+brew install rocksdb
+brew install rapidjson
+```
 
 (3) Clone the GIt repository
 
-	```
-	git clone https://github.com/biocore/sortmerna.git
-	```
+```
+git clone https://github.com/biocore/sortmerna.git
+```
 
 (4) Generate the build files:
 
-	```bash
-	mkdir -p $SMR_HOME/build/Release
-	pushd $SMR_HOME/build/Release
-	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
-		-- The CXX compiler identification is AppleClang 9.0.0.9000039
-		-- The C compiler identification is AppleClang 9.0.0.9000039
-		-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++
-		-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ -- works
-		-- Detecting CXX compiler ABI info
-		-- Detecting CXX compiler ABI info - done
-		-- Detecting CXX compile features
-		-- Detecting CXX compile features - done
-		-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc
-		-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc -- works
-		-- Detecting C compiler ABI info
-		-- Detecting C compiler ABI info - done
-		-- Detecting C compile features
-		-- Detecting C compile features - done
-		CMAKE_CXX_COMPILER_ID = AppleClang
-		CMAKE_CONFIGURATION_TYPES =
-		CMAKE_CXX_FLAGS_RELEASE: -O3 -DNDEBUG
-		EXTRA_CXX_FLAGS_RELEASE: -pthread
-		Cloning into 'concurrentqueue'...
-		Checking out files: 100% (1613/1613), done.
-		-- Configuring done
-		-- Generating done
-		-- Build files have been written to: /Users/bc/sortmerna/build/Release
-	```
+```bash
+mkdir -p $SMR_HOME/build/Release
+pushd $SMR_HOME/build/Release
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+	-- The CXX compiler identification is AppleClang 9.0.0.9000039
+	-- The C compiler identification is AppleClang 9.0.0.9000039
+	-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++
+	-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ -- works
+	-- Detecting CXX compiler ABI info
+	-- Detecting CXX compiler ABI info - done
+	-- Detecting CXX compile features
+	-- Detecting CXX compile features - done
+	-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc
+	-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc -- works
+	-- Detecting C compiler ABI info
+	-- Detecting C compiler ABI info - done
+	-- Detecting C compile features
+	-- Detecting C compile features - done
+	CMAKE_CXX_COMPILER_ID = AppleClang
+	CMAKE_CONFIGURATION_TYPES =
+	CMAKE_CXX_FLAGS_RELEASE: -O3 -DNDEBUG
+	EXTRA_CXX_FLAGS_RELEASE: -pthread
+	Cloning into 'concurrentqueue'...
+	Checking out files: 100% (1613/1613), done.
+	-- Configuring done
+	-- Generating done
+	-- Build files have been written to: /Users/bc/sortmerna/build/Release
+```
 
-	Note: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
+Note: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
-	CMake will perform necessary system check-ups, dependencies, and generate Makefile.
+CMake will perform necessary system check-ups, dependencies, and generate Makefile.
 
 (5) Compile and build executables:
 
-	```bash
-	make
-	```
+```bash
+make
+```
 
-	The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-	Simply add the build binaries to the PATH e.g.
-	`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
+Simply add the build binaries to the PATH e.g.
+`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
 
 
 ### Set Clang compiler for Mac OS
 
 (1) Check if you have Clang installed:
 
-	```bash
-	clang --version
-	```
+```bash
+clang --version
+```
 
 (2a) If Clang is installed, set your compiler to Clang:
 
-	```bash
-	export CC=clang
-	export CXX=clang++
-	```
+```bash
+export CC=clang
+export CXX=clang++
+```
 
 (2b) If Clang is not installed, see [Clang for Mac OS](#clang-for-mac-os)
 for installation instructions.
@@ -233,47 +233,47 @@ for installation instructions.
 
 (1) Check if you have GCC installed:
 
-	```bash
-	gcc --version
-	```
+```bash
+gcc --version
+```
 
 (2a) If GCC is installed, set your compiler to GCC:
 
-	```bash
-	export CC=gcc-mp-5.4
-	export CXX=g++-mp-5.4
-	```
+```bash
+export CC=gcc-mp-5.4
+export CXX=g++-mp-5.4
+```
 
 (2b) If GCC is not installed, it can be installed through Homebrew or MacPorts.
 
-	```
-	brew tap homebrew/versions
-	brew install [flags] gcc54
-	```
-	
-	To list available flags
-	```
-	brew options gcc54
-	```
+```
+brew tap homebrew/versions
+brew install [flags] gcc54
+```
+
+To list available flags
+```
+brew options gcc54
+```
 
 Clang for Mac OS
 ----------------
 
-	Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
-	install the latest version of Clang supported with Xcode. 
+Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
+install the latest version of Clang supported with Xcode. 
 
-	After installing Xcode, the Xcode command line tools may be installed via:
+After installing Xcode, the Xcode command line tools may be installed via:
 
-	Xcode -> Preferences -> Downloads
+Xcode -> Preferences -> Downloads
 
-	Under "Components", click to install "Command Line Tools"
+Under "Components", click to install "Command Line Tools"
 
 
 ## Windows OS
 
-	MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
+MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
 
-	We tested the build using `Visual Studio 15 2017 Win64` and `Visual Studio 14 2015 Win64`
+We tested the build using `Visual Studio 15 2017 Win64` and `Visual Studio 14 2015 Win64`
 
 (1) Download and Install VS Community edition from [Visual Studio community website](https://www.visualstudio.com/vs/community/)
 
@@ -281,48 +281,49 @@ Clang for Mac OS
 
 (3) Clone the GIt repository
 
-	```
-	git clone https://github.com/biocore/sortmerna.git
-	```
+```
+git clone https://github.com/biocore/sortmerna.git
+```
 
 (4) Open Win CMD (command shell)
 
-	```
-	mkdir %SMR_HOME%\build
-	pushd %SMR_HOME%\build
-	cmake -G "Visual Studio 15 2017 Win64" ..
-	```
-	
-	The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
-	`%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
+```
+mkdir %SMR_HOME%\build
+pushd %SMR_HOME%\build
+cmake -G "Visual Studio 15 2017 Win64" ..
+```
 
-	Start Visual Studio and open Sortmerna solution
-	`File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
+The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
+`%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
 
-	Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
-	In Solution explorer right-click `ALL_BUILD' and select `build` in pop-up menu.
+Start Visual Studio and open Sortmerna solution
+`File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
 
-	Depending on the build type the binaries are generated in 
-	`%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
+Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
+In Solution explorer right-click `ALL_BUILD' and select `build` in pop-up menu.
+
+Depending on the build type the binaries are generated in 
+`%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
 
 Add sortmerna executables to PATH
-	```
-	set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
-	```
+
+```
+set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
+```
 
 Tests
 =====
 
-	Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
+Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
 
-	Tests can be run with the following command:
-	```
-	python ./tests/test_sortmerna.py
-	python ./tests/test_sortmerna_zlib.py
-	```
-	Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
+Tests can be run with the following command:
+```
+python ./tests/test_sortmerna.py
+python ./tests/test_sortmerna_zlib.py
+```
+Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
-	Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
+Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
 
 
 Third-party libraries
