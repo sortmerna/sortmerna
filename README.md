@@ -107,8 +107,9 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries to va
 	
 (3) Clone the Git repository
 
-	'''
-	'''
+	```
+	git clone https://github.com/biocore/sortmerna.git
+	```
 	
 (2) Generate the build files using CMake:
 
