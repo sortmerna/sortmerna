@@ -318,9 +318,9 @@ C:\libs\git-2.16.2-64\
 	tmp\
 	usr\
 ```
-You can use either `bash.exe` or native Windows CMD `cmd.exe'.
+You can use either `bash.exe` or native Windows CMD `cmd.exe`.
 
-If you choose to work directly with CMD, add the following to your path:
+If you choose to work with CMD, add the following to your path:
 
 ```
 set GIT_HOME=C:\libs\git-2.16.2-64
@@ -337,16 +337,35 @@ git clone https://github.com/biocore/sortmerna.git
 
 (4) Prepare the build files:
 
+On Windows we recommend using the `cmake-gui` utility.
+Either navigate to CMake installation directory in Windows Explorer and double-click
+`cmake-gui` or launch it from command line as shown below:
+
 ```
-mkdir %SMR_HOME%\build
-pushd %SMR_HOME%\build
-cmake -G "Visual Studio 15 2017 Win64" ..
+set PATH=C:\libs\cmake-3.11.0-rc1-win64-x64\bin;%PATH%
+cmake-gui
 ```
 
-The above generates VS project files in `%SMR_HOME%\build\` directory. It also downloads required 3rd party source packages like `zlib` (in `%SMR_HOME%\3rdparty\`).
+In the CMake GUI
+ - click `Browse source` button and navigate to the directory where Sortmerna sources are located (SMR_HOME).
+ - click `Browse Build` and navigate to the directory where to build the binaries e.g. %SMR_HOME%\build
+ - at the prompt select the Generator from the list e.g. "Visual Studio 15 2017 Win64"
+ - click `Configure`
+ - Set required variables:
+   - ZLIB_INCLUDE_DIR
+   - ZLIB_LIB_DEBUG
+   - ZLIB_LIB_RELEASE
+   - ROCKSDB_INCLUDE_DIR
+   - ROCKSDB_LIB_DEBUG
+   - ROCKSDB_LIB_RELEASE
+ - click `Configure` again
+ - click `Generate` if all variables were set OK (no red background)
+
+When Cmake-gui `Configure` downloads required 3rd party source packages (in `%SMR_HOME%\3rdparty\`)
+The `Generate` generates VS project files in `%SMR_HOME%\build\` directory.
 `%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
 
-Start Visual Studio and open Sortmerna solution
+Start Visual Studio and open Sortmerna solution:
 `File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
 
 Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
