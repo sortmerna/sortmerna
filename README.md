@@ -351,13 +351,13 @@ In the CMake GUI
  - click `Browse Build` and navigate to the directory where to build the binaries e.g. %SMR_HOME%\build
  - at the prompt select the Generator from the list e.g. "Visual Studio 15 2017 Win64"
  - click `Configure`
- - Set required variables:
-   - ZLIB_INCLUDE_DIR
-   - ZLIB_LIB_DEBUG
-   - ZLIB_LIB_RELEASE
-   - ROCKSDB_INCLUDE_DIR
-   - ROCKSDB_LIB_DEBUG
-   - ROCKSDB_LIB_RELEASE
+ - Set the following variables:
+   - ZLIB_INCLUDE_DIR=%SMR_HOME%/3rdparty/zlib
+   - ZLIB_LIB_DEBUG=%SMR_HOME%/3rdparty/zlib/build/Debug
+   - ZLIB_LIB_RELEASE=%SMR_HOME%/3rdparty/zlib/build/Release
+   - ROCKSDB_INCLUDE_DIR=%SMR_HOME%/3rdparty/rocksdb/include
+   - ROCKSDB_LIB_DEBUG=%SMR_HOME%/3rdparty/rocksdb/build/Debug
+   - ROCKSDB_LIB_RELEASE=%SMR_HOME%/3rdparty/rocksdb/build/Release
  - click `Configure` again
  - click `Generate` if all variables were set OK (no red background)
 
