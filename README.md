@@ -335,11 +335,11 @@ git --version
 git clone https://github.com/biocore/sortmerna.git
 ```
 
-(4) Prepare the build files:
+(5) Prepare the build files:
 
 On Windows we recommend using the `cmake-gui` utility.
-Either navigate to CMake installation directory in Windows Explorer and double-click
-`cmake-gui` or launch it from command line as shown below:
+Either navigate to CMake installation directory (using Windows Explorer) and double-click
+`cmake-gui`, or launch it from command line as shown below:
 
 ```
 set PATH=C:\libs\cmake-3.11.0-rc1-win64-x64\bin;%PATH%
@@ -361,20 +361,53 @@ In the CMake GUI
  - click `Configure` again
  - click `Generate` if all variables were set OK (no red background)
 
-When Cmake-gui `Configure` downloads required 3rd party source packages (in `%SMR_HOME%\3rdparty\`)
 The `Generate` generates VS project files in `%SMR_HOME%\build\` directory.
 `%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
 
-Start Visual Studio and open Sortmerna solution:
-`File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
+(6) Configure and build Zlib library
 
-Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
-In Solution explorer right-click `ALL_BUILD' and select `build` in pop-up menu.
+When Cmake-gui `Configure` is run it downloads required 3rd party source packages into `%SMR_HOME%\3rdparty\` directory.
+
+In Cmake-gui:
+- click `Browse Source...` and select `%SMR_HOME%\3rdparty\zlib\`
+- click `Browse Build...` and select `%SMR_HOME%\3rdparty\zlib\build\` (confirm to create the `build` directory if not already exists)
+- click `Configure` and set the required variables or accept defaults
+- click `Generate`
+
+In Visual Studio
+- `File -> Open -> Project/Solution` and select `%SMR_HOME%\3rdparty\zlib\build\zlib.sln`
+- In Solution Explorer right-click `ALL_BUILD` and select `build` from drop-down menu
+
+(7) COnfigure and build RockDB library
+
+In Cmake-gui:
+- click `Browse Source...` and select `%SMR_HOME%\3rdparty\rocksdb\`
+- click `Browse Build...` and select `%SMR_HOME%\3rdparty\rocksdb\build\` (confirm to create the `build` directory if not already exists)
+- click `Configure` and set the following variables:
+  - Ungrouped Entries
+    - PORTABLE (checkbox)
+	- GIT_EXECUTABLE (select path to `git.exe` e.g. `C:/libs/git-2.16.2-64/bin/git.exe`
+  - WITH
+    - WITH_MD_LIBRARY
+	- WITH_ZLIB
+Accept defaults for the rest
+- click `Generate`
+
+In Visual Studio
+- `File -> Open -> Project/Solution` and select `%SMR_HOME%\3rdparty\rocksdb\build\rocksdb.sln`
+- In Solution Explorer right-click `ALL_BUILD` and select `build` from drop-down menu
+
+(8) Build SormeRNA
+
+In Visual Studio:
+- `File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
+- Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
+- In Solution explorer right-click `ALL_BUILD' and select `build` in drop-down menu.
 
 Depending on the build type the binaries are generated in 
 `%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
 
-Add sortmerna executables to PATH
+(9) Add sortmerna executables to PATH
 
 ```
 set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
@@ -400,6 +433,10 @@ Third-party libraries
 Various features in SortMeRNA are dependent on third-party libraries, including:
 * [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
 * [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
+* [Zlib](https://github.com/madler/zlib): reading compressed Reads files
+* [RocksDB](https://github.com/facebook/rocksdb): storage for SortmeRNA alignment results
+* [RapidJson](https://github.com/Tencent/rapidjson): serialization of Reads objects to store in RocksDB
+* [Concurrent Queue](https://github.com/cameron314/concurrentqueue): Lockless buffer for Reads accessed from multiple processing threads
 
 Wrappers and Packages
 =====================
