@@ -390,7 +390,7 @@ In Cmake-gui:
   - WITH
     - WITH_MD_LIBRARY
 	- WITH_ZLIB
-Accept defaults for the rest
+	- Accept defaults for the rest
 - click `Generate`
 
 In Visual Studio

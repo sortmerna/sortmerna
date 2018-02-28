@@ -1,3 +1,10 @@
+28 February 2018
+	- Modify architecture to use C++ threads instead of OpenMP
+	- OpenMP - remove
+	- Modify architecture to use a concurrent queue for holding Reads. The reads are pushed to the queue by the Reads file Reader, and processed in multiple Processor threads. This allows for using Const memory, only for the Reads being currently processed(aligned). At any time the number of Reads im memory is not more than the number of processing threads. 
+	- Memory mapping is not necessary any longer - remove.
+	- Modify architecture to store alignment results in a key-value database (RocksDB).
+	- Separate Reads processing into independent stages: Alignment, Post-Processing, Report generation
 14 July 2017
 	- Transfer build system to CMake
 	- Port software to Windows
