@@ -22,7 +22,6 @@ osx_image: xcode9.2 # OS X 10.12 Sierra
 #    env:
 #      - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
 #env: CXX=g++-5
-	  
 #sudo: false
 sudo: required
 
