@@ -18,6 +18,7 @@
 #ifndef SSW_H
 #define SSW_H
 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -50,7 +51,7 @@ static const bool True = 1;
 */
 
 typedef struct {
-    uint32_t* cigar;
+	uint32_t* cigar;
 	uint32_t ref_seq;
  	int32_t ref_begin1;
 	int32_t ref_end1; 
@@ -63,8 +64,6 @@ typedef struct {
     uint16_t cigarLen;
     bool strand;
 } s_align;
-
-
 
 #ifdef __cplusplus
 extern "C" {
