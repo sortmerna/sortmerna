@@ -47,7 +47,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90 ; fi # '90' is the priority
   # zlib cmake librocksdb-dev zlib1g-dev rapidjson-dev
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install zlib rocksdb rapidjson ; fi # cmake installed by default
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install librocksdb-dev zlib1g-dev rapidjson-dev ; fi # cmake installed by default
   
 script:
   - mkdir -p build/Release; pushd build/Release
