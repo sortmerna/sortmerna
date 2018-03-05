@@ -46,22 +46,22 @@ install:
     # C++14
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90 ; fi # '90' is the priority
-  # for building ROcksDB
+  # for building RocksDB
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd ./3rdparty; git clone https://github.com/facebook/rocksdb.git ; popd; fi
   
 script:
-  - mkdir -p build/Release; pushd build/Release
-  # generate CMR make file
   - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
   # build RocksDB
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd; mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
   # build SortmeRNA
-  - pushd build/Release
+  - mkdir -p build/Release; pushd build/Release
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
   - make; popd
+  # run tests
   - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"; cd tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi
