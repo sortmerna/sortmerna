@@ -46,14 +46,22 @@ install:
     # C++14
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90 ; fi # '90' is the priority
-  # zlib cmake librocksdb-dev zlib1g-dev rapidjson-dev
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install librocksdb-dev zlib1g-dev rapidjson-dev ; fi # cmake installed by default
+  # for building ROcksDB
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
   
 script:
   - mkdir -p build/Release; pushd build/Release
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
-  - make
-  - popd
+  # generate CMR make file
+  - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+  # build RocksDB
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd; mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../..
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd
+  # build SortmeRNA
+  - pushd build/Release
+  - make; popd
   - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"; cd tests
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi

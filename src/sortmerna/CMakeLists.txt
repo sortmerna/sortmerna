@@ -53,20 +53,28 @@ set(SMR_SRCS
 
 #message("${SMR_SRCS}")
 
-if(WIN32)
+if(SET_ROCKSDB)
+	add_library(rocksdb STATIC IMPORTED)
+	set_target_properties(rocksdb PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ROCKSDB_INCLUDE_DIR})
+	if(WIN32)
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/rocksdb.lib)
+	else()
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/librocksdb.a)
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/librocksdb.a)
+	endif()
+endif()
+
+if(SET_ZLIB)
 	add_library(z STATIC IMPORTED)
 	set_target_properties(z PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
 	set_target_properties(z PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
 	set_target_properties(z PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
+endif()
 
-	add_library(rocksdb STATIC IMPORTED)
-	set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
-	set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/rocksdb.lib)
-	set_target_properties(rocksdb PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ROCKSDB_INCLUDE_DIR})
-
+if(WIN32)
 	add_executable(sortmerna
 		$<TARGET_OBJECTS:winapi>
-#		$<TARGET_OBJECTS:mmanwin32> 
 		${SMR_SRCS} ${SMR_HDRS}
 	)
 else()
@@ -82,16 +90,14 @@ endif()
 if(WIN32)
 	target_include_directories(sortmerna PRIVATE
 		$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
-#		$<TARGET_PROPERTY:mmanwin32,INCLUDE_DIRECTORIES>
-#		${EXTERNAL_DEPS}/zlib/dist/include
-#		${ROCKSDB_INCLUDE_DIR}
 		${EXTERNAL_DEPS}/rapidjson/include
-		${EXTERNAL_DEPS}/dirent/include
 		${EXTERNAL_DEPS}/concurrentqueue
+		${EXTERNAL_DEPS}/dirent/include
 		${CMAKE_SOURCE_DIR}/include
 	)
 else()
 	target_include_directories(sortmerna PRIVATE
+		${EXTERNAL_DEPS}/rapidjson/include
 		${EXTERNAL_DEPS}/concurrentqueue
 		${CMAKE_SOURCE_DIR}/include
 	)
@@ -126,7 +132,7 @@ else()
 endif()
 
 if(WIN32)
-	add_dependencies(sortmerna winapi alp) #mmanwin32
-else(WIN32)
+	add_dependencies(sortmerna winapi alp)
+else()
 	add_dependencies(sortmerna alp)
-endif(WIN32)
+endif()

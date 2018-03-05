@@ -10,12 +10,20 @@ project(sortmerna CXX C)
 
 set(CMAKE_CXX_STANDARD 14)
 
+set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
+
 #include(ExternalProject)
 message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}") # 'GNU' on Ubuntu
 message("CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
 
 # append sortmerna custom modules to cmake modules
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
+
+option(SRC_ZLIB "Download Zlib sources" OFF)
+option(SRC_ROCKSDB "Download RocksDB sources" OFF)
+option(SRC_RAPIDJSON "Download Rapidjson sources" OFF)
+option(SET_ROCKSDB "Add RocksDB headers and lib to the build (if RocksDB was built from sources)" OFF)
+option(SET_ZLIB "Add Zlib headers and lib to the build (if Zlib was built from sources)" OFF)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${EXTRA_CXX_FLAGS_RELEASE}" STRGREATER "")
@@ -27,24 +35,22 @@ endif()
 message("CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
 message("EXTRA_CXX_FLAGS_RELEASE: ${EXTRA_CXX_FLAGS_RELEASE}")
 
-set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
-
 ## download zlib
-if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
+if(SRC_ZLIB AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
 	execute_process(COMMAND git clone --depth 1 https://github.com/madler/zlib
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 	)
-endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
+endif()
 
 ## Download RocksDB
-if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/rocksdb)
+if(SRC_ROCKSDB AND NOT EXISTS ${EXTERNAL_DEPS}/rocksdb)
 	execute_process(COMMAND git clone --depth 1 https://github.com/facebook/rocksdb
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 	)
 endif()
 
 ## Download Rapidjson
-if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/rapidjson)
+if(SRC_RAPIDJSON AND NOT EXISTS ${EXTERNAL_DEPS}/rapidjson)
 	execute_process(COMMAND git clone --depth 1 https://github.com/Tencent/rapidjson
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 	)
@@ -110,16 +116,17 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
 
 ## cache entries for 3rd party libraries
-if(WIN32)
+if(SET_ROCKSDB)
 	## cache entries for RocksDB
 	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory")
-	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
-	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 	set(ROCKSDB_LIB_DEBUG ${EXTERNAL_DEPS}/rocksdb/build/Debug CACHE PATH "Rocksdb Debug Lib directory")
 	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory")
+	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
+	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+endif()
 
+if(SET_ZLIB)
 	## zlib
-#	set(ZLIB_ROOT ${EXTERNAL_DEPS}/zlib CACHE PATH "Zlib root directory")
 	set(ZLIB_LIB_DEBUG ${EXTERNAL_DEPS}/zlib/build/Debug CACHE PATH "Zlib library directory")
 	set(ZLIB_LIB_RELEASE ${EXTERNAL_DEPS}/zlib/build/Release CACHE PATH "Zlib library directory")
 endif()

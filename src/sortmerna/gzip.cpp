@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <cassert>
+#include <algorithm>
 
 #include "gzip.hpp"
 
