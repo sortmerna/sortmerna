@@ -32,6 +32,7 @@
 #include "unistd.h"
 #include <iomanip>
 #include <fstream>
+#include <cmath> // log, exp
 
 #include "output.hpp"
 #include "ThreadPool.hpp"
@@ -204,7 +205,7 @@ void Output::report_blast
 			&& read.hits_align_info.alignv[i].part == refs.part)
 		{
 			uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
-				* (read.hits_align_info.alignv[i].score1) - log(refstats.gumbel[refs.num].second)) / (float)log(2));
+				* (read.hits_align_info.alignv[i].score1) - std::log(refstats.gumbel[refs.num].second)) / (float)std::log(2));
 
 			double evalue_score = (double)refstats.gumbel[refs.num].second
 				* refstats.full_ref[refs.num]
