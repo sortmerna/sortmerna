@@ -53,12 +53,12 @@ script:
   - mkdir -p build/Release; pushd build/Release
   # generate CMR make file
   - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
   # build RocksDB
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd; mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../..
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd; mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
   # build SortmeRNA
   - pushd build/Release
   - make; popd
