@@ -36,8 +36,8 @@ struct Readstats {
 	uint64_t number_total_read; // total number of reads in file. Should be known before processing and index loading. 'calculate'
 	off_t    full_file_size; // the size of the full reads file (in bytes). 'calculate'
 	uint64_t full_read_main; // total number of nucleotides in all reads i.e. sum of length of All read sequences 'calculate'
-	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database
-	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering. Synchronize? - only incremented by threads.
+	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database. TODO: accessed in threads - synchronize?
+	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering. TODO: accessed in threads (incremented) - synchronize?
 
 	// Clustering of reads around references by similarity i.e. 
 	// {ref: [read,read,...], ref: [read,read...], ...}
@@ -74,4 +74,5 @@ struct Readstats {
 	bool restoreFromDb(KeyValueDatabase & kvdb);
 	void pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str);
 	void increment_total_reads_mapped_cov();
+	void printOtuMap(std::string otumapfile);
 }; // ~struct Readstats

@@ -24,7 +24,7 @@
 
 // forward
 void computeStats(Read & read, Readstats & readstats, References & refs, Runopts & opts);
-void writeLog(Runopts & opts, Readstats & readstats);
+void writeLog(Runopts & opts, Readstats & readstats, Output & output);
 
 void Processor::run()
 {
@@ -132,7 +132,7 @@ void ReportProcessor::run()
 
 } // ~ReportProcessor::run
 
-void runPostProcessor(Runopts & opts)
+void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output)
 {
 	int N_READ_THREADS = opts.num_read_thread_pp;
 	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
@@ -145,7 +145,6 @@ void runPostProcessor(Runopts & opts)
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
-	Readstats readstats(opts);
 	readstats.restoreFromDb(kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
@@ -187,25 +186,31 @@ void runPostProcessor(Runopts & opts)
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)
-	writeLog(opts, readstats);
+
+	ss << "readstats.total_reads_denovo_clustering: " << readstats.total_reads_denovo_clustering << std::endl;
+	std::cout << ss.str(); ss.str("");
+
+	writeLog(opts, readstats, output);
+
+	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
+
 	kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
+
 	std::cout << "\trunPostProcessor: Done \n";
 } // ~runPostProcessor
 
-void writeLog(Runopts & opts, Readstats & readstats)
+void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 {
-	Output output(opts, readstats);
 	output.openfiles(opts);
+
 	if (opts.samout) output.writeSamHeader(opts);
-	output.logstream.open(output.logfile, std::ofstream::binary | std::ofstream::app);
 
 	// output total number of reads
 	output.logstream << " Results:\n";
 	output.logstream << "    Total reads = " << readstats.number_total_read << "\n";
 	if (opts.de_novo_otu)
 	{
-		// total_reads_denovo_clustering = sum of all reads that have read::hit_denovo == true
-		// either query DB or store in Readstats::total_reads_denovo_clustering
+		// all reads that have read::hit_denovo == true
 		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
 	}
 	// output total non-rrna + rrna reads
@@ -236,5 +241,4 @@ void writeLog(Runopts & opts, Readstats & readstats)
 	time_t q = time(0);
 	struct tm * now = localtime(&q);
 	output.logstream << "\n " << asctime(now) << "\n";
-	output.logstream.close();
 } // ~writeLog

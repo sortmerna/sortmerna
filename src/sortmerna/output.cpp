@@ -54,11 +54,10 @@ void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Re
 void Output::init(Runopts & opts, Readstats & readstats)
 {
 	// attach pid to output files
-	char pidStr[4000];
+	std::stringstream pidStr;
 	if (opts.pid)
 	{
-		int32_t pid = getpid();
-		sprintf(pidStr, "%d", pid);
+		pidStr << getpid();
 	}
 
 	// associate the streams with reference sequence file names
@@ -71,7 +70,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				fastaOutFile.append("_");
-				fastaOutFile.append(pidStr);
+				fastaOutFile.append(pidStr.str());
 			}
 			fastaOutFile.append(".");
 			fastaOutFile.append(readstats.suffix);
@@ -87,7 +86,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				samoutFile.append("_");
-				samoutFile.append(pidStr);
+				samoutFile.append(pidStr.str());
 			}
 			samoutFile.append(".sam");
 			samout.open(samoutFile);
@@ -101,7 +100,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				blastoutFile.append("_");
-				blastoutFile.append(pidStr);
+				blastoutFile.append(pidStr.str());
 			}
 			blastoutFile.append(".blast");
 			blastout.open(blastoutFile);
@@ -116,7 +115,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				logfile.append("_");
-				logfile.append(pidStr);
+				logfile.append(pidStr.str());
 			}
 			logfile.append(".log");
 
@@ -132,7 +131,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				otumapFile.append("_");
-				otumapFile.append(pidStr);
+				otumapFile.append(pidStr.str());
 			}
 			otumapFile.append("_otus.txt");
 			otumap.open(otumapFile);
@@ -146,7 +145,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				denovo_otus_file.append("_");
-				denovo_otus_file.append(pidStr);
+				denovo_otus_file.append(pidStr.str());
 			}
 			denovo_otus_file.append("_denovo.");
 			denovo_otus_file.append(readstats.suffix);
@@ -166,7 +165,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.pid)
 			{
 				opts.filetype_or += "_";
-				opts.filetype_or += pidStr;
+				opts.filetype_or += pidStr.str();
 			}
 			opts.filetype_or += ".";
 			opts.filetype_or += readstats.suffix;
@@ -692,7 +691,7 @@ void Output::openfiles(Runopts & opts)
 {
 	std::stringstream ss;
 
-	if (opts.blastout) {
+	if (opts.blastout && !blastout.is_open()) {
 		blastout.open(blastoutFile);
 		if (!blastout.good())
 		{
@@ -702,7 +701,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.samout) {
+	if (opts.samout && !samout.is_open()) {
 		samout.open(samoutFile);
 		if (!samout.good())
 		{
@@ -712,7 +711,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.fastxout) {
+	if (opts.fastxout && !fastaout.is_open()) {
 		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
 		if (!fastaout.good())
 		{
@@ -722,24 +721,36 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.fastxout && opts.filetype_or.size() != 0)
+	if (opts.fastxout && opts.filetype_or.size() != 0 && !fastaNonAlignOut.is_open())
 	{
 		fastaNonAlignOut.open(opts.filetype_or, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())
 		{
-			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q Non-aligned output file for writing.\n";
+			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q Non-aligned output file for writing." << std::endl;
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	if (denovo_otus_file.size() != 0)
+	if (denovo_otus_file.size() != 0 && !denovoreads.is_open())
 	{
 		denovoreads.open(denovo_otus_file, std::ios::app | std::ios::binary);
 		if (!denovoreads.good())
 		{
-			ss << "  " << RED << "ERROR" << denovo_otus_file << ": file " << COLOFF
-				" (denovoreads) could not be opened for writing.\n\n";
+			ss << "  " << RED << "ERROR" << denovo_otus_file << ": file " << COLOFF 
+				<< " (denovoreads) could not be opened for writing." << std::endl;
+			std::cerr << ss.str(); ss.str("");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (opts.doLog && logfile.size() > 0 && !logstream.is_open())
+	{
+		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
+		if (!logstream.good())
+		{
+			ss << "  " << RED << "ERROR" << logfile << ": file " << COLOFF
+				<< " (logfile) could not be opened." << std::endl;
 			std::cerr << ss.str(); ss.str("");
 			exit(EXIT_FAILURE);
 		}

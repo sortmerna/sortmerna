@@ -324,13 +324,10 @@ void parallelTraversalJob
 		// (it did not pass the E-value threshold)
 		if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
 	}//~if read didn't align
-
-	if (opts.de_novo_otu && read.hit_denovo)
-		++readstats.total_reads_denovo_clustering;
 } // ~parallelTraversalJob
 
 
-void paralleltraversal(Runopts & opts)
+void paralleltraversal(Runopts & opts, Readstats & readstats, Output & output)
 {
 	std::stringstream ss;
 
@@ -363,9 +360,7 @@ void paralleltraversal(Runopts & opts)
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, numProcThread); // shared: Processor pushes, Writer pops
-	Readstats readstats(opts);
 	Refstats refstats(opts, readstats);
-	Output output(opts, readstats);
 	Index index;
 	References refs;
 
@@ -422,6 +417,7 @@ void paralleltraversal(Runopts & opts)
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)
+
 	// store readstats calculated in alignment
 	kvdb.put("Readstats", readstats.toString());
 } // ~paralleltraversal

@@ -36,6 +36,7 @@
 #include "paralleltraversal.hpp"
 #include "common.hpp"
 #include "output.hpp"
+#include "readstats.hpp"
 #include "cmd.hpp"
 
 // standard
@@ -56,7 +57,7 @@
 #include "zlib.h"
 
 // forward
-void runPostProcessor(Runopts & opts);
+void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output);
 
 #if defined(_WIN32)
 const char DELIM = ';';
@@ -912,8 +913,8 @@ void Runopts::optBlast(char **argv, int &narg)
 	if (blast_human_readable && (blastops.size() > 1))
 	{
 		ss << std::endl << "  " << RED << "ERROR" << COLOFF 
-			<< ": for human-readable format, --blast [STRING] can only contain"
-			"a single field '0'." << std::endl << std::endl;
+			<< ": for human-readable format, --blast [STRING] can only contain a single field '0'."
+			<< std::endl << std::endl;
 		std::cerr << ss.str();
 		exit(EXIT_FAILURE);
 	}
@@ -921,8 +922,7 @@ void Runopts::optBlast(char **argv, int &narg)
 	if (blast_human_readable && blastFormat == BlastFormat::TABULAR)
 	{
 		ss << std::endl << "  " << RED << "ERROR" << COLOFF 
-			<< ": --blast [STRING] can only have one of the options "
-			"'0' (human-readable) or '1' (tabular)." 
+			<< ": --blast [STRING] can only have one of the options '0' (human-readable) or '1' (tabular)."
 			<< std::endl << std::endl;
 		std::cerr << ss.str();
 		exit(EXIT_FAILURE);
@@ -1415,8 +1415,8 @@ void Runopts::optTask(char **argv, int &narg)
 	int taskOpt = 0;
 	sscanf(argv[narg + 1], "%d", &taskOpt);
 
-	if (taskOpt > 2) {
-		ss << "Optiong report " << taskOpt << " Can only take values: 0,1,2,3 Defaulting to 0 ... " << std::endl;
+	if (taskOpt > 4) {
+		ss << "Option report " << taskOpt << " Can only take values: [0..4] Defaulting to 0 ... " << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -1425,10 +1425,11 @@ void Runopts::optTask(char **argv, int &narg)
 	case 0: alirep = align; break;
 	case 1: alirep = postproc; break;
 	case 2: alirep = report; break;
-	case 3: alirep = all; break;
+	case 3: alirep = alipost; break;
+	case 4: alirep = all; break;
 	}
 
-	ss << "ALIGN_REPORT: " << alirep << std::endl;
+	ss << "optTask: ALIGN_REPORT: " << alirep << std::endl;
 	std::cout << ss.str();
 
 	narg += 2;
@@ -1770,24 +1771,27 @@ int main(int argc, char** argv)
 	}
 	else
 	{
+		Readstats readstats(opts);
+		Output output(opts, readstats);
+
 		switch (opts.alirep)
 		{
 		case Runopts::ALIGN_REPORT::align:
-			paralleltraversal(opts);
+			paralleltraversal(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::postproc:
-			runPostProcessor(opts);
+			runPostProcessor(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::report:
 			generateReports(opts);
 			break;
 		case Runopts::ALIGN_REPORT::alipost:
-			paralleltraversal(opts);
-			runPostProcessor(opts);
+			paralleltraversal(opts, readstats, output);
+			runPostProcessor(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::all:
-			paralleltraversal(opts);
-			runPostProcessor(opts);
+			paralleltraversal(opts, readstats, output);
+			runPostProcessor(opts, readstats, output);
 			generateReports(opts);
 			break;
 		}

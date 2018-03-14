@@ -38,7 +38,8 @@ void Readstats::calculate()
 	}
 	else
 	{
-		std::string line;
+		std::string line; // line from the Reads file
+		std::string sequence; // full sequence of a Read (can contain multiple lines for Fasta files)
 		bool isFastq = true;
 		Gzip gzip(opts);
 
@@ -46,35 +47,61 @@ void Readstats::calculate()
 
 		std::cout << "Readstats::calculate starting ...   ";
 
-		for (int count = 0; gzip.getline(ifs, line) != RL_END; ) // std::getline count lines in One record
+		for (int count = 0, stat = 0; ; ) // std::getline count lines in One record
 		{
-			// skip empty line
-			if (!line.empty())
+			stat = gzip.getline(ifs, line);
+			if (stat == RL_END)
 			{
-				// right-trim whitespace in place (removes '\r' too)
-				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-				//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
-				// fastq: 0(header), 1(seq), 2(+), 3(quality)
-				// fasta: 0(header), 1(seq)
-				if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)
+				if (!sequence.empty())
 				{
-					count = 0; // record start
-					isFastq = (line[0] == FASTQ_HEADER_START);
-				} // ~if header line
-				else {
-					++count;
-					if (count > 3) {
-						ss << "Unexpected number of lines: " << count 
-							<< " in a single Read. Total reads processed: " << number_total_read 
-							<< " Exiting...\n";
+					// process the last record
+					++number_total_read;
+					full_read_main += sequence.length();
+				}
+				break;
+			}
+
+			if (stat == RL_ERR)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				exit(1);
+			}
+
+			if (line.empty()) continue; // skip empty line
+			
+			// right-trim whitespace in place (removes '\r' too)
+			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+			//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+			// fastq: 0(header), 1(seq), 2(+), 3(quality)
+			// fasta: 0(header), 1(seq)
+			if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)
+			{
+				if (!sequence.empty())
+				{ // process previous sequence
+					++number_total_read;
+					full_read_main += sequence.length();
+				}
+
+				count = 0; // record start
+				sequence.clear(); // clear container for the new record
+				isFastq = (line[0] == FASTQ_HEADER_START);
+			} // ~if header line
+			else {
+				++count;
+				if (isFastq)
+				{
+					if (count > 3)
+					{
+						ss << __FILE__ << ":" << __LINE__ << " Unexpected number of lines : " << count 
+							<< " in a single FASTQ Read. Total reads processed: " << number_total_read 
+							<< " Exiting..." << std::endl;
 						std::cout << ss.str(); ss.str("");
 						exit(EXIT_FAILURE);
 					}
-					if (isFastq && (line[0] == '+' || count == 3)) continue; // fastq.quality
+					if ( count == 3 || line[0] == '+' ) continue; // fastq.quality
+				} // ~if fastq
 
-					++number_total_read;
-					full_read_main += line.length();
-				}
+				sequence += line;
 			}
 		} // ~for getline
 
@@ -202,4 +229,30 @@ void Readstats::increment_total_reads_mapped_cov()
 {
 	//std::lock_guard<std::mutex> rmcg(total_reads_mapped_cov_lock);
 	++total_reads_mapped_cov;
+}
+
+void Readstats::printOtuMap(std::string otumapfile)
+{
+	std::stringstream ss;
+	std::ofstream omstrm;
+	omstrm.open(otumapfile);
+
+	ss << __FILE__ << ":" << __LINE__ << " Printing OTU Map.." << std::endl;
+	std::cout << ss.str(); ss.str("");
+
+	for (std::map<std::string, std::vector<std::string>>::iterator it = otu_map.begin(); it != otu_map.end(); ++it)
+	{
+		omstrm << it->first << "\t";
+		int i = 0;
+		for (std::vector<std::string>::iterator itv = it->second.begin(); itv != it->second.end(); ++itv)
+		{
+			if (i < it->second.size() - 1)
+				omstrm << *itv << "\t";
+			else
+				omstrm << *itv; // last element
+			++i;
+		}
+		omstrm << std::endl;
+	}
+	if (omstrm.is_open()) omstrm.close();
 }

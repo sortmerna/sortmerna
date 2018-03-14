@@ -69,7 +69,7 @@ public:
 	{
 		init(opts, readstats);
 	}
-	~Output() {}
+	~Output() {	closefiles(); }
 
 	void report_blast(
 		Runopts & opts,

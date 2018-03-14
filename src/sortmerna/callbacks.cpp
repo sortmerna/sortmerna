@@ -50,6 +50,8 @@ void reportsJob(
 } // ~reportsJob
 
 /* 
+ * Called for each read from PostProcessor::run
+ *
  * Calculate:
  *     readstats.total_reads_mapped_cov 
  *     readstats.otu_map
@@ -98,9 +100,17 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 					// reference sequence identifier for mapped read
 					std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
 					std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
+					// left trim '>' or '@'
+					ref_seq_str.erase(ref_seq_str.begin(), 
+						std::find_if(ref_seq_str.begin(), ref_seq_str.end(), 
+							[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 
 					// read identifier
 					std::string read_seq_str = read.header.substr(0, read.header.find(' '));
+					// left trim '>' or '@'
+					read_seq_str.erase(read_seq_str.begin(),
+						std::find_if(read_seq_str.begin(), read_seq_str.end(),
+							[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 					readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
 				}
 
@@ -110,4 +120,7 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 			}
 		}//~if alignment at current database and index part loaded in RAM
 	}//~for all alignments
+
+	if (opts.de_novo_otu && read.hit_denovo)
+		++readstats.total_reads_denovo_clustering;
 } // ~computeStats

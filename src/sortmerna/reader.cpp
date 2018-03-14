@@ -45,12 +45,6 @@ void Reader::read()
 		for (int count = 0, stat = 0; ; ) // count lines in a single record
 		{
 			stat = gzip.getline(ifs, line);
-			if (stat == RL_ERR)
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
-				exit(1);
-			}
-
 			if (stat == RL_END)
 			{
 				// push the last ready read object to the queue
@@ -62,6 +56,14 @@ void Reader::read()
 				}
 				break;
 			}
+
+			if (stat == RL_ERR)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				exit(1);
+			}
+
+			if (line.empty()) continue;
 
 			// left trim space and '>' or '@'
 			//line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));

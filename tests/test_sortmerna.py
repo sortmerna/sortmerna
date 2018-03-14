@@ -59,8 +59,8 @@ class SortmernaTests(TestCase):
         self.set3 = join(self.root, "empty_file.fasta")
         self.set4 = join(
             self.root, "set4_mate_pairs_metatranscriptomics.fastq")
-        self.set5 = join(
-            self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
+        self.set5 = join(self.root, 
+                         "set5_simulated_amplicon_silva_bac_16s.fasta")
         self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
         self.read_GQ099317 = join(self.root, "illumina_GQ099317.fasta")
         # create temporary file with reference sequence
@@ -332,6 +332,7 @@ class SortmernaTests(TestCase):
                                       separator,
                                       self.db_arc16s,
                                       join(self.output_dir, "db_arc16s"))
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -344,7 +345,9 @@ class SortmernaTests(TestCase):
                              "--aligned", aligned_basename,
                              "--reads", self.set7,
                              "--log",
-                             "--fastx"]
+                             "--fastx",
+                             "-d", datadir,
+                             "--task", "4"]
         print(sortmerna_command)
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -450,6 +453,7 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_1_part_map")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
         indexdb_command = [self.indexdb_rna,
@@ -481,6 +485,8 @@ class SortmernaTests(TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "-m", "1024",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         print('test_simulated_amplicon_1_part_map: Runnig {}'.format(sortmerna_command))
         if 'Windows' in platform.platform():
@@ -551,6 +557,7 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_generic_buffer")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -581,6 +588,8 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         print("test_simulated_amplicon_generic_buffer: Running {}".format(sortmerna_command))
         if 'Windows' in platform.platform():
@@ -647,6 +656,7 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_6_part_map")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -676,6 +686,8 @@ class SortmernaTests(TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "-m", "1",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
@@ -704,6 +716,7 @@ class SortmernaTests(TestCase):
         print("test_simulated_amplicon_12_part_index")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -726,6 +739,8 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         print("test_simulated_amplicon_12_part_index: Running {}".format(sortmerna_command))
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
@@ -743,6 +758,7 @@ class SortmernaTests(TestCase):
         print("test_environmental_output")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -762,6 +778,8 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--fastx",
                              "--reads", self.set2,
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         print(sortmerna_command)
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
@@ -804,6 +822,7 @@ class SortmernaTests(TestCase):
         print("test_empty_query_file")
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -823,6 +842,8 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--fastx",
                              "--reads", self.set3,
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -856,6 +877,7 @@ class SortmernaTests(TestCase):
         print("test_mate_pairs")
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -874,6 +896,8 @@ class SortmernaTests(TestCase):
                              "--fastx",
                              "--reads", self.set4,
                              "--log",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -990,6 +1014,7 @@ class SortmernaTests(TestCase):
         print("test_output_all_alignments_f_rc")
         index_db = join(self.output_dir, "ref_GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -1004,6 +1029,8 @@ class SortmernaTests(TestCase):
                              "--reads", self.read_GQ099317,
                              "--num_alignments", "0",
                              "--sam",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -1058,6 +1085,7 @@ class SortmernaTests(TestCase):
         print("test_cigar_lcs_1")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -1071,6 +1099,8 @@ class SortmernaTests(TestCase):
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "1 qstrand cigar",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -1093,6 +1123,7 @@ class SortmernaTests(TestCase):
         print("test_blast_format_0")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -1118,6 +1149,8 @@ class SortmernaTests(TestCase):
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "0",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         print('Running: {}'.format(sortmerna_command))
         if 'Windows' in platform.platform():
@@ -1244,6 +1277,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_1")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -1257,6 +1291,8 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "1",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -1276,6 +1312,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_0_other")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -1290,15 +1327,19 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "0 qstrand",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         print("test_blast_format_0_other: running {}".format(sortmerna_command))
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         self.assertTrue(proc.stderr)
-        #error_msg = """for human-readable format, --blast [STRING] cannot contain more fields than '0'"""
-        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: for human-readable format, --blast [STRING] cannot contain more fields than '0'.\n\n"""
+        if 'Windows' in platform.platform():
+            error_msg = """for human-readable format, --blast [STRING] can only contain a single field '0'"""
+        else:
+            error_msg = """\n  \x1b[0;31mERROR\x1b[0m: for human-readable format, --blast [STRING] can only contain a single field '0'.\n\n"""
         print("test_blast_format_0_other: Asserting [{}] in [{}]".format(error_msg, proc.stderr))
-        #self.assertTrue(error_msg in proc.stderr.decode('utf-8'))
-        self.assertEqual(error_msg, proc.stderr.decode('utf-8'))
+        self.assertTrue(error_msg in proc.stderr.decode('utf-8'))
+        #self.assertEqual(error_msg, proc.stderr.decode('utf-8'))
 
     def test_blast_format_1_other(self):
         """ Test BLAST-like -m8 tabular format with unsupported field
@@ -1306,6 +1347,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         print("test_blast_format_1_other")
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
+        datadir = join(self.output_dir, 'kvdb')
         indexdb_command = [self.indexdb_rna,
                            "--ref",
                            index_path,
@@ -1319,11 +1361,16 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "1 sstrand",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
 
         self.assertTrue(proc.stderr)
-        error_msg = """\n  \x1b[0;31mERROR\x1b[0m: `sstrand` is not supported in --blast [STRING].\n\n"""
+        if 'Windows' in platform.platform():
+            error_msg = """\n  ERROR: `sstrand` is not supported in --blast [STRING].\n\n"""
+        else:
+            error_msg = """\n  \x1b[0;31mERROR\x1b[0m: `sstrand` is not supported in --blast [STRING].\n\n"""
         self.assertEqual(error_msg, proc.stderr.decode('utf-8'))
 
 

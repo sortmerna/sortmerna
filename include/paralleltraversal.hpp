@@ -36,6 +36,9 @@
  
 #include "options.hpp"
 
+// forward
+struct Readstats;
+class Output;
 
 /*! @fn paralleltraversal()
 	@brief Traverse the query input and indexed database and output
@@ -65,6 +68,6 @@
 		   L-mers using smaller intervals </li>
 	</ol>
 */
-void paralleltraversal(Runopts & opts);
+void paralleltraversal(Runopts & opts, Readstats & readstats, Output & output);
 
 // ~PARALLELTRAVERSAL_H
