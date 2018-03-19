@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <mutex>
+#include <atomic>
 
 #include "common.hpp"
 #include "options.hpp"
@@ -25,10 +26,10 @@ struct Readstats {
 	// TODO: synchronize - Computed in worker thread (per read) - shared
 	uint32_t min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
 	uint32_t max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
-	// total number of reads mapped passing E-value threshold. Computed in 'compute_lis_alignment' in a worker thread i.e. per read.
-	uint64_t total_reads_mapped; // Set in 'compute_lis_alignment2'
-	// total number of reads mapped passing E - value threshold and %id and/or %query coverage thresholds
-	uint64_t total_reads_mapped_cov; // Set in 'compute_lis_alignment2'
+	std::atomic_uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Thread accessed: 'compute_lis_alignment'
+	// total number of reads mapped passing E-value threshold and %id and/or %query coverage thresholds
+	// thread accessed: 'compute_lis_alignment'
+	std::atomic_uint64_t total_reads_mapped_cov;
 	char filesig = FASTA_HEADER_START;
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
@@ -36,8 +37,10 @@ struct Readstats {
 	uint64_t number_total_read; // total number of reads in file. Should be known before processing and index loading. 'calculate'
 	off_t    full_file_size; // the size of the full reads file (in bytes). 'calculate'
 	uint64_t full_read_main; // total number of nucleotides in all reads i.e. sum of length of All read sequences 'calculate'
-	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database. TODO: accessed in threads - synchronize?
-	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering. TODO: accessed in threads (incremented) - synchronize?
+	// TODO: thread accessed: 'compute_lis_alignment' - synchronize
+	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database.
+	// TODO: currently accessed in single thread ('computeStats') but potentially could be multiple threads
+	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering.
 
 	// Clustering of reads around references by similarity i.e. 
 	// {ref: [read,read,...], ref: [read,read...], ...}

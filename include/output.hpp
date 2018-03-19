@@ -99,4 +99,4 @@ private:
 }; // ~class Output
 
 
-void generateReports(Runopts & opts);
+void generateReports(Runopts & opts, Readstats & readstats, Output & output);

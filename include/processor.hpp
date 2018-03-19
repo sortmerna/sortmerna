@@ -74,6 +74,7 @@ public:
 	PostProcessor(
 		std::string id,
 		ReadsQueue & readQueue,
+		ReadsQueue & writeQueue,
 		Runopts & opts,
 		References & refs,
 		Readstats & readstats,
@@ -81,6 +82,7 @@ public:
 	) :
 		id(id),
 		readQueue(readQueue),
+		writeQueue(writeQueue),
 		opts(opts),
 		refs(refs),
 		readstats(readstats),
@@ -97,6 +99,7 @@ protected:
 	std::string id;
 	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
 	ReadsQueue & readQueue;
+	ReadsQueue & writeQueue;
 	Runopts & opts;
 	References & refs;
 	Readstats & readstats;

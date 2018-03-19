@@ -40,7 +40,7 @@
 struct Readstats;
 class Output;
 
-/*! @fn paralleltraversal()
+/*! @fn align()
 	@brief Traverse the query input and indexed database and output
 		   alignments passing the E-value threshold
 	@detail The following methods will be executed:
@@ -68,6 +68,6 @@ class Output;
 		   L-mers using smaller intervals </li>
 	</ol>
 */
-void paralleltraversal(Runopts & opts, Readstats & readstats, Output & output);
+void align(Runopts & opts, Readstats & readstats, Output & output);
 
 // ~PARALLELTRAVERSAL_H

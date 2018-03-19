@@ -120,7 +120,7 @@ struct alignment_struct
 };
 
 void compute_lis_alignment(
-	Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats, Output & output,
+	Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats,
 	bool & search,
 	uint32_t max_SW_score,
 	bool& read_to_count

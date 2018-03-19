@@ -84,15 +84,17 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 			double align_cov_round = 0.0;
 			ss >> align_id_round >> align_cov_round;
 
-			// alignment with the highest SW score passed
-			// %id and %coverage thresholds
+			// alignment with the highest SW score passed %id and %coverage thresholds
 			if ((p == index_max_score) &&
 				(align_id_round >= opts.align_id) &&
 				(align_cov_round >= opts.align_cov))
 			{
-				// increment number of reads passing identity
-				// and coverage threshold
-				readstats.increment_total_reads_mapped_cov(); // thread safe
+				// increment number of reads passing identity and coverage threshold
+				readstats.total_reads_mapped_cov++;
+
+				// TODO: this check is already performed during alignment (paralleltraversalJob and compute_lis_alignment). Is it necessary here? - it is.
+				// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
+				if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = false;
 
 				// fill OTU map with highest-scoring alignment for the read
 				if (opts.otumapout)
@@ -113,10 +115,6 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 							[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 					readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
 				}
-
-				// TODO: this check is already performed during alignment (paralleltraversalJob and compute_lis_alignment). Is it necessary here?
-				// do not output read for de novo OTU construction it passed the %id/coverage thresholds
-				//if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
 			}
 		}//~if alignment at current database and index part loaded in RAM
 	}//~for all alignments

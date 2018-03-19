@@ -767,7 +767,7 @@ void Output::closefiles()
 }
 
 // called from main. TODO: move into a class?
-void generateReports(Runopts & opts)
+void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;
@@ -781,8 +781,6 @@ void generateReports(Runopts & opts)
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // Not used for Reports
-	Readstats readstats(opts);
-	Output output(opts, readstats);
 	Refstats refstats(opts, readstats);
 	References refs;
 

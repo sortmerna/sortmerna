@@ -160,8 +160,10 @@ std::string Readstats::toString()
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&min_read_len)), sizeof(min_read_len), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_read_len)), sizeof(max_read_len), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_mapped)), sizeof(total_reads_mapped), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_mapped_cov)), sizeof(total_reads_mapped_cov), std::back_inserter(buf));
+	auto val = total_reads_mapped.load();
+	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
+	val = total_reads_mapped_cov.load();
+	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_denovo_clustering)), sizeof(total_reads_denovo_clustering), std::back_inserter(buf));
 
 	// vector reads_matched_per_db
@@ -187,11 +189,15 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&max_read_len), bstr.data() + offset, sizeof(max_read_len));
 	offset += sizeof(max_read_len);
 
-	std::memcpy(static_cast<void*>(&total_reads_mapped), bstr.data() + offset, sizeof(total_reads_mapped));
-	offset += sizeof(total_reads_mapped);
+	uint64_t val = 0;
+	std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
+	total_reads_mapped = val;
+	offset += sizeof(val);
 
-	std::memcpy(static_cast<void*>(&total_reads_mapped_cov), bstr.data() + offset, sizeof(total_reads_mapped_cov));
-	offset += sizeof(total_reads_mapped_cov);
+	val = 0;
+	std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
+	total_reads_mapped_cov = val;
+	offset += sizeof(val);
 
 	std::memcpy(static_cast<void*>(&total_reads_denovo_clustering), bstr.data() + offset, sizeof(total_reads_denovo_clustering));
 	offset += sizeof(total_reads_denovo_clustering);
@@ -228,7 +234,7 @@ void Readstats::pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str
 void Readstats::increment_total_reads_mapped_cov()
 {
 	//std::lock_guard<std::mutex> rmcg(total_reads_mapped_cov_lock);
-	++total_reads_mapped_cov;
+	total_reads_mapped_cov++;
 }
 
 void Readstats::printOtuMap(std::string otumapfile)

@@ -21,6 +21,7 @@
 #include "read.hpp"
 #include "ThreadPool.hpp"
 #include "reader.hpp"
+#include "writer.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, References & refs, Runopts & opts);
@@ -95,7 +96,13 @@ void PostProcessor::run()
 
 		callback(read, readstats, refs, opts);
 		++countReads;
+
+		if (read.isValid && !read.isEmpty && !read.hit_denovo) 
+		{
+			writeQueue.push(read);
+		}
 	}
+	writeQueue.mDoneAdding();
 
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
 	std::cout << ss.str(); ss.str("");
@@ -132,19 +139,21 @@ void ReportProcessor::run()
 
 } // ~ReportProcessor::run
 
-void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output)
+// called from main
+void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 {
 	int N_READ_THREADS = opts.num_read_thread_pp;
 	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << "\trunPostProcessor Thread: " << std::this_thread::get_id() << std::endl;
+	ss << "\tpostProcess Thread: " << std::this_thread::get_id() << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // shared: Processor pushes, Writer pops
 	readstats.restoreFromDb(kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
@@ -155,7 +164,7 @@ void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output)
 		// iterate parts of reference files
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "\trunPostProcessor: Loading reference " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+			ss << "\tpostProcess: Loading reference " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
 			auto starts = std::chrono::high_resolution_clock::now(); // index loading start
 			refs.load(index_num, idx_part, opts, refstats);
@@ -170,15 +179,21 @@ void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output)
 				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
 			}
 
+			for (int i = 0; i < opts.num_write_thread; i++)
+			{
+				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
+			}
+
 			// add processor jobs
 			for (int i = 0; i < N_PROC_THREADS; ++i)
 			{
-				tpool.addJob(PostProcessor("postproc_" + std::to_string(i), readQueue, opts, refs, readstats, computeStats));
+				tpool.addJob(PostProcessor("postproc_" + std::to_string(i), readQueue, writeQueue, opts, refs, readstats, computeStats));
 			}
 			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part
 			refs.clear();
 			readQueue.reset(N_READ_THREADS);
+			writeQueue.reset(N_PROC_THREADS);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
 			ss << "    Done reference " << index_num << " Part: " << idx_part + 1
@@ -196,8 +211,8 @@ void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output)
 
 	kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
 
-	std::cout << "\trunPostProcessor: Done \n";
-} // ~runPostProcessor
+	std::cout << "\tpostProcess: Done \n";
+} // ~postProcess
 
 void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 {
@@ -215,11 +230,11 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 	}
 	// output total non-rrna + rrna reads
 	output.logstream << std::setprecision(2) << std::fixed;
-	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped
-		<< " (" << (float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read) * 100 << ")\n";
+	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
+		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read) * 100 << ")\n";
 	output.logstream << "    Total reads failing E-value threshold = "
-		<< readstats.number_total_read - readstats.total_reads_mapped
-		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped / (float)readstats.number_total_read))) * 100 << ")\n";
+		<< readstats.number_total_read - readstats.total_reads_mapped.load()
+		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read))) * 100 << ")\n";
 	output.logstream << "    Minimum read length = " << readstats.min_read_len << "\n";
 	output.logstream << "    Maximum read length = " << readstats.max_read_len << "\n";
 	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
@@ -235,7 +250,7 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 
 	if (opts.otumapout)
 	{
-		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov << "\n";
+		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << "\n";
 		output.logstream << " Total OTUs = " << readstats.otu_map.size() << "\n";
 	}
 	time_t q = time(0);

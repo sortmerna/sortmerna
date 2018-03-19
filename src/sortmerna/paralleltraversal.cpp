@@ -54,9 +54,6 @@
 #include "writer.hpp"
 #include "output.hpp"
 
-//#ifdef _OPENMP
-//#include <omp.h>
-//#endif
 
 #if defined(_WIN32)
 #define O_SMR_READ_BIN O_RDONLY | O_BINARY
@@ -81,7 +78,7 @@
 //char complement[4] = { 3,2,1,0 };
 
 // Callback run in a Processor thread
-void parallelTraversalJob
+void alignmentCb
 	(
 		Runopts & opts, 
 		Index & index, 
@@ -287,7 +284,7 @@ void parallelTraversalJob
 			if (win_num == numwin - 1)
 			{
 				compute_lis_alignment(
-					read, opts, index, refs, readstats, refstats, output,
+					read, opts, index, refs, readstats, refstats,
 					search, // returns False if the alignment is found -> stop searching
 					max_SW_score,
 					read_to_count
@@ -322,12 +319,12 @@ void parallelTraversalJob
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
-		if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = !read.hit_denovo; // flip
+		if (opts.de_novo_otu) read.hit_denovo = false;
 	}//~if read didn't align
-} // ~parallelTraversalJob
+} // ~alignmentCb
 
-
-void paralleltraversal(Runopts & opts, Readstats & readstats, Output & output)
+// called from main
+void align(Runopts & opts, Readstats & readstats, Output & output)
 {
 	std::stringstream ss;
 
@@ -401,7 +398,7 @@ void paralleltraversal(Runopts & opts, Readstats & readstats, Output & output)
 			// add processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, opts, index, refs, output, readstats, refstats, parallelTraversalJob));
+				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, opts, index, refs, output, readstats, refstats, alignmentCb));
 			}
 			++loopCount;
 

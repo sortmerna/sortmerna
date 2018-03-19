@@ -57,7 +57,7 @@
 #include "zlib.h"
 
 // forward
-void runPostProcessor(Runopts & opts, Readstats & readstats, Output & output);
+void postProcess(Runopts & opts, Readstats & readstats, Output & output);
 
 #if defined(_WIN32)
 const char DELIM = ';';
@@ -1707,11 +1707,11 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (!gap_open_set) gap_open = 5;
 	if (!gap_ext_set) gap_extension = 2;
 	if (!match_ambiguous_N) score_N = mismatch;
+
 	// default method for searching alignments
 	if (!best_set && !num_alignments_set)
 	{
-		// FASTA/FASTQ output, stop searching for
-		// alignments after the first match
+		// FASTA/FASTQ output, stop searching for alignments after the first match
 		if (fastxout && !(blastout || samout || otumapout || doLog || de_novo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
@@ -1721,6 +1721,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			min_lis = 2;
 		}
 	}
+
 	// default minimum LIS used for setting the number of
 	// alignments to search prior to outputting --best INT
 	if (best_set && !min_lis_set) min_lis = 2;
@@ -1777,22 +1778,22 @@ int main(int argc, char** argv)
 		switch (opts.alirep)
 		{
 		case Runopts::ALIGN_REPORT::align:
-			paralleltraversal(opts, readstats, output);
+			align(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::postproc:
-			runPostProcessor(opts, readstats, output);
+			postProcess(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::report:
-			generateReports(opts);
+			generateReports(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::alipost:
-			paralleltraversal(opts, readstats, output);
-			runPostProcessor(opts, readstats, output);
+			align(opts, readstats, output);
+			postProcess(opts, readstats, output);
 			break;
 		case Runopts::ALIGN_REPORT::all:
-			paralleltraversal(opts, readstats, output);
-			runPostProcessor(opts, readstats, output);
-			generateReports(opts);
+			align(opts, readstats, output);
+			postProcess(opts, readstats, output);
+			generateReports(opts, readstats, output);
 			break;
 		}
 	}

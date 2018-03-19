@@ -106,8 +106,7 @@ void find_lis(
 
 void compute_lis_alignment
 	(
-		Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats, 
-		Output & output, /* TODO: not used - remove */
+		Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats,
 		bool & search,
 		uint32_t max_SW_score,
 		bool& read_to_count
@@ -167,8 +166,7 @@ void compute_lis_alignment
 		// (starting from highest scoring)
 		for (uint32_t k = 0; k < most_frequent_seq.size(); k++)
 		{
-			// the maximum scoring alignment has been found,
-			// do not search for anymore alignments
+			// the maximum scoring alignment has been found, do not search for anymore alignments
 			if ((opts.num_best_hits != 0) && (read.max_SW_score == opts.num_best_hits)) break;
 			max_occur = most_frequent_seq[k].first;
 			max_seq = most_frequent_seq[k].second;
@@ -616,8 +614,8 @@ void compute_lis_alignment
 										read_to_count = false;
 
 										// do not output read for de novo OTU clustering
-										// (it passed the %id/coverage thersholds)
-										if (opts.de_novo_otu) read.hit_denovo = !read.hit_denovo; // read_hits_denovo[readn].flip()
+										// it passed the %id/coverage thersholds
+										if (opts.de_novo_otu) read.hit_denovo = !read.hit_denovo; // flip
 									}
 
 									// add alignment information to the read. TODO: check how this affects the old logic
