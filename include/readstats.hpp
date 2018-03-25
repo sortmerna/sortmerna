@@ -76,6 +76,5 @@ struct Readstats {
 	std::string toString();
 	bool restoreFromDb(KeyValueDatabase & kvdb);
 	void pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str);
-	void increment_total_reads_mapped_cov();
 	void printOtuMap(std::string otumapfile);
 }; // ~struct Readstats

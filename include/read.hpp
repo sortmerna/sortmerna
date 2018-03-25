@@ -22,7 +22,7 @@ struct alignment_struct2
 	uint32_t max_size; // max size of s_align array
 	uint32_t size; // actual size of s_align array
 	uint32_t min_index;
-	uint32_t max_index;
+	uint32_t max_index; // index into alignv for the reference with highest SW alignment score (calc in 'compute_lis_alignment')
 	std::vector<s_align2> alignv;
 
 	alignment_struct2() : max_size(0), size(0), min_index(0), max_index(0) {}

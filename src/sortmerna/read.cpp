@@ -229,7 +229,7 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 * @param IN alignIdx index into Read.hits_align_info.alignv
 * @param OUT mismatches  calculated here for the given Read Alignment
 * @param OUT gaps
-* @param OUT id
+* @param OUT id   matched characters
 */
 void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id)
 {
@@ -237,7 +237,9 @@ void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatc
 
 	if (alignIdx >= hits_align_info.alignv.size()) return; // index exceeds the size of the alignment vector
 
-	mismatches = 0, gaps = 0, id = 0;
+	mismatches = 0; // count of mismatched characters
+	gaps = 0; // count of gaps
+	id = 0; // count of matched characters
 
 	int32_t qb = hits_align_info.alignv[alignIdx].ref_begin1; // index of the first char in the reference matched part
 	int32_t pb = hits_align_info.alignv[alignIdx].read_begin1; // index of the first char in the read matched part

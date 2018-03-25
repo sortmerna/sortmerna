@@ -151,7 +151,7 @@ class SortmernaTests(TestCase):
         tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
-        self.assertEqual(tmpdir, tmp_dir.decode('utf-8'))
+        self.assertEqual(tmpdir, tmp_dir)
         rmtree(tmpdir)
 
     def test_indexdb_rna_TMPDIR_env(self):
@@ -219,6 +219,7 @@ class SortmernaTests(TestCase):
             proc.stderr.close()
             self.assertTrue(stdout)
             self.assertFalse(stderr)
+            
         expected_db_files = set(index_db + ext
                                 for ext in ['.bursttrie_0.dat', '.kmer_0.dat',
                                             '.pos_0.dat', '.stats'])
@@ -226,11 +227,12 @@ class SortmernaTests(TestCase):
             self.assertTrue(exists(fp))
         # check temporary folder was that set by --tmpdir
         query = re.compile(b'temporary file was here: (.*?)\n')
+        print('stdout: {}'.format(stdout))
         m = query.search(stdout)
         tmp_dir = ""
         if m:
             tmp_dir = dirname(m.group(1))
-        self.assertEqual("/tmp", tmp_dir.decode('utf-8'))
+        self.assertEqual("/tmp", tmp_dir) # tmp_dir.decode('utf-8') - AttributeError: 'str' object has no attribute 'decode'
 
     def test_indexdb_default_param(self):
         """ Test indexing a database using SortMeRNA
@@ -673,6 +675,7 @@ class SortmernaTests(TestCase):
             proc.stderr.close()
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
+        
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
                              "--aligned", aligned_basename,
@@ -685,10 +688,12 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
-                             "-m", "1",
                              "-d", datadir,
                              "--task", "4",
                              "-v"]
+        
+        print('Running: {}'.format(sortmerna_command))
+        
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         else:
@@ -938,6 +943,8 @@ class SortmernaTests(TestCase):
                              "--fastx",
                              "--reads", self.set4,
                              "--log",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
@@ -978,6 +985,8 @@ class SortmernaTests(TestCase):
                              "--fastx",
                              "--reads", self.set4,
                              "--log",
+                             "-d", datadir,
+                             "--task", "4",
                              "-v"]
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)

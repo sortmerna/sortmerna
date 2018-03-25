@@ -569,6 +569,8 @@ void Output::report_sam
 /* 
  * prototype outputformats.cpp:report_fasta
  *
+ * called on each Read or each 2 reads (if paired)
+ *
  * @param reads: 1 or 2 reads (if paired)
  */
 void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
@@ -626,9 +628,9 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			// the read was accepted
 			if (!reads[0].hit)
 			{
-				fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				fastaNonAlignOut << reads[0].header << std::endl << reads[0].sequence << std::endl;
 			}
-		} // ~ if (pairedin_gv || pairedout_gv)
+		} // ~ if (!(pairedin_gv || pairedout_gv))
 	} //~if ( opts.fastxout )  
 } // ~Output::report_fasta
 

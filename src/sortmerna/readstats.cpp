@@ -231,12 +231,6 @@ void Readstats::pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str
 	otu_map[ref_seq_str].push_back(read_seq_str);
 }
 
-void Readstats::increment_total_reads_mapped_cov()
-{
-	//std::lock_guard<std::mutex> rmcg(total_reads_mapped_cov_lock);
-	total_reads_mapped_cov++;
-}
-
 void Readstats::printOtuMap(std::string otumapfile)
 {
 	std::stringstream ss;

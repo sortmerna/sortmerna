@@ -92,7 +92,7 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 				// increment number of reads passing identity and coverage threshold
 				readstats.total_reads_mapped_cov++;
 
-				// TODO: this check is already performed during alignment (paralleltraversalJob and compute_lis_alignment). Is it necessary here? - it is.
+				// TODO: this check is already performed during alignment (alignmentCb and compute_lis_alignment). Is it necessary here? - it is.
 				// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
 				if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = false;
 

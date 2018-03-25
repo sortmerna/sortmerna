@@ -121,16 +121,16 @@ void ReportProcessor::run()
 
 	for (;!readQueue.isDone();)
 	{
+		reads.clear();
 		for (i = 0; i < cap; ++i)
 		{
 			reads.push_back(readQueue.pop()); // returns an empty read if queue is empty
 			if (reads[i].isEmpty || !reads[i].isValid) break;
 		}
 
-		if (reads.back().isEmpty || !reads.back().isValid)	continue;
+		if (reads.back().isEmpty || !reads.back().isValid) continue;
 
 		callback(reads, opts, refs, refstats, output);
-		reads.clear();
 		countReads+=i;
 	}
 

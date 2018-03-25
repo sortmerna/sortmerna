@@ -26,7 +26,7 @@ void CmdSession::run(Runopts & opts)
 		std::cin >> cmd;
 		if ("exit" == cmd) break;
 		read.init(opts, kvdb, std::stoi(cmd));
-		ss << "read.hit= " << read.hit << std::endl;
+		ss << read.matchesToJson() << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 } // ~CmdSession::run

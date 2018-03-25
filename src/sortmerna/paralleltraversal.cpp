@@ -417,4 +417,4 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 
 	// store readstats calculated in alignment
 	kvdb.put("Readstats", readstats.toString());
-} // ~paralleltraversal
+} // ~align
