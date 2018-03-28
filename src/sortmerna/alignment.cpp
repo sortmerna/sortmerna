@@ -420,11 +420,11 @@ void compute_lis_alignment
 								{
 									// an alignment for this read already exists
 									//if (alignment != read_hits_align_info.end())
-									if (read.hits_align_info.size > 0)
+									if (read.hits_align_info.alignv.size() > 0) // read.hits_align_info.size > 0
 									{
 										uint32_t smallest_score_index = read.hits_align_info.min_index;
 										uint32_t highest_score_index = read.hits_align_info.max_index;
-										uint32_t array_size = read.hits_align_info.size;
+										uint32_t array_size = read.hits_align_info.alignv.size();
 										uint32_t array_max_size = read.hits_align_info.max_size;
 
 										// number of alignments stored per read < num_best_hits_gv, 

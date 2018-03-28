@@ -19,22 +19,22 @@ class References; // forward
 
 struct alignment_struct2
 {
-	uint32_t max_size; // max size of s_align array
-	uint32_t size; // actual size of s_align array
+	uint32_t max_size; // max size of s_align array TODO: no need with alignv?
+	//uint32_t size; // actual size of s_align array TODO: remove - no need with alignv
 	uint32_t min_index;
 	uint32_t max_index; // index into alignv for the reference with highest SW alignment score (calc in 'compute_lis_alignment')
 	std::vector<s_align2> alignv;
 
-	alignment_struct2() : max_size(0), size(0), min_index(0), max_index(0) {}
+	alignment_struct2() : max_size(0), min_index(0), max_index(0) {}
 
 	alignment_struct2(std::string); // create from binary string
 
-	alignment_struct2(uint32_t max_size, uint32_t size, uint32_t min, uint32_t max)
-		: max_size(max_size), size(size), min_index(min), max_index(max) {}
+	alignment_struct2(uint32_t max_size, uint32_t min, uint32_t max)
+		: max_size(max_size), min_index(min), max_index(max) {}
 
 	std::string toString(); // convert to binary string
 	size_t getSize() { 
-		size_t ret = sizeof(max_size) + sizeof(size) + sizeof(min_index) + sizeof(max_index);
+		size_t ret = sizeof(max_size) + sizeof(min_index) + sizeof(max_index);
 		for (std::vector<s_align2>::iterator it = alignv.begin(); it != alignv.end(); ++it)
 			ret += it->size();
 		return ret;
@@ -43,7 +43,6 @@ struct alignment_struct2
 	void clear()
 	{
 		max_size = 0;
-		size = 0;
 		min_index = 0;
 		max_index = 0;
 		alignv.clear();
@@ -74,7 +73,7 @@ public:
 	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
 	bool hit = false; // indicates that a match for this Read has been found
-	bool hit_denovo = true;
+	bool hit_denovo = true; // hit & !(%Cov & %ID)
 	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
 	uint16_t max_SW_score = 0; // Max Smith-Waterman score
 	int32_t num_alignments = 0; // number of alignments to output per read
