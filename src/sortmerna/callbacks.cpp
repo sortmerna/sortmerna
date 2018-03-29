@@ -90,13 +90,13 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 				if (align_id_round >= opts.align_id && align_cov_round >= opts.align_cov)
 				{
 					// increment number of reads passing identity and coverage threshold
-					readstats.total_reads_mapped_cov++;
+					++readstats.total_reads_mapped_cov;
 
 					// TODO: this check is already performed during alignment (alignmentCb and compute_lis_alignment) 
 					//       for (opts.num_alignments > -1)
 					//  here for (opts.num_alignments == -1)
 					// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
-					if (opts.de_novo_otu && read.hit_denovo) read.hit_denovo = false;
+					if (opts.de_novo_otu) read.hit_denovo = false;
 
 					// fill OTU map with highest-scoring alignment for the read
 					if (opts.otumapout)
@@ -123,6 +123,6 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 		} // ~if p == index_max_score
 	}//~for all alignments
 
-	if (opts.de_novo_otu && read.hit_denovo)
+	if (opts.de_novo_otu && read.hit && read.hit_denovo)
 		++readstats.total_reads_denovo_clustering;
 } // ~computeStats

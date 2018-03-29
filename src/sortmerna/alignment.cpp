@@ -425,7 +425,6 @@ void compute_lis_alignment
 										uint32_t smallest_score_index = read.hits_align_info.min_index;
 										uint32_t highest_score_index = read.hits_align_info.max_index;
 										uint32_t array_size = read.hits_align_info.alignv.size();
-										uint32_t array_max_size = read.hits_align_info.max_size;
 
 										// number of alignments stored per read < num_best_hits_gv, 
 										// add alignment to array without comparison to other members of array
@@ -610,12 +609,12 @@ void compute_lis_alignment
 									// output it (SAM, BLAST and FASTA/Q)
 									if ((align_id_round >= opts.align_id) && (align_cov_round >= opts.align_cov) && read_to_count)
 									{
-										readstats.total_reads_mapped_cov++;
+										++readstats.total_reads_mapped_cov;
 										read_to_count = false;
 
 										// do not output read for de novo OTU clustering
 										// it passed the %id/coverage thersholds
-										if (opts.de_novo_otu) read.hit_denovo = !read.hit_denovo; // flip
+										if (opts.de_novo_otu) read.hit_denovo = false;
 									}
 
 									// add alignment information to the read. TODO: check how this affects the old logic

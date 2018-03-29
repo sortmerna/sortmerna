@@ -46,9 +46,6 @@ struct Readstats {
 	// calculated after alignment is done on all reads
 	std::map<std::string, std::vector<std::string>> otu_map;
 
-	std::mutex total_reads_mapped_cov_lock; // mutex for total_reads_mapped_cov
-	std::mutex otu_map_lock; // mutex for otu_map
-
 	Readstats(Runopts & opts)
 		:
 		opts(opts),

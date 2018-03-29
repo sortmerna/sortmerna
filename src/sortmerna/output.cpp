@@ -645,7 +645,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 		if (opts.pairedin || opts.pairedout)
 		{
 			// either both reads are accepted, or one is accepted and pairedin_gv
-			if ( opts.pairedin && (reads[0].hit_denovo || reads[1].hit_denovo) )
+			if ( opts.pairedin && reads[0].hit && reads[1].hit && (reads[0].hit_denovo || reads[1].hit_denovo) )
 			{
 				// output aligned read
 				for (Read read : reads)
@@ -655,7 +655,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 		else // regular or pair-ended reads don't need to go into the same file
 		{
 			// the read was accepted
-			if (reads[0].hit_denovo)
+			if (reads[0].hit && reads[0].hit_denovo)
 			{
 				// output aligned read
 				denovoreads << reads[0].header << std::endl << reads[0].sequence << std::endl;

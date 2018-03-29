@@ -17,12 +17,6 @@
 alignment_struct2::alignment_struct2(std::string bstr)
 {
 	size_t offset = 0;
-	// max_size
-	std::memcpy(static_cast<void*>(&max_size), bstr.data(), sizeof(max_size));
-	offset += sizeof(max_size);
-	// size
-	//std::memcpy(static_cast<void*>(&size), bstr.data() + offset, sizeof(size));
-	//offset += sizeof(size);
 	// min_index
 	std::memcpy(static_cast<void*>(&min_index), bstr.data() + offset, sizeof(min_index));
 	offset += sizeof(min_index);
@@ -51,8 +45,6 @@ std::string alignment_struct2::toString()
 	std::string buf;
 	size_t offset = 0;
 
-	std::copy_n(static_cast<char*>(static_cast<void*>(&max_size)), sizeof(max_size), std::back_inserter(buf));
-	//std::copy_n(static_cast<char*>(static_cast<void*>(&size)), sizeof(size), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&min_index)), sizeof(min_index), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_index)), sizeof(max_index), std::back_inserter(buf));
 

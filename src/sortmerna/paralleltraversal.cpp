@@ -315,7 +315,7 @@ void alignmentCb
 
 	// the read didn't align (for --num_alignments [INT] option),
 	// output null alignment string
-	if (!read.hit && !opts.forward && (opts.num_alignments > -1))
+	if (!read.hit && !opts.forward && opts.num_alignments > -1)
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
