@@ -49,8 +49,8 @@ struct Runopts {
 	int32_t num_best_hits = 0;
 	int32_t edges = -1;
 
-	bool forward = false; // '-F' search only the forward strand
-	bool reverse = false; // '-R' search only the reverse-complementary strand
+	bool forward = false; // '-F' search only the forward strand if true
+	bool reverse = false; // '-R' search only the reverse-complementary strand if true
 	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file. Only Fasta/q and De-novo reporting.
 	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file. Only Fasta/q and De-novo reporting.
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
@@ -111,7 +111,7 @@ private:
 	bool full_search_set = false;
 	bool passes_set = false;
 	bool edges_set = false;
-	bool match_ambiguous_N = false;
+	bool match_ambiguous_N = false; // -N flags to match the ambiguous characters using score_N
 	bool min_lis_set = false;
 	bool num_alignments_set = false;
 	bool best_set = false;

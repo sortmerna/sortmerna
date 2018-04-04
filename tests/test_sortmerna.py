@@ -229,10 +229,14 @@ class SortmernaTests(TestCase):
         query = re.compile(b'temporary file was here: (.*?)\n')
         print('stdout: {}'.format(stdout))
         m = query.search(stdout)
-        tmp_dir = ""
-        if m:
-            tmp_dir = dirname(m.group(1))
-        self.assertEqual("/tmp", tmp_dir) # tmp_dir.decode('utf-8') - AttributeError: 'str' object has no attribute 'decode'
+        
+        if 'Windows' in platform.platform():
+            tmp_dir = environ.get('TEMP')
+            print('TEMP: {}'.format(tmp_dir))
+        else:
+            if m: tmp_dir = dirname(m.group(1))
+            self.assertEqual("/tmp", tmp_dir)
+    #END test_indexdb_rna_tmp_dir_system
 
     def test_indexdb_default_param(self):
         """ Test indexing a database using SortMeRNA

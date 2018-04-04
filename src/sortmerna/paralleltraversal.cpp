@@ -78,6 +78,9 @@
 //char complement[4] = { 3,2,1,0 };
 
 // Callback run in a Processor thread
+/* 
+ * @param isLastStrand Boolean flags when the last strand is passed for matching
+ */
 void alignmentCb
 	(
 		Runopts & opts, 
@@ -86,14 +89,16 @@ void alignmentCb
 		Output & output, 
 		Readstats & readstats, 
 		Refstats & refstats, 
-		Read & read
+		Read & read,
+		bool isLastStrand
 	)
 {
 	read.lastIndex = index.index_num;
 	read.lastPart = index.part;
 
 	// for reverse reads
-	if (!opts.forward)
+	//if (!opts.forward)
+	if (read.reversed)
 	{
 		// output the first num_alignments_gv alignments
 		if (opts.num_alignments > 0)
@@ -315,7 +320,7 @@ void alignmentCb
 
 	// the read didn't align (for --num_alignments [INT] option),
 	// output null alignment string
-	if (!read.hit && !opts.forward && opts.num_alignments > -1)
+	if (isLastStrand && !read.hit && opts.num_alignments > -1) // !opts.forward
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)

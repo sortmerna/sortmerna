@@ -360,7 +360,8 @@ void compute_lis_alignment
 								}
 							}
 
-							if (read.is04) read.flip34(opts);
+							// put read into 04 encoding
+							if (read.is03) read.flip34(opts);
                        
 							// create profile for read
 							s_profile* profile = 0;
@@ -562,7 +563,7 @@ void compute_lis_alignment
 									// get the edit distance between reference and read (serves for
 									// SAM output and computing %id and %query coverage)
 									double id = 0;
-									char to_char[5] = { 'A','C','G','T','N' };
+									//char to_char[5] = { 'A','C','G','T','N' }; // TODO: moved to nt_map
 									const char* ref_seq_ptr = refs.buffer[max_seq].sequence.data(); // reference_seq  [(2 * (int)max_seq) + 1]
 									const char* read_seq_ptr = read.isequence.data(); // myread
 									int32_t qb = result->ref_begin1;
@@ -578,7 +579,7 @@ void compute_lis_alignment
 										{
 											for (uint32_t p = 0; p < length; ++p)
 											{
-												if ((char)to_char[(int)*(ref_seq_ptr + qb)] != (char)to_char[(int)*(read_seq_ptr + pb)]) ++mismatches;
+												if ((char)nt_map[(int)*(ref_seq_ptr + qb)] != (char)nt_map[(int)*(read_seq_ptr + pb)]) ++mismatches;
 												else ++id;
 												++qb;
 												++pb;
@@ -682,6 +683,6 @@ void compute_lis_alignment
 		}//~for all of the reference sequence candidates
 	}//if ( readhitf || readhitr > ratio )
 
-	if (read.is04) read.flip34(opts);
+	if (read.is04) read.flip34(opts); // flip back into 03 encoding
 
 } // ~compute_lis_alignment

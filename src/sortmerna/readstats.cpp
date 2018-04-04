@@ -25,6 +25,7 @@
 #include "kvdb.hpp"
 #include "gzip.hpp"
 
+const std::string Readstats::dbkey = "Readstats";
 
 void Readstats::calculate()
 {
@@ -178,7 +179,7 @@ std::string Readstats::toString()
 bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 {
 	bool ret = false;
-	std::string bstr = kvdb.get("Readstats");
+	std::string bstr = kvdb.get(Readstats::dbkey);
 	if (bstr.size() == 0) { return ret; }
 	size_t offset = 0;
 	std::stringstream ss;

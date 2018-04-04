@@ -61,6 +61,9 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 {
 	// OTU-map: index of alignment holding maximum SW score
 	uint32_t index_max_score = read.hits_align_info.max_index;
+
+	if (read.is03) read.flip34(opts);
+
 	// loop all the alignments of this read
 	for (uint32_t p = 0; p < read.hits_align_info.alignv.size(); ++p)
 	{
@@ -125,4 +128,6 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 
 	if (opts.de_novo_otu && read.hit && read.hit_denovo)
 		++readstats.total_reads_denovo_clustering;
+
+	if (read.is04) read.flip34(opts);
 } // ~computeStats

@@ -1273,8 +1273,10 @@ void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: BOOL -N has been set more than once, please "
-			"check your command parameters.\n", RED, COLOFF);
+		std::stringstream ss;
+		ss << std::endl << " " << RED << "ERROR" << COLOFF
+			<< ": BOOL -N has been set more than once, please check your command parameters." << std::endl;
+		std::cerr << ss.str();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_N_MatchAmbiguous

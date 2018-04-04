@@ -68,17 +68,16 @@ std::string alignment_struct2::toString()
  // initialize Smith-Waterman scoring matrix for genome sequences
 void Read::initScoringMatrix(Runopts & opts)
 {
-	int l, k, m;
 	int8_t val = 0;
-	for (l = k = 0; l < 4; ++l)
+	for (int l = 0; l < 4; ++l)
 	{
-		for (m = 0; m < 4; ++m) {
+		for (int m = 0; m < 4; ++m) {
 			val = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
 			scoring_matrix.push_back(val);
 		}
 		scoring_matrix.push_back(opts.score_N); // ambiguous base
 	}
-	for (m = 0; m < 5; ++m) {
+	for (int m = 0; m < 5; ++m) {
 		scoring_matrix.push_back(opts.score_N); // ambiguous base
 	}
 }
@@ -225,8 +224,6 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 */
 void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id)
 {
-	const char to_char[5] = { 'A','C','G','T','N' };
-
 	if (alignIdx >= hits_align_info.alignv.size()) return; // index exceeds the size of the alignment vector
 
 	mismatches = 0; // count of mismatched characters
@@ -238,10 +235,10 @@ void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatc
 
 	std::string refseq = refs.buffer[hits_align_info.alignv[alignIdx].ref_seq].sequence;
 
-	for (uint32_t c2 = 0; c2 < hits_align_info.alignv[alignIdx].cigar.size(); ++c2)
+	for (uint32_t cidx = 0; cidx < hits_align_info.alignv[alignIdx].cigar.size(); ++cidx)
 	{
-		uint32_t letter = 0xf & hits_align_info.alignv[alignIdx].cigar[c2]; // 4 low bits
-		uint32_t length = (0xfffffff0 & hits_align_info.alignv[alignIdx].cigar[c2]) >> 4; // high 28 bits i.e. 32-4=28
+		uint32_t letter = 0xf & hits_align_info.alignv[alignIdx].cigar[cidx]; // 4 low bits
+		uint32_t length = (0xfffffff0 & hits_align_info.alignv[alignIdx].cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
 		if (letter == 0)
 		{
 			for (uint32_t u = 0; u < length; ++u)

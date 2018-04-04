@@ -46,6 +46,8 @@ struct Readstats {
 	// calculated after alignment is done on all reads
 	std::map<std::string, std::vector<std::string>> otu_map;
 
+	static const std::string dbkey;
+
 	Readstats(Runopts & opts)
 		:
 		opts(opts),

@@ -94,6 +94,7 @@ struct _profile {
 	uint8_t bias;
 };
 
+// TODO: remove - never referenced
 int8_t rc_table[128] = {
 	4, 4,  4, 4,  4,  4,  4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
 	4, 4,  4, 4,  4,  4,  4, 4,  4, 4, 4, 4,  4, 4, 4, 4,

@@ -1831,26 +1831,6 @@ int main(int argc, char** argv)
 							memset(lookup_table[kmer_key_short_f].trie_F, 0, 4 * sizeof(NodeElement));
 						}
 
-						// TESTING
-						/*
-						uint32_t short_kmer = kmer_key_short_f;
-						char get_char[4] = {'A','C','G','T'};
-						string kmer_keep = "";
-						uint32_t l = 8;
-						for ( int s = 0; s < partialwin_gv; s++ )
-						{
-						  kmer_keep.push_back((char)get_char[short_kmer&3]);
-						  short_kmer>>=2;
-						}
-						string kmer_keep_rev = "";
-						for ( std::string::reverse_iterator rit=kmer_keep.rbegin();  rit != kmer_keep.rend(); ++rit )
-						kmer_keep_rev.push_back(*rit);
-
-						unsigned char* tgh = kmer_key_short_f_p;
-						for ( int u = 0 ; u < partialwin_gv+1; u++ ) kmer_keep_rev.push_back((char)get_char[*tgh++]);
-
-						cout << kmer_keep_rev << endl; //TESTING
-						*/
 						insert_prefix(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p);
 					}
 

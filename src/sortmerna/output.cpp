@@ -184,7 +184,7 @@ void Output::report_blast
 	Read & read
 )
 {
-	const char to_char[5] = { 'A','C','G','T','N' };
+	//const char to_char[5] = { 'A','C','G','T','N' }; // TODO: moved to common.cpp::nt_map
 	const char MATCH = '|';
 	const char MISMATCH = '*';
 	const char INDEL = '-';
@@ -193,6 +193,8 @@ void Output::report_blast
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 	char strandmark = '+';
+
+	if (read.is03) read.flip34(opts);
 
 	// TODO: iterating all alignments for each reference part is an overhead. Alignments are pre-ordered, 
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
@@ -267,7 +269,7 @@ void Output::report_blast
 								if (letter == 1) blastout << INDEL; // mark indel
 								else
 								{
-									blastout << to_char[(int)refseq[q]];
+									blastout << nt_map[(int)refseq[q]];
 									++q;
 								}
 								++count;
@@ -290,7 +292,7 @@ void Output::report_blast
 							{
 								if (letter == 0)
 								{
-									if ((char)to_char[(int)refseq[q]] == (char)to_char[(int)read.isequence[p]]) blastout << MATCH; // mark match
+									if ((char)nt_map[(int)refseq[q]] == (char)nt_map[(int)read.isequence[p]]) blastout << MATCH; // mark match
 									else blastout << MISMATCH; // mark mismatch
 									++q;
 									++p;
@@ -325,7 +327,7 @@ void Output::report_blast
 								if (letter == 2) blastout << INDEL; // mark indel
 								else
 								{
-									blastout << to_char[(int)read.isequence[p]];
+									blastout << nt_map[(int)read.isequence[p]];
 									++p;
 								}
 								++count;
@@ -440,6 +442,8 @@ void Output::report_blast
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
+
+	if (read.is04) read.flip34(opts);
 } // ~ Output::report_blast
 
 
@@ -486,7 +490,8 @@ void Output::report_sam
 	Read & read
 )
 {
-	const char to_char[5] = { 'A','C','G','T','N' };
+	//const char to_char[5] = { 'A','C','G','T','N' }; // TODO: moved to common.hpp::nt_map
+	if (read.is03) read.flip34(opts);
 
 	//if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
 	//	return;
@@ -564,6 +569,8 @@ void Output::report_sam
 			samout << "\tNM:i:" << mismatches + gaps << "\n";
 		}
 	} // ~for read.alignments
+
+	if (read.is04) read.flip34(opts);
 } // ~Output::report_sam
 
 /* 
@@ -781,6 +788,13 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	KeyValueDatabase kvdb(opts.kvdbPath);
+	bool indb = readstats.restoreFromDb(kvdb);
+
+	if (indb) {
+		ss << __FILE__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
+		std::cout << ss.str(); ss.str("");
+	}
+
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // Not used for Reports
 	Refstats refstats(opts, readstats);

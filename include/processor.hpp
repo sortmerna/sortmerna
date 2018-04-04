@@ -35,7 +35,7 @@ public:
 		Readstats & readstats, 
 		Refstats & refstats,
 		//std::function<void(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)> callback
-		void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)
+		void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read, bool isLastStrand)
 	) :
 		id(id),
 		readQueue(readQueue),
@@ -54,7 +54,7 @@ public:
 protected:
 	void run();
 	//std::function<void(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)> callback;
-	void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read);
+	void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read, bool isLastStrand);
 
 protected:
 	std::string id;

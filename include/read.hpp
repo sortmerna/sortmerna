@@ -85,7 +85,7 @@ public:
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <------------------------------ store in database
 
-	const char complement[4] = { 3, 2, 1, 0 }; // A <-> T, C <-> G
+	//const char complement[4] = { 3, 2, 1, 0 }; // A <-> T, C <-> G
 
 	Read()
 		:
@@ -194,17 +194,18 @@ public:
 	{
 		for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
 		{
-			char c = (4 == nt_table[(int)*it]) ? 0 : nt_table[(int)*it];
-			//isequence += nt_table[(int)*it];
-			isequence += c;
-			if (c == 0) { // ambiguous nt
-				ambiguous_nt.push_back(static_cast<int>(isequence.size()) - 1); // i.e. add current position to the vector
+			char c = nt_table[(int)*it];
+			if (c == 4) // ambiguous nt. 4 is max value in nt_table
+			{
+				ambiguous_nt.push_back(static_cast<int>(isequence.size())); // i.e. add current position to the vector
+				c = 0;
 			}
+			isequence += c;
 		}
 		is03 = true;
 	}
 
-	// reverse complement the integer sequence
+	// reverse complement the integer sequence in 03 encoding
 	void revIntStr() {
 		std::reverse(isequence.begin(), isequence.end());
 		for (int i = 0; i < isequence.length(); i++) {
@@ -279,23 +280,25 @@ public:
 	// flip isequence between 03 - 04 alphabets
 	void flip34(Runopts & opts)
 	{
-		int val = is03 ? 4 : 0;
 		if (ambiguous_nt.size() > 0) 
 		{
-			if (opts.forward)
-			{
-				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
-				{
-					isequence[ambiguous_nt[p]] = val;
-				}
-			}
-			else
+			int val = is03 ? 4 : 0;
+			if (reversed)
 			{
 				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
 				{
 					isequence[(isequence.length() - ambiguous_nt[p]) - 1] = val;
 				}
 			}
+			else
+			{
+				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+				{
+					isequence[ambiguous_nt[p]] = val;
+				}
+			}
+			is03 = !is03;
+			is04 = !is04;
 		}
 	} // ~flip34
 

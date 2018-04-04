@@ -51,18 +51,21 @@ void Processor::run()
 
 		// search the forward and/or reverse strands depending on Run options
 		int32_t strandCount = 0;
-		opts.forward = true; // TODO: this discards the possiblity of forward = false
-		if (opts.forward ^ opts.reverse)
+		//opts.forward = true; // TODO: this discards the possiblity of forward = false
+		bool singleStrand = opts.forward ^ opts.reverse; // search single strand
+		if (singleStrand)
 			strandCount = 1; // only search the forward xor reverse strand
 		else 
 			strandCount = 2; // search both strands. The default when neither -F or -R were specified
 
-		for (int32_t strand = 0; strand < strandCount; strand++)
+		for (int32_t count = 0; count < strandCount; ++count)
 		{
-			if (!opts.forward && !read.reversed)
-				read.revIntStr(); // reverse-complement the sequence
-			callback(opts, index, refs, output, readstats, refstats, read);
-			opts.forward = false;
+			if ((singleStrand && opts.reverse) || count == 1)
+			{
+				if (!read.reversed)	read.revIntStr();
+			}
+			callback(opts, index, refs, output, readstats, refstats, read, singleStrand || count == 1);
+			//opts.forward = false;
 		}
 
 		if (read.isValid && !read.isEmpty) {
@@ -154,7 +157,13 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // shared: Processor pushes, Writer pops
-	readstats.restoreFromDb(kvdb);
+	bool indb = readstats.restoreFromDb(kvdb);
+
+	if (indb) {
+		ss << __FILE__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
+		std::cout << ss.str(); ss.str("");
+	}
+
 	Refstats refstats(opts, readstats);
 	References refs;
 
