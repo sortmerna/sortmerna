@@ -38,6 +38,9 @@
 #include "references.hpp"
 #include "readstats.hpp"
 
+// forward
+s_align2 copyAlignment(s_align* pAlign);
+uint32_t findMinIndex(Read & read);
 
 bool
 smallest(const mypair &a, const mypair &b)
@@ -121,7 +124,7 @@ void compute_lis_alignment
 	// continue analysis of read
 	if (read.readhit >= (uint32_t)opts.seed_hits) // default seed_hits_gv = 2
 	{
-		// map<seq, number of occurrences> most_frequent_seq_t
+		// map of <reference sequence number : number of occurrences of a k-mer on the reference>
 		map<uint32_t, uint32_t> most_frequent_seq_t;
 		map<uint32_t, uint32_t>::iterator map_it;
 		uint32_t max_seq = 0;
@@ -148,7 +151,7 @@ void compute_lis_alignment
 			}
 		}
 
-		// <mypair> = <number of occurrences of a sequence, index of sequence>
+		// list of pairs <number of occurrences of a k-mer on the reference, reference sequence number> for k-mers with frequency >= seed_hits_gv
 		vector<mypair> most_frequent_seq;
 		// copy list of occurrences from map to vector for sorting
 		for (map_it = most_frequent_seq_t.begin(); map_it != most_frequent_seq_t.end(); map_it++)
@@ -399,7 +402,7 @@ void compute_lis_alignment
 							if (aligned)
 							{
 								// read has not been yet mapped, set bit to true for this read
-								// (this is the _only_ place where read_hits must be modified)
+								// (this is the Only place where read_hits must be modified)
 								if (!read.hit)
 								{
 									read.hit = true;
@@ -420,40 +423,33 @@ void compute_lis_alignment
 								if (opts.min_lis > -1)
 								{
 									// an alignment for this read already exists
-									//if (alignment != read_hits_align_info.end())
-									if (read.hits_align_info.alignv.size() > 0) // read.hits_align_info.size > 0
+									if (read.hits_align_info.alignv.size() > 0)
 									{
 										uint32_t smallest_score_index = read.hits_align_info.min_index;
 										uint32_t highest_score_index = read.hits_align_info.max_index;
-										uint32_t array_size = read.hits_align_info.alignv.size();
+										uint32_t hits_size = read.hits_align_info.alignv.size();
 
-										// number of alignments stored per read < num_best_hits_gv, 
+										// number of alignments stored per read < 'num_best_hits_gv', 
 										// add alignment to array without comparison to other members of array
-										if ((opts.num_best_hits == 0) || (array_size < (uint32_t)opts.num_best_hits))
+										if (opts.num_best_hits == 0 || hits_size < (uint32_t)opts.num_best_hits)
 										{
-											// all slots have been filled, find slot with smallest
+											// add alignment
+											read.hits_align_info.alignv.push_back( copyAlignment(result) );
+											++hits_size;
+
+											// read alignments are filled to max size, find the smallest
 											// alignment score and set the smallest_score_index
 											// (this is not done when num_best_hits_gv == 0 since
 											// we want to output all alignments for some --min_lis)
-											if (array_size == (uint32_t)opts.num_best_hits)
+											if (read.hits_align_info.alignv.size() == (uint32_t)opts.num_best_hits)
 											{
-												uint32_t smallest_score = 1000000;
-												//s_align *this_alignment = alignment->second.ptr;
-												for (int p = 0; p < opts.num_best_hits; p++)
-												{
-													if (read.hits_align_info.alignv[p].score1  < smallest_score) // this_alignment[p].score1
-													{
-														smallest_score = read.hits_align_info.alignv[p].score1;
-														smallest_score_index = p;
-													}
-												}
-												read.hits_align_info.min_index = smallest_score_index; // alignment->second.min_index
+												read.hits_align_info.min_index = findMinIndex(read);
 											}
 
 											// update the index position of the first occurrence of the
 											// highest alignment score
 											if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
-												read.hits_align_info.max_index = array_size - 1;
+												read.hits_align_info.max_index = hits_size - 1;
 
 											// the maximum possible score for this read has been found
 											if (result->score1 == max_SW_score) read.max_SW_score++;
@@ -479,35 +475,10 @@ void compute_lis_alignment
 											// increment number of reads mapped to database with higher score
 											readstats.reads_matched_per_db[index.index_num]++;
 
-											s_align2 align;
-											for (int i = 0; i < result->cigarLen; i++)
-												align.cigar.push_back(*result->cigar++);
+											// replace an old smallest scored alignment with the new one
+											read.hits_align_info.alignv[smallest_score_index] = copyAlignment(result);
 
-											align.index_num = result->index_num;
-											align.part = result->part;
-											align.readlen = result->readlen;
-											align.read_begin1 = result->read_begin1;
-											align.read_end1 = result->read_end1;
-											align.ref_begin1 = result->ref_begin1;
-											align.ref_end1 = result->ref_end1;
-											align.ref_seq = result->ref_seq;
-											align.score1 = result->score1;
-											align.strand = result->strand;
-											read.hits_align_info.alignv[smallest_score_index] = align; // *result
-
-											// find the new smallest_score_index
-											uint32_t smallest_score = 1000000;
-
-											for (int p = 0; p < opts.num_best_hits; p++)
-											{
-												if (read.hits_align_info.alignv[p].score1 < smallest_score)
-												{
-													smallest_score = read.hits_align_info.alignv[p].score1;
-													smallest_score_index = p;
-												}
-											}
-
-											read.hits_align_info.min_index = smallest_score_index; // alignment->second.min_index
+											read.hits_align_info.min_index = findMinIndex(read);
 											// the maximum possible score for this read has been found
 											if (result->score1 == max_SW_score) read.max_SW_score++;
 											// free result, except the cigar (now new cigar)
@@ -531,20 +502,7 @@ void compute_lis_alignment
 										else 
 											max_size = BEST_HITS_INCREMENT;
 
-										s_align2 align;
-										for (int i = 0; i < result->cigarLen; i++)
-											align.cigar.push_back(*result->cigar++);
-										align.index_num = result->index_num;
-										align.part = result->part;
-										align.readlen = result->readlen;
-										align.read_begin1 = result->read_begin1;
-										align.read_end1 = result->read_end1;
-										align.ref_begin1 = result->ref_begin1;
-										align.ref_end1 = result->ref_end1;
-										align.ref_seq = result->ref_seq;
-										align.score1 = result->score1;
-										align.strand = result->strand;
-										read.hits_align_info.alignv.push_back(align); // *result
+										read.hits_align_info.alignv.push_back( copyAlignment(result) );
 
 										// the maximum possible score for this read has been found
 										if (result->score1 == max_SW_score) read.max_SW_score++;
@@ -618,21 +576,8 @@ void compute_lis_alignment
 										if (opts.de_novo_otu) read.hit_denovo = false;
 									}
 
-									// add alignment information to the read. TODO: check how this affects the old logic
-									s_align2 align;
-									for (int i = 0; i < result->cigarLen; i++)
-										align.cigar.push_back(*result->cigar++);
-									align.index_num = result->index_num;
-									align.part = result->part;
-									align.readlen = result->readlen;
-									align.read_begin1 = result->read_begin1;
-									align.read_end1 = result->read_end1;
-									align.ref_begin1 = result->ref_begin1;
-									align.ref_end1 = result->ref_end1;
-									align.ref_seq = result->ref_seq;
-									align.score1 = result->score1;
-									align.strand = result->strand;
-									read.hits_align_info.alignv.push_back(align);
+									// add alignment to the read. TODO: check how this affects the old logic
+									read.hits_align_info.alignv.push_back( copyAlignment(result) );
 
 									// the maximum possible score for this read has been found
 									if (result->score1 == max_SW_score) read.max_SW_score++;
@@ -686,3 +631,37 @@ void compute_lis_alignment
 	if (read.is04) read.flip34(opts); // flip back into 03 encoding
 
 } // ~compute_lis_alignment
+
+s_align2 copyAlignment(s_align* pAlign)
+{
+	s_align2 ret_align;
+	for (int i = 0; i < pAlign->cigarLen; i++)
+		ret_align.cigar.push_back(*pAlign->cigar++);
+	ret_align.index_num = pAlign->index_num;
+	ret_align.part = pAlign->part;
+	ret_align.readlen = pAlign->readlen;
+	ret_align.read_begin1 = pAlign->read_begin1;
+	ret_align.read_end1 = pAlign->read_end1;
+	ret_align.ref_begin1 = pAlign->ref_begin1;
+	ret_align.ref_end1 = pAlign->ref_end1;
+	ret_align.ref_seq = pAlign->ref_seq;
+	ret_align.score1 = pAlign->score1;
+	ret_align.strand = pAlign->strand;
+
+	return ret_align;
+}
+
+uint32_t findMinIndex(Read & read)
+{
+	uint32_t smallest_score = read.hits_align_info.alignv[0].score1;
+	uint32_t index = 0;
+	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
+	{
+		if (read.hits_align_info.alignv[i].score1 < smallest_score)
+		{
+			smallest_score = read.hits_align_info.alignv[i].score1;
+			index = i;
+		}
+	}
+	return index;
+}

@@ -19,16 +19,14 @@ class References; // forward
 
 struct alignment_struct2
 {
-	uint32_t min_index;
-	uint32_t max_index; // index into alignv for the reference with highest SW alignment score (calc in 'compute_lis_alignment')
+	uint32_t max_size; // max size of alignv i.e. max number of alignments to store (see options '-N', '--best N') TODO: remove?
+	uint32_t min_index; // index into alignv for the reference with lowest SW alignment score (see 'compute_lis_alignment')
+	uint32_t max_index; // index into alignv for the reference with highest SW alignment score (see 'compute_lis_alignment')
 	std::vector<s_align2> alignv;
 
-	alignment_struct2() : min_index(0), max_index(0) {}
+	alignment_struct2() : max_size(0), min_index(0), max_index(0) {}
 
 	alignment_struct2(std::string); // create from binary string
-
-	alignment_struct2(uint32_t max_size, uint32_t min, uint32_t max)
-		: min_index(min), max_index(max) {}
 
 	std::string toString(); // convert to binary string
 	size_t getSize() { 
@@ -40,6 +38,7 @@ struct alignment_struct2
 
 	void clear()
 	{
+		max_size = 0;
 		min_index = 0;
 		max_index = 0;
 		alignv.clear();
@@ -84,8 +83,6 @@ public:
 	alignment_struct2 hits_align_info;
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <------------------------------ store in database
-
-	//const char complement[4] = { 3, 2, 1, 0 }; // A <-> T, C <-> G
 
 	Read()
 		:
