@@ -490,7 +490,6 @@ void Output::report_sam
 	Read & read
 )
 {
-	//const char to_char[5] = { 'A','C','G','T','N' }; // TODO: moved to common.hpp::nt_map
 	if (read.is03) read.flip34(opts);
 
 	//if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
@@ -543,7 +542,9 @@ void Output::report_sam
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
 			samout << "\t*\t0\t0\t";
 			// (10) SEQ
-			samout << read.sequence;
+			if (read.hits_align_info.alignv[i].strand && read.reversed || !(read.hits_align_info.alignv[i].strand && read.reversed))
+				read.revIntStr();
+			samout << read.get5alphaSeq();
 			// (11) QUAL
 			samout << "\t";
 			// reverse-complement strand

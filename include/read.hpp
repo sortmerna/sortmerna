@@ -80,7 +80,9 @@ public:
 	// Only used during alignment on a particular index/part. No need to store.
 	// Reset on each new index part
 	std::vector<id_win> id_win_hits;
-	alignment_struct2 hits_align_info;
+
+	alignment_struct2 hits_align_info; // stored in DB
+
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <------------------------------ store in database
 
@@ -209,6 +211,24 @@ public:
 			isequence[i] = complement[(int)isequence[i]];
 		}
 		reversed = !reversed;
+	}
+
+	// convert isequence to alphabetic form i.e. to A,C,G,T,N
+	std::string get5alphaSeq() {
+		std::string seq;
+		// convert to alphabetic
+		for (int i = 0; i < isequence.size(); ++i)
+			seq += nt_map[(int)isequence[i]];
+
+		// substitute ambiguous chars
+		for (int i = 0; i < ambiguous_nt.size(); ++i)
+		{
+			if (reversed)
+				seq[(seq.size() - ambiguous_nt[i] - 1)] = 'N';
+			else
+				seq[ambiguous_nt[i]] = 'N';
+		}
+		return seq;
 	}
 
 	void validate() {

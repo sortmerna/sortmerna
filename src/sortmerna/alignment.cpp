@@ -233,11 +233,12 @@ void compute_lis_alignment
 			uint32_t lcs_que_start = 0;
 			uint32_t begin = it3->first;
                        
+			// TODO: remove? this 'while' Always does a single iteration because of line 245 below (++it3). It has 3 'break' instructions though. Convoluted.
 			while (it3 != hits_on_genome.end())
 			{
 				uint32_t stop = begin + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // lnwin_index_num
 				bool push = false;
-				while ((it3 != hits_on_genome.end()) && (it3->first <= stop))
+				while ( it3 != hits_on_genome.end() && it3->first <= stop )
 				{
 					vi_read.push_back(*it3);
 					push = true;
@@ -616,8 +617,8 @@ void compute_lis_alignment
 
 				if (vi_read.empty())
 				{
-					if (it3 != hits_on_genome.end())
-						begin = it3->first;
+					if (it3 != hits_on_genome.end()) // TODO: seems Always false
+						begin = it3->first; // TODO: seems never reached
 					else break;
 				}
 				else

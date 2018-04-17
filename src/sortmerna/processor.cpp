@@ -62,10 +62,12 @@ void Processor::run()
 		{
 			if ((singleStrand && opts.reverse) || count == 1)
 			{
-				if (!read.reversed)	read.revIntStr();
+				if (!read.reversed)
+					read.revIntStr();
 			}
 			callback(opts, index, refs, output, readstats, refstats, read, singleStrand || count == 1);
 			//opts.forward = false;
+			read.id_win_hits.clear(); // bug 46
 		}
 
 		if (read.isValid && !read.isEmpty) {
@@ -226,8 +228,6 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 {
 	output.openfiles(opts);
-
-	if (opts.samout) output.writeSamHeader(opts);
 
 	// output total number of reads
 	output.logstream << " Results:\n";
