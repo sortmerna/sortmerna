@@ -184,7 +184,6 @@ void Output::report_blast
 	Read & read
 )
 {
-	//const char to_char[5] = { 'A','C','G','T','N' }; // TODO: moved to common.cpp::nt_map
 	const char MATCH = '|';
 	const char MISMATCH = '*';
 	const char INDEL = '-';
@@ -193,8 +192,12 @@ void Output::report_blast
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 	char strandmark = '+';
+	bool flip03 = false; // flag to flip back to 03 on return
 
-	if (read.is03) read.flip34(opts);
+	if (read.is03) {
+		read.flip34();
+		flip03 = true;
+	}
 
 	// TODO: iterating all alignments for each reference part is an overhead. Alignments are pre-ordered, 
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
@@ -216,14 +219,13 @@ void Output::report_blast
 			std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
 			std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
 
-			if (read.hits_align_info.alignv[i].strand) {
-				if (read.reversed) read.revIntStr(); // reverse to forward strand
+			if (read.hits_align_info.alignv[i].strand)
 				strandmark = '+';
-			}
-			else {
-				if (!read.reversed) read.revIntStr(); // reverse-complement the read
+			else
 				strandmark = '-';
-			}
+
+			if (read.hits_align_info.alignv[i].strand == read.reversed)
+				read.revIntStr(); // reverse if necessary
 
 			// Blast-like pairwise alignment (only for aligned reads)
 			if (opts.blastFormat == BlastFormat::REGULAR)
@@ -443,7 +445,7 @@ void Output::report_blast
 		}
 	} // ~iterate all alignments
 
-	if (read.is04) read.flip34(opts);
+	if (flip03) read.flip34();
 } // ~ Output::report_blast
 
 
@@ -490,7 +492,11 @@ void Output::report_sam
 	Read & read
 )
 {
-	if (read.is03) read.flip34(opts);
+	bool flip03 = false;
+	if (read.is03) {
+		read.flip34();
+		flip03 = true;
+	}
 
 	//if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
 	//	return;
@@ -508,7 +514,8 @@ void Output::report_sam
 	// iterate read alignments
 	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
 	{
-		if (read.hits_align_info.alignv[i].index_num == refs.num && read.hits_align_info.alignv[i].part == refs.part)
+		if (read.hits_align_info.alignv[i].index_num == refs.num 
+			&& read.hits_align_info.alignv[i].part == refs.part)
 		{
 			// (1) Query
 			samout << read.getSeqId();
@@ -542,9 +549,10 @@ void Output::report_sam
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
 			samout << "\t*\t0\t0\t";
 			// (10) SEQ
-			if (read.hits_align_info.alignv[i].strand && read.reversed || !(read.hits_align_info.alignv[i].strand && read.reversed))
+
+			if ( read.hits_align_info.alignv[i].strand == read.reversed ) // XNOR
 				read.revIntStr();
-			samout << read.get5alphaSeq();
+			samout << read.get04alphaSeq();
 			// (11) QUAL
 			samout << "\t";
 			// reverse-complement strand
@@ -571,7 +579,7 @@ void Output::report_sam
 		}
 	} // ~for read.alignments
 
-	if (read.is04) read.flip34(opts);
+	if (flip03) read.flip34();
 } // ~Output::report_sam
 
 /* 

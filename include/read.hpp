@@ -214,20 +214,26 @@ public:
 	}
 
 	// convert isequence to alphabetic form i.e. to A,C,G,T,N
-	std::string get5alphaSeq() {
+	std::string get04alphaSeq() {
+		bool rev03 = false; // mark whether to revert back to 03
+		if (is03) {
+			flip34();
+			rev03 = true;
+		}
 		std::string seq;
 		// convert to alphabetic
 		for (int i = 0; i < isequence.size(); ++i)
 			seq += nt_map[(int)isequence[i]];
 
 		// substitute ambiguous chars
-		for (int i = 0; i < ambiguous_nt.size(); ++i)
-		{
-			if (reversed)
-				seq[(seq.size() - ambiguous_nt[i] - 1)] = 'N';
-			else
-				seq[ambiguous_nt[i]] = 'N';
-		}
+		//for (int i = 0; i < ambiguous_nt.size(); ++i)
+		//{
+		//	if (reversed)
+		//		seq[(seq.size() - ambiguous_nt[i] - 1)] = 'N';
+		//	else
+		//		seq[ambiguous_nt[i]] = 'N';
+		//}
+		if (rev03) flip34();
 		return seq;
 	}
 
@@ -295,7 +301,7 @@ public:
 	void unmarshallJson(KeyValueDatabase & kvdb);
 
 	// flip isequence between 03 - 04 alphabets
-	void flip34(Runopts & opts)
+	void flip34()
 	{
 		if (ambiguous_nt.size() > 0) 
 		{

@@ -365,7 +365,7 @@ void compute_lis_alignment
 							}
 
 							// put read into 04 encoding
-							if (read.is03) read.flip34(opts);
+							if (read.is03) read.flip34();
                        
 							// create profile for read
 							s_profile* profile = 0;
@@ -629,7 +629,7 @@ void compute_lis_alignment
 		}//~for all of the reference sequence candidates
 	}//if ( readhitf || readhitr > ratio )
 
-	if (read.is04) read.flip34(opts); // flip back into 03 encoding
+	if (read.is04) read.flip34(); // flip back into 03 encoding
 
 } // ~compute_lis_alignment
 
