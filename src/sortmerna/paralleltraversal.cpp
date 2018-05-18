@@ -77,8 +77,10 @@
   */
 //char complement[4] = { 3,2,1,0 };
 
-// Callback run in a Processor thread
 /* 
+ * Callback run in a Processor thread
+ * Called on each index * index_part * read.num_strands
+ *
  * @param isLastStrand Boolean flags when the last strand is passed for matching
  */
 void alignmentCb
@@ -97,7 +99,6 @@ void alignmentCb
 	read.lastPart = index.part;
 
 	// for reverse reads
-	//if (!opts.forward)
 	if (read.reversed)
 	{
 		// output the first num_alignments_gv alignments
@@ -137,65 +138,80 @@ void alignmentCb
 	}
 
 	uint32_t windowshift = opts.skiplengths[index.index_num][0];
-	// keep track of windows which have been already traversed in the burst trie
-	vector<bool> read_index_hits(read.sequence.size());
+	// keep track of windows (read positions) which have been already traversed in the burst trie
+	// initially all False
+	vector<bool> read_pos_searched(read.sequence.size());
 
 	uint32_t pass_n = 0; // Pass number (possible value 0,1,2)
 	uint32_t max_SW_score = read.sequence.size() *opts.match; // the maximum SW score attainable for this read
 
-	std::vector<MYBITSET> vbitwindowsf;
-	std::vector<MYBITSET> vbitwindowsr;
+	std::vector<UCHAR> bitvec; // window (prefix/suffix) bitvector
 
-	// TODO: these 2 lines need to be calculated once per index part. Move to index or some new calculation object
-	uint32_t bit_vector_size = (refstats.partialwin[index.index_num] - 2) << 2; // on each index part. Init in Main, accessed in Worker
-	uint32_t offset = (refstats.partialwin[index.index_num] - 3) << 2; // on each index part
+	// TODO: below 2 values are unique per index part. Move to index?
+	uint32_t bitvec_size = (refstats.partialwin[index.index_num] - 2) << 2; // e.g. 9 - 2 = 0000 0111 << 2 = 0001 1100 = 28
+	// Does this mark where in 32-bit the bitvector starts?
+	uint32_t offset = (refstats.partialwin[index.index_num] - 3) << 2; // e.g. 9 - 3 = 0000 0110 << 2 = 0001 1000 = 24
 
-	uint32_t minoccur = 0; // TODO: never updated. Always 0. What's the point?
-
-	// loop for each new Pass to granulate seed search intervals
+	// loop search positions on the read in multiple passes
+	// changing the step (windowshift) when necessary
 	for (bool search = true; search; )
 	{
-		uint32_t numwin = (read.sequence.size()
-			- refstats.lnwin[index.index_num]
-			+ windowshift) / windowshift; // number of k-mer windows fit along the sequence
+		// number of k-mer windows fit along the read given 
+		// the window size and a search step (windowshift)
+		uint32_t numwin = ( read.sequence.size()
+				- refstats.lnwin[index.index_num]
+				+ windowshift ) / windowshift;
 
-		uint32_t win_index = 0; // index of the window's first char in the sequence e.g. 0, 18, 36 if window.length = 18
+		uint32_t win_pos = 0; // position (index) of the window's first char in the sequence i.e. [0..read.sequence.length-1]
 		// iterate the windows
 		for (uint32_t win_num = 0; win_num < numwin; win_num++)
 		{
-			// skip position, seed at this position has already been searched for in a previous Pass
-			//if (read_index_hits[win_index]) goto check_score;
-			// search position, set search bit to true
-			//else read_index_hits[win_index].flip();
-			if (!read_index_hits[win_index])
+			if (read.is04) read.flip34(); // Make sure the read is in 03 encoding for index search
+
+			// skip position when the seed at this position has already been searched for in a previous Passes
+			if (!read_pos_searched[win_pos])
 			{
-				read_index_hits[win_index].flip();
+				read_pos_searched[win_pos].flip(); // mark position as searched
 				// this flag it set to true if a match is found during
 				// subsearch 1(a), to skip subsearch 1(b)
 				bool accept_zero_kmer = false;
 				// ids for k-mers that hit the database
-				vector<id_win> id_hits; // TODO: why not to add directly to 'id_win_hits'? - because id_win_hits may contain hits from different index parts.
-				vbitwindowsf.resize(bit_vector_size);
-				std::fill(vbitwindowsf.begin(), vbitwindowsf.end(), 0);
+				vector<id_win> id_hits; // TODO: add directly to 'id_win_hits'? - No, id_win_hits may contain hits from different index parts.
 
-				init_win_f(&read.isequence[win_index + refstats.partialwin[index.index_num]],
-					&vbitwindowsf[0],
-					&vbitwindowsf[4],
+				bitvec.resize(bitvec_size);
+				std::fill(bitvec.begin(), bitvec.end(), 0);
+
+				init_win_f(&read.isequence[win_pos + refstats.partialwin[index.index_num]],
+					&bitvec[0],
+					&bitvec[4],
 					refstats.numbvs[index.index_num]);
 
-				uint32_t keyf = 0;
-				char *keyf_ptr = &read.isequence[win_index];
-				// build hash for first half windows (foward and reverse)
-				// hash is just a numeric value formed by the chars of a string consisting of '0','1','2','3'
-				// e.g. "2233012" -> b10.1011.1100.0110 = x2BC6 = 11206
-				for (uint32_t g = 0; g < refstats.partialwin[index.index_num]; g++)
-				{
-					(keyf <<= 2) |= (uint32_t)(*keyf_ptr);
-					++keyf_ptr;
+				// the hash of the first half of the kmer window
+				uint32_t keyf = read.hashKmer(win_pos, refstats.partialwin[index.index_num]);
+
+				// TODO: remove in production
+				if (index.lookup_tbl.size() <= keyf) {
+					std::stringstream ss;
+					size_t vsize = index.lookup_tbl.size();
+					uint16_t idxn = index.index_num;
+					uint16_t idxp = index.part;
+					unsigned int id = read.id;
+					bool is03 = read.is03;
+					bool is04 = read.is04;
+					ss << __FILE__ << ":" << __LINE__
+						<< " ERROR: lookup index: " << keyf << " is larger than lookup_tbl.size: " << vsize 
+						<< " Index: " << idxn
+						<< " Part: " << idxp
+						<< " Read.id: " << id
+						<< " Read.is03: " << is03
+						<< " Read.is04: " << is04
+						<< " Aborting.." << std::endl;
+					std::cout << ss.str();
+					exit(EXIT_FAILURE);
 				}
 
 				// do traversal if the exact half window exists in the burst trie
-				if ((index.lookup_tbl[keyf].count > minoccur) && (index.lookup_tbl[keyf].trie_F != NULL))
+				if ((index.lookup_tbl[keyf].count > opts.minoccur) && (index.lookup_tbl[keyf].trie_F != NULL))
 				{
 					/* subsearch (1)(a) d([p_1],[w_1]) = 0 and d([p_2],[w_2]) <= 1;
 					*
@@ -211,43 +227,55 @@ void alignmentCb
 						index.lookup_tbl[keyf].trie_F,
 						0,
 						0,
-						// win2f_k1_ptr
-						&vbitwindowsf[0],
-						// win2f_k1_full
-						&vbitwindowsf[offset],
+						&bitvec[0],
+						&bitvec[offset],
 						accept_zero_kmer,
 						id_hits,
 						read.id,
-						win_index,
+						win_pos,
 						refstats.partialwin[index.index_num],
 						opts
 					);
 				} //~if exact half window exists in the burst trie
 
-				// only search if an exact match has not been found
+				// only search reversed kmer if an exact match has not been found for the forward
 				if (!accept_zero_kmer)
 				{
-					vbitwindowsr.resize(bit_vector_size);
-					std::fill(vbitwindowsr.begin(), vbitwindowsr.end(), 0);
+					//bitvec.resize(bitvec_size);
+					std::fill(bitvec.begin(), bitvec.end(), 0);
 
-					// build the first bitvector window
-					init_win_r(&read.isequence[win_index + refstats.partialwin[index.index_num] - 1],
-						&vbitwindowsr[0],
-						&vbitwindowsr[4],
+					// init the first bitvector window
+					init_win_r(&read.isequence[win_pos + refstats.partialwin[index.index_num] - 1],
+						&bitvec[0],
+						&bitvec[4],
 						refstats.numbvs[index.index_num]);
 
-					uint32_t keyr = 0;
-					char *keyr_ptr = &read.isequence[win_index + refstats.partialwin[index.index_num]];
+					// the hash of the second (rear) half of the kmer window
+					uint32_t keyr = read.hashKmer(win_pos + refstats.partialwin[index.index_num], refstats.partialwin[index.index_num]);
 
-					// build hash for first half windows (foward and reverse)
-					for (uint32_t g = 0; g < refstats.partialwin[index.index_num]; g++)
-					{
-						(keyr <<= 2) |= (uint32_t)(*keyr_ptr); //  - '0'
-						++keyr_ptr;
+					// TODO: remove in production
+					if (index.lookup_tbl.size() <= keyr) {
+						std::stringstream ss;
+						size_t vsize = index.lookup_tbl.size();
+						uint16_t idxn = index.index_num;
+						uint16_t idxp = index.part;
+						unsigned int id = read.id;
+						bool is03 = read.is03;
+						bool is04 = read.is04;
+						ss << __LINE__ << " Thread: " << std::this_thread::get_id()
+							<< " ERROR: lookup index: " << keyr << " is larger than lookup_tbl.size: " << vsize
+							<< " Index: " << idxn
+							<< " Part: " << idxp
+							<< " Read.id: " << id
+							<< " Read.is03: " << is03
+							<< " Read.is04: " << is04
+							<< " Aborting.." << std::endl;
+						std::cout << ss.str();
+						exit(EXIT_FAILURE);
 					}
 
 					// continue subsearch (1)(b)
-					if ((index.lookup_tbl[keyr].count > minoccur) && (index.lookup_tbl[keyr].trie_R != NULL))
+					if ( index.lookup_tbl[keyr].count > opts.minoccur && index.lookup_tbl[keyr].trie_R != NULL )
 					{
 						/* subsearch (1)(b) d([p_1],[w_1]) = 1 and d([p_2],[w_2]) = 0;
 						*
@@ -263,12 +291,12 @@ void alignmentCb
 							index.lookup_tbl[keyr].trie_R,
 							0,
 							0,
-							&vbitwindowsr[0], /* win1r_k1_ptr */
-							&vbitwindowsr[offset], /* win1r_k1_full */
+							&bitvec[0],
+							&bitvec[offset],
 							accept_zero_kmer,
 							id_hits,
 							read.id,
-							win_index,
+							win_pos,
 							refstats.partialwin[index.index_num], 
 							opts);
 					}//~if exact half window exists in the reverse burst trie                    
@@ -283,7 +311,7 @@ void alignmentCb
 					}
 					read.readhit++;
 				}
-			}
+			} // ~if not read_pos_searched[win_pos]
 
 			// continue read analysis if threshold seeds were matched
 			if (win_num == numwin - 1)
@@ -296,7 +324,7 @@ void alignmentCb
 				);
 
 				// the read was not accepted at current window skip length,
-				// decrease the window skip length
+				// use the next (smaller) window skip length
 				if (search)
 				{
 					// last (3rd) Pass has been made
@@ -305,15 +333,16 @@ void alignmentCb
 					{
 						// the next interval size equals to the current one, skip it
 						while ( pass_n < 3 &&
-							opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1]) ++pass_n;
+							opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1])
+							++pass_n;
 						if (++pass_n > 2) search = false;
 						// set interval skip length for next Pass
 						else windowshift = opts.skiplengths[index.index_num][pass_n];
 					}
 				}
-				break; // do not offset final window on read
+				break; // last possible position reached for given window and skip length -> go to the next skip length
 			}//~( win_num == NUMWIN-1 )
-			win_index += windowshift;
+			win_pos += windowshift;
 		}//~for (each window)                
 			//~while all three window skip lengths have not been tested, or a match has not been found
 	}// ~while (search);
@@ -371,7 +400,8 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	// perform alignment
 	auto starts = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
-	// loop through every index passed to option --ref (ex. SSU 16S and SSU 18S)
+
+	// loop through every index passed to option '--ref'
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index

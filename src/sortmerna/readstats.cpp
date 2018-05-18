@@ -166,6 +166,7 @@ std::string Readstats::toString()
 	val = total_reads_mapped_cov.load();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_denovo_clustering)), sizeof(total_reads_denovo_clustering), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&stats_calc_done)), sizeof(stats_calc_done), std::back_inserter(buf));
 
 	// vector reads_matched_per_db
 	size_t reads_matched_per_db_size = reads_matched_per_db.size();
@@ -202,6 +203,9 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 
 	std::memcpy(static_cast<void*>(&total_reads_denovo_clustering), bstr.data() + offset, sizeof(total_reads_denovo_clustering));
 	offset += sizeof(total_reads_denovo_clustering);
+
+	std::memcpy(static_cast<void*>(&stats_calc_done), bstr.data() + offset, sizeof(stats_calc_done));
+	offset += sizeof(stats_calc_done);
 
 	size_t reads_matched_per_db_size = 0;
 	std::memcpy(static_cast<void*>(&reads_matched_per_db_size), bstr.data() + offset, sizeof(reads_matched_per_db_size));

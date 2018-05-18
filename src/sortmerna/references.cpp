@@ -65,6 +65,8 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		{
 			if (!rec.isEmpty)
 			{
+				rec.id = rec.getId();
+				rec.nid = num_seq_read;
 				buffer.push_back(rec);
 				num_seq_read++;
 			}
@@ -81,6 +83,8 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		{
 			if (!rec.isEmpty)
 			{
+				rec.id = rec.getId();
+				rec.nid = num_seq_read;
 				buffer.push_back(rec); // push record created before this current header
 				rec.isEmpty = true;
 				num_seq_read++;
@@ -147,6 +151,24 @@ std::string References::convertChar(int idx)
 		}
 	}
 	return chstr;
+}
+
+/* 
+ * For debugging needs.
+ * Find a reference index given a header.
+ */
+int References::findref(std::string id)
+{
+	int retpos = -1;
+	for (int i = 0; i < buffer.size(); ++i)
+	{
+		if (std::string::npos != buffer[i].header.find(id)) {
+			retpos = i;
+			break; 
+		}
+	}
+
+	return retpos;
 }
 
 void References::clear()

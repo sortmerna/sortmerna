@@ -19,6 +19,8 @@ class References {
 public:
 	struct BaseRecord
 	{
+		size_t nid; // index into Reference file
+		std::string id; // ID from header
 		std::string header;
 		std::string sequence;
 		std::string quality; // "" (fasta) | "xxx..." (fastq)
@@ -48,6 +50,7 @@ public:
 	void load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats); // load references into the buffer given index number and index part
 	void convert_fix(std::string & seq); // convert sequence to numberical form and fix ambiguous chars
 	std::string convertChar(int idx); // convert numerical form to char string
+	int findref(std::string id);
 	void clear();
 
 public:

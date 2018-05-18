@@ -124,7 +124,7 @@ std::string Read::toString()
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_SW_score)), sizeof(max_SW_score), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_alignments)), sizeof(num_alignments), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&readhit)), sizeof(readhit), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&best)), sizeof(best), std::back_inserter(buf));
+	//std::copy_n(static_cast<char*>(static_cast<void*>(&best)), sizeof(best), std::back_inserter(buf));
 
 	// id_win_hits vector - TODO: remove?
 #if 0
@@ -172,8 +172,8 @@ bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&readhit), bstr.data() + offset, sizeof(readhit));
 	offset += sizeof(readhit);
 
-	std::memcpy(static_cast<void*>(&best), bstr.data() + offset, sizeof(best));
-	offset += sizeof(best);
+	//std::memcpy(static_cast<void*>(&best), bstr.data() + offset, sizeof(best));
+	//offset += sizeof(best);
 
 	// std::vector<id_win> id_win_hits TODO: remove?
 #if 0
@@ -261,3 +261,25 @@ void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatc
 		}
 	}
 } // ~Read::calcMismatchGapId
+
+/* 
+ * Calculate the numerical value (hash) of a kmer given its position on the read and its length.
+ * The hash is just a numeric value formed by the chars of a string consisting of '0','1','2','3'
+ * e.g. "2233012" -> b10.1011.1100.0110 = x2BC6 = 11206
+ *
+ * Use to lookup the 'Index::lookup_tbl'
+ *
+ * @param pos  Kmer position on the read
+ * @param len  Kmer Length
+ */
+uint32_t Read::hashKmer(uint32_t pos, uint32_t len)
+{
+	uint32_t hash = 0;
+	char *pKmer = &isequence[pos];
+	for (uint32_t i = 0; i < len; i++)
+	{
+		(hash <<= 2) |= (uint32_t)(*pKmer);
+		++pKmer;
+	}
+	return hash;
+}

@@ -113,3 +113,95 @@ void Reader::read()
 	}
 	ifs.close();
 } // ~Reader::read
+
+bool Reader::loadReadByIdx(Runopts & opts, Read & read)
+{
+	std::stringstream ss;
+	bool isok = false;
+
+	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
+	if (!ifs.is_open()) 
+	{
+		std::cerr << __FILE__ << ":" << __LINE__ << " failed to open " << opts.readsfile << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		std::string line;
+		unsigned int read_id = 0; // read ID
+		bool isFastq = true;
+		bool lastRec = false; // lastRec is to make one iteration past the EOF
+		Gzip gzip(opts);
+
+		auto t = std::chrono::high_resolution_clock::now();
+
+		// read lines from the reads file
+		for (int count = 0, stat = 0; ; ) // count lines in a single read
+		{
+			stat = gzip.getline(ifs, line);
+			if (stat == RL_END) break;
+
+			if (stat == RL_ERR)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				exit(1);
+			}
+
+			if (line.empty()) continue;
+
+			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+
+			if ( line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START )
+			{
+				if (!read.isEmpty) {
+					isok = true;
+					break; // read is ready
+				}
+
+				// add header -->
+				if (read_id == read.id)
+				{
+					isFastq = (line[0] == FASTQ_HEADER_START);
+					read.format = isFastq ? Format::FASTQ : Format::FASTA;
+					read.header = line;
+					read.isEmpty = false;
+				}
+				else {
+					++read_id;
+					count = 0; // for fastq
+				}
+			} // ~if header line
+			else if ( !read.isEmpty )
+			{
+				// add sequence -->
+				if ( isFastq )
+				{
+					++count;
+					if ( line[0] == '+' ) continue;
+					if ( count == 3 )
+					{
+						read.quality = line; // last line in Fastq read
+						continue;
+					}
+				}
+				read.sequence += line;
+			}
+		} // ~for getline
+
+		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+
+		//ss << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: "
+		//	<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id << std::endl;
+		//std::cout << ss.str(); ss.str("");
+	}
+
+	ifs.close();
+
+	return isok;
+
+} // ~Reader::loadRead
+
+bool Reader::loadReadById(Runopts & opts, Read & read)
+{
+	return true;
+} // ~Reader::loadReadById

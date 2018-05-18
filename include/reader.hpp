@@ -13,6 +13,8 @@
 #include "kvdb.hpp"
 #include "options.hpp"
 
+class Read; // forward
+
 // reads Reads and Readstats files, generates Read objects and pushes them onto ReadsQueue
 class Reader {
 public:
@@ -27,6 +29,8 @@ public:
 
 	void operator()() { read(); }
 	void read();
+	static bool loadReadByIdx(Runopts & opts, Read & read);
+	static bool loadReadById(Runopts & opts, Read & read);
 private:
 	std::string id;
 	int loopCount; // counter of processing iterations.

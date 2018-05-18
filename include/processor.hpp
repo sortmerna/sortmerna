@@ -78,7 +78,8 @@ public:
 		Runopts & opts,
 		References & refs,
 		Readstats & readstats,
-		void(*callback)(Read & read, Readstats & readstats, References & refs, Runopts & opts)
+		Refstats & refstats,
+		void(*callback)(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts)
 	) :
 		id(id),
 		readQueue(readQueue),
@@ -86,6 +87,7 @@ public:
 		opts(opts),
 		refs(refs),
 		readstats(readstats),
+		refstats(refstats),
 		callback(callback)
 	{}
 
@@ -93,7 +95,7 @@ public:
 
 protected:
 	void run();
-	void(*callback)(Read & read, Readstats & readstats, References & refs, Runopts & opts);
+	void(*callback)(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
 
 protected:
 	std::string id;
@@ -103,6 +105,7 @@ protected:
 	Runopts & opts;
 	References & refs;
 	Readstats & readstats;
+	Refstats & refstats;
 }; // ~class PostProcessor
 
 /* generates output after alignment and post-processing are done */

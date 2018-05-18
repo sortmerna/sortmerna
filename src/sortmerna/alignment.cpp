@@ -30,6 +30,7 @@
  */
 
 #include <sstream>
+#include <fstream>
 
 #include "alignment.hpp"
 #include "read.hpp"
@@ -42,19 +43,56 @@
 s_align2 copyAlignment(s_align* pAlign);
 uint32_t findMinIndex(Read & read);
 
-bool
-smallest(const mypair &a, const mypair &b)
+#define DEBUG_ALIGN
+#ifdef DEBUG_ALIGN
+// only for Debug
+std::string LOGF = "C:/a01_projects/clarity_genomics/logs/debug.log";
+void debug(std::string text)
 {
-	if (a.first == b.first) return (a.second < b.second);
-	return (a.first < b.first);
+	std::ofstream log;
+	log.open(LOGF, std::ios::app);
+	log << text;
+	log.close();
 }
 
-bool
-largest(const mypair &a, const mypair &b)
+void debug_seq_kmer_freq_vec(int readid, int part, vector<uint32pair> & seq_kmer_freq_vec)
 {
-	if (a.first == b.first) return (a.second > b.second);
-	return (a.first > b.first);
+	std::stringstream ss;
+	ss << "=== seq_kmer_freq_vec ===" << std::endl;
+	ss << "Read ID: " << readid << " Part: " << part << std::endl;
+	ss << "Reference #, Kmer frequency" << std::endl;
+	ss << "---------------------------" << std::endl;
+	for (auto pair : seq_kmer_freq_vec)
+		ss << pair.first << " " << pair.second << std::endl;
+	debug(ss.str());
 }
+
+void debug_hits_on_genome(vector<uint32pair> & hits_on_genome)
+{
+	std::stringstream ss;
+	ss << "=== hits_on_genome ===" << std::endl;
+	ss << "Position on reference, position on read" << std::endl;
+	ss << "---------------------------------------" << std::endl;
+	for (uint32pair pair : hits_on_genome)
+	{
+		ss << pair.first << "  " << pair.second << std::endl;
+	}
+	debug(ss.str());
+}
+
+void debug_hits_on_genome2(std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> hits)
+{
+	std::stringstream ss;
+	ss << "=== hits_on_genome ===" << std::endl;
+	ss << "Reference, Position on reference, Position on read" << std::endl;
+	ss << "---------------------------------------" << std::endl;
+	for (auto triple : hits)
+	{
+		ss << std::get<0>(triple) << "  " << std::get<1>(triple) << "  " << std::get<2>(triple) << std::endl;
+	}
+	debug(ss.str());
+}
+#endif
 
 /*
  *
@@ -104,9 +142,11 @@ void find_lis(
 
 
 	for (u = b.size(), v = b.back(); u--; v = p[v]) b[u] = v;
-}
+} // ~find_lis
 
-
+/* 
+ * called on each idx * part * read * strand * [1..max opts.skiplengths[index_num].size (3 by default)] 
+ */
 void compute_lis_alignment
 	(
 		Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats,
@@ -124,116 +164,180 @@ void compute_lis_alignment
 	// continue analysis of read
 	if (read.readhit >= (uint32_t)opts.seed_hits) // default seed_hits_gv = 2
 	{
-		// map of <reference sequence number : number of occurrences of a k-mer on the reference>
-		map<uint32_t, uint32_t> most_frequent_seq_t;
+		// frequency map of k-mer occurrences on the references i.e.
+		// <reference number : number of the k-mer occurrences>
+		map<uint32_t, uint32_t> seq_kmer_freq_map;
+		// vector to hold frequency map content for Sorting (map cannot be sorted)
+		vector<uint32pair> seq_kmer_freq_vec;
 		map<uint32_t, uint32_t>::iterator map_it;
 		uint32_t max_seq = 0;
 		uint32_t max_occur = 0;
 
-		// STEP 2: for every reference sequence, compute the number of
-		// window hits belonging to it
-		for (uint32_t i = 0; i < read.id_win_hits.size(); i++)
+		// STEP 2: Find all candidate references by using Read's kmers hits information.
+		//         For every reference, compute the number of kmers' hits belonging to it
+		for (auto hit : read.id_win_hits)
 		{
-			uint32_t _id = read.id_win_hits[i].id;
-			// number of entries in the positions table for this id
-			uint32_t num_hits = index.positions_tbl[_id].size;
-			// pointer to the seq_pos array in the positions table for this id
-			seq_pos* positions_tbl_ptr = index.positions_tbl[_id].arr;
-			// loop through every position of id
-			for (uint32_t j = 0; j < num_hits; j++)
+			seq_pos* positions_tbl_ptr = index.positions_tbl[hit.id].arr;
+			// loop all positions of id
+			for (uint32_t j = 0; j < index.positions_tbl[hit.id].size; j++)
 			{
 				uint32_t seq = positions_tbl_ptr++->seq;
-				// sequence already exists in the map, increment it's value
-				if ((map_it = most_frequent_seq_t.find(seq)) != most_frequent_seq_t.end())
-					map_it->second++;
-				// sequence doesn't exist, add it
-				else most_frequent_seq_t[seq] = 1;
+				if ((map_it = seq_kmer_freq_map.find(seq)) != seq_kmer_freq_map.end())
+					map_it->second++; // sequence already in the map, increment its frequency value
+				else
+					seq_kmer_freq_map[seq] = 1; // sequence not in the map, add it
 			}
 		}
 
-		// list of pairs <number of occurrences of a k-mer on the reference, reference sequence number> for k-mers with frequency >= seed_hits_gv
-		vector<mypair> most_frequent_seq;
-		// copy list of occurrences from map to vector for sorting
-		for (map_it = most_frequent_seq_t.begin(); map_it != most_frequent_seq_t.end(); map_it++)
+		// copy frequency map to vector for sorting
+		// consider only candidate references that have enough seed hits
+		for (auto freq_pair: seq_kmer_freq_map)
 		{
-			// pass candidate reference sequences for further analyses
-			// only if they have enough seed hits
-			if (map_it->second >= (uint32_t)opts.seed_hits)
-				most_frequent_seq.push_back(mypair(map_it->second, map_it->first));
+			if (freq_pair.second >= (uint32_t)opts.seed_hits)
+				seq_kmer_freq_vec.push_back(freq_pair);
 		}
-		most_frequent_seq_t.clear();
-		// sort the highest scoring sequences to the head of the array
-		sort(most_frequent_seq.begin(), most_frequent_seq.end(), largest);
 
-		// STEP 3: for each reference sequence candidate
-		// (starting from highest scoring)
-		for (uint32_t k = 0; k < most_frequent_seq.size(); k++)
+		seq_kmer_freq_map.clear();
+
+		// sort sequences by frequency in descending order
+		std::sort(seq_kmer_freq_vec.begin(), seq_kmer_freq_vec.end(), 
+			[](std::pair<uint32_t, uint32_t> e1, std::pair<uint32_t, uint32_t> e2) {
+			if (e1.second == e2.second) 
+				return e1.first > e2.first; // order seq numbers descending for equal frequencies
+			return e1.second > e2.second; // order frequencies descending
+		});
+
+#ifdef DEBUG_ALIGN
+		if (read.id == 480 && !read.reversed && refs.part == 1)
+			debug_seq_kmer_freq_vec(read.id, refs.part, seq_kmer_freq_vec);
+#endif
+
+		// STEP 3: for each reference sequence candidate,
+		//		starting from highest scoring.
+		for (uint32_t k = 0; k < seq_kmer_freq_vec.size(); k++)
 		{
-			// the maximum scoring alignment has been found, do not search for anymore alignments
-			if ((opts.num_best_hits != 0) && (read.max_SW_score == opts.num_best_hits)) break;
-			max_occur = most_frequent_seq[k].first;
-			max_seq = most_frequent_seq[k].second;
+			// the maximum scoring alignment has been found - stop searching for more alignments
+			if (opts.num_best_hits != 0 && read.max_SW_score == opts.num_best_hits) {
+#ifdef DEBUG_ALIGN
+				if (read.id == 480 && !read.reversed && refs.part == 1)
+				{
+					std::stringstream ss;
+					ss << " Breaking OUT num_best_hits: " << opts.num_best_hits << " max_SW_score: " << read.max_SW_score << std::endl;
+					debug(ss.str());
+				}
+#endif
+				break;
+			}
+
+			max_seq = seq_kmer_freq_vec[k].first;
+			max_occur = seq_kmer_freq_vec[k].second;
               
-			// not enough window hits, try to collect more hits or go to next read
-			if (max_occur < (uint32_t)opts.seed_hits) break;
+			// not enough window hits, try to collect more hits or next read
+			if (max_occur < (uint32_t)opts.seed_hits) {
+#ifdef DEBUG_ALIGN
+				if (read.id == 480 && !read.reversed && refs.part == 1)
+				{
+					std::stringstream ss;
+					ss << " Breaking OUT max_occur: " << max_occur << " seed_hits: " << opts.seed_hits << std::endl;
+					debug(ss.str());
+				}
+#endif
+				break;
+			}
 
 			// update number of reference sequences remaining to check
-			if ((opts.min_lis > 0) && aligned && (k > 0))
+			// only decrement read.best if the current ref sequence to check
+			// has a lower seed count than the previous one
+			if ( opts.min_lis > 0 && aligned && k > 0 && max_occur < seq_kmer_freq_vec[k - 1].second )
 			{
-				// only decrement best_x if the next ref sequence to check
-				// has a lower seed count than the previous one
-				if (max_occur < most_frequent_seq[k - 1].first)
-				{
+				read.best--;
+				if (read.best < 1) {
+#ifdef DEBUG_ALIGN
+					if (read.id == 480 && !read.reversed && refs.part == 1)
 					{
-						read.best--;
+						std::stringstream ss;
+						ss << " Breaking OUT read.best: " << read.best << " opts.min_lis: " << opts.min_lis << std::endl;
+						debug(ss.str());
 					}
-					if (read.best < 1) break;
+#endif
+					break;
 				}
 			}
 
 			// check if the maximum number of alignments per read
 			// (--num_alignments INT) have been output
-			if (opts.num_alignments > 0)
+			if (opts.num_alignments > 0 && read.num_alignments <= 0)
 			{
-				if (read.num_alignments <= 0) break;
+#ifdef DEBUG_ALIGN
+				if (read.id == 480 && !read.reversed && refs.part == 1)
+				{
+					std::stringstream ss;
+					ss << " Breaking OUT opts.num_alignments: " << opts.num_alignments << " read.num_alignments" << read.num_alignments << std::endl;
+					debug(ss.str());
+				}
+#endif
+				break;
 			}
 
-			// STEP 4: collect all the genome positions belonging to the
-			// reference candidate from the table of positions computed
-			// during indexing
-			vector<mypair> hits_on_genome;
-			uint32_t count = 0;
-			for (uint32_t i = 0; i < read.id_win_hits.size(); i++)
+			// STEP 4: 
+			// collect all the genome positions belonging to the reference candidate
+			vector<uint32pair> hits_on_genome;
+#ifdef DEBUG_ALIGN
+			std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> hits_on_genome2;
+			if (read.id == 480 && !read.reversed && refs.part == 1)
 			{
-				uint32_t _id = read.id_win_hits[i].id;
-				uint32_t num_hits = index.positions_tbl[_id].size;
-				seq_pos* positions_tbl_ptr = index.positions_tbl[_id].arr;
+				std::stringstream ss;
+				ss << "=== Analyzing Reference ID: " << max_seq << " Frequency: " << max_occur << " ref_kmer_freq index: " << k << std::endl;
+				debug(ss.str());
+			}
+#endif
+			for ( auto hit: read.id_win_hits )
+			{
+				uint32_t num_hits = index.positions_tbl[hit.id].size;
+				seq_pos* positions_tbl_ptr = index.positions_tbl[hit.id].arr;
 				// loop through every position of id
 				for (uint32_t j = 0; j < num_hits; j++)
 				{
 					if (positions_tbl_ptr->seq == max_seq)
 					{
-						count++;
-						hits_on_genome.push_back(mypair(positions_tbl_ptr->pos, read.id_win_hits[i].win)); // id_win_hits[i]
+						hits_on_genome.push_back(uint32pair(positions_tbl_ptr->pos, hit.win));
+#ifdef DEBUG_ALIGN
+						hits_on_genome2.push_back(std::make_tuple(max_seq, positions_tbl_ptr->pos, hit.win));
+#endif
 					}
 					positions_tbl_ptr++;
 				}
 			}
-			// sort the positions on genome in ascending order
-			sort(hits_on_genome.begin(), hits_on_genome.end(), smallest);
+
+			// sort the positions in ascending order
+			std::sort(hits_on_genome.begin(), hits_on_genome.end(), [](uint32pair e1, uint32pair e2) {
+				if (e1.first == e2.first) 
+					return (e1.second < e2.second); // order read positions ascending for equal reference positions
+				return (e1.first < e2.first);
+			}); // smallest
+
+#ifdef DEBUG_ALIGN
+			if (read.id == 480 && !read.reversed && refs.part == 1)
+			{
+				//debug_hits_on_genome(hits_on_genome);
+				debug_hits_on_genome2(hits_on_genome2);
+			}
+
+#endif
 			// iterate over the set of hits, output windows of
 			// length == read which have at least ratio hits
-			vector<mypair>::iterator it3 = hits_on_genome.begin();
-			deque<mypair> vi_read;
-			deque<mypair>::iterator deq;
+			vector<uint32pair>::iterator it3 = hits_on_genome.begin();
+			deque<uint32pair> vi_read;
+			deque<uint32pair>::iterator deq;
+
 			// STEP 5: run a sliding window of read's length across
-			// the genome, and search for windows with enough
-			// k-mer hits
+			// the genome, and search for windows with enough k-mer hits
 			uint32_t lcs_ref_start = 0;
 			uint32_t lcs_que_start = 0;
 			uint32_t begin = it3->first;
                        
-			// TODO: remove? this 'while' Always does a single iteration because of line 245 below (++it3). It has 3 'break' instructions though. Convoluted.
+			// TODO: remove this 'while'? - Always does a single iteration because of line '++it3'. 
+			// It has 3 'break' instructions though. Convoluted.
 			while (it3 != hits_on_genome.end())
 			{
 				uint32_t stop = begin + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // lnwin_index_num
@@ -364,7 +468,7 @@ void compute_lis_alignment
 								}
 							}
 
-							// put read into 04 encoding
+							// put read into 04 encoding before SSW
 							if (read.is03) read.flip34();
                        
 							// create profile for read
@@ -375,7 +479,7 @@ void compute_lis_alignment
 
 							result = ssw_align(
 								profile,
-								(int8_t*)refs.buffer[max_seq].sequence.c_str() + align_ref_start - head, // TODO: review this
+								(int8_t*)refs.buffer[max_seq].sequence.c_str() + align_ref_start - head,
 								align_length,
 								opts.gap_open,
 								opts.gap_extension,
@@ -389,10 +493,8 @@ void compute_lis_alignment
 							if (profile != 0) init_destroy(&profile);
 
 							// check alignment satisfies all thresholds
-							if (result != 0)
-							{
-								if (result->score1 > refstats.minimal_score[index.index_num]) aligned = true;
-							}
+							if ( result != 0 && result->score1 > refstats.minimal_score[index.index_num] )
+									aligned = true;
 
 							result->index_num = index.index_num;
 							result->part = index.part;
@@ -516,45 +618,21 @@ void compute_lis_alignment
 								// output the Nth alignment (set by --num_alignments [INT] parameter)
 								else if (opts.num_alignments > -1)
 								{
+									// add alignment to the read. TODO: check how this affects the old logic
+									read.hits_align_info.alignv.push_back(copyAlignment(result));
+
+									// the maximum possible score for this read has been found
+									if (result->score1 == max_SW_score) read.max_SW_score++;
+
 									// update number of alignments to output per read
 									if (opts.num_alignments > 0) read.num_alignments--; // TODO: why decrement?
 
 									// get the edit distance between reference and read (serves for
 									// SAM output and computing %id and %query coverage)
-									double id = 0;
-									//char to_char[5] = { 'A','C','G','T','N' }; // TODO: moved to nt_map
-									const char* ref_seq_ptr = refs.buffer[max_seq].sequence.data(); // reference_seq  [(2 * (int)max_seq) + 1]
-									const char* read_seq_ptr = read.isequence.data(); // myread
-									int32_t qb = result->ref_begin1;
-									int32_t pb = result->read_begin1;
+									uint32_t id = 0;
 									uint32_t mismatches = 0;
 									uint32_t gaps = 0;
-
-									for (uint32_t c2 = 0; c2 < result->cigarLen; ++c2)
-									{
-										uint32_t letter = 0xf & *(result->cigar + c2);
-										uint32_t length = (0xfffffff0 & *(result->cigar + c2)) >> 4;
-										if (letter == 0)
-										{
-											for (uint32_t p = 0; p < length; ++p)
-											{
-												if ((char)nt_map[(int)*(ref_seq_ptr + qb)] != (char)nt_map[(int)*(read_seq_ptr + pb)]) ++mismatches;
-												else ++id;
-												++qb;
-												++pb;
-											}
-										}
-										else if (letter == 1)
-										{
-											pb += length;
-											gaps += length;
-										}
-										else
-										{
-											qb += length;
-											gaps += length;
-										}
-									}
+									read.calcMismatchGapId(refs, read.hits_align_info.alignv.size()-1, mismatches, gaps, id);
 
 									int32_t align_len = abs(result->read_end1 + 1 - result->read_begin1);
 									int32_t total_pos = mismatches + gaps + id;
@@ -567,7 +645,7 @@ void compute_lis_alignment
 
 									// the alignment passed the %id and %query coverage threshold
 									// output it (SAM, BLAST and FASTA/Q)
-									if ((align_id_round >= opts.align_id) && (align_cov_round >= opts.align_cov) && read_to_count)
+									if ( align_id_round >= opts.align_id && align_cov_round >= opts.align_cov && read_to_count)
 									{
 										++readstats.total_reads_mapped_cov;
 										read_to_count = false;
@@ -576,12 +654,6 @@ void compute_lis_alignment
 										// it passed the %id/coverage thersholds
 										if (opts.de_novo_otu) read.hit_denovo = false;
 									}
-
-									// add alignment to the read. TODO: check how this affects the old logic
-									read.hits_align_info.alignv.push_back( copyAlignment(result) );
-
-									// the maximum possible score for this read has been found
-									if (result->score1 == max_SW_score) read.max_SW_score++;
 
 									if (result != 0) free(result); // free alignment info
 								}//~if output all alignments
@@ -628,9 +700,6 @@ void compute_lis_alignment
 			}//~for all reference sequence length                   
 		}//~for all of the reference sequence candidates
 	}//if ( readhitf || readhitr > ratio )
-
-	if (read.is04) read.flip34(); // flip back into 03 encoding
-
 } // ~compute_lis_alignment
 
 s_align2 copyAlignment(s_align* pAlign)

@@ -73,8 +73,8 @@ public:
 	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
 	uint16_t max_SW_score = 0; // Max Smith-Waterman score
 	int32_t num_alignments = 0; // number of alignments to output per read
-	uint32_t readhit = 0; // number of seeds matches between read and database. Total number of hits?
-	int32_t best = 0; // init with min_lis_gv
+	uint32_t readhit = 0; // number of seeds matches between read and database. (? readhit == id_win_hits.size)
+	int32_t best = 0; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
 
 	// array of positions of window hits on the reference sequence in given index/part. 
 	// Only used during alignment on a particular index/part. No need to store.
@@ -215,25 +215,14 @@ public:
 
 	// convert isequence to alphabetic form i.e. to A,C,G,T,N
 	std::string get04alphaSeq() {
-		bool rev03 = false; // mark whether to revert back to 03
-		if (is03) {
-			flip34();
-			rev03 = true;
-		}
+		//bool rev03 = false; // mark whether to revert back to 03
 		std::string seq;
+		if (is03) flip34();
 		// convert to alphabetic
 		for (int i = 0; i < isequence.size(); ++i)
 			seq += nt_map[(int)isequence[i]];
 
-		// substitute ambiguous chars
-		//for (int i = 0; i < ambiguous_nt.size(); ++i)
-		//{
-		//	if (reversed)
-		//		seq[(seq.size() - ambiguous_nt[i] - 1)] = 'N';
-		//	else
-		//		seq[ambiguous_nt[i]] = 'N';
-		//}
-		if (rev03) flip34();
+		//if (rev03) flip34();
 		return seq;
 	}
 
@@ -333,4 +322,6 @@ public:
 		id.erase(id.begin(), std::find_if(id.begin(), id.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 		return id;
 	}
+
+	uint32_t hashKmer(uint32_t pos, uint32_t len);
 }; // ~class Read

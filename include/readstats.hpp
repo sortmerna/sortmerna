@@ -23,12 +23,12 @@ class KeyValueDatabase;
 struct Readstats {
 	Runopts & opts;
 
-	// TODO: synchronize - Computed in worker thread (per read) - shared
-	uint32_t min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
-	uint32_t max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
+	std::atomic_uint32_t min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
+	std::atomic_uint32_t max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
 	std::atomic_uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Thread accessed: 'compute_lis_alignment'
 	// thread accessed: 'compute_lis_alignment'
 	std::atomic_uint64_t total_reads_mapped_cov; // total number of reads mapped passing E-value threshold and %id && %query coverage thresholds
+
 	char filesig = FASTA_HEADER_START;
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
@@ -39,14 +39,17 @@ struct Readstats {
 	// TODO: thread accessed: 'compute_lis_alignment' - synchronize
 	std::vector<uint64_t> reads_matched_per_db; // total number of reads matched for each database.
 	// TODO: currently accessed in single thread ('computeStats') but potentially could be multiple threads
+	// Setter: 'computeStats'. User: 'writeLog'
 	uint64_t total_reads_denovo_clustering; // total number of reads for de novo clustering.
 
-	// Clustering of reads around references by similarity i.e. 
-	// {ref: [read,read,...], ref: [read,read...], ...}
+	// Clustering of reads around references by similarity i.e. {ref: [read,read,...], ref: [read,read...], ...}
 	// calculated after alignment is done on all reads
+	// Setter: 'computeStats'. User: 'printOtuMap'
+	// TODO: Store in DB? Can be very big.
 	std::map<std::string, std::vector<std::string>> otu_map;
 
 	static const std::string dbkey;
+	bool stats_calc_done; // flags 'computeStats' was called
 
 	Readstats(Runopts & opts)
 		:
@@ -59,7 +62,8 @@ struct Readstats {
 		full_file_size(0),
 		full_read_main(0),
 		reads_matched_per_db(opts.indexfiles.size(), 0),
-		total_reads_denovo_clustering(0)
+		total_reads_denovo_clustering(0),
+		stats_calc_done(false)
 	{
 		calcSuffix();
 		opts.exit_early = check_file_format();

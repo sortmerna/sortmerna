@@ -61,7 +61,7 @@ using namespace std;
     A data structure holding two variables
     of type uint32_t.
 */
-typedef pair<uint32_t,uint32_t> mypair;
+typedef pair<uint32_t,uint32_t> uint32pair;
 
 
 /*! @fn smallest()
@@ -77,7 +77,7 @@ typedef pair<uint32_t,uint32_t> mypair;
     @param const pair<uint32_t,uint32_t> &b
     @return smallest integer of a and b, or a if a == b
 */
-inline bool smallest ( const mypair &a, const mypair &b );
+//inline bool smallest ( const uint32pair &a, const uint32pair &b );
 
 /*! @fn largest()
     @brief Return the largest integer of two input integers
@@ -86,7 +86,7 @@ inline bool smallest ( const mypair &a, const mypair &b );
     @return 'a' goes before 'b' if a.first > b.first, otherwise
             'a'
 */
-bool largest ( const mypair &a, const mypair &b );
+//bool largest ( const uint32pair &a, const uint32pair &b );
 
 /*! @fn find_lis()
  *  @brief Given a list of matching positions on the read, find the longest

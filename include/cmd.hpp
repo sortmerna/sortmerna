@@ -6,13 +6,20 @@
  * Interactive command-line session:
  *    - query records in Key-Value database
  */
+#include <string>
 
 // forward
 struct Runopts;
+
+enum CMD { EXIT, READ, INDEX };
 
 class CmdSession
 {
 public:
 	CmdSession(){}
 	void run(Runopts & opts);
+private:
+	void cmdRead(Runopts & opts, std::string & cmd);
+	void cmdIndex(Runopts & opts, std::string & cmd);
+	void cmdTest(Runopts & opts, std::string & cmd);
 };

@@ -11,6 +11,7 @@
 #include "references.hpp"
 #include "options.hpp"
 #include "readstats.hpp"
+#include "refstats.hpp"
 #include "index.hpp"
 #include "output.hpp"
 
@@ -50,18 +51,17 @@ void reportsJob(
 } // ~reportsJob
 
 /* 
- * Called for each read from PostProcessor::run
+ * Called for each index*index_part*read from PostProcessor::run
  *
  * Calculate:
  *     readstats.total_reads_mapped_cov 
  *     readstats.otu_map
  *     //read.hit_denovo see TODO in the function body
  */
-void computeStats(Read & read, Readstats & readstats, References & refs, Runopts & opts)
+void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts)
 {
 	// OTU-map: index of alignment holding maximum SW score
 	uint32_t index_max_score = read.hits_align_info.max_index;
-
 	if (read.is03) read.flip34();
 
 	// loop all the alignments of this read
@@ -126,8 +126,10 @@ void computeStats(Read & read, Readstats & readstats, References & refs, Runopts
 		} // ~if p == index_max_score
 	}//~for all alignments
 
-	if (opts.de_novo_otu && read.hit && read.hit_denovo)
+	// only call once per read, on the last index/part
+	if ( opts.de_novo_otu && 
+		refs.num == opts.indexfiles.size() - 1 && refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 &&
+		read.hit && read.hit_denovo )
 		++readstats.total_reads_denovo_clustering;
 
-	if (read.is04) read.flip34();
 } // ~computeStats

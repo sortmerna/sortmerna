@@ -192,12 +192,9 @@ void Output::report_blast
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 	char strandmark = '+';
-	bool flip03 = false; // flag to flip back to 03 on return
+	//bool flip03 = false; // flag to flip back to 03 on return
 
-	if (read.is03) {
-		read.flip34();
-		flip03 = true;
-	}
+	if (read.is03) read.flip34();
 
 	// TODO: iterating all alignments for each reference part is an overhead. Alignments are pre-ordered, 
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
@@ -217,14 +214,14 @@ void Output::report_blast
 				* std::exp(-refstats.gumbel[refs.num].first * read.hits_align_info.alignv[i].score1);
 
 			std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
-			std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
+			std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].id;
 
 			if (read.hits_align_info.alignv[i].strand)
 				strandmark = '+';
 			else
 				strandmark = '-';
 
-			if (read.hits_align_info.alignv[i].strand == read.reversed)
+			if (read.hits_align_info.alignv[i].strand == read.reversed) // XNOR
 				read.revIntStr(); // reverse if necessary
 
 			// Blast-like pairwise alignment (only for aligned reads)
@@ -445,7 +442,7 @@ void Output::report_blast
 		}
 	} // ~iterate all alignments
 
-	if (flip03) read.flip34();
+	//if (flip03) read.flip34();
 } // ~ Output::report_blast
 
 
@@ -492,11 +489,7 @@ void Output::report_sam
 	Read & read
 )
 {
-	bool flip03 = false;
-	if (read.is03) {
-		read.flip34();
-		flip03 = true;
-	}
+	if (read.is03) read.flip34();
 
 	//if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
 	//	return;
@@ -523,7 +516,7 @@ void Output::report_sam
 			if (!read.hits_align_info.alignv[i].strand) samout << "\t16\t";
 			else samout << "\t0\t";
 			// (3) Subject
-			samout << refs.buffer[read.hits_align_info.alignv[i].ref_seq].getId();
+			samout << refs.buffer[read.hits_align_info.alignv[i].ref_seq].id;
 			// (4) Ref start
 			samout << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1;
 			// (5) mapq
@@ -578,8 +571,6 @@ void Output::report_sam
 			samout << "\tNM:i:" << mismatches + gaps << "\n";
 		}
 	} // ~for read.alignments
-
-	if (flip03) read.flip34();
 } // ~Output::report_sam
 
 /* 

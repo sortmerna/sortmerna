@@ -39,13 +39,13 @@
 #include "indexdb.hpp"
 
 /* a bitvector of 1 byte */
-#define MYBITSET unsigned char
+#define UCHAR unsigned char
 
 /* mask for depth > 0 bitvectors for k = 1 */
-#define MSB4 (MYBITSET)4
+#define MSB4 (UCHAR)4
 
 /* mask for depth = 0 bitvectors for k = 1 */
-#define MSB8 (MYBITSET)8	
+#define MSB8 (UCHAR)8	
 
 
 /* initialized in paralleltraversal.cpp */
@@ -64,8 +64,8 @@ extern int thisread;
  * PARAMETERS	: 	  
  *
  **************************************************************************************************************/
-void init_win_f ( char*, MYBITSET*, MYBITSET*, int numbvs );
-void init_win_r ( char*, MYBITSET*, MYBITSET*, int numbvs );
+void init_win_f ( char*, UCHAR*, UCHAR*, int numbvs );
+void init_win_r ( char*, UCHAR*, UCHAR*, int numbvs );
 
 
 /*
@@ -78,7 +78,7 @@ void init_win_r ( char*, MYBITSET*, MYBITSET*, int numbvs );
  *		  	  
  *
  **************************************************************************************************************/
-void offset_win_k1 ( char*, char*, MYBITSET*, MYBITSET*, MYBITSET*, int numbvs );
+void offset_win_k1 ( char*, char*, UCHAR*, UCHAR*, UCHAR*, int numbvs );
 
 
 /*
@@ -88,6 +88,6 @@ void offset_win_k1 ( char*, char*, MYBITSET*, MYBITSET*, MYBITSET*, int numbvs )
  * PARAMETERS	: 	  
  *
  **************************************************************************************************************/
-void output_win_k1 ( MYBITSET*, bool, int partialwin );
+void output_win_k1 (UCHAR*, bool, int partialwin );
 
 #endif 

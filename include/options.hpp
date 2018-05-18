@@ -44,10 +44,12 @@ struct Runopts {
 	/* '--num_alignments': output the first '--num_alignments' found, unlike '--best', 
 		which searches many alignments(specified by '--min_lis') prior to outputting the best ones. */
 	int32_t num_alignments = -1; // 
-	int32_t min_lis = -1; // '--min_lis' search all alignments having the first INT longest LIS
+	int32_t min_lis = -1; // '--min_lis' search all alignments having the first N longest LIS
 	int32_t seed_hits = -1;
 	int32_t num_best_hits = 0;
 	int32_t edges = -1;
+
+	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
 
 	bool forward = false; // '-F' search only the forward strand if true
 	bool reverse = false; // '-R' search only the reverse-complementary strand if true

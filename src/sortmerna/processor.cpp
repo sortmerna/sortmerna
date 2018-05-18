@@ -24,7 +24,7 @@
 #include "writer.hpp"
 
 // forward
-void computeStats(Read & read, Readstats & readstats, References & refs, Runopts & opts);
+void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
 void writeLog(Runopts & opts, Readstats & readstats, Output & output);
 
 void Processor::run()
@@ -99,7 +99,7 @@ void PostProcessor::run()
 
 		if (read.isEmpty || !read.isValid)	continue;
 
-		callback(read, readstats, refs, opts);
+		callback(read, readstats, refstats, refs, opts);
 		++countReads;
 
 		if (read.isValid && !read.isEmpty && !read.hit_denovo) 
@@ -166,61 +166,67 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 		std::cout << ss.str(); ss.str("");
 	}
 
-	Refstats refstats(opts, readstats);
-	References refs;
+	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent increment of the stored value. Change this if ever using 'stats_calc_done"
 
-	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
-	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
-	{
-		// iterate parts of reference files
-		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
+	//if (!readstats.stats_calc_done)
+	//{
+		Refstats refstats(opts, readstats);
+		References refs;
+
+		// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
+		for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
 		{
-			ss << "\tpostProcess: Loading reference " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
-			std::cout << ss.str(); ss.str("");
-			auto starts = std::chrono::high_resolution_clock::now(); // index loading start
-			refs.load(index_num, idx_part, opts, refstats);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
-			std::cout << ss.str(); ss.str("");
-
-			starts = std::chrono::high_resolution_clock::now(); // index processing starts
-
-			for (int i = 0; i < N_READ_THREADS; ++i)
+			// iterate parts of reference files
+			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
-			}
+				ss << "\tpostProcess: Loading reference " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+				std::cout << ss.str(); ss.str("");
+				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
+				refs.load(index_num, idx_part, opts, refstats);
+				std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
+				std::cout << ss.str(); ss.str("");
 
-			for (int i = 0; i < opts.num_write_thread; i++)
-			{
-				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
-			}
+				starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
-			// add processor jobs
-			for (int i = 0; i < N_PROC_THREADS; ++i)
-			{
-				tpool.addJob(PostProcessor("postproc_" + std::to_string(i), readQueue, writeQueue, opts, refs, readstats, computeStats));
-			}
-			++loopCount;
-			tpool.waitAll(); // wait till processing is done on one index part
-			refs.clear();
-			readQueue.reset(N_READ_THREADS);
-			writeQueue.reset(N_PROC_THREADS);
+				for (int i = 0; i < N_READ_THREADS; ++i)
+				{
+					tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+				}
 
-			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << "    Done reference " << index_num << " Part: " << idx_part + 1
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
-			std::cout << ss.str(); ss.str("");
-		} // ~for(idx_part)
-	} // ~for(index_num)
+				for (int i = 0; i < opts.num_write_thread; i++)
+				{
+					tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
+				}
 
-	ss << "readstats.total_reads_denovo_clustering: " << readstats.total_reads_denovo_clustering << std::endl;
-	std::cout << ss.str(); ss.str("");
+				// add processor jobs
+				for (int i = 0; i < N_PROC_THREADS; ++i)
+				{
+					tpool.addJob(PostProcessor("postproc_" + std::to_string(i), readQueue, writeQueue, opts, refs, readstats, refstats, computeStats));
+				}
+				++loopCount;
+				tpool.waitAll(); // wait till processing is done on one index part
+				refs.clear();
+				readQueue.reset(N_READ_THREADS);
+				writeQueue.reset(N_PROC_THREADS);
+
+				elapsed = std::chrono::high_resolution_clock::now() - starts;
+				ss << "    Done reference " << index_num << " Part: " << idx_part + 1
+					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+				std::cout << ss.str(); ss.str("");
+			} // ~for(idx_part)
+		} // ~for(index_num)
+
+		ss << "readstats.total_reads_denovo_clustering: " << readstats.total_reads_denovo_clustering << std::endl;
+		std::cout << ss.str(); ss.str("");
+
+		readstats.stats_calc_done = true;
+		kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
+	//} // ~if !readstats.stats_calc_done
 
 	writeLog(opts, readstats, output);
 
 	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
-
-	kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
 
 	std::cout << "\tpostProcess: Done \n";
 } // ~postProcess

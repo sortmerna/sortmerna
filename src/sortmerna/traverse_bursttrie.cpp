@@ -96,8 +96,8 @@ void traversetrie_align(
 	NodeElement *trie_t,
 	uint32_t lev_t,
 	unsigned char depth,
-	MYBITSET *win_k1_ptr,
-	MYBITSET *win_k1_full,
+	UCHAR *win_k1_ptr,
+	UCHAR *win_k1_full,
 	bool &accept_zero_kmer,
 	std::vector<id_win> &id_hits,
 	int64_t readn, // TODO: never used - remove?
@@ -109,7 +109,7 @@ void traversetrie_align(
 	uint16_t lev_t_trie_pivot = lev_t;
 	unsigned char value = 0;
 
-	// traverse through the node elements in a trie node
+	// traverse the node elements (4: A,C,G,T) in a trie node
 	for (uint32_t node_element = 0; node_element < 4; node_element++)
 	{
 		value = trie_t->flag;
@@ -289,7 +289,7 @@ void traversetrie_align(
 				}//~else the node element points to a bucket
 			}//~else LEV(1) is not in a null state, continue parallel traversal
 		}//~else this node element points to a trie node or a bucket, continue traversing
-	}//~for all trie nodes
+	}//~for 4 node elements
 
 	return;
 }//~traversetrie_align()
