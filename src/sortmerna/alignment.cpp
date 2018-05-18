@@ -43,7 +43,7 @@
 s_align2 copyAlignment(s_align* pAlign);
 uint32_t findMinIndex(Read & read);
 
-#define DEBUG_ALIGN
+//#define DEBUG_ALIGN
 #ifdef DEBUG_ALIGN
 // only for Debug
 std::string LOGF = "C:/a01_projects/clarity_genomics/logs/debug.log";
