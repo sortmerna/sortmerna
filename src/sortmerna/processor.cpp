@@ -80,8 +80,8 @@ void Processor::run()
 	}
 	writeQueue.mDoneAdding();
 
-	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads
-		<< " reads. Skipped (already processed) " << countProcessed << " reads\n";
+	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads 
+		<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
 	std::cout << ss.str(); ss.str("");
 } // ~Processor::run
 

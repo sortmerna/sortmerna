@@ -39,13 +39,19 @@
 #include "references.hpp"
 #include "readstats.hpp"
 
+#define ASCENDING <
+#define DESCENDING >
+
+
 // forward
 s_align2 copyAlignment(s_align* pAlign);
 uint32_t findMinIndex(Read & read);
 
 //#define DEBUG_ALIGN
 #ifdef DEBUG_ALIGN
-// only for Debug
+#define DBG_READ_ID 10017
+#define DBG_IDX_PART 0
+
 std::string LOGF = "C:/a01_projects/clarity_genomics/logs/debug.log";
 void debug(std::string text)
 {
@@ -90,6 +96,16 @@ void debug_hits_on_genome2(std::vector<std::tuple<uint32_t, uint32_t, uint32_t>>
 	{
 		ss << std::get<0>(triple) << "  " << std::get<1>(triple) << "  " << std::get<2>(triple) << std::endl;
 	}
+	debug(ss.str());
+}
+
+void debug_id_win_hits(Read & read)
+{
+	std::stringstream ss;
+	ss << "=== read.id_win_hits ===" << std::endl;
+	ss << "kmer id, kmer position on read" << std::endl;
+	for (auto hit : read.id_win_hits)
+		ss << hit.id << " " << hit.win << std::endl;
 	debug(ss.str());
 }
 #endif
@@ -140,7 +156,6 @@ void find_lis(
 		}
 	}
 
-
 	for (u = b.size(), v = b.back(); u--; v = p[v]) b[u] = v;
 } // ~find_lis
 
@@ -173,6 +188,11 @@ void compute_lis_alignment
 		uint32_t max_seq = 0;
 		uint32_t max_occur = 0;
 
+#ifdef DEBUG_ALIGN
+		if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
+			debug_id_win_hits(read);
+#endif
+
 		// STEP 2: Find all candidate references by using Read's kmers hits information.
 		//         For every reference, compute the number of kmers' hits belonging to it
 		for (auto hit : read.id_win_hits)
@@ -203,12 +223,12 @@ void compute_lis_alignment
 		std::sort(seq_kmer_freq_vec.begin(), seq_kmer_freq_vec.end(), 
 			[](std::pair<uint32_t, uint32_t> e1, std::pair<uint32_t, uint32_t> e2) {
 			if (e1.second == e2.second) 
-				return e1.first > e2.first; // order seq numbers descending for equal frequencies
-			return e1.second > e2.second; // order frequencies descending
+				return e1.first ASCENDING e2.first; // order references ascending for equal frequencies (originally: descending)
+			return e1.second DESCENDING e2.second; // order frequencies descending
 		});
 
 #ifdef DEBUG_ALIGN
-		if (read.id == 480 && !read.reversed && refs.part == 1)
+		if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 			debug_seq_kmer_freq_vec(read.id, refs.part, seq_kmer_freq_vec);
 #endif
 
@@ -219,7 +239,7 @@ void compute_lis_alignment
 			// the maximum scoring alignment has been found - stop searching for more alignments
 			if (opts.num_best_hits != 0 && read.max_SW_score == opts.num_best_hits) {
 #ifdef DEBUG_ALIGN
-				if (read.id == 480 && !read.reversed && refs.part == 1)
+				if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 				{
 					std::stringstream ss;
 					ss << " Breaking OUT num_best_hits: " << opts.num_best_hits << " max_SW_score: " << read.max_SW_score << std::endl;
@@ -235,7 +255,7 @@ void compute_lis_alignment
 			// not enough window hits, try to collect more hits or next read
 			if (max_occur < (uint32_t)opts.seed_hits) {
 #ifdef DEBUG_ALIGN
-				if (read.id == 480 && !read.reversed && refs.part == 1)
+				if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 				{
 					std::stringstream ss;
 					ss << " Breaking OUT max_occur: " << max_occur << " seed_hits: " << opts.seed_hits << std::endl;
@@ -253,7 +273,7 @@ void compute_lis_alignment
 				read.best--;
 				if (read.best < 1) {
 #ifdef DEBUG_ALIGN
-					if (read.id == 480 && !read.reversed && refs.part == 1)
+					if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 					{
 						std::stringstream ss;
 						ss << " Breaking OUT read.best: " << read.best << " opts.min_lis: " << opts.min_lis << std::endl;
@@ -269,7 +289,7 @@ void compute_lis_alignment
 			if (opts.num_alignments > 0 && read.num_alignments <= 0)
 			{
 #ifdef DEBUG_ALIGN
-				if (read.id == 480 && !read.reversed && refs.part == 1)
+				if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 				{
 					std::stringstream ss;
 					ss << " Breaking OUT opts.num_alignments: " << opts.num_alignments << " read.num_alignments" << read.num_alignments << std::endl;
@@ -284,7 +304,7 @@ void compute_lis_alignment
 			vector<uint32pair> hits_on_genome;
 #ifdef DEBUG_ALIGN
 			std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> hits_on_genome2;
-			if (read.id == 480 && !read.reversed && refs.part == 1)
+			if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 			{
 				std::stringstream ss;
 				ss << "=== Analyzing Reference ID: " << max_seq << " Frequency: " << max_occur << " ref_kmer_freq index: " << k << std::endl;
@@ -312,12 +332,12 @@ void compute_lis_alignment
 			// sort the positions in ascending order
 			std::sort(hits_on_genome.begin(), hits_on_genome.end(), [](uint32pair e1, uint32pair e2) {
 				if (e1.first == e2.first) 
-					return (e1.second < e2.second); // order read positions ascending for equal reference positions
-				return (e1.first < e2.first);
+					return (e1.second ASCENDING e2.second); // order references ascending for equal reference positions
+				return (e1.first ASCENDING e2.first);
 			}); // smallest
 
 #ifdef DEBUG_ALIGN
-			if (read.id == 480 && !read.reversed && refs.part == 1)
+			if (read.id == DBG_READ_ID && !read.reversed && refs.part == DBG_IDX_PART)
 			{
 				//debug_hits_on_genome(hits_on_genome);
 				debug_hits_on_genome2(hits_on_genome2);

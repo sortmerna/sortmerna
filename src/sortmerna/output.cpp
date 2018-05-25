@@ -780,11 +780,13 @@ void Output::openfiles(Runopts & opts)
 
 void Output::closefiles()
 {
-	if (blastout.is_open()) blastout.close();
-	if (samout.is_open()) samout.close();
-	if (fastaout.is_open()) fastaout.close();
-	if (fastaNonAlignOut.is_open()) fastaNonAlignOut.close();
-	if (denovoreads.is_open()) denovoreads.close();
+	if (blastout.is_open()) { blastout.flush(); blastout.close(); }
+	if (samout.is_open()) { samout.flush(); samout.close(); }
+	if (fastaout.is_open()) { fastaout.flush(); fastaout.close(); }
+	if (fastaNonAlignOut.is_open()) { fastaNonAlignOut.flush(); fastaNonAlignOut.close(); }
+	if (denovoreads.is_open()) { denovoreads.flush(); denovoreads.close(); }
+
+	std::cout << "Output.closefiles called. Flushed and closed" << std::endl;
 }
 
 // called from main. TODO: move into a class?
@@ -851,10 +853,9 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 			ss << "   Done reference " << index_num << " Part: " << idx_part + 1
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
 			std::cout << ss.str(); ss.str("");
-			if (!opts.blastout && !opts.samout)	goto done1;
+			if (!opts.blastout && !opts.samout)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
-done1:
-	output.closefiles();
+
 	std::cout << "\tDone generateReports\n";
 } // ~generateReports

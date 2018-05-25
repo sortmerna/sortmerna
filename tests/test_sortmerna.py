@@ -80,6 +80,8 @@ class SortmernaTests(TestCase):
             tmp.write(query_str)
         tmp.close()
         self.files_to_remove = [self.subject_str_fp, self.query_str_fp]
+        self.ALIGN_REPORT = '4'
+        self.ONLY_REPORT = '2'
 
     def tearDown(self):
         rmtree(self.output_dir)
@@ -420,7 +422,7 @@ class SortmernaTests(TestCase):
                              "--log",
                              "--fastx",
                              "-d", datadir,
-                             "--task", "4"]
+                             "--task", self.ALIGN_REPORT]
         
         print('test_multiple_databases_search: {}'.format(sortmerna_command))
         
@@ -516,7 +518,8 @@ class SortmernaTests(TestCase):
         self.assertEqual(num_pass_id_cov_log, str(num_pass_id_cov_log))
         
         # Correct number of clusters recorded
-        self.assertEqual("4400", num_clusters_log)
+        #self.assertEqual("4401", num_clusters_log) # 4400 before bug 52
+        self.assertTrue(num_clusters_log in ['4400','4401']) # 4400 for amplicon_12_part
         num_clusters_file = 0
         num_reads_in_clusters_file = 0
         with open(aligned_basename + "_otus.txt") as f_otus:
@@ -576,9 +579,9 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print('test_simulated_amplicon_1_part_map: {}'.format(sortmerna_command))
         
@@ -622,9 +625,9 @@ class SortmernaTests(TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "--best", "5",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print('test_simulated_amplicon_1_part_map: {}'.format(sortmerna_command))
         
@@ -708,9 +711,9 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_simulated_amplicon_generic_buffer: {}".format(sortmerna_command))
         
@@ -753,9 +756,9 @@ class SortmernaTests(TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "--best", "5",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_simulated_amplicon_generic_buffer: {}".format(sortmerna_command))
         
@@ -826,9 +829,9 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_simulated_amplicon_6_part_map: {}".format(sortmerna_command))
         
@@ -891,9 +894,9 @@ class SortmernaTests(TestCase):
                              "--de_novo_otu",
                              "--blast", "1 cigar qcov",
                              "--fastx",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_simulated_amplicon_12_part_index: {}".format(sortmerna_command))
         
@@ -933,6 +936,7 @@ class SortmernaTests(TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set2,
                              "--aligned", aligned_basename,
                              "--id", "0.97",
                              "--coverage", "0.97",
@@ -940,9 +944,8 @@ class SortmernaTests(TestCase):
                              "--otu_map",
                              "--de_novo_otu",
                              "--fastx",
-                             "--reads", self.set2,
                              "-d", datadir,
-                             "--task", "4",
+                             "--task", self.ALIGN_REPORT,
                              "-v"]
         
         print("test_environmental_output: {}".format(sortmerna_command))
@@ -970,11 +973,16 @@ class SortmernaTests(TestCase):
         # Correct number of reads mapped
         self.assertEqual("99999", num_hits)
         # Correct number of clusters recorded
-        self.assertEqual("272", num_clusters_log)
+        use_refs_descending = False # how algorithm sorts candidate references descending/ascending (alignment.cpp)
+        if use_refs_descending:
+            num_groups = 272 # originally
+        else:
+            num_groups = 264
+        self.assertEqual(str(num_groups), num_clusters_log)
         # Correct number of clusters in OTU-map
         with open(aligned_basename + "_otus.txt") as f_otumap:
             num_clusters_file = sum(1 for line in f_otumap)
-        self.assertEqual(272, num_clusters_file)
+        self.assertEqual(num_groups, num_clusters_file)
         num_failures_file = 0
         for seq in skbio.io.read(aligned_basename + "_denovo.fasta", format='fasta'):
             num_failures_file += 1
@@ -1008,6 +1016,7 @@ class SortmernaTests(TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set3,
                              "--aligned", aligned_basename,
                              "--id", "0.97",
                              "--coverage", "0.97",
@@ -1015,10 +1024,9 @@ class SortmernaTests(TestCase):
                              "--otu_map",
                              "--de_novo_otu",
                              "--fastx",
-                             "--reads", self.set3,
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_empty_query_file: {}".format(sortmerna_command))
         
@@ -1062,29 +1070,29 @@ class SortmernaTests(TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
-                           "--max_pos",
-                           "250",
+                           "--ref", index_path,
+                           "--max_pos", "250",
                            "-v"]
         
         print("test_mate_pairs: {}".format(indexdb_command))
         
         proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
+        
         aligned_basename = join(self.output_dir, "aligned")
         nonaligned_basename = join(self.output_dir, "nonaligned")
         
         # launch normally
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set4,
                              "--aligned", aligned_basename,
                              "--other", nonaligned_basename,
                              "--fastx",
-                             "--reads", self.set4,
                              "--log",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_mate_pairs: {}".format(sortmerna_command))
         
@@ -1116,23 +1124,23 @@ class SortmernaTests(TestCase):
         self.assertEqual(4000, num_nonaligned_reads/4)
         
         # Clean up before next call
-        remove(aligned_basename + ".log")
-        remove(aligned_basename + ".fastq")
-        remove(nonaligned_basename + ".fastq")
-        self.cleanData(datadir)
+        #remove(aligned_basename + ".log")
+        #remove(aligned_basename + ".fastq")
+        #remove(nonaligned_basename + ".fastq")
+        #self.cleanData(datadir)
         
         # launch with option --paired_in
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set4,
                              "--aligned", aligned_basename,
                              "--other", nonaligned_basename,
                              "--paired_in",
                              "--fastx",
-                             "--reads", self.set4,
                              "--log",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ONLY_REPORT]
         
         print("test_mate_pairs: {}".format(sortmerna_command))
         
@@ -1157,31 +1165,35 @@ class SortmernaTests(TestCase):
         # Correct number of clusters recorded
         self.assertEqual("4000", num_fail)
         # Correct number of aligned reads
+        NUM_EXPECTED = 10000
         with open(aligned_basename + ".fastq") as f_aligned:
             num_aligned_reads = sum(1 for line in f_aligned)
-        self.assertEqual(10000, num_aligned_reads/4)
+            if num_aligned_reads/4 != NUM_EXPECTED:
+                print(proc)
+        self.assertEqual(NUM_EXPECTED, num_aligned_reads/4)
         # Correct number of non-aligned reads
         with open(nonaligned_basename + ".fastq") as f_nonaligned:
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
         self.assertEqual(0, num_nonaligned_reads/4)
+        
         # Clean up before next call
-        remove(aligned_basename + ".log")
-        remove(aligned_basename + ".fastq")
-        remove(nonaligned_basename + ".fastq")
-        self.cleanData(datadir)
+        #remove(aligned_basename + ".log")
+        #remove(aligned_basename + ".fastq")
+        #remove(nonaligned_basename + ".fastq")
+        #self.cleanData(datadir)
         
         # launch with option --paired_out
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set4,
                              "--aligned", aligned_basename,
                              "--other", nonaligned_basename,
                              "--paired_out",
                              "--fastx",
-                             "--reads", self.set4,
                              "--log",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ONLY_REPORT]
         
         print("test_mate_pairs: {}".format(sortmerna_command))
         
@@ -1243,13 +1255,13 @@ class SortmernaTests(TestCase):
         # num_alignments 0
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.read_GQ099317,
+                             "--aligned", aligned_basename,
                              "--num_alignments", "0",
                              "--sam",
+                             "-v"
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_output_all_alignments_f_rc: {}".format(sortmerna_command))
         
@@ -1325,13 +1337,13 @@ class SortmernaTests(TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
+                             "--aligned", aligned_basename,
                              "--sam",
                              "--blast", "1 qstrand cigar",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_cigar_lcs_1: {}".format(sortmerna_command))
         
@@ -1388,13 +1400,13 @@ class SortmernaTests(TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
+                             "--aligned", aligned_basename,
                              "--sam",
                              "--blast", "0",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print('test_blast_format_0: {}'.format(sortmerna_command))
         
@@ -1546,9 +1558,9 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "1",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_blast_format_1: {}".format(sortmerna_command))
         
@@ -1593,9 +1605,10 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "0 qstrand",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT
+                            ]
         
         print("test_blast_format_0_other: {}".format(sortmerna_command))
         
@@ -1638,9 +1651,10 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
                              "--reads", self.query_str_fp,
                              "--sam",
                              "--blast", "1 sstrand",
+                             "-v",
                              "-d", datadir,
-                             "--task", "4",
-                             "-v"]
+                             "--task", self.ALIGN_REPORT
+                            ]
         
         print("test_blast_format_1_other: {}".format(sortmerna_command))
         

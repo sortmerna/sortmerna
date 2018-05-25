@@ -22,4 +22,5 @@ private:
 	void cmdRead(Runopts & opts, std::string & cmd);
 	void cmdIndex(Runopts & opts, std::string & cmd);
 	void cmdTest(Runopts & opts, std::string & cmd);
+	void cmd_max_ref_part(Runopts & opts, std::string & cmd); // ref idx=0 part=1
 };

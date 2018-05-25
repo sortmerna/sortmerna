@@ -43,10 +43,11 @@ void CmdSession::run(Runopts & opts)
 		std::istringstream iss(cmd);
 		std::vector<std::string> cmdv((std::istream_iterator<std::string>(iss)),
 			std::istream_iterator<std::string>());
-		if ("exit" == cmdv[0]) break;
-		if ("read" == cmdv[0]) cmdRead(opts, cmd);
+		if ("exit"  == cmdv[0]) break;
+		if ("read"  == cmdv[0]) cmdRead(opts, cmd);
 		if ("index" == cmdv[0]) cmdIndex(opts, cmd);
-		if ("test" == cmdv[0]) cmdTest(opts, cmd);
+		if ("ref"   == cmdv[0]) cmd_max_ref_part(opts, cmd);
+		if ("test"  == cmdv[0]) cmdTest(opts, cmd);
 	}
 } // ~CmdSession::run
 
@@ -246,6 +247,41 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 		std::cout << "Read: " << readid << " at position: " << posval << " has no matches in reference: " << refid << std::endl;
 
 } // ~CmdSession::cmdIndex
+
+/* 
+ * Get Max reference number given the reference part 
+ * ref --idx=0 --part=1
+ */
+void CmdSession::cmd_max_ref_part(Runopts & opts, std::string & cmd)
+{
+	std::stringstream ss;
+	std::string idxval;
+	std::string partval;
+	bool isok = true;
+
+	isok = isok && getOpt(cmd, OPT_IDX, idxval);
+	isok = isok && getOpt(cmd, OPT_PART, partval);
+
+	if (!isok)
+	{
+		std::cout << "cmdIndex: missing some options. Returning.." << std::endl;
+		return;
+	}
+
+	Readstats readstats(opts);
+	Refstats refstats(opts, readstats);
+	References refs;
+
+	refs.load(std::stoi(idxval), std::stoi(partval), opts, refstats);
+
+	std::cout << " Reference file number: " << idxval 
+		<< " Reference part: " << partval
+		<< " Part size: " << refs.buffer.size()
+		<< " Max Ref ID: " << refs.buffer[refs.buffer.size() - 1].id
+		<< " Max Ref NID: " << refs.buffer[refs.buffer.size() - 1].nid
+		<< std::endl;
+ 
+} // ~CmdSession::cmd_max_ref_part
 
 /* Sample command: test 
 */

@@ -162,7 +162,7 @@ void alignmentCb
 				- refstats.lnwin[index.index_num]
 				+ windowshift ) / windowshift;
 
-		uint32_t win_pos = 0; // position (index) of the window's first char in the sequence i.e. [0..read.sequence.length-1]
+		uint32_t win_pos = 0; // position (index) of the window's first char on the read i.e. [0..read.sequence.length-1]
 		// iterate the windows
 		for (uint32_t win_num = 0; win_num < numwin; win_num++)
 		{
@@ -211,7 +211,7 @@ void alignmentCb
 				}
 
 				// do traversal if the exact half window exists in the burst trie
-				if ((index.lookup_tbl[keyf].count > opts.minoccur) && (index.lookup_tbl[keyf].trie_F != NULL))
+				if ( index.lookup_tbl[keyf].count > opts.minoccur && index.lookup_tbl[keyf].trie_F != NULL )
 				{
 					/* subsearch (1)(a) d([p_1],[w_1]) = 0 and d([p_2],[w_2]) <= 1;
 					*
@@ -323,8 +323,8 @@ void alignmentCb
 					read_to_count
 				);
 
-				// the read was not accepted at current window skip length,
-				// use the next (smaller) window skip length
+				// the read was not accepted at current window shift,
+				// use the next (smaller) window shift
 				if (search)
 				{
 					// last (3rd) Pass has been made
@@ -333,7 +333,7 @@ void alignmentCb
 					{
 						// the next interval size equals to the current one, skip it
 						while ( pass_n < 3 &&
-							opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1])
+							opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1] )
 							++pass_n;
 						if (++pass_n > 2) search = false;
 						// set interval skip length for next Pass
