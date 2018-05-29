@@ -80,12 +80,13 @@ const char nt_map[5] = { 'A', 'C', 'G', 'T', 'N' };
 const char complement[5] = { 3, 2, 1, 0, 4 }; // A <-> T, C <-> G, N <-> N
 
 extern timeval t;
+extern bool verbose;
 
 /*! @brief Macro for timing */
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
 /*! @brief Print function for verbose mode */
-#define eprintf(format, ...) do {if (false) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+#define eprintf(format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
 
 /*! @brief start color text red */
 #if defined(_WIN32)

@@ -5,8 +5,9 @@ Software tests for the SortMeRNA
 """
 
 
-from unittest import TestCase, main
+import unittest
 import re
+import sys
 from subprocess import Popen, PIPE, run
 from os import close, remove, environ, listdir, unlink
 from os.path import abspath, exists, join, dirname, isfile
@@ -34,7 +35,7 @@ import time
 
     
 # Test class and cases
-class SortmernaTests(TestCase):
+class SortmernaTests(unittest.TestCase):
     """ Tests for SortMeRNA functionality """
     
     @classmethod
@@ -46,26 +47,24 @@ class SortmernaTests(TestCase):
         self.output_dir = mkdtemp()
         # 'data' folder must be in the same directory as test_sortmerna.py
         self.root = join(dirname(abspath(__file__)), "data")
+        
         # reference databases
         self.db_bac16s = join(self.root, "silva-bac-16s-database-id85.fasta")
         self.db_arc16s = join(self.root, "silva-arc-16s-database-id95.fasta")
         self.db_gg_13_8 = join(self.root, "gg_13_8_ref_set.fasta")
-        self.db_GQ099317 = join(
-            self.root, "ref_GQ099317_forward_and_rc.fasta")
+        self.db_GQ099317 = join(self.root, "ref_GQ099317_forward_and_rc.fasta")
         self.db_short = join(self.root, "ref_short_seqs.fasta")
+        
         # reads
-        self.set2 = join(
-            self.root, "set2_environmental_study_550_amplicon.fasta")
+        self.set2 = join(self.root, "set2_environmental_study_550_amplicon.fasta")
         self.set3 = join(self.root, "empty_file.fasta")
-        self.set4 = join(
-            self.root, "set4_mate_pairs_metatranscriptomics.fastq")
-        self.set5 = join(self.root, 
-                         "set5_simulated_amplicon_silva_bac_16s.fasta")
+        self.set4 = join(self.root, "set4_mate_pairs_metatranscriptomics.fastq")
+        self.set5 = join(self.root, "set5_simulated_amplicon_silva_bac_16s.fasta")
         self.set7 = join(self.root, "set7_arc_bac_16S_database_match.fasta")
         self.read_GQ099317 = join(self.root, "illumina_GQ099317.fasta")
+        
         # create temporary file with reference sequence
-        f, self.subject_str_fp = mkstemp(prefix='temp_subject_',
-                                         suffix='.fasta')
+        f, self.subject_str_fp = mkstemp(prefix='temp_subject_', suffix='.fasta')
         close(f)
         # write _reference_ sequences to tmp file
         with open(self.subject_str_fp, 'w') as tmp:
@@ -169,7 +168,7 @@ class SortmernaTests(TestCase):
         m = query.search(stdout)
         tmp_dir = ""
         if m:
-            tmp_dir = dirname(m.group(1))
+            tmp_dir = dirname(m.group(1)).decode("utf-8")
         self.assertEqual(tmpdir, tmp_dir)
         rmtree(tmpdir)
             
@@ -183,7 +182,10 @@ class SortmernaTests(TestCase):
         start = time.time()
         
         tmpdir = mkdtemp()
-        environ["TMPDIR"] = tmpdir
+        if 'Windows' in platform.platform():
+            environ["TMP"] = tmpdir
+        else:
+            environ["TMPDIR"] = tmpdir
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         
@@ -220,7 +222,7 @@ class SortmernaTests(TestCase):
         m = query.search(stdout)
         tmp_dir = ""
         if m:
-            tmp_dir = dirname(m.group(1))
+            tmp_dir = dirname(m.group(1)).decode("utf-8")
         self.assertEqual(tmpdir, tmp_dir)
         rmtree(tmpdir)
             
@@ -233,7 +235,10 @@ class SortmernaTests(TestCase):
         print("test_indexdb_rna_tmp_dir_system")
         start = time.time()
         
-        environ["TMPDIR"] = ""
+        if 'Windows' in platform.platform():
+            environ["TMP"] = ""
+        else:
+            environ["TMPDIR"] = ""
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         
@@ -270,7 +275,7 @@ class SortmernaTests(TestCase):
         m = query.search(stdout)
         
         if 'Windows' in platform.platform():
-            tmp_dir = environ.get('TEMP')
+            tmp_dir = environ.get('TMP')
             print('TEMP: {}'.format(tmp_dir))
         else:
             if m: tmp_dir = dirname(m.group(1))
@@ -1030,8 +1035,12 @@ class SortmernaTests(TestCase):
         
         print("test_empty_query_file: {}".format(sortmerna_command))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
-        if proc.stderr: print(proc.stderr)
+        try:
+            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+            if proc.stderr: print(proc.stderr)
+        except:
+            msg = 'test_empty_query_file: ERROR running sortmerna: {}'.format(sys.exc_info()[0])
+            print(msg)
         
         # Correct number of clusters in OTU-map
         with open(aligned_basename + ".log") as f_log:
@@ -1039,7 +1048,8 @@ class SortmernaTests(TestCase):
             
         print("test_empty_query_file: Run time: {}".format(time.time() - start))
     #END test_empty_query_file
-
+           
+    @unittest.skip("Skip until bug 54 fixed")
     def test_mate_pairs(self):
         """ Test outputting FASTQ files for merged
             mate pair reads.
@@ -1124,10 +1134,10 @@ class SortmernaTests(TestCase):
         self.assertEqual(4000, num_nonaligned_reads/4)
         
         # Clean up before next call
-        #remove(aligned_basename + ".log")
-        #remove(aligned_basename + ".fastq")
-        #remove(nonaligned_basename + ".fastq")
-        #self.cleanData(datadir)
+        remove(aligned_basename + ".log")
+        remove(aligned_basename + ".fastq")
+        remove(nonaligned_basename + ".fastq")
+        self.cleanData(datadir)
         
         # launch with option --paired_in
         sortmerna_command = [self.sortmerna,
@@ -1177,10 +1187,10 @@ class SortmernaTests(TestCase):
         self.assertEqual(0, num_nonaligned_reads/4)
         
         # Clean up before next call
-        #remove(aligned_basename + ".log")
-        #remove(aligned_basename + ".fastq")
-        #remove(nonaligned_basename + ".fastq")
-        #self.cleanData(datadir)
+        remove(aligned_basename + ".log")
+        remove(aligned_basename + ".fastq")
+        remove(nonaligned_basename + ".fastq")
+        self.cleanData(datadir)
         
         # launch with option --paired_out
         sortmerna_command = [self.sortmerna,
@@ -1259,7 +1269,7 @@ class SortmernaTests(TestCase):
                              "--aligned", aligned_basename,
                              "--num_alignments", "0",
                              "--sam",
-                             "-v"
+                             "-v",
                              "-d", datadir,
                              "--task", self.ALIGN_REPORT]
         
@@ -1722,4 +1732,4 @@ CTCAACCGCAAGGAGGGGGATGCCTAAGGCAGGGCTAGTGACTGGGG
 """ 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

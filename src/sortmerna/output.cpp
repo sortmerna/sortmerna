@@ -107,22 +107,6 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			blastout.close();
 		}
 
-		// don't touch the log if only reports are generated
-		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
-		{
-			// statistics file output
-			logfile = opts.filetype_ar;
-			if (opts.pid)
-			{
-				logfile.append("_");
-				logfile.append(pidStr.str());
-			}
-			logfile.append(".log");
-
-			logstream.open(logfile);
-			logstream.close();
-		}
-
 		if (opts.otumapout)
 		{
 			// OTU map output file
@@ -152,6 +136,32 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 			denovo_otu.open(denovo_otus_file);
 			denovo_otu.close();
+		}
+
+		// don't touch the log if only reports are generated
+		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
+		{
+			// statistics file output
+			logfile = opts.filetype_ar;
+			if (opts.pid)
+			{
+				logfile.append("_");
+				logfile.append(pidStr.str());
+			}
+			logfile.append(".log");
+
+			logstream.open(logfile);
+
+			// TODO: this is truly an ad hoc place for this code
+			if (opts.exit_early) {
+				logstream << "  The input reads file or reference file is empty, "
+					<< "or the reads file is not in FASTA or FASTQ format, "
+					<< "no analysis could be made." << std::endl;
+				logstream.close();
+				exit(EXIT_SUCCESS);
+			}
+
+			logstream.close();
 		}
 	}//~if ( ptr_filetype_ar != NULL ) 
 

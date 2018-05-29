@@ -48,6 +48,13 @@
 
 #if defined(_WIN32)
 #include <Winsock.h>
+const std::string ENV_TMPDIR = "TMP";
+const char PATH_SEPARATOR = '\\';
+const char DELIM = ';';
+#else
+const std::string ENV_TMPDIR = "TMPDIR";
+const char PATH_SEPARATOR = '/';
+const char DELIM = ':';
 #endif
 
 
@@ -119,13 +126,6 @@ bool verbose = false;
 
 // change version number here
 char version_num[] = "2.1b, 03/03/2016";
-
-#if defined(_WIN32)
-const char DELIM = ';';
-#else
-const char DELIM = ':';
-#endif
-
 
 /*
  *
@@ -1100,7 +1100,7 @@ int main(int argc, char** argv)
 							{
 								fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has "
 									"been entered twice in the list. It will "
-									"be indexed twice. \n\n", "\033[0;33m",
+									"be indexed twice. \n\n", YELLOW,
 									COLOFF, fastafile);
 							}
 							else if ((myfiles[i].second).compare(indexfile) == 0)
@@ -1367,16 +1367,15 @@ int main(int argc, char** argv)
 		FILE *tmp = fopen(tmp_str_test, "w+");
 		if (tmp == NULL)
 		{
-			fprintf(stderr, "\n  %sERROR%s: cannot access directory %s: "
-				"%s\n\n", RED, COLOFF, ptr_tmpdir,
-				strerror(errno));
+			fprintf(stderr, "\n  %sERROR%s: cannot access directory %s: %s\n\n", 
+				RED, COLOFF, ptr_tmpdir, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		else
 		{
 			// remove temporary test file
 			if (remove(tmp_str_test) != 0)
-				fprintf(stderr, "%sWARNING%s: could not delete temporary file %s\n", "\033[0;33m", COLOFF, tmp_str_test);
+				fprintf(stderr, "%sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_str_test);
 
 			// set the working directory
 			memcpy(keys_str, tmp_str, 4000);
@@ -1388,37 +1387,32 @@ int main(int argc, char** argv)
 		bool try_further = true;
 
 		// try TMPDIR
-		tmpdir_env = getenv("TMPDIR");
-		if ((tmpdir_env != NULL) && (strcmp(tmpdir_env, "") != 0))
+		tmpdir_env = getenv(ENV_TMPDIR.data());
+		if ( tmpdir_env != NULL && strcmp(tmpdir_env, "") != 0 )
 		{
-			char tmp_str[4000] = "";
-			strcat(tmp_str, tmpdir_env);
-			char* ptr_tmpdir_t = tmpdir_env;
-			while (*ptr_tmpdir_t++ != '\0');
-			if (*(ptr_tmpdir_t - 2) != '/') strcat(tmp_str, "/");
+			std::string tmp_dir(tmpdir_env);
+			if (tmp_dir[tmp_dir.size() - 1] != PATH_SEPARATOR)
+				tmp_dir += PATH_SEPARATOR;
 
-			char tmp_str_test[4100] = "";
-			strcat(tmp_str_test, tmp_str);
-			strcat(tmp_str_test, "test_");
-			strcat(tmp_str_test, pidStr);
-			strcat(tmp_str_test, ".txt");
+			std::string tmp_file = tmp_dir + "test" + pidStr + ".txt";
 
-			FILE *tmp = fopen(tmp_str_test, "w+");
+			FILE *tmp = fopen(tmp_file.data(), "w+");
 			if (tmp == NULL)
 			{
 				fprintf(stderr, "\n  %sWARNING%s: no write permissions in "
-					"directory %s: %s\n", "\033[0;33m", COLOFF,
+					"directory %s: %s\n", YELLOW, COLOFF,
 					tmpdir_env, strerror(errno));
 				fprintf(stderr, "  will try /tmp/.\n\n");
 			}
 			else
 			{
 				// remove the temporary test file
-				if (remove(tmp_str_test) != 0)
-					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", "\033[0;33m", COLOFF, tmp_str_test);
+				fclose(tmp);
+				if (remove(tmp_file.data()) != 0)
+					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_file.data());
 
 				// set working directory
-				memcpy(keys_str, tmp_str, 4000);
+				memcpy(keys_str, tmp_dir.data(), 4000);
 
 				try_further = false;
 			}
@@ -1435,7 +1429,7 @@ int main(int argc, char** argv)
 			if (tmp == NULL)
 			{
 				fprintf(stderr, "\n  %sWARNING%s: no write permissions in "
-					"directory /tmp/: %s\n", "\033[0;33m", COLOFF,
+					"directory /tmp/: %s\n", YELLOW, COLOFF,
 					strerror(errno));
 				fprintf(stderr, "  will try local directory.\n\n");
 			}
@@ -1443,7 +1437,7 @@ int main(int argc, char** argv)
 			{
 				// remove the temporary test file
 				if (remove(tmp_str) != 0)
-					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", "\033[0;33m", COLOFF, tmp_str);
+					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_str);
 
 				// set working directory
 				strcat(keys_str, "/tmp/");
@@ -1466,7 +1460,7 @@ int main(int argc, char** argv)
 					"directory: %s\n", RED, COLOFF,
 					strerror(errno));
 				fprintf(stderr, "  Please set --tmpdir to a writable directory, "
-					"or change the write permissions in $TMPDIR, /tmp/ "
+					"or change the write permissions in $TMPDIR, e.g. /tmp/ (Linux) "
 					"or current directory.\n\n");
 				exit(EXIT_FAILURE);
 			}
@@ -1474,7 +1468,7 @@ int main(int argc, char** argv)
 			{
 				// remove the temporary test file
 				if (remove(tmp_str) != 0)
-					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", "\033[0;33m", COLOFF, tmp_str);
+					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_str);
 
 				// set working directory
 				strcat(keys_str, "./");
@@ -1731,7 +1725,7 @@ int main(int argc, char** argv)
 				if (estimated_seq_mem > mem)
 				{
 					fseek(fp, start_seq, SEEK_SET);
-					fprintf(stderr, "\n  %sWARNING%s: the index for sequence `", "\033[0;33m", COLOFF);
+					fprintf(stderr, "\n  %sWARNING%s: the index for sequence `", YELLOW, COLOFF);
 					int c = 0;
 					do
 					{
@@ -1931,7 +1925,7 @@ int main(int argc, char** argv)
 			if (ret != 0)
 			{
 				fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n",
-					"\033[0;33m", keys_str, COLOFF);
+					YELLOW, keys_str, COLOFF);
 			}
 
 			// 5. add ids to burst trie

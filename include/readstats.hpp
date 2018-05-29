@@ -67,7 +67,8 @@ struct Readstats {
 	{
 		calcSuffix();
 		opts.exit_early = check_file_format();
-		calculate(); // number_total_read only
+		if (!opts.exit_early)
+			calculate(); // number_total_read only
 	}
 
 	~Readstats() {}
