@@ -99,8 +99,7 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_short, index_db)
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path]
+                           "--ref", index_path]
         
         print('test_ref_shorter_than_seed: {}'.format(indexdb_command))
         
@@ -134,10 +133,8 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
-                           "--tmpdir",
-                           tmpdir,
+                           "--ref", index_path,
+                           "--tmpdir", tmpdir,
                            "-v"]
         
         print('test_indexdb_rna_tmpdir_arg: {}'.format(indexdb_command))
@@ -190,8 +187,7 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print('test_indexdb_rna_TMPDIR_env: {}'.format(indexdb_command))
@@ -243,8 +239,7 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print('test_indexdb_rna_tmp_dir_system: {}'.format(indexdb_command))
@@ -569,9 +564,9 @@ class SortmernaTests(unittest.TestCase):
         # best 1
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set5,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
-                             "--reads", self.set5,
                              "--id", "0.97",
                              "--coverage", "0.97",
                              "--log",
