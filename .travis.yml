@@ -34,8 +34,8 @@ before_install:
   - conda update --yes conda
   - conda config --add channels https://conda.anaconda.org/biobuilds
   # C++14
-  - if [[ "$TRAVIS_OS_NAME" == "linux" AND "$CC" == "gcc" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" AND "$CC" == "gcc" ]]; then sudo apt-get update -qq ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get update -qq ; fi
   
 install:
   - conda create --yes -n env_name python=3.5 numpy scipy
@@ -44,8 +44,8 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
     # C++14
-  - if [[ "$TRAVIS_OS_NAME" == "linux" AND "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
-  - if [[ "$TRAVIS_OS_NAME" == "linux" AND "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
   # for building RocksDB
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd ./3rdparty; git clone https://github.com/facebook/rocksdb.git ; popd; fi
