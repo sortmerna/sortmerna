@@ -278,7 +278,7 @@ class SortmernaTests(unittest.TestCase):
             tmp_dir = environ.get('TMP')
             print('TEMP: {}'.format(tmp_dir))
         else:
-            if m: tmp_dir = dirname(m.group(1))
+            if m: tmp_dir = dirname(m.group(1).decode('utf-8'))
             self.assertEqual("/tmp", tmp_dir)
             
         print("test_indexdb_rna_tmp_dir_system: Run time: {}".format(time.time() - start))
@@ -294,8 +294,7 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print('test_indexdb_default_param: {}'.format(indexdb_command))
@@ -335,11 +334,9 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v",
-                           "-m ",
-                           "0.05"]
+                           "-m ", "0.05"]
         
         print('test_indexdb_split_databases: {}'.format(indexdb_command))
         
@@ -411,8 +408,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print('test_multiple_databases_search: {}'.format(indexdb_command))
@@ -422,8 +418,8 @@ class SortmernaTests(unittest.TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.set7,
+                             "--aligned", aligned_basename,
                              "--log",
                              "--fastx",
                              "-d", datadir,
@@ -554,8 +550,7 @@ class SortmernaTests(unittest.TestCase):
         other_basename = join(self.output_dir, "other")
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print('test_simulated_amplicon_1_part_map: {}'.format(indexdb_command))
@@ -619,9 +614,9 @@ class SortmernaTests(unittest.TestCase):
         # best 5
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set5,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
-                             "--reads", self.set5,
                              "--id", "0.97",
                              "--coverage", "0.97",
                              "--log",
@@ -684,8 +679,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_simulated_amplicon_generic_buffer: {}".format(indexdb_command))
@@ -706,9 +700,9 @@ class SortmernaTests(unittest.TestCase):
         # best 1
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set5,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
-                             "--reads", self.set5,
                              "--id", "0.97",
                              "--coverage", "0.97",
                              "--log",
@@ -750,9 +744,9 @@ class SortmernaTests(unittest.TestCase):
         # best 5
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set5,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
-                             "--reads", self.set5,
                              "--id", "0.97",
                              "--coverage", "0.97",
                              "--log",
@@ -802,8 +796,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_simulated_amplicon_6_part_map: {}".format(indexdb_command))
@@ -824,9 +817,9 @@ class SortmernaTests(unittest.TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set5,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
-                             "--reads", self.set5,
                              "--id", "0.97",
                              "--coverage", "0.97",
                              "--log",
@@ -875,8 +868,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v",
                            "-m", "10"]
         
@@ -889,9 +881,9 @@ class SortmernaTests(unittest.TestCase):
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
+                             "--reads", self.set5,
                              "--aligned", aligned_basename,
                              "--other", other_basename,
-                             "--reads", self.set5,
                              "--id", "0.97",
                              "--coverage", "0.97",
                              "--log",
@@ -928,10 +920,8 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
-                           "--max_pos",
-                           "250",
+                           "--ref", index_path,
+                           "--max_pos", "250",
                            "-v"]
         
         print("test_environmental_output: {}".format(indexdb_command))
@@ -949,9 +939,9 @@ class SortmernaTests(unittest.TestCase):
                              "--otu_map",
                              "--de_novo_otu",
                              "--fastx",
+                             "-v",
                              "-d", datadir,
-                             "--task", self.ALIGN_REPORT,
-                             "-v"]
+                             "--task", self.ALIGN_REPORT]
         
         print("test_environmental_output: {}".format(sortmerna_command))
         
@@ -1008,10 +998,8 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
-                           "--max_pos",
-                           "250",
+                           "--ref", index_path,
+                           "--max_pos", "250",
                            "-v"]
         
         print("test_empty_query_file: {}".format(indexdb_command))
@@ -1252,8 +1240,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_output_all_alignments_f_rc: {}".format(indexdb_command))
@@ -1336,8 +1323,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_cigar_lcs_1: {}".format(indexdb_command))
@@ -1386,8 +1372,7 @@ class SortmernaTests(unittest.TestCase):
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print('test_blast_format_0: {}'.format(indexdb_command))
@@ -1553,8 +1538,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_blast_format_1: {}".format(indexdb_command))
@@ -1564,8 +1548,8 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
+                             "--aligned", aligned_basename,
                              "--sam",
                              "--blast", "1",
                              "-v",
@@ -1600,8 +1584,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_blast_format_0_other: {}".format(indexdb_command))
@@ -1611,8 +1594,8 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
+                             "--aligned", aligned_basename,
                              "--sam",
                              "--blast", "0 qstrand",
                              "-v",
@@ -1646,8 +1629,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         datadir = join(self.output_dir, 'kvdb')
         
         indexdb_command = [self.indexdb_rna,
-                           "--ref",
-                           index_path,
+                           "--ref", index_path,
                            "-v"]
         
         print("test_blast_format_1_other: {}".format(indexdb_command))
@@ -1657,8 +1639,8 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         
         sortmerna_command = [self.sortmerna,
                              "--ref", index_path,
-                             "--aligned", aligned_basename,
                              "--reads", self.query_str_fp,
+                             "--aligned", aligned_basename,
                              "--sam",
                              "--blast", "1 sstrand",
                              "-v",
