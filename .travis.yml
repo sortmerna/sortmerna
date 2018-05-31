@@ -24,7 +24,7 @@ matrix:
           packages:
             - gcc-7
             - g++-7
-            #- zlib1g-dev # for RocksDB
+            - zlib1g-dev # for RocksDB
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       
@@ -34,6 +34,7 @@ matrix:
         apt:
           sources:
             - llvm-toolchain-trusty-6.0
+            - ubuntu-toolchain-r-test
           packages:
             - clang-6.0
             #- zlib1g-dev # for RocksDB
@@ -42,15 +43,22 @@ matrix:
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
-      compiler: gcc
-      env:
-        - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
-      
-    - os: osx
-      osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: clang
       env:
         - MATRIX_EVAL="CC=clang-9.2 && CXX=clang++-9.2"
+      
+    - os: osx
+      osx_image: xcode9.2 # OS X 10.12 Sierra
+      compiler: gcc
+      env:
+        - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
+        
+  exclude:
+    - os : linux
+      compiler: clang
+      
+    - os : osx
+      compiler: gcc
 
 
 before_install:
@@ -76,7 +84,7 @@ install:
 #  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
 #  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
   # for building RocksDB
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd ./3rdparty; git clone https://github.com/facebook/rocksdb.git ; popd; fi
   
 script:
