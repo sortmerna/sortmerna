@@ -1,14 +1,17 @@
 language: cpp
 
-compiler:
-  - clang
-  - gcc
+#compiler:
+#  - clang
+#  - gcc
   
-os:
-  - linux
-  - osx
+#os:
+#  - linux
+#  - osx
   
-osx_image: xcode9.2 # OS X 10.12 Sierra
+#osx_image: xcode9.2 # OS X 10.12 Sierra
+
+#sudo: false
+#sudo: required
 
 matrix:
   include:
@@ -21,6 +24,7 @@ matrix:
           packages:
             - gcc-7
             - g++-7
+            #- zlib1g-dev # for RocksDB
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       
@@ -29,16 +33,38 @@ matrix:
       addons:
         apt:
           sources:
+            - llvm-toolchain-trusty-6.0
+          packages:
+            - clang-6.0
+            #- zlib1g-dev # for RocksDB
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      
+    - os: osx
+      osx_image: xcode9.2 # OS X 10.12 Sierra
+      compiler: gcc
+      addons:
+        apt:
+          sources:
             - ubuntu-toolchain-r-test
           packages:
-            - clang-9.2
+            - gcc-7
+            - g++-7
       env:
-        - COMPILER='clang++-9.2'
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+      
+    - os: osx
+      osx_image: xcode9.2 # OS X 10.12 Sierra
+      compiler: clang
+      #addons:
+      #  apt:
+      #    sources:
+      #      - ubuntu-toolchain-r-test
+      #    packages:
+      #      - clang-9.2
+      env:
         - MATRIX_EVAL="CC=clang-9.2 && CXX=clang++-9.2"
 
-#env: CXX=g++-5
-#sudo: false
-sudo: required
 
 before_install:
   - eval "${MATRIX_EVAL}"
