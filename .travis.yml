@@ -43,25 +43,12 @@ matrix:
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-7
-            - g++-7
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: clang
-      #addons:
-      #  apt:
-      #    sources:
-      #      - ubuntu-toolchain-r-test
-      #    packages:
-      #      - clang-9.2
       env:
         - MATRIX_EVAL="CC=clang-9.2 && CXX=clang++-9.2"
 
