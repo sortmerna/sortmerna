@@ -45,20 +45,22 @@ matrix:
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: clang
       env:
-        - MATRIX_EVAL="CC=clang-9.2 && CXX=clang++-9.2"
+        #- MATRIX_EVAL="COMPILER=clang-9.0 && CXX=clang++-9.0"
+        #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0"
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: gcc
       env:
-        - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7"
         
-  exclude:
-    - os : linux
-      compiler: clang
+# does nothing
+#  exclude:
+#    - os : linux
+#      compiler: clang
       
-    - os : osx
-      compiler: gcc
+#    - os : osx
+#      compiler: gcc
 
 
 before_install:
