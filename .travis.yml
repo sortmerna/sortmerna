@@ -18,7 +18,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-    	    packages:
+          packages:
             - gcc-7
             - g++-7
       env:
@@ -28,11 +28,10 @@ matrix:
       compiler: clang
       addons:
         apt:
-          packages:
-            - clang-9.2
-          #- libstdc++-6-dev
           sources:
             - ubuntu-toolchain-r-test
+          packages:
+            - clang-9.2
       env:
         - COMPILER='clang++-9.2'
         - MATRIX_EVAL="CC=clang-9.2 && CXX=clang++-9.2"
