@@ -23,11 +23,11 @@ class KeyValueDatabase;
 struct Readstats {
 	Runopts & opts;
 
-	std::atomic_uint32_t min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
-	std::atomic_uint32_t max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
-	std::atomic_uint64_t total_reads_mapped; // total number of reads mapped passing E-value threshold. Thread accessed: 'compute_lis_alignment'
+	std::atomic<uint32_t> min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
+	std::atomic<uint32_t> max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
+	std::atomic<uint64_t> total_reads_mapped; // total number of reads mapped passing E-value threshold. Thread accessed: 'compute_lis_alignment'
 	// thread accessed: 'compute_lis_alignment'
-	std::atomic_uint64_t total_reads_mapped_cov; // total number of reads mapped passing E-value threshold and %id && %query coverage thresholds
+	std::atomic<uint64_t> total_reads_mapped_cov; // total number of reads mapped passing E-value threshold and %id && %query coverage thresholds
 
 	char filesig = FASTA_HEADER_START;
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?

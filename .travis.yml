@@ -26,7 +26,7 @@ matrix:
             - g++-7
             - zlib1g-dev # for RocksDB
       env:
-        - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7 && CXXFLAGS=-Wno-error=maybe-uninitialized"
+        - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
       
     - os: linux
       compiler: clang
@@ -94,7 +94,7 @@ script:
   - echo "${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
   # build RocksDB
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
   # build SortmeRNA
   - mkdir -p build/Release; pushd build/Release
