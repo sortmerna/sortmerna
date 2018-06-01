@@ -53,7 +53,8 @@ matrix:
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: gcc
       env:
-        - MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="ENV=Osx+gcc-APPL && gcc --version"
+        #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7"
         
 # does nothing
 #  exclude:
