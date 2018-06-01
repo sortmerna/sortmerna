@@ -26,7 +26,7 @@ matrix:
             - g++-7
             - zlib1g-dev # for RocksDB
       env:
-        - MATRIX_EVAL="SMR_BUILD=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7 && CXXFLAGS=-Wno-error=maybe-uninitialized"
       
     - os: linux
       compiler: clang
@@ -39,13 +39,13 @@ matrix:
             - clang-6.0
             - zlib1g-dev # for RocksDB
       env:
-        - MATRIX_EVAL="SMR_BUILD=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
+        - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: clang
       env:
-        - MATRIX_EVAL="SMR_BUILD=Osx+APPL_clang-9.0"
+        - MATRIX_EVAL="ENV=Osx+APPL_clang-9.0"
         #- MATRIX_EVAL="COMPILER=clang-9.0 && CXX=clang++-9.0"
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0"
       
@@ -53,7 +53,7 @@ matrix:
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: gcc
       env:
-        - MATRIX_EVAL="SMR_BUILD=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7"
         
 # does nothing
 #  exclude:
