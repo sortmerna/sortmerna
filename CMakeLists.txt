@@ -15,6 +15,9 @@ set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
 #include(ExternalProject)
 message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}") # 'GNU' on Ubuntu
 message("CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
+message("CMAKE_HOST_SYSTEM_NAME = ${CMAKE_HOST_SYSTEM_NAME}")
+message("CMAKE_HOST_SYSTEM_VERSION = ${CMAKE_HOST_SYSTEM_VERSION}")
+message("CMAKE_HOST_SYSTEM = ${CMAKE_HOST_SYSTEM}")
 
 # append sortmerna custom modules to cmake modules
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
