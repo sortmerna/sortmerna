@@ -29,33 +29,31 @@
 #include <iostream>
 #include <iterator>
 
-#include "../include/bitvector.hpp"
+#include "bitvector.hpp"
 
 using namespace std;
 
 
-/// mask_4 = 15 = 00001111; this is to keep the bitvectors of length 4
-MYBITSET mask_4 = 15; 
-/// mask the first four bitvectors of substrings $xxx
-MYBITSET mask_3 = 7;
+/// 4 bit mask 00001111 to keep the bitvectors of length 4
+UCHAR mask_4 = 15;
+/// 3 bit mask the first four bitvectors of substrings $xxx
+UCHAR mask_3 = 7;
 
 
 
-/*
- *
- * FUNCTION 	: void init_win_r()
- *		  (see bitvector.hpp for a description)                  
- *
- ************************************************************************************************/
+/*               
+ * initialize forward (prefix) bitvector
+ */
 void 
-init_win_f ( char* ptrf, 
-			MYBITSET* bittable_000, 
-			MYBITSET* bittable_010,
-            int numbvs)
+init_win_f (
+	char* ptrf, 
+	UCHAR* bittable_000,
+	UCHAR* bittable_010,
+	int numbvs)
 {
 	/// [w_1] forward
 
-	MYBITSET *reset  = bittable_000;
+	UCHAR *reset  = bittable_000;
 
 	/// set manually the bitvectors at position i = 0 of [w_1] reverse
 	for ( int bitn = 2; bitn >= 0; bitn-- )
@@ -64,9 +62,9 @@ init_win_f ( char* ptrf,
 	}
 
 	/// set the bitvectors for positions i > 0 of [w_2] forward
-	MYBITSET *setbit = bittable_010;
-	MYBITSET *win_ptr1 = bittable_000;
-	MYBITSET *win_ptr2 = bittable_010;
+	UCHAR *setbit = bittable_010;
+	UCHAR *win_ptr1 = bittable_000;
+	UCHAR *win_ptr2 = bittable_010;
 
 	for ( int i = 1; i <= numbvs; i++ )
 	{
@@ -81,26 +79,23 @@ init_win_f ( char* ptrf,
 			setbit = win_ptr2;
 	  	}	
 	}
-
 }//~init_win_f()
 
 
 
 /*
- *
- * FUNCTION 	: void init_win_r()
- *		  (see bitvector.hpp for a description)                  
- *
- ************************************************************************************************/
+ * initialize the rear (suffix) bitvector
+ */
 void 
-init_win_r ( char* ptrr, 
-			MYBITSET* bittable_000, 
-			MYBITSET* bittable_010,
-            int numbvs)
+init_win_r ( 
+	char* ptrr, 
+	UCHAR* bittable_000,
+	UCHAR* bittable_010,
+	int numbvs )
 {
  	/// [w_1] reverse
 
-	MYBITSET *reset  = bittable_000;
+	UCHAR *reset  = bittable_000;
 
 	/// set manually the bitvectors at position i = 0 of [w_1] reverse
 	for ( int bitn = 2; bitn >= 0; bitn-- )
@@ -110,9 +105,9 @@ init_win_r ( char* ptrr,
 
 	/// set the bitvectors for positions i > 0 of [w_2] forward (note: mask = 15 = 00001111; this is to keep the bitvectors of length 4)
 
-	MYBITSET *setbit = bittable_010;
-	MYBITSET *win_ptr1 = bittable_000;
-	MYBITSET *win_ptr2 = bittable_010;
+	UCHAR *setbit = bittable_010;
+	UCHAR *win_ptr1 = bittable_000;
+	UCHAR *win_ptr2 = bittable_010;
 
 	for ( int i = 1; i <= numbvs; i++ )
 	{
@@ -136,18 +131,19 @@ init_win_r ( char* ptrr,
  *
  ***************************************************************************************/
 void 
-offset_win_k1 ( char *FW2, 
-		char *RW1,
-		MYBITSET* bittable_0P0,
-		MYBITSET* bittable_100,
-		MYBITSET* bittable_110,
-        int numbvs)
+offset_win_k1 (
+	char *FW2, 
+	char *RW1,
+	UCHAR* bittable_0P0,
+	UCHAR* bittable_100,
+	UCHAR* bittable_110,
+	int numbvs )
 {
 	/// [w_1] reverse
 
 	/// compute bitvectors for shifted window from previous window
-	MYBITSET *win_ptr1 = bittable_0P0;
-	MYBITSET *win_ptr2 = bittable_100;
+	UCHAR *win_ptr1 = bittable_0P0;
+	UCHAR *win_ptr2 = bittable_100;
 
 	for ( int i = 0; i < numbvs; i++ )
 	{
@@ -155,7 +151,7 @@ offset_win_k1 ( char *FW2,
 	}/// for every bitvector in [w_1] reverse
 
 	/// compute bitvectors for depth = 0
-	MYBITSET *setbit = win_ptr1;
+	UCHAR *setbit = win_ptr1;
 
 	for ( int i = 4; i > 0; --i )
 	{
@@ -205,7 +201,7 @@ offset_win_k1 ( char *FW2,
  *
  ***************************************************************************************/
 void 
-output_win_k1 ( MYBITSET* bittable_000, bool w, int partialwin )
+output_win_k1 (UCHAR* bittable_000, bool w, int partialwin )
 {
 		/// [w_2] forward
 		if ( w )

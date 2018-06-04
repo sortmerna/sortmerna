@@ -30,6 +30,9 @@
  *               Rob Knight, robknight@ucsd.edu
  */
 
+#include <sstream>
+#include <iostream>
+
 #include "../include/kseq_load.hpp"
 
 
@@ -48,19 +51,24 @@ load_reads(char* inputreads,
            off_t full_file_size,
            char*& finalnt)
 {
+	std::stringstream ss;
+
   raw = new char[full_file_size]();
   if ( raw == NULL )
   {
-    fprintf(stderr,"    %sERROR%s: [Line %d: %s] could not allocate memory for reference sequence buffer\n",
-                   startColor,"\033[0m", __LINE__, __FILE__);
+    ss << "    " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__
+		<< "] could not allocate memory for reference sequence buffer\n";
+	std::cout << ss.str(); ss.str("");
     exit(EXIT_FAILURE);
   }
+
   // 2 pointers per entry (1 for label + 1 for sequence)
   char** reads = new char*[number_total_read*2]();
   if ( reads == NULL )
   {
-    fprintf(stderr,"\n  %sERROR%s: [Line %d: %s] cannot allocate memory for reads\n\n",
-                   startColor,"\033[0m", __LINE__, __FILE__);
+    ss << "\n  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__ 
+		<<"] cannot allocate memory for reads\n\n";
+	std::cout << ss.str(); ss.str("");
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_LIBZ
@@ -118,8 +126,9 @@ load_reads(char* inputreads,
   /* TEST */
   if (l == -2)
   {
-    fprintf(stderr,"  %sERROR%s: [Line %d: %s] could not read reads file - %s\n\n",
-                   startColor,"\033[0m", __LINE__, __FILE__, strerror(errno));
+    ss << "  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__ 
+		<<"] could not read reads file - " << strerror(errno) << "\n\n";
+	std::cout << ss.str(); ss.str("");
     exit(EXIT_FAILURE);    
   }
   kseq_destroy(seq);

@@ -1,28 +1,100 @@
-language: c
-compiler:
-  - clang
-  - gcc
-os:
-  - linux
-  - osx
-sudo: false
+language: cpp
+
+#sudo: false # required
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - g++-7
+            - zlib1g-dev # for RocksDB
+      env:
+        - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
+      
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-6.0
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-6.0
+            - zlib1g-dev # for RocksDB
+      env:
+        - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
+      
+    - os: osx
+      osx_image: xcode9.2 # OS X 10.12 Sierra
+      compiler: clang
+      env:
+        - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL"
+        #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
+      
+    # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
+    - os: osx
+      osx_image: xcode9.2 # OS X 10.12 Sierra
+      compiler: gcc
+      env:
+        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
+        #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
+        
+# does nothing
+#  exclude:
+#    - os : linux
+#      compiler: clang
+      
+#    - os : osx
+#      compiler: gcc
+
+
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh; fi
+  - eval "${MATRIX_EVAL}"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh ; fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda update --yes conda
   - conda config --add channels https://conda.anaconda.org/biobuilds
+  # C++14
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test ; fi
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get update -qq ; fi
+  
 install:
-  - conda create --yes -n env_name python=3.5 numpy scipy zlib cmake
+  - conda create --yes -n env_name python=3.5 numpy scipy
   - source activate env_name
   - pip install scikit-bio==0.2.3
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
+    # C++14
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
+  # for building RocksDB
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd ./3rdparty; git clone https://github.com/facebook/rocksdb.git ; popd; fi
+  
 script:
+  - echo "${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
+  # build RocksDB
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
+  - if [[ "$ENV" == "Linux+gcc-7" ]]; then cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
+  - if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
+  # build SortmeRNA
   - mkdir -p build/Release; pushd build/Release
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
-  - make
-  - popd
-  - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"; cd tests
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna.py; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python ./test_sortmerna_zlib.py; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release ../.. ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
+  - make; popd
+  # run tests
+  - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"
+  - if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna.py; fi
+  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
+
+## END .travis.yml
