@@ -93,8 +93,8 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
   - make; popd
   # run tests
-  #- export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"; cd tests
-  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./test_sortmerna.py; fi
-  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./test_sortmerna_zlib.py; fi
+  - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"
+  - if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna.py; fi
+  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
 ## END .travis.yml
