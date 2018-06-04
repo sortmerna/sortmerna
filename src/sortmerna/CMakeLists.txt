@@ -26,6 +26,8 @@ else()
 	)
 endif()
 
+find_package(Threads REQUIRED)
+
 set(SMR_SRCS
 	alignment.cpp
 	bitvector.cpp
@@ -128,6 +130,7 @@ else()
 		alp
 		z
 		rocksdb
+		${CMAKE_THREAD_LIBS_INIT}
 	)
 endif()
 
