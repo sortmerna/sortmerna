@@ -1,17 +1,6 @@
 language: cpp
 
-#compiler:
-#  - clang
-#  - gcc
-  
-#os:
-#  - linux
-#  - osx
-  
-#osx_image: xcode9.2 # OS X 10.12 Sierra
-
-#sudo: false
-#sudo: required
+#sudo: false # required
 
 matrix:
   include:
@@ -45,16 +34,16 @@ matrix:
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: clang
       env:
-        - MATRIX_EVAL="ENV=Osx+APPL_clang-9.0"
-        #- MATRIX_EVAL="COMPILER=clang-9.0 && CXX=clang++-9.0"
-        #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0"
+        - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL"
+        #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
       
+    # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
       compiler: gcc
       env:
-        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version"
-        #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
+        #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
         
 # does nothing
 #  exclude:
@@ -100,7 +89,8 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
   # build SortmeRNA
   - mkdir -p build/Release; pushd build/Release
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
+  - if [[ "$ENV" == "Linux+gcc-7" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
+  - if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release -DEXTRA_CXX_FLAGS_RELEASE="-std=c++14 -stdlib=libstdc++ -pthread" ../.. ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
   - make; popd
   # run tests
