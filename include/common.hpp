@@ -96,6 +96,7 @@ extern bool verbose;
 #define BOLD   ""
 #define UNDL   ""
 #define COLOFF ""
+const char DELIM = ';';
 #else
 #define RED    "\033[0;31m"
 #define GREEN  "\033[0;32m"
@@ -103,8 +104,8 @@ extern bool verbose;
 #define BOLD   "\033[1m"
 #define UNDL   "\033[4m" // underline
 #define COLOFF "\033[0m" // color off
+const char DELIM = ':';
 #endif
-
 
 
 /*! @brief Maximum length of input reads

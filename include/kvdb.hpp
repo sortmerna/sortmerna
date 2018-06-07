@@ -35,6 +35,8 @@ public:
 		rocksdb::Status s = kvdb->Get(rocksdb::ReadOptions(), key, &val);
 		return val;
 	}
+
+	int clear(std::string dbPath);
 private:
 	rocksdb::DB* kvdb;
 	rocksdb::Options options;

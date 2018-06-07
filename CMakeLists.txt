@@ -18,6 +18,11 @@ message("CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
 message("CMAKE_HOST_SYSTEM_NAME = ${CMAKE_HOST_SYSTEM_NAME}")
 message("CMAKE_HOST_SYSTEM_VERSION = ${CMAKE_HOST_SYSTEM_VERSION}")
 message("CMAKE_HOST_SYSTEM = ${CMAKE_HOST_SYSTEM}")
+message("PROJECT_BINARY_DIR = ${PROJECT_BINARY_DIR}")
+message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+message("CMAKE_CURRENT_BINARY_DIR = ${CMAKE_CURRENT_BINARY_DIR}")
+message("RUNTIME_OUTPUT_DIRECTORY_RELEASE = ${RUNTIME_OUTPUT_DIRECTORY_RELEASE}")
+
 
 # append sortmerna custom modules to cmake modules
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
@@ -27,6 +32,7 @@ option(SRC_ROCKSDB "Download RocksDB sources" OFF)
 option(SRC_RAPIDJSON "Download Rapidjson sources" OFF)
 option(SET_ROCKSDB "Add RocksDB headers and lib to the build (if RocksDB was built from sources)" OFF)
 option(SET_ZLIB "Add Zlib headers and lib to the build (if Zlib was built from sources)" OFF)
+option(WITH_TESTS "Select whether to build tests" ON)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${EXTRA_CXX_FLAGS_RELEASE}" STRGREATER "")
@@ -118,7 +124,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
 ## build sortmerna
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
 
-## cache entries for 3rd party libraries
+## 3rd party libraries
 if(SET_ROCKSDB)
 	## cache entries for RocksDB
 	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory")
@@ -126,13 +132,32 @@ if(SET_ROCKSDB)
 	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory")
 	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+	## library
+	add_library(rocksdb STATIC IMPORTED GLOBAL)
+	set_target_properties(rocksdb PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ROCKSDB_INCLUDE_DIR})
+	if(WIN32)
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/rocksdb.lib)
+	else()
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/librocksdb.a)
+		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/librocksdb.a)
+	endif()
 endif()
 
 if(SET_ZLIB)
-	## zlib
+	## zlib cache entries
 	set(ZLIB_LIB_DEBUG ${EXTERNAL_DEPS}/zlib/build/Debug CACHE PATH "Zlib library directory")
 	set(ZLIB_LIB_RELEASE ${EXTERNAL_DEPS}/zlib/build/Release CACHE PATH "Zlib library directory")
+	## library
+	add_library(z STATIC IMPORTED GLOBAL)
+	set_target_properties(z PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
+	set_target_properties(z PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
+	set_target_properties(z PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
 endif()
+
+if (WITH_TESTS)
+  ADD_SUBDIRECTORY (tests/sortmerna)
+endif ()
 
 #find_package(zlib REQUIRED)
 

@@ -50,11 +50,9 @@
 #include <Winsock.h>
 const std::string ENV_TMPDIR = "TMP";
 const char PATH_SEPARATOR = '\\';
-const char DELIM = ';';
 #else
 const std::string ENV_TMPDIR = "TMPDIR";
 const char PATH_SEPARATOR = '/';
-const char DELIM = ':';
 #endif
 
 
