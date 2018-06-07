@@ -389,6 +389,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 
 	ThreadPool tpool(numThreads);
 	KeyValueDatabase kvdb(opts.kvdbPath);
+	kvdb.clear(opts.kvdbPath); // clear DB directory before new alingment
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, numProcThread); // shared: Processor pushes, Writer pops
 	Refstats refstats(opts, readstats);
