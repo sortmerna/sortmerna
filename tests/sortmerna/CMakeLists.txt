@@ -21,13 +21,21 @@ include_directories("${CMAKE_SOURCE_DIR}/include" ${CMAKE_SOURCE_DIR}/src/winapi
 
 foreach(test ${tests})
 	add_executable("test_${test}" ${test}.cpp $<TARGET_OBJECTS:smr_objs>)
-	target_link_libraries( "test_${test}"
-		alp
-		z
-		rocksdb
-		Rpcrt4.lib
-		Cabinet.lib
-	)
+	if(WIN32)
+		target_link_libraries( "test_${test}"
+			alp
+			z
+			rocksdb
+			Rpcrt4.lib
+			Cabinet.lib
+		)
+	else()
+		target_link_libraries( "test_${test}"
+			alp
+			z
+			rocksdb
+		)
+	endif()
 endforeach()
 
 add_dependencies(test_kvdb sortmerna)
