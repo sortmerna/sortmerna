@@ -127,9 +127,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
 ## 3rd party libraries
 if(SET_ROCKSDB)
 	## cache entries for RocksDB
-	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory")
-	set(ROCKSDB_LIB_DEBUG ${EXTERNAL_DEPS}/rocksdb/build/Debug CACHE PATH "Rocksdb Debug Lib directory")
-	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory")
+	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory" FORCE)
+	set(ROCKSDB_LIB_DEBUG ${EXTERNAL_DEPS}/rocksdb/build/Debug CACHE PATH "Rocksdb Debug Lib directory" FORCE)
+	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory" FORCE)
 	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 	## library
