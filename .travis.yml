@@ -85,7 +85,7 @@ script:
   # build RocksDB
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
   - if [[ "$ENV" == "Linux+gcc-7" ]]; then cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
-  - if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then cmake -E env CXXFLAGS="-Wno-unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
+  - if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
   # build SortmeRNA
   - mkdir -p build/Release; pushd build/Release
