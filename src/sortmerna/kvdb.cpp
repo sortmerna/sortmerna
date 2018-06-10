@@ -14,7 +14,7 @@ int KeyValueDatabase::clear(std::string dbpath)
 {
 	DIR *pdir = opendir(dbpath.data());
 	struct dirent *next_file;
-	char fpath[256];
+	std::string fpath;
 
 	if (pdir == NULL)
 	{
@@ -24,10 +24,10 @@ int KeyValueDatabase::clear(std::string dbpath)
 
 	while ((next_file = readdir(pdir)) != NULL)
 	{
-		sprintf(fpath, "%s/%s", dbpath.data(), next_file->d_name);
+		fpath = dbpath + "/" + next_file->d_name;
 		if (0 == strcmp(next_file->d_name, ".") || 0 == strcmp(next_file->d_name, ".."))
 			continue; // skip '.' and '..'
-		remove(fpath);
+		remove(fpath.c_str());
 	}
 	closedir(pdir);
 	return 0;
