@@ -61,6 +61,9 @@
 #define O_SMR_READ_BIN O_RDONLY
 #endif
 
+// forward
+int clear_dir(std::string dpath);
+
  // see "heuristic 1" below
  //#define HEURISTIC1_OFF
 
@@ -388,8 +391,8 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(numThreads);
+	clear_dir(opts.kvdbPath);
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	kvdb.clear(opts.kvdbPath); // clear DB directory before new alingment
 	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, numProcThread); // shared: Processor pushes, Writer pops
 	Refstats refstats(opts, readstats);

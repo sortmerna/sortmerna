@@ -44,6 +44,7 @@ set(SMR_SRCS
 	ssw.c
 #	ssw_example.c
 	traverse_bursttrie.cpp
+	util.cpp
 	writer.cpp
 )
 
