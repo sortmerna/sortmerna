@@ -4,6 +4,7 @@
  */
 #include <iostream> // cerr
 #include <string>
+#include <cstring>
 #include <dirent.h>
 
 int clear_dir(std::string dpath)
