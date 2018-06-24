@@ -65,6 +65,11 @@ void Reader::read()
 
 			if (line.empty()) continue;
 
+			if (count == 0)
+				isFastq = line[0] == FASTQ_HEADER_START;
+
+			++count;
+
 			// left trim space and '>' or '@'
 			//line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 			// right-trim whitespace in place (removes '\r' too)
@@ -74,33 +79,31 @@ void Reader::read()
 
 			// fastq: 0(header), 1(seq), 2(+), 3(quality)
 			// fasta: 0(header), 1(seq)
-			if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)
+			if (line[0] == FASTA_HEADER_START || isFastq && (count == 1 || count > 4))
 			{ // add header -->
 				if (!read.isEmpty)
 				{ // push previous read object to queue
 					read.init(opts, kvdb, read_id);
 					readQueue.push(read);
 					++read_id;
-					count = 0;
+					count = 1;
 				}
 
 				// start new record
 				read.clear();
-				isFastq = (line[0] == FASTQ_HEADER_START);
 				read.format = isFastq ? Format::FASTQ : Format::FASTA;
 				read.header = line;
 				read.isEmpty = false;
 			} // ~if header line
 			else 
 			{ // add sequence -->
-				++count;
 				if (isFastq && line[0] == '+') continue;
-				if (isFastq && count == 3)
+				if (isFastq && count == 4)
 				{
 					read.quality = line;
 					continue;
 				}
-				read.sequence += line;
+				read.sequence += line; // FASTA multi-line sequence
 			}
 			//if (ifs.eof()) lastRec = true; // push and break
 		} // ~for getline

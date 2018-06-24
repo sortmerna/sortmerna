@@ -77,15 +77,43 @@ There are 3 methods to install SortMeRNA:
 
 Option (3) is the simplest, as it provides access to pre-compiled binaries to various OS.
 
+Please, note the current development code undergone a drastic archtectural change since the last release.
+
+The changes include:
+1. switching to standard C++ threads (no more OpenMP)
+2. Removing Mmap functionality ('-m' option no more). The reads file of any size is read as a stream continuously. The reads are stored in a lockless buffer and processed (aligned) by multiple threads. The results of alignment are stored in an index database (RocksDB).
+3. Reads' processing is split into 3 independent stages: Alignment, Post-processing, and Report Generation. Post-processing and the Report Generation use alignments from the index Database
+
+The change listing above means the available binaries are quite outdated.
+We are preparing a new release that will provide new binary distributions.
+
 # SortMeRNA Compilation
+
+The OS we use for development:
+1. Linux: Ubuntu 16.04 LTS Xenial with GCC 5.4.0
+2. Windows: 10 with Visual Studio 15 2017 Win64
+3. MAC: macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
 
 CMake is used for generating the build files and should be installed prior the build.
 CMake distributions are available for all major operating systems.
 Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
-## Linux OS
+The following Flags can be used when generating the build files (`-D<FLAG>=VALUE`):
+* `WITH_TESTS` (build unit tests)
+* `ROCKSDB_INCLUDE_DIR` (path to RocksDB include directory)
+* `ROCKSDB_LIB_DEBUG` (path to RocksDB library for Debug)
+* `ROCKSDB_LIB_RELEASE` (path to RocksDB library for Release)
+* `ZLIB_LIB_DEBUG` (path to ZLib debug library location. Use if location is custom)
+* `ZLIB_LIB_RELEASE` (path to ZLib release library locations. Use if location is custom)
+* `SRC_ZLIB` (download Zlib sources. Use if ZLib is to be built)
+* `SRC_ROCKSDB` (download RocksDB sources. Use if RocksDB is to be built)
+* `SRC_RAPIDJSON` (download RapidJson sources. Use if 'apt install rapidjson' not available)
+* `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary of RocksDB is installed using packager)
+* `SET_ZLIB` (set to 1 to indicate ZLib was built from sources.)
 
-We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
+The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using standard packager like 'apt'.
+
+## Linux OS
 
 (1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
@@ -116,7 +144,19 @@ We tested the build on Ubuntu 16.04 LTS Xenial with GCC 5.4.0
 	```bash
 	mkdir -p $SMR_HOME/build/Release
 	pushd $SMR_HOME/build/Release
-	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
+	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
+	```
+	
+	OR with RocksDB built from sources in default location ($SMR_HOME/3rdparty/rocksdb)
+	
+	```bash
+	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
+	```
+	
+	OR with custom values for RocksDB include/lib
+	
+	```bash
+	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
 	```
 
 NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.

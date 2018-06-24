@@ -130,9 +130,9 @@ void alignmentCb
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])
 	{
 		std::stringstream ss;
-		ss << "\n  " << YELLOW << "WARNING" << COLOFF
+		ss << "\n  " << YELLOW << "WARNING " << COLOFF
 			<< __FILE__ << ":" << __LINE__ << ": Processor thread: " << std::this_thread::get_id()
-			<< " The read: " << read.id << " is shorter than "
+			<< " The read.id: " << read.id << " read.header: " << read.header << " is shorter than "
 			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
 		std::cout << ss.str(); ss.str("");
 
