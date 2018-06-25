@@ -7,8 +7,17 @@
 #include <cstring>
 #include <dirent.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
+// forward
+int clear_dir(std::string dpath);
+bool dirExists(std::string dpath);
+
 int clear_dir(std::string dpath)
 {
+	if (!dirExists(dpath)) return 0;
+
 	DIR *pdir = opendir(dpath.data());
 	struct dirent *next_file;
 	std::string fpath;
@@ -32,3 +41,23 @@ int clear_dir(std::string dpath)
 	closedir(pdir);
 	return 0;
 } /// ~clear_dir
+
+/* 
+ * @param dpath String - Directory Path
+ */
+bool dirExists(std::string dpath)
+{
+	bool exists = false;
+	struct stat info;
+
+	if (stat(dpath.data(), &info) != 0)
+		std::cout << "Cannot access path: " << dpath << std::endl;
+	else if (info.st_mode & S_IFDIR)  // S_ISDIR() doesn't exist on my windows 
+	{
+		std::cout << "Path is a directory: " << dpath << std::endl;
+		exists = true;
+	}
+	else
+		std::cout << "Path is Not a directory: " << dpath << std::endl;
+	return exists;
+}

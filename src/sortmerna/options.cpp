@@ -1563,42 +1563,41 @@ void printlist()
 		<< "  -------------------------------------------------------------------------------------------------------------" << std::endl
 		<< "     " << BOLD << "--ref" << COLOFF << "             " << UNDL << "STRING,STRING" << COLOFF
 		<< "   FASTA reference file:index file                               " << GREEN << "mandatory" << COLOFF << std::endl
-		<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1)"
-		<< std::endl
-		<< "                                       If passing multiple reference files, separate them"
-		<< std::endl
-		<< "                                       using the delimiter ':' (Linux) or ';' (Windows),"
-		<< std::endl
-		<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)"
-		<< std::endl
+		<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1)"    << std::endl
+		<< "                                       If passing multiple reference files, separate them"	<< std::endl
+		<< "                                       using the delimiter ':' (Linux) or ';' (Windows),"	<< std::endl
+		<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)" << std::endl
 		<< "     " << BOLD << "--reads" << COLOFF << "           " << UNDL << "STRING" << COLOFF
-		<< "          FASTA/FASTQ raw reads file                                     " << GREEN << "mandatory" << COLOFF
-		<< std::endl
+		<< "          FASTA/FASTQ raw reads file                                     " << GREEN << "mandatory" << COLOFF << std::endl
 #ifdef HAVE_LIBZ
 		<< "       OR" << std::endl
 		<< "     " << BOLD << "--reads-gz" << COLOFF << "        " << UNDL << "STRING" << COLOFF
 		<< "          FASTA/FASTQ compressed (with gzip) reads file                  " << GREEN << "mandatory" << COLOFF
 		<< std::endl
 #endif
-		<< "     " << BOLD << "--aligned" << COLOFF << "         " << UNDL << "STRING" << COLOFF
-		<< "          aligned reads filepath + base file name                        " << GREEN << "mandatory" << COLOFF
-		<< std::endl
-		<< "                                         (appropriate extension will be added)\n" << std::endl
-		<< "     " << BOLD << "-d" << COLOFF << "         " << UNDL << "STRING" << COLOFF
-		<< "          key−value store location (folder path)                        " << GREEN << "mandatory" << COLOFF << std::endl
-		<< "     " << BOLD << "--task" << COLOFF << "          " << UNDL << "INT" << COLOFF
-		<< "     Task: 0 (align) default, 1 (post−process), 2 (report), 3 (align and post−proc), 4 (all)" << std::endl
+		<< "     " << BOLD << "--aligned" << COLOFF << "         "        << UNDL << "STRING" << COLOFF
+		<< "          aligned reads filepath + base file name                        " << GREEN << "mandatory" << COLOFF << std::endl
+		<< "                                         (appropriate extension will be added)" << std::endl
+		<< "     " << BOLD << "-d"        << COLOFF << "                " << UNDL << "STRING" << COLOFF
+		<<"          key−value store location (folder path)                         " << GREEN << "mandatory" << COLOFF << std::endl
+		<< "     " << BOLD << "--task"    << COLOFF << "            "     << UNDL << "INT" << COLOFF
+		<< "             "                     << "Processing Task" << std::endl
+		<< "                                         0 - align (default) Only perform alignment" << std::endl
+		<< "                                         1 - post−processing (log writing)" << std::endl
+		<< "                                         2 - generate reports" << std::endl
+		<< "                                         3 - align and post−process" << std::endl
+		<< "                                         4 - all" << std::endl
 		<< "   [COMMON OPTIONS]: " << std::endl
-		<< "     " << BOLD << "--threads" << COLOFF << "                " << UNDL << "INT:INT:INT" << COLOFF
-		<< "          number of Read:Write:Process threads to use                                       " << UNDL << "1:1:numCores" << COLOFF << std::endl
-		<< "     " << BOLD << "--thpp" << COLOFF << "                " << UNDL << "INT:INT:INT" << COLOFF
-		<< "          number of Post-Processing Read:Process threads to use                             " << UNDL << "1:1" << COLOFF << std::endl
-		<< "     " << BOLD << "--threp" << COLOFF << "                " << UNDL << "INT:INT:INT" << COLOFF
-		<< "          number of Report Read:Process threads to use                                      " << UNDL << "1:1" << COLOFF << std::endl
-		<< "     " << BOLD << "--other" << COLOFF << "           " << UNDL << "STRING" << COLOFF
+		<< "     " << BOLD << "--threads" << COLOFF << "         "        << UNDL << "INT:INT:INT" << COLOFF
+		<< "     number of Read:Write:Process threads to use                    " << UNDL << "1:1:numCores" << COLOFF << std::endl
+		<< "     " << BOLD << "--thpp"    << COLOFF << "            "     << UNDL << "INT:INT:INT" << COLOFF
+		<< "     number of Post-Processing Read:Process threads to use          " << UNDL << "1:1" << COLOFF << std::endl
+		<< "     " << BOLD << "--threp"   << COLOFF << "           "      << UNDL << "INT:INT:INT" << COLOFF
+		<< "     number of Report Read:Process threads to use                   " << UNDL << "1:1" << COLOFF << std::endl
+		<< "     " << BOLD << "--other"   << COLOFF << "           "      << UNDL << "STRING" << COLOFF
 		<< "          rejected reads filepath + base file name" << std::endl
 		<< "                                         (appropriate extension will be added)" << std::endl
-		<< "     " << BOLD << "--fastx" << COLOFF << "           " << UNDL << "BOOL" << COLOFF
+		<< "     " << BOLD << "--fastx"   << COLOFF << "           " << UNDL << "BOOL" << COLOFF
 		<< "            output FASTA/FASTQ file                                        " << UNDL << "off" << COLOFF << std::endl
 		<< "                                         (for aligned and/or rejected reads)" << std::endl
 		<< "     " << BOLD << "--sam" << COLOFF << "             " << UNDL << "BOOL" << COLOFF
@@ -1708,16 +1707,16 @@ void printlist()
 		<< "                                         matches in the index rather than stopping" << std::endl
 		<< "                                         after finding a 0-error match (<1%% gain in" << std::endl
 		<< "                                         sensitivity with up four-fold decrease in speed)" << std::endl
-		<< "    " << BOLD << "--pid" << COLOFF << "              " << UNDL << "BOOL" << COLOFF
+		<< "    " << BOLD << "--pid"     << COLOFF << "              " << UNDL << "BOOL" << COLOFF
 		<< "            add pid to output file names                                   " << UNDL << "off" << COLOFF << std::endl
-		<< "    " << BOLD << "--cmd" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
-		<< "          launch an interactive session (command prompt)" << std::endl
-		<< std::endl
+		<< "    " << BOLD << "--cmd"     << COLOFF << "              " << UNDL << "BOOL" << COLOFF
+		<< "            launch an interactive session (command prompt)" << std::endl << std::endl
 		<< "   [HELP]:" << std::endl
-		<< "    " << BOLD << "-h" << COLOFF << "                " << UNDL << "BOOL" << COLOFF << "            help" << std::endl
-		<< "    " << BOLD << "--version" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
-		<< "            SortMeRNA version number" << std::endl << std::endl << std::endl
-		<< std::endl
-		<< std::endl;
+		<< "    " << BOLD << "-h"        << COLOFF << "                 " << UNDL << "BOOL" << COLOFF << "            help" << std::endl
+		<< "    " << BOLD << "--version" << COLOFF << "          " << UNDL << "BOOL" << COLOFF << "            SortMeRNA version number" 
+		<< std::endl << std::endl << std::endl << std::endl << std::endl;
+
+	std::cout << ss.str();
+
 	exit(EXIT_FAILURE);
 }//~printlist()
