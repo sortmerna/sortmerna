@@ -247,7 +247,7 @@ export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sor
 ```
 
 
-### Set Clang compiler for Mac OS
+### Mac OS - configure shell to use Clang compiler
 
 (1) Check if you have Clang installed:
 
@@ -265,7 +265,7 @@ export CXX=clang++
 (2b) If Clang is not installed, see [Clang for Mac OS](#clang-for-mac-os)
 for installation instructions.
 
-### Set GCC compiler for Mac OS
+### Mac OS - configure shell to use GCC compiler
 
 (1) Check if you have GCC installed:
 
@@ -292,8 +292,8 @@ To list available flags
 brew options gcc54
 ```
 
-Clang for Mac OS
-----------------
+Mac OS - install Clang
+----------------------
 
 Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
 install the latest version of Clang supported with Xcode. 
