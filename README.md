@@ -65,27 +65,18 @@ command was run.
 
 SortMeRNA can be built and run on Windows, Linux, and Mac.
 
-There are 3 methods to install SortMeRNA:
+There are 3 methods to get SortMeRNA:
 
-1. [GitHub repository](https://github.com/biocore/sortmerna) development version (master branch)
+1. [GitHub repository](https://github.com/biocore/sortmerna) Build development version from sources (master branch)
 ...* [Installation instructions](#sortmerna-compilation)
-2. [GitHub releases](https://github.com/biocore/sortmerna/releases) (tar balls, zip)
-...* [Installation instructions Linux](#linux-os)
-...* [Installation instructions Mac OS](#mac-os)
-...* [Installation instructions Windows OS](#windows-os)
-3. [BioInfo releases](http://bioinfo.lifl.fr/RNA/sortmerna/) (tar balls including compiled binaries)
+2. [GitHub releases](https://github.com/biocore/sortmerna/releases) Build Release version from sources (tar balls, zip)
+...* [on Linux](#linux-os)
+...* [on Mac OS](#mac-os)
+...* [on Windows OS](#windows-os)
+3. [GitHub releases](https://github.com/biocore/sortmerna/releases) Use pre-built Release binaries.
 
-Option (3) is the simplest, as it provides access to pre-compiled binaries to various OS.
+Option (3) is the simplest, as it provides access to pre-compiled binaries.
 
-Please, note the current development code undergone a drastic archtectural change since the last release.
-
-The changes include:
-1. switching to standard C++ threads (no more OpenMP)
-2. Removing Mmap functionality ('-m' option no more). The reads file of any size is read as a stream continuously. The reads are stored in a lockless buffer and processed (aligned) by multiple threads. The results of alignment are stored in an index database (RocksDB).
-3. Reads' processing is split into 3 independent stages: Alignment, Post-processing, and Report Generation. Post-processing and the Report Generation use alignments from the index Database
-
-The change listing above means the available binaries are quite outdated.
-We are preparing a new release that will provide new binary distributions.
 
 # SortMeRNA Compilation
 
@@ -111,53 +102,54 @@ The following Flags can be used when generating the build files (`-D<FLAG>=VALUE
 * `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary of RocksDB is installed using packager)
 * `SET_ZLIB` (set to 1 to indicate ZLib was built from sources.)
 
-The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using standard packager like 'apt'.
+The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using a standard packager like 'apt' (on Linux) or 'homebrew' (on Mac)
+
 
 ## Linux OS
 
 (1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
-	```bash
-	gcc --version
-		gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
-	```
+```bash
+gcc --version
+	gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
+```
 
 (2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
 
-	```
-	sudo apt update
-	sudo apt install cmake
-	sudo apt install git
-	suod apt install zlib
-	sudo apt install rocksdb
-	sudo apt install rapidjson
-	```
+```
+sudo apt update
+sudo apt install cmake
+sudo apt install git
+suod apt install zlib
+sudo apt install rocksdb
+sudo apt install rapidjson
+```
 	
 (3) Clone the Git repository
 
-	```
-	git clone https://github.com/biocore/sortmerna.git
-	```
+```
+git clone https://github.com/biocore/sortmerna.git
+```
 	
 (2) Generate the build files using CMake:
 
-	```bash
-	mkdir -p $SMR_HOME/build/Release
-	pushd $SMR_HOME/build/Release
-	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
-	```
+```bash
+mkdir -p $SMR_HOME/build/Release
+pushd $SMR_HOME/build/Release
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
+```
 	
-	OR with RocksDB built from sources in default location ($SMR_HOME/3rdparty/rocksdb)
+OR with RocksDB built from sources in default location ($SMR_HOME/3rdparty/rocksdb)
 	
-	```bash
-	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
-	```
+```bash
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
+```
 	
-	OR with custom values for RocksDB include/lib
+OR with custom values for RocksDB include/lib
 	
-	```bash
-	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
-	```
+```bash
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
+```
 
 NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
@@ -165,9 +157,9 @@ The above commands will perform necessary system check-ups, dependencies, and ge
 
 (3) Compile and build executables:
 
-	```bash
-	make
-	```
+```bash
+make
+```
 
 The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
 Simply add the build binaries to the PATH e.g.
@@ -247,8 +239,12 @@ make
 ```
 
 The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
+
 Simply add the build binaries to the PATH e.g.
-`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+
+```
+export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
+```
 
 
 ### Set Clang compiler for Mac OS
@@ -453,17 +449,28 @@ Depending on the build type the binaries are generated in
 set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
 ```
 
-Tests
-=====
+Running
+=======
 
-Python code is provided for running tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
+Python code is provided for running integration tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
 
 Tests can be run with the following command:
+
 ```
 python ./tests/test_sortmerna.py
+```
+
+OR individual tests
+
+```
+python ./tests/test_sortmerna.py SortmernaTests.test_simulated_amplicon_generic_buffer
+```
+
+Tests on compressed data files
+
+```
 python ./tests/test_sortmerna_zlib.py
 ```
-Make sure the ```data``` folder is in the same directory as ```test_sortmerna.py```
 
 Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
 
@@ -484,7 +491,7 @@ Wrappers and Packages
 Galaxy
 ------
 
-Thanks to Björn Grüning and Nicola Soranzo, an up-to-date Galaxy wrapper exists for SortMeRNA.
+Thanks to Björn Grüning and Nicola Soranzo, a Galaxy wrapper exists for SortMeRNA 2.1.
 Please visit Björn's [github page](https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna) for installation.
 
 Debian
