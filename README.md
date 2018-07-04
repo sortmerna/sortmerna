@@ -157,6 +157,10 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSD
 
 NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
+Other compiler/linker flags that might be necessary depending on the system:
+
+* -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
+
 The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
 (3) Compile and build executables:
