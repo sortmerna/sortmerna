@@ -81,9 +81,13 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries.
 # SortMeRNA Compilation
 
 The OS we use for development:
-1. Linux: Ubuntu 16.04 LTS Xenial with GCC 5.4.0
+1. Linux: Ubuntu 16.04 LTS Xenial with GCC 7.3.0
 2. Windows: 10 with Visual Studio 15 2017 Win64
 3. MAC: macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
+
+Other environments we tested:
+
+* Centos 6.6 with GCC 7.3.0. Getting latest GCC on old Centos requires building GCC from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host). Upgrading GCC on Ubuntu for comparison is easy through PPA packages.
 
 CMake is used for generating the build files and should be installed prior the build.
 CMake distributions are available for all major operating systems.
