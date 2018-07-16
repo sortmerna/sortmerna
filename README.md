@@ -129,6 +129,8 @@ sudo apt install rocksdb
 sudo apt install rapidjson
 ```
 	
+Note that the above packages are important build and runtime dependencies. If they are not present on the system and cannot be installed using a package manager, they need to be built. E.g. RocksDB may not be available as a standard package on older Linux distros, so will need to be built from sources.
+	
 (3) Clone the Git repository
 
 ```
