@@ -137,20 +137,20 @@ If the dependencies cannot be installed using a package manager, they need to be
 git clone https://github.com/biocore/sortmerna.git
 ```
 	
-(2) Generate the build files using CMake:
+(4) Generate the build files using CMake:
 
 ```bash
 mkdir -p $SMR_HOME/build/Release
 pushd $SMR_HOME/build/Release
 ```
 
-(2.1) If all the dependencies are available on the system
+(4.1) If all the dependencies are available on the system
 
 ```bash
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
 ```
 	
-(2.2) If RocksDB and RapidJson have to be installed from sources (see the flags description above)
+(4.2) If RocksDB and RapidJson have to be installed from sources (see the flags description above)
 	
 ```bash
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
@@ -172,9 +172,9 @@ Other compiler/linker flags that might be necessary depending on the system:
 
 The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
-(3) Compile and build executables:
+(5) Compile and build executables:
 
-(3.1) If RocksDB needs to be built
+(5.1) If RocksDB needs to be built
 
 ```bash
 mdir -p SMR_HOME/3rdparty/rocksdb/build/Release
@@ -184,7 +184,7 @@ make
 popd
 ```
 
-(3.2)
+(5.2)
 
 Build SortMeRNA
 
