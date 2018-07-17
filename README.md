@@ -129,7 +129,7 @@ sudo apt install rocksdb
 sudo apt install rapidjson
 ```
 	
-Note that the above packages are important build and runtime dependencies. If they are not present on the system and cannot be installed using a package manager, they need to be built. E.g. RocksDB may not be available as a standard package on older Linux distros, so will need to be built from sources.
+If the dependencies cannot be installed using a package manager, they need to be built (read below).
 	
 (3) Clone the Git repository
 
@@ -142,19 +142,26 @@ git clone https://github.com/biocore/sortmerna.git
 ```bash
 mkdir -p $SMR_HOME/build/Release
 pushd $SMR_HOME/build/Release
+```
+
+(2.1) If all the dependencies are available on the system
+
+```bash
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
 ```
 	
-OR with RocksDB built from sources in default location ($SMR_HOME/3rdparty/rocksdb)
+(2.2) If RocksDB and RapidJson have to be installed from sources (see the flags description above)
 	
 ```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
 ```
-	
+
+The above will download RocksDB and RapidJson into default locations ($SMR_HOME/3rdparty/rocksdb) and ($SMR_HOME/3rdparty/rapidjson) correspondingly.
+
 OR with custom values for RocksDB include/lib
 	
 ```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
 ```
 
 NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
@@ -167,13 +174,30 @@ The above commands will perform necessary system check-ups, dependencies, and ge
 
 (3) Compile and build executables:
 
+(3.1) If RocksDB needs to be built
+
+```bash
+mdir -p SMR_HOME/3rdparty/rocksdb/build/Release
+pushd SMR_HOME/3rdparty/rocksdb/build/Release
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../..
+make
+popd
+```
+
+(3.2)
+
+Build SortMeRNA
+
 ```bash
 make
 ```
 
 The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
 Simply add the build binaries to the PATH e.g.
-`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+
+```
+export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
+```
 
 
 ## Mac OS
