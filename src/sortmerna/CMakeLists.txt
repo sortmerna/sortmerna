@@ -109,4 +109,22 @@ else()
 		${CMAKE_THREAD_LIBS_INIT}
 	)
 	add_dependencies(sortmerna alp smr_objs)
+
+    #include(GetPrerequisites)
+    #get_prerequisites(sortmerna SMR_DEPS 0 1 ) # executable has to be specified (not sortmerna target)
+    #message(STATUS "SMR_DEPS: ${SMR_DEPS}")
+
+	get_prerequisits(sortmerna SMR_DEPS)
+	message(STATUS ${SMR_DEPS})
+
+	get_target_property(SMR_DEPS sortmerna INTERFACE_LINK_LIBRARIES)
+	message(STATUS "INTERFACE_LINK_LIBRARIES: ${SMR_DEPS}")
+	get_target_property(SMR_DEPS sortmerna IMPORTED_LINK_DEPENDENT_LIBRARIES)
+	message(STATUS "IMPORTED_LINK_DEPENDENT_LIBRARIES: ${SMR_DEPS}")
+	get_target_property(SMR_DEPS sortmerna IMPORTED_LINK_INTERFACE_LIBRARIES)
+	message(STATUS "IMPORTED_LINK_INTERFACE_LIBRARIES: ${SMR_DEPS}")
+	get_target_property(SMR_DEPS sortmerna LINK_DEPENDS)
+	message(STATUS "IMPORTED_LINK_INTERFACE_LIBRARIES: ${SMR_DEPS}")
+	
+	
 endif()

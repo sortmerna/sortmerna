@@ -21,7 +21,7 @@ struct Runopts {
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
 	int num_write_thread = 1; // number of threads writing to Key-value database
-	int num_proc_thread = 0; // '-a' number of threads to use for alignment, post-processing, reporting
+	int num_proc_thread = 0; // '-a' number of threads to use for alignment, post-processing, reporting. Default - all available cores.
 
 	int num_read_thread_pp = 1; // number of post-processing read threads
 	int num_proc_thread_pp = 1; // number of post-processing processor threads
