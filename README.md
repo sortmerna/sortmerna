@@ -81,9 +81,13 @@ Option (3) is the simplest, as it provides access to pre-compiled binaries.
 # SortMeRNA Compilation
 
 The OS we use for development:
-1. Linux: Ubuntu 16.04 LTS Xenial with GCC 5.4.0
+1. Linux: Ubuntu 16.04 LTS Xenial with GCC 7.3.0
 2. Windows: 10 with Visual Studio 15 2017 Win64
 3. MAC: macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
+
+Other environments we tested:
+
+* Centos 6.6 with GCC 7.3.0. Getting latest GCC on old Centos requires building GCC from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host). Upgrading GCC on Ubuntu for comparison is easy through PPA packages.
 
 CMake is used for generating the build files and should be installed prior the build.
 CMake distributions are available for all major operating systems.
@@ -125,37 +129,64 @@ sudo apt install rocksdb
 sudo apt install rapidjson
 ```
 	
+If the dependencies cannot be installed using a package manager, they need to be built (read below).
+	
 (3) Clone the Git repository
 
 ```
 git clone https://github.com/biocore/sortmerna.git
 ```
 	
-(2) Generate the build files using CMake:
+(4) Generate the build files using CMake:
 
 ```bash
 mkdir -p $SMR_HOME/build/Release
 pushd $SMR_HOME/build/Release
+```
+
+(4.1) If all the dependencies are available on the system
+
+```bash
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
 ```
 	
-OR with RocksDB built from sources in default location ($SMR_HOME/3rdparty/rocksdb)
+(4.2) If RocksDB and RapidJson have to be installed from sources (see the flags description above)
 	
 ```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
 ```
-	
+
+The above will download RocksDB and RapidJson into default locations ($SMR_HOME/3rdparty/rocksdb) and ($SMR_HOME/3rdparty/rapidjson) correspondingly.
+
 OR with custom values for RocksDB include/lib
 	
 ```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=1 -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
 ```
 
 NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
+Other compiler/linker flags that might be necessary depending on the system:
+
+* -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
+
 The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
-(3) Compile and build executables:
+(5) Compile and build executables:
+
+(5.1) If RocksDB needs to be built
+
+```bash
+mdir -p SMR_HOME/3rdparty/rocksdb/build/Release
+pushd SMR_HOME/3rdparty/rocksdb/build/Release
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../..
+make
+popd
+```
+
+(5.2)
+
+Build SortMeRNA
 
 ```bash
 make
@@ -163,7 +194,10 @@ make
 
 The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
 Simply add the build binaries to the PATH e.g.
-`export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"`
+
+```
+export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
+```
 
 
 ## Mac OS
