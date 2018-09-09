@@ -1595,7 +1595,7 @@ void printlist()
 		<< "                                           1 - post−processing (log writing)"                                     << std::endl
 		<< "                                           2 - generate reports"                                                  << std::endl
 		<< "                                           3 - align and post−process"                                            << std::endl
-		<< "                                           4 - all"                                                               << std::endl
+		<< "                                           4 - all"                                                               << std::endl << std::endl
 		<< "   [COMMON OPTIONS]: "                                                                                            << std::endl << BOLD
 		<< "    --threads       "                                                                                             << COLOFF << UNDL
 		<<                      "  INT:INT:INT   "                                                                            << COLOFF
@@ -1676,8 +1676,8 @@ void printlist()
 		<<                      "  BOOL          "                                                                            << COLOFF
 		<<                                       "   both paired-end reads go in --aligned fasta/q file        "              << UNDL 
 		<<                                                                                                     "off"          << COLOFF << std::endl
-		<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)"               << std::endl << BOLD << COLOFF
-		<< "    --paired_out    "                                                                                            
+		<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)"               << std::endl << BOLD
+		<< "    --paired_out    "                                                                                             << COLOFF << UNDL
 		<<                      "   BOOL         "                                                                            << COLOFF
 		<<                                       "   both paired-end reads go in --other fasta/q file          "              << UNDL 
 		<<                                                                                                     "off"          << COLOFF << std::endl
