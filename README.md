@@ -57,7 +57,7 @@ and running the following command:
 doxygen doxygen_configure.txt
 ```
 
-This command will generate a folder ```html``` in the directory from which the
+This command will generate a folder `html` in the directory from which the
 command was run.
 
 
@@ -89,11 +89,16 @@ The build was tested on the following OS:
 3. MAC
 	* macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
 
-Getting latest GCC on old Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host).
+Getting latest GCC on _old_ Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host).
 
-CMake is used for generating the build files and should be installed prior the build.
-CMake distributions are available for all major operating systems.
-Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+**CMake** is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+
+The following libraries have to be installed using a packager or to be built
+* **ZLib** (zlib1g-dev)
+* **RocksDB** (librocksdb-dev)
+* **RapidJson** (rapidjson-dev)
+	
+**Git** has to be installed _if_ building from the GitHub repository sources.
 
 The following Flags can be used when generating the build files (`-D<FLAG>=VALUE`):
 * `WITH_TESTS` (build unit tests)
@@ -108,7 +113,7 @@ The following Flags can be used when generating the build files (`-D<FLAG>=VALUE
 * `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary if RocksDB is installed using packager)
 * `SET_ZLIB` (set to 1 to indicate ZLib was built from sources.)
 
-The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using a standard packager like 'apt' (on Linux) or 'homebrew' (on Mac)
+The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using a standard packager like `apt` (on Linux) or `homebrew` (on Mac)
 
 
 ## Linux OS
