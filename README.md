@@ -70,11 +70,11 @@ The following methods can be used for building/running SortMeRNA:
 1. [DNANexus](https://platform.dnanexus.com): use the ```sortmerna-3.run```  App to run SortmeRNA on your data at any time (coming soon)
 2. [Pre-built binaries from GitHub releases](https://github.com/biocore/sortmerna/releases) .
 3. [GitHub releases](https://github.com/biocore/sortmerna/releases) Build Release version from sources (tar balls, zip)
-...* [on Linux](#linux-os)
-...* [on Mac OS](#mac-os)
-...* [on Windows OS](#windows-os)
+	* [on Linux](#linux-os)
+	* [on Mac OS](#mac-os)
+	* [on Windows OS](#windows-os)
 4. [GitHub repository](https://github.com/biocore/sortmerna) Build development version from sources (master branch)
-...* [Instructions](#sortmerna-compilation)
+	* [Instructions](#sortmerna-compilation)
 
 
 # SortMeRNA Compilation
