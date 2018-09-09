@@ -112,7 +112,7 @@ else()
 
     #include(GetPrerequisites)
     #get_prerequisites(sortmerna SMR_DEPS 0 1 ) # executable has to be specified (not sortmerna target)
-	#get_prerequisits(sortmerna SMR_DEPS)
+	#get_prerequisites(sortmerna SMR_DEPS)
     #message(STATUS "SMR_DEPS: ${SMR_DEPS}")
 
 	#get_target_property(SMR_DEPS sortmerna INTERFACE_LINK_LIBRARIES)

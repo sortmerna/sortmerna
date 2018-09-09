@@ -27,7 +27,7 @@
 #endif
 
  /*! @brief Version number */
-std::string version_num = "2.1b, 03/03/2016";
+std::string version_num = "3.0.0-a, 09/09/2018";
 
 /*! @brief Measure time using this variable. */
 //timeval t;
@@ -1531,12 +1531,12 @@ void welcome()
 		<< "                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl
 		<< "                See the GNU Lesser General Public License for more details." << std::endl
 		<< "  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com " << std::endl
-		<< "                Laurent Noé      laurent.noe@lifl.fr" << std::endl
-		<< "                Pierre Pericard  pierre.pericard@lifl.fr" << std::endl
-		<< "                Daniel McDonald  wasade@gmail.com" << std::endl
-		<< "                Mikaël Salson    mikael.salson@lifl.fr" << std::endl
-		<< "                Hélène Touzet    helene.touzet@lifl.fr" << std::endl
-		<< "                Rob Knight       robknight@ucsd.edu\n" << std::endl;
+		<< "                Laurent Noé      laurent.noe@lifl.fr"      << std::endl
+		<< "                Pierre Pericard  pierre.pericard@lifl.fr"  << std::endl
+		<< "                Daniel McDonald  wasade@gmail.com"         << std::endl
+		<< "                Mikaël Salson    mikael.salson@lifl.fr"    << std::endl
+		<< "                Hélène Touzet    helene.touzet@lifl.fr"    << std::endl
+		<< "                Rob Knight       robknight@ucsd.edu\n"     << std::endl;
 
 	std::cout << ss.str();
 }
@@ -1558,164 +1558,230 @@ void printlist()
 		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output −d kvdb_path [OPTIONS]:" << std::endl
 #endif
 		<< std::endl
-		<< "  -------------------------------------------------------------------------------------------------------------" << std::endl
-		<< "  | parameter          value           description                                                    default |" << std::endl
-		<< "  -------------------------------------------------------------------------------------------------------------" << std::endl
-		<< "     " << BOLD << "--ref" << COLOFF << "             " << UNDL << "STRING,STRING" << COLOFF
-		<< "   FASTA reference file:index file                               " << GREEN << "mandatory" << COLOFF << std::endl
-		<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1)"    << std::endl
-		<< "                                       If passing multiple reference files, separate them"	<< std::endl
-		<< "                                       using the delimiter ':' (Linux) or ';' (Windows),"	<< std::endl
-		<< "                                       (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)" << std::endl
-		<< "     " << BOLD << "--reads" << COLOFF << "           " << UNDL << "STRING" << COLOFF
-		<< "          FASTA/FASTQ raw reads file                                     " << GREEN << "mandatory" << COLOFF << std::endl
+		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
+		<< "  | option              type-format       description                                              default    |"  << std::endl
+		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl << BOLD
+		<< "    --ref            "                                                                                            << COLOFF << UNDL
+		<<                       "  STRING,STRING"                                                                            << COLOFF
+		<<                                       "   FASTA reference file:index file                           "              << GREEN 
+		<<                                                                                                     "mandatory"    << COLOFF << std::endl
+		<< "                                          If passing multiple reference files, separate them"                     << std::endl
+		<< "                                          using the delimiter ':' (Linux) or ';' (Windows),"                      << std::endl
+		<< "                 (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)"            << std::endl << BOLD
+		<< "    --reads          "                                                                                            << COLOFF << UNDL
+		<<                       "  STRING       "                                                                            << COLOFF
+		<<                                       "   FASTA/FASTQ raw reads file                                "              << GREEN 
+		<<                                                                                                     "mandatory"    << COLOFF << std::endl
 #ifdef HAVE_LIBZ
-		<< "       OR" << std::endl
-		<< "     " << BOLD << "--reads-gz" << COLOFF << "        " << UNDL << "STRING" << COLOFF
-		<< "          FASTA/FASTQ compressed (with gzip) reads file                  " << GREEN << "mandatory" << COLOFF
-		<< std::endl
+		<< "        OR"                                                                                                       << std::endl << BOLD                                                                                                    
+		<< "    --reads-gz       "                                                                                            << COLOFF << UNDL
+		<<                       "  STRING       "                                                                            << COLOFF
+		<<                                       "   FASTA/FASTQ compressed (with gzip) reads file             "              << GREEN 
+		<<                                                                                                     "mandatory"    << COLOFF << std::endl << BOLD
 #endif
-		<< "     " << BOLD << "--aligned" << COLOFF << "         "        << UNDL << "STRING" << COLOFF
-		<< "          aligned reads filepath + base file name                        " << GREEN << "mandatory" << COLOFF << std::endl
-		<< "                                         (appropriate extension will be added)" << std::endl
-		<< "     " << BOLD << "-d"        << COLOFF << "                " << UNDL << "STRING" << COLOFF
-		<<"          key−value store location (folder path)                         " << GREEN << "mandatory" << COLOFF << std::endl
-		<< "     " << BOLD << "--task"    << COLOFF << "            "     << UNDL << "INT" << COLOFF
-		<< "             "                     << "Processing Task" << std::endl
-		<< "                                         0 - align (default) Only perform alignment" << std::endl
-		<< "                                         1 - post−processing (log writing)" << std::endl
-		<< "                                         2 - generate reports" << std::endl
-		<< "                                         3 - align and post−process" << std::endl
-		<< "                                         4 - all" << std::endl
-		<< "   [COMMON OPTIONS]: " << std::endl
-		<< "     " << BOLD << "--threads" << COLOFF << "         "        << UNDL << "INT:INT:INT" << COLOFF
-		<< "     number of Read:Write:Process threads to use                    " << UNDL << "1:1:numCores" << COLOFF << std::endl
-		<< "     " << BOLD << "--thpp"    << COLOFF << "            "     << UNDL << "INT:INT:INT" << COLOFF
-		<< "     number of Post-Processing Read:Process threads to use          " << UNDL << "1:1" << COLOFF << std::endl
-		<< "     " << BOLD << "--threp"   << COLOFF << "           "      << UNDL << "INT:INT:INT" << COLOFF
-		<< "     number of Report Read:Process threads to use                   " << UNDL << "1:1" << COLOFF << std::endl
-		<< "     " << BOLD << "--other"   << COLOFF << "           "      << UNDL << "STRING" << COLOFF
-		<< "          rejected reads filepath + base file name" << std::endl
-		<< "                                         (appropriate extension will be added)" << std::endl
-		<< "     " << BOLD << "--fastx"   << COLOFF << "           " << UNDL << "BOOL" << COLOFF
-		<< "            output FASTA/FASTQ file                                        " << UNDL << "off" << COLOFF << std::endl
-		<< "                                         (for aligned and/or rejected reads)" << std::endl
-		<< "     " << BOLD << "--sam" << COLOFF << "             " << UNDL << "BOOL" << COLOFF
-		<< "            output SAM alignment                                          " << UNDL << "off" << COLOFF << std::endl
-		<< "                                         (for aligned reads only)" << std::endl
-		<< "     " << BOLD << "--SQ" << COLOFF << "              " << UNDL << "BOOL" << COLOFF
-		<< "            add SQ tags to the SAM file                                    " << UNDL << "off" << COLOFF << std::endl
-		<< "     " << BOLD << "--blast" << COLOFF << "           " << UNDL << "STRING" << COLOFF
-		<< "          output alignments in various Blast-like formats                " << std::endl
-		<< "                                        '0' - pairwise" << std::endl
-		<< "                                        '1' - tabular (Blast -m 8 format)" << std::endl
-		<< "                                        '1 cigar' - tabular + column for CIGAR " << std::endl
-		<< "                                        '1 cigar qcov' - tabular + columns for CIGAR" << std::endl
-		<< "                                                         and query coverage" << std::endl
-		<< "                                        '1 cigar qcov qstrand' - tabular + columns for CIGAR," << std::endl
-		<< "                                                                query coverage and strand" << std::endl
-		<< "     " << BOLD << "--log" << COLOFF << "             " << UNDL << "BOOL" << COLOFF
-		<< "            output overall statistics                                      " << UNDL << "off" << COLOFF << std::endl
+		<< "    --aligned        "                                                                                            << COLOFF << UNDL
+		<<                       "   STRING      "                                                                            << COLOFF
+		<<                                       "   aligned reads filepath + base file name                   "              << GREEN 
+		<<                                                                                                     "mandatory"    << COLOFF << std::endl
+		<< "                                         (appropriate extension will be added)"                                   << std::endl << BOLD
+		<< "    -d               "                                                                                            << COLOFF << UNDL
+		<<                       "   STRING      "                                                                            << COLOFF
+		<<                                       "    key−value store location (folder path)                   "              << GREEN 
+		<<                                                                                                     "mandatory"    << COLOFF << std::endl << BOLD
+		<< "    --task           "                                                                                            << COLOFF << UNDL
+		<<                       "   INT         "                                                                            << COLOFF
+		<<                                       "    Processing Task"                                                        << std::endl
+		<< "                                            0 - align (default) Only perform alignment"                           << std::endl
+		<< "                                            1 - post−processing (log writing)"                                    << std::endl
+		<< "                                            2 - generate reports"                                                 << std::endl
+		<< "                                            3 - align and post−process"                                           << std::endl
+		<< "                                            4 - all"                                                              << std::endl
+		<< "   [COMMON OPTIONS]: "                                                                                            << std::endl << BOLD
+		<< "    --threads       "                                                                                             << COLOFF << UNDL
+		<<                      "   INT:INT:INT  "                                                                            << COLOFF
+		<<                                       "   number of Read:Write:Process threads to use               "              << UNDL 
+		<<                                                                                                     "1:1:numCores" << COLOFF << std::endl << BOLD
+		<< "    --thpp          "                                                                                             << COLOFF << UNDL
+		<<                      "   INT:INT:INT  "                                                                            << COLOFF
+		<<                                       "   number of Post-Processing Read:Process threads to use     "              << UNDL 
+		<<                                                                                                     "1:1"          << COLOFF << std::endl << BOLD
+		<< "    --threp         "                                                                                             << COLOFF << UNDL
+		<<                      "   INT:INT:INT  "                                                                            << COLOFF
+		<<                                       "   number of Report Read:Process threads to use              "              << UNDL 
+		<<                                                                                                     "1:1"          << COLOFF << std::endl << BOLD
+		<< "    --other         "                                                                                                        << COLOFF << UNDL
+		<<                      "   STRING       "                                                                                         << COLOFF
+		<<                                       "   rejected reads filepath + base file name                  "                          << std::endl
+		<< "                                         (appropriate extension will be added)                     "                            << std::endl << BOLD
+		<< "    --fastx         "                                                                                                   << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                                      << COLOFF
+		<<                                       "   output FASTA/FASTQ file                                   "         << UNDL 
+		<<                                                                                                     "off"     << COLOFF << std::endl
+		<< "                                        (for aligned and/or rejected reads)"                                   << std::endl << BOLD
+		<< "    --sam           "                                                                                          << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                          << COLOFF
+		<<                                       "   output SAM alignment                                      "         << UNDL 
+		<<                                                                                                     "off"     << COLOFF << std::endl
+		<< "                                         (for aligned reads only)"                                             << std::endl << BOLD
+		<< "    --SQ            "                                                                                                      << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                                      << COLOFF
+		<<                                       "   add SQ tags to the SAM file                               "         << UNDL 
+		<<                                                                                                     "off"     << COLOFF << std::endl << BOLD
+		<< "    --blast         "                                                                                                   << COLOFF << UNDL
+		<<                      "   STRING       "                                                                                      << COLOFF
+		<<                                       "   output alignments in various Blast-like formats"                << std::endl
+		<< "                                           '0' - pairwise"                                               << std::endl
+		<< "                                           '1' - tabular (Blast -m 8 format)"                            << std::endl
+		<< "                                           '1 cigar' - tabular + column for CIGAR "                      << std::endl
+		<< "                                           '1 cigar qcov' - tabular + columns for CIGAR"                 << std::endl
+		<< "                                                      and query coverage"                                << std::endl
+		<< "                                           '1 cigar qcov qstrand' - tabular + columns for CIGAR,"        << std::endl
+		<< "                                                                query coverage and strand"               << std::endl << BOLD
+		<< "    --log           "                                                                                    << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   output overall statistics                                 "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl
 #ifdef NOMASK_option
 		<< "     " << BOLD << "--no-mask" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
 		<< "            do not mask low occurrence (L/2)-mers when searching           " << UNDL << "on" << COLOFF << std::endl
 		<< "                                       for seeds of length L\n" << std::endl
 #endif
-		<< "     " << BOLD << "--num_alignments" << COLOFF << "  " << UNDL << "INT" << COLOFF
-		<< "             report first INT alignments per read reaching E-value          " << UNDL << "-1" << COLOFF << std::endl
-		<< "                                        (--num_alignments 0 signifies all alignments will be output)" << std::endl
-		<< "       " << COLOFF << "or" << RED << " (default)" << std::endl
-		<< "     " << BOLD << "--best" << COLOFF << "            " << UNDL << "INT" << COLOFF
-		<< "             report INT best alignments per read reaching E-value           " << UNDL << "1" << COLOFF << std::endl
-		<< "                                         by searching --min_lis INT candidate alignments" << std::endl
-		<< "                                        (--best 0 signifies all candidate alignments will be searched)" << std::endl
-		<< "     " << BOLD << "--min_lis" << COLOFF << "         " << UNDL << "INT" << COLOFF
-		<< "             search all alignments having the first INT longest LIS         " << UNDL << "2" << COLOFF << std::endl
-		<< "                                         LIS stands for Longest Increasing Subsequence, it is " << std::endl
-		<< "                                         computed using seeds' positions to expand hits into" << std::endl
-		<< "                                         longer matches prior to Smith-Waterman alignment. " << std::endl
-		<< "     " << BOLD << "--print_all_reads" << COLOFF << " " << UNDL << "BOOL" << COLOFF
-		<< "            output null alignment strings for non-aligned reads            " << UNDL << "off" << COLOFF << std::endl
-		<< "                                         to SAM and/or BLAST tabular files" << std::endl
-		<< "     " << BOLD << "--paired_in" << COLOFF << "       " << UNDL << "BOOL" << COLOFF
-		<< "            both paired-end reads go in --aligned fasta/q file             " << UNDL << "off" << COLOFF << std::endl
-		<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)" << std::endl
-		<< "     " << BOLD << "--paired_out" << COLOFF << "      " << UNDL << "BOOL" << COLOFF
-		<< "            both paired-end reads go in --other fasta/q file               " << UNDL << "off" << COLOFF << std::endl
-		<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)" << std::endl
-		<< "     " << BOLD << "--match " << COLOFF << "          " << UNDL << "INT" << COLOFF
-		<< "             SW score (positive integer) for a match                        " << UNDL << "2" << COLOFF << std::endl
-		<< "     " << BOLD << "--mismatch" << COLOFF << "        " << UNDL << "INT" << COLOFF
-		<< "             SW penalty (negative integer) for a mismatch                   " << UNDL << "-3" << COLOFF << std::endl
-		<< "     " << BOLD << "--gap_open" << COLOFF << "        " << UNDL << "INT" << COLOFF
-		<< "             SW penalty (positive integer) for introducing a gap            " << UNDL << "5" << COLOFF << std::endl
-		<< "     " << BOLD << "--gap_ext" << COLOFF << "         " << UNDL << "INT" << COLOFF
-		<< "             SW penalty (positive integer) for extending a gap              " << UNDL << "2" << COLOFF << std::endl
-		<< "     " << BOLD << "-N" << COLOFF << "                " << UNDL << "INT" << COLOFF
-		<< "             SW penalty for ambiguous letters (N's)                         " << UNDL << "scored as --mismatch" << COLOFF << std::endl
-		<< "     " << BOLD << "-F" << COLOFF << "                " << UNDL << "BOOL" << COLOFF
-		<< "            search only the forward strand                                 " << UNDL << "off" << COLOFF << std::endl
-		<< "     " << BOLD << "-R" << COLOFF << "                " << UNDL << "BOOL" << COLOFF
-		<< "            search only the reverse-complementary strand                   " << UNDL << "off" << COLOFF << std::endl
-		<< "     " << BOLD << "-a" << COLOFF << "                " << UNDL << "INT" << COLOFF
-		<< "             number of threads to use                                       " << UNDL << "1" << COLOFF << std::endl
-		<< "     " << BOLD << "-e" << COLOFF << "                " << UNDL << "DOUBLE" << COLOFF
-		<< "          E-value threshold                                              " << UNDL << "1" << COLOFF << std::endl
-		// RAM cannot support 1GB default
-		//if (1073741824 / pagesize_gv > maxpages_gv / 2)
-		//	<< "     " << BOLD << "-m" << COLOFF << "                " << UNDL << "INT"<< COLOFF 
-		//	<<"             INT Mbytes for loading reads in memory with mmap             " << UNDL << ((pagesize_gv*(maxpages_gv / 2)) / 1048576) << COLOFF << std::endl
-		// RAM can support at least 1GB default
-		//else
-		//	<< "     " << BOLD << "-m" << COLOFF << "                " << UNDL << "INT" << COLOFF 
-		//	<< "             INT Mbytes for loading reads in memory with mmap               " << UNDL << "[suggested: 1024]" << COLOFF << std::endl
-		//	<< "                                        (maximum -m INT is " << (((maxpages_gv / 2)*pagesize_gv) / 1048576) << ")" << std::endl
-		<< "                                        (NOTE: If this option is chosen, reads will be loaded using" << std::endl
-		<< "                                         mmap rather than the default generic stream buffer; if the" << std::endl
-		<< "                                         input reads are in compressed format, this option will be" << std::endl
-		<< "                                         ignored; loading reads with mmap can be faster and is" << std::endl
-		<< "                                         recommended for large files which cannot fit into" << std::endl
-		<< "                                         available RAM)" << std::endl
-		<< "     " << BOLD << "-v" << COLOFF << "                " << UNDL << "BOOL" << COLOFF
-		<< "            verbose                                                        " << UNDL << "off" << COLOFF << std::endl << std::endl << std::endl
-		<< "   [OTU PICKING OPTIONS]: \n" << std::endl
-		<< "     " << BOLD << "--id" << COLOFF << "              " << UNDL << "DOUBLE" << COLOFF
-		<< "          %%id similarity threshold (the alignment must                   " << UNDL << "0.97" << COLOFF << std::endl
-		<< "                                         still pass the E-value threshold)\n" << std::endl
-		<< "     " << BOLD << "--coverage" << COLOFF << "        " << UNDL << "DOUBLE" << COLOFF
-		<< "          %%query coverage threshold (the alignment must                  " << UNDL << "0.97" << COLOFF << std::endl
-		<< "                                         still pass the E-value threshold)\n" << std::endl
-		<< "     " << BOLD << "--de_novo_otu" << COLOFF << "     " << UNDL << "BOOL" << COLOFF
-		<< "            FASTA/FASTQ file for reads matching database < %%id             " << UNDL << "off" << COLOFF << std::endl
-		<< "                                         (set using --id) and < %%cov (set using --coverage) " << std::endl
-		<< "                                         (alignment must still pass the E-value threshold)" << std::endl
-		<< "     " << BOLD << "--otu_map" << COLOFF << "         " << UNDL << "BOOL" << COLOFF
-		<< "            output OTU map (input to QIIME's make_otu_table.py)            " << UNDL << "off" << COLOFF << std::endl << std::endl << std::endl
-		<< "   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): " << std::endl
-		<< "    " << BOLD << "--passes" << COLOFF << "           " << UNDL << "INT,INT,INT" << COLOFF
-		<< "     three intervals at which to place the seed on the read         " << UNDL << "L,L/2,3" << COLOFF << std::endl
-		<< "                                         (L is the seed length set in ./indexdb_rna)" << std::endl
-		<< "    " << BOLD << "--edges" << COLOFF << "            " << UNDL << "INT" << COLOFF
-		<< "             number (or percent if INT followed by %% sign) of               " << UNDL << "4" << COLOFF << std::endl
-		<< "                                         nucleotides to add to each edge of the read" << std::endl
-		<< "                                         prior to SW local alignment " << std::endl
-		<< "    " << BOLD << "--num_seeds" << COLOFF << "        " << UNDL << "INT" << COLOFF
-		<< "             number of seeds matched before searching                       " << UNDL << "2" << COLOFF << std::endl
-		<< "                                         for candidate LIS " << std::endl
-		<< "    " << BOLD << "--full_search" << COLOFF << "      " << UNDL << "BOOL" << COLOFF
-		<< "            search for all 0-error and 1-error seed                        " << UNDL << "off" << COLOFF << std::endl
-		<< "                                         matches in the index rather than stopping" << std::endl
-		<< "                                         after finding a 0-error match (<1%% gain in" << std::endl
-		<< "                                         sensitivity with up four-fold decrease in speed)" << std::endl
-		<< "    " << BOLD << "--pid"     << COLOFF << "              " << UNDL << "BOOL" << COLOFF
-		<< "            add pid to output file names                                   " << UNDL << "off" << COLOFF << std::endl
-		<< "    " << BOLD << "--cmd"     << COLOFF << "              " << UNDL << "BOOL" << COLOFF
-		<< "            launch an interactive session (command prompt)" << std::endl << std::endl
-		<< "   [HELP]:" << std::endl
-		<< "    " << BOLD << "-h"        << COLOFF << "                 " << UNDL << "BOOL" << COLOFF << "            help" << std::endl
-		<< "    " << BOLD << "--version" << COLOFF << "          " << UNDL << "BOOL" << COLOFF << "            SortMeRNA version number" 
-		<< std::endl << std::endl << std::endl << std::endl << std::endl;
-
+		                                                                                                             << BOLD
+		<< "    --num_alignments"                                                                                    << COLOFF << UNDL
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   report first INT alignments per read reaching E-value     "     << UNDL 
+		<<                                                                                                     "-1"  << COLOFF << std::endl
+		<< "                                        (--num_alignments 0 signifies all alignments will be output)"    << std::endl << COLOFF
+		<< "       OR"                                                                                               << RED 
+		<<           " (default)"                                                                                    << std::endl << BOLD
+		<< "    --best          "                                                                                    << COLOFF << UNDL
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   report INT best alignments per read reaching E-value      "     << UNDL 
+		<<                                                                                                     "1"   << COLOFF << std::endl
+		<< "                                         by searching --min_lis INT candidate alignments"                << std::endl
+		<< "                                        (--best 0 signifies all candidate alignments will be searched)"  << std::endl << BOLD
+		<< "    --min_lis       "                                                                                    << COLOFF << UNDL
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   search all alignments having the first INT longest LIS    "     << UNDL 
+		<<                                                                                                     "2"   << COLOFF << std::endl
+		<< "                                         LIS stands for Longest Increasing Subsequence, it is "          << std::endl
+		<< "                                         computed using seeds' positions to expand hits into"            << std::endl
+		<< "                                         longer matches prior to Smith-Waterman alignment. "             << std::endl << BOLD
+		<< "   --print_all_reads"                                                                                    << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   output null alignment strings for non-aligned reads       "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl
+		<< "                                         to SAM and/or BLAST tabular files"                              << std::endl << BOLD
+		<< "    --paired_in     "                                                                                    << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   both paired-end reads go in --aligned fasta/q file        "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl
+		<< "                                        (interleaved reads only, see Section 4.2.4 of User Manual)"      << std::endl << BOLD << COLOFF
+		<< "    --paired_out    "                                                                                            
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   both paired-end reads go in --other fasta/q file          "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl
+		<< "                                       (interleaved reads only, see Section 4.2.4 of User Manual)"       << std::endl << BOLD
+		<< "    --match         "                                                                                    << COLOFF << UNDL
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   SW score (positive integer) for a match                   "     << UNDL 
+		<<                                                                                                     "2"   << COLOFF << std::endl << BOLD
+		<< "    --mismatch      "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   SW penalty (negative integer) for a mismatch              "     << UNDL 
+		<<                                                                                                     "-3"  << COLOFF << std::endl << BOLD
+		<< "    --gap_open      "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   SW penalty (positive integer) for introducing a gap       "     << UNDL 
+		<<                                                                                                     "5"   << COLOFF << std::endl << BOLD
+		<< "    --gap_ext       "                                                                                    << COLOFF << UNDL
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   SW penalty (positive integer) for extending a gap         "     << UNDL 
+		<<                                                                                                     "2"   << COLOFF << std::endl << BOLD
+		<< "    -N              "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   SW penalty for ambiguous letters (N's)                    "     << std::endl
+		<< "                                         scored as --mismatch"                                           << std::endl << BOLD
+		<< "    -F              "                                                                                    << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   search only the forward strand                            "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl << BOLD
+		<< "    -R              "                                                                                    << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   search only the reverse-complementary strand              "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl << BOLD
+		<< "    -a              "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   number of threads to use                                  "     << UNDL 
+		<<                                                                                                     "1"   << COLOFF << std::endl << BOLD
+		<< "    -e              "                                                                                    << COLOFF << UNDL
+		<<                      "   DOUBLE       "                                                                   << COLOFF
+		<<                                       "   E-value threshold                                         "     << UNDL 
+		<<                                                                                                     "1"   << COLOFF << std::endl << BOLD
+		<< "    -v              "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   verbose                                                   "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl << std::endl << std::endl
+		<< "  [OTU PICKING OPTIONS]:"                                                                                << std::endl << BOLD
+		<< "    --id            "                                                                                    << COLOFF << UNDL 
+		<<                      "   DOUBLE       "                                                                   << COLOFF
+		<<                                       "   %%id similarity threshold (the alignment must             "     << UNDL 
+		<<                                                                                                     "0.97" << COLOFF << std::endl
+		<< "                                         still pass the E-value threshold)\n"                            << std::endl << BOLD
+		<< "    --coverage      "                                                                                    << COLOFF << UNDL
+		<<                      "   DOUBLE       "                                                                   << COLOFF
+		<<                                       "   %%query coverage threshold (the alignment must            "     << UNDL 
+		<<                                                                                                     "0.97" << COLOFF << std::endl
+		<< "                                         still pass the E-value threshold)\n"                            << std::endl << BOLD
+		<< "    --de_novo_otu   "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   FASTA/FASTQ file for reads matching database < %%id       "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl
+		<< "                                         (set using --id) and < %%cov (set using --coverage) "           << std::endl
+		<< "                                         (alignment must still pass the E-value threshold)"              << std::endl << BOLD
+		<< "    --otu_map       "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   output OTU map (input to QIIME's make_otu_table.py)       "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl << std::endl << std::endl
+		<< "   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): "                                    << std::endl << BOLD
+		<< "    --passes        "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT,INT,INT  "                                                                   << COLOFF
+		<<                                       "   three intervals at which to place the seed on the read    "         << UNDL 
+		<<                                                                                                     "L,L/2,3" << COLOFF << std::endl
+		<< "                                         (L is the seed length set in ./indexdb_rna)"                        << std::endl << BOLD
+		<< "    --edges         "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   number (or percent if INT followed by %% sign) of         "     << UNDL 
+		<<                                                                                                     "4"   << COLOFF << std::endl
+		<< "                                         nucleotides to add to each edge of the read"                    << std::endl
+		<< "                                         prior to SW local alignment "                                   << std::endl << BOLD
+		<< "    --num_seeds     "                                                                                    << COLOFF << UNDL 
+		<<                      "   INT          "                                                                   << COLOFF
+		<<                                       "   number of seeds matched before searching                  "     << UNDL 
+		<<                                                                                                     "2"   << COLOFF << std::endl
+		<< "                                         for candidate LIS "                                             << std::endl << BOLD
+		<< "    --full_search   "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   search for all 0-error and 1-error seed                   "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl
+		<< "                                         matches in the index rather than stopping"                      << std::endl
+		<< "                                         after finding a 0-error match (<1%% gain in"                    << std::endl
+		<< "                                         sensitivity with up four-fold decrease in speed)"               << std::endl << BOLD
+		<< "    --pid           "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   add pid to output file names                              "     << UNDL 
+		<<                                                                                                     "off" << COLOFF << std::endl << BOLD
+		<< "    --cmd           "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF
+		<<                                       "   launch an interactive session (command prompt)"                 << std::endl << std::endl
+		<< "   [HELP]:"                                                                                              << std::endl << BOLD
+		<< "    -h              "                                                                                    << COLOFF << UNDL
+		<<                      "   BOOL         "                                                                   << COLOFF 
+		<<                                       "   help"                                                           << std::endl << BOLD
+		<< "    --version       "                                                                                    << COLOFF << UNDL 
+		<<                      "   BOOL         "                                                                   << COLOFF 
+		<<                                       "   SortMeRNA version number"                     << std::endl << std::endl << std::endl << std::endl << std::endl;
+		
 	std::cout << ss.str();
 
 	exit(EXIT_FAILURE);
