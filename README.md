@@ -65,29 +65,31 @@ command was run.
 
 SortMeRNA can be built and run on Windows, Linux, and Mac.
 
-There are 3 methods to get SortMeRNA:
+The following methods can be used for building/running SortMeRNA:
 
-1. [GitHub repository](https://github.com/biocore/sortmerna) Build development version from sources (master branch)
-...* [Installation instructions](#sortmerna-compilation)
-2. [GitHub releases](https://github.com/biocore/sortmerna/releases) Build Release version from sources (tar balls, zip)
+1. DNANexus: use the ```sortmerna-3.run```  App to run SortmeRNA on your data at any time (coming soon)
+2. [Pre-built binaries from GitHub releases](https://github.com/biocore/sortmerna/releases) .
+3. [GitHub releases](https://github.com/biocore/sortmerna/releases) Build Release version from sources (tar balls, zip)
 ...* [on Linux](#linux-os)
 ...* [on Mac OS](#mac-os)
 ...* [on Windows OS](#windows-os)
-3. [GitHub releases](https://github.com/biocore/sortmerna/releases) Use pre-built Release binaries.
-
-Option (3) is the simplest, as it provides access to pre-compiled binaries.
+4. [GitHub repository](https://github.com/biocore/sortmerna) Build development version from sources (master branch)
+...* [Instructions](#sortmerna-compilation)
 
 
 # SortMeRNA Compilation
 
-The OS we use for development:
-1. Linux: Ubuntu 16.04 LTS Xenial with GCC 7.3.0
-2. Windows: 10 with Visual Studio 15 2017 Win64
-3. MAC: macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
+The build was tested on the following OS:
+1. Linux
+	* Ubuntu 14.04 Trusty with GCC 7.3.0
+	* Ubuntu 16.04 Xenial with GCC 7.3.0
+	* Centos 6.6 with GCC 7.3.0
+2. Windows
+	* Windows 10 with Visual Studio 15 2017 Win64
+3. MAC
+	* macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
 
-Other environments we tested:
-
-* Centos 6.6 with GCC 7.3.0. Getting latest GCC on old Centos requires building GCC from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host). Upgrading GCC on Ubuntu for comparison is easy through PPA packages.
+Getting latest GCC on old Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host).
 
 CMake is used for generating the build files and should be installed prior the build.
 CMake distributions are available for all major operating systems.
@@ -103,7 +105,7 @@ The following Flags can be used when generating the build files (`-D<FLAG>=VALUE
 * `SRC_ZLIB` (download Zlib sources. Use if ZLib is to be built)
 * `SRC_ROCKSDB` (download RocksDB sources. Use if RocksDB is to be built)
 * `SRC_RAPIDJSON` (download RapidJson sources. Use if 'apt install rapidjson' not available)
-* `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary of RocksDB is installed using packager)
+* `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary if RocksDB is installed using packager)
 * `SET_ZLIB` (set to 1 to indicate ZLib was built from sources.)
 
 The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using a standard packager like 'apt' (on Linux) or 'homebrew' (on Mac)
@@ -124,9 +126,7 @@ gcc --version
 sudo apt update
 sudo apt install cmake
 sudo apt install git
-suod apt install zlib
-sudo apt install rocksdb
-sudo apt install rapidjson
+sudo apt install zlib1g-dev librocksdb-dev rapidjson-dev
 ```
 	
 If the dependencies cannot be installed using a package manager, they need to be built (read below).
