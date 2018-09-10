@@ -1,0 +1,68 @@
+{
+  "name": "sortmerna-3.run.tests.u16.dev",
+  "title": "Run SortmeRNA 3 Tests on Ubuntu 16.04",
+  "summary": "App for running SortmeRNA 3 integration tests on Ubuntu 16.04 using binaries specified as input",
+  "dxapi": "1.0.0",
+  "inputSpec": [
+    {
+      "name": "SMR_BIN",
+      "help": "SMR binary file",
+      "class": "file",
+      "patterns": [ "*" ],
+      "optional": false
+    },
+    {
+      "name": "LIBSTDC_SO",
+      "help": "libstdc++ shared library - dependency of smr_bin",
+      "class": "file",
+      "patterns": [ "*" ],
+      "optional": true
+    },
+    {
+      "name": "INDEXDB_BIN",
+      "help": "indexdb binary file",
+      "class": "file",
+      "patterns": [ "*" ],
+      "optional": false
+    },
+    {
+      "name": "conda_url",
+      "class": "string",
+      "default": "https://repo.continuum.io/miniconda/Miniconda3-4.5.4-Linux-x86_64.sh",
+      "optional": true,
+      "help": "Miniconda repository URL"
+    },
+    {
+      "name": "bio_channel",
+      "class": "string",
+      "default": "https://conda.anaconda.org/biobuilds",
+      "optional": true,
+      "help": "Miniconda Bio channel URL"
+    },
+    {
+      "name": "sortmerna_git",
+      "class": "string",
+      "default": "https://github.com/biocore/sortmerna.git",
+      "optional": true,
+      "help": "Sortmerna Github URL"
+    }
+  ],
+  "outputSpec": [],
+  "runSpec": {
+    "distribution": "Ubuntu",
+    "release":      "16.04",
+    "file":         "src/run.sh",
+    "interpreter":  "bash",
+    "timeoutPolicy": { "*": { "hours": 48 } },
+    "execDepends": [
+      { "name": "patchelf" },
+      { "name": "librocksdb-dev" }
+    ]
+  },
+  "access": { "network": [ "*" ], "project": "UPLOAD" },
+  "regionalOptions": {
+    "aws:us-east-1": {
+      "systemRequirements": { "*": { "instanceType": "mem1_ssd1_x4" } }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "sortmerna-3.run.tests.u14",
+  "title": "Run SortmeRNA 3 Tests on Ubuntu 14.04",
+  "summary": "Applet for running SortmeRNA integration tests on Ubuntu 14.04",
+  "dxapi": "1.0.0",
+  "inputSpec": [
+    {
+      "name": "conda_repo",
+      "class": "string",
+      "default": "https://repo.continuum.io/miniconda/Miniconda3-4.5.4-Linux-x86_64.sh",
+      "optional": true,
+      "help": "Miniconda repository URL"
+    },
+    {
+      "name": "patchelf_distro",
+      "class": "string",
+      "default": "https://nixos.org/releases/patchelf/patchelf-0.9/patchelf-0.9.tar.gz",
+      "optional": true,
+      "help": "patchelf utility distribution URL"
+    }
+  ],
+  "outputSpec": [],
+  "runSpec": {
+    "file": "src/run.sh",
+    "distribution": "Ubuntu",
+    "release": "14.04",
+    "interpreter": "bash",
+    "timeoutPolicy": { "*": { "hours": 48 } }
+  },
+  "access": {
+    "network": [ "*" ],
+    "project": "UPLOAD"
+  },
+  "regionalOptions": {
+    "aws:us-east-1": {
+      "systemRequirements": { "*": { "instanceType": "mem1_ssd1_x4" } }
+    }
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "name": "sortmerna-3.run.u14",
+  "title": "SortMeRNA 3 Run applet",
+  "summary": "Run SortMeRNA 3 on Ubuntu 14.04",
+  "dxapi": "1.0.0", 
+    {
+      "name": "reference_input",
+      "help": "FASTA reference file(s)",
+      "class": "array:file",
+      "patterns": ["*.fa", "*.fasta", "*.fna"]
+    },
+    {
+      "name": "reads_input",
+      "help": "FASTA/FASTQ reads file",
+      "class": "file",
+      "patterns": ["*.fa", "*.fasta", "*.fna", "*.fq", "*.fastq"],
+      "optional": true
+    },
+    {
+      "name": "reads_input_gz",
+      "help": "FASTA/FASTQ reads compressed file",
+      "class": "file",
+      "patterns": ["*.fq.gz", "*.fastq.gz", "*.fasta.gz", "*.fa.gz", "*.fna.gz"],
+      "optional": true
+    },
+    {
+      "name": "database_dir",
+      "help": "key−value store location (folder path)",
+      "class": "string",
+      "default": "kvdb",
+      "optional": true
+    },
+    {
+      "name": "processing_task",
+      "help": "Processing task. One of 0 (Only perform alignment) 1 (post−processing (log writing)) 2 (generate reports) 3 (align and post−process) 4 (all - default)",
+      "class": "string",
+      "default": "4",
+      "choices": [ "0", "1", "2", "3", "4" ],
+      "optional": true
+    },
+    {
+      "name": "bam_output",
+      "help": "Output BAM alignments",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
+      "name": "fastx_output",
+      "help": "Output FASTA/FASTQ file",
+      "class": "boolean",
+      "optional": true,
+      "default": true
+    },
+    {
+      "name": "blast_output",
+      "help": "Output Blast alignments",
+      "class": "string",
+      "optional": true,
+      "default": "1 cigar qcov qstrand",
+      "choices": [
+        "0",
+        "1",
+        "1 cigar",
+        "1 cigar qcov",
+        "1 cigar qcov qstrand"
+      ]
+    },
+    {
+      "name": "advanced",
+      "help": "Additional parameters to pass to SortMeRNA",
+      "class": "string",
+      "optional": true,
+      "default": "--paired_out -v"
+    },
+    {
+      "name":    "output_dir",
+      "label":   "Output directory",
+      "help":    "Directory to store/upload output",
+      "class":   "string",
+      "default": "out"
+    },
+    {
+      "name":    "help_smr",
+      "label":   "Sortmerna help",
+      "help":    "Print sortmerna help string",
+      "class":   "boolean",
+      "default":  false,
+      "optional": true
+    },
+    {
+      "name":    "drysmr",
+      "label":   "Dryrun sortmerna filter",
+      "help":    "Dryrun sortmerna filtering (for debugging)",
+      "class":   "boolean",
+      "default":  false,
+      "optional": true
+    },
+    {
+      "name":    "dryidx",
+      "label":   "Dryrun indexing",
+      "help":    "Dryrun indexing (for debugging)",
+      "class":   "boolean",
+      "default":  false,
+      "optional": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "output_fastx_gz",
+      "label": "Output aligned FASTA/FASTQ file",
+      "help": "Output aligned FASTA/FASTQ file",
+      "class": "file",
+      "patterns": ["*.fq.gz", "*.fastq.gz", "*.fasta.gz", "*.fa.gz", "*.fna.gz"]
+    },
+    {
+      "name": "output_other_gz",
+      "label": "Output non-aligned FASTA/FASTQ file",
+      "help": "Output non-aligned FASTA/FASTQ file",
+      "class": "file",
+      "patterns": ["*.fq.gz", "*.fastq.gz", "*.fasta.gz", "*.fa.gz", "*.fna.gz"],
+      "optional": true
+    },
+    {
+      "name": "output_bam",
+      "label": "Output BAM file",
+      "help": "Output BAM file",
+      "class": "file",
+      "patterns": ["*.bam"],
+      "optional": true
+    },
+    {
+      "name": "output_blast_gz",
+      "label": "Output BLAST m8 format file",
+      "help": "Output BLAST m8 format file",
+      "class": "file",
+      "patterns": ["*.blast"],
+      "optional": true
+    },
+    {
+      "name": "output_logfile",
+      "label": "Log file",
+      "help": "File to write logging info",
+      "class": "file",
+      "patterns": ["*"]
+    }
+  ],
+  "runSpec": {
+    "file": "src/run.sh",
+    "release": "14.04",
+    "interpreter": "bash",
+    "timeoutPolicy": {
+      "*": {
+        "hours": 48
+      }
+    },
+    "distribution": "Ubuntu"
+  },
+  "access": {
+    "project": "UPLOAD"
+  },
+  "regionalOptions": {
+    "aws:us-east-1": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem1_ssd1_x4"
+        }
+      }
+    }
+  }
+}

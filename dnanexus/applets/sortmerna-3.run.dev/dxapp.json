@@ -1,0 +1,175 @@
+{
+  "name": "sortmerna-3.run.dev",
+  "title": "SortMeRNA 3 Run applet",
+  "summary": "Run SortMeRNA 3 on Ubuntu 16.04 using SMR binaries downloaded at runtime",
+  "dxapi": "1.0.0", 
+  "inputSpec": [
+    {
+      "name": "BINS",
+      "help": "SMR binary files: sortmerna, libstdc++.so.6 (sortmerna dependency), indexdb etc.",
+      "class": "array:file",
+      "patterns": [ "*" ]
+    },
+    {
+      "name": "REFS",
+      "help": "(--ref) FASTA reference file(s)",
+      "class": "array:file",
+      "patterns": ["*.fa", "*.fasta", "*.fna"]
+    },
+    {
+      "name": "READS",
+      "help": "(--reads) FASTA/FASTQ reads file",
+      "class": "file",
+      "patterns": ["*.fa", "*.fasta", "*.fna", "*.fq", "*.fastq"],
+      "optional": true
+    },
+    {
+      "name": "READS_GZ",
+      "help": "(--reads-gz) FASTA/FASTQ reads compressed file",
+      "class": "file",
+      "patterns": ["*.fq.gz", "*.fastq.gz", "*.fasta.gz", "*.fa.gz", "*.fna.gz"],
+      "optional": true
+    },
+    {
+      "name": "DBDIR",
+      "help": "(-d) key−value store location (folder path)",
+      "class": "string",
+      "default": "kvdb",
+      "optional": true
+    },
+    {
+      "name": "TASK",
+      "help": "(--task) Processing task. One of 0 (Only perform alignment) 1 (post−processing (log writing)) 2 (generate reports) 3 (align and post−process) 4 (all - default)",
+      "class": "string",
+      "default": "4",
+      "choices": [ "0", "1", "2", "3", "4" ],
+      "optional": true
+    },
+    {
+      "name": "SAM",
+      "help": "(--sam) Output alignments in SAM format",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
+      "name": "FASTX",
+      "help": "(--fastx) Output alignments in FASTA/FASTQ format",
+      "class": "boolean",
+      "optional": true,
+      "default": true
+    },
+    {
+      "name": "BLAST",
+      "help": "(--blast) Output alignments in Blast format",
+      "class": "string",
+      "optional": true,
+      "default": "1 cigar qcov qstrand",
+      "choices": [
+        "0",
+        "1",
+        "1 cigar",
+        "1 cigar qcov",
+        "1 cigar qcov qstrand"
+      ]
+    },
+    {
+      "name": "advanced",
+      "help": "Additional parameters to pass to SortMeRNA",
+      "class": "string",
+      "optional": true,
+      "default": "--paired_out -v"
+    },
+    {
+      "name":    "help_smr",
+      "label":   "(-h) Sortmerna help",
+      "help":    "Print sortmerna help string",
+      "class":   "boolean",
+      "default":  false,
+      "optional": true
+    },
+    {
+      "name":    "drysmr",
+      "label":   "Dryrun sortmerna filter",
+      "help":    "Dryrun sortmerna filtering (for debugging)",
+      "class":   "boolean",
+      "default":  false,
+      "optional": true
+    },
+    {
+      "name":    "dryidx",
+      "label":   "Dryrun indexing",
+      "help":    "Dryrun indexing (for debugging)",
+      "class":   "boolean",
+      "default":  false,
+      "optional": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "output_fastx_gz",
+      "label": "Output aligned FASTA/FASTQ file",
+      "help": "Output aligned FASTA/FASTQ file",
+      "class": "file",
+      "patterns": ["*.fq.gz", "*.fastq.gz", "*.fasta.gz", "*.fa.gz", "*.fna.gz"]
+    },
+    {
+      "name": "output_other_gz",
+      "label": "Output non-aligned FASTA/FASTQ file",
+      "help": "Output non-aligned FASTA/FASTQ file",
+      "class": "file",
+      "patterns": ["*.fq.gz", "*.fastq.gz", "*.fasta.gz", "*.fa.gz", "*.fna.gz"],
+      "optional": true
+    },
+    {
+      "name": "output_bam",
+      "label": "Output BAM file",
+      "help": "Output BAM file",
+      "class": "file",
+      "patterns": ["*.bam"],
+      "optional": true
+    },
+    {
+      "name": "output_blast_gz",
+      "label": "Output BLAST m8 format file",
+      "help": "Output BLAST m8 format file",
+      "class": "file",
+      "patterns": ["*.blast"],
+      "optional": true
+    },
+    {
+      "name": "output_logfile",
+      "label": "Log file",
+      "help": "File to write logging info",
+      "class": "file",
+      "patterns": ["*"]
+    }
+  ],
+  "runSpec": {
+    "distribution": "Ubuntu",
+    "release": "16.04",
+    "interpreter": "bash",
+    "file": "src/run.sh",
+    "timeoutPolicy": {
+      "*": {
+        "hours": 48
+      }
+    },
+    "execDepends": [
+      { "name": "patchelf" },
+      { "name": "librocksdb-dev" }
+    ]
+  },
+  "access": {
+    "project": "UPLOAD"
+  },
+  "regionalOptions": {
+    "aws:us-east-1": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem1_ssd1_x4"
+        }
+      }
+    }
+  }
+}
