@@ -7,7 +7,7 @@ https://wiki.dnanexus.com/.
 <!-- /dx-header -->
 
 This application is for running SortmeRNA 3.
-It can be launched either from DNANexus GUI or on command line using 'dx' utility.
+It can be launched either from DNANexus GUI or on command line using `dx` utility.
 
 Required parameters:
 
