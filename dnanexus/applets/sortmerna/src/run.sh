@@ -139,7 +139,7 @@ main() {
 
     if [[ ! -z "${READS_GZ}" ]]; then
     # TODO: update when SortMeRNA 2.2 is released (with reading gzip as option)
-        opt_READS="--reads $READS_DIR/${READS_GZ_name}"
+        opt_READS="--reads-gz $READS_DIR/${READS_GZ_name}"
     fi
 
     if [ "${SAM}" == "true" ]; then
