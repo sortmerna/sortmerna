@@ -31,13 +31,6 @@
       "optional": true
     },
     {
-      "name": "DBDIR",
-      "help": "(-d) key−value store location (folder path)",
-      "class": "string",
-      "default": "kvdb",
-      "optional": true
-    },
-    {
       "name": "TASK",
       "help": "(--task) Processing task. One of 0 (Only perform alignment) 1 (post−processing (log writing)) 2 (generate reports) 3 (align and post−process) 4 (all - default)",
       "class": "string",
@@ -122,11 +115,11 @@
       "optional": true
     },
     {
-      "name": "output_bam",
-      "label": "Output BAM file",
-      "help": "Output BAM file",
+      "name": "output_Sam",
+      "label": "Output SAM file",
+      "help": "Output SAM file",
       "class": "file",
-      "patterns": ["*.bam"],
+      "patterns": ["*.bam", ".sam"],
       "optional": true
     },
     {
@@ -150,11 +143,7 @@
     "release": "16.04",
     "interpreter": "bash",
     "file": "src/run.sh",
-    "timeoutPolicy": {
-      "*": {
-        "hours": 48
-      }
-    },
+    "timeoutPolicy": { "*": { "hours": 48 } },
     "execDepends": [
       { "name": "patchelf" },
       { "name": "librocksdb-dev" }

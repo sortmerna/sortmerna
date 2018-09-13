@@ -15,6 +15,9 @@ main() {
     IDX_DIR=$HOME/idx
     REFS_DIR=$HOME/in/refs
     READS_DIR=$HOME/in/reads
+    DBDIR=kvdb
+    TASK=4
+    UPLOAD_ROOT=/out
 
     echo "mkdir $HOME/bin/"
     mkdir $HOME/bin
@@ -58,11 +61,7 @@ main() {
     #
     # Download input files, process Options and run
     #
-    for REF in "${REFS[@]}"
-    do
-        echo "dx download $REFS_DIR/: \"$REF\""
-        dx download -o $REFS_DIR/ "$REF"
-    done
+    echo "REFS:            ${REFS[@]}"
     echo "READS:           ${READS}"
     echo "READS_GZ:        ${READS_GZ}"
     echo "SAM:             ${SAM}"
@@ -78,7 +77,7 @@ main() {
     # get executable name from the Job description to use in output (TODO: is there a better way?)
     tokens=($(dx describe ${DX_JOB_ID} | grep 'Executable name'))
     exe_name=${tokens[2]}
-    upload_path="${OUT_DIR}/$exe_name"
+    upload_path="$UPLOAD_ROOT/$exe_name"
     echo "Applet/Executable name: $exe_name" # e.g. sortmerna-3.0-beta.run
     echo "Upload will be done into $upload_path"
     stat=$(dx mkdir -p $upload_path)
@@ -92,9 +91,11 @@ main() {
         sortmerna -h || true
     fi
 
-    if [ ! -d "$DBDIR" ]; then
-        echo "Not Found KVDB directory: $DBDIR"
-    fi
+    for REF in "${REFS[@]}"
+    do
+        echo "dx download $REFS_DIR/: \"$REF\""
+        dx download -o $REFS_DIR/ "$REF"
+    done
 
     reads_base_noext="" # reads file basename without extension
     reads_ext="" # reads file extension
