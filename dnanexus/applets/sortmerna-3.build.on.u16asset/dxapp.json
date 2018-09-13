@@ -43,7 +43,7 @@
     "release": "16.04",
     "distribution": "Ubuntu",
     "file": "src/build.sh",
-    "assetDepends": [{ "id": "record-FJyg6pj0JfqgG97q8bZ1BV9Y" }]
+    "assetDepends": [{ "id": "record-FKJ5gfj0KpQffJ562PF2KyP8" }]
   },
   "access": { "network": [ "*" ] },
   "regionalOptions": {
