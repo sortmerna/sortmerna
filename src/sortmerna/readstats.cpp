@@ -94,7 +94,9 @@ void Readstats::calculate()
 					if (count > 3)
 					{
 						ss << __FILE__ << ":" << __LINE__ << " Unexpected number of lines : " << count 
-							<< " in a single FASTQ Read. Total reads processed: " << number_total_read 
+							<< " in a single FASTQ Read. Total reads processed: " << number_total_read
+							<< " Last sequence: " << sequence
+							<< " Last line read: " << line
 							<< " Exiting..." << std::endl;
 						std::cout << ss.str(); ss.str("");
 						exit(EXIT_FAILURE);
