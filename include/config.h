@@ -1,5 +1,11 @@
-/* include/config.h.  Generated from config.h.in by configure.  */
-/* include/config.h.in.  Generated from configure.ac by autoheader.  */
+/* 
+ * FILE: config.h 
+ * Created: xxxxyyzz
+ */
+#define STDC_HEADERS 1
+
+/* Version number of package */
+#define VERSION "3.0.0-b 20180909"
 
 /* Define to 1 if you have the `getpagesize' function. */
 #define HAVE_GETPAGESIZE 1
@@ -58,14 +64,7 @@
 /* Define to the home page for this package. */
 #define PACKAGE_URL "http://bioinfo.lifl.fr/sortmerna"
 
-/* Define to the version of this package. */
-#define PACKAGE_VERSION "2.1b"
-
 /* Define to 1 if you have the ANSI C header files. */
-#define STDC_HEADERS 1
-
-/* Version number of package */
-#define VERSION "2.1b"
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the

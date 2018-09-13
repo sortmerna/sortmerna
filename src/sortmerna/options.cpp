@@ -26,9 +26,6 @@
 #include <sys/sysctl.h>
 #endif
 
- /*! @brief Version number */
-std::string version_num = "3.0.0-a, 09/09/2018";
-
 /*! @brief Measure time using this variable. */
 //timeval t;
 
@@ -928,7 +925,7 @@ void Runopts::optCoverage(char **argv, int &narg)
 
 void Runopts::optVersion(char **argv, int &narg)
 {
-	fprintf(stderr, "\n  SortMeRNA version %s\n\n", version_num.c_str());
+	fprintf(stderr, "\n  SortMeRNA version %s\n\n", VERSION);
 	exit(EXIT_SUCCESS);
 } // ~Runopts::optVersion
 
@@ -1522,8 +1519,8 @@ void welcome()
 {
 	std::stringstream ss;
 
-	ss << "\n  Program:     SortMeRNA version " << version_num << std::endl
-		<< "  Copyright:    2012-17 Bonsai Bioinformatics Research Group:" << std::endl
+	ss << "\n  Program:     SortMeRNA version " << VERSION << std::endl
+		<< "  Copyright:    2012-18 Bonsai Bioinformatics Research Group:" << std::endl
 		<< "                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe" << std::endl
 		<< "                2014-17 Knight Lab:" << std::endl
 		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl

@@ -122,9 +122,6 @@ uint32_t num_elem[100] = { 0 };
 
 bool verbose = false;
 
-// change version number here
-char version_num[] = "2.1b, 03/03/2016";
-
 /*
  *
  * @function insert_prefix() add an element to the mini-burst trie,
@@ -875,7 +872,7 @@ void load_index(kmer* lookup_table, char* outfile)
  **************************************************************************************************************/
 void welcome()
 {
-	printf("\n  Program:     SortMeRNA version %s\n", version_num);
+	printf("\n  Program:     SortMeRNA version %s\n", VERSION);
 	printf("  Copyright:    2012-17 Bonsai Bioinformatics Research Group:\n");
 	printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n");
 	printf("                2014-17 Knight Lab:\n");
