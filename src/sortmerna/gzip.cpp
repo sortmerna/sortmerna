@@ -29,44 +29,50 @@ int Gzip::getline(std::ifstream & ifs, std::string & line)
 		{
 			if (!line_start || !line_start[0])
 			{
-				ret = inf(ifs); // inflate
+				ret = Gzip::inflatez(ifs); // inflate
 
-				if (ret == Z_STREAM_END && pstrm->avail_out == OUT_CHUNK) return RL_END;
-				if (ret < 0) return RL_ERR;
+				if (ret == Z_STREAM_END && pstrm->avail_out == OUT_SIZE) 
+					return RL_END;
+
+				if (ret < 0) 
+					return RL_ERR;
 
 				if (!line_start)
 					line_start = (char*)z_out.data();
 			}
 
 			//line_end = strstr(line_start, "\n"); // returns 0 if '\n' not found
-			line_end = std::find(line_start, (char*)&z_out[0] + OUT_CHUNK - pstrm->avail_out - 1, 10); // '\n'
-			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_CHUNK - strm.avail_out - 1, [l = std::locale{}](auto ch) { return ch == 10; });
-			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_CHUNK - strm.avail_out - 1, [l = std::locale{}](auto ch) { return std::isspace(ch, l); });
+			line_end = std::find(line_start, (char*)&z_out[0] + OUT_SIZE - pstrm->avail_out - 1, 10); // '\n'
+			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return ch == 10; });
+			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return std::isspace(ch, l); });
 			if (line_end && line_end[0] == 10)
 			{
 				std::copy(line_start, line_end, std::back_inserter(line));
 
-				if (line_end < (char*)&z_out[0] + OUT_CHUNK - pstrm->avail_out - 1) // check there is data after line_end
+				if (line_end < (char*)&z_out[0] + OUT_SIZE - pstrm->avail_out - 1) // check there is data after line_end
 					line_start = line_end + 1; // skip '\n'
 				else
-					line_start = 0; // no more data in out buffer - flag to inflate more
+				{
+					line_start = 0; // no more data in OUT buffer - flag to inflate more
+					pstrm->avail_out = 0; // mark OUT buffer as Full to reflush from the beginning [bug 61]
+				}
 
-				line_ready = true;
+				line_ready = true; // DEBUG: 
+				
+				//if (line == "@SRR1635864.196 196 length=101")
+				//	std::cout << "HERE";
 			}
 			else
 			{
-				line_end = (char*)&z_out[0] + OUT_CHUNK - pstrm->avail_out; // end of data in out buffer
+				line_end = (char*)&z_out[0] + OUT_SIZE - pstrm->avail_out; // end of data in out buffer
 				std::copy(line_start, line_end, std::back_inserter(line));
 				line_start = (pstrm->avail_out == 0) ? 0 : line_end;
 				line_end = 0;
 				line_ready = false;
 			}
-
-			//if (line == ">L1S29.274586_481951 HWI-EAS440_0386:1:28:10252:18627#0/1")
-			//	std::cout << "HERE\n";
 		} // ~for !line_ready
 	}
-	else
+	else // non-compressed file
 	{
 		if (ifs.eof()) return RL_END;
 
@@ -77,7 +83,10 @@ int Gzip::getline(std::ifstream & ifs, std::string & line)
 	return RL_OK;
 } // ~Gzip::getline
 
-int Gzip::inf(std::ifstream & ifs)
+/*
+ * Called from getline
+ */
+int Gzip::inflatez(std::ifstream & ifs)
 {
 	int ret;
 	std::stringstream ss;
@@ -87,7 +96,7 @@ int Gzip::inf(std::ifstream & ifs)
 		if (pstrm->avail_in == 0 && !ifs.eof()) // in buffer empty
 		{
 			std::fill(z_in.begin(), z_in.end(), 0); // reset buffer to 0
-			ifs.read((char*)z_in.data(), CHUNK);
+			ifs.read((char*)z_in.data(), IN_SIZE);
 			if (!ifs.eof() && ifs.fail())
 			{
 				(void)inflateEnd(pstrm);
@@ -100,15 +109,23 @@ int Gzip::inf(std::ifstream & ifs)
 
 		if (pstrm->avail_in == 0 && ifs.eof())
 		{
-			if (pstrm->avail_out < OUT_CHUNK)	pstrm->avail_out = OUT_CHUNK;
-			inflateEnd(pstrm);
+			if (pstrm->avail_out < OUT_SIZE)
+				pstrm->avail_out = OUT_SIZE;
+
+			ret = inflateEnd(pstrm); // free up the resources
+
+			if (ret != Z_STREAM_END)
+			{
+				std::cout << __FILE__ << ":" << __LINE__ << "  WARNING: inflateEnd status is " << ret << std::endl;
+			}
+
 			return Z_STREAM_END;
 		}
 
 		if (pstrm->avail_out == 0) // out buffer is full - reset
 		{
 			std::fill(z_out.begin(), z_out.end(), 0); // reset buffer to 0
-			pstrm->avail_out = OUT_CHUNK;
+			pstrm->avail_out = OUT_SIZE;
 			pstrm->next_out = z_out.data();
 		}
 
@@ -126,15 +143,24 @@ int Gzip::inf(std::ifstream & ifs)
 			break;
 		}
 
-		if (pstrm->avail_out == 0 || (pstrm->avail_out < OUT_CHUNK && pstrm->avail_in == 0)) break;
+		// OUT buffer holds Inflated data
+		// IN buffer holds Compressed data
+		// avail_out == 0 means OUT buffer is Full i.e. no space left
+		// avail_in  == 0 means  IN buffer is Empty
+		// second condition checks if there is still data left in OUT buffer when IN buffer is empty
+		if ( pstrm->avail_out == 0 || ( pstrm->avail_out < OUT_SIZE && pstrm->avail_in == 0 ) ) 
+			break;
 	} // for(;;)
 
 	return ret;// == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
-} // ~Gzip::inf
+} // ~Gzip::inflatez
 
+/* 
+ * Called from constructor
+ */
 void Gzip::init()
 {
-	static z_stream strm; // TODO: better way?
+	static z_stream strm; // TODO: better way i.e. no 'static' ?
 	pstrm = &strm;
 
 	strm.zalloc = Z_NULL;
@@ -150,8 +176,8 @@ void Gzip::init()
 
 	strm.avail_out = 0;
 
-	z_in.resize(CHUNK);
-	z_out.resize(OUT_CHUNK);
-	std::fill(z_in.begin(), z_in.end(), 0);
-	std::fill(z_out.begin(), z_out.end(), 0);
+	z_in.resize(IN_SIZE);
+	z_out.resize(OUT_SIZE);
+	std::fill(z_in.begin(), z_in.end(), 0); // fill IN buffer with 0s
+	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer wiht 0s
 } // ~Gzip::init

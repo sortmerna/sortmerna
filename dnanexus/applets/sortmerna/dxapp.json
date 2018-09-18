@@ -117,7 +117,8 @@
     "timeoutPolicy": { "*": { "hours": 48 } },
     "execDepends": [
       { "name": "patchelf" },
-      { "name": "librocksdb-dev" }
+      { "name": "librocksdb-dev" },
+      { "name": "samtools" }
     ]
   },
   "access": { "project": "UPLOAD" },

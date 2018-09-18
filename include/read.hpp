@@ -230,8 +230,8 @@ public:
 		std::stringstream ss;
 		if (sequence.size() > READLEN)
 		{
-			ss << "\n  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": "<< __FILE__ 
-				<< "] at least one of your reads is > " << READLEN << " nt " << std::endl
+			ss << std::endl << RED << "ERROR" << COLOFF << ": [" << __FILE__ << ":"<< __LINE__ 
+				<< "] Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > "  << READLEN << " nt " << std::endl
 				<< "  Please check your reads or contact the authors." << std::endl;
 			std::cerr << ss.str();
 			exit(EXIT_FAILURE);

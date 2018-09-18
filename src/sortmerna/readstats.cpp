@@ -30,6 +30,7 @@ const std::string Readstats::dbkey = "Readstats";
 void Readstats::calculate()
 {
 	std::stringstream ss;
+	uint64_t tcount = 0;
 
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
@@ -41,16 +42,19 @@ void Readstats::calculate()
 	{
 		std::string line; // line from the Reads file
 		std::string sequence; // full sequence of a Read (can contain multiple lines for Fasta files)
-		bool isFastq = true;
+		bool isFastq = false;
+		bool isFasta = false;
 		Gzip gzip(opts);
 
 		auto t = std::chrono::high_resolution_clock::now();
 
 		std::cout << "Readstats::calculate starting ...   ";
 
-		for (int count = 0, stat = 0; ; ) // std::getline count lines in One record
+		for (int count = 0, stat = 0; ; ++count) // std::getline count lines in One record
 		{
 			stat = gzip.getline(ifs, line);
+			++tcount;
+
 			if (stat == RL_END)
 			{
 				if (!sequence.empty())
@@ -68,14 +72,45 @@ void Readstats::calculate()
 				exit(1);
 			}
 
-			if (line.empty()) continue; // skip empty line
+			if (line.empty()) 
+			{
+				--count;
+				--tcount;
+				continue; // skip empty line
+			}
 			
 			// right-trim whitespace in place (removes '\r' too)
 			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 			//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+
+			if (tcount == 1)
+			{
+				isFastq = (line[0] == FASTQ_HEADER_START);
+				isFasta = (line[0] == FASTA_HEADER_START);
+
+				if (!(isFasta || isFastq))
+				{
+					std::cerr << __FILE__ << ":" << __LINE__
+						<< "  ERROR: the line [" << line << "] is not FASTA/Q header: " << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+
+			if (count == 4 && isFastq)
+			{
+				count = 0;
+				if (line[0] != FASTQ_HEADER_START)
+				{
+					std::cerr << __FILE__ << ":" << __LINE__
+						<< "  ERROR: the line [" << line << "] is not FASTQ header. number_total_read= " 
+						<< number_total_read << " tcount= " << tcount << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+
 			// fastq: 0(header), 1(seq), 2(+), 3(quality)
 			// fasta: 0(header), 1(seq)
-			if (line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START)
+			if ((isFasta && line[0] == FASTA_HEADER_START) || (count == 0 && isFastq))
 			{
 				if (!sequence.empty())
 				{ // process previous sequence
@@ -83,12 +118,11 @@ void Readstats::calculate()
 					full_read_main += sequence.length();
 				}
 
-				count = 0; // record start
+				count = 0; // FASTA record start
 				sequence.clear(); // clear container for the new record
-				isFastq = (line[0] == FASTQ_HEADER_START);
 			} // ~if header line
-			else {
-				++count;
+			else 
+			{
 				if (isFastq)
 				{
 					if (count > 3)
@@ -101,10 +135,11 @@ void Readstats::calculate()
 						std::cout << ss.str(); ss.str("");
 						exit(EXIT_FAILURE);
 					}
-					if ( count == 3 || line[0] == '+' ) continue; // fastq.quality
+					if ( count == 3 || line[0] == '+' ) 
+						continue; // fastq.quality
 				} // ~if fastq
 
-				sequence += line;
+				sequence += line; // fasta multiline sequence
 			}
 		} // ~for getline
 

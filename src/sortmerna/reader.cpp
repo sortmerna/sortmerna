@@ -33,26 +33,30 @@ void Reader::read()
 		std::string line;
 		Read read; // an empty read
 		unsigned int read_id = 0; // read ID
-		bool isFastq = true;
-		bool lastRec = false; // lastRec is to make one iteration past the EOF
-		Gzip gzip(opts);
+		unsigned int tcount = 0;
+		bool isFastq = false;
+		bool isFasta = false;
+		//bool lastRec = false; // lastRec is to make one iteration past the EOF
+		Gzip gzip(opts); // reads both zipped and non-zipped files
 
 		ss << id << " thread: " << std::this_thread::get_id() << " started\n";
 		std::cout << ss.str(); ss.str("");
 		auto t = std::chrono::high_resolution_clock::now();
 
 		// read lines from the files and create read objects
-		for (int count = 0, stat = 0; ; ) // count lines in a single record
+		// NOTE: don't increment count here to avoid counting (just in case) empty lines
+		for (int count = 0, stat = 0; ;	++count) // count lines in a single record
 		{
 			stat = gzip.getline(ifs, line);
+			++tcount;
+
 			if (stat == RL_END)
 			{
-				// push the last ready read object to the queue
+				// push the last Read to the queue
 				if (!read.isEmpty)
 				{
 					read.init(opts, kvdb, read_id); // load alignment statistics from DB
 					readQueue.push(read);
-					++read_id;
 				}
 				break;
 			}
@@ -63,12 +67,12 @@ void Reader::read()
 				exit(1);
 			}
 
-			if (line.empty()) continue;
-
-			if (count == 0)
-				isFastq = line[0] == FASTQ_HEADER_START;
-
-			++count;
+			if (line.empty()) 
+			{
+				--count;
+				--tcount;
+				continue;
+			}
 
 			// left trim space and '>' or '@'
 			//line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
@@ -76,17 +80,26 @@ void Reader::read()
 			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 			// removes all space
 			//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
+			if (tcount == 1)
+			{
+				isFastq = (line[0] == FASTQ_HEADER_START);
+				isFasta = (line[0] == FASTA_HEADER_START);
+			}
+
+			if (count == 4 && isFastq)
+			{
+				count = 0;
+			}
 
 			// fastq: 0(header), 1(seq), 2(+), 3(quality)
 			// fasta: 0(header), 1(seq)
-			if (line[0] == FASTA_HEADER_START || isFastq && (count == 1 || count > 4))
+			if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0))
 			{ // add header -->
 				if (!read.isEmpty)
 				{ // push previous read object to queue
 					read.init(opts, kvdb, read_id);
 					readQueue.push(read);
 					++read_id;
-					count = 1;
 				}
 
 				// start new record
@@ -94,16 +107,23 @@ void Reader::read()
 				read.format = isFastq ? Format::FASTQ : Format::FASTA;
 				read.header = line;
 				read.isEmpty = false;
+
+				count = 0; // FASTA record start
 			} // ~if header line
 			else 
 			{ // add sequence -->
-				if (isFastq && line[0] == '+') continue;
-				if (isFastq && count == 4)
+				if (isFastq)
 				{
-					read.quality = line;
-					continue;
+					if (count == 2) // line[0] == '+' validation is already by readstats::calculate
+						continue;
+					if (count == 3)
+					{
+						read.quality = line;
+						continue;
+					}
 				}
-				read.sequence += line; // FASTA multi-line sequence
+
+				read.sequence += line; // FASTA multi-line sequence or FASTQ sequence
 			}
 			//if (ifs.eof()) lastRec = true; // push and break
 		} // ~for getline
@@ -111,7 +131,7 @@ void Reader::read()
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.mDoneAdding();
 		ss << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
-			<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id << std::endl;
+			<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id + 1 << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 	ifs.close();
@@ -133,7 +153,6 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 		std::string line;
 		unsigned int read_id = 0; // read ID
 		bool isFastq = true;
-		bool lastRec = false; // lastRec is to make one iteration past the EOF
 		Gzip gzip(opts);
 
 		auto t = std::chrono::high_resolution_clock::now();

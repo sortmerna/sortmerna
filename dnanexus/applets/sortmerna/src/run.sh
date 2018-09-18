@@ -38,6 +38,10 @@ main() {
     echo "apt-cache policy librocksdb-dev"
     apt-cache policy librocksdb-dev
 
+    # check samtools
+    echo "apt-cache policy samtools"
+    apt-cache policy samtools
+
     # patch sortmerna to look for libstdc++.so.6 in the ORIGIN directory
     echo "Running: patchelf --set-rpath '$ORIGIN' $HOME/bin/sortmerna"
     patchelf --set-rpath '$ORIGIN' $HOME/bin/sortmerna
@@ -203,9 +207,9 @@ main() {
 
     # SAM (optional)
     if [ "${SAM}" == "true" ]; then
-    echo "[INFO] Output BAM: $OUT_DIR/${reads_base_noext}_aligned.bam"
-        samtools view -b ${reads_base_noext}_aligned.sam > ${reads_base_noext}_aligned.bam
-        file_id=$(dx upload ${reads_base_noext}_aligned.bam --path "$upload_path/${reads_base_noext}_aligned.bam" --brief)
+        echo "[INFO] Output BAM: $OUT_DIR/${reads_base_noext}_aligned.bam"
+        samtools view -b $OUT_DIR/${reads_base_noext}_aligned.sam > $OUT_DIR/${reads_base_noext}_aligned.bam
+        file_id=$(dx upload $OUT_DIR/${reads_base_noext}_aligned.bam --path "$upload_path/${reads_base_noext}_aligned.bam" --brief)
         dx-jobutil-add-output "output_sam" "$file_id"
     fi
 
