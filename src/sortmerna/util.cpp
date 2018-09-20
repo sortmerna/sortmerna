@@ -51,13 +51,13 @@ bool dirExists(std::string dpath)
 	struct stat info;
 
 	if (stat(dpath.data(), &info) != 0)
-		std::cout << "dirExists: Path does not exists: " << dpath << std::endl;
+		std::cout << __FUNCTION__ << ": Path does not exist: " << dpath << std::endl;
 	else if (info.st_mode & S_IFDIR)  // S_ISDIR() doesn't exist on my windows 
 	{
-		std::cout << "Path is a directory: " << dpath << std::endl;
+		std::cout << __FUNCTION__ << ": Path is a directory: " << dpath << std::endl;
 		exists = true;
 	}
 	else
-		std::cout << "Path is Not a directory: " << dpath << std::endl;
+		std::cout << __FUNCTION__ << ": Path is Not a directory: " << dpath << std::endl;
 	return exists;
 }

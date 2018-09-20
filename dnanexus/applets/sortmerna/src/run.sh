@@ -172,8 +172,36 @@ main() {
         sortmerna $opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_SAM $opt_FASTX $opt_LOG $advanced $opt_d_KVDB $opt_TASK
     fi
 
+    #
+    # print statistics
+    #
     echo "[INFO] ls -lrt $OUT_DIR"
     ls -lrt $OUT_DIR
+
+    # Log
+    echo "[INFO] find $OUT_DIR -name '*.log' | xargs cat"
+    find $OUT_DIR -name '*.log' | xargs cat
+
+    # fasta line count
+    echo "[INFO] find $OUT_DIR -name '*.fasta' | xargs wc -l"
+    find $OUT_DIR -name '*.fasta' | xargs wc -l
+
+    # fastq line count
+    echo "[INFO] find $OUT_DIR -name '*.fastq' | xargs wc -l"
+    find $OUT_DIR -name '*.fastq' | xargs wc -l
+
+    # blast line count
+    echo "[INFO] find $OUT_DIR -name '*.blast' | xargs wc -l"
+    find $OUT_DIR -name '*.blast' | xargs wc -l
+
+    # sam line count
+    echo "[INFO] find $OUT_DIR -name '*.sam' | xargs wc -l"
+    find $OUT_DIR -name '*.sqm' | xargs wc -l
+
+    #"${reads_base_noext}_aligned.log"
+    #"${reads_base_noext}_other.fasta"
+    #"${reads_base_noext}_aligned.fasta"
+    #"${reads_base_noext}_aligned.blast"
 
     #
     # Output results

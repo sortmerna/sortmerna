@@ -65,8 +65,8 @@ struct Readstats {
 		total_reads_denovo_clustering(0),
 		stats_calc_done(false)
 	{
-		calcSuffix();
 		opts.exit_early = check_file_format();
+		calcSuffix();
 		if (!opts.exit_early)
 			calculate(); // number_total_read only
 	}

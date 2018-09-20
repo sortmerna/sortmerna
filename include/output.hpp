@@ -49,7 +49,7 @@ class Output {
 public:
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
 	std::ofstream fastaout; // fasta/fastq
-	std::ofstream fastaNonAlignOut; // fasta/fastq non-aligned
+	std::ofstream fastaNonAlignOut; // fasta/fastq non-aligned (other)
 	std::ofstream samout; // SAM
 	std::ofstream blastout; // BLAST
 	std::ofstream logstream;
