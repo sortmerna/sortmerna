@@ -90,18 +90,17 @@ main() {
     if [[ ! -z "${READS}" ]]; then
         echo "download -o $READS_DIR/ \"${READS}\""
         dx download -o $READS_DIR/ "${READS}"
-        reads_base_noext=${READS_name%.*}
-        reads_ext=${READS_name#*.}
+        reads_base_noext=${READS_name%.*} # strip extension
+        reads_ext=${READS_name#*.} # strip name
         echo "reads_input basename: $reads_base_noext extension: $reads_ext"
     fi
 
     if [[ ! -z "${READS_GZ}" ]]; then
         echo "download -o $READS_DIR/ \"${READS_GZ}\""
         dx download -o $READS_DIR/ "${READS_GZ}"
-        # unzip Reads archive - unnecessary - SMR can process zipped files
-        #gzip -d -c ${READS_GZ_name} > ${READS_GZ_name%.*}
-        reads_base_noext=${READS_GZ_name%%.*}
-        reads_ext=${READS_GZ_name#*.}
+        reads_base_noext=${READS_GZ_name%%.*} # strip extension
+        tmp=${READS_GZ_name%.*} # strip 'gz'
+        reads_ext=${tmp#*.}  # strip name
         echo "reads_input basename: $reads_base_noext extension: $reads_ext"
     fi
 
@@ -208,7 +207,7 @@ main() {
     #
     # Aligned reads - required output
     mkdir -p $OUT_DIR/output_fastx_gz
-    aligned_file="$OUT_DIR/output_fastx_gz/${reads_base_noext}_aligned.$reads_ext.gz"
+    aligned_file="$OUT_DIR/output_fastx_gz/${reads_base_noext}_aligned.${reads_ext}.gz"
     echo "[INFO] Output aligned reads: $aligned_file"
     gzip -c $OUT_DIR/${reads_base_noext}_aligned.$reads_ext > $aligned_file
     file_id=$(dx upload $aligned_file --path "$upload_path/" --brief)
@@ -227,7 +226,7 @@ main() {
 
     # Non-aligned reads
     mkdir -p $OUT_DIR/output_other_gz
-    file_other_gz=$OUT_DIR/output_other_gz/${reads_base_noext}_other.$reads_ext.gz
+    file_other_gz="$OUT_DIR/output_other_gz/${reads_base_noext}_other.${reads_ext}.gz"
     echo "[INFO] Output non-aligned reads: $file_other_gz"
     gzip -c $OUT_DIR/${reads_base_noext}_other.$reads_ext > $file_other_gz
     file_id=$(dx upload $file_other_gz --path "$upload_path/${reads_base_noext}_other.$reads_ext.gz" --brief)
@@ -244,7 +243,7 @@ main() {
     # BLAST (optional)
     if [[ ! -z "${BLAST}" ]]; then
         mkdir $OUT_DIR/output_blast_gz
-        file_blast_gz=$OUT_DIR/output_blast_gz/${reads_base_noext}_aligned.blast.gz
+        file_blast_gz="$OUT_DIR/output_blast_gz/${reads_base_noext}_aligned.blast.gz"
         echo "[INFO] Output BLAST: $file_blast_gz"
         gzip -c $OUT_DIR/${reads_base_noext}_aligned.blast > $file_blast_gz
         file_id=$(dx upload $file_blast_gz --path "$upload_path/${reads_base_noext}_aligned.blast.gz" --brief)
