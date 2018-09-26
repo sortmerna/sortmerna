@@ -49,7 +49,7 @@ main() {
     echo "REFS:            ${REFS[@]}"
     echo "READS:           ${READS}"
     echo "READS_GZ:        ${READS_GZ}"
-    echo "SAM:             ${SAM}"
+    echo "BAM:             ${BAM}"
     echo "FASTX:           ${FASTX}"
     echo "BLAST:           ${BLAST}"
     echo "advanced:        ${advanced}"
@@ -112,7 +112,7 @@ main() {
     opt_READS=""
     opt_ALIGNED="--aligned $OUT_DIR/${reads_base_noext}_aligned"
     opt_OTHER="--other $OUT_DIR/${reads_base_noext}_other"
-    opt_SAM=""
+    opt_BAM=""
     opt_FASTX=""
     opt_LOG="--log"
     opt_BLAST=""
@@ -145,8 +145,8 @@ main() {
         opt_READS="--reads-gz $READS_DIR/${READS_GZ_name}"
     fi
 
-    if [ "${SAM}" == "true" ]; then
-        opt_SAM="--sam"
+    if [ "${BAM}" == "true" ]; then
+        opt_BAM="--sam"
     fi
 
     if [ "${FASTX}" == "true" ]; then
@@ -162,13 +162,13 @@ main() {
 
     # Run sortmerna
     if [[ ! -z "${BLAST}" ]]; then
-        opts="$opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_SAM $opt_FASTX $opt_LOG --blast \"${BLAST}\" $advanced $opt_d_KVDB $opt_TASK"
+        opts="$opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_BAM $opt_FASTX $opt_LOG --blast \"${BLAST}\" $advanced $opt_d_KVDB $opt_TASK"
         echo "Starting: sortmerna $opts"
-        sortmerna $opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_SAM $opt_FASTX $opt_LOG --blast "${BLAST}" $advanced $opt_d_KVDB $opt_TASK
+        sortmerna $opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_BAM $opt_FASTX $opt_LOG --blast "${BLAST}" $advanced $opt_d_KVDB $opt_TASK
     else
-        opts="$opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_SAM $opt_FASTX $opt_LOG $advanced $opt_d_KVDB $opt_TASK"
+        opts="$opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_BAM $opt_FASTX $opt_LOG $advanced $opt_d_KVDB $opt_TASK"
         echo "Starting: sortmerna $opts"
-        sortmerna $opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_SAM $opt_FASTX $opt_LOG $advanced $opt_d_KVDB $opt_TASK
+        sortmerna $opt_REF $opt_READS $opt_ALIGNED $opt_OTHER $opt_BAM $opt_FASTX $opt_LOG $advanced $opt_d_KVDB $opt_TASK
     fi
 
     #
@@ -232,11 +232,12 @@ main() {
     file_id=$(dx upload $file_other_gz --path "$upload_path/${reads_base_noext}_other.$reads_ext.gz" --brief)
     dx-jobutil-add-output "output_other_gz" "$file_id"
 
-    # SAM (optional)
-    if [ "${SAM}" == "true" ]; then
+    # BAM (optional)
+    if [ "${BAM}" == "true" ]; then
         echo "[INFO] Output BAM: $OUT_DIR/${reads_base_noext}_aligned.bam"
 
         refopts=""
+        echo "[INFO] Concatenating references to use with Samtools"
         for (( i=0; i<$(( num_refs )); ++i ))
         do
             echo "[INFO] $REFS_DIR/${REFS_name[$i]} >> $REFS_DIR/refs.fasta"

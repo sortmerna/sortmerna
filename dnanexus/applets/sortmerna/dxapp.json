@@ -26,8 +26,8 @@
       "help": "FASTA/FASTQ reads compressed file"
     },
     {
-      "name": "SAM",
-      "help": "(--sam) Output alignments in SAM format",
+      "name": "BAM",
+      "help": "(--sam) Output alignments in BAM format",
       "class": "boolean",
       "optional": true,
       "default": false
