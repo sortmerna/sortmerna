@@ -235,8 +235,18 @@ main() {
     # SAM (optional)
     if [ "${SAM}" == "true" ]; then
         echo "[INFO] Output BAM: $OUT_DIR/${reads_base_noext}_aligned.bam"
-        samtools view -b $OUT_DIR/${reads_base_noext}_aligned.sam > $OUT_DIR/${reads_base_noext}_aligned.bam
-        file_id=$(dx upload $OUT_DIR/${reads_base_noext}_aligned.bam --path "$upload_path/${reads_base_noext}_aligned.bam" --brief)
+
+        refopts=""
+        for (( i=0; i<$(( num_refs )); ++i ))
+        do
+            echo "[INFO] samtools faidx ${REFS_path[$i]}"
+            samtools faidx ${REFS_path[$i]}
+            refopts="${refopts} -t ${REFS_path[$i]}.fai"
+        done
+        
+        echo "[INFO] samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam"
+        samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam
+        file_id=$(dx upload $OUT_DIR/${reads_base_noext}_aligned.bam --path "$upload_path/" --brief)
         dx-jobutil-add-output "output_sam" "$file_id"
     fi
 
