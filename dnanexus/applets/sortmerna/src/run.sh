@@ -80,7 +80,7 @@ main() {
     #dx-download-all-inputs
     for REF in "${REFS[@]}"
     do
-        echo "dx download $REFS_DIR/: \"$REF\""
+        echo "[INFO] dx download -o $REFS_DIR/ \"$REF\""
         dx download -o $REFS_DIR/ "$REF"
     done
 
@@ -239,10 +239,13 @@ main() {
         refopts=""
         for (( i=0; i<$(( num_refs )); ++i ))
         do
-            echo "[INFO] samtools faidx $REFS_DIR/${REFS_name[$i]}"
-            samtools faidx $REFS_DIR/${REFS_name[$i]}
-            refopts="${refopts} -t $REFS_DIR/${REFS_name[$i]}.fai"
+            echo "[INFO] $REFS_DIR/${REFS_name[$i]} >> $REFS_DIR/refs.fasta"
+            cat $REFS_DIR/${REFS_name[$i]} >> "$REFS_DIR/refs.fasta"
         done
+
+        echo "[INFO] samtools faidx $REFS_DIR/refs.fasta"
+        samtools faidx "$REFS_DIR/refs.fasta"
+        refopts="-t $REFS_DIR/refs.fasta.fai"
         
         echo "[INFO] samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam"
         samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam
@@ -261,4 +264,4 @@ main() {
     fi
 
     echo "==== DONE ===="
-}
+} # ~main
