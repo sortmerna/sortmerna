@@ -239,9 +239,9 @@ main() {
         refopts=""
         for (( i=0; i<$(( num_refs )); ++i ))
         do
-            echo "[INFO] samtools faidx ${REFS_path[$i]}"
-            samtools faidx ${REFS_path[$i]}
-            refopts="${refopts} -t ${REFS_path[$i]}.fai"
+            echo "[INFO] samtools faidx $REFS_DIR/${REFS_name[$i]}"
+            samtools faidx $REFS_DIR/${REFS_name[$i]}
+            refopts="${refopts} -t $REFS_DIR/${REFS_name[$i]}.fai"
         done
         
         echo "[INFO] samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam"
