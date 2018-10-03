@@ -101,7 +101,6 @@ The following libraries have to be installed using a packager or to be built
 **Git** has to be installed _if_ building from the GitHub repository sources.
 
 The following Flags can be used when generating the build files (`-D<FLAG>=VALUE`):
-* `WITH_TESTS` (build unit tests)
 * `ROCKSDB_INCLUDE_DIR` (path to RocksDB include directory)
 * `ROCKSDB_LIB_DEBUG` (path to RocksDB library for Debug)
 * `ROCKSDB_LIB_RELEASE` (path to RocksDB library for Release)
