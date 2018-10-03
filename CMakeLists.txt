@@ -32,7 +32,7 @@ option(SRC_ROCKSDB "Download RocksDB sources" OFF)
 option(SRC_RAPIDJSON "Download Rapidjson sources" OFF)
 option(SET_ROCKSDB "Add RocksDB headers and lib to the build (if RocksDB was built from sources)" OFF)
 option(SET_ZLIB "Add Zlib headers and lib to the build (if Zlib was built from sources)" OFF)
-option(WITH_TESTS "Select whether to build tests" ON)
+option(WITH_TESTS "Select whether to build tests" OFF)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${EXTRA_CXX_FLAGS_RELEASE}" STRGREATER "")
