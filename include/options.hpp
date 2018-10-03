@@ -29,6 +29,8 @@ struct Runopts {
 	int num_read_thread_rep = 1; // number of report reader threads
 	int num_proc_thread_rep = 1; // number of report processor threads
 
+	int queue_size_max = 100; // max number of Reads in the Read and Write queues. 10 works OK.
+
 	long match = 2; // '--match' SW score (positive integer) for a match               TODO: change to int8_t
 	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch   TODO: change to int8_t
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
@@ -70,6 +72,9 @@ struct Runopts {
 	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 	bool interactive = false; // start interactive session
+
+	// DEBUG options
+	bool dbg_put_kvdb = false; // if True - do Not put records into Key-value DB. Debugging Memory Consumption.
 
 	enum ALIGN_REPORT { align, postproc, report, alipost, all };
 	ALIGN_REPORT alirep = align;
@@ -167,4 +172,5 @@ private:
 	void opt_N_MatchAmbiguous(char **argv, int &narg);
 	void opt_d_KeyValDatabase(char **argv, int &narg); // Key-Value Database directory path (kvdbPath)
 	void opt_Default(char **argv, int &narg);
+	void opt_debug_put_kvdb(int &narg);
 };

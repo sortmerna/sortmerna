@@ -40,7 +40,6 @@
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
-const int QUEUE_SIZE_MAX = 10; // TODO: move to process options?
 
 enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
@@ -110,6 +109,8 @@ const char DELIM = ':';
 	(not limited to this length algorithmically)
 */
 #define READLEN 30000
+
+#define LOCKQEUEU // use Locking queue for storing the Reads
 
 #endif
 

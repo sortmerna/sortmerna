@@ -36,9 +36,13 @@ void Processor::run()
 	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started\n";
 	std::cout << ss.str(); ss.str("");
 
-	for (;!readQueue.isDone();)
+	for (;;)
 	{
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
+		if (read.isEmpty && readQueue.numPushers == 0)
+		{
+			break;
+		}
 		alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
 		//ss << "Processor: " << id << " Popped read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
@@ -78,7 +82,7 @@ void Processor::run()
 
 		countReads++;
 	}
-	writeQueue.mDoneAdding();
+	--writeQueue.numPushers; // signal this processor done adding
 
 	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads 
 		<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
@@ -90,14 +94,20 @@ void PostProcessor::run()
 	int countReads = 0;
 	std::stringstream ss;
 
-	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started\n";
+	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 	std::cout << ss.str(); ss.str("");
 
-	for (;!readQueue.isDone();)
+	for (;;)
 	{
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
-
-		if (read.isEmpty || !read.isValid)	continue;
+		if (read.isEmpty)
+		{ 
+			if (readQueue.numPushers == 0) 
+				break; // queue is empty and no more pushers => end processing
+			
+			if (!read.isValid) 
+				continue;
+		}
 
 		callback(read, readstats, refstats, refs, opts);
 		++countReads;
@@ -107,8 +117,9 @@ void PostProcessor::run()
 			writeQueue.push(read);
 		}
 	}
-	writeQueue.mDoneAdding();
+	--writeQueue.numPushers; // signal this processor done adding
 
+	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
 	std::cout << ss.str(); ss.str("");
 } // ~PostProcessor::run
@@ -122,15 +133,27 @@ void ReportProcessor::run()
 	std::cout << ss.str(); ss.str("");
 	int cap = opts.pairedin || opts.pairedout ? 2 : 1;
 	std::vector<Read> reads;
+	Read read;
 	int i = 0;
+	bool isDone = false;
 
-	for (;!readQueue.isDone();)
+	for (;!isDone;)
 	{
 		reads.clear();
 		for (i = 0; i < cap; ++i)
 		{
-			reads.push_back(readQueue.pop()); // returns an empty read if queue is empty
-			if (reads[i].isEmpty || !reads[i].isValid) break;
+			read = readQueue.pop();  // returns an empty read if queue is empty
+			reads.push_back(read);
+			if (read.isEmpty)
+			{
+				if (readQueue.numPushers == 0)
+				{
+					isDone = true;
+					break;
+				}
+				if (!read.isValid)
+					break;
+			}
 		}
 
 		if (reads.back().isEmpty || !reads.back().isValid) continue;
@@ -152,13 +175,10 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << "\tpostProcess Thread: " << std::this_thread::get_id() << std::endl;
-	std::cout << ss.str(); ss.str("");
-
-	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
+	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // shared: Processor pushes, Writer pops
+	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // shared: Processor pushes, Writer pops
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
@@ -196,7 +216,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 
 				for (int i = 0; i < opts.num_write_thread; i++)
 				{
-					tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
+					tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb, opts));
 				}
 
 				// add processor jobs

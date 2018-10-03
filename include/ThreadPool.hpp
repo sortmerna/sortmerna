@@ -26,10 +26,15 @@ public:
 
 	ThreadPool(int numThreads) : shutdown_(false), busy(0)
 	{
+		std::stringstream ss;
+
 		// Create the specified number of threads
 		threads_.reserve(numThreads);
 		for (int i = 0; i < numThreads; ++i)
 			threads_.emplace_back(std::bind(&ThreadPool::threadEntry, this, i));
+
+		ss << __FILE__ << ":" << __LINE__ << " Initialized ThreadPool with: [" << numThreads << "] threads" << std::endl;
+		std::cout << ss.str(); ss.str("");
 	}
 
 	~ThreadPool()
@@ -81,7 +86,8 @@ protected:
 				std::unique_lock <std::mutex> lockmJobQueue(job_queue_lock);
 
 				// while no jobs and no shutdown - just keep waiting.
-				while (!shutdown_.load() && jobs_.empty())	cv_jobs.wait(lockmJobQueue); // this works
+				while (!shutdown_.load() && jobs_.empty())
+					cv_jobs.wait(lockmJobQueue); // works
 				//cv_jobs.wait(jqLock, [this] { return !shutdown_.load() && jobs_.empty(); });
 
 				if (jobs_.empty()) // only get here on shutdown = true
@@ -115,6 +121,6 @@ protected:
 	std::atomic_bool shutdown_;
 	std::queue <std::function <void(void)>> jobs_;
 	std::vector <std::thread> threads_;
-	std::atomic_uint busy; // counter of running jobs jobs
+	std::atomic_uint busy; // counter of running jobs
 }; // ~class ThreadPool
 

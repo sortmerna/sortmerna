@@ -393,8 +393,8 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	ThreadPool tpool(numThreads);
 	clear_dir(opts.kvdbPath);
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, opts.num_read_thread); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, numProcThread); // shared: Processor pushes, Writer pops
+	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
 	Refstats refstats(opts, readstats);
 	Index index;
 	References refs;
@@ -431,7 +431,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 
 			for (int i = 0; i < opts.num_write_thread; i++)
 			{
-				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb));
+				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb, opts));
 			}
 
 			// add processor jobs

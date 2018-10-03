@@ -19,14 +19,24 @@ void Writer::write()
 
 	auto t = std::chrono::high_resolution_clock::now();
 	int numPopped = 0;
-	for (;!writeQueue.isDone();) {
+	for (;;) 
+	{
 		Read read = writeQueue.pop();
-		if (!read.isValid || read.isEmpty) continue;
+		if (read.isEmpty)
+		{
+			if (writeQueue.numPushers == 0)
+				break; // no more records in the queue and no pushers => stop processing
+
+			if (!read.isValid) 
+				continue;
+		}
 		++numPopped;
 		//std::string matchResultsStr = read.matchesToJson();
 		std::string readstr = read.toString();
-		if (readstr.size() > 0)
+		if (!opts.dbg_put_kvdb && readstr.size() > 0)
+		{
 			kvdb.put(std::to_string(read.id), readstr);
+		}
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 	ss << std::setprecision(2) << std::fixed << "Writer " << id << " thread " << std::this_thread::get_id() 

@@ -819,8 +819,8 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 		std::cout << ss.str(); ss.str("");
 	}
 
-	ReadsQueue readQueue("read_queue", QUEUE_SIZE_MAX, N_READ_THREADS); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", QUEUE_SIZE_MAX, N_PROC_THREADS); // Not used for Reports
+	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
+	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // Not used for Reports
 	Refstats refstats(opts, readstats);
 	References refs;
 
