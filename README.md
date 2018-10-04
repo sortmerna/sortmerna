@@ -83,6 +83,7 @@ The build was tested on the following OS:
 1. Linux
 	* Ubuntu 14.04 Trusty with GCC 7.3.0
 	* Ubuntu 16.04 Xenial with GCC 7.3.0
+	* Ubuntu 16.04 Xenial with GCC 5.4.0 (default)
 	* Centos 6.6 with GCC 7.3.0
 2. Windows
 	* Windows 10 with Visual Studio 15 2017 Win64
