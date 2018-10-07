@@ -876,10 +876,12 @@ void load_index(kmer* lookup_table, char* outfile)
 void welcome()
 {
 	printf("\n  Program:     SortMeRNA version %d.%d.%d\n", SORTMERNA_MAJOR, SORTMERNA_MINOR, SORTMERNA_PATCH);
-	printf("  Copyright:    2012-17 Bonsai Bioinformatics Research Group:\n");
-	printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n");
-	printf("                2014-17 Knight Lab:\n");
+	printf("  Copyright:    2016-2018 Clarity Genomics BVBA::\n");
+	printf("                Turnhoutseweg 30, 2340 Beerse, Belgium\n");
+	printf("                2014-2016 Knight Lab:\n");
 	printf("                Department of Pediatrics, UCSD, La Jolla\n");
+	printf("                2012-2014 Bonsai Bioinformatics Research Group:\n");
+	printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n");
 	printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
 	printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 	printf("                See the GNU Lesser General Public License for more details.\n");

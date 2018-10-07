@@ -1530,10 +1530,12 @@ void welcome()
 	std::stringstream ss;
 
 	ss << "\n  Program:     SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
-		<< "  Copyright:    2012-18 Bonsai Bioinformatics Research Group:" << std::endl
-		<< "                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe" << std::endl
-		<< "                2014-17 Knight Lab:" << std::endl
+		<< "  Copyright:    2016-2018 Clarity Genomics BVBA:" << std::endl
+		<< "                Turnhoutseweg 30, 2340 Beerse, Belgium" << std::endl
+		<< "                2014-2016 Knight Lab:" << std::endl
 		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl
+		<< "                2012-2014 Bonsai Bioinformatics Research Group:" << std::endl
+		<< "                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe" << std::endl
 		<< "  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the" << std::endl
 		<< "                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl
 		<< "                See the GNU Lesser General Public License for more details." << std::endl
