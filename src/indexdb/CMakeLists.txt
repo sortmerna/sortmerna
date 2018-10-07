@@ -22,12 +22,14 @@ if(WIN32)
 	add_executable(indexdb 
 		$<TARGET_OBJECTS:cmph>
 		$<TARGET_OBJECTS:winapi>
+		$<TARGET_OBJECTS:build_version>
 #		$<TARGET_OBJECTS:mmanwin32>
 		${IXDB_HDRS} ${IXDB_SRCS}
 	)
 else()
 	add_executable(indexdb 
 		$<TARGET_OBJECTS:cmph>
+		$<TARGET_OBJECTS:build_version>
 		${IXDB_HDRS} ${IXDB_SRCS}
 	)
 endif()
@@ -48,7 +50,7 @@ else()
 endif()
 
 if(WIN32)
-	add_dependencies(indexdb cmph winapi) #mmanwin32
+	add_dependencies(indexdb cmph winapi build_version) #mmanwin32
 else(WIN32)
-	add_dependencies(indexdb cmph)
+	add_dependencies(indexdb cmph build_version)
 endif(WIN32)

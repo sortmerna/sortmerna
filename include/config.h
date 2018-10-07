@@ -4,9 +4,6 @@
  */
 #define STDC_HEADERS 1
 
-/* Version number of package */
-#define VERSION "3.0.0-b 20180909"
-
 /* Define to 1 if you have the `getpagesize' function. */
 #define HAVE_GETPAGESIZE 1
 

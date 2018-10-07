@@ -41,7 +41,10 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
+#include <iostream>
 
+#include "version.h"
+#include "build_version.h"
 #include "indexdb.hpp"
 #include "cmph.h"
 #include <sys/stat.h> //for creating tmp dir
@@ -872,7 +875,7 @@ void load_index(kmer* lookup_table, char* outfile)
  **************************************************************************************************************/
 void welcome()
 {
-	printf("\n  Program:     SortMeRNA version %s\n", VERSION);
+	printf("\n  Program:     SortMeRNA version %d.%d.%d\n", SORTMERNA_MAJOR, SORTMERNA_MINOR, SORTMERNA_PATCH);
 	printf("  Copyright:    2012-17 Bonsai Bioinformatics Research Group:\n");
 	printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n");
 	printf("                2014-17 Knight Lab:\n");

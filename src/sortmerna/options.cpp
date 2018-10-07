@@ -8,6 +8,8 @@
  // 3rd party
 #include "zlib.h"
 
+#include "version.h"
+#include "build_version.h"
 #include "options.hpp"
 #include "common.hpp"
 
@@ -925,7 +927,7 @@ void Runopts::optCoverage(char **argv, int &narg)
 
 void Runopts::optVersion(char **argv, int &narg)
 {
-	fprintf(stderr, "\n  SortMeRNA version %s\n\n", VERSION);
+	std::cout << std::endl << "SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl;
 	exit(EXIT_SUCCESS);
 } // ~Runopts::optVersion
 
@@ -1527,7 +1529,7 @@ void welcome()
 {
 	std::stringstream ss;
 
-	ss << "\n  Program:     SortMeRNA version " << VERSION << std::endl
+	ss << "\n  Program:     SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
 		<< "  Copyright:    2012-18 Bonsai Bioinformatics Research Group:" << std::endl
 		<< "                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe" << std::endl
 		<< "                2014-17 Knight Lab:" << std::endl

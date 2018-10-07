@@ -29,9 +29,6 @@ set(SMR_SRCS
 	index.cpp
 	kseq_load.cpp
 	kvdb.cpp
-#	main.cpp
-#	minoccur.cpp
-#	mmap.cpp
 	options.cpp
 	output.cpp
 	paralleltraversal.cpp
@@ -42,7 +39,6 @@ set(SMR_SRCS
 	references.cpp
 	refstats.cpp
 	ssw.c
-#	ssw_example.c
 	traverse_bursttrie.cpp
 	util.cpp
 	writer.cpp
@@ -75,6 +71,7 @@ if(WIN32)
 	add_executable(sortmerna
 		$<TARGET_OBJECTS:winapi>
 		$<TARGET_OBJECTS:smr_objs>
+		$<TARGET_OBJECTS:build_version>
 		main.cpp
 	)
 	target_include_directories(sortmerna PRIVATE
@@ -91,10 +88,11 @@ if(WIN32)
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
-	add_dependencies(sortmerna winapi alp smr_objs)
+	add_dependencies(sortmerna winapi alp smr_objs build_version)
 else()
 	add_executable(sortmerna
 		$<TARGET_OBJECTS:smr_objs>
+		$<TARGET_OBJECTS:build_version>
 		main.cpp
 	)
 	target_include_directories(sortmerna PRIVATE
@@ -108,7 +106,7 @@ else()
 		rocksdb
 		${CMAKE_THREAD_LIBS_INIT}
 	)
-	add_dependencies(sortmerna alp smr_objs)
+	add_dependencies(sortmerna alp smr_objs build_version)
 
     #include(GetPrerequisites)
     #get_prerequisites(sortmerna SMR_DEPS 0 1 ) # executable has to be specified (not sortmerna target)

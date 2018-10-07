@@ -107,6 +107,39 @@ endif()
 #	)
 #endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 
+string(TIMESTAMP GIT_DATE_TIME "%Y/%m/%d %H:%M:%S" UTC)
+
+find_package(Git)
+
+if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+  if(WIN32)
+    execute_process(COMMAND $ENV{COMSPEC} /C ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse HEAD OUTPUT_VARIABLE GIT_SHA)
+  else()
+    execute_process(COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse HEAD OUTPUT_VARIABLE GIT_SHA)
+  endif()
+else()
+  set(GIT_SHA 0)
+endif()
+
+string(REGEX REPLACE "[^0-9a-f]+" "" GIT_SHA "${GIT_SHA}")
+
+# Read sortmerna version from version.h file.
+file(READ include/version.h version_header_file)
+string(REGEX MATCH "#define SORTMERNA_MAJOR ([0-9]+)" _ ${version_header_file})
+set(SORTMERNA_VERSION_MAJOR ${CMAKE_MATCH_1})
+string(REGEX MATCH "#define SORTMERNA_MINOR ([0-9]+)" _ ${version_header_file})
+set(SORTMERNA_VERSION_MINOR ${CMAKE_MATCH_1})
+string(REGEX MATCH "#define SORTMERNA_PATCH ([0-9]+)" _ ${version_header_file})
+set(SORTMERNA_VERSION_PATCH ${CMAKE_MATCH_1})
+set(SORTMERNA_VERSION ${SORTMERNA_VERSION_MAJOR}.${SORTMERNA_VERSION_MINOR}.${SORTMERNA_VERSION_PATCH})
+
+
+set(BUILD_VERSION_CPP ${CMAKE_BINARY_DIR}/build_version.cpp)
+configure_file(src/util/build_version.cpp.in ${BUILD_VERSION_CPP} @ONLY)
+add_library(build_version OBJECT ${BUILD_VERSION_CPP})
+target_include_directories(build_version PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 ## build cmph
 add_subdirectory(${EXTERNAL_DEPS}/cmph)
 
