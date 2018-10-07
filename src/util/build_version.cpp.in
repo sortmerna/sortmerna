@@ -1,0 +1,4 @@
+#include "build_version.h"
+const char* sortmerna_build_git_sha = "sortmerna_build_git_sha:@@GIT_SHA@@";
+const char* sortmerna_build_git_date = "sortmerna_build_git_date:@@GIT_DATE_TIME@@";
+const char* sortmerna_build_compile_date = __DATE__;
