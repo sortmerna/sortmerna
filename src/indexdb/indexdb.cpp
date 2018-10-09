@@ -910,22 +910,22 @@ namespace {
 		printf("  --------------------------------------------------------------------------------------------------------\n");
 		printf("  | parameter        value           description                                                 default |\n");
 		printf("  --------------------------------------------------------------------------------------------------------\n");
-		printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n", "\033[1m", COLOFF, "\033[4m", COLOFF, "\033[0;32m", COLOFF);
+		printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n", BOLD, COLOFF, UNDL, COLOFF, GREEN, COLOFF);
 		printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
 		printf("                                       If passing multiple reference sequence files, separate\n");
 		printf("                                       them by ':',\n");
 		printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
 		printf("   [OPTIONS]:\n");
-		printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n", "\033[1m", COLOFF, "\033[4m", COLOFF);
-		printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n", "\033[1m", COLOFF, "\033[4m", COLOFF, "\033[4m", COLOFF);
-		printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n", "\033[1m", COLOFF, "\033[4m", COLOFF, "\033[4m", COLOFF);
+		printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n", BOLD, COLOFF, UNDL, COLOFF);
+		printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
+		printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
 #ifdef interval
-		printf("     %s--interval%s      %sINT%s             index every INTth L-mer in the reference database             %s1%s\n", "\033[1m", COLOFF, "\033[4m", COLOFF, "\033[4m", COLOFF);
+		printf("     %s--interval%s      %sINT%s             index every INTth L-mer in the reference database             %s1%s\n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
 #endif
-		printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n", "\033[1m", COLOFF, "\033[4m", COLOFF, "\033[4m", COLOFF);
+		printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
 		printf("                                      (setting --max_pos 0 will store all positions)\n");
-		printf("     %s-v%s              %sBOOL%s            verbose\n", "\033[1m", COLOFF, "\033[4m", COLOFF);
-		printf("     %s-h%s              %sBOOL%s            help	\n\n", "\033[1m", COLOFF, "\033[4m", COLOFF);
+		printf("     %s-v%s              %sBOOL%s            verbose\n", BOLD, COLOFF, UNDL, COLOFF);
+		printf("     %s-h%s              %sBOOL%s            help	\n\n", BOLD, COLOFF, UNDL, COLOFF);
 		exit(EXIT_FAILURE);
 	}//~printlist()
 }
@@ -965,7 +965,7 @@ int main(int argc, char** argv)
 	{
 		verbose = true;
 		welcome();
-		fprintf(stderr, "  For help or more information on usage, type `./indexdb_rna %s-h%s'\n\n", "\033[1m", COLOFF);
+		fprintf(stderr, "  For help or more information on usage, type `./indexdb_rna %s-h%s'\n\n", BOLD, COLOFF);
 		exit(EXIT_FAILURE);
 	}
 
@@ -1512,8 +1512,8 @@ int main(int argc, char** argv)
 		}
 
 		eprintf("\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
-			"\033[0;34m", (char*)(myfiles[newindex].first).c_str(),
-			COLOFF, "\033[0;34m", (char*)(myfiles[newindex].second).c_str(),
+			BLUE, (char*)(myfiles[newindex].first).c_str(),
+			COLOFF, BLUE, (char*)(myfiles[newindex].second).c_str(),
 			COLOFF);
 
 		// get full file size

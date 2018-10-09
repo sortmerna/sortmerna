@@ -90,6 +90,7 @@ extern bool verbose;
 #define RED    ""
 #define GREEN  ""
 #define YELLOW ""
+#define BLUE   ""
 #define BOLD   ""
 #define UNDL   ""
 #define COLOFF ""
@@ -98,6 +99,7 @@ const char DELIM = ';';
 #define RED    "\033[0;31m"
 #define GREEN  "\033[0;32m"
 #define YELLOW "\033[0;33m"
+#define BLUE   "\033[0;34m"
 #define BOLD   "\033[1m"
 #define UNDL   "\033[4m" // underline
 #define COLOFF "\033[0m" // color off
