@@ -906,7 +906,7 @@ void welcome()
 namespace {
 	void printlist()
 	{
-		printf("\n  usage:   ./indexdb_rna --ref db.fasta,db.idx [OPTIONS]:\n\n");
+		printf("\n  usage:   ./indexdb --ref db.fasta,db.idx [OPTIONS]:\n\n");
 		printf("  --------------------------------------------------------------------------------------------------------\n");
 		printf("  | parameter        value           description                                                 default |\n");
 		printf("  --------------------------------------------------------------------------------------------------------\n");
