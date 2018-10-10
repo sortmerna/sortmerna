@@ -33,7 +33,10 @@
     "release":      "16.04",
     "interpreter":  "bash",
     "timeoutPolicy": { "*": { "hours": 48 } },
-    "execDepends": [{ "name": "patchelf" }]
+    "execDepends": [
+      { "name": "patchelf" },
+      { "name": "librocksdb-dev" }
+    ]
   },
   "access": { "network": [ "*" ], "project": "UPLOAD" },
   "regionalOptions": {

@@ -1,5 +1,5 @@
 #!/bin/bash
-# sortmerna 3.0-beta.run.tests.u16
+# sortmerna-3.run.tests.u16
 
 main() {
 
@@ -15,6 +15,10 @@ main() {
     apt-cache policy patchelf
     echo "which patchelf"
     which patchelf # /usr/local/bin/patchelf
+
+    # check rocksdb
+    echo "apt-cache policy librocksdb-dev"
+    apt-cache policy librocksdb-dev
 
     # patch sortmerna to look for libstdc++.so.6 in the ORIGIN directory
     echo "Running: patchelf --set-rpath '$ORIGIN' $HOME/bin/sortmerna"
