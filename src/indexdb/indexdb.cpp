@@ -875,23 +875,27 @@ void load_index(kmer* lookup_table, char* outfile)
  **************************************************************************************************************/
 void welcome()
 {
-	printf("\n  Program:     SortMeRNA version %d.%d.%d\n", SORTMERNA_MAJOR, SORTMERNA_MINOR, SORTMERNA_PATCH);
-	printf("  Copyright:    2016-2018 Clarity Genomics BVBA::\n");
-	printf("                Turnhoutseweg 30, 2340 Beerse, Belgium\n");
-	printf("                2014-2016 Knight Lab:\n");
-	printf("                Department of Pediatrics, UCSD, La Jolla\n");
-	printf("                2012-2014 Bonsai Bioinformatics Research Group:\n");
-	printf("                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe\n");
-	printf("  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the\n");
-	printf("                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
-	printf("                See the GNU Lesser General Public License for more details.\n");
-	printf("  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com \n");
-	printf("                Laurent Noé      laurent.noe@lifl.fr\n");
-	printf("                Pierre Pericard  pierre.pericard@lifl.fr\n");
-	printf("                Daniel McDonald  wasade@gmail.com\n");
-	printf("                Mikaël Salson    mikael.salson@lifl.fr\n");
-	printf("                Hélène Touzet    helene.touzet@lifl.fr\n");
-	printf("                Rob Knight       robknight@ucsd.edu\n\n");
+	std::stringstream ss;
+
+	ss << "\n  Program:     SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
+		<< "  Copyright:    2016-2018 Clarity Genomics BVBA:" << std::endl
+		<< "                Turnhoutseweg 30, 2340 Beerse, Belgium" << std::endl
+		<< "                2014-2016 Knight Lab:" << std::endl
+		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl
+		<< "                2012-2014 Bonsai Bioinformatics Research Group:" << std::endl
+		<< "                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe" << std::endl
+		<< "  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the" << std::endl
+		<< "                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl
+		<< "                See the GNU Lesser General Public License for more details." << std::endl
+		<< "  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com " << std::endl
+		<< "                Laurent Noé      laurent.noe@lifl.fr" << std::endl
+		<< "                Pierre Pericard  pierre.pericard@lifl.fr" << std::endl
+		<< "                Daniel McDonald  wasade@gmail.com" << std::endl
+		<< "                Mikaël Salson    mikael.salson@lifl.fr" << std::endl
+		<< "                Hélène Touzet    helene.touzet@lifl.fr" << std::endl
+		<< "                Rob Knight       robknight@ucsd.edu\n" << std::endl;
+
+	std::cout << ss.str();
 }
 
 
@@ -965,7 +969,7 @@ int main(int argc, char** argv)
 	{
 		verbose = true;
 		welcome();
-		fprintf(stderr, "  For help or more information on usage, type `./indexdb_rna %s-h%s'\n\n", BOLD, COLOFF);
+		std::cout << "  For help or more information on usage, type 'indexdb " << BOLD << "-h" << COLOFF << "'" << std::endl << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
