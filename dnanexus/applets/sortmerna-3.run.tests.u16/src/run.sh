@@ -3,7 +3,8 @@
 
 main() {
 
-    echo "PWD: $PWD"
+    echo "find $HOME -type f"
+    find $HOME -type f
 
     # prepare binaries and set PATH
     chmod u+x $HOME/bin/indexdb
@@ -27,7 +28,8 @@ main() {
     # install Conda Python 3 and bio packages
     echo "PYTHONPATH: $PYTHONPATH"
     unset PYTHONPATH
-    wget ${conda_repo} -O miniconda.sh
+    echo "wget ${conda_url} -O miniconda.sh"
+    wget ${conda_url} -O miniconda.sh
     chmod +x miniconda.sh
     ./miniconda.sh -b -p $HOME/miniconda &> /dev/null
     echo "Running: conda update --yes conda"
