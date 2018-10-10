@@ -41,7 +41,7 @@ main() {
     echo "Running: source activate env_name"
     source activate env_name
     echo "Running: pip install scikit-bio==0.2.3"
-    pip install scikit-bio==0.2.3
+    pip install -q scikit-bio==0.2.3
 
     ls -lrt $HOME/bin
     echo "[INFO] PATH: $PATH"
