@@ -33,7 +33,7 @@ public:
 		for (int i = 0; i < numThreads; ++i)
 			threads_.emplace_back(std::bind(&ThreadPool::threadEntry, this, i));
 
-		ss << __FILE__ << ":" << __LINE__ << " Initialized ThreadPool with: [" << numThreads << "] threads" << std::endl;
+		ss << __func__ << ":" << __LINE__ << " initialized Pool with: [" << numThreads << "] threads" << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -98,8 +98,6 @@ protected:
 					return;
 				}
 
-				ss << "Thread " << std::this_thread::get_id() << " running a job" << std::endl;
-				std::cout << ss.str(); ss.str("");
 				job = std::move(jobs_.front());
 				jobs_.pop();
 				++running_jobs;
@@ -109,7 +107,7 @@ protected:
 			job(); // Do the job without holding any locks
 			--running_jobs;
 			cv_done.notify_one(); // whithout this the main thread hangs forever after calling 'waitAll'
-			ss << "ThreadPool::running_jobs= " << running_jobs << " jobs.empty= " << jobs_.empty() << std::endl;
+			ss << __func__ << ":" << __LINE__ << " number of running_jobs= " << running_jobs << " jobs queue empty= " << jobs_.empty() << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for
 	} // ~threadEntry

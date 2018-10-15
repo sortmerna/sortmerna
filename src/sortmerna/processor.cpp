@@ -33,7 +33,7 @@ void Processor::run()
 	int countProcessed = 0;
 	bool alreadyProcessed = false;
 	std::stringstream ss;
-	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started\n";
+	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	for (;;)
@@ -83,10 +83,11 @@ void Processor::run()
 		countReads++;
 	}
 	writeQueue.decrPushers(); // signal this processor done adding
+	writeQueue.notify();
 
 	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads 
 		<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
-	std::cout << ss.str(); ss.str("");
+	std::cout << ss.str();
 } // ~Processor::run
 
 void PostProcessor::run()
@@ -121,7 +122,7 @@ void PostProcessor::run()
 
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
-	std::cout << ss.str(); ss.str("");
+	std::cout << ss.str();
 } // ~PostProcessor::run
 
 void ReportProcessor::run()

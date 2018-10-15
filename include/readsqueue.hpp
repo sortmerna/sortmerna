@@ -146,7 +146,7 @@ public:
 	 */
 	void notify()
 	{
-		cvQueue.notify_all();
+		cvQueue.notify_one();
 	}
 
 	unsigned int getPushers()
