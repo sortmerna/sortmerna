@@ -39,7 +39,7 @@ void Processor::run()
 	for (;;)
 	{
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
-		if (read.isEmpty && readQueue.numPushers == 0)
+		if (read.isEmpty && readQueue.getPushers() == 0)
 		{
 			break;
 		}
@@ -82,7 +82,7 @@ void Processor::run()
 
 		countReads++;
 	}
-	--writeQueue.numPushers; // signal this processor done adding
+	writeQueue.decrPushers(); // signal this processor done adding
 
 	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads 
 		<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
@@ -102,7 +102,7 @@ void PostProcessor::run()
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
 		if (read.isEmpty)
 		{ 
-			if (readQueue.numPushers == 0) 
+			if (readQueue.getPushers() == 0) 
 				break; // queue is empty and no more pushers => end processing
 			
 			if (!read.isValid) 
@@ -117,7 +117,7 @@ void PostProcessor::run()
 			writeQueue.push(read);
 		}
 	}
-	--writeQueue.numPushers; // signal this processor done adding
+	writeQueue.decrPushers(); // signal this processor done adding
 
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
@@ -146,7 +146,7 @@ void ReportProcessor::run()
 			reads.push_back(read);
 			if (read.isEmpty)
 			{
-				if (readQueue.numPushers == 0)
+				if (readQueue.getPushers() == 0)
 				{
 					isDone = true;
 					break;

@@ -27,8 +27,10 @@ class ReadsQueue
 {
 	std::string id;
 	int capacity; // max size of the queue
-	std::atomic<int> numPushed; // shared
-	std::atomic<int> numPopped; // shared
+
+	std::atomic_uint numPushed; // shared
+	std::atomic_uint numPopped; // shared
+	std::atomic_uint pushers; // counter of threads that push reads on this queue. When zero - the pushing is over.
 #ifdef LOCKQEUEU
 	std::queue<Read> recs; // shared: Reader & Processors, Writer & Processors
 #else
@@ -41,15 +43,13 @@ class ReadsQueue
 	std::stringstream ss;
 
 public:
-	std::atomic_uint numPushers; // counter of threads that push reads on this queue. When zero - the pushing is over.
-
 	ReadsQueue(std::string id, int capacity, int numPushers)
 		:
 		id(id),
 		capacity(capacity),
 		numPushed(0),
 		numPopped(0),
-		numPushers(numPushers)
+		pushers(numPushers)
 #ifndef LOCKQEUEU
 		,
 		recs(capacity) // set initial capacity
@@ -92,7 +92,7 @@ public:
 		Read rec;
 #ifdef LOCKQEUEU
 		std::unique_lock<std::mutex> lmq(qlock);
-		cvQueue.wait(lmq, [this] { return (numPushers == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.
+		cvQueue.wait(lmq, [this] { return (pushers == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.
 		if (!recs.empty()) 
 		{
 			rec = recs.front();
@@ -117,7 +117,7 @@ public:
 	bool isDone() {
 #ifdef LOCKQEUEU
 		std::lock_guard<std::mutex> lmq(qlock);
-		bool done = (numPushers == 0 && recs.empty());
+		bool done = (pushers == 0 && recs.empty());
 		cvQueue.notify_one(); // otherwise pop can stuck not knowing the adding stopped
 #else
 		bool done = (numPushers == 0 && recs.size_approx() == 0);
@@ -127,8 +127,8 @@ public:
 
 	// call from main thread when no other threads running
 	void reset(int nPushers) {
-		numPushers = nPushers;
-		ss << "ReadsQueue id: " << id << " reset. numPushers: " << numPushers << std::endl; std::cout << ss.str(); ss.str("");
+		pushers = nPushers;
+		ss << __func__ << ":" << __LINE__ << " " << id << ": pushers: " << pushers << std::endl; std::cout << ss.str(); ss.str("");
 	}
 
 	// TODO: not used
@@ -147,5 +147,18 @@ public:
 	void notify()
 	{
 		cvQueue.notify_all();
+	}
+
+	unsigned int getPushers()
+	{
+		return pushers;
+	}
+
+	void decrPushers()
+	{
+		--pushers;
+		ss.str("");
+		ss << __func__ << " id: " << id << " pushers: " << pushers << std::endl;
+		std::cout << ss.str();
 	}
 }; // ~class ReadsQueue

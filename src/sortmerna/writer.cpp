@@ -24,7 +24,7 @@ void Writer::write()
 		Read read = writeQueue.pop();
 		if (read.isEmpty)
 		{
-			if (writeQueue.numPushers == 0)
+			if (writeQueue.getPushers() == 0)
 				break; // no more records in the queue and no pushers => stop processing
 
 			if (!read.isValid) 
@@ -39,7 +39,7 @@ void Writer::write()
 		}
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-	ss << std::setprecision(2) << std::fixed << "Writer " << id << " thread " << std::this_thread::get_id() 
+	ss << std::setprecision(2) << std::fixed << id << " thread " << std::this_thread::get_id() 
 		<< " done. Elapsed time: " << elapsed.count() << " s Reads written: " << numPopped << std::endl;
 	std::cout << ss.str(); ss.str("");
 } // Writer::write
