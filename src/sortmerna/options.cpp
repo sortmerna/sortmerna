@@ -1529,7 +1529,8 @@ void welcome()
 {
 	std::stringstream ss;
 
-	ss << "\n  Program:     SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
+	ss << std::endl
+		<< "  Program:      SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
 		<< "  Copyright:    2016-2018 Clarity Genomics BVBA:" << std::endl
 		<< "                Turnhoutseweg 30, 2340 Beerse, Belgium" << std::endl
 		<< "                2014-2016 Knight Lab:" << std::endl

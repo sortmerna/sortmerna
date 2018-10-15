@@ -8,6 +8,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(indexdb CXX)
 
+set(CMAKE_CXX_STANDARD 14)
+
 if(WIN32)
 	set(IXDB_HDRS
 		${CMAKE_SOURCE_DIR}/3rdparty/dirent/include/dirent.h

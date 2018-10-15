@@ -411,16 +411,26 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << std::endl << "    Loading index " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
+			ss << __func__ << ":" << __LINE__ << " Loading index " << index_num 
+				<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
+			std::cout << ss.str(); ss.str("");
+			starts = std::chrono::high_resolution_clock::now();
+
+			index.load(index_num, idx_part, opts, refstats);
+
+			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
 			std::cout << ss.str(); ss.str("");
 
+			ss << __func__ << ":" << __LINE__ << " Loading references " << " ... ";
+			std::cout << ss.str(); ss.str("");
 			starts = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part, opts, refstats);
-			refs.load(index_num, idx_part, opts, refstats);
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-//			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec\n";
+			refs.load(index_num, idx_part, opts, refstats);
+
+//			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
+			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
 			std::cout << ss.str(); ss.str("");
 
 			starts = std::chrono::high_resolution_clock::now();

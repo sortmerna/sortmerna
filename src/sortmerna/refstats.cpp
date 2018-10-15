@@ -4,8 +4,9 @@
  */
 #include <utility>
 #include <fstream> // ifstream
-#include <vector>
+#include <sstream>
 #include <ios>
+#include <vector>
 
 #include "../alp/sls_alignment_evaluer.hpp"
 
@@ -28,7 +29,18 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	numbvs(opts.indexfiles.size(), 0),
 	numseq(opts.indexfiles.size(), 0)
 {
+	std::stringstream ss;
+	ss << __func__ << ":" << __LINE__ << " Index Statistics calculation Start ...";
+	std::cout << ss.str(); ss.str("");
+
+	auto starts = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed;
+
 	load(opts, readstats);
+
+	elapsed = std::chrono::high_resolution_clock::now() - starts;
+	ss << " Done. Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
+	std::cout << ss.str(); ss.str("");
 }
 
 // prototype: load_index.cpp:load_index_stats
@@ -56,10 +68,12 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		std::ifstream stats((char*)(opts.indexfiles[index_num].second + ".stats").c_str(), std::ios::in | std::ios::binary);
 		if (!stats.good())
 		{
-			fprintf(stderr, "\n  %sERROR%s: The index '%s' does not exist.\n", RED,
-				COLOFF, (char*)(opts.indexfiles[index_num].second + ".stats").c_str());
-			fprintf(stderr, "  Make sure you have constructed your index using the command `indexdb'. "
-				"See `indexdb -h' for help.\n\n");
+			std::cerr << std::endl
+				<< RED << "ERROR" << COLOFF
+				<< ": The index '" << opts.indexfiles[index_num].second + ".stats' does not exist."
+				<< " Make sure you have constructed your index using the command 'indexdb'."
+				<< " See 'indexdb -h' for help" << std::endl << std::endl;
+
 			exit(EXIT_FAILURE);
 		}
 
@@ -77,8 +91,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		FILE *fastafile = ::fopen(opts.indexfiles[index_num].first.c_str(), "r");
 		if (fastafile == NULL)
 		{
-			fprintf(stderr, "    %sERROR%s: could not open FASTA reference file: %s .\n",
-				RED, COLOFF, opts.indexfiles[index_num].first.c_str());
+			std::cerr << RED << "ERROR" << COLOFF << ": could not open FASTA reference file: " << opts.indexfiles[index_num].first << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -88,11 +101,12 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 
 		if (sz != filesize)
 		{
-			fprintf(stderr, "    %sERROR%s: Based on file size, the FASTA file (%s) passed to --ref <FASTA file, index name>\n",
-				RED, COLOFF, (char*)(opts.indexfiles[index_num].first).c_str());
-			fprintf(stderr, "    does not appear to be the same FASTA file (%s) used to build the index %s.\n",
-				fastafile_name, (char*)(opts.indexfiles[index_num].second).c_str());
-			fprintf(stderr, "    Check your --ref list of files and corresponding indexes.\n\n");
+			std::cerr << RED << "ERROR" << COLOFF
+				<< ": Based on file size, the FASTA file (" << opts.indexfiles[index_num].first
+				<< ") passed to --ref <FASTA file, index name>" << std::endl
+				<< "    does not appear to be the same FASTA file (" << fastafile_name
+				<< ") used to build the index " << opts.indexfiles[index_num].second
+				<< "    Check your --ref list of files and corresponding indexes" << std::endl << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -157,17 +171,16 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 			letterFreqs2[i] = background_freq_gv[i];
 		}
 
-		// create an object to store the Gumbel parameters
-		AlignmentEvaluer GumbelCalculator_obj;
+		AlignmentEvaluer gumbelCalculator; // object to store the Gumbel parameters
 
 		// set the randomization parameters
 		// (will yield the same Lamba and K values on subsequent runs with the same input files)
-		GumbelCalculator_obj.set_gapped_computation_parameters_simplified(
+		gumbelCalculator.set_gapped_computation_parameters_simplified(
 			max_time,
 			number_of_samples,
 			number_of_samples_for_preliminary_stages);
 
-		GumbelCalculator_obj.initGapped(
+		gumbelCalculator.initGapped(
 			alphabetSize,
 			substitutionScoreMatrix,
 			letterFreqs1,
@@ -183,8 +196,8 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 			max_mem,
 			randomSeed);
 
-		gumbel[index_num].first = GumbelCalculator_obj.parameters().lambda;
-		gumbel[index_num].second = GumbelCalculator_obj.parameters().K;
+		gumbel[index_num].first = gumbelCalculator.parameters().lambda;
+		gumbel[index_num].second = gumbelCalculator.parameters().K;
 
 		delete[] letterFreqs2;
 		delete[] letterFreqs1;
