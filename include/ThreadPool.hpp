@@ -24,7 +24,7 @@ class ThreadPool
 {
 public:
 
-	ThreadPool(int numThreads) : shutdown_(false), busy(0)
+	ThreadPool(int numThreads) : shutdown_(false), running_jobs(0)
 	{
 		std::stringstream ss;
 
@@ -63,7 +63,7 @@ public:
 	{
 		std::unique_lock<std::mutex> lmjD(job_done_lock);
 		//while (busy.load() != 0 && !jobs_.empty()) cv_done.wait(lmJobDone);
-		cv_done.wait(lmjD, [this] { return busy.load() == 0 && jobs_.empty(); }); // works
+		cv_done.wait(lmjD, [this] { return running_jobs == 0 && jobs_.empty(); }); // works
 	}
 
 	// Wait for all threads to stop
@@ -102,14 +102,14 @@ protected:
 				std::cout << ss.str(); ss.str("");
 				job = std::move(jobs_.front());
 				jobs_.pop();
-				++busy;
+				++running_jobs;
 			}
 			// mutex 'l' released here
 
 			job(); // Do the job without holding any locks
-			--busy;
+			--running_jobs;
 			cv_done.notify_one(); // whithout this the main thread hangs forever after calling 'waitAll'
-			ss << "ThreadPool::busy= " << busy << " jobs.empty= " << jobs_.empty() << std::endl;
+			ss << "ThreadPool::running_jobs= " << running_jobs << " jobs.empty= " << jobs_.empty() << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for
 	} // ~threadEntry
@@ -121,6 +121,6 @@ protected:
 	std::atomic_bool shutdown_;
 	std::queue <std::function <void(void)>> jobs_;
 	std::vector <std::thread> threads_;
-	std::atomic_uint busy; // counter of running jobs
+	std::atomic_uint running_jobs; // counter of running jobs
 }; // ~class ThreadPool
 
