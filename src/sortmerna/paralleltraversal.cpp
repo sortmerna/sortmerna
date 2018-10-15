@@ -458,8 +458,8 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 			readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << "    paralleltraversal: Done index " << index_num << " Part: " << idx_part + 1 
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
+			ss << __func__ << ":" << __LINE__ << " paralleltraversal: Done index " << index_num << " Part: " << idx_part + 1 
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)
 	} // ~for(index_num)
