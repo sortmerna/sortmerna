@@ -45,9 +45,6 @@ void Processor::run()
 		}
 		alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
-		//ss << "Processor: " << id << " Popped read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
-		//std::cout << ss.str(); ss.str("");
-
 		if (read.isEmpty || !read.isValid || alreadyProcessed) {
 			if (alreadyProcessed) ++countProcessed;
 			continue;
@@ -74,16 +71,15 @@ void Processor::run()
 			read.id_win_hits.clear(); // bug 46
 		}
 
-		if (read.isValid && !read.isEmpty) {
-			//ss << "Processor: " << id << " Pushing read id: " << read.id << " Index: " << read.lastIndex << " Part: " << read.lastPart << std::endl;
-			//std::cout << ss.str(); ss.str("");
+		if (read.isValid && !read.isEmpty) 
+		{
 			writeQueue.push(read);
 		}
 
 		countReads++;
 	}
 	writeQueue.decrPushers(); // signal this processor done adding
-	writeQueue.notify();
+	writeQueue.notify(); // wake up writer waiting on queue.pop()
 
 	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads 
 		<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
