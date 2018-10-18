@@ -371,13 +371,13 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	int numProcThread = 0;
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
-		ss << "paralleltraversal: Using default number of Processor threads = num CPU cores: " << numCores << std::endl; // 8
+		ss << __func__ << ":" << __LINE__ << " Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
 		std::cout << ss.str(); ss.str("");
 	}
 	else
 	{
 		numProcThread = opts.num_proc_thread; // set using '--thread'
-		ss << "paralleltraversal: Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
+		ss << __func__ << ":" << __LINE__ << " Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
 		std::cout << ss.str(); ss.str("");
 	}
 
