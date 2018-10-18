@@ -107,8 +107,8 @@ protected:
 			--running_threads;
 			ss << __func__ << ":" << __LINE__ << " number of running_threads= " << running_threads << " jobs queue empty= " << jobs_.empty() << std::endl;
 			std::cout << ss.str(); ss.str("");
+			cv_done.notify_one(); // wake up the main thread waiting in 'waitAll'. Keep it here for multi-reference cases.
 		} // ~for
-		cv_done.notify_one(); // wake up the main thread waiting in 'waitAll'
 	} // ~threadEntry
 
 	std::mutex job_queue_lock; // lock for pop/push on jobs_
