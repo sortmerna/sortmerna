@@ -1174,12 +1174,12 @@ void Runopts::opt_Default(char **argv, int &narg)
 void Runopts::optTask(char **argv, int &narg)
 {
 	std::stringstream ss;
-	int taskOpt = 0;
+	int taskOpt = 4;
 	sscanf(argv[narg + 1], "%d", &taskOpt);
 
 	if (taskOpt > 4) {
-		ss << "Option report " << taskOpt << " Can only take values: [0..4] Defaulting to 0 ... " << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::cerr << "Option −−task " << taskOpt << " Can only take values: [0..4] ... " << std::endl;
+		exit(EXIT_FAILURE);
 	}
 
 	switch (taskOpt)
@@ -1570,7 +1570,8 @@ void printlist()
 		<< std::endl
 		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
 		<< "  | option              type-format       description                                              default    |"  << std::endl
-		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl << BOLD
+		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
+		<< "  [REQUIRED OPTIONS]"                                                                                             << std::endl << BOLD
 		<< "    --ref            "                                                                                            << COLOFF << UNDL
 		<<                       "  STRING,STRING"                                                                            << COLOFF
 		<<                                       "   FASTA reference file:index file                           "              << GREEN 
@@ -1597,28 +1598,8 @@ void printlist()
 		<< "    -d               "                                                                                            << COLOFF << UNDL
 		<<                       "  STRING       "                                                                            << COLOFF
 		<<                                       "   key−value store location (folder path)                    "              << GREEN 
-		<<                                                                                                     "mandatory"    << COLOFF << std::endl << BOLD
-		<< "    --task           "                                                                                            << COLOFF << UNDL
-		<<                       "  INT          "                                                                            << COLOFF
-		<<                                       "   Processing Task"                                                         << std::endl
-		<< "                                           0 - align (default) Only perform alignment"                            << std::endl
-		<< "                                           1 - post−processing (log writing)"                                     << std::endl
-		<< "                                           2 - generate reports"                                                  << std::endl
-		<< "                                           3 - align and post−process"                                            << std::endl
-		<< "                                           4 - all"                                                               << std::endl << std::endl
-		<< "   [COMMON OPTIONS]: "                                                                                            << std::endl << BOLD
-		<< "    --threads       "                                                                                             << COLOFF << UNDL
-		<<                      "  INT:INT:INT   "                                                                            << COLOFF
-		<<                                       "   number of Read:Write:Process threads to use               "              << UNDL 
-		<<                                                                                                     "1:1:numCores" << COLOFF << std::endl << BOLD
-		<< "    --thpp          "                                                                                             << COLOFF << UNDL
-		<<                      "  INT:INT:INT   "                                                                            << COLOFF
-		<<                                       "   number of Post-Processing Read:Process threads to use     "              << UNDL 
-		<<                                                                                                     "1:1"          << COLOFF << std::endl << BOLD
-		<< "    --threp         "                                                                                             << COLOFF << UNDL
-		<<                      "  INT:INT:INT   "                                                                            << COLOFF
-		<<                                       "   number of Report Read:Process threads to use              "              << UNDL 
-		<<                                                                                                     "1:1"          << COLOFF << std::endl << BOLD
+		<<                                                                                                     "mandatory"    << COLOFF << std::endl << std::endl
+		<< "  [COMMON OPTIONS]: "                                                                                             << std::endl << BOLD
 		<< "    --other         "                                                                                             << COLOFF << UNDL
 		<<                      "  STRING        "                                                                            << COLOFF
 		<<                                       "   rejected reads filepath + base file name                  "              << std::endl
@@ -1752,8 +1733,8 @@ void printlist()
 		<< "    --otu_map       "                                                                                             << COLOFF << UNDL 
 		<<                      "  BOOL          "                                                                            << COLOFF
 		<<                                       "   output OTU map (input to QIIME's make_otu_table.py)       "              << UNDL 
-		<<                                                                                                     "off"          << COLOFF << std::endl << std::endl << std::endl
-		<< "   [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): "                                             << std::endl << BOLD
+		<<                                                                                                     "off"          << COLOFF << std::endl << std::endl
+		<< "  [ADVANCED OPTIONS] (see SortMeRNA user manual for more details): "                                              << std::endl << BOLD
 		<< "    --passes        "                                                                                             << COLOFF << UNDL 
 		<<                      "  INT,INT,INT   "                                                                            << COLOFF
 		<<                                       "   three intervals at which to place the seed on the read    "              << UNDL 
@@ -1783,14 +1764,34 @@ void printlist()
 		<<                                                                                                     "off"          << COLOFF << std::endl << BOLD
 		<< "    --cmd           "                                                                                             << COLOFF << UNDL 
 		<<                      "  BOOL          "                                                                            << COLOFF
-		<<                                       "   launch an interactive session (command prompt)"                          << std::endl << std::endl
+		<<                                       "   launch an interactive session (command prompt)"                          << std::endl << std::endl << BOLD
+		<< "    --task          "                                                                                             << COLOFF << UNDL
+		<<                      "  INT           "                                                                            << COLOFF
+		<<                                       "   Processing Task"                                                         << std::endl
+		<< "                                           0 - align Only perform alignment"                                      << std::endl
+		<< "                                           1 - post−processing (log writing)"                                     << std::endl
+		<< "                                           2 - generate reports"                                                  << std::endl
+		<< "                                           3 - align and post−process"                                            << std::endl
+		<< "                                           4 - all (default)"                                                     << std::endl << std::endl << BOLD
+		<< "    --threads       "                                                                                             << COLOFF << UNDL
+		<<                      "  INT:INT:INT   "                                                                            << COLOFF
+		<<                                       "   number of Read:Write:Process threads to use               "              << UNDL
+		<<                                                                                                     "1:1:numCores" << COLOFF << std::endl << BOLD
+		<< "    --thpp          "                                                                                             << COLOFF << UNDL
+		<<                      "  INT:INT:INT   "                                                                            << COLOFF
+		<<                                       "   number of Post-Processing Read:Process threads to use     "              << UNDL
+		<<                                                                                                     "1:1"          << COLOFF << std::endl << BOLD
+		<< "    --threp         "                                                                                             << COLOFF << UNDL
+		<<                      "  INT:INT:INT   "                                                                            << COLOFF
+		<<                                       "   number of Report Read:Process threads to use              "              << UNDL
+		<<                                                                                                     "1:1"          << COLOFF << std::endl << std::endl
 		<< "   [HELP]:"                                                                                                       << std::endl << BOLD
 		<< "    -h              "                                                                                             << COLOFF << UNDL
 		<<                      "  BOOL          "                                                                            << COLOFF 
 		<<                                       "   help"                                                                    << std::endl << BOLD
 		<< "    --version       "                                                                                             << COLOFF << UNDL 
 		<<                      "  BOOL          "                                                                            << COLOFF 
-		<<                                       "   SortMeRNA version number"           << std::endl << std::endl << std::endl << std::endl << std::endl;
+		<<                                       "   SortMeRNA version number"                                                << std::endl << std::endl;
 		
 	std::cout << ss.str();
 

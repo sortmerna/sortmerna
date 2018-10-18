@@ -115,8 +115,8 @@ void PostProcessor::run()
 		}
 	}
 	writeQueue.decrPushers(); // signal this processor done adding
-
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
+
 	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
 	std::cout << ss.str();
 } // ~PostProcessor::run
@@ -172,6 +172,8 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
+	std::cout <<std::endl << __func__ << ":" << __LINE__ << " Log file generation starts" << std::endl;
+
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
@@ -179,7 +181,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss << __FILE__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
+		ss << __func__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -196,12 +198,13 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 			// iterate parts of reference files
 			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 			{
-				ss << "\tpostProcess: Loading reference " << index_num << " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+				ss << std::endl << __func__ << ":" << __LINE__ << ": Loading reference " << index_num 
+					<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 				std::cout << ss.str(); ss.str("");
 				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
 				refs.load(index_num, idx_part, opts, refstats);
 				std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
-				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
+				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
 				std::cout << ss.str(); ss.str("");
 
 				starts = std::chrono::high_resolution_clock::now(); // index processing starts
@@ -228,8 +231,8 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 				writeQueue.reset(N_PROC_THREADS);
 
 				elapsed = std::chrono::high_resolution_clock::now() - starts;
-				ss << "    Done reference " << index_num << " Part: " << idx_part + 1
-					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+				ss << "Done reference " << index_num << " Part: " << idx_part + 1
+					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 				std::cout << ss.str(); ss.str("");
 			} // ~for(idx_part)
 		} // ~for(index_num)

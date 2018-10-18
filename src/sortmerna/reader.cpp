@@ -130,7 +130,9 @@ void Reader::read()
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 		readQueue.decrPushers(); // signal the reader done adding
-		ss << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
+		readQueue.notify(); // notify processor that might be waiting to pop
+
+		ss << __func__ << ":" << __LINE__ << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
 			<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id + 1 
 			<< " readQueue.size: " << readQueue.size() << std::endl;
 		std::cout << ss.str(); ss.str("");
