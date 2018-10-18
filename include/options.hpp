@@ -77,7 +77,7 @@ struct Runopts {
 	bool dbg_put_kvdb = false; // if True - do Not put records into Key-value DB. Debugging Memory Consumption.
 
 	enum ALIGN_REPORT { align, postproc, report, alipost, all };
-	ALIGN_REPORT alirep = align;
+	ALIGN_REPORT alirep = all;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 
 	/*! @brief Vector of strings to store result from option --blast STRING.

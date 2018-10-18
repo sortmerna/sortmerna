@@ -1173,7 +1173,6 @@ void Runopts::opt_Default(char **argv, int &narg)
   /* Processing task */
 void Runopts::optTask(char **argv, int &narg)
 {
-	std::stringstream ss;
 	int taskOpt = 4;
 	sscanf(argv[narg + 1], "%d", &taskOpt);
 
@@ -1190,9 +1189,6 @@ void Runopts::optTask(char **argv, int &narg)
 	case 3: alirep = alipost; break;
 	case 4: alirep = all; break;
 	}
-
-	ss << "optTask: ALIGN_REPORT: " << alirep << std::endl;
-	std::cout << ss.str();
 
 	narg += 2;
 } // ~Runopts::optReport

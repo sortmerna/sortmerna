@@ -807,7 +807,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << "\tgenerateReports called. Thread: " << std::this_thread::get_id() << std::endl;
+	ss << std::endl << __func__ << ":" << __LINE__ << " Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -815,7 +815,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss << __FILE__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
+		ss << __func__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -833,12 +833,13 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << "\tLoading reference " << index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+			ss << std::endl << __func__ << ":" << __LINE__ << " Loading reference " 
+				<< index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
 			auto starts = std::chrono::high_resolution_clock::now();
 			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]\n";
+			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
 			std::cout << ss.str(); ss.str("");
 
 			starts = std::chrono::high_resolution_clock::now(); // index processing starts
@@ -860,12 +861,12 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 			readQueue.reset(N_READ_THREADS);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
-			ss << "   Done reference " << index_num << " Part: " << idx_part + 1
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+			ss << __func__ << ":" << __LINE__ << " Done reference " << index_num << " Part: " << idx_part + 1
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 			std::cout << ss.str(); ss.str("");
 			if (!opts.blastout && !opts.samout)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	std::cout << "\tDone generateReports\n";
+	std::cout << __func__ << ":" << __LINE__ << " Done Reports generation" << std::endl;
 } // ~generateReports

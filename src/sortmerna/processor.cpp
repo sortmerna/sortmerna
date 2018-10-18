@@ -117,7 +117,7 @@ void PostProcessor::run()
 	writeQueue.decrPushers(); // signal this processor done adding
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 
-	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
+	ss << __func__ << ":" << __LINE__ << " " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
 	std::cout << ss.str();
 } // ~PostProcessor::run
 
@@ -248,7 +248,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 
 	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
 
-	std::cout << "\tpostProcess: Done \n";
+	std::cout << __func__ << ":" << __LINE__ << " Done" << std::endl;
 } // ~postProcess
 
 void writeLog(Runopts & opts, Readstats & readstats, Output & output)
