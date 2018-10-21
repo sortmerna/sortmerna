@@ -1,0 +1,20 @@
+body {
+    background-color: white;
+    color: rgb(0,0,50);
+}
+.high {
+    color: rgb(100, 100, 200)
+}
+a:link {
+    color: #0168dd;
+}
+a:visited {
+    color: #0353ad;
+}
+h1, h2, h3 {
+    color: rgb(130, 130, 130);
+}
+.code {
+    color: rgb(9, 34, 59); /**/
+    background-color: #e9f1fa; /* #f6f8fa */
+}
