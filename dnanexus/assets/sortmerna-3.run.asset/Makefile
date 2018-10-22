@@ -1,5 +1,6 @@
 SHELL=/bin/bash
-BIOCHANNEL=https://conda.anaconda.org/biobuilds
+BIO_CHANNEL=https://conda.anaconda.org/biobuilds
+CONDA_URL=https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
 .ONESHELL:
 all:
@@ -16,13 +17,13 @@ all:
     #@echo "PYTHONPATH: $PYTHONPATH"
     #unset PYTHONPATH
     #@echo "wget ${conda_url} -O miniconda.sh"
-    wget ${conda_url} -O miniconda.sh
+    wget ${CONDA_URL} -O miniconda.sh
     chmod +x miniconda.sh
     ./miniconda.sh -b -p $HOME/miniconda &> /dev/null
     #@echo "Running: conda update --yes conda"
     $HOME/miniconda/bin/conda update --yes conda
     #@echo "Running: conda config --add channels ${bio_channel}"
-    $HOME/miniconda/bin/conda config --add channels ${BIOCHANNEL}
+    $HOME/miniconda/bin/conda config --add channels ${BIO_CHANNEL}
     #@echo "Running: conda create --yes -n env_name python=3.5 numpy scipy"
     #conda create --yes -n env_name python=3.5 numpy scipy
     #@echo "Running: source activate env_name"
