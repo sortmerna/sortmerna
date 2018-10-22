@@ -5,39 +5,10 @@
   "dxapi": "1.0.0",
   "inputSpec": [
     {
-      "name": "SMR_BIN",
-      "help": "SMR binary file",
-      "class": "file",
-      "patterns": [ "*" ],
-      "optional": false
-    },
-    {
-      "name": "LIBSTDC_SO",
-      "help": "libstdc++ shared library - dependency of smr_bin",
-      "class": "file",
-      "patterns": [ "*" ],
-      "optional": true
-    },
-    {
-      "name": "INDEXDB_BIN",
-      "help": "indexdb binary file",
-      "class": "file",
-      "patterns": [ "*" ],
-      "optional": false
-    },
-    {
-      "name": "conda_url",
-      "class": "string",
-      "default": "https://repo.continuum.io/miniconda/Miniconda3-4.5.4-Linux-x86_64.sh",
-      "optional": true,
-      "help": "Miniconda repository URL"
-    },
-    {
-      "name": "bio_channel",
-      "class": "string",
-      "default": "https://conda.anaconda.org/biobuilds",
-      "optional": true,
-      "help": "Miniconda Bio channel URL"
+      "name": "BINS",
+      "help": "SMR binary files: sortmerna, libstdc++.so.6 (sortmerna dependency), indexdb etc.",
+      "class": "array:file",
+      "patterns": [ "*" ]
     },
     {
       "name": "sortmerna_git",
@@ -54,10 +25,8 @@
     "file":         "src/run.sh",
     "interpreter":  "bash",
     "timeoutPolicy": { "*": { "hours": 48 } },
-    "execDepends": [
-      { "name": "patchelf" },
-      { "name": "librocksdb-dev" }
-    ]
+    "execDepends": [],
+    "assetDepends": [{ "id": "record-FP6y9Jj0zj8fQyf583VY52FF" }]
   },
   "access": { "network": [ "*" ], "project": "UPLOAD" },
   "regionalOptions": {
