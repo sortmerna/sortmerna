@@ -13,25 +13,27 @@ all:
 
 	# install Conda and bio packages
 	#
+	pushd /opt && \
+	unset PYTHONPATH && \
 	wget $(CONDA_URL) -O miniconda.sh && \
 	chmod +x miniconda.sh && \
-	./miniconda.sh -b -p $(HOME)/miniconda &> /dev/null && \
-	$(HOME)/miniconda/bin/conda update -y -q conda && \
-	$(HOME)/miniconda/bin/conda config --add channels $(BIO_CHANNEL) && \
-	$(HOME)/miniconda/bin/conda install -q -y scikit-bio
+	./miniconda.sh -b -p /opt/miniconda &> /dev/null && \
+	/opt/miniconda/bin/conda update -y -q conda && \
+	/opt/miniconda/bin/conda config --add channels $(BIO_CHANNEL) && \
+	/opt/miniconda/bin/conda install -q -y scikit-bio
 
-	$(HOME)/miniconda/bin/python --version
-	$(HOME)/miniconda/bin/conda list python
-	$(HOME)/miniconda/bin/conda list scikit-bio
-	$(HOME)/miniconda/bin/conda list numpy
-	$(HOME)/miniconda/bin/conda list scipy
+	/opt/miniconda/bin/python --version
+	/opt/miniconda/bin/conda list python
+	/opt/miniconda/bin/conda list scikit-bio
+	/opt/miniconda/bin/conda list numpy
+	/opt/miniconda/bin/conda list scipy
 
-	# clean-up
-	$(info "Before cleanup:")
-	out := $(shell df -h)
-	$(info $(out))
-	sudo apt autoremove --purge
-	@echo "Done: apt autoremove --purge"
-	$(info "After cleanup:")
-	out := $(shell df -h)
-	$(info $(out))
+	# clean-up     TODO: Causes problems - leave for now
+	#$(info "Before cleanup:")
+	#out := $(shell df -h)
+	#$(info $(out))
+	#sudo apt autoremove --purge
+	#@echo "Done: apt autoremove --purge"
+	#$(info "After cleanup:")
+	#out := $(shell df -h)
+	#$(info $(out))

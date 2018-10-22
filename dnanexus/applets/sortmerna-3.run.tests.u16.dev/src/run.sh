@@ -19,11 +19,14 @@ main() {
     echo "ls -lrt $HOME/bin/"
     ls -lrt $HOME/bin/
 
+    # otherwise can interfere with conda
+    unset PYTHONPATH
+
     # check Python
-    $HOME/miniconda/bin/python --version
+    /opt/miniconda/bin/python --version
 
     # check scikit-bio
-    $HOME/miniconda/bin/conda list scikit-bio
+    /opt/miniconda/bin/conda list scikit-bio
 
     # check patchelf
     echo "apt-cache policy patchelf"
@@ -46,7 +49,7 @@ main() {
     find . -type f
 
     # run tests
-    $HOME/miniconda/bin/python $HOME/sortmerna/tests/test_sortmerna.py
+    /opt/miniconda/bin/python $HOME/sortmerna/tests/test_sortmerna.py
 
     echo "==== DONE ===="
 }
