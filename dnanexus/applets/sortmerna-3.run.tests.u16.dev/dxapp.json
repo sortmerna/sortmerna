@@ -1,5 +1,5 @@
 {
-  "name": "sortmerna-3.run.tests.u16.dev",
+  "name": "sortmerna-3.run.tests.u16",
   "title": "Run SortmeRNA 3 Tests on Ubuntu 16.04",
   "summary": "App for running SortmeRNA 3 integration tests on Ubuntu 16.04 using binaries specified as input",
   "dxapi": "1.0.0",
@@ -26,7 +26,7 @@
     "interpreter":  "bash",
     "timeoutPolicy": { "*": { "hours": 48 } },
     "execDepends": [],
-    "assetDepends": [{ "id": "record-FP6y9Jj0zj8fQyf583VY52FF" }]
+    "assetDepends": [{ "id": "record-FP723X00qpjg0G9f0xzjbQbP" }]
   },
   "access": { "network": [ "*" ], "project": "UPLOAD" },
   "regionalOptions": {
