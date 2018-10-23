@@ -6,10 +6,14 @@ all:
 	# Bypass the APT caching proxy that is built into the execution environment
 	sudo rm -f /etc/apt/apt.conf.d/99dnanexus
 
-	uname −a
-	lsb_release −a
-	which bash
-	bash −−version
+	# these commands fail to execute. DNANexus bug?
+	#uname −a  # uname: extra operand ‘−a’
+	#lsb_release −a # lsb_release: error: No arguments are permitted
+	#which bash
+	#bash −−version # bash: −−version: No such file or directory
+	#$(shell uname -a)
+	#$(shell lsb_release -a)
+	#$(shell bash --version)
 
 	# install gcc-7
 	#

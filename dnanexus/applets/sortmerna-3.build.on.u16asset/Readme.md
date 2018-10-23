@@ -1,12 +1,12 @@
-<!-- dx-header -->
 # App for building Sortmerna (DNAnexus Platform App)
 
-sortmerna_build
+The applet for building SortmeRNA 3 using the `sortmerna-3.asset`.
 
-This is the source code for an app that runs on the DNAnexus Platform.
-For more information about how to run or modify it, see
-https://wiki.dnanexus.com/.
-<!-- /dx-header -->
+When the `sortmerna-3.asset` changes, the `dxapp.json` has to be modified to reference the updated asset e.g.
 
-<!-- Insert a description of your app here -->
-This application is for building SortmeRNA 3.0-beta. It relies on an asset with necessary tools and dependencies like gcc-7, CMake, RocksDB
+```
+pushd SORTMERNA_HOME
+vi dnanexus/applets/sortmerna-3.build.on.u16asset
+...
+"assetDepends": [{ "id": "record-FKJ5gfj0KpQffJ562PF2KyP8" }] # <-- modify record to reference correct asset
+...

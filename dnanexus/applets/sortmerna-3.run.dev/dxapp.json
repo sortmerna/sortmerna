@@ -148,7 +148,8 @@
       { "name": "patchelf" },
       { "name": "zlib1g-dev" },
       { "name": "librocksdb-dev" },
-      { "name": "rapidjson-dev"}
+      { "name": "rapidjson-dev"},
+      { "name": "samtools" }
     ]
   },
   "access": {

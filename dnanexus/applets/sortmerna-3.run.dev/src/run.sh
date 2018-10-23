@@ -54,6 +54,14 @@ main() {
     echo "apt-cache policy librocksdb-dev"
     apt-cache policy librocksdb-dev
 
+    # check zlib1g-dev
+    echo "apt-cache policy zlib1g-dev"
+    apt-cache policy zlib1g-dev
+
+    # check samtools
+    echo "apt-cache policy samtools"
+    apt-cache policy samtools
+
     # patch sortmerna to look for libstdc++.so.6 in the ORIGIN directory
     echo "Running: patchelf --set-rpath '$ORIGIN' $HOME/bin/sortmerna"
     patchelf --set-rpath '$ORIGIN' $HOME/bin/sortmerna
@@ -110,9 +118,9 @@ main() {
     if [[ ! -z "${READS_GZ}" ]]; then
         echo "download -o $READS_DIR/ \"${READS_GZ}\""
         dx download -o $READS_DIR/ "${READS_GZ}"
-        #gzip -d -c ${READS_GZ_name} > ${READS_GZ_name%.*}
-        reads_base_noext=${READS_GZ_name%%.*}
-        reads_ext=${READS_GZ_name#*.}
+        reads_base_noext=${READS_GZ_name%%.*} # strip extension
+        tmp=${READS_GZ_name%.*} # strip 'gz'
+        reads_ext=${tmp#*.}  # strip name
     fi
     echo "reads_input basename: $reads_base_noext extension: $reads_ext"
 
@@ -133,7 +141,6 @@ main() {
     opt_v_VERBOSE="-v"
     opt_d_KVDB="-d ${DBDIR}"
     opt_TASK="--task ${TASK}"
-    #opt_a_NUM_THREADS="-a $(nproc)" # default anyway - ignore
     opts=""
 
     refopts=""
@@ -155,7 +162,7 @@ main() {
     fi
     if [[ ! -z "${READS_GZ}" ]]; then
     # TODO: update when SortMeRNA 2.2 is released (with reading gzip as option)
-        opt_READS="--reads $READS_DIR/${READS_GZ_name}"
+        opt_READS="--reads-gz $READS_DIR/${READS_GZ_name}"
     fi
 
       if [ "${SAM}" == "true" ]; then
@@ -189,8 +196,36 @@ main() {
         fi
     fi
 
-    echo "Listing OUT idir: $OUT_DIR/ ..."
+    #
+    # print statistics
+    #
+    echo "[INFO] ls -lrt $OUT_DIR"
     ls -lrt $OUT_DIR
+
+    # Log
+    echo "[INFO] find $OUT_DIR -name '*.log' | xargs cat"
+    find $OUT_DIR -name '*.log' | xargs cat
+
+    # fasta line count
+    echo "[INFO] find $OUT_DIR -name '*.fasta' | xargs wc -l"
+    find $OUT_DIR -name '*.fasta' | xargs wc -l
+
+    # fastq line count
+    echo "[INFO] find $OUT_DIR -name '*.fastq' | xargs wc -l"
+    find $OUT_DIR -name '*.fastq' | xargs wc -l
+
+    # blast line count
+    echo "[INFO] find $OUT_DIR -name '*.blast' | xargs wc -l"
+    find $OUT_DIR -name '*.blast' | xargs wc -l
+
+    # sam line count
+    echo "[INFO] find $OUT_DIR -name '*.sam' | xargs wc -l"
+    find $OUT_DIR -name '*.sqm' | xargs wc -l
+
+    #"${reads_base_noext}_aligned.log"
+    #"${reads_base_noext}_other.fasta"
+    #"${reads_base_noext}_aligned.fasta"
+    #"${reads_base_noext}_aligned.blast"
 
     #
     # Output results
@@ -239,11 +274,23 @@ main() {
     # BAM (optional)
     if [ "${sam_output}" == "true" ]; then
         echo "[INFO] Output BAM: $OUT_DIR/${reads_base_noext}_aligned.bam"
-        if [ "${drysmr}" == "false" ]; then
-            samtools view -b ${reads_base_noext}_aligned.sam > ${reads_base_noext}_aligned.bam
-            file_id=$(dx upload ${reads_base_noext}_aligned.bam --path "$upload_path/${reads_base_noext}_aligned.bam" --brief)
-            dx-jobutil-add-output "output_bam" "$file_id"
-        fi
+
+        refopts=""
+        echo "[INFO] Concatenating references to use with Samtools"
+        for (( i=0; i<$(( num_refs )); ++i ))
+        do
+            echo "[INFO] $REFS_DIR/${REFS_name[$i]} >> $REFS_DIR/refs.fasta"
+            cat $REFS_DIR/${REFS_name[$i]} >> "$REFS_DIR/refs.fasta"
+        done
+
+        echo "[INFO] samtools faidx $REFS_DIR/refs.fasta"
+        samtools faidx "$REFS_DIR/refs.fasta"
+        refopts="-t $REFS_DIR/refs.fasta.fai"
+        
+        echo "[INFO] samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam"
+        samtools view ${refopts} -b $OUT_DIR/${reads_base_noext}_aligned.sam -o $OUT_DIR/${reads_base_noext}_aligned.bam
+        file_id=$(dx upload $OUT_DIR/${reads_base_noext}_aligned.bam --path "$upload_path/" --brief)
+        dx-jobutil-add-output "output_sam" "$file_id"
     fi
 
     # BLAST (optional)
