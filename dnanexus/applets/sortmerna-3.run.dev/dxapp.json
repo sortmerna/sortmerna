@@ -31,14 +31,6 @@
       "optional": true
     },
     {
-      "name": "TASK",
-      "help": "(--task) Processing task. One of 0 (Only perform alignment) 1 (post−processing (log writing)) 2 (generate reports) 3 (align and post−process) 4 (all - default)",
-      "class": "string",
-      "default": "4",
-      "choices": [ "0", "1", "2", "3", "4" ],
-      "optional": true
-    },
-    {
       "name": "SAM",
       "help": "(--sam) Output alignments in SAM format",
       "class": "boolean",
@@ -72,6 +64,14 @@
       "class": "string",
       "optional": true,
       "default": "--paired_out -v"
+    },
+    {
+      "name": "TASK",
+      "help": "(--task) Processing task. One of 0 (Only perform alignment) 1 (post−processing (log writing)) 2 (generate reports) 3 (align and post−process) 4 (all - default)",
+      "class": "string",
+      "default": "4",
+      "choices": [ "0", "1", "2", "3", "4" ],
+      "optional": true
     },
     {
       "name":    "help_smr",
@@ -146,7 +146,9 @@
     "timeoutPolicy": { "*": { "hours": 48 } },
     "execDepends": [
       { "name": "patchelf" },
-      { "name": "librocksdb-dev" }
+      { "name": "zlib1g-dev" },
+      { "name": "librocksdb-dev" },
+      { "name": "rapidjson-dev"}
     ]
   },
   "access": {

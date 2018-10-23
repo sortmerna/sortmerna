@@ -7,5 +7,10 @@
     "instanceType": "mem2_ssd1_x4",
     "release": "16.04",
     "excludeResource": [],
-    "execDepends": []
+    "execDepends": [
+      { "name": "patchelf" },
+      { "name": "zlib1g-dev" },
+      { "name": "librocksdb-dev" },
+      { "name": "rapidjson-dev"}
+    ]
   }

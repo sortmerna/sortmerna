@@ -16,7 +16,7 @@ main() {
     REFS_DIR=$HOME/in/refs
     READS_DIR=$HOME/in/reads
     DBDIR=kvdb
-    TASK=4
+    #TASK=4
     UPLOAD_ROOT=/out
 
     echo "mkdir $HOME/bin/"

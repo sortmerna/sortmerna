@@ -1,6 +1,5 @@
-# atropos_detect Developer Readme
+# Applet for running Sortmerna using binaries provided as input
 
 <!--
 -->
 
-## Running this app with additional computational resources

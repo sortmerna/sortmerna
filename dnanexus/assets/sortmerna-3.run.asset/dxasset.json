@@ -10,6 +10,7 @@
     "execDepends": [
       { "name": "patchelf" },
       { "name": "zlib1g-dev" },
-      { "name": "librocksdb-dev" }
+      { "name": "librocksdb-dev" },
+      { "name": "rapidjson-dev"}
     ]
   }
