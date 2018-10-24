@@ -23,8 +23,15 @@ vi dnanexus/applets/sortmerna-3.build.on.u16asset/dxapp.json
 "assetDepends": [{ "id": "record-FP7bBFj0GjzpPjxb2Q54XbV1" }] # <-- reference the correct asset
 ...
 
-# run the build applet
+# build the applet
 dx build -f -d applets/ dnanexus/applets/sortmerna-3.build.on.u16asset
+dx find data
+...
+closed  2018-10-23 13:10:15   /applets/sortmerna-3.build.on.u16asset (applet-FP7bFxj0g35zxFXbByq4fzy3)
+...
+
+# run the applet to build sortmerna
+dx run applet-FP7bFxj0g35zxFXbByq4fzy3
 
 # list the built artifacts
 dx find data
