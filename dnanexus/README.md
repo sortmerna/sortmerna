@@ -14,3 +14,17 @@ applets | sortmerna | run SortMeRNA on Ubuntu 16.04 [README](https://github.com/
 assets | sortmerna-3.asset | Ubuntu 16.04 Environment containing SortmeRNA build tools, libraries, and dependencies [README](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/README.md)
 assets | sortmerna-3.asset.u14 | DEPRECATED: Ubuntu 14.04 Environment required to build SortmeRNA 3 [README](https://github.com/biocore/sortmerna/tree/master/dnanexus/assets/sortmerna-3.asset.u14)
 assets | sortmerna-3.run.asset | Ubuntu 16.04 Environment containing SortmeRNA dependencies and Conda [README](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.run.asset/README.md)
+
+## Usage scenarios
+
+1. [Build and Run Sortmerna on DNANexus](build-and-run-sortmerna-on-dnanexus) in two steps:
+   1. build
+   2. run using the binaries from step 1
+2. [Build and Run Sortmerna integration Tests](build-and-run-sortmerna-integration-tests)
+3. Run `ready-to-use` Sortmerna application on your data TODO
+
+### Build and Run Sortmerna on DNANexus
+
+### Build and Run Sortmerna integration Tests
+
+### Run `ready-to-use` Sortmerna application on your data
