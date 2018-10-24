@@ -7,3 +7,4 @@ The asset packages the environment necessary to build the Sortmerna including
 * patchelf
 * zlib1g-dev
 * librocksdb-dev
+* rapidjson-dev
