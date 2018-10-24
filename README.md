@@ -24,7 +24,7 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 	* [Linux OS](#linux-os)
 	* [Mac OS](#mac-os)
 	* [Windows OS](#windows-os)
-* [Tests](#tests)
+* [Running tests](#running)
 * [Third-party libraries](#third-party-libraries)
 * [Wrappers and packages](#wrappers-and-packages)
 	* [Galaxy](#galaxy)
@@ -115,8 +115,25 @@ The following Flags can be used when generating the build files (`-D<FLAG>=VALUE
 
 The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using a standard packager like `apt` (on Linux) or `homebrew` (on Mac)
 
+General steps for building Sortmerna from the sources are as follows:
+1. Prepare the build environment
+2. Get the sources from GitHub
+3. Build
 
 ## Linux OS
+
+The minute details can be found in [dnanexus folder](https://github.com/biocore/sortmerna/tree/master/dnanexus), which includes code for the build automation.
+
+The build environment (step 1) for Ubuntu 16.04 is prepared using [sortmerna-3.asset](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset)
+* The dependencies available as standard distros are prepared in [dxasset.json](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/dxasset.json) ( see this [line](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/dxasset.json#L10)).
+* Non-standard packages (GCC-7 and CMake) are prepared in [Makefile](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/Makefile)
+
+The build (steps 2, 3) is performed using the applet [sortmerna-3.build.on.u16asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/applets/sortmerna-3.build.on.u16asset)
+* Git clone is called [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L37)
+* CMake called to generate the build files [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L40)
+* Make is called [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L45)
+
+For convenience we give the description of the whole process below.
 
 (1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
