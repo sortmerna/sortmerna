@@ -69,8 +69,8 @@ SortMeRNA can be built and run on Windows, Linux, and Mac.
 The following methods can be used for building/running SortMeRNA:
 
 1. [DNANexus](https://github.com/biocore/sortmerna/blob/master/dnanexus/README.md): use SortmeRNA on the Cloud (might be all you need!)
-	* Applets for building, tesing and running are readily available
-	* Ready to use application is being tested right now
+	* Applets for building, testing and running are readily available
+	* Ready to use application is coming soon (being tested right now)
 	* Trial accounts can be used.
 2. [Pre-built binaries from GitHub releases](https://github.com/biocore/sortmerna/releases) TODO.
 3. [GitHub release sources](https://github.com/biocore/sortmerna/releases) Build Release version from sources (tar balls, zip)
