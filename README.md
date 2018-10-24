@@ -538,7 +538,7 @@ User manual is available in [docs/web folder](https://github.com/biocore/sortmer
 The manual is written as a single web page using HTML, CSS, and JS (very minimal for changing color theme light/dark), so cannot be viewed directly on GitHub.
 Clone the repository to your local machine and open [index.html](https://github.com/biocore/sortmerna/blob/master/docs/web/index.html) in the web browser.
 In case you prefer PDF, any decent browser can print web pages to PDF.
-Please, note the manual was tested so far only using Chrome.
+Please, note the manual was tested so far only using Chrome on FHD display (1920 x 1080).
 
 Third-party libraries
 =====================
