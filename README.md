@@ -25,6 +25,7 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 	* [Mac OS](#mac-os)
 	* [Windows OS](#windows-os)
 * [Running tests](#running)
+* [User Manual](#user-manual)
 * [Third-party libraries](#third-party-libraries)
 * [Wrappers and packages](#wrappers-and-packages)
 	* [Galaxy](#galaxy)
@@ -530,6 +531,14 @@ python ./tests/test_sortmerna_zlib.py
 
 Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
 
+User Manual
+===========
+
+User manual is available in [docs/web folder](https://github.com/biocore/sortmerna/tree/master/docs/web).
+The manual is written as a single web page using HTML, CSS, and JS (very minimal for changing color theme light/dark), so cannot be viewed directly on GitHub.
+Clone the repository to your local machine and open [index.html](https://github.com/biocore/sortmerna/blob/master/docs/web/index.html) in the web browser.
+In case you prefer PDF, any decent browser can print web pages to PDF.
+Please, note the manual was tested so far only using Chrome.
 
 Third-party libraries
 =====================
