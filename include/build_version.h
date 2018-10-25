@@ -6,5 +6,7 @@
 // the git revision used for compilation
 extern const char* sortmerna_build_git_sha;
 
+extern const char* sortmerna_build_git_date;
+
 // Date on which the code was compiled:
 extern const char* sortmerna_build_compile_date;

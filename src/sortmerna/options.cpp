@@ -927,7 +927,11 @@ void Runopts::optCoverage(char **argv, int &narg)
 
 void Runopts::optVersion(char **argv, int &narg)
 {
-	std::cout << std::endl << "SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl;
+	std::cout << std::endl
+		<< "SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
+		<< "Build Date: " << sortmerna_build_compile_date << std::endl
+		<< sortmerna_build_git_sha << std::endl
+		<< sortmerna_build_git_date << std::endl;
 	exit(EXIT_SUCCESS);
 } // ~Runopts::optVersion
 

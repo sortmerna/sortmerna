@@ -92,6 +92,149 @@ closed  2018-08-13 09:11:00 734.40 KB /data/refs/silva-arc-23s-id98.fasta (file-
 # run sortmerna
 dx run applet-FP885580g35ZzzP65YPb4kjX # <-- See REFS [2] below for full execution trace
 ...
+Entering interactive mode for input selection.
+
+Input:   BINS (BINS)
+Class:   array:file
+
+Enter file values, one at a time (^D or <ENTER> to finish, <TAB> twice for compatible files in
+current directory, '?' for more options)
+BINS[0]: file-FP7bJ0Q0qqg69XxGB7gk1f54 # <-- /out/sortmerna-3.build.on.u16asset/indexdb
+BINS[1]: file-FP7bJ0j0qqg8Zz30Gzy142J4 # <-- /out/sortmerna-3.build.on.u16asset/libstdc++.so.6
+BINS[2]: file-FP7bJ080qqgFJqP9FX0yf61J # <-- /out/sortmerna-3.build.on.u16asset/sortmerna
+BINS[3]:
+
+Input:   REFS (REFS)
+Class:   array:file
+
+Enter file values, one at a time (^D or <ENTER> to finish, <TAB> twice for compatible files in
+current directory, '?' for more options)
+REFS[0]: file-FJZz7300V8Pb4KZgBGkXbZBq # <-- /data/refs/silva-arc-16s-id95.fasta
+REFS[1]: file-FJZz7Fj0V8PX7G23K0Yf2Z2J # <-- /data/refs/silva-bac-16s-id90.fasta
+REFS[2]: file-FJZz78j0V8Pp0Y6Z07zK7K86
+REFS[3]:
+
+Select an optional parameter to set by its # (^D or <ENTER> to finish):
+
+ [0] READS (READS)
+ [1] READS_GZ (READS_GZ)
+ [2] SAM (SAM) [default=false]
+ [3] FASTX (FASTX) [default=true]
+ [4] BLAST (BLAST) [default="1 cigar qcov qstrand"]
+ [5] advanced (advanced) [default="--paired_out -v"]
+ [6] TASK (TASK) [default="4"]
+ [7] (-h) Sortmerna help (help_smr) [default=false]
+ [8] Dryrun sortmerna filter (drysmr) [default=false]
+ [9] Dryrun indexing (dryidx) [default=false]
+
+Optional param #: 1
+
+Input:   READS_GZ (READS_GZ)
+Class:   file
+
+Enter file ID or path (<TAB> twice for compatible files in current directory, '?' for
+more options)
+READS_GZ: file-FKJ4b0001FF03Zxz1B96ZVx5
+
+Select an optional parameter to set by its # (^D or <ENTER> to finish):
+
+ [0] READS (READS)
+ [1] READS_GZ (READS_GZ) [={"$dnanexus_link": "file-FKJ4b0001FF03Zxz1B96ZVx5"}]
+ [2] SAM (SAM) [default=false]
+ [3] FASTX (FASTX) [default=true]
+ [4] BLAST (BLAST) [default="1 cigar qcov qstrand"]
+ [5] advanced (advanced) [default="--paired_out -v"]
+ [6] TASK (TASK) [default="4"]
+ [7] (-h) Sortmerna help (help_smr) [default=false]
+ [8] Dryrun sortmerna filter (drysmr) [default=false]
+ [9] Dryrun indexing (dryidx) [default=false]
+
+Optional param #: 2
+
+Input:   SAM (SAM)
+Class:   boolean
+
+Enter boolean value ('?' for more options)
+SAM: true
+
+Select an optional parameter to set by its # (^D or <ENTER> to finish):
+
+ [0] READS (READS)
+ [1] READS_GZ (READS_GZ) [={"$dnanexus_link": "file-FKJ4b0001FF03Zxz1B96ZVx5"}]
+ [2] SAM (SAM) [=true]
+ [3] FASTX (FASTX) [default=true]
+ [4] BLAST (BLAST) [default="1 cigar qcov qstrand"]
+ [5] advanced (advanced) [default="--paired_out -v"]
+ [6] TASK (TASK) [default="4"]
+ [7] (-h) Sortmerna help (help_smr) [default=false]
+ [8] Dryrun sortmerna filter (drysmr) [default=false]
+ [9] Dryrun indexing (dryidx) [default=false]
+
+Optional param #: 5
+
+Input:   advanced (advanced)
+Class:   string
+
+Enter string value ('?' for more options)
+advanced: -v
+
+Select an optional parameter to set by its # (^D or <ENTER> to finish):
+
+ [0] READS (READS)
+ [1] READS_GZ (READS_GZ) [={"$dnanexus_link": "file-FKJ4b0001FF03Zxz1B96ZVx5"}]
+ [2] SAM (SAM) [=true]
+ [3] FASTX (FASTX) [default=true]
+ [4] BLAST (BLAST) [default="1 cigar qcov qstrand"]
+ [5] advanced (advanced) [="-v"]
+ [6] TASK (TASK) [default="4"]
+ [7] (-h) Sortmerna help (help_smr) [default=false]
+ [8] Dryrun sortmerna filter (drysmr) [default=false]
+ [9] Dryrun indexing (dryidx) [default=false]
+
+Optional param #:
+
+Using input JSON:
+{
+    "BINS": [
+        {
+            "$dnanexus_link": "file-FP7bJ0Q0qqg69XxGB7gk1f54"
+        },
+        {
+            "$dnanexus_link": "file-FP7bJ0j0qqg8Zz30Gzy142J4"
+        },
+        {
+            "$dnanexus_link": "file-FP7bJ080qqgFJqP9FX0yf61J"
+        }
+    ],
+    "REFS": [
+        {
+            "$dnanexus_link": "file-FJZz7300V8Pb4KZgBGkXbZBq"
+        },
+        {
+            "$dnanexus_link": "file-FJZz7Fj0V8PX7G23K0Yf2Z2J"
+        },
+        {
+            "$dnanexus_link": "file-FJZz78j0V8Pp0Y6Z07zK7K86"
+        }
+    ],
+    "READS_GZ": {
+        "$dnanexus_link": "file-FKJ4b0001FF03Zxz1B96ZVx5"
+    },
+    "SAM": true,
+    "advanced": "-v"
+}
+
+Confirm running the executable with this input [Y/n]:
+Calling applet-FP8x9v80g35fzyV6JkV1jxP2 with output destination project-FGyB2f00g35X2Pvv891Gf7JK:/
+
+Job ID: job-FP8xBbQ0g35vyGF83zZqZ9Xv
+Watch launched job now? [Y/n]
+
+Job Log
+-------
+Watching job job-FP8xBbQ0g35vyGF83zZqZ9Xv. Press Ctrl+C to stop.
+
+...
 2018-10-24 13:56:00 SortMeRNA 3 Run applet INFO Logging initialized (priority)
 2018-10-24 13:56:01 SortMeRNA 3 Run applet INFO CPU: 10% (4 cores) * Memory: 283/7225MB * Storage: 79GB free * Net: 0↓/0↑MBps
 2018-10-24 13:56:02 SortMeRNA 3 Run applet STDOUT dxpy/0.266.1 (Linux-4.4.0-98-generic-x86_64-with-Ubuntu-16.04-xenial)
