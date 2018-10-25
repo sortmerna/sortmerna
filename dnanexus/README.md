@@ -110,6 +110,17 @@ dx run applet-FP885580g35ZzzP65YPb4kjX # <-- See REFS [2] below for full executi
           output_blast_gz = file-FP8GB88049kKvZ7p7P1fKV1G
 ...
 ```
+Note that in this example we used the minimal 4 CPU cores `mem2_ssd1_x4` VM available on DNANexus (assuming trial account). By default Sortmerna creates 1 processing thread per CPU core. The Reads file `1.92 GB  /data/reads/SRR1635864_1.fastq.gz` however was quite big (24,654,594 reads), and we also used 3 reference files. The total running time as seen from the trace [2]:
+
+task | Worker threads | Time per reference file, sec | Total time, min
+-----|----------------|------------------------------|-----------
+Processing (alignment) | 4 | 434.65 + 878.98 + 425.16 | ~30
+Statistics Log generation | 1 | 419.13 + 413.70 + 411.31 | ~20
+Report generation | 1 | 376.36 + 387.42 + 383.46 | ~19
+
+With a more powerful VM like `mem2_ssd1_x8` (8 cores), or `mem2_ssd1_x16` (16 cores) the running time would considerably improve.
+
+
 
 ### Build and Run Sortmerna integration Tests
 
