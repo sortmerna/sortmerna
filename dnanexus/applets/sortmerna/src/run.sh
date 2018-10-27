@@ -141,7 +141,6 @@ main() {
     fi
 
     if [[ ! -z "${READS_GZ}" ]]; then
-    # TODO: update when SortMeRNA 2.2 is released (with reading gzip as option)
         opt_READS="--reads-gz $READS_DIR/${READS_GZ_name}"
     fi
 
@@ -159,6 +158,9 @@ main() {
 
     echo "Listing index: $IDX_DIR/ ..."
     ls -lrt $IDX_DIR
+
+    echo "[INFO]: sortmerna --version"
+    sortmerna --version
 
     # Run sortmerna
     if [[ ! -z "${BLAST}" ]]; then

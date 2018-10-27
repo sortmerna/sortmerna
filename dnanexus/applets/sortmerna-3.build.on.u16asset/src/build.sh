@@ -45,6 +45,9 @@ main() {
     make
     popd
 
+    echo "Executing: ${HOME}/sortmerna/build/Release/src/sortmerna/sortmerna --version"
+    ${HOME}/sortmerna/build/Release/src/sortmerna/sortmerna --version
+
     # upload built artifacts and library dependencies to dnanexus project and add output entries to 'job_output.json'
     sortmerna=$(dx upload sortmerna/build/Release/src/sortmerna/sortmerna --path ${upload_path}/ --brief)
     dx-jobutil-add-output sortmerna "$sortmerna" --class=file

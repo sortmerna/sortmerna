@@ -1,22 +1,18 @@
-<!-- dx-header -->
-# App for running Sortmerna (DNAnexus Platform App)
+# App for running Sortmerna on DNAnexus Platform
 
-This is the source code for an app that runs on the DNAnexus Platform.
-For more information about how to run or modify it, see
-https://wiki.dnanexus.com/.
-<!-- /dx-header -->
-
-The application can be launched either from DNANexus GUI or on command line using `dx` utility.
+The application can be launched in two ways:
+1. Using web browser to access the DNANexus GUI
+2. Using `dx` command line utility locally on the user machine.
 
 Required parameters:
 
-* **REFS** a set of files with Reference sequences
-* **READS** or **READS_GZ** the file with Reads to be aligned.
+* `REFS` - a set of files with Reference sequences
+* `READS` or `READS_GZ` - the file with Reads to be aligned.
 
 # Command Line example
 
 ```
-dx run sortmerna-3.run
+dx run sortmerna
 Entering interactive mode for input selection.
 
 Input:   REFS (REFS)

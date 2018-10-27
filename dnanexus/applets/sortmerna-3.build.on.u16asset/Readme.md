@@ -2,7 +2,7 @@
 
 The applet for building SortmeRNA 3 using the [sortmerna-3.asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/assets/sortmerna-3.asset) on DNANexus platform.
 
-The following artifacts are uploaded to the user account after being built
+The following artifacts are uploaded to the user account after the build
 * indexdb
 * sortmerna
 * libstdc++.so.6

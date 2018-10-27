@@ -2,7 +2,7 @@
   "name": "sortmerna",
   "title": "SortMeRNA Run applet",
   "summary": "Run SortMeRNA on Ubuntu 16.04",
-  "version": "3.0.0-b",
+  "version": "3.0.0",
   "dxapi": "1.0.0", 
   "inputSpec": [
     {
@@ -126,7 +126,7 @@
     "aws:us-east-1": {
       "systemRequirements": {
         "*": {
-          "instanceType": "mem1_ssd1_x8"
+          "instanceType": "mem1_ssd1_x4"
         }
       }
     }
