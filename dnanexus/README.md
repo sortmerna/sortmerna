@@ -261,7 +261,7 @@ Processing (alignment) | 4 | 434.65 + 878.98 + 425.16 | ~30
 Statistics Log generation | 1 | 419.13 + 413.70 + 411.31 | ~20
 Report generation | 1 | 376.36 + 387.42 + 383.46 | ~19
 
-With a more powerful VM like `mem2_ssd1_x8` (8 cores), or `mem2_ssd1_x16` (16 cores) the running time would considerably improve.
+More powerful VMs like `mem2_ssd1_x8` (8 cores), or `mem2_ssd1_x16` (16 cores) can be used if necessary.
 
 
 
