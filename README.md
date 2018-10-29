@@ -1,5 +1,4 @@
-sortmerna
-=========
+# sortmerna
 
 [![Build Status](https://travis-ci.org/biocore/sortmerna.png?branch=master)](https://travis-ci.org/biocore/sortmerna)
 
@@ -17,49 +16,30 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
 
 # Table of Contents
-* [Support](#support)
-* [Documentation](#documentation)
+
 * [Getting Started](#getting-started)
-* [Compilation](#sortmerna-compilation)
-	* [Linux OS](#linux-os)
-	* [Mac OS](#mac-os)
-	* [Windows OS](#windows-os)
+	* [DNANexus cloud](#dnanexus-cloud)
+	* [Using GitHub release binaries](#using-github-release-binaries)
+	* [Building from source code](#building-from-source-code)
+		* [General notes](#general-notes)
+		* [Obtaining the source code](#obtaining-the-source-code)
+			* [Download GitHub Release](#download-github-release)
+			* [Clone the GitHub Repository and use the head or a release](#clone-the-github-repository-and-use-the-head-or-a-release)
+		* [building on Linux OS](#building-on-linux-os)
+		* [Building on Mac OS](#building-on-mac-os)
+			* [Install Clang on Mac](#install-clang-on-mac)
+			* [Configure shell to use Clang compiler on Mac](#configure-shell-to-use-clang-compiler-on-mac)
+			* [Configure shell to use GCC compiler on Mac](#configure-shell-to-use-gcc-compiler-on-Mac)
+		* [Building on Windows OS](#building-on-windows-os)
 * [Running tests](#running)
 * [User Manual](#user-manual)
 * [Third-party libraries](#third-party-libraries)
-* [Wrappers and packages](#wrappers-and-packages)
-	* [Galaxy](#galaxy)
-	* [Debian](#debian)
-	* [GNU Guix](#gnu-guix)
-	* [QIIME](#qiime)
 * [Taxonomies](#taxonomies)
 * [Citation](#citation)
 * [Contributors](#contributors)
+* [Support](#support)
+* [Documentation](#documentation)
 * [References](#references)
-
-
-# Support
-For questions and comments, please use the SortMeRNA [forum](https://groups.google.com/forum/#!forum/sortmerna).
-
-  
-# Documentation
-
-If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, you can generate the documentation
-by modifying the following lines in ```doxygen_configure.txt```:
-
-```
-INPUT = /path/to/sortmerna/include /path/to/sortmerna/src
-IMAGE_PATH = /path/to/sortmerna/algorithm
-```
-
-and running the following command:
-
-```
-doxygen doxygen_configure.txt
-```
-
-This command will generate a folder `html` in the directory from which the
-command was run.
 
 
 # Getting Started
@@ -68,22 +48,25 @@ SortMeRNA can be built and run on Windows, Linux, and Mac.
 
 The following methods can be used for building/running SortMeRNA:
 
-1. [DNANexus](https://github.com/biocore/sortmerna/blob/master/dnanexus/README.md): use SortmeRNA on the Cloud (it's `cool` and might be all you need!)
-	* Applets for building, testing and running are readily available
-	* Ready to use application is coming soon (being tested right now)
-	* Trial accounts can be used.
-2. [Pre-built binaries from GitHub releases](https://github.com/biocore/sortmerna/releases) TODO.
-3. [GitHub release sources](https://github.com/biocore/sortmerna/releases) Build Release version from sources (tar balls, zip)
-	* [on Linux](#linux-os)
-	* [on Mac OS](#mac-os)
-	* [on Windows OS](#windows-os)
-4. [GitHub main branch](https://github.com/biocore/sortmerna) Build development version from sources (master branch)
-	* [Instructions](#sortmerna-compilation)
+## DNANexus cloud
 
+Arguably the easiest way to use Sortmerna.
 
-# SortMeRNA Compilation
+* Ready-to-use `sortmerna` application is available on DNANexus cloud. Just upload your data and run the application.
+* Sortmerna distribution also contains DNANexus applets for building, testing and running Sortmerna. See [dnanexus](https://github.com/biocore/sortmerna/blob/master/dnanexus/README.md) subdirectory for detailed instructions.
 
-The build was tested on the following OS:
+Note that DNANexus trial accounts can be used.
+
+## Using GitHub release binaries
+[Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
+
+TODO
+
+## Building from source code
+
+### General notes
+
+The build was tested using the following environments:
 1. Linux
 	* Ubuntu 14.04 Trusty with GCC 7.3.0
 	* Ubuntu 16.04 Xenial with GCC 7.3.0
@@ -94,18 +77,18 @@ The build was tested on the following OS:
 3. MAC
 	* macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
 
-Getting latest GCC on _old_ Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VBox Windows 10 host).
+Getting latest GCC on _old_ Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VirtualBox Windows 10 host).
 
-**CMake** is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+`CMake` is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 The following libraries have to be installed using a packager or to be built
-* **ZLib** (zlib1g-dev)
-* **RocksDB** (librocksdb-dev)
-* **RapidJson** (rapidjson-dev)
+* `ZLib` (zlib1g-dev)
+* `RocksDB` (librocksdb-dev)
+* `RapidJson` (rapidjson-dev)
 	
-**Git** has to be installed _if_ building from the GitHub repository sources.
+`Git` has to be installed _if_ building from the GitHub repository sources.
 
-The following Flags can be used when generating the build files (`-D<FLAG>=VALUE`):
+The following Flags can be used when generating the build files using CMake (`-D<FLAG>=VALUE`):
 * `ROCKSDB_INCLUDE_DIR` (path to RocksDB include directory)
 * `ROCKSDB_LIB_DEBUG` (path to RocksDB library for Debug)
 * `ROCKSDB_LIB_RELEASE` (path to RocksDB library for Release)
@@ -117,16 +100,14 @@ The following Flags can be used when generating the build files (`-D<FLAG>=VALUE
 * `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary if RocksDB is installed using packager)
 * `SET_ZLIB` (set to 1 to indicate ZLib was built from sources.)
 
-The above flags can be ignored if the dependencies (zlib, rocksdb, rapidjson) are installed using a standard packager like `apt` (on Linux) or `homebrew` (on Mac)
+The above flags can be ignored if the dependencies (`zlib`, `rocksdb`, `rapidjson`) are installed using a standard packager like `apt` (on Linux) or `homebrew` (on Mac)
 
 General steps for building Sortmerna from the sources are as follows:
 1. Prepare the build environment
-2. Get the sources from GitHub
+2. Get the sources from GitHub or from GitHub releases
 3. Build
 
-## Linux OS
-
-The minute details can be found in [dnanexus folder](https://github.com/biocore/sortmerna/tree/master/dnanexus), which includes code for the build automation.
+The minute details on setting the build environment and performing the build can be found in [dnanexus folder](https://github.com/biocore/sortmerna/tree/master/dnanexus), which includes code for the build automation.
 
 The build environment (step 1) for Ubuntu 16.04 is prepared using [sortmerna-3.asset](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset)
 * The dependencies available as standard distros are prepared in [dxasset.json](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/dxasset.json) ( see this [line](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/dxasset.json#L10)).
@@ -137,7 +118,32 @@ The build (steps 2, 3) is performed using the applet [sortmerna-3.build.on.u16as
 * CMake called to generate the build files [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L40)
 * Make is called [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L45)
 
-For convenience we give the description of the whole process below.
+### Obtaining the source code
+
+The source code can be obtained using the following methods
+
+1. Download GitHub Release
+2. Clone the GitHub repository and use either master head branch (development) or checkout a release (tag)
+
+#### Download GitHub Release
+
+[GitHub releases](https://github.com/biocore/sortmerna/releases)
+
+TODO
+
+#### Clone the GitHub Repository and use the head or a release
+
+```
+# clone the repository
+git clone https://github.com/biocore/sortmerna.git
+
+pushd sortmerna
+
+# If you need a particular release (tag)
+git checkout v3.0.0
+```
+
+### building on Linux OS
 
 (1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
 
@@ -219,14 +225,13 @@ make
 ```
 
 The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-Simply add the build binaries to the PATH e.g.
 
 ```
+# add the build binaries to the PATH
 export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
 ```
 
-
-## Mac OS
+### Building on Mac OS
 
 We tested the build on macOS 10.13 High Sierra (64-bit).
 We recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages required to build SortmeRNA.
@@ -306,8 +311,18 @@ Simply add the build binaries to the PATH e.g.
 export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
 ```
 
+#### Install Clang on Mac
 
-### Mac OS - configure shell to use Clang compiler
+Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
+install the latest version of Clang supported with Xcode. 
+
+After installing Xcode, the Xcode command line tools may be installed via:
+
+Xcode -> Preferences -> Downloads
+
+Under "Components", click to install "Command Line Tools"
+
+#### Configure shell to use Clang compiler on Mac
 
 (1) Check if you have Clang installed:
 
@@ -325,7 +340,7 @@ export CXX=clang++
 (2b) If Clang is not installed, see [Clang for Mac OS](#clang-for-mac-os)
 for installation instructions.
 
-### Mac OS - configure shell to use GCC compiler
+#### Configure shell to use GCC compiler on Mac
 
 (1) Check if you have GCC installed:
 
@@ -352,20 +367,7 @@ To list available flags
 brew options gcc54
 ```
 
-Mac OS - install Clang
-----------------------
-
-Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
-install the latest version of Clang supported with Xcode. 
-
-After installing Xcode, the Xcode command line tools may be installed via:
-
-Xcode -> Preferences -> Downloads
-
-Under "Components", click to install "Command Line Tools"
-
-
-## Windows OS
+### Building on Windows OS
 
 MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
 
@@ -509,8 +511,7 @@ Depending on the build type the binaries are generated in
 set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
 ```
 
-Running
-=======
+# Running
 
 Python code is provided for running integration tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
 
@@ -534,8 +535,7 @@ python ./tests/test_sortmerna_zlib.py
 
 Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
 
-User Manual
-===========
+# User Manual
 
 User manual is available in [docs/web folder](https://github.com/biocore/sortmerna/tree/master/docs/web).
 The manual is written as a single web page using HTML, CSS, and JS (very minimal for changing color theme light/dark), so cannot be viewed directly on GitHub.
@@ -543,8 +543,8 @@ Clone the repository to your local machine and open [index.html](https://github.
 In case you prefer PDF, any decent browser can print web pages to PDF.
 Please, note the manual was tested so far only using Chrome on FHD display (1920 x 1080).
 
-Third-party libraries
-=====================
+# Third-party libraries
+
 Various features in SortMeRNA are dependent on third-party libraries, including:
 * [ALP](http://www.ncbi.nlm.nih.gov/CBBresearch/Spouge/html_ncbi/html/software/program.html?uid=6): computes statistical parameters for Gumbel distribution (K and Lambda)
 * [CMPH](http://cmph.sourceforge.net): C Minimal Perfect Hashing Library
@@ -553,54 +553,46 @@ Various features in SortMeRNA are dependent on third-party libraries, including:
 * [RapidJson](https://github.com/Tencent/rapidjson): serialization of Reads objects to store in RocksDB
 * [Concurrent Queue](https://github.com/cameron314/concurrentqueue): Lockless buffer for Reads accessed from multiple processing threads
 
-Wrappers and Packages
-=====================
-
-Galaxy
-------
-
-Thanks to Björn Grüning and Nicola Soranzo, a Galaxy wrapper exists for SortMeRNA 2.1.
-Please visit Björn's [github page](https://github.com/bgruening/galaxytools/tree/master/tools/rna_tools/sortmerna) for installation.
-
-Debian
-------
-
-Thanks to the [Debian Med](https://www.debian.org/devel/debian-med/) team, SortMeRNA 2.0 is now a package in Debian.
-Thanks to Andreas Tille for the sortmerna and indexdb_rna man pages (version 2.0).
-These have been updated for 2.1 in the master repository.
-
-GNU Guix
---------
-
-Thanks to Ben Woodcroft for adding SortMeRNA 2.1 to GNU Guix, find the package [here](https://www.gnu.org/software/guix/packages/).
-
-QIIME
------
-
-SortMeRNA 2.0 can be used in [QIIME](http://qiime.org)'s [pick_closed_reference_otus.py](http://qiime.org/scripts/pick_closed_reference_otus.html),
-[pick_open_reference_otus.py](http://qiime.org/scripts/pick_open_reference_otus.html) and [assign_taxonomy.py](http://qiime.org/scripts/assign_taxonomy.html) scripts.
-
-Note: At the moment, only 2.0 is compatible with QIIME.
-
-Taxonomies
-==========
+# Taxonomies
 
 The folder `rRNA_databases/silva_ids_acc_tax.tar.gz` contains SILVA taxonomy strings (extracted from XML file generated by ARB)
 for each of the reference sequences in the representative databases. The format of the files is three tab-separated columns,
 the first being the reference sequence ID, the second being the accession number and the final column is the taxonomy.
 
-Citation
-========
+# Citation
 
 If you use SortMeRNA, please cite:
 Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data", Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.
 
-Contributors
-============
+# Contributors
+
 See [AUTHORS](./AUTHORS) for a list of contributors to this project.
 
-References
-==========
+# Support
+
+For questions and comments, please use the SortMeRNA [forum](https://groups.google.com/forum/#!forum/sortmerna).
+
+  
+# Documentation
+
+If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, you can generate the documentation
+by modifying the following lines in ```doxygen_configure.txt```:
+
+```
+INPUT = /path/to/sortmerna/include /path/to/sortmerna/src
+IMAGE_PATH = /path/to/sortmerna/algorithm
+```
+
+and running the following command:
+
+```
+doxygen doxygen_configure.txt
+```
+
+This command will generate a folder `html` in the directory from which the
+command was run.
+
+# References
 
 1. Homebrew 
 	- [home](https://brew.sh/)
