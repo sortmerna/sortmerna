@@ -58,9 +58,66 @@ Arguably the easiest way to use Sortmerna.
 Note that DNANexus trial accounts can be used.
 
 ## Using GitHub release binaries
-[Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
+Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
 
-TODO
+The file [sortmerna-3.0.0-linux.tar.gz](https://github.com/biocore/sortmerna/releases/download/v3.0.0/sortmerna-3.0.0-linux.tar.gz) contains 3 binaries
+`indexdb`, `libstdc++.so.6`, `sortmerna`
+
+`libstdc++.so.6` is a dependency of `sortmerna`. It is needed on machines that have no GCC installed.
+
+The binaries were built on DNANexus Ubuntu 16.04 VM using [sortmerna-3.build.on.u16asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/applets/sortmerna-3.build.on.u16asset) and the [sortmerna-3.asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/assets/sortmerna-3.asset)
+
+The `sortmerna` binary was patched using `patchelf` utility to search for `libstdc++.so.6` in the same directory where `sortmerna` is located.
+
+Put all the binaries into the same location e.g. `SORTMERNA_HOME/bin`, and add the `bin` to the PATH.
+
+Below are all the necessary `bash` commands:
+
+```
+# get binary distro
+wget https://github.com/biocore/sortmerna/releases/download/v3.0.0/sortmerna-3.0.0-linux.tar.gz
+
+# get sources
+wget https://github.com/biocore/sortmerna/archive/v3.0.0.tar.gz
+
+# list the source tar content
+less v3.0.0.tar.gz
+drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.0/
+-rw-rw-r-- root/root       119 2018-10-29 08:13 sortmerna-3.0.0/.gitignore
+-rw-rw-r-- root/root      4909 2018-10-29 08:13 sortmerna-3.0.0/.travis.yml
+drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.0/3rdparty/
+drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.0/3rdparty/alp/
+-rw-rw-r-- root/root      1344 2018-10-29 08:13 sortmerna-3.0.0/3rdparty/alp/CMakeLists.txt
+...
+
+# extract sources
+tar xzf v3.0.0.tar.gz
+
+# create bin/
+mkdir sortmerna-3.0.0/bin
+
+# extract binaries into bin/
+tar xzf sortmerna-3.0.0-linux.tar.gz -C sortmerna-3.0.0/bin/
+
+# list the binaries
+ls -lrt sortmerna-3.0.0/bin/
+-rwxrwxr-x 1 biocodz biocodz  174560 Oct 30 06:48 indexdb
+-rw-rw-r-- 1 biocodz biocodz 1607120 Oct 30 06:48 libstdc++.so.6
+-rwxrwxr-x 1 biocodz biocodz  849928 Oct 30 06:56 sortmerna
+
+# set PATH
+export PATH=$PWD/sortmerna-3.0.0/bin:$PATH
+
+# test the installation
+sortmerna --version
+SortMeRNA version 3.0.0
+Build Date: Oct 29 2018
+sortmerna_build_git_sha:@bc47297ce3e8580ef32d161255bfcbe1f718c322@
+sortmerna_build_git_date:@2018/10/29 12:35:39@
+
+# view help
+sortmerna -h
+```
 
 ## Building from source code
 
