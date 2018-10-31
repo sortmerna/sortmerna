@@ -51,7 +51,7 @@ The following methods can be used for building/running SortMeRNA:
 
 ## Beware Issue 171
 
-Beware that the directory specified using `-d` options is completely wiped out on each `sortmerna` run. Refer to the [Issue 171](https://github.com/biocore/sortmerna/issues/171)
+Beware that the directory specified using `-d` option is completely wiped out on each `sortmerna` run. Refer to the [Issue 171](https://github.com/biocore/sortmerna/issues/171)
 
 ## DNANexus cloud
 
