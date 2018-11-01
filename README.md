@@ -590,7 +590,7 @@ Tests on compressed data files
 python ./tests/test_sortmerna_zlib.py
 ```
 
-Users require [scikit-bio](https://github.com/biocore/scikit-bio) 0.5.0 to run the tests.
+Users require [scikit-bio](https://github.com/biocore/scikit-bio) to run the tests.
 
 # User Manual
 
