@@ -1607,7 +1607,8 @@ void printlist()
 {
 	std::stringstream ss;
 
-	ss << "\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:" << std::endl
+	ss << std::endl
+		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:" << std::endl
 #ifdef HAVE_LIBZ
 		<< "  OR" << std::endl
 		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:" << std::endl
