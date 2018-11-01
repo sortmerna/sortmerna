@@ -34,6 +34,9 @@
 // forward
 void welcome();
 void printlist();
+std::string get_user_home();
+unsigned int list_dir(std::string dpath);
+bool dirExists(std::string dpath);
 
 void Runopts::optReads(char **argv, int &narg)
 {
@@ -1145,15 +1148,15 @@ void Runopts::opt_d_KeyValDatabase(char **argv, int &narg)
 {
 	std::stringstream ss;
 
-	if (argv[narg + 1] == NULL)
+	// kvdb is specified
+	if (argv[narg + 1] != NULL)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": -d [STRING] requires a folder path for key-value database (ex. -d /var/data/kvdb)" << std::endl;
-		std::cerr << ss.str();
-		exit(EXIT_FAILURE);
+		kvdbPath.assign(argv[narg + 1]); // e.g. "C:/a01_projects/clarity_genomics/data/kvdb"
+		//ss << "\n  " << RED << "ERROR" << COLOFF
+		//	<< ": -d [STRING] requires a folder path for key-value database (ex. -d /var/data/kvdb)" << std::endl;
+		//std::cerr << ss.str();
+		//exit(EXIT_FAILURE);
 	}
-
-	kvdbPath.assign(argv[narg + 1]); // e.g. "C:/a01_projects/clarity_genomics/data/kvdb"
 	narg += 2;
 } // ~Runopts::opt_d_KeyValDatabase
 
@@ -1203,6 +1206,34 @@ void Runopts::optInteractive(char **argv, int &narg)
 	interactive = true;
 	++narg;
 } // ~Runopts::optInteractive
+
+void Runopts::test_kvdb_path()
+{
+	if (kvdbPath.size() == 0)
+	{
+		kvdbPath = get_user_home() + "/kvdb";
+		std::cout << __func__ << ": Key-value DB location was not specified. Using default: " << std::endl;
+	}
+
+	std::cout << __func__ << ": Using Key-value DB location: " << kvdbPath << std::endl;
+
+	if (dirExists(kvdbPath))
+	{
+		// dir exists and not empty -> exception
+		auto count = list_dir(kvdbPath);
+		if (count > 0) {
+			std::cerr << __func__ << ": Directory " << kvdbPath
+				<< " exists and is Not empty. Please, make sure the directory is empty, or specify a different directory using option '-d'" << std::endl;
+			exit(1);
+		}
+		// dir exists and empty -> use
+	}
+	else
+	{
+		// dir does not exist -> try creating
+		std::cout << __func__ << ": Directory " << kvdbPath << " does not exists - will try to create";
+	}
+} // ~test_kvdb_path
 
 
 void Runopts::process(int argc, char**argv, bool dryrun)
@@ -1332,7 +1363,8 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		}//~switch
 	}//~while ( narg < argc )
 
-
+	// validate the options
+	test_kvdb_path();
 
 	 // ERROR messages ******* 
 	 // Reads file is mandatory
@@ -1343,6 +1375,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"are mandatory input.\n\n", RED, COLOFF, __LINE__, __FILE__);
 		printlist();
 	}
+
 	// Basename for aligned reads is mandatory
 	if (filetype_ar.size() == 0)
 	{
@@ -1350,6 +1383,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// No output format has been chosen
 	else if (!(fastxout || blastout || samout || otumapout || doLog || de_novo_otu))
 	{
@@ -1358,6 +1392,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!fastxout && (pairedin || pairedout))
 	{
@@ -1367,6 +1402,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"maintaining paired reads together.\n");
 		exit(EXIT_FAILURE);
 	}
+
 	// Basename for non-aligned reads is mandatory
 	if (filetype_or.size() != 0)
 	{
@@ -1377,6 +1413,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			exit(EXIT_FAILURE);
 		}
 	}
+
 	// An OTU map can only be constructed with the single best alignment per read
 	if (otumapout && num_alignments_set)
 	{
@@ -1387,6 +1424,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		fprintf(stderr, "  Use --otu_map with --best [INT] instead.\n\n");
 		exit(EXIT_FAILURE);
 	}
+
 	// If --num_alignments output was chosen, check an alignment format has also been chosen
 	if (num_alignments_set && !(blastout || samout || fastxout))
 	{
@@ -1394,6 +1432,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"format has been chosen (--blast, --sam or --fastx).\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// If --best output was chosen, check an alignment format has also been chosen
 	if (best_set && !(blastout || samout || otumapout))
 	{
@@ -1401,6 +1440,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"format has been chosen (--blast or --sam or --otu_map).\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// Check gap extend score < gap open score
 	if (gap_extension > gap_open)
 	{
@@ -1408,6 +1448,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// Option --print_all_reads can only be used with Blast-like tabular
 	// and SAM formats (not pairwise)
 	if (print_all_reads && blastout && blastFormat != BlastFormat::TABULAR)
@@ -1416,6 +1457,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"tabular format.\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// Only one of these options is allowed (--best outputs one alignment,
 	// --num_alignments outputs > 1 alignments)
 	if (best_set && num_alignments_set)
@@ -1426,6 +1468,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"and output a single best alignment, whereas --num_alignments [INT] will "
 			"output the first INT alignments).\n\n");
 	}
+
 	// Option --min_lis [INT] can only accompany --best [INT]
 	if (min_lis_set && num_alignments_set)
 	{
@@ -1435,6 +1478,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"the User manual on this option).\n\n");
 		exit(EXIT_FAILURE);
 	}
+
 	// Option --mis_lis INT accompanies --best INT, cannot be set alone
 	if (min_lis_set && !best_set)
 	{
@@ -1442,6 +1486,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"[INT].\n\n", RED, COLOFF, __LINE__, __FILE__);
 		exit(EXIT_FAILURE);
 	}
+
 	// %id and %coverage can only be used with --otu_map
 	if (((align_id > 0) || (align_cov > 0)) && !otumapout)
 	{
@@ -1562,22 +1607,22 @@ void printlist()
 {
 	std::stringstream ss;
 
-	ss << "\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output −d kvdb_path [OPTIONS]:" << std::endl
+	ss << "\n  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:" << std::endl
 #ifdef HAVE_LIBZ
 		<< "  OR" << std::endl
-		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output −d kvdb_path [OPTIONS]:" << std::endl
+		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:" << std::endl
 #endif
 		<< std::endl
 		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
 		<< "  | option              type-format       description                                              default    |"  << std::endl
 		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
-		<< "  [REQUIRED OPTIONS]"                                                                                             << std::endl << BOLD
+		<< "  [REQUIRED OPTIONS]: "                                                                                           << std::endl << BOLD
 		<< "    --ref            "                                                                                            << COLOFF << UNDL
 		<<                       "  STRING,STRING"                                                                            << COLOFF
 		<<                                       "   FASTA reference file:index file                           "              << GREEN 
 		<<                                                                                                     "mandatory"    << COLOFF << std::endl
-		<< "                                          If passing multiple reference files, separate them"                     << std::endl
-		<< "                                          using the delimiter ':' (Linux) or ';' (Windows),"                      << std::endl
+		<< "                                         If passing multiple reference files, separate them"                      << std::endl
+		<< "                                         using the delimiter ':' (Linux) or ';' (Windows),"                       << std::endl
 		<< "                 (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)"            << std::endl << BOLD
 		<< "    --reads          "                                                                                            << COLOFF << UNDL
 		<<                       "  STRING       "                                                                            << COLOFF
@@ -1594,11 +1639,7 @@ void printlist()
 		<<                       "  STRING       "                                                                            << COLOFF
 		<<                                       "   aligned reads filepath + base file name                   "              << GREEN 
 		<<                                                                                                     "mandatory"    << COLOFF << std::endl
-		<< "                                         (appropriate extension will be added)"                                   << std::endl << BOLD
-		<< "    -d               "                                                                                            << COLOFF << UNDL
-		<<                       "  STRING       "                                                                            << COLOFF
-		<<                                       "   key−value store location (folder path)                    "              << GREEN 
-		<<                                                                                                     "mandatory"    << COLOFF << std::endl << std::endl
+		<< "                                         (appropriate extension will be added)"                                   << std::endl << std::endl
 		<< "  [COMMON OPTIONS]: "                                                                                             << std::endl << BOLD
 		<< "    --other         "                                                                                             << COLOFF << UNDL
 		<<                      "  STRING        "                                                                            << COLOFF
@@ -1701,10 +1742,6 @@ void printlist()
 		<<                      "  BOOL          "                                                                            << COLOFF
 		<<                                       "   search only the reverse-complementary strand              "              << UNDL 
 		<<                                                                                                     "off"          << COLOFF << std::endl << BOLD
-		<< "    -a              "                                                                                             << COLOFF << UNDL 
-		<<                      "  INT           "                                                                            << COLOFF
-		<<                                       "   number of threads to use                                  "              << UNDL 
-		<<                                                                                                     "1"            << COLOFF << std::endl << BOLD
 		<< "    -e              "                                                                                             << COLOFF << UNDL
 		<<                      "  DOUBLE        "                                                                            << COLOFF
 		<<                                       "   E-value threshold                                         "              << UNDL 
@@ -1712,8 +1749,8 @@ void printlist()
 		<< "    -v              "                                                                                             << COLOFF << UNDL 
 		<<                      "  BOOL          "                                                                            << COLOFF
 		<<                                       "   verbose                                                   "              << UNDL 
-		<<                                                                                                     "off"          << COLOFF << std::endl << std::endl << std::endl
-		<< "  [OTU PICKING OPTIONS]:"                                                                                         << std::endl << BOLD
+		<<                                                                                                     "off"          << COLOFF << std::endl << std::endl
+		<< "  [OTU PICKING OPTIONS]: "                                                                                        << std::endl << BOLD
 		<< "    --id            "                                                                                             << COLOFF << UNDL 
 		<<                      "  DOUBLE        "                                                                            << COLOFF
 		<<                                       "   %%id similarity threshold (the alignment must             "              << UNDL 
@@ -1761,18 +1798,34 @@ void printlist()
 		<< "    --pid           "                                                                                             << COLOFF << UNDL 
 		<<                      "  BOOL          "                                                                            << COLOFF
 		<<                                       "   add pid to output file names                              "              << UNDL 
-		<<                                                                                                     "off"          << COLOFF << std::endl << BOLD
-		<< "    --cmd           "                                                                                             << COLOFF << UNDL 
+		<<                                                                                                     "off"          << COLOFF << std::endl << std::endl
+		<< "   [HELP]: "                                                                                                      << std::endl << BOLD
+		<< "    -h              "                                                                                             << COLOFF << UNDL
+		<<                      "  BOOL          "                                                                            << COLOFF 
+		<<                                       "   help"                                                                    << std::endl << BOLD
+		<< "    --version       "                                                                                             << COLOFF << UNDL 
+		<<                      "  BOOL          "                                                                            << COLOFF 
+		<<                                       "   SortMeRNA version number"                                                << std::endl << std::endl
+		<< "  [DEVELOPER OPTIONS]: "                                                                                          << std::endl << BOLD
+		<< "    --cmd           "                                                                                             << COLOFF << UNDL
 		<<                      "  BOOL          "                                                                            << COLOFF
-		<<                                       "   launch an interactive session (command prompt)"                          << std::endl << std::endl << BOLD
+		<<                                       "   launch an interactive session (command prompt)"                          << std::endl << BOLD
 		<< "    --task          "                                                                                             << COLOFF << UNDL
 		<<                      "  INT           "                                                                            << COLOFF
 		<<                                       "   Processing Task"                                                         << std::endl
 		<< "                                           0 - align Only perform alignment"                                      << std::endl
-		<< "                                           1 - post−processing (log writing)"                                     << std::endl
+		<< "                                           1 - post-processing (log writing)"                                     << std::endl
 		<< "                                           2 - generate reports"                                                  << std::endl
 		<< "                                           3 - align and post−process"                                            << std::endl
 		<< "                                           4 - all (default)"                                                     << std::endl << std::endl << BOLD
+		<< "    -d              "                                                                                             << COLOFF << UNDL
+		<<                      "  STRING        "                                                                            << COLOFF
+		<<                                       "   key-value datastore FULL folder path                      "              << UNDL
+		<<                                                                                                     "USERDIR/kvdb" << COLOFF << std::endl << BOLD
+		<< "    -a              "                                                                                             << COLOFF << UNDL
+		<<                      "  INT           "                                                                            << COLOFF
+		<<                                       "   number of threads to use                                  "              << UNDL
+		<<                                                                                                     "numCores"     << COLOFF << std::endl << BOLD
 		<< "    --threads       "                                                                                             << COLOFF << UNDL
 		<<                      "  INT:INT:INT   "                                                                            << COLOFF
 		<<                                       "   number of Read:Write:Process threads to use               "              << UNDL
@@ -1784,14 +1837,7 @@ void printlist()
 		<< "    --threp         "                                                                                             << COLOFF << UNDL
 		<<                      "  INT:INT:INT   "                                                                            << COLOFF
 		<<                                       "   number of Report Read:Process threads to use              "              << UNDL
-		<<                                                                                                     "1:1"          << COLOFF << std::endl << std::endl
-		<< "   [HELP]:"                                                                                                       << std::endl << BOLD
-		<< "    -h              "                                                                                             << COLOFF << UNDL
-		<<                      "  BOOL          "                                                                            << COLOFF 
-		<<                                       "   help"                                                                    << std::endl << BOLD
-		<< "    --version       "                                                                                             << COLOFF << UNDL 
-		<<                      "  BOOL          "                                                                            << COLOFF 
-		<<                                       "   SortMeRNA version number"                                                << std::endl << std::endl;
+		<<                                                                                                     "1:1"          << COLOFF << std::endl << std::endl;
 		
 	std::cout << ss.str();
 

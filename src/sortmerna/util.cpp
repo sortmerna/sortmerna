@@ -3,16 +3,59 @@
  * Created: Jun 10, 2018 Sun
  */
 #include <iostream> // cerr
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <dirent.h>
+#include <algorithm>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 // forward
+unsigned int check_dir(std::string dpath);
+unsigned int list_dir(std::string dpath);
 int clear_dir(std::string dpath);
 bool dirExists(std::string dpath);
+std::string get_user_home();
+
+unsigned int check_dir(std::string dpath)
+{
+	unsigned int retval = 0;
+	auto count = list_dir(dpath);
+	if (count > 0) {
+		std::cout << __func__ << ":" << __LINE__ << " Directory " << dpath << " exists and is not empty" << std::endl;
+		retval = 1;
+	}
+	return retval;
+}
+
+unsigned int list_dir(std::string dpath)
+{
+	unsigned int count = 0;
+	if (!dirExists(dpath)) return count;
+
+	DIR *pdir = opendir(dpath.data());
+	struct dirent *next_file;
+	std::string fpath;
+
+	if (pdir == NULL)
+	{
+		std::cerr << __FILE__ << ":" << __LINE__ << " Failed to open path " << dpath << std::endl;
+		exit(1);
+	}
+
+	while ((next_file = readdir(pdir)) != NULL)
+	{
+		if (0 == strcmp(next_file->d_name, ".") || 0 == strcmp(next_file->d_name, ".."))
+			continue; // skip '.' and '..'
+		++count;
+	}
+	closedir(pdir);
+
+	std::cout << __func__ << ":" << __LINE__ << " Directory " << dpath << " has " << count << " files" << std::endl;
+ 	return count;
+}
 
 int clear_dir(std::string dpath)
 {
@@ -60,4 +103,18 @@ bool dirExists(std::string dpath)
 	else
 		std::cout << __FUNCTION__ << ": Path is Not a directory: " << dpath << std::endl;
 	return exists;
+}
+
+std::string get_user_home()
+{
+	std::string homedir;
+#if defined(_WIN32)
+	homedir.append(getenv("USERPROFILE"));
+	std::replace(homedir.begin(), homedir.end(), '\\', '/');
+	//homedir.append(getenv("HOMEDRIVE"));
+	//homedir.append(getenv("HOMEPATH"));
+#else
+	homedir.append(getenv("HOME"));
+#endif
+	return homedir;
 }

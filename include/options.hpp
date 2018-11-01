@@ -173,4 +173,6 @@ private:
 	void opt_d_KeyValDatabase(char **argv, int &narg); // Key-Value Database directory path (kvdbPath)
 	void opt_Default(char **argv, int &narg);
 	void opt_debug_put_kvdb(int &narg);
+
+	void test_kvdb_path();
 };

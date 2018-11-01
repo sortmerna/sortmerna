@@ -9,7 +9,7 @@
 
         <div id="content">
         <h1>SortMeRNA User Manual</h1>
-        <p>October 2018, version 3.0.0</p>
+        <p>October 2018, version 3.0.1</p>
         <div>
             <h2>Contents</h2>
             <ol id="cont">
@@ -27,7 +27,7 @@
             </ol>            
         </div>
 
-        <p class="code">This manual is for SortMeRNA version 3.0.0</p>
+        <p class="code">This manual is for SortMeRNA version 3.0.1</p>
 
         <div id="intro">
             <h2>1 Introduction</h2>
@@ -87,7 +87,7 @@ id %: members of the cluster must have identity at least this % id with the repr
             <p>Display the man page:</p>
             <p class="code">$ indexdb -h</p>
 <pre>
-    Program:     SortMeRNA version 3.0.0
+    Program:     SortMeRNA version 3.0.1
     Copyright:    2016-2018 Clarity Genomics BVBA::
                     Turnhoutseweg 30, 2340 Beerse, Belgium
                     2014-2016 Knight Lab:
@@ -131,7 +131,7 @@ id %: members of the cluster must have identity at least this % id with the repr
 <p class="code">$ indexdb --ref sortmerna/rRNA_databases/silva-bac-16s-id90.fasta,./data/idx/silva-bac-16s-id90 -v</p>
 
             <pre>
-    Program:     SortMeRNA version 3.0.0
+    Program:     SortMeRNA version 3.0.1
     Copyright:    2016-2018 Clarity Genomics BVBA::
                     Turnhoutseweg 30, 2340 Beerse, Belgium
                     2014-2016 Knight Lab:
@@ -242,7 +242,7 @@ In SortMeRNA users have the option to output sequence alignments for their match
 
 <p class="code">$ sortmerna -h</p>
 <pre>
-    Program:      SortMeRNA version 3.0.0
+    Program:      SortMeRNA version 3.0.1
     Copyright:    2016-2018 Clarity Genomics BVBA:
                   Turnhoutseweg 30, 2340 Beerse, Belgium
                   2014-2016 Knight Lab:
@@ -261,112 +261,112 @@ In SortMeRNA users have the option to output sequence alignments for their match
                   Rob Knight       robknight@ucsd.edu
   
   
-    usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output −d kvdb_path [OPTIONS]:
+    usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:
     OR
-    usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output −d kvdb_path [OPTIONS]:
+    usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:
   
     -------------------------------------------------------------------------------------------------------------
     | option              type-format       description                                              default    |
     -------------------------------------------------------------------------------------------------------------
-    [REQUIRED OPTIONS]
-      --ref              STRING,STRING   FASTA reference file:index file                           mandatory
-                                            If passing multiple reference files, separate them
-                                            using the delimiter ':' (Linux) or ';' (Windows),
-                   (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)
-      --reads            STRING          FASTA/FASTQ raw reads file                                mandatory
-          OR
-      --reads-gz         STRING          FASTA/FASTQ compressed (with gzip) reads file             mandatory
-      --aligned          STRING          aligned reads filepath + base file name                   mandatory
-                                           (appropriate extension will be added)
-      -d                 STRING          key−value store location (folder path)                    mandatory
-  
+    [REQUIRED OPTIONS]:
+    --ref              STRING,STRING   FASTA reference file:index file                           mandatory
+                                         If passing multiple reference files, separate them
+                                         using the delimiter ':' (Linux) or ';' (Windows),
+                 (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)
+    --reads            STRING          FASTA/FASTQ raw reads file                                mandatory
+        OR
+    --reads-gz         STRING          FASTA/FASTQ compressed (with gzip) reads file             mandatory
+    --aligned          STRING          aligned reads filepath + base file name                   mandatory
+                                         (appropriate extension will be added)
+
     [COMMON OPTIONS]:
-      --other           STRING           rejected reads filepath + base file name
-                                           (appropriate extension will be added)
-      --fastx           BOOL             output FASTA/FASTQ file                                   off
-                                           (for aligned and/or rejected reads)
-      --sam             BOOL             output SAM alignment                                      off
-                                           (for aligned reads only)
-      --SQ              BOOL             add SQ tags to the SAM file                               off
-      --blast           STRING           output alignments in various Blast-like formats
-                                             '0' - pairwise
-                                             '1' - tabular (Blast -m 8 format)
-                                             '1 cigar' - tabular + column for CIGAR
-                                             '1 cigar qcov' - tabular + columns for CIGAR
-                                                        and query coverage
-                                             '1 cigar qcov qstrand' - tabular + columns for CIGAR,
-                                                                  query coverage and strand
-      --log             BOOL             output overall statistics                                 off
-      --num_alignments  INT              report first INT alignments per read reaching E-value     -1
-                                          (--num_alignments 0 signifies all alignments will be output)
-         OR (default)
-      --best            INT              report INT best alignments per read reaching E-value      1
-                                           by searching --min_lis INT candidate alignments
-                                          (--best 0 signifies all candidate alignments will be searched)
-      --min_lis         INT              search all alignments having the first INT longest LIS    2
-                                           LIS stands for Longest Increasing Subsequence, it is
-                                           computed using seeds' positions to expand hits into
-                                           longer matches prior to Smith-Waterman alignment.
-     --print_all_reads  BOOL             output null alignment strings for non-aligned reads       off
-                                           to SAM and/or BLAST tabular files
-      --paired_in       BOOL             both paired-end reads go in --aligned fasta/q file        off
-                                          (interleaved reads only, see Section 4.2.4 of User Manual)
-      --paired_out       BOOL            both paired-end reads go in --other fasta/q file          off
-                                         (interleaved reads only, see Section 4.2.4 of User Manual)
-      --match           INT              SW score (positive integer) for a match                   2
-      --mismatch        INT              SW penalty (negative integer) for a mismatch              -3
-      --gap_open        INT              SW penalty (positive integer) for introducing a gap       5
-      --gap_ext         INT              SW penalty (positive integer) for extending a gap         2
-      -N                INT              SW penalty for ambiguous letters (N's)
-                                           scored as --mismatch
-      -F                BOOL             search only the forward strand                            off
-      -R                BOOL             search only the reverse-complementary strand              off
-      -a                INT              number of threads to use                                  1
-      -e                DOUBLE           E-value threshold                                         1
-      -v                BOOL             verbose                                                   off
-  
-  
+    --other           STRING           rejected reads filepath + base file name
+                                         (appropriate extension will be added)
+    --fastx           BOOL             output FASTA/FASTQ file                                   off
+                                         (for aligned and/or rejected reads)
+    --sam             BOOL             output SAM alignment                                      off
+                                         (for aligned reads only)
+    --SQ              BOOL             add SQ tags to the SAM file                               off
+    --blast           STRING           output alignments in various Blast-like formats
+                                           '0' - pairwise
+                                           '1' - tabular (Blast -m 8 format)
+                                           '1 cigar' - tabular + column for CIGAR
+                                           '1 cigar qcov' - tabular + columns for CIGAR
+                                                      and query coverage
+                                           '1 cigar qcov qstrand' - tabular + columns for CIGAR,
+                                                                query coverage and strand
+    --log             BOOL             output overall statistics                                 off
+    --num_alignments  INT              report first INT alignments per read reaching E-value     -1
+                                        (--num_alignments 0 signifies all alignments will be output)
+       OR (default)
+    --best            INT              report INT best alignments per read reaching E-value      1
+                                         by searching --min_lis INT candidate alignments
+                                        (--best 0 signifies all candidate alignments will be searched)
+    --min_lis         INT              search all alignments having the first INT longest LIS    2
+                                         LIS stands for Longest Increasing Subsequence, it is
+                                         computed using seeds' positions to expand hits into
+                                         longer matches prior to Smith-Waterman alignment.
+   --print_all_reads  BOOL             output null alignment strings for non-aligned reads       off
+                                         to SAM and/or BLAST tabular files
+    --paired_in       BOOL             both paired-end reads go in --aligned fasta/q file        off
+                                        (interleaved reads only, see Section 4.2.4 of User Manual)
+    --paired_out       BOOL            both paired-end reads go in --other fasta/q file          off
+                                       (interleaved reads only, see Section 4.2.4 of User Manual)
+    --match           INT              SW score (positive integer) for a match                   2
+    --mismatch        INT              SW penalty (negative integer) for a mismatch              -3
+    --gap_open        INT              SW penalty (positive integer) for introducing a gap       5
+    --gap_ext         INT              SW penalty (positive integer) for extending a gap         2
+    -N                INT              SW penalty for ambiguous letters (N's)
+                                         scored as --mismatch
+    -F                BOOL             search only the forward strand                            off
+    -R                BOOL             search only the reverse-complementary strand              off
+    -e                DOUBLE           E-value threshold                                         1
+    -v                BOOL             verbose                                                   off
+
     [OTU PICKING OPTIONS]:
-      --id              DOUBLE           %%id similarity threshold (the alignment must             0.97
-                                           still pass the E-value threshold)
-  
-      --coverage        DOUBLE           %%query coverage threshold (the alignment must            0.97
-                                           still pass the E-value threshold)
-  
-      --de_novo_otu     BOOL             FASTA/FASTQ file for reads matching database < %%id       off
-                                           (set using --id) and < %%cov (set using --coverage)
-                                           (alignment must still pass the E-value threshold)
-      --otu_map         BOOL             output OTU map (input to QIIME's make_otu_table.py)       off
-  
+    --id              DOUBLE           %%id similarity threshold (the alignment must             0.97
+                                         still pass the E-value threshold)
+
+    --coverage        DOUBLE           %%query coverage threshold (the alignment must            0.97
+                                         still pass the E-value threshold)
+
+    --de_novo_otu     BOOL             FASTA/FASTQ file for reads matching database < %%id       off
+                                         (set using --id) and < %%cov (set using --coverage)
+                                         (alignment must still pass the E-value threshold)
+    --otu_map         BOOL             output OTU map (input to QIIME's make_otu_table.py)       off
+
     [ADVANCED OPTIONS] (see SortMeRNA user manual for more details):
-      --passes          INT,INT,INT      three intervals at which to place the seed on the read    L,L/2,3
-                                           (L is the seed length set in ./indexdb_rna)
-      --edges           INT              number (or percent if INT followed by %% sign) of         4
-                                           nucleotides to add to each edge of the read
-                                           prior to SW local alignment
-      --num_seeds       INT              number of seeds matched before searching                  2
-                                           for candidate LIS
-      --full_search     BOOL             search for all 0-error and 1-error seed                   off
-                                           matches in the index rather than stopping
-                                           after finding a 0-error match (<1%% gain in
-                                           sensitivity with up four-fold decrease in speed)
-      --pid             BOOL             add pid to output file names                              off
-      --cmd             BOOL             launch an interactive session (command prompt)
-  
-      --task            INT              Processing Task
-                                             0 - align Only perform alignment
-                                             1 - post−processing (log writing)
-                                             2 - generate reports
-                                             3 - align and post−process
-                                             4 - all (default)
-  
-      --threads         INT:INT:INT      number of Read:Write:Process threads to use               1:1:numCores
-      --thpp            INT:INT:INT      number of Post-Processing Read:Process threads to use     1:1
-      --threp           INT:INT:INT      number of Report Read:Process threads to use              1:1
-  
-     [HELP]:
-      -h                BOOL             help
-      --version         BOOL             SortMeRNA version number  
+    --passes          INT,INT,INT      three intervals at which to place the seed on the read    L,L/2,3
+                                         (L is the seed length set in ./indexdb_rna)
+    --edges           INT              number (or percent if INT followed by %% sign) of         4
+                                         nucleotides to add to each edge of the read
+                                         prior to SW local alignment
+    --num_seeds       INT              number of seeds matched before searching                  2
+                                         for candidate LIS
+    --full_search     BOOL             search for all 0-error and 1-error seed                   off
+                                         matches in the index rather than stopping
+                                         after finding a 0-error match (<1%% gain in
+                                         sensitivity with up four-fold decrease in speed)
+    --pid             BOOL             add pid to output file names                              off
+
+    [HELP]:
+    -h                BOOL             help
+    --version         BOOL             SortMeRNA version number
+
+    [DEVELOPER OPTIONS]:
+    --cmd             BOOL             launch an interactive session (command prompt)
+    --task            INT              Processing Task
+                                           0 - align Only perform alignment
+                                           1 - post?processing (log writing)
+                                           2 - generate reports
+                                           3 - align and post?process
+                                           4 - all (default)
+
+    -d                STRING           key-value datastore FULL folder path                      USERDIR/kvdb
+    -a                INT              number of threads to use                                  numCores
+    --threads         INT:INT:INT      number of Read:Write:Process threads to use               1:1:numCores
+    --thpp            INT:INT:INT      number of Post-Processing Read:Process threads to use     1:1
+    --threp           INT:INT:INT      number of Report Read:Process threads to use              1:1
 </pre>
 
 <p>
@@ -387,11 +387,10 @@ $ sortmerna --ref \<br/>
 --reads-gz /home/biocodz/data/reads/set1-illumina-rrna-reads.fasta.gz \<br/>
 --aligned /home/biocodz/data/out/set1-illumina-rrna_aligned \<br/>
 --other /home/biocodz/data/out/set1-illumina-rrna_other \<br/>
---sam --fastx --log --blast 1 --num_alignments 1 -v \<br/>
--d /home/biocodz/data/kvdb
+--sam --fastx --log --blast 1 --num_alignments 1 -v
 </p>
 <pre>
-    Program:      SortMeRNA version 3.0.0
+    Program:      SortMeRNA version 3.0.1
     Copyright:    2016-2018 Clarity Genomics BVBA:
                   Turnhoutseweg 30, 2340 Beerse, Belgium
                   2014-2016 Knight Lab:

@@ -391,7 +391,6 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(numThreads);
-	clear_dir(opts.kvdbPath);
 	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
