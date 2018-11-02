@@ -184,9 +184,7 @@ The source code can be obtained using the following methods
 
 #### Download GitHub Release
 
-[GitHub releases](https://github.com/biocore/sortmerna/releases)
-
-TODO
+Visit [GitHub releases](https://github.com/biocore/sortmerna/releases)
 
 #### Clone the GitHub Repository and use the head or a release
 
