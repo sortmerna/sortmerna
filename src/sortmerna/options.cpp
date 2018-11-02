@@ -1212,7 +1212,7 @@ void Runopts::test_kvdb_path()
 	if (kvdbPath.size() == 0)
 	{
 		kvdbPath = get_user_home() + "/kvdb";
-		std::cout << __func__ << ": Key-value DB location was not specified. Using default: " << std::endl;
+		std::cout << __func__ << ": Key-value DB location was not specified. Setting default" << std::endl;
 	}
 
 	std::cout << __func__ << ": Using Key-value DB location: " << kvdbPath << std::endl;
@@ -1221,17 +1221,30 @@ void Runopts::test_kvdb_path()
 	{
 		// dir exists and not empty -> exception
 		auto count = list_dir(kvdbPath);
-		if (count > 0) {
-			std::cerr << __func__ << ": Directory " << kvdbPath
-				<< " exists and is Not empty. Please, make sure the directory is empty, or specify a different directory using option '-d'" << std::endl;
-			exit(1);
+		if (count > 0) 
+		{
+			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alipost == alirep)
+			{
+				std::cerr << __func__ << ": Directory " << kvdbPath
+					<< " exists and is Not empty. Please, make sure the directory is empty, or specify a different directory using option '-d'" << std::endl;
+				exit(1);
+			}
 		}
-		// dir exists and empty -> use
+		else
+		{
+			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
+			{
+				std::cerr << __func__ << ": Directory " << kvdbPath
+					<< " is empty. Alignment has to be performed first. Please, use option '--task 0 | 3 | 4'" << std::endl;
+				exit(1);
+			}
+			// dir exists and empty -> use
+		}
 	}
 	else
 	{
 		// dir does not exist -> try creating
-		std::cout << __func__ << ": Directory " << kvdbPath << " does not exists - will try to create";
+		std::cout << __func__ << ": Directory " << kvdbPath << " does not exists - will attempt to create";
 	}
 } // ~test_kvdb_path
 
