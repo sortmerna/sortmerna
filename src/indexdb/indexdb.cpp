@@ -1558,9 +1558,9 @@ int main(int argc, char** argv)
 			if (nt == '>') strs += 2;
 			else
 			{
-				fprintf(stderr, "\n%sERROR%s: each read header of the database fasta "
-					"file must begin with '>';", RED, COLOFF);
-				fprintf(stderr, "\n  check sequence # %llu\n\n", strs);
+				std::cerr << __func__ << ":" << __LINE__ << RED << "ERROR" << COLOFF
+					<< ": each read header of the database fasta file must begin with '>';" << std::endl
+					<< "  check sequence # " << strs << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
