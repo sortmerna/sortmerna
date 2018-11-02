@@ -1357,7 +1357,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			else if (strcmp(opt, "task") == 0) optTask(argv, narg);
 			else if (strcmp(opt, "cmd") == 0) optInteractive(argv, narg); // '--cmd' interactive session
 																		  // threads
-			else if (strcmp(opt, "thread") == 0) opt_threads(argv, narg); // '--thread 1:1:8' num alignment threads
+			else if (strcmp(opt, "threads") == 0) opt_threads(argv, narg); // '--threads 1:1:8' num alignment threads
 			else if (strcmp(opt, "thpp") == 0) opt_threads_pp(argv, narg); // '--thpp 1:1' num post-proc threads
 			else if (strcmp(opt, "threp") == 0) opt_threads_rep(argv, narg); // '--threp 1:1' num report threads
 			else if (strcmp(opt, "dbg_put_db") == 0) opt_debug_put_kvdb(narg); // '--dbg_put_db'
