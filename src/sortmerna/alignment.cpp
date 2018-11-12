@@ -401,7 +401,7 @@ void compute_lis_alignment
 						result->part = index.part;
 						result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
 
-						// STEP 8: alignment succeeded, output (--all) or store (--best)
+						// Alignment succeeded, output (--all) or store (--best)
 						// the alignment and go to next alignment
 						if (aligned)
 						{
@@ -421,7 +421,7 @@ void compute_lis_alignment
 							result->read_begin1 += align_que_start;
 							result->read_end1 += align_que_start;
 							result->readlen = read.sequence.length();
-							result->ref_seq = max_ref; // TODO: Monitor - moved here from (min_lis_gv > -1)
+							result->ref_seq = max_ref; 
 
 							// update best alignment
 							if (opts.min_lis > -1)
@@ -433,11 +433,10 @@ void compute_lis_alignment
 									uint32_t highest_score_index = read.hits_align_info.max_index;
 									uint32_t hits_size = read.hits_align_info.alignv.size();
 
-									// number of alignments stored per read < 'num_best_hits_gv', 
+									// number of alignments stored per read < 'num_best_hits', 
 									// add alignment to array without comparison to other members of array
 									if (opts.num_best_hits == 0 || hits_size < (uint32_t)opts.num_best_hits)
 									{
-										// add alignment
 										auto rescopy = copyAlignment(result);
 										if (rescopy == read.hits_align_info.alignv.back())
 											; // skip equivalent alignment
@@ -445,10 +444,11 @@ void compute_lis_alignment
 										{
 											if (rescopy.ref_seq == read.hits_align_info.alignv.back().ref_seq)
 											{
-												read.hits_align_info.alignv.back() = rescopy;
+												read.hits_align_info.alignv.back() = rescopy; // replace alignment
 											}
 											else
 											{
+												// add alignment
 												read.hits_align_info.alignv.push_back(rescopy);
 												++hits_size;
 
@@ -461,23 +461,25 @@ void compute_lis_alignment
 													read.hits_align_info.min_index = findMinIndex(read);
 												}
 
-												// update the index position of the first occurrence of the
-												// highest alignment score
+												// update the index position of the first occurrence of the highest alignment score
 												if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
+												{
 													read.hits_align_info.max_index = hits_size - 1;
+												}
 
 												// the maximum possible score for this read has been found
 												if (result->score1 == max_SW_score)
+												{
 													read.max_SW_count++;
-
-												// free result
-												free(result);
-												result = NULL;
+												}
 											}
+
+											free(result); // free result
+											result = NULL;
 										}
 									}//~if (array_size < num_best_hits_gv)
 
-									// all num_best_hits_gv slots have been filled,
+									// all num_best_hits slots have been filled,
 									// replace the alignment having the lowest score
 									else if (result->score1 > read.hits_align_info.alignv[smallest_score_index].score1)
 									{
@@ -486,8 +488,7 @@ void compute_lis_alignment
 										if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
 											read.hits_align_info.max_index = smallest_score_index;
 
-										// decrement number of reads mapped to database
-										// with lower score
+										// decrement number of reads mapped to database with lower score
 										readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--;
 
 										// increment number of reads mapped to database with higher score
@@ -497,16 +498,20 @@ void compute_lis_alignment
 										read.hits_align_info.alignv[smallest_score_index] = copyAlignment(result);
 
 										read.hits_align_info.min_index = findMinIndex(read);
+
 										// the maximum possible score for this read has been found
-										if (result->score1 == max_SW_score) read.max_SW_count++;
-										// free result, except the cigar (now new cigar)
-										free(result);
+										if (result->score1 == max_SW_score) {
+											read.max_SW_count++;
+										}
+										
+										free(result); // free result, except the cigar (now new cigar)
 										result = NULL;
 									}
-									else
+									else if (result != NULL)
 									{
 										// new alignment has a lower score, destroy it
-										if (result != NULL) free(result);
+										 free(result);
+										 result = 0;
 									}
 								}
 								// an alignment for this read doesn't exist, add the first alignment
@@ -570,27 +575,38 @@ void compute_lis_alignment
 									if (opts.de_novo_otu) read.hit_denovo = false;
 								}
 
-								if (result != 0) free(result); // free alignment info
+								if (result != 0) 
+								{
+									free(result); // free alignment info
+									result = 0;
+								}
 							}//~if output all alignments
 
 							// continue to next read (do not need to collect more seeds using another pass)
 							search = false;
 
-								// maximum score possible for the read has been reached,
-								// stop searching for further matches
-							if ((opts.num_best_hits != 0) && (read.max_SW_count == opts.num_best_hits)) break;
+							// maximum score possible for the read has been reached,
+							// stop searching for further matches
+							if ((opts.num_best_hits != 0) && (read.max_SW_count == opts.num_best_hits))
+							{
+								break;
+							}
 
 							// stop search after the first num_alignments_gv alignments
 							// for this read
 							if (opts.num_alignments > 0)
 							{
 								// go to next read (do not search for further alignments)
-								if (read.num_alignments <= 0) break; // num_alignments_x[readn]
+								if (read.num_alignments <= 0)
+								{
+									break; // num_alignments_x[readn]
+								}
 							}
 						}//~if read aligned
-						else // the read did not align
+						else if(result != 0)  // the read did not align
 						{
-							if (result != 0) free(result); // free alignment info
+							free(result); // free alignment info
+							result = 0;
 						}
 					}//~if LIS long enough                               
 #ifdef HEURISTIC1_OFF

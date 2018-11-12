@@ -1341,10 +1341,10 @@ class SortmernaTests(unittest.TestCase):
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
-        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412",
-                              "64", "30", "59", "1470", "2", "1429", "0",
-                              "2039", "+",
-                              "58S56M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1243M17S"]
+        expected_alignment = ["AB271211", "Unc49508", "93.5", "1430",
+                              "64", "30", "58", "1487", "1", "1446", "0",
+                              "2074", "+",
+                              "57S57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1260M"]
         actual_alignment = []
         with open("%s.blast" % aligned_basename) as aligned_f:
             for line in aligned_f:
@@ -1556,7 +1556,8 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
-        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2039"]
+        expected_alignment = ["AB271211", "Unc49508", "93.5", "1430", "64", "30", "58", "1487", "1", "1446", "0", "2074"]
+        #expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2039"] # issue 137
         actual_alignment = []
         with open("%s.blast" % aligned_basename) as aligned_f:
             for line in aligned_f:

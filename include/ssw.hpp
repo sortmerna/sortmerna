@@ -121,7 +121,7 @@ typedef struct s_align2 {
 			+ sizeof(strand);
 	}
 
-	bool s_align2::operator==(const s_align2& other)
+	bool operator==(const s_align2& other)
 	{
 		return other.cigar == cigar &&
 			other.ref_seq == ref_seq &&
