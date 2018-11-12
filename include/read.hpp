@@ -71,14 +71,19 @@ public:
 	bool hit = false; // indicates that a match for this Read has been found
 	bool hit_denovo = true; // hit & !(%Cov & %ID) TODO: change this to 'hit_cov_id' because it's set to true if !(%Cov & %ID) regardless of 'hit'
 	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
-	uint16_t max_SW_score = 0; // Max Smith-Waterman score
+	uint16_t max_SW_count = 0; // count of matches that have Max Smith-Waterman score for this read
 	int32_t num_alignments = 0; // number of alignments to output per read
 	uint32_t readhit = 0; // number of seeds matches between read and database. (? readhit == id_win_hits.size)
 	int32_t best = 0; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
 
 	// array of positions of window hits on the reference sequence in given index/part. 
-	// Only used during alignment on a particular index/part. No need to store.
+	// Only used during alignment on a particular index/part. No need to store on disk.
 	// Reset on each new index part
+	// [0] : {id = 568 win = 0 	}
+	// ...
+	// [4] : {id = 1248788 win = 72 }
+	//        |            |_k-mer start position on read
+	//        |_k-mer id on reference (index into 'positions_tbl')
 	std::vector<id_win> id_win_hits;
 
 	alignment_struct2 hits_align_info; // stored in DB
@@ -142,7 +147,7 @@ public:
 		hit = that.hit;
 		hit_denovo = that.hit_denovo;
 		null_align_output = that.null_align_output;
-		max_SW_score = that.max_SW_score;
+		max_SW_count = that.max_SW_count;
 		num_alignments = that.num_alignments;
 		readhit = that.readhit;
 		best = that.best;
@@ -175,7 +180,7 @@ public:
 		hit = that.hit;
 		hit_denovo = that.hit_denovo;
 		null_align_output = that.null_align_output;
-		max_SW_score = that.max_SW_score;
+		max_SW_count = that.max_SW_count;
 		num_alignments = that.num_alignments;
 		readhit = that.readhit;
 		best = that.best;
@@ -258,7 +263,7 @@ public:
 		hit = false;
 		hit_denovo = true;
 		null_align_output = false;
-		max_SW_score = 0;
+		max_SW_count = 0;
 		num_alignments = 0;
 		readhit = 0;
 		best = 0;

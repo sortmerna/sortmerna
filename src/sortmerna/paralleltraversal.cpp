@@ -112,7 +112,7 @@ void alignmentCb
 		}
 		// the maximum scoring alignment has been found, go to next read
 		// (unless all alignments are being output)
-		else if (opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_score == opts.num_best_hits)
+		else if (opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits)
 			return;
 	}
 
