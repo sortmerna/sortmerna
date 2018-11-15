@@ -239,7 +239,7 @@ void compute_lis_alignment
 		{
 			// TODO: should it be
 			uint32_t stop_ref = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num] + 1; // position on reference
-			//uint32_t stop_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // bug?
+			//uint32_t stop_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // wrong?
 			bool push = false;
 			while ( hits_per_ref_iter != hits_per_ref.end() && hits_per_ref_iter->first <= stop_ref )
 			{
@@ -261,23 +261,23 @@ void compute_lis_alignment
 			// enough windows at this position on genome to search for LIS
 			if (match_chain.size() >= (uint32_t)opts.seed_hits)
 			{
-				vector<uint32_t> list;
-				find_lis(match_chain, list);
+				vector<uint32_t> lis_arr; // array of Indices of matches from the match_chain comprising the LIS
+				find_lis(match_chain, lis_arr);
 #ifdef HEURISTIC1_OFF
 				uint32_t list_n = 0;
 				do
 				{
 #endif                                      
 					// LIS long enough to perform Smith-Waterman alignment
-					if (list.size() >= (uint32_t)opts.seed_hits)
+					if (lis_arr.size() >= (uint32_t)opts.seed_hits)
 					{
 #ifdef HEURISTIC1_OFF
-						lcs_ref_start = match_chain[list[list_n]].first;
-						lcs_que_start = match_chain[list[list_n]].second;
+						lcs_ref_start = match_chain[lis_arr[list_n]].first;
+						lcs_que_start = match_chain[lis_arr[list_n]].second;
 #endif
 #ifndef HEURISTIC1_OFF
-						lcs_ref_start = match_chain[list[0]].first;
-						lcs_que_start = match_chain[list[0]].second;
+						lcs_ref_start = match_chain[lis_arr[0]].first;
+						lcs_que_start = match_chain[lis_arr[0]].second;
 #endif                                    
 						// reference string
 						uint32_t head = 0;
@@ -306,7 +306,7 @@ void compute_lis_alignment
 							// que |---------------------...|
 							//                LIS |-----|
 							//
-							if (reflen < read.sequence.length()) // readlen
+							if (reflen < read.sequence.length())
 							{
 								tail = 0;
 								// beginning from align_ref_start = 0 and align_que_start = X, the read finishes
@@ -397,10 +397,6 @@ void compute_lis_alignment
 						if ( result != 0 && result->score1 > refstats.minimal_score[index.index_num] )
 								aligned = true;
 
-						result->index_num = index.index_num;
-						result->part = index.part;
-						result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
-
 						// Alignment succeeded, output (--all) or store (--best)
 						// the alignment and go to next alignment
 						if (aligned)
@@ -421,7 +417,11 @@ void compute_lis_alignment
 							result->read_begin1 += align_que_start;
 							result->read_end1 += align_que_start;
 							result->readlen = read.sequence.length();
-							result->ref_seq = max_ref; 
+							result->ref_seq = max_ref;
+
+							result->index_num = index.index_num;
+							result->part = index.part;
+							result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
 
 							// update best alignment
 							if (opts.min_lis > -1)
@@ -542,10 +542,15 @@ void compute_lis_alignment
 								read.hits_align_info.alignv.push_back(copyAlignment(result));
 
 								// the maximum possible score for this read has been found
-								if (result->score1 == max_SW_score) read.max_SW_count++;
+								if (result->score1 == max_SW_score)
+								{
+									read.max_SW_count++;
+								}
 
 								// update number of alignments to output per read
-								if (opts.num_alignments > 0) read.num_alignments--; // TODO: why decrement?
+								if (opts.num_alignments > 0) {
+									read.num_alignments--; // TODO: why decrement?
+								}
 
 								// get the edit distance between reference and read (serves for
 								// SAM output and computing %id and %query coverage)
@@ -610,7 +615,7 @@ void compute_lis_alignment
 						}
 					}//~if LIS long enough                               
 #ifdef HEURISTIC1_OFF
-				} while ((hits_per_ref_iter == hits_per_ref.end()) && (++list_n < list.size()));
+				} while ((hits_per_ref_iter == hits_per_ref.end()) && (++list_n < lis_arr.size()));
 #endif                                              
 			}//~if enough window hits                                                
 		pop:
