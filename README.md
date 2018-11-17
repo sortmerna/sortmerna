@@ -57,6 +57,8 @@ Arguably the easiest way to use Sortmerna.
 
 Note that DNANexus trial accounts can be used.
 
+NOTE (20181117). We have just found that a certain approval procedure has to be performed by the DNANexus support team before the application is available to the wide public. We are in process of rectifying this. Until then if you need the access to the application, please, contact biocodz@protonmail.com to be added to the list of authorized users.
+
 ## Using GitHub release binaries
 Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
 
