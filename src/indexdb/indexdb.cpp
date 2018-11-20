@@ -162,8 +162,8 @@ inline void insert_prefix(NodeElement* trie_node,
 		node_elem->nodetype.bucket = (void*)malloc(ENTRYSIZE);
 		if (node_elem->nodetype.bucket == NULL)
 		{
-			fprintf(stderr, "  %sERROR%s: could not allocate memory for bucket "
-				"(insert_prefix() in indexdb.cpp)\n", RED, COLOFF);
+			std::cerr << RED << "  ERROR"<< COLOFF 
+				<< ": could not allocate memory for bucket (insert_prefix() in indexdb.cpp)" << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		// initialize bucket memory to 0
@@ -182,9 +182,8 @@ inline void insert_prefix(NodeElement* trie_node,
 		node_elem->nodetype.bucket = (void*)malloc(node_elem_size + ENTRYSIZE);
 		if (node_elem->nodetype.bucket == NULL)
 		{
-			fprintf(stderr, "  %sERROR%s: could not allocate memory for bucket "
-				"resize (insert_prefix() in indexdb.cpp): %s\n", RED,
-				COLOFF, strerror(errno));
+			std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for bucket "
+				"resize (insert_prefix() in indexdb.cpp): " <<  strerror(errno) << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -227,8 +226,8 @@ inline void insert_prefix(NodeElement* trie_node,
 			NodeElement* child_node = (NodeElement*)malloc(4 * sizeof(NodeElement));
 			if (child_node == NULL)
 			{
-				fprintf(stderr, "  %sERROR%s: could not allocate memory for child_node "
-					"(insert_prefix())\n", RED, COLOFF);
+				std::cerr << RED << "  ERROR" << COLOFF 
+					<< ": could not allocate memory for child_node (insert_prefix())" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			memset(child_node, 0, 4 * sizeof(NodeElement));
@@ -247,8 +246,8 @@ inline void insert_prefix(NodeElement* trie_node,
 					node_elem_child->nodetype.bucket = (void*)malloc(ENTRYSIZE);
 					if (node_elem_child->nodetype.bucket == NULL)
 					{
-						fprintf(stderr, "  %sERROR%s: could not allocate memory for child bucket "
-							"(insert_prefix())\n", RED, COLOFF);
+						std::cerr << RED << "  ERROR" << COLOFF <<
+							": could not allocate memory for child bucket (insert_prefix())" << std::endl;
 						exit(EXIT_FAILURE);
 					}
 					memset(node_elem_child->nodetype.bucket, 0, ENTRYSIZE);
@@ -263,8 +262,8 @@ inline void insert_prefix(NodeElement* trie_node,
 					node_elem_child->nodetype.bucket = (void*)malloc(child_bucket_size + ENTRYSIZE);
 					if (node_elem_child->nodetype.bucket == NULL)
 					{
-						fprintf(stderr, "  %sERROR%s: could not allocate memory for child bucket resize "
-							"(insert_prefix() in indexdb.cpp)\n", RED, COLOFF);
+						std::cerr << RED << "  ERROR" << COLOFF 
+							<< ": could not allocate memory for child bucket resize (insert_prefix() in indexdb.cpp)" << std::endl;
 						exit(EXIT_FAILURE);
 					}
 					memset(node_elem_child->nodetype.bucket, 0, child_bucket_size + ENTRYSIZE);
@@ -845,7 +844,8 @@ void load_index(kmer* lookup_table, char* outfile)
 					// ?
 					default:
 					{
-						fprintf(stderr, "  %sERROR%s: flag is set to %d (load_index)\n", RED, COLOFF, trienode->flag);
+						std::cerr << RED << "  ERROR" << COLOFF 
+							<<": flag is set to " << trienode->flag << " (load_index)" << std::endl;
 						exit(EXIT_FAILURE);
 					}
 					break;
@@ -911,26 +911,67 @@ void welcome()
 namespace {
 	void printlist()
 	{
-		printf("\n  usage:   ./indexdb --ref db.fasta,db.idx [OPTIONS]:\n\n");
-		printf("  --------------------------------------------------------------------------------------------------------\n");
-		printf("  | parameter        value           description                                                 default |\n");
-		printf("  --------------------------------------------------------------------------------------------------------\n");
-		printf("     %s--ref%s           %sSTRING,STRING%s   FASTA reference file, index file                            %smandatory%s\n", BOLD, COLOFF, UNDL, COLOFF, GREEN, COLOFF);
-		printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)\n");
-		printf("                                       If passing multiple reference sequence files, separate\n");
-		printf("                                       them by ':',\n");
-		printf("                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)\n");
-		printf("   [OPTIONS]:\n");
-		printf("     %s--tmpdir%s        %sSTRING%s          directory where to write temporary files\n", BOLD, COLOFF, UNDL, COLOFF);
-		printf("     %s-m%s              %sINT%s             the amount of memory (in Mbytes) for building the index     %s3072%s \n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
-		printf("     %s-L%s              %sINT%s             seed length                                                 %s18%s\n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
+		std::stringstream ss;
+		ss << std::endl
+			<< "  usage:   ./indexdb --ref db.fasta,db.idx [OPTIONS]:" << std::endl << std::endl
+			<< "  --------------------------------------------------------------------------------------------------------" << std::endl
+			<< "  | parameter        value           description                                                 default |" << std::endl
+			<< "  --------------------------------------------------------------------------------------------------------" << std::endl
+			<< "     " << BOLD 
+			<<      "--ref" << COLOFF 
+			<<           "           " << UNDL 
+			<<                      "STRING,STRING" << COLOFF 
+			<<                                   "   FASTA reference file, index file                            "          << GREEN 
+			<<                                                                                                  "mandatory" << COLOFF << std::endl
+			<< "                                      (ex. --ref /path/to/file1.fasta,/path/to/index1)" << std::endl
+			<< "                                       If passing multiple reference sequence files, separate" << std::endl
+			<< "                                       them by ':'," << std::endl
+			<< "                                      (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)" << std::endl
+			<< "   [OPTIONS]:" << std::endl
+			<< "     "<< BOLD 
+			<<      "--tmpdir" << COLOFF 
+			<<              "        " << UNDL
+			<<                      "STRING" << COLOFF 
+			<<                            "          directory where to write temporary files" << std::endl
+			<< "     " << BOLD
+			<<      "-m" << COLOFF
+			<<        "              " << UNDL
+			<<                      "INT" << COLOFF
+			<<                         "             the amount of memory (in Mbytes) for building the index     "<< UNDL
+			<<                                                                                                  "3072" << COLOFF << std::endl
+			<< "     " << BOLD
+			<<      "-L" << COLOFF
+			<<        "              " << UNDL
+			<<                      "INT" << COLOFF
+			<<                         "             seed length                                                 " << UNDL
+			<<                                                                                                  "18" << COLOFF << std::endl
 #ifdef interval
-		printf("     %s--interval%s      %sINT%s             index every INTth L-mer in the reference database             %s1%s\n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
+			<< "     " << BOLD
+			<<      "--interval" << COLOFF
+			<<                "      " << UNDL 
+			<<                      "INT" << COLOFF 
+			<<                         "             index every INTth L-mer in the reference database             "  << UNDL 
+			<<                                                                                                    "1" << COLOFF << std::endl
 #endif
-		printf("     %s--max_pos%s       %sINT%s             maximum number of positions to store for each unique L-mer  %s10000%s\n", BOLD, COLOFF, UNDL, COLOFF, UNDL, COLOFF);
-		printf("                                      (setting --max_pos 0 will store all positions)\n");
-		printf("     %s-v%s              %sBOOL%s            verbose\n", BOLD, COLOFF, UNDL, COLOFF);
-		printf("     %s-h%s              %sBOOL%s            help	\n\n", BOLD, COLOFF, UNDL, COLOFF);
+			<< "     " << BOLD
+			<<      "--max_pos" << COLOFF
+			<<               "       " << UNDL
+			<<                      "INT" << COLOFF
+			<<                         "             maximum number of positions to store for each unique L-mer  "<<UNDL
+			<<                                                                                                  "10000" << COLOFF << std::endl
+			<< "                                      (setting --max_pos 0 will store all positions)" << std::endl
+			<< "     " << BOLD 
+			<<      "-v" << COLOFF
+			<<        "              " << UNDL 
+			<<                      "BOOL" << COLOFF
+			<<                          "            verbose" << std::endl
+			<< "     "<<BOLD
+			<<      "-h" << COLOFF
+			<<        "              "<<UNDL
+			<<                      "BOOL" << COLOFF
+			<<                          "            help" << std::endl << std::endl;
+
+		std::cout << ss.str();
 		exit(EXIT_FAILURE);
 	}//~printlist()
 }
@@ -951,14 +992,17 @@ int main(int argc, char** argv)
 	// time
 	double s = 0.0;
 	double f = 0.0;
+
 	// memory of index
 	double mem = 0;
 	bool mem_is_set = false;
 	bool lnwin_set = false;
 	bool interval_set = false;
 	bool max_pos_set = false;
+
 	// vector of (FASTA file, index name) pairs for constructing index
-	std::vector< std::pair<std::string, std::string> > myfiles;
+	std::vector<std::pair<std::string, std::string>> myfiles;
+
 	// pointer to temporary directory
 	char* ptr_tmpdir = NULL;
 	uint32_t interval = 0;
@@ -990,9 +1034,8 @@ int main(int argc, char** argv)
 				// no files are given
 				if (argv[narg + 1] == NULL)
 				{
-					fprintf(stderr, 
-						"\n  %sERROR%s: --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)\n\n", 
-						RED, COLOFF);
+					std::cerr << std::endl << RED <<"  ERROR"<< COLOFF 
+						<< ": --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)"<< std::endl;
 					exit(EXIT_FAILURE);
 				}
 				else
@@ -1042,7 +1085,7 @@ int main(int argc, char** argv)
 									fclose(t);
 								}
 								// exit
-								fprintf(stdout, "  The input file is empty, an index was not built.\n");
+								std::cout << "  The input file is empty, an index was not built." << std::endl;
 								exit(EXIT_SUCCESS);
 							}
 							// file size > 0, reset file pointer to start of file
@@ -1051,9 +1094,8 @@ int main(int argc, char** argv)
 						}
 						else
 						{
-							fprintf(stderr, "\n  %sERROR%s: the file %s could not be "
-								"opened: %s.\n\n", RED, COLOFF,
-								fastafile, strerror(errno));
+							std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
+								<<": the file "<< fastafile << " could not be opened: " << strerror(errno) << std::endl;
 							exit(EXIT_FAILURE);
 						}
 
@@ -1085,15 +1127,17 @@ int main(int argc, char** argv)
 						else
 						{
 							if (ptr_end != NULL)
-								fprintf(stderr, "\n  %sERROR%s: the directory %s for writing "
-									"index '%s' could not be opened. The full directory "
-									"path must be provided (ex. no '~'). \n\n",
-									RED, COLOFF, dir, ptr_end + 1);
+							{
+								std::cerr << std::endl << RED << "  ERROR" << COLOFF
+									<< ": the directory " << dir << " for writing index '" << ptr_end + 1
+									<< "' could not be opened. The full directory path must be provided (ex. no '~')." << std::endl;
+							}
 							else
-								fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
-									"'%s' could not be opened. The full directory path must "
-									"be provided (ex. no '~'). \n\n", RED,
-									COLOFF, dir, indexfile);
+							{
+								std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
+									<< ": the directory " << dir << " for writing index '" << indexfile 
+									<< "' could not be opened. The full directory path must be provided (ex. no '~')." << std::endl;
+							}
 
 							exit(EXIT_FAILURE);
 						}
@@ -1103,17 +1147,15 @@ int main(int argc, char** argv)
 						{
 							if ((myfiles[i].first).compare(fastafile) == 0)
 							{
-								fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has "
-									"been entered twice in the list. It will "
-									"be indexed twice. \n\n", YELLOW,
-									COLOFF, fastafile);
+								std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF 
+									<< ": the FASTA file "<< fastafile 
+									<< " has been entered twice in the list. It will be indexed twice." << std::endl;
 							}
 							else if ((myfiles[i].second).compare(indexfile) == 0)
 							{
-								fprintf(stderr, "\n  %sERROR%s: the index name %s has "
-									"been entered twice in the list. Index names "
-									"must be unique.\n\n", RED,
-									COLOFF, indexfile);
+								std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+									<< ": the index name " << indexfile 
+									<< " has been entered twice in the list. Index names must be unique." << std::endl;
 								exit(EXIT_FAILURE);
 							}
 						}
@@ -1127,9 +1169,8 @@ int main(int argc, char** argv)
 			{
 				if (argv[narg + 1] == NULL)
 				{
-					fprintf(stderr, "\n  %sERROR%s: a directory path must "
-						"follow the option --tmpdir (ex. /path/to/dir ) \n",
-						RED, COLOFF);
+					std::cerr << std::endl << RED << "  ERROR" << COLOFF
+						<< ": a directory path must follow the option --tmpdir (ex. /path/to/dir )" << std::endl;
 					exit(EXIT_FAILURE);
 				}
 				else
@@ -1314,8 +1355,9 @@ int main(int argc, char** argv)
 		break;
 		default:
 		{
-			fprintf(stderr, "\n  %sERROR%s: '%c' is not one of the options\n\n",
-				RED, COLOFF, argv[narg][1]);
+			std::cerr << std::endl 
+				<< RED << "  ERROR" << COLOFF 
+				<< ": " << argv[narg][1] << " is not one of the options" << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		}//~switch
@@ -1324,9 +1366,10 @@ int main(int argc, char** argv)
 	// check that the database file has been provided
 	if (myfiles.empty())
 	{
-		fprintf(stderr, "\n  %sERROR%s: a FASTA reference database & index name "
-			"(--ref /path/to/file1.fasta,/path/to/index1) is mandatory "
-			"input.\n\n", RED, COLOFF);
+		std::cerr << std::endl << RED << "ERROR" << COLOFF 
+			<< ": a FASTA reference database & index name "
+			<< "(--ref /path/to/file1.fasta,/path/to/index1) is mandatory input."
+			<< std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -1492,6 +1535,7 @@ int main(int argc, char** argv)
 	eprintf("\n  Parameters summary: \n");
 	eprintf("    K-mer size: %d\n", lnwin_gv + 1);
 	eprintf("    K-mer interval: %d\n", interval);
+
 	if (max_pos == 0)
 		eprintf("    Maximum positions to store per unique K-mer: all\n");
 	else
@@ -1507,7 +1551,7 @@ int main(int argc, char** argv)
 		// the original FASTA file were added to each index part
 		std::vector<index_parts_stats> index_parts_stats_vec;
 
-		// FASTA reference sequences input file
+		// Process reference input file
 		FILE *fp = fopen((char*)(myfiles[newindex].first).c_str(), "r");
 		if (fp == NULL)
 		{
@@ -1730,16 +1774,16 @@ int main(int argc, char** argv)
 				if (estimated_seq_mem > mem)
 				{
 					fseek(fp, start_seq, SEEK_SET);
-					fprintf(stderr, "\n  %sWARNING%s: the index for sequence `", YELLOW, COLOFF);
+					std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF << ": the index for sequence `";
 					int c = 0;
 					do
 					{
 						c = fgetc(fp);
-						fprintf(stderr, "%c", (char)c);
+						std::cerr << c;
 					} while (c != '\n');
 
-					fprintf(stderr, "` will not fit into %e Mbytes memory, it will be skipped.", mem);
-					fprintf(stderr, "  If memory can be increased, please try `-m %e` Mbytes.", estimated_seq_mem);
+					std::cerr << "` will not fit into " << mem << " Mbytes memory, it will be skipped.";
+					std::cerr << "  If memory can be increased, please try `-m " << estimated_seq_mem << "` Mbytes.";
 					fseek(fp, end_seq, SEEK_SET);
 					continue;
 				}
@@ -1824,7 +1868,7 @@ int main(int argc, char** argv)
 							lookup_table[kmer_key_short_f].trie_F = (NodeElement*)malloc(4 * sizeof(NodeElement));
 							if (lookup_table[kmer_key_short_f].trie_F == NULL)
 							{
-								fprintf(stderr, "  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n", RED, COLOFF);
+								std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for trie_node in indexdb.cpp" << std::endl;
 								exit(EXIT_FAILURE);
 							}
 							memset(lookup_table[kmer_key_short_f].trie_F, 0, 4 * sizeof(NodeElement));
@@ -1854,7 +1898,7 @@ int main(int argc, char** argv)
 							lookup_table[kmer_key_short_r].trie_R = (NodeElement*)malloc(4 * sizeof(NodeElement));
 							if (lookup_table[kmer_key_short_r].trie_R == NULL)
 							{
-								fprintf(stderr, "  %sERROR%s: could not allocate memory for trie_node in indexdb.cpp\n", RED, COLOFF);
+								std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for trie_node in indexdb.cpp" << std::endl;
 								exit(EXIT_FAILURE);
 							}
 							memset(lookup_table[kmer_key_short_r].trie_R, 0, 4 * sizeof(NodeElement));
@@ -1908,7 +1952,7 @@ int main(int argc, char** argv)
 			FILE * keys_fd = keys;
 			if (keys_fd == NULL)
 			{
-				fprintf(stderr, "File \"%s\" not found\n", keys_str);
+				std::cerr << "File '"<< keys_str << "' not found" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			cmph_io_adapter_t *source = cmph_io_nlfile_adapter(keys_fd);
@@ -1929,8 +1973,7 @@ int main(int argc, char** argv)
 			int ret = remove(keys_str);
 			if (ret != 0)
 			{
-				fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n",
-					YELLOW, keys_str, COLOFF);
+				std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << keys_str << std::endl;
 			}
 
 			// 5. add ids to burst trie
@@ -1945,7 +1988,7 @@ int main(int argc, char** argv)
 			positions_tbl = (kmer_origin*)malloc(number_elements * sizeof(kmer_origin));
 			if (positions_tbl == NULL)
 			{
-				fprintf(stderr, "  %sERROR%s: could not allocate memory for positions_tbl (main(), indexdb.cpp)\n", RED, COLOFF);
+				std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for positions_tbl (main(), indexdb.cpp)" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
@@ -2072,9 +2115,7 @@ int main(int argc, char** argv)
 							index_pos++;
 						}
 					}
-				}
-
-				//cout << endl; //TESTING       
+				} 
 
 				delete[] myseq;
 				delete[] myseqr;
@@ -2335,18 +2376,19 @@ int main(int argc, char** argv)
 			}
 			free(lookup_table);
 			part++;
-		} while (nt != EOF); // for all index parts    
+		} while (nt != EOF); // for all index parts
+
 		if (index_size != 0)
 		{
 			eprintf("      writing nucleotide distribution statistics to %s\n", (myfiles[newindex].second + ".stats").c_str());
 			std::ofstream stats((char*)(myfiles[newindex].second + ".stats").c_str(), std::ios::binary);
 			if (!stats.good())
 			{
-				fprintf(stderr, "\n  %sERROR%s: The file '%s' cannot be created: %s\n\n",
-					RED, COLOFF, (char*)(myfiles[newindex].second + ".stats").c_str(),
-					strerror(errno));
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+					<< ": The file '" << myfiles[newindex].second + ".stats" << "' cannot be created: " << strerror(errno) << std::endl;
 				exit(EXIT_FAILURE);
 			}
+
 			// file size for file used to build the index
 			stats.write(reinterpret_cast<const char*>(&filesize), sizeof(size_t));
 			// length of fasta file name (incl. path)
@@ -2356,6 +2398,7 @@ int main(int argc, char** argv)
 			stats.write(reinterpret_cast<const char*>((myfiles[newindex].first).c_str()), sizeof(char)*fasta_len);
 			// number of sequences in the reference file
 			uint32_t num_sq = sam_sq_header.size();
+
 			// background frequencies, size of the database, window length
 			// and number of reference sequences in a separate stats file
 			double total_nt = background_freq[0] + background_freq[1] + background_freq[2] + background_freq[3];
@@ -2363,6 +2406,7 @@ int main(int argc, char** argv)
 			background_freq[1] = background_freq[1] / total_nt;
 			background_freq[2] = background_freq[2] / total_nt;
 			background_freq[3] = background_freq[3] / total_nt;
+
 			// the A/C/G/T percentage distribution
 			stats.write(reinterpret_cast<const char*>(&background_freq), sizeof(double) * 4);
 			// the length of all sequences in the database

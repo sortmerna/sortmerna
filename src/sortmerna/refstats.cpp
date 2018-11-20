@@ -15,8 +15,6 @@
 #include "options.hpp"
 #include "indexdb.hpp"
 
-using namespace Sls;
-
 Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	:
 	num_index_parts(opts.indexfiles.size(), 0),
@@ -171,7 +169,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 			letterFreqs2[i] = background_freq_gv[i];
 		}
 
-		AlignmentEvaluer gumbelCalculator; // object to store the Gumbel parameters
+		Sls::AlignmentEvaluer gumbelCalculator; // object to store the Gumbel parameters
 
 		// set the randomization parameters
 		// (will yield the same Lamba and K values on subsequent runs with the same input files)

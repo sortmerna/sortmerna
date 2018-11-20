@@ -620,7 +620,10 @@ void compute_lis_alignment
 			}//~if enough window hits                                                
 		pop:
 			// get the next candidate reference position 
-			if (!match_chain.empty()) match_chain.pop_front();
+			if (!match_chain.empty())
+			{
+				match_chain.pop_front();
+			}
 
 			if (match_chain.empty())
 			{
