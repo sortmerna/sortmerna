@@ -1184,9 +1184,8 @@ int main(int argc, char** argv)
 			{
 				if (argv[narg + 1] == NULL)
 				{
-					fprintf(stderr, "\n  %sERROR%s: --interval requires a positive "
-						"integer as input (ex. --interval 2).\n\n",
-						RED, COLOFF);
+					std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+						<< ": --interval requires a positive integer as input (ex. --interval 2)." << std::endl;
 					exit(EXIT_FAILURE);
 				}
 				// set interval
@@ -1194,9 +1193,8 @@ int main(int argc, char** argv)
 				{
 					if (argv[narg + 1][0] == '-')
 					{
-						fprintf(stderr, "\n  %sERROR%s: --interval requires a "
-							"positive integer as input (ex. --interval 2).\n\n",
-							RED, COLOFF);
+						std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+							<< ": --interval requires a positive integer as input (ex. --interval 2)." << std::endl;
 						exit(EXIT_FAILURE);
 					}
 					else if (isdigit(argv[narg + 1][0]))
@@ -1207,17 +1205,15 @@ int main(int argc, char** argv)
 					}
 					else
 					{
-						fprintf(stderr, "\n  %sERROR%s: --interval requires a positive "
-							"integer as input (ex. --interval 2).\n\n",
-							RED, COLOFF);
+						std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
+							<< ": --interval requires a positive integer as input (ex. --interval 2)."<< std::endl;
 						exit(EXIT_FAILURE);
 					}
 				}
 				else
 				{
-					fprintf(stderr, "\n  %sERROR%s: --interval has been set "
-						"twice, please verify your choice\n\n",
-						RED, COLOFF);
+					std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
+						<< ": --interval has been set twice, please verify your choice" << std::endl;
 					printlist();
 				}
 			}
@@ -1226,9 +1222,8 @@ int main(int argc, char** argv)
 			{
 				if (argv[narg + 1] == NULL)
 				{
-					fprintf(stderr, "\n  %sERROR%s: --max_pos requires a positive "
-						"integer as input (ex. --max_pos 250).\n\n",
-						RED, COLOFF);
+					std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+						<< ": --max_pos requires a positive integer as input (ex. --max_pos 250)." << std::endl;
 					exit(EXIT_FAILURE);
 				}
 				// set max_pos
@@ -1236,9 +1231,8 @@ int main(int argc, char** argv)
 				{
 					if (argv[narg + 1][0] == '-')
 					{
-						fprintf(stderr, "\n  %sERROR%s: --max_pos requires a positive "
-							"integer as input (ex. --max_pos 250).\n\n",
-							RED, COLOFF);
+						std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
+							<< ": --max_pos requires a positive integer as input (ex. --max_pos 250)." << std::endl;
 						exit(EXIT_FAILURE);
 					}
 					else if (isdigit(argv[narg + 1][0]))
@@ -1249,24 +1243,21 @@ int main(int argc, char** argv)
 					}
 					else
 					{
-						fprintf(stderr, "\n  %sERROR%s: --max_pos requires a positive "
-							"integer as input (ex. --max_pos 250).\n\n",
-							RED, COLOFF);
+						std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+							<<": --max_pos requires a positive integer as input (ex. --max_pos 250)."<< std::endl;
 						exit(EXIT_FAILURE);
 					}
 				}
 				else
 				{
-					fprintf(stderr, "\n  %sERROR%s: --max_pos has been set twice, "
-						"please verify your choice\n\n", RED,
-						COLOFF);
+					std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
+						<< ": --max_pos has been set twice, please verify your choice" << std::endl;
 					printlist();
 				}
 			}
 			else
 			{
-				fprintf(stderr, "\n  %sERROR%s: unknown option --%s.\n\n",
-					RED, COLOFF, myoption);
+				std::cerr << std::endl << RED << "  ERROR"<< COLOFF <<": unknown option --" << myoption << std::endl;
 				printlist();
 				exit(EXIT_FAILURE);
 			}
@@ -1276,8 +1267,7 @@ int main(int argc, char** argv)
 		{
 			if (lnwin_set)
 			{
-				fprintf(stderr, "\n  %sERROR%s: option -L can only be set once.\n\n",
-					RED, COLOFF);
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF << ": option -L can only be set once." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
@@ -1286,20 +1276,20 @@ int main(int argc, char** argv)
 
 			if (lnwin_t <= 0)
 			{
-				fprintf(stderr, "\n  %sERROR%s: -L must be a positive integer "
-					"(10, 12, 14, .. , 20).\n\n", RED, COLOFF);
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+					<< ": -L must be a positive integer (10, 12, 14, .. , 20)." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			else if (lnwin_t % 2 == 1)
 			{
-				fprintf(stderr, "\n  %sERROR%s: -L must be an even integer (10, 12, "
-					"14, .. , 20).\n\n", RED, COLOFF);
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+					<< ": -L must be an even integer (10, 12, 14, .. , 20)." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			else if ((lnwin_t < 8) || (lnwin_t > 26))
 			{
-				fprintf(stderr, "\n  %sERROR%s: -L must be between 8 and 26, inclusive.\n\n",
-					RED, COLOFF);
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+					<< ": -L must be between 8 and 26, inclusive." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			else
@@ -1321,8 +1311,8 @@ int main(int argc, char** argv)
 				mem = strtod(argv[narg + 1], &pEnd);
 				if (!mem)
 				{
-					fprintf(stderr, "\n  %sERROR%s: -m [INT] must be a positive integer "
-						"value (in Mbyte).\n\n", RED, COLOFF);
+					std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+						<< ": -m [INT] must be a positive integer value (in Mbyte)." << std::endl;
 					exit(EXIT_FAILURE);
 				}
 				narg += 2;
@@ -1330,8 +1320,7 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				fprintf(stderr, "\n  %sERROR%s: option -m can only be set once,\n\n",
-					RED, COLOFF);
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF << ": option -m can only be set once." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -1415,15 +1404,15 @@ int main(int argc, char** argv)
 		FILE *tmp = fopen(tmp_str_test, "w+");
 		if (tmp == NULL)
 		{
-			fprintf(stderr, "\n  %sERROR%s: cannot access directory %s: %s\n\n", 
-				RED, COLOFF, ptr_tmpdir, strerror(errno));
+			std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+				<< ": cannot access directory " << ptr_tmpdir << ": " << strerror(errno) << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		else
 		{
 			// remove temporary test file
 			if (remove(tmp_str_test) != 0)
-				fprintf(stderr, "%sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_str_test);
+				std::cerr << YELLOW << "WARNING" << COLOFF << ": could not delete temporary file " << tmp_str_test << std::endl;
 
 			// set the working directory
 			memcpy(keys_str, tmp_str, 4000);
@@ -1447,17 +1436,16 @@ int main(int argc, char** argv)
 			FILE *tmp = fopen(tmp_file.data(), "w+");
 			if (tmp == NULL)
 			{
-				fprintf(stderr, "\n  %sWARNING%s: no write permissions in "
-					"directory %s: %s\n", YELLOW, COLOFF,
-					tmpdir_env, strerror(errno));
-				fprintf(stderr, "  will try /tmp/.\n\n");
+				std::cerr << std::endl << YELLOW << "  WARNING"<< COLOFF 
+					<< ": no write permissions in directory "<< tmpdir_env << ": "<< strerror(errno) << std::endl
+					<< "  will try /tmp/." << std::endl;
 			}
 			else
 			{
 				// remove the temporary test file
 				fclose(tmp);
 				if (remove(tmp_file.data()) != 0)
-					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_file.data());
+					std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_file.data() << std::endl;
 
 				// set working directory
 				memcpy(keys_str, tmp_dir.data(), 4000);
@@ -1476,16 +1464,15 @@ int main(int argc, char** argv)
 			FILE *tmp = fopen(tmp_str, "w+");
 			if (tmp == NULL)
 			{
-				fprintf(stderr, "\n  %sWARNING%s: no write permissions in "
-					"directory /tmp/: %s\n", YELLOW, COLOFF,
-					strerror(errno));
-				fprintf(stderr, "  will try local directory.\n\n");
+				std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF 
+					<< ": no write permissions in directory /tmp/: " << strerror(errno) << std::endl
+					<< "  will try local directory." << std::endl;
 			}
 			else
 			{
 				// remove the temporary test file
 				if (remove(tmp_str) != 0)
-					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_str);
+					std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_str << std::endl;
 
 				// set working directory
 				strcat(keys_str, "/tmp/");
@@ -1504,19 +1491,17 @@ int main(int argc, char** argv)
 			FILE *tmp = fopen(tmp_str, "w+");
 			if (tmp == NULL)
 			{
-				fprintf(stderr, "\n  %sERROR%s: no write permissions in current "
-					"directory: %s\n", RED, COLOFF,
-					strerror(errno));
-				fprintf(stderr, "  Please set --tmpdir to a writable directory, "
-					"or change the write permissions in $TMPDIR, e.g. /tmp/ (Linux) "
-					"or current directory.\n\n");
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
+					<< ": no write permissions in current directory: "<< strerror(errno) << std::endl
+					<< "  Please set --tmpdir to a writable directory,"
+					<< " or change the write permissions in $TMPDIR, e.g. /tmp/ (Linux), or current directory." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			else
 			{
 				// remove the temporary test file
 				if (remove(tmp_str) != 0)
-					fprintf(stderr, "  %sWARNING%s: could not delete temporary file %s\n", YELLOW, COLOFF, tmp_str);
+					std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_str << std::endl;
 
 				// set working directory
 				strcat(keys_str, "./");
@@ -1555,8 +1540,7 @@ int main(int argc, char** argv)
 		FILE *fp = fopen((char*)(myfiles[newindex].first).c_str(), "r");
 		if (fp == NULL)
 		{
-			fprintf(stderr, "  %sERROR%s: could not open file %s\n",
-				RED, COLOFF, (char*)(myfiles[newindex].first).c_str());
+			std::cerr << RED << "  ERROR" << COLOFF << ": could not open file " << myfiles[newindex].first << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -1640,10 +1624,10 @@ int main(int argc, char** argv)
 			full_len += len;
 			if (len < pread_gv)
 			{
-				fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] at least one of your sequences "
-					"is shorter than the seed length %d, please filter out all "
-					"sequences shorter than %d to continue index construction.\n\n",
-					RED, COLOFF, __LINE__, __FILE__, pread_gv, pread_gv);
+				std::cerr << std::endl << RED << "  ERROR" << COLOFF << ": [" << __func__ << ":" << __LINE__ 
+					<< "] at least one of your sequences is shorter than the seed length " << pread_gv 
+					<< ", please filter out all sequences shorter than " << pread_gv 
+					<< " to continue index construction." << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
@@ -1691,8 +1675,7 @@ int main(int argc, char** argv)
 			FILE *keys = fopen(keys_str, "w+");
 			if (keys == NULL)
 			{
-				fprintf(stderr, "  %sERROR%s: could not open %s file for writing\n",
-					RED, COLOFF, keys_str);
+				std::cerr << RED << "  ERROR" << COLOFF << ": could not open " << keys_str << " file for writing" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
@@ -1704,9 +1687,7 @@ int main(int argc, char** argv)
 			kmer *lookup_table = (kmer*)malloc((1 << lnwin_gv) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
-				fprintf(stderr, "  %sERROR%s: could not allocate memory for "
-					"9-mer look-up table (indexdb.cpp)\n",
-					RED, COLOFF);
+				std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for 9-mer look-up table (indexdb.cpp)" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
