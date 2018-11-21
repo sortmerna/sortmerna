@@ -62,7 +62,7 @@ NOTE (20181117). We have just found that a certain approval procedure has to be 
 ## Using GitHub release binaries
 Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
 
-The file [sortmerna-3.0.1-linux.tar.gz](https://github.com/biocore/sortmerna/releases/download/v3.0.1/sortmerna-3.0.1-linux.tar.gz) contains 3 binaries
+The file [sortmerna-3.0.2-linux.tar.gz](https://github.com/biocore/sortmerna/releases/download/v3.0.2/sortmerna-3.0.2-linux.tar.gz) contains 3 binaries
 `indexdb`, `libstdc++.so.6`, `sortmerna`
 
 `libstdc++.so.6` is a dependency of `sortmerna`. It is needed on machines that have no GCC installed.
@@ -77,42 +77,42 @@ Below are all the necessary `bash` commands:
 
 ```
 # get binary distro
-wget https://github.com/biocore/sortmerna/releases/download/v3.0.1/sortmerna-3.0.1-linux.tar.gz
+wget https://github.com/biocore/sortmerna/releases/download/v3.0.2/sortmerna-3.0.2-linux.tar.gz
 
 # get sources
-wget https://github.com/biocore/sortmerna/archive/v3.0.1.tar.gz
+wget https://github.com/biocore/sortmerna/archive/v3.0.2.tar.gz
 
 # list the source tar content
-less v3.0.1.tar.gz
-drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.1/
--rw-rw-r-- root/root       119 2018-10-29 08:13 sortmerna-3.0.1/.gitignore
--rw-rw-r-- root/root      4909 2018-10-29 08:13 sortmerna-3.0.1/.travis.yml
-drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.1/3rdparty/
-drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.1/3rdparty/alp/
--rw-rw-r-- root/root      1344 2018-10-29 08:13 sortmerna-3.0.1/3rdparty/alp/CMakeLists.txt
+less v3.0.2.tar.gz
+drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.2/
+-rw-rw-r-- root/root       119 2018-10-29 08:13 sortmerna-3.0.2/.gitignore
+-rw-rw-r-- root/root      4909 2018-10-29 08:13 sortmerna-3.0.2/.travis.yml
+drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.2/3rdparty/
+drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.2/3rdparty/alp/
+-rw-rw-r-- root/root      1344 2018-10-29 08:13 sortmerna-3.0.2/3rdparty/alp/CMakeLists.txt
 ...
 
 # extract sources
-tar xzf v3.0.1.tar.gz
+tar xzf v3.0.2.tar.gz
 
 # create bin/
-mkdir sortmerna-3.0.1/bin
+mkdir sortmerna-3.0.2/bin
 
 # extract binaries into bin/
-tar xzf sortmerna-3.0.1-linux.tar.gz -C sortmerna-3.0.1/bin/
+tar xzf sortmerna-3.0.2-linux.tar.gz -C sortmerna-3.0.2/bin/
 
 # list the binaries
-ls -lrt sortmerna-3.0.1/bin/
+ls -lrt sortmerna-3.0.2/bin/
 -rwxrwxr-x 1 biocodz biocodz  174560 Oct 30 06:48 indexdb
 -rw-rw-r-- 1 biocodz biocodz 1607120 Oct 30 06:48 libstdc++.so.6
 -rwxrwxr-x 1 biocodz biocodz  849928 Oct 30 06:56 sortmerna
 
 # set PATH
-export PATH=$PWD/sortmerna-3.0.1/bin:$PATH
+export PATH=$PWD/sortmerna-3.0.2/bin:$PATH
 
 # test the installation
 sortmerna --version
-SortMeRNA version 3.0.1
+SortMeRNA version 3.0.2
 Build Date: Oct 29 2018
 sortmerna_build_git_sha:@bc47297ce3e8580ef32d161255bfcbe1f718c322@
 sortmerna_build_git_date:@2018/10/29 12:35:39@
@@ -197,7 +197,7 @@ git clone https://github.com/biocore/sortmerna.git
 pushd sortmerna
 
 # If you need a particular release (tag)
-git checkout v3.0.1
+git checkout v3.0.2
 ```
 
 ### building on Linux OS

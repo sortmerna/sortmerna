@@ -2,7 +2,7 @@
   "name": "sortmerna",
   "title": "SortMeRNA Run applet",
   "summary": "Run SortMeRNA on Ubuntu 16.04",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "dxapi": "1.0.0", 
   "inputSpec": [
     {
