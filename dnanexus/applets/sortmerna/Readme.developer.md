@@ -1,18 +1,31 @@
-TODO
+## Building the applet
 
-# atropos_detect Developer Readme
+This applet requires the sortmerna binaries: `sortmerna, indexdb, libstdc++.so.6`. The binaries can be built either on the local user machine, or using [sortmerna-3.build.on.u16asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/applets/sortmerna-3.build.on.u16asset)
 
-## Running this app with additional computational resources
 
-Prior building this applet `dx build ...`, create subdirectory /applets/sortmerna/resources/home/dnanexus/bin/ on the Projects machine, and copy there the required binaries: 'sortmerna', 'indexdb', 'libstdc++.so.6'
+Example using binaries built on `sortmerna-3.build.on.u16asset`:
 
-For example:
+```
+# on your local machine navigate to the sortmerna distribution directory e.g. /home/biocodz/sortmerna/
+pushd $SORTMERNA_HOME
 
-mkdir -p applets/sortmerna/resources/home/dnanexus/bin
-dx download -o applets/sortmerna/resources/home/dnanexus/bin file-FK28vjQ0GjGVYQyFP5J95PGg
-    applets/sortmerna/resources/home/dnanexus/bin/sortmerna
-dx download -o applets/sortmerna/resources/home/dnanexus/bin file-FK28vk00GjGj56jgP4Qf27KQ
-    applets/sortmerna/resources/home/dnanexus/bin/libstdc++.so.6
-dx download -o applets/sortmerna/resources/home/dnanexus/bin file-FK28vjj0GjGZ99zZP5680bJ3
-    applets/sortmerna/resources/home/dnanexus/bin/indexdb
-dx build -f -d applets/ applets/sortmerna
+# Create directory for binaries
+mkdir -p dnanexus/applets/sortmerna/resources/home/dnanexus/bin
+
+#
+# Download binaries built on the DNANexus Project host into your local machine
+#
+dx ls file-FK28vjQ0GjGVYQyFP5J95PGg
+    sortmerna
+dx ls file-FK28vk00GjGj56jgP4Qf27KQ
+    libstdc++.so.6
+dx ls file-FK28vjj0GjGZ99zZP5680bJ3
+    indexdb
+
+dx download -f -o dnanexus/applets/sortmerna/resources/home/dnanexus/bin/ file-FK28vjQ0GjGVYQyFP5J95PGg  # sortmerna
+dx download -f -o dnanexus/applets/sortmerna/resources/home/dnanexus/bin/ file-FK28vk00GjGj56jgP4Qf27KQ  # libstdc++.so.6
+dx download -f -o dnanexus/applets/sortmerna/resources/home/dnanexus/bin/ file-FK28vjj0GjGZ99zZP5680bJ3  # indexdb
+
+# build the applet
+dx build -f -d applets/ dnanexus/applets/sortmerna
+```
