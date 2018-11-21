@@ -62,7 +62,7 @@ public:
 	void waitAll()
 	{
 		std::unique_lock<std::mutex> lmjD(job_done_lock);
-		cv_done.wait(lmjD, [this] { return running_threads == 0 && jobs_.empty(); });
+		cv_done.wait(lmjD, [this] { return running_threads.load() == 0 && jobs_.empty(); });
 	}
 
 	// Wait for all threads to stop
@@ -105,7 +105,7 @@ protected:
 
 			job(); // Do the job without holding any locks
 			--running_threads;
-			ss << __func__ << ":" << __LINE__ << " number of running_threads= " << running_threads << " jobs queue empty= " << jobs_.empty() << std::endl;
+			ss << __func__ << ":" << __LINE__ << " number of running_threads= " << running_threads.load() << " jobs queue empty= " << jobs_.empty() << std::endl;
 			std::cout << ss.str(); ss.str("");
 			cv_done.notify_one(); // wake up the main thread waiting in 'waitAll'. Keep it here for multi-reference cases.
 		} // ~for

@@ -93,8 +93,8 @@ std::string Read::matchesToJson() {
 	writer.Bool(hit_denovo);
 	writer.Key("null_align_output");
 	writer.Bool(null_align_output);
-	writer.Key("max_SW_score");
-	writer.Uint(max_SW_score);
+	writer.Key("max_SW_count");
+	writer.Uint(max_SW_count);
 	writer.Key("num_alignments");
 	writer.Int(num_alignments);
 
@@ -114,14 +114,14 @@ std::string Read::toString()
 	if (hits_align_info.alignv.size() == 0)
 		return "";
 
-	// hit, hit_denovo, null_align_output, max_SW_score, num_alignments, readhit, best
+	// hit, hit_denovo, null_align_output, max_SW_count, num_alignments, readhit, best
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&hit)), sizeof(hit), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&hit_denovo)), sizeof(hit_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&max_SW_score)), sizeof(max_SW_score), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&max_SW_count)), sizeof(max_SW_count), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_alignments)), sizeof(num_alignments), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&readhit)), sizeof(readhit), std::back_inserter(buf));
 	//std::copy_n(static_cast<char*>(static_cast<void*>(&best)), sizeof(best), std::back_inserter(buf));
@@ -163,8 +163,8 @@ bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&null_align_output), bstr.data() + offset, sizeof(null_align_output));
 	offset += sizeof(null_align_output);
 
-	std::memcpy(static_cast<void*>(&max_SW_score), bstr.data() + offset, sizeof(max_SW_score));
-	offset += sizeof(max_SW_score);
+	std::memcpy(static_cast<void*>(&max_SW_count), bstr.data() + offset, sizeof(max_SW_count));
+	offset += sizeof(max_SW_count);
 
 	std::memcpy(static_cast<void*>(&num_alignments), bstr.data() + offset, sizeof(num_alignments));
 	offset += sizeof(num_alignments);

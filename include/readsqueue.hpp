@@ -65,7 +65,7 @@ public:
 #else
 		size_t recsize = recs.size_approx();
 #endif
-		ss << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed << "  popped: " << numPopped << std::endl;
+		ss << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed.load() << "  popped: " << numPopped << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -92,13 +92,13 @@ public:
 		Read rec;
 #ifdef LOCKQEUEU
 		std::unique_lock<std::mutex> lmq(qlock);
-		cvQueue.wait(lmq, [this] { return (pushers == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.
+		cvQueue.wait(lmq, [this] { return (pushers.load() == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.
 		if (!recs.empty()) 
 		{
 			rec = recs.front();
 			recs.pop();
 			++numPopped;
-			if (numPopped % 100000 == 0)
+			if (numPopped.load() % 100000 == 0)
 			{
 				ss << id << " Popped id: " << rec.id << "\r";
 				std::cout << ss.str(); ss.str("");
@@ -117,7 +117,7 @@ public:
 	bool isDone() {
 #ifdef LOCKQEUEU
 		std::lock_guard<std::mutex> lmq(qlock);
-		bool done = (pushers == 0 && recs.empty());
+		bool done = (pushers.load() == 0 && recs.empty());
 		cvQueue.notify_one(); // otherwise pop can stuck not knowing the adding stopped
 #else
 		bool done = (numPushers == 0 && recs.size_approx() == 0);
@@ -128,14 +128,16 @@ public:
 	// call from main thread when no other threads running
 	void reset(int nPushers) {
 		pushers = nPushers;
-		ss << __func__ << ":" << __LINE__ << " " << id << ": pushers: " << pushers << std::endl; std::cout << ss.str(); ss.str("");
+		ss << __func__ << ":" << __LINE__ << " " << id << ": pushers: " << pushers.load() << std::endl; std::cout << ss.str(); ss.str("");
 	}
 
-	// TODO: not used
 	size_t size()
 	{
 #ifdef LOCKQEUEU
-		return recs.size();
+		std::lock_guard<std::mutex> lqm(qlock);
+		size_t sz = recs.size();
+		cvQueue.notify_one();
+		return sz;
 #else
 		return recs.size_approx();
 #endif
@@ -151,14 +153,14 @@ public:
 
 	unsigned int getPushers()
 	{
-		return pushers;
+		return pushers.load();
 	}
 
 	void decrPushers()
 	{
 		--pushers;
 		ss.str("");
-		ss << __func__ << ":" << __LINE__ << " id: " << id << " pushers: " << pushers << std::endl;
+		ss << __func__ << ":" << __LINE__ << " id: " << id << " pushers: " << pushers.load() << std::endl;
 		std::cout << ss.str();
 	}
 }; // ~class ReadsQueue

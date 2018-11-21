@@ -112,18 +112,18 @@ void alignmentCb
 		}
 		// the maximum scoring alignment has been found, go to next read
 		// (unless all alignments are being output)
-		else if (opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_score == opts.num_best_hits)
+		else if (opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits)
 			return;
 	}
 
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
 	// find the minimum sequence length
-	if (read.sequence.size() < readstats.min_read_len)
+	if (read.sequence.size() < readstats.min_read_len.load())
 		readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// find the maximum sequence length
-	if (read.sequence.size()  > readstats.max_read_len)
+	if (read.sequence.size()  > readstats.max_read_len.load())
 		readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// the read length is too short

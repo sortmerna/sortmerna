@@ -120,4 +120,19 @@ typedef struct s_align2 {
 			+ sizeof(index_num)
 			+ sizeof(strand);
 	}
+
+	bool operator==(const s_align2& other)
+	{
+		return other.cigar == cigar &&
+			other.ref_seq == ref_seq &&
+			other.ref_begin1 == ref_begin1 &&
+			other.ref_end1 == ref_end1 &&
+			other.read_begin1 == read_begin1 &&
+			other.read_end1 == read_end1 &&
+			other.readlen == readlen &&
+			other.score1 == score1 &&
+			other.part == part &&
+			other.index_num == index_num &&
+			other.strand == strand;
+	}
 } s_align2;

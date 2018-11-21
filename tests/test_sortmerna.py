@@ -450,9 +450,10 @@ class SortmernaTests(unittest.TestCase):
 
     def output_test(self, aligned_basename, other_basename):
         """ Test output of unit test functions.
-            test_simulated_amplicon_1_part_map()
-            test_simulated_amplicon_generic_buffer()
-            test_simulated_amplicon_12_part_index()
+            Used by:
+                test_simulated_amplicon_1_part_map
+                test_simulated_amplicon_generic_buffer
+                test_simulated_amplicon_12_part_index
         """
         f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
@@ -535,7 +536,8 @@ class SortmernaTests(unittest.TestCase):
             query FASTA file both processed as one
             section.
         """
-        print("test_simulated_amplicon_1_part_map")
+        FUNC = "test_simulated_amplicon_1_part_map"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "db_bac16s")
@@ -548,7 +550,7 @@ class SortmernaTests(unittest.TestCase):
                            "--ref", index_path,
                            "-v"]
         
-        print('test_simulated_amplicon_1_part_map: {}'.format(indexdb_command))
+        print('{}: {}'.format(FUNC, indexdb_command))
         
         if 'Windows' in platform.platform():
             proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
@@ -578,7 +580,7 @@ class SortmernaTests(unittest.TestCase):
                              "-d", datadir,
                              "--task", self.ALIGN_REPORT]
         
-        print('test_simulated_amplicon_1_part_map: {}'.format(sortmerna_command))
+        print('{}: {}'.format(FUNC, sortmerna_command))
         
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
@@ -624,7 +626,7 @@ class SortmernaTests(unittest.TestCase):
                              "-d", datadir,
                              "--task", self.ALIGN_REPORT]
         
-        print('test_simulated_amplicon_1_part_map: {}'.format(sortmerna_command))
+        print('{}: {}'.format(FUNC, sortmerna_command))
         
         if 'Windows' in platform.platform():
             proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
@@ -642,7 +644,7 @@ class SortmernaTests(unittest.TestCase):
         if stderr: print(stderr)
         self.output_test(aligned_basename, other_basename)
             
-        print("test_simulated_amplicon_1_part_map: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_simulated_amplicon_1_part_map
         
     def cleanData(self, datadir):
@@ -666,23 +668,22 @@ class SortmernaTests(unittest.TestCase):
             query FASTA file both processed as one
             section using the generic buffer (kseq lib).
         """
-        print("test_simulated_amplicon_generic_buffer")
+        FUNC = "test_simulated_amplicon_generic_buffer"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna, "--ref", index_path, "-v"]
         
-        print("test_simulated_amplicon_generic_buffer: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, cmd))
         
         if 'Windows' in platform.platform():
-            proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
         else:
-            proc = Popen(indexdb_command,
+            proc = Popen(cmd,
                          stdout=PIPE,
                          stderr=PIPE,
                          close_fds=True)
@@ -693,29 +694,28 @@ class SortmernaTests(unittest.TestCase):
         other_basename = join(self.output_dir, "other")
         
         # best 1
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set5,
-                             "--aligned", aligned_basename,
-                             "--other", other_basename,
-                             "--id", "0.97",
-                             "--coverage", "0.97",
-                             "--log",
-                             "--otu_map",
-                             "--de_novo_otu",
-                             "--blast", "1 cigar qcov",
-                             "--fastx",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set5,
+                "--aligned", aligned_basename,
+                "--other", other_basename,
+                "--id", "0.97",
+                "--coverage", "0.97",
+                "--log",
+                "--otu_map",
+                "--de_novo_otu",
+                "--blast", "1 cigar qcov",
+                "--fastx",
+                "-v",
+                "-d", datadir]
         
-        print("test_simulated_amplicon_generic_buffer: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, cmd))
         
         if 'Windows' in platform.platform():
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
             stderr = proc.stderr
         else:
-            proc = Popen(sortmerna_command,
+            proc = Popen(cmd,
                          stdout=PIPE,
                          stderr=PIPE,
                          close_fds=True)
@@ -737,32 +737,29 @@ class SortmernaTests(unittest.TestCase):
         self.cleanData(datadir)
         
         # best 5
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set5,
-                             "--aligned", aligned_basename,
-                             "--other", other_basename,
-                             "--id", "0.97",
-                             "--coverage", "0.97",
-                             "--log",
-                             "--otu_map",
-                             "--de_novo_otu",
-                             "--blast", "1 cigar qcov",
-                             "--fastx",
-                             "--best", "5",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set5,
+                "--aligned", aligned_basename,
+                "--other", other_basename,
+                "--id", "0.97",
+                "--coverage", "0.97",
+                "--log",
+                "--otu_map",
+                "--de_novo_otu",
+                "--blast", "1 cigar qcov",
+                "--fastx",
+                "--best", "5",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_simulated_amplicon_generic_buffer: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, cmd))
         
         if 'Windows' in platform.platform():
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
         else:
-            proc = Popen(sortmerna_command,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
+            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
             proc.wait()
             stdout, stderr = proc.communicate()
             proc.stdout.close()
@@ -770,7 +767,7 @@ class SortmernaTests(unittest.TestCase):
             if stderr: print(stderr)
         self.output_test(aligned_basename, other_basename)
             
-        print("test_simulated_amplicon_generic_buffer: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_simulated_amplicon_generic_buffer
 
     def test_simulated_amplicon_6_part_map(self):
@@ -790,19 +787,16 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print("test_simulated_amplicon_6_part_map: {}".format(indexdb_command))
+        print("test_simulated_amplicon_6_part_map: {}".format(cmd))
         
         if 'Windows' in platform.platform():
-            proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
         else:
-            proc = Popen(indexdb_command,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
+            proc = Popen(cmd, stdout=PIPE,  stderr=PIPE, close_fds=True)
             proc.wait()
             proc.stdout.close()
             proc.stderr.close()
@@ -823,8 +817,7 @@ class SortmernaTests(unittest.TestCase):
                              "--blast", "1 cigar qcov",
                              "--fastx",
                              "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+                             "-d", datadir]
         
         print("test_simulated_amplicon_6_part_map: {}".format(sortmerna_command))
         
@@ -1341,10 +1334,10 @@ class SortmernaTests(unittest.TestCase):
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
-        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412",
-                              "64", "30", "59", "1470", "2", "1429", "0",
-                              "2039", "+",
-                              "58S56M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1243M17S"]
+        expected_alignment = ["AB271211", "Unc49508", "93.5", "1430",
+                              "64", "30", "58", "1487", "1", "1446", "0",
+                              "2069", "+",
+                              "57S57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1260M"]
         actual_alignment = []
         with open("%s.blast" % aligned_basename) as aligned_f:
             for line in aligned_f:
@@ -1556,7 +1549,8 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
-        expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2039"]
+        expected_alignment = ["AB271211", "Unc49508", "93.5", "1430", "64", "30", "58", "1487", "1", "1446", "0", "2069"]
+        #expected_alignment = ["AB271211", "Unc49508", "93.4", "1412", "64", "30", "59", "1470", "2", "1429", "0", "2039"] # issue 137
         actual_alignment = []
         with open("%s.blast" % aligned_basename) as aligned_f:
             for line in aligned_f:

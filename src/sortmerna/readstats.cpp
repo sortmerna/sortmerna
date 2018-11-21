@@ -154,6 +154,7 @@ void Readstats::calculate()
 
 bool Readstats::check_file_format()
 {
+	std::stringstream ss;
 	bool exit_early = false;
 #ifdef HAVE_LIBZ
 	// Check file format (if ZLIB supported)
@@ -168,8 +169,9 @@ bool Readstats::check_file_format()
 		filesig = seq->last_char;
 	else
 	{
-		fprintf(stderr, "  %sERROR%s: Line %d: %s unrecognized file format or empty file %s\n\n",
-			RED, COLOFF, __LINE__, __FILE__, opts.readsfile.c_str());
+		ss << "[" << __func__ << ":" << __LINE__ << "]" << RED << "  ERROR" << COLOFF
+			<< ": unrecognized file format or empty file " << opts.readsfile << std::endl;
+		std::cerr << ss.str();
 		exit_early = true;
 	}
 	kseq_destroy(seq);

@@ -270,8 +270,8 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 	output.logstream << "    Total reads failing E-value threshold = "
 		<< readstats.number_total_read - readstats.total_reads_mapped.load()
 		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read))) * 100 << ")\n";
-	output.logstream << "    Minimum read length = " << readstats.min_read_len << "\n";
-	output.logstream << "    Maximum read length = " << readstats.max_read_len << "\n";
+	output.logstream << "    Minimum read length = " << readstats.min_read_len.load() << "\n";
+	output.logstream << "    Maximum read length = " << readstats.max_read_len.load() << "\n";
 	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
 
 	output.logstream << " By database:\n";

@@ -91,14 +91,10 @@ typedef pair<uint32_t,uint32_t> uint32pair;
 /*! @fn find_lis()
  *  @brief Given a list of matching positions on the read, find the longest
            strictly increasing subsequence, O(n log k)
-    @param deque<pair<uint32_t, uint32_t> > &a
-    @param vector<uint32_t> &b
-    @param int64_t readn
+    @param deque<pair<uint32_t, uint32_t> > &a  list of matching positions on the read which fall within a range of the read's length on the genome
+    @param vector<uint32_t> &b  array of starting positions of each longest subsequence
 */
-void
-find_lis(deque<pair<uint32_t, uint32_t> > &a /**< list of matching positions on the read which fall within a range of the read's length on the genome */,
-         vector<uint32_t> &b /**< array of starting positions of each longest subsequence */,
-         uint64_t readn /**< read number */);
+void find_lis(deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b);
 
 /*! @brief struct alignment_struct
    holds the index of the minimum and maximum scoring
