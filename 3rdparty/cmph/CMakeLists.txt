@@ -5,7 +5,7 @@
 # CMake file for sortmerna/cmph
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(cmph CXX)
 
 #AUX_SOURCE_DIRECTORY(${CMAKE_SOURCE_DIR}/cmph CMPH_SRCS)
@@ -86,5 +86,4 @@ set(CMPH_SRCS
 #message("CMPH_SRCS= ${CMPH_SRCS}\nCMPH_PRIVATE_HDRS= ${CMPH_PRIVATE_HDRS}")
 
 add_library(cmph OBJECT ${CMPH_SRCS} ${CMPH_HDRS})
-
 target_include_directories(cmph PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/cmph)

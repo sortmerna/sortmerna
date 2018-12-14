@@ -5,7 +5,7 @@
 # CMake file for sortmerna/3rdparty/alp
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(alp CXX)
 
 set(ALP_HDRS
@@ -55,9 +55,8 @@ set (ALP_SRCS
 )
 
 
-add_Library(alp STATIC ${ALP_HDRS} ${ALP_SRCS})
+add_Library(alp OBJECT ${ALP_HDRS} ${ALP_SRCS})
+target_include_directories(alp PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/alp)
+
 #add_Library(alp INTERFACE)
-
 #target_sources(alp INTERFACE ${ALP_HDRS})
-
-target_include_directories(alp PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/alp) # INTERFACE

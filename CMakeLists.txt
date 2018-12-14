@@ -1,16 +1,44 @@
-#===============================================================================
+﻿#===============================================================================
 # FILE: CMakeLists.txt
 # Created: Jun 06, 2017
 #
 # Top level CMake file for sortmerna
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(sortmerna CXX C)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty)
+find_package(Git)
+
+string(TIMESTAMP GIT_DATE_TIME "%Y/%m/%d %H:%M:%S" UTC)
+
+#
+# Prepare Version information
+#
+if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+  if(WIN32)
+    execute_process(COMMAND $ENV{COMSPEC} /C ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse HEAD OUTPUT_VARIABLE GIT_SHA)
+  else()
+    execute_process(COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse HEAD OUTPUT_VARIABLE GIT_SHA)
+  endif()
+else()
+  set(GIT_SHA 0)
+endif()
+
+string(REGEX REPLACE "[^0-9a-f]+" "" GIT_SHA "${GIT_SHA}")
+
+# Read sortmerna version from version.h file.
+file(READ include/version.h version_header_file)
+string(REGEX MATCH "#define SORTMERNA_MAJOR ([0-9]+)" _ ${version_header_file})
+set(SORTMERNA_VERSION_MAJOR ${CMAKE_MATCH_1})
+string(REGEX MATCH "#define SORTMERNA_MINOR ([0-9]+)" _ ${version_header_file})
+set(SORTMERNA_VERSION_MINOR ${CMAKE_MATCH_1})
+string(REGEX MATCH "#define SORTMERNA_PATCH ([0-9]+)" _ ${version_header_file})
+set(SORTMERNA_VERSION_PATCH ${CMAKE_MATCH_1})
+set(SORTMERNA_VERSION ${SORTMERNA_VERSION_MAJOR}.${SORTMERNA_VERSION_MINOR}.${SORTMERNA_VERSION_PATCH})
+
 
 #include(ExternalProject)
 message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}") # 'GNU' on Ubuntu
@@ -23,15 +51,44 @@ message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 message("CMAKE_CURRENT_BINARY_DIR = ${CMAKE_CURRENT_BINARY_DIR}")
 message("RUNTIME_OUTPUT_DIRECTORY_RELEASE = ${RUNTIME_OUTPUT_DIRECTORY_RELEASE}")
 
-
 # append sortmerna custom modules to cmake modules
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
+message("CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
 
-option(SRC_ZLIB "Download Zlib sources" OFF)
-option(SRC_ROCKSDB "Download RocksDB sources" OFF)
-option(SRC_RAPIDJSON "Download Rapidjson sources" OFF)
-option(SET_ROCKSDB "Add RocksDB headers and lib to the build (if RocksDB was built from sources)" OFF)
-option(SET_ZLIB "Add Zlib headers and lib to the build (if Zlib was built from sources)" OFF)
+set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty CACHE PATH "Installation directory for 3rd party dependencies")
+set(ZLIB_URL https://github.com/madler/zlib.git CACHE STRING "ZLib GitHub URL")
+set(ZLIB_ROOT ${EXTERNAL_DEPS}/zlib CACHE PATH "ZLIB installation directory")
+set(ROCKSDB_URL https://github.com/facebook/rocksdb.git CACHE STRING "RocksDB GitHub URL")
+set(ROCKSDB_HOME ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RocksDB installation directory")
+set(RAPIDJSON_URL https://github.com/Tencent/rapidjson CACHE STRING "RapidJSON GitHub URL")
+set(RAPIDJSON_HOME ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RapidJSON installation directory")
+set(DIRENTWIN_URL https://github.com/tronkko/dirent CACHE STRING "Dirent-Windows interface GitHub URL")
+set(DIRENTWIN_HOME ${EXTERNAL_DEPS}/dirent CACHE PATH "Dirent-Windows interface installation directory")
+set(CONCURRENTQUEUE_URL https://github.com/cameron314/concurrentqueue CACHE STRING "Concurrent queue library GitHub URL")
+set(CONCURRENTQUEUE_HOME ${EXTERNAL_DEPS}/concurrentqueue CACHE PATH "Concurrent queue library installation directory")
+
+option(WITH_MD_LIBRARY "build with MD" ON)
+if(WIN32 AND MSVC)
+  if(NOT WITH_MD_LIBRARY)
+	foreach(flag_var
+		CMAKE_CXX_FLAGS 
+		CMAKE_CXX_FLAGS_DEBUG 
+		CMAKE_CXX_FLAGS_RELEASE
+		CMAKE_CXX_FLAGS_MINSIZEREL 
+		CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		CMAKE_C_FLAGS 
+		CMAKE_C_FLAGS_DEBUG 
+		CMAKE_C_FLAGS_RELEASE
+		CMAKE_C_FLAGS_MINSIZEREL 
+		CMAKE_C_FLAGS_RELWITHDEBINFO)
+	   if(${flag_var} MATCHES "/MD")
+		  string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+	   endif(${flag_var} MATCHES "/MD")
+	endforeach(flag_var)
+  endif()
+endif()
+
+
 option(WITH_TESTS "Select whether to build tests" OFF)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -45,39 +102,39 @@ message("CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
 message("EXTRA_CXX_FLAGS_RELEASE: ${EXTRA_CXX_FLAGS_RELEASE}")
 
 ## download zlib
-if(SRC_ZLIB AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
-	execute_process(COMMAND git clone --depth 1 https://github.com/madler/zlib
-		WORKING_DIRECTORY ${EXTERNAL_DEPS}
-	)
-endif()
+#if(SRC_ZLIB AND NOT EXISTS ${EXTERNAL_DEPS}/zlib)
+#	execute_process(COMMAND git clone --depth 1 https://github.com/madler/zlib
+#		WORKING_DIRECTORY ${EXTERNAL_DEPS}
+#	)
+#endif()
 
 ## Download RocksDB
-if(SRC_ROCKSDB AND NOT EXISTS ${EXTERNAL_DEPS}/rocksdb)
-	execute_process(COMMAND git clone --depth 1 https://github.com/facebook/rocksdb
-		WORKING_DIRECTORY ${EXTERNAL_DEPS}
-	)
-endif()
+#if(SRC_ROCKSDB AND NOT EXISTS ${EXTERNAL_DEPS}/rocksdb)
+#	execute_process(COMMAND git clone --depth 1 https://github.com/facebook/rocksdb
+#		WORKING_DIRECTORY ${EXTERNAL_DEPS}
+#	)
+#endif()
 
 ## Download Rapidjson
-if(SRC_RAPIDJSON AND NOT EXISTS ${EXTERNAL_DEPS}/rapidjson)
-	execute_process(COMMAND git clone --depth 1 https://github.com/Tencent/rapidjson
-		WORKING_DIRECTORY ${EXTERNAL_DEPS}
-	)
-endif()
+#(SRC_RAPIDJSON AND NOT EXISTS ${EXTERNAL_DEPS}/rapidjson)
+#	execute_process(COMMAND git clone --depth 1 https://github.com/Tencent/rapidjson
+#		WORKING_DIRECTORY ${EXTERNAL_DEPS}
+#	)
+#endif()
 
 # download dirent. Only dirent.h used from this project - no need to build
-if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/dirent)
-	execute_process(COMMAND git clone --depth 1 https://github.com/tronkko/dirent
+if(WIN32 AND NOT EXISTS ${DIRENTWIN_HOME})
+	execute_process(COMMAND git clone --depth 1 ${DIRENTWIN_URL}
 		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 )
 endif()
 
 ## Download concurrentqueue
-if(NOT EXISTS ${EXTERNAL_DEPS}/concurrentqueue)
-	execute_process(COMMAND git clone --depth 1 https://github.com/cameron314/concurrentqueue
-		WORKING_DIRECTORY ${EXTERNAL_DEPS}
-	)
-endif()
+#if(NOT EXISTS ${EXTERNAL_DEPS}/concurrentqueue)
+#	execute_process(COMMAND git clone --depth 1 https://github.com/cameron314/concurrentqueue
+#		WORKING_DIRECTORY ${EXTERNAL_DEPS}
+#	)
+#endif()
 
 ## mman for Windows TODO: not used any longer. Remove.
 #if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
@@ -107,38 +164,11 @@ endif()
 #	)
 #endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
 
-string(TIMESTAMP GIT_DATE_TIME "%Y/%m/%d %H:%M:%S" UTC)
-
-find_package(Git)
-
-if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-  if(WIN32)
-    execute_process(COMMAND $ENV{COMSPEC} /C ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse HEAD OUTPUT_VARIABLE GIT_SHA)
-  else()
-    execute_process(COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse HEAD OUTPUT_VARIABLE GIT_SHA)
-  endif()
-else()
-  set(GIT_SHA 0)
-endif()
-
-string(REGEX REPLACE "[^0-9a-f]+" "" GIT_SHA "${GIT_SHA}")
-
-# Read sortmerna version from version.h file.
-file(READ include/version.h version_header_file)
-string(REGEX MATCH "#define SORTMERNA_MAJOR ([0-9]+)" _ ${version_header_file})
-set(SORTMERNA_VERSION_MAJOR ${CMAKE_MATCH_1})
-string(REGEX MATCH "#define SORTMERNA_MINOR ([0-9]+)" _ ${version_header_file})
-set(SORTMERNA_VERSION_MINOR ${CMAKE_MATCH_1})
-string(REGEX MATCH "#define SORTMERNA_PATCH ([0-9]+)" _ ${version_header_file})
-set(SORTMERNA_VERSION_PATCH ${CMAKE_MATCH_1})
-set(SORTMERNA_VERSION ${SORTMERNA_VERSION_MAJOR}.${SORTMERNA_VERSION_MINOR}.${SORTMERNA_VERSION_PATCH})
-
-
+# build build_version
 set(BUILD_VERSION_CPP ${CMAKE_BINARY_DIR}/build_version.cpp)
 configure_file(src/util/build_version.cpp.in ${BUILD_VERSION_CPP} @ONLY)
 add_library(build_version OBJECT ${BUILD_VERSION_CPP})
-target_include_directories(build_version PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(build_version PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 ## build cmph
 add_subdirectory(${EXTERNAL_DEPS}/cmph)
@@ -158,38 +188,38 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
 
 ## 3rd party libraries
-if(SET_ROCKSDB)
+#if(SET_ROCKSDB)
 	## cache entries for RocksDB
-	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory")
-	set(ROCKSDB_LIB_DEBUG ${EXTERNAL_DEPS}/rocksdb/build/Debug CACHE PATH "Rocksdb Debug Lib directory")
-	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory")
-	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
-	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+#	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory")
+#	set(ROCKSDB_LIB_DEBUG ${EXTERNAL_DEPS}/rocksdb/build/Debug CACHE PATH "Rocksdb Debug Lib directory")
+#	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory")
+#	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
+#	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 	## library
-	add_library(rocksdb STATIC IMPORTED GLOBAL)
-	set_target_properties(rocksdb PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ROCKSDB_INCLUDE_DIR})
-	if(WIN32)
-		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
-		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/rocksdb.lib)
-	else()
-		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/librocksdb.a)
-		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/librocksdb.a)
-	endif()
-endif()
+#	add_library(rocksdb STATIC IMPORTED GLOBAL)
+#	set_target_properties(rocksdb PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ROCKSDB_INCLUDE_DIR})
+#	if(WIN32)
+#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
+#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/rocksdb.lib)
+#	else()
+#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/librocksdb.a)
+#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/librocksdb.a)
+#	endif()
+#endif()
 
-if(SET_ZLIB)
+#if(SET_ZLIB)
 	## zlib cache entries
-	set(ZLIB_LIB_DEBUG ${EXTERNAL_DEPS}/zlib/build/Debug CACHE PATH "Zlib library directory")
-	set(ZLIB_LIB_RELEASE ${EXTERNAL_DEPS}/zlib/build/Release CACHE PATH "Zlib library directory")
+#	set(ZLIB_LIB_DEBUG ${EXTERNAL_DEPS}/zlib/build/Debug CACHE PATH "Zlib library directory")
+#	set(ZLIB_LIB_RELEASE ${EXTERNAL_DEPS}/zlib/build/Release CACHE PATH "Zlib library directory")
 	## library
-	add_library(z STATIC IMPORTED GLOBAL)
-	set_target_properties(z PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
-	set_target_properties(z PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
-	set_target_properties(z PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
-endif()
+#	add_library(z STATIC IMPORTED GLOBAL)
+#	set_target_properties(z PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
+#	set_target_properties(z PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
+#	set_target_properties(z PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
+#endif()
 
 if (WITH_TESTS)
-  ADD_SUBDIRECTORY (tests/sortmerna)
+  add_subdirectory (tests/sortmerna)
 endif ()
 
 #find_package(zlib REQUIRED)
