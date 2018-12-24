@@ -136,34 +136,6 @@ endif()
 #	)
 #endif()
 
-## mman for Windows TODO: not used any longer. Remove.
-#if(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
-	## download archive. The archive contains directory "mman-win32".
-#	file(DOWNLOAD
-#		https://storage.googleapis.com/google-code-archive-source/v2/code.google.com/mman-win32/source-archive.zip
-#		${EXTERNAL_DEPS}/mman.zip
-#	)
-	## extract mman-win32 archive.
-#	execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xf mman.zip
-#		WORKING_DIRECTORY ${EXTERNAL_DEPS}
-#	)
-	## remove mman-win32 archive
-#	file(REMOVE ${EXTERNAL_DEPS}/mman.zip)
-	## move source file. NOTE: modify mman.c to include 'sys/mman.h' instead of 'mman.h'
-#	file(RENAME ${EXTERNAL_DEPS}/mman-win32/trunk/mman.c ${EXTERNAL_DEPS}/mman-win32/mman.c)
-	## move header file.
-#	file(MAKE_DIRECTORY ${EXTERNAL_DEPS}/mman-win32/sys)
-#	file(RENAME ${EXTERNAL_DEPS}/mman-win32/trunk/mman.h ${EXTERNAL_DEPS}/mman-win32/sys/mman.h)
-	## remove unused directories
-#	file(REMOVE_RECURSE
-#		${EXTERNAL_DEPS}/mman-win32/.svn
-#		${EXTERNAL_DEPS}/mman-win32/branches
-#		${EXTERNAL_DEPS}/mman-win32/tags
-#		${EXTERNAL_DEPS}/mman-win32/trunk
-#		${EXTERNAL_DEPS}/mman-win32/wiki
-#	)
-#endif(WIN32 AND NOT EXISTS ${EXTERNAL_DEPS}/mman-win32)
-
 # build build_version
 set(BUILD_VERSION_CPP ${CMAKE_BINARY_DIR}/build_version.cpp)
 configure_file(src/util/build_version.cpp.in ${BUILD_VERSION_CPP} @ONLY)
@@ -187,64 +159,49 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
 ## build sortmerna
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
 
-## 3rd party libraries
-#if(SET_ROCKSDB)
-	## cache entries for RocksDB
-#	set(ROCKSDB_INCLUDE_DIR ${EXTERNAL_DEPS}/rocksdb/include CACHE PATH "Rocksdb Include directory")
-#	set(ROCKSDB_LIB_DEBUG ${EXTERNAL_DEPS}/rocksdb/build/Debug CACHE PATH "Rocksdb Debug Lib directory")
-#	set(ROCKSDB_LIB_RELEASE ${EXTERNAL_DEPS}/rocksdb/build/Release CACHE PATH "Rocksdb Release Lib directory")
-#	message("ROCKSDB_INCLUDE_DIR = ${ROCKSDB_INCLUDE_DIR}")
-#	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
-	## library
-#	add_library(rocksdb STATIC IMPORTED GLOBAL)
-#	set_target_properties(rocksdb PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ROCKSDB_INCLUDE_DIR})
-#	if(WIN32)
-#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/rocksdb.lib)
-#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/rocksdb.lib)
-#	else()
-#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_DEBUG ${ROCKSDB_LIB_DEBUG}/librocksdb.a)
-#		set_target_properties(rocksdb PROPERTIES IMPORTED_LOCATION_RELEASE ${ROCKSDB_LIB_RELEASE}/librocksdb.a)
-#	endif()
-#endif()
-
-#if(SET_ZLIB)
-	## zlib cache entries
-#	set(ZLIB_LIB_DEBUG ${EXTERNAL_DEPS}/zlib/build/Debug CACHE PATH "Zlib library directory")
-#	set(ZLIB_LIB_RELEASE ${EXTERNAL_DEPS}/zlib/build/Release CACHE PATH "Zlib library directory")
-	## library
-#	add_library(z STATIC IMPORTED GLOBAL)
-#	set_target_properties(z PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${EXTERNAL_DEPS}/zlib/dist/include)
-#	set_target_properties(z PROPERTIES IMPORTED_LOCATION_DEBUG ${ZLIB_LIB_DEBUG}/zlibstaticd.lib)
-#	set_target_properties(z PROPERTIES IMPORTED_LOCATION_RELEASE ${ZLIB_LIB_RELEASE}/zlibstatic.lib)
-#endif()
-
 if (WITH_TESTS)
   add_subdirectory (tests/sortmerna)
 endif ()
 
-#find_package(zlib REQUIRED)
+# Installation and packaging
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
 
-#option(WITH_MD_LIBRARY "build with MD" ON)
-#if(WIN32 AND MSVC)
-#  if(WITH_MD_LIBRARY)
-#    set(RUNTIME_LIBRARY "MD")
-#  else()
-#    set(RUNTIME_LIBRARY "MT")
-#  endif()
-#endif()
+#include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-#ExternalProject_Add(zlib
-#	DOWNLOAD_COMMAND C:/a03_libs/git-2.12.2-x64/bin/git clone --depth 1 https://github.com/madler/zlib
-#	UPDATE_COMMAND C:/a03_libs/git-2.12.2-x64/bin/git pull
-#	DOWNLOAD_DIR ${EXTERNAL_DEPS_ROOT}  # seems DOWNLOAD_DIR only works with DOWNLOAD_COMMAND. Ignored with GIT_REPOSITORY
-#    GIT_REPOSITORY https://github.com/madler/zlib
-#	GIT_SHALLOW 1
-#    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_DEPS_ROOT}
-#)
+set(package_config_destination ${CMAKE_INSTALL_PREFIX}/cmake/sortmerna)
+message("package_config_destination: ${package_config_destination}")
 
-#include_directories(${EXTERNAL_DEPS_ROOT}/include)
-#link_directories(${EXTERNAL_DEPS_ROOT}/lib)
+configure_package_config_file(
+	${CMAKE_CURRENT_LIST_DIR}/cmake/sortmernaConfig.cmake.in sortmernaConfig.cmake
+	INSTALL_DESTINATION ${package_config_destination}
+)
 
-#add_executable(FirstTest main.cpp)
-#add_dependencies(FirstTest googletest)
-#target_link_libraries(FirstTest gtest gtest_main pthread)
+write_basic_package_version_file(
+	sortmernaConfigVersion.cmake
+	VERSION ${SORTMERNA_VERSION}
+	COMPATIBILITY SameMajorVersion
+)  
+
+install(TARGETS sortmerna indexdb
+	EXPORT sortmernaTargets
+	RUNTIME 
+	DESTINATION bin
+	COMPONENT runtime
+)
+
+install(FILES
+		${CMAKE_CURRENT_BINARY_DIR}/sortmernaConfig.cmake
+		${CMAKE_CURRENT_BINARY_DIR}/sortmernaConfigVersion.cmake
+	DESTINATION ${package_config_destination}
+	COMPONENT config
+)
+
+# generate PACKAGE and PACKAGE_SOURCE targets, and CPack configuration files
+# to build distribution archive/installer
+set(CPACK_PACKAGE_VENDOR "Clarity Genomics")
+set(CPACK_PACKAGE_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+set(CPACK_PACKAGE_VERSION_MAJOR ${SORTMERNA_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${SORTMERNA_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${SORTMERNA_VERSION_PATCH})
+include(CPack)

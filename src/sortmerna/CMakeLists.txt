@@ -14,22 +14,17 @@ find_package(Threads REQUIRED)
 
 find_package(RocksDB 
 	REQUIRED
-#  5.18.0
-#  NAMES rocksdb
   PATHS ${ROCKSDB_HOME}
-#  PATH_SUFFIXES Release Debug
   NO_DEFAULT_PATH
 )
-#message("ROCKSDB_LIBS = ${ROCKSDB_LIBS}")
 
 include(FindZLIB)
-find_package(ZLIB 
-	REQUIRED
-#	PATHS ${ZLIB_HOME} # BUG: if specified gives error 'missing ZLIB_DIR', otherwise works fine.
-#	NO_DEFAULT_PATH
-)
+# prevent CONFIG search mode
+find_package(ZLIB MODULE REQUIRED)
 
-find_package(RapidJson)
+include(FindRapidJson)
+ # prevent CONFIG search mode
+find_package(RapidJson MODULE REQUIRED)
 
 set(SMR_SRCS
 	alignment.cpp
@@ -79,13 +74,8 @@ else()
 endif()
 
 # SMR
+add_executable(sortmerna main.cpp)
 if(WIN32)
-	add_executable(sortmerna
-		main.cpp
-		#$<TARGET_OBJECTS:winapi> # No more: CMake 3.12 allows linking OJBECT libraries
-		#$<TARGET_OBJECTS:smr_objs>
-		#$<TARGET_OBJECTS:build_version>
-	)
 	target_include_directories(sortmerna 
 		PRIVATE
 			${CMAKE_SOURCE_DIR}/include
@@ -104,24 +94,21 @@ if(WIN32)
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
 	add_dependencies(sortmerna 
-		winapi alp 
-		smr_objs 
+		winapi
+		alp
 		build_version
+		smr_objs
 	)
 else()
-	add_executable(sortmerna
-		#$<TARGET_OBJECTS:smr_objs>
-		$<TARGET_OBJECTS:build_version>
-		main.cpp
-	)
 	target_include_directories(sortmerna 
 		PRIVATE
 			${EXTERNAL_DEPS}/concurrentqueue
 			${CMAKE_SOURCE_DIR}/include
 	)
 	target_link_libraries(sortmerna
+		build_version
+		smr_objs
 		alp
-		#z
 		ZLIB::ZLIB
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
@@ -132,18 +119,4 @@ else()
 		smr_objs 
 		build_version
 	)
-
-    #include(GetPrerequisites)
-    #get_prerequisites(sortmerna SMR_DEPS 0 1 ) # executable has to be specified (not sortmerna target)
-	#get_prerequisites(sortmerna SMR_DEPS)
-    #message(STATUS "SMR_DEPS: ${SMR_DEPS}")
-
-	#get_target_property(SMR_DEPS sortmerna INTERFACE_LINK_LIBRARIES)
-	#message(STATUS "INTERFACE_LINK_LIBRARIES: ${SMR_DEPS}")
-	#get_target_property(SMR_DEPS sortmerna IMPORTED_LINK_DEPENDENT_LIBRARIES)
-	#message(STATUS "IMPORTED_LINK_DEPENDENT_LIBRARIES: ${SMR_DEPS}")
-	#get_target_property(SMR_DEPS sortmerna IMPORTED_LINK_INTERFACE_LIBRARIES)
-	#message(STATUS "IMPORTED_LINK_INTERFACE_LIBRARIES: ${SMR_DEPS}")
-	#get_target_property(SMR_DEPS sortmerna LINK_DEPENDS)
-	#message(STATUS "IMPORTED_LINK_INTERFACE_LIBRARIES: ${SMR_DEPS}")
 endif()
