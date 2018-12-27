@@ -5,7 +5,7 @@
 # CMake file for sortmerna/src/winapi
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 project(winapi CXX)
 
 set(WINAPI_HDRS

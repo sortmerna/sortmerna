@@ -5,7 +5,7 @@
 # CMake file for sortmerna/src/sortmerna
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 project(sortmerna CXX)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -63,7 +63,7 @@ if(WIN32)
 		PRIVATE
 			${CMAKE_SOURCE_DIR}/include
 			$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
-			${EXTERNAL_DEPS}/dirent/include
+			${DIRENTWIN_HOME}/include
 			${EXTERNAL_DEPS}/concurrentqueue
 	)
 else()
@@ -79,8 +79,8 @@ if(WIN32)
 	target_include_directories(sortmerna 
 		PRIVATE
 			${CMAKE_SOURCE_DIR}/include
+			${DIRENTWIN_HOME}/include
 			${EXTERNAL_DEPS}/concurrentqueue
-			${EXTERNAL_DEPS}/dirent/include
 	)
 	target_link_libraries(sortmerna
 		build_version

@@ -5,14 +5,14 @@
 # CMake file for sortmerna/src/indexdb
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
 project(indexdb CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 
 if(WIN32)
 	set(IXDB_HDRS
-		${CMAKE_SOURCE_DIR}/3rdparty/dirent/include/dirent.h
+		${DIRENTWIN_HOME}/include/dirent.h
 	)
 endif()
 
@@ -25,7 +25,6 @@ if(WIN32)
 		$<TARGET_OBJECTS:cmph>
 		$<TARGET_OBJECTS:winapi>
 		$<TARGET_OBJECTS:build_version>
-#		$<TARGET_OBJECTS:mmanwin32>
 		${IXDB_HDRS} ${IXDB_SRCS}
 	)
 else()
@@ -39,10 +38,9 @@ endif()
 if(WIN32)
 	target_include_directories(indexdb PUBLIC 
 		${CMAKE_SOURCE_DIR}/include
-		${CMAKE_SOURCE_DIR}/3rdparty/dirent/include
+		${DIRENTWIN_HOME}/include
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
-#		$<TARGET_PROPERTY:mmanwin32,INCLUDE_DIRECTORIES>
 	)
 else()
 	target_include_directories(indexdb PUBLIC 
@@ -52,7 +50,7 @@ else()
 endif()
 
 if(WIN32)
-	add_dependencies(indexdb cmph winapi build_version) #mmanwin32
+	add_dependencies(indexdb cmph winapi build_version)
 else(WIN32)
 	add_dependencies(indexdb cmph build_version)
 endif(WIN32)

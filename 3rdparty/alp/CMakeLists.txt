@@ -5,7 +5,7 @@
 # CMake file for sortmerna/3rdparty/alp
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 project(alp CXX)
 
 set(ALP_HDRS

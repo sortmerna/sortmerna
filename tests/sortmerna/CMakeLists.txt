@@ -3,7 +3,7 @@
 # Created: Jun 06, 2018 Wed
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
 project(tests CXX)
 
 set(CMAKE_CXX_STANDARD 14)
