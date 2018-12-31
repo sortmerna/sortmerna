@@ -1,5 +1,9 @@
+#==============================================================================
+# FILE: .travis.yml
+# Travis CI build configuration
+#==============================================================================
+dist: xenial
 language: cpp
-
 #sudo: false # required
 
 matrix:
@@ -13,7 +17,7 @@ matrix:
           packages:
             - gcc-7
             - g++-7
-            - zlib1g-dev # for RocksDB
+          #  - zlib1g-dev # for RocksDB # build from sources
       env:
         - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
       
@@ -22,13 +26,17 @@ matrix:
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-6.0
             - ubuntu-toolchain-r-test
+          # the latest official clang on Xenial is clang-4.0 [https://packages.ubuntu.com/xenial/devel] => use llvm
+            - llvm-toolchain-xenial-7
+          #  - llvm-toolchain-trusty-6.0
           packages:
-            - clang-6.0
-            - zlib1g-dev # for RocksDB
+            - clang-7
+          #  - clang-6.0
+          #  - zlib1g-dev # for RocksDB
       env:
-        - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
+        - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7"
+      #  - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
@@ -46,55 +54,119 @@ matrix:
         #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
         
 # does nothing
-#  exclude:
-#    - os : linux
-#      compiler: clang
+  exclude:
+    - os : linux
+      compiler: clang
       
-#    - os : osx
-#      compiler: gcc
+    - os : osx
+      compiler: gcc
 
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh ; fi
+  
+install:
+  # $HOME  /home/travis (Linux), /Users/travis (MacOS), /c/Users/travis (Windows)
+  - pushd $HOME
+
+  # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt remove cmake; apt purge --auto-remove cmake; fi
+  - wget https://cmake.org/files/v3.13/cmake-3.13.0.tar.gz;
+  - tar xzf cmake-3.13.0.tar.gz
+  - pushd cmake-3.13.0
+  - ./bootstrap
+  - make
+  - sudo make install 
+  - echo "cmake --version"
+  - cmake --version
+  - popd
+
+  # Miniconda
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh;
+    fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda update --yes conda
   - conda config --add channels https://conda.anaconda.org/biobuilds
-  # C++14
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test ; fi
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get update -qq ; fi
-  
-install:
   - conda create --yes -n env_name python=3.5 numpy scipy
   - source activate env_name
   - pip install scikit-bio==0.2.3
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
+#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
+#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
     # C++14
 #  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
 #  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
   # for building RocksDB
 #  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd ./3rdparty; git clone https://github.com/facebook/rocksdb.git ; popd; fi
-  
+
 script:
-  - echo "${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
-  # build RocksDB
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p 3rdparty/rocksdb/build/Release; pushd 3rdparty/rocksdb/build/Release ; fi
-  - if [[ "$ENV" == "Linux+gcc-7" ]]; then cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
-  - if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; popd ; fi
+  - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
+  - pushd "${TRAVIS_BUILD_DIR}"
+
+  # Install 3rd party libraries
+  - pushd ./3rdparty;
+
+  # rapidjson
+  - git clone https://github.com/Tencent/rapidjson.git
+  - mkdir -p rapidjson/build/Release
+  - pushd rapidjson/build/Release
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DCMAKE_INSTALL_PREFIX=../../dist ../..
+  - cmake --build .
+  - cmake --build . --target install
+  - popd
+
+  # ZLib
+  - git clone https://github.com/madler/zlib.git;
+  - mkdir -p zlib/build/Release;
+  - pushd zlib/build/Release;
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
+  - cmake --build . ;
+  - cmake --build . --target install;
+  - ls -lrt ../../dest/lib/ ; 
+  - popd;
+
+  # RocksDB
+  - git clone https://github.com/facebook/rocksdb.git;
+  - mkdir -p rocksdb/build/Release;
+  - pushd rocksdb/build/Release;
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
+    #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
+  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then 
+  #  fi
+    #Trusty: cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
+  #- if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then
+  #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
+  #  fi
+  - cmake --build . ;
+  - cmake --build . --target install;
+  - popd; # return to 3rdparty
+  - popd; # return to sortmerna
+
   # build SortmeRNA
-  - mkdir -p build/Release; pushd build/Release
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release ../.. ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; fi
-  - make; popd
+  - mkdir -p build/Release; pushd build/Release;
+  # cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release ../.. ; 
+  #- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DZLIB_ROOT=../../3rdparty/zlib/dist -DZLIB_LIBRARY_RELEASE=../../3rdparty/zlib/dist/lib/libz.a -DZLIB_LIBRARY_DEBUG=../../3rdparty/zlib/dist/lib/libzd.a -DROCKSDB_HOME=../../3rdparty/rocksdb/dist -DROCKSDB_3RDPARTY_INC=1 -DRAPIDJSON_HOME=../../3rdparty/rapidjson/dist -DCPACK_BINARY_TGZ=ON
+  #  fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
+  #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
+  #  fi
+  - cmake --build . ;
+  - cmake --build . --target install;
+  - cmake --build . --target package;
+  - popd; # return to sortmerna/
+
   # run tests
-  - export PATH="$PWD/build/Release/src/indexdb:$PWD/build/Release/src/sortmerna:$PATH"
-  - if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna.py; fi
+  - export PATH="$PWD/dist/bin:$PATH"
+  - echo "sortmerna --version"
+  - sortmerna --version
+  - sortmerna -h
+  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
 ## END .travis.yml

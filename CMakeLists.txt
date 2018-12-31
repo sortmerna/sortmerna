@@ -59,7 +59,8 @@ set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty CACHE PATH "Installation director
 set(ZLIB_URL https://github.com/madler/zlib.git CACHE STRING "ZLib GitHub URL")
 set(ZLIB_ROOT ${EXTERNAL_DEPS}/zlib CACHE PATH "ZLIB installation directory")
 set(ROCKSDB_URL https://github.com/facebook/rocksdb.git CACHE STRING "RocksDB GitHub URL")
-set(ROCKSDB_HOME ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RocksDB installation directory")
+set(ROCKSDB_SRC ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RocksDB source root directory")
+set(ROCKSDB_HOME ${EXTERNAL_DEPS}/rocksdb/dist CACHE PATH "RocksDB installation directory")
 set(RAPIDJSON_URL https://github.com/Tencent/rapidjson CACHE STRING "RapidJSON GitHub URL")
 set(RAPIDJSON_HOME ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RapidJSON installation directory")
 set(DIRENTWIN_URL https://github.com/tronkko/dirent CACHE STRING "Dirent-Windows interface GitHub URL")
@@ -114,6 +115,17 @@ message("EXTRA_CXX_FLAGS_RELEASE: ${EXTRA_CXX_FLAGS_RELEASE}")
 #		WORKING_DIRECTORY ${EXTERNAL_DEPS}
 #	)
 #endif()
+
+#
+# modify RocksDB thirdparty.inc
+#
+option(ROCKSDB_3RDPARTY_INC "Modify rocksdb/thirdparty.inc" OFF)
+if (ROCKSDB_3RDPARTY_INC)
+	include(smr_utils)
+	rocksdb_edit_3rdparty_inc()
+	#rocksdb_edit_3rdparty_inc_2()
+endif(ROCKSDB_3RDPARTY_INC)
+
 
 ## Download Rapidjson
 #(SRC_RAPIDJSON AND NOT EXISTS ${EXTERNAL_DEPS}/rapidjson)
