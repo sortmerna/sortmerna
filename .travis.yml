@@ -81,6 +81,8 @@ install:
   - ./bootstrap
   - make
   - sudo make install 
+  - ls -l /usr/local/bin/cmake
+  - /usr/local/bin/cmake --version
   - export PATH=/usr/loca/bin:$PATH # bring new cmake to the top
   - echo $PATH
   - which cmake
