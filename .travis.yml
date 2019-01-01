@@ -127,7 +127,7 @@ script:
   - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
   - cmake --build . ;
   - cmake --build . --target install;
-  - ls -lrt ../../dest/lib/ ; 
+  - ls -lrt ../../dist/lib/ ; 
   - popd;
 
   # RocksDB
@@ -151,7 +151,7 @@ script:
   - mkdir -p build/Release; pushd build/Release;
   # cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release ../.. ; 
   #- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DZLIB_ROOT=../../3rdparty/zlib/dist -DZLIB_LIBRARY_RELEASE=../../3rdparty/zlib/dist/lib/libz.a -DZLIB_LIBRARY_DEBUG=../../3rdparty/zlib/dist/lib/libzd.a -DROCKSDB_HOME=../../3rdparty/rocksdb/dist -DROCKSDB_3RDPARTY_INC=1 -DRAPIDJSON_HOME=../../3rdparty/rapidjson/dist -DCPACK_BINARY_TGZ=ON
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DZLIB_ROOT=../../3rdparty/zlib/dist -DZLIB_LIBRARY_RELEASE=../../3rdparty/zlib/dist/lib/libz.a -DZLIB_LIBRARY_DEBUG=../../3rdparty/zlib/dist/lib/libzd.a -DROCKSDB_HOME=../../3rdparty/rocksdb/dist -DROCKSDB_3RDPARTY_INC=1 -DRAPIDJSON_HOME=../../3rdparty/rapidjson/dist -DCPACK_BINARY_TGZ=ON ../.. ;
   #  fi
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
