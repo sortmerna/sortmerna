@@ -70,6 +70,8 @@ install:
   - pushd $HOME
 
   # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
+  - which cmake
+  - cmake --version
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt remove cmake; sudo apt purge --auto-remove cmake; fi
   - wget https://cmake.org/files/v3.13/cmake-3.13.0.tar.gz;
   - tar xzf cmake-3.13.0.tar.gz
@@ -77,7 +79,8 @@ install:
   - ./bootstrap
   - make
   - sudo make install 
-  - echo "cmake --version"
+  - echo $PATH
+  - which cmake
   - cmake --version
   - popd
 
