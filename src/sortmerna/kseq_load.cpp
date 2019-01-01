@@ -33,7 +33,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "../include/kseq_load.hpp"
+#include "kseq_load.hpp"
 
 
 /*

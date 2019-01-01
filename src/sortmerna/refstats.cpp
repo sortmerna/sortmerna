@@ -8,7 +8,7 @@
 #include <ios>
 #include <vector>
 
-#include "../alp/sls_alignment_evaluer.hpp"
+#include "sls_alignment_evaluer.hpp" // ../alp/
 
 #include "refstats.hpp"
 #include "readstats.hpp"

@@ -57,6 +57,7 @@ target_link_libraries(smr_objs
 		ZLIB::ZLIB
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
+		alp
 )
 if(WIN32)
 	target_include_directories(smr_objs 
