@@ -453,6 +453,7 @@ void Runopts::optMatch(char **argv, int &narg)
 		fprintf(stderr, "\n  %sERROR%s: --match [INT] has been set twice, please "
 			"verify your choice\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optMatch
 
@@ -482,6 +483,7 @@ void Runopts::optMismatch(char **argv, int &narg)
 		printf("\n  %sERROR%s: --mismatch [INT] has been set twice, please verify "
 			"your choice\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optMismatch
 
@@ -511,6 +513,7 @@ void Runopts::optGapOpen(char **argv, int &narg)
 		printf("\n  %sERROR%s: --gap_open [INT] has been set twice, please verify "
 			"your choice\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optGapOpen
 
@@ -540,6 +543,7 @@ void Runopts::optGapExt(char **argv, int &narg)
 		fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] has been set twice, please "
 			"verify your choice\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optGapExt
 
@@ -569,6 +573,7 @@ void Runopts::optNumSeeds(char **argv, int &narg)
 		fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] has been set twice, please "
 			"verify your choice\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optNumSeeds
 
@@ -703,6 +708,7 @@ void Runopts::optMinLis(char **argv, int &narg)
 		fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] has been set twice, please "
 			"verify your choice.\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 	else
 	{
@@ -732,6 +738,7 @@ void Runopts::optBest(char **argv, int &narg)
 		fprintf(stderr, "\n  %sERROR%s: --best [INT] has been set twice, please "
 			"verify your choice.\n\n", RED, COLOFF);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 	else
 	{
@@ -944,6 +951,7 @@ void Runopts::optUnknown(char **argv, int &narg, char * opt)
 	ss << "\n  " << RED << "ERROR" << COLOFF << ": option --" << opt << " not recognized" << std::endl << std::endl;
 	std::cout << ss.str();
 	printlist();
+	exit(EXIT_FAILURE);
 } // ~Runopts::optUnknown
 
 void Runopts::opt_e_Evalue(char **argv, int &narg)
@@ -1014,6 +1022,7 @@ void Runopts::opt_h_Help()
 {
 	welcome();
 	printlist();
+	exit(0);
 } // ~Runopts::opt_h_Help
 
 void Runopts::opt_v_Verbose(int & narg)
@@ -1175,6 +1184,7 @@ void Runopts::opt_Default(char **argv, int &narg)
 		<< "] '" << argv[narg][1] << "' is not one of the options." << std::endl;
 	std::cerr << ss.str(); ss.str("");
 	printlist();
+	exit(EXIT_FAILURE);
 } // ~Runopts::opt_Default
 
   /* Processing task */
@@ -1387,6 +1397,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			"reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) "
 			"are mandatory input.\n\n", RED, COLOFF, __LINE__, __FILE__);
 		printlist();
+		exit(EXIT_FAILURE);
 	}
 
 	// Basename for aligned reads is mandatory
@@ -1854,6 +1865,4 @@ void printlist()
 		<<                                                                                                     "1:1"          << COLOFF << std::endl << std::endl;
 		
 	std::cout << ss.str();
-
-	exit(EXIT_FAILURE);
 }//~printlist()
