@@ -75,9 +75,12 @@ install:
   - which cmake
   - cmake --version
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt remove cmake; sudo apt purge --auto-remove cmake; fi
-  - wget https://cmake.org/files/v3.13/cmake-3.13.0.tar.gz;
-  - tar xzf cmake-3.13.0.tar.gz
-  - pushd cmake-3.13.0
+  - wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz
+  #- wget https://cmake.org/files/v3.13/cmake-3.13.0.tar.gz
+  # binary distro for osx
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then https://cmake.org/files/v3.13/cmake-3.13.0-Darwin-x86_64.tar.gz; fi
+  - tar xzf cmake-3.13.2.tar.gz
+  - pushd cmake-3.13.2
   - ./bootstrap
   - make
   - sudo make install 
