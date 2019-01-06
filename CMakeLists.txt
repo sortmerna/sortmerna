@@ -117,14 +117,13 @@ message("EXTRA_CXX_FLAGS_RELEASE: ${EXTRA_CXX_FLAGS_RELEASE}")
 #endif()
 
 #
-# modify RocksDB thirdparty.inc
+# modify RocksDB thirdparty.inc - no need, it is modified before building RocksDB
 #
-option(ROCKSDB_3RDPARTY_INC "Modify rocksdb/thirdparty.inc" OFF)
-if (ROCKSDB_3RDPARTY_INC)
-	include(smr_utils)
-	rocksdb_edit_3rdparty_inc()
-	#rocksdb_edit_3rdparty_inc_2()
-endif(ROCKSDB_3RDPARTY_INC)
+#option(ROCKSDB_3RDPARTY_INC "Modify rocksdb/thirdparty.inc" OFF)
+#if (ROCKSDB_3RDPARTY_INC)
+#	include(smr_utils)
+#	rocksdb_edit_3rdparty_inc()
+#endif(ROCKSDB_3RDPARTY_INC)
 
 
 ## Download Rapidjson

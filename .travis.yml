@@ -74,18 +74,25 @@ install:
   - echo $PATH
   - which cmake
   - cmake --version
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt remove cmake; sudo apt purge --auto-remove cmake; fi
-  - wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
+      sudo apt remove cmake; 
+      sudo apt purge --auto-remove cmake;
+      wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2-Linux-x86_64.sh;
+      chmod +x cmake-3.13.2-Linux-x86_64.sh;
+      ./cmake-3.13.2-Linux-x86_64.sh --skip-license;
+    fi
+  # build from source - problem with Clang
+  #- wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz
   #- wget https://cmake.org/files/v3.13/cmake-3.13.0.tar.gz
   # binary distro for osx
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then https://cmake.org/files/v3.13/cmake-3.13.0-Darwin-x86_64.tar.gz; fi
-  - tar xzf cmake-3.13.2.tar.gz
-  - pushd cmake-3.13.2
-  - ./bootstrap
-  - make
-  - sudo make install 
-  - ls -l /usr/local/bin/cmake
-  - /usr/local/bin/cmake --version
+  #- tar xzf cmake-3.13.2.tar.gz
+  #- pushd cmake-3.13.2
+  #- ./bootstrap
+  #- make
+  #- sudo make install 
+  #- ls -l /usr/local/bin/cmake
+  #- /usr/local/bin/cmake --version
   - export PATH=/usr/local/bin:$PATH # bring new cmake to the top
   - echo $PATH
   - which cmake
@@ -126,7 +133,9 @@ script:
   - git clone https://github.com/Tencent/rapidjson.git
   - mkdir -p rapidjson/build/Release
   - pushd rapidjson/build/Release
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DCMAKE_INSTALL_PREFIX=../../dist ../..
+  - |
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+    -DRAPIDJSON_BUILD_EXAMPLES=OFF  -DRAPIDJSON_BUILD_DOC=OFF -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
   - cmake --build .
   - cmake --build . --target install
   - popd
@@ -143,9 +152,22 @@ script:
 
   # RocksDB
   - git clone https://github.com/facebook/rocksdb.git;
-  - mkdir -p rocksdb/build/Release;
-  - pushd rocksdb/build/Release;
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
+  - pushd rocksdb
+  # modify thirdparty.inc
+  - mv thirdparty.inc _thirdparty.inc
+  - |
+    ZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist; \
+    sed -E -e "s|set\(ZLIB_HOME .*\)|set\(ZLIB_HOME ${ZLIB_ROOT}\)|" \
+    -e 's/set\(ZLIB_INCLUDE .*\)/set\(ZLIB_INCLUDE ${ZLIB_HOME}\/include\)/' \
+    -e 's/set\(ZLIB_LIB_DEBUG .*\)/set\(ZLIB_LIB_DEBUG ${ZLIB_HOME}\/lib\/libz\.a\)/' \
+    -e 's/set\(ZLIB_LIB_RELEASE .*\)/set\(ZLIB_LIB_RELEASE ${ZLIB_HOME}\/lib\/libz\.a\)/' \
+    _thirdparty.inc > thirdparty.inc
+  - cat thirdparty.inc
+  - mkdir -p build/Release;
+  - pushd build/Release;
+  - |
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist \
+    -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then 
   #  fi
@@ -155,6 +177,7 @@ script:
   #  fi
   - cmake --build . ;
   - cmake --build . --target install;
+  - popd; # return to rocksdb
   - popd; # return to 3rdparty
   - popd; # return to sortmerna
 
