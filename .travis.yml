@@ -153,6 +153,7 @@ script:
   # RocksDB
   - git clone https://github.com/facebook/rocksdb.git;
   - pushd rocksdb
+  - ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
   # modify thirdparty.inc
   - mv thirdparty.inc _thirdparty.inc
   - |
