@@ -81,20 +81,23 @@ install:
       wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2-Linux-x86_64.sh;
       chmod +x cmake-3.13.2-Linux-x86_64.sh;
       ./cmake-3.13.2-Linux-x86_64.sh --skip-license;
+      /usr/local/bin/cmake --version;
+      export PATH=/usr/local/bin:$PATH;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew upgrade cmake
     fi
   # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
   #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
-      wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz ;
-      tar xzf cmake-3.13.2.tar.gz;
-      pushd cmake-3.13.2;
-      ./bootstrap;
-      make;
-      make install;
-      ls -l /usr/local/bin/cmake;
-    fi
-  - /usr/local/bin/cmake --version
-  - export PATH=/usr/local/bin:$PATH # bring new cmake to the top
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
+  #    wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz ;
+  #    tar xzf cmake-3.13.2.tar.gz;
+  #    pushd cmake-3.13.2;
+  #    ./bootstrap;
+  #    make;
+  #    make install;
+  #    ls -l /usr/local/bin/cmake;
+  #  fi
   - echo $PATH
   - which cmake
   - cmake --version
