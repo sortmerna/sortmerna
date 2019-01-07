@@ -85,7 +85,7 @@ install:
       export PATH=/usr/local/bin:$PATH;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew upgrade cmake
+      brew upgrade cmake;
     fi
   # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
   #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
