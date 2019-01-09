@@ -213,4 +213,24 @@ script:
   - if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
+before_deploy:
+  - find ${TRAVIS_BUILD_DIR}/dist -type f
+  - echo "Get git tag"
+  - |
+    xtag=$(git describe --exact-match HEAD 2>/dev/null); \
+    if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
+  - echo "Deploying SMR version [$SMR_VER]"
+  - pwd
+  - env
+
+deploy:
+  provider: releases
+  api_key: "GITHUB OAUTH TOKEN"
+  file: 
+    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${SMR_VER}-Linux.sh
+    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${SMR_VER}-Linux.tar.gz
+  overwrite: true
+  skip_cleanup: true
+  on:
+    tags: true
 ## END .travis.yml
