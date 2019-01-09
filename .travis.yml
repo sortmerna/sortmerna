@@ -233,4 +233,5 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+    condition: $ENV = "Linux+LLVM_clang-7"
 ## END .travis.yml
