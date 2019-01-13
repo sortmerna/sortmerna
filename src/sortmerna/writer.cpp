@@ -1,6 +1,7 @@
 /**
 * FILE: writer.cpp
 * Created: Nov 26, 2017 Sun
+* @copyright 2016-19 Clarity Genomics BVBA
 */
 #include <iomanip>
 #include <sstream>

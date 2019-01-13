@@ -1,6 +1,7 @@
 ﻿/* 
  * FILE: options.cpp
  * Created: Jun 07, 2018 Thu
+ * @copyright 2016-19 Clarity Genomics BVBA
  */
 
  // TODO: BUG: if SMR headers moved down after 3rd party, 'timeval' struct gets 'redefined' - compiler error. That's a header mess bug.
@@ -1600,7 +1601,7 @@ void welcome()
 
 	ss << std::endl
 		<< "  Program:      SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
-		<< "  Copyright:    2016-2018 Clarity Genomics BVBA:" << std::endl
+		<< "  Copyright:    2016-2019 Clarity Genomics BVBA:" << std::endl
 		<< "                Turnhoutseweg 30, 2340 Beerse, Belgium" << std::endl
 		<< "                2014-2016 Knight Lab:" << std::endl
 		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl

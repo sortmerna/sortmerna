@@ -1,6 +1,8 @@
 /* 
  * FILE: callbacks.cpp
  * Created: Jan 04, 2018 Thu
+ *
+ * @copyright 2016-19 Clarity Genomics BVBA
  */
 
 #include <string>

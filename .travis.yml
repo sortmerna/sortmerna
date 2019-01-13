@@ -180,8 +180,6 @@ script:
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist \
     -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
-  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then 
-  #  fi
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
   #- if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
@@ -194,10 +192,17 @@ script:
 
   # build SortmeRNA
   - mkdir -p build/Release; pushd build/Release;
-  # cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" -DROCKSDB_INCLUDE_DIR=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/include -DROCKSDB_LIB_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/build/Release ../.. ; 
-  #- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DZLIB_ROOT=../../3rdparty/zlib/dist -DZLIB_LIBRARY_RELEASE=../../3rdparty/zlib/dist/lib/libz.a -DZLIB_LIBRARY_DEBUG=../../3rdparty/zlib/dist/lib/libzd.a -DROCKSDB_HOME=../../3rdparty/rocksdb/dist -DROCKSDB_3RDPARTY_INC=1 -DRAPIDJSON_HOME=../../3rdparty/rapidjson/dist -DCPACK_BINARY_TGZ=ON ../.. ;
-  #  fi
+  - |
+    cmake -G "Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=../../dist \
+    -DZLIB_ROOT=../../3rdparty/zlib/dist \
+    -DZLIB_LIBRARY_RELEASE=../../3rdparty/zlib/dist/lib/libz.a \
+    -DZLIB_LIBRARY_DEBUG=../../3rdparty/zlib/dist/lib/libzd.a \
+    -DROCKSDB_HOME=../../3rdparty/rocksdb/dist \
+    -DROCKSDB_3RDPARTY_INC=1 \
+    -DRAPIDJSON_HOME=../../3rdparty/rapidjson/dist \
+    -DCPACK_BINARY_TGZ=ON ../.. ;
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
   #  fi
@@ -212,6 +217,18 @@ script:
   - sortmerna -h
   - if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
+
+after_success:
+  # TODO: move to 'before_deploy' after testing
+  - echo "move this to 'before_deploy' after testing'"
+  - find ${TRAVIS_BUILD_DIR}/dist -type f
+  - echo "Get git tag"
+  - |
+    xtag=$(git describe --exact-match HEAD 2>/dev/null); \
+    if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
+  - echo "Deploying SMR version [$SMR_VER]"
+  - pwd
+  - env
 
 before_deploy:
   - find ${TRAVIS_BUILD_DIR}/dist -type f

@@ -1,6 +1,7 @@
 ﻿/**
  * FILE: reader.cpp
  * Created: Nov 26, 2017 Sun
+ * @copyright 2016-19 Clarity Genomics BVBA
  * 
  * Processes Reads file, creates Read objects, and pushes them to a queue for further pick−up by Processor
  */

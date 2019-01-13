@@ -3,6 +3,8 @@
  * Created: Nov 26, 2017 Sun
  *
  * Callable objects designed to be run in threads
+ *
+ * @copyright 2016-19 Clarity Genomics BVBA
  */
 
 #include <iostream>

@@ -5,6 +5,7 @@
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
  * @copyright 2012-16 Bonsai Bioinformatics Research Group
  * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+ * @copyright 2016-19 Clarity Genomics BVBA
  *
  * SortMeRNA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -879,7 +880,7 @@ void welcome()
 
 	ss << std::endl
 		<< "  Program:      SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
-		<< "  Copyright:    2016-2018 Clarity Genomics BVBA:" << std::endl
+		<< "  Copyright:    2016-2019 Clarity Genomics BVBA:" << std::endl
 		<< "                Turnhoutseweg 30, 2340 Beerse, Belgium" << std::endl
 		<< "                2014-2016 Knight Lab:" << std::endl
 		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl

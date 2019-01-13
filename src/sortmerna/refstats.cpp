@@ -1,6 +1,7 @@
 /*
  * FILE: refstats.cpp
  * Created: Dec 23, 2017 Sat
+ * @copyright 2016-19 Clarity Genomics BVBA
  */
 #include <utility>
 #include <fstream> // ifstream

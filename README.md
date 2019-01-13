@@ -18,7 +18,6 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 # Table of Contents
 
 * [Getting Started](#getting-started)
-	* [DNANexus cloud](#dnanexus-cloud)
 	* [Using GitHub release binaries](#using-github-release-binaries)
 	* [Building from source code](#building-from-source-code)
 		* [General notes](#general-notes)
@@ -26,11 +25,9 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 			* [Download GitHub Release](#download-github-release)
 			* [Clone the GitHub Repository and use the head or a release](#clone-the-github-repository-and-use-the-head-or-a-release)
 		* [building on Linux OS](#building-on-linux-os)
-		* [Building on Mac OS](#building-on-mac-os)
-			* [Install Clang on Mac](#install-clang-on-mac)
-			* [Configure shell to use Clang compiler on Mac](#configure-shell-to-use-clang-compiler-on-mac)
-			* [Configure shell to use GCC compiler on Mac](#configure-shell-to-use-gcc-compiler-on-Mac)
+		* [Building on MacOS](#building-on-macos)
 		* [Building on Windows OS](#building-on-windows-os)
+	* [DNANexus cloud](#dnanexus-cloud)
 * [Running tests](#running)
 * [User Manual](#user-manual)
 * [Third-party libraries](#third-party-libraries)
@@ -44,78 +41,59 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
 # Getting Started
 
-SortMeRNA can be built and run on Windows, Linux, and Mac.
+SortMeRNA can be run/built on Windows, Linux, and Mac.
 
-The following methods can be used for building/running SortMeRNA:
-
-## DNANexus cloud
-
-Arguably the easiest way to use Sortmerna.
-
-* Ready-to-use `sortmerna` application is available on DNANexus cloud. Just upload your data and run the application.
-* Sortmerna distribution also contains DNANexus applets for building, testing and running Sortmerna. See [dnanexus](https://github.com/biocore/sortmerna/blob/master/dnanexus/README.md) subdirectory for detailed instructions.
-
-Note that DNANexus trial accounts can be used.
-
-NOTE (20181117). We have just found that a certain approval procedure has to be performed by the DNANexus support team before the application is available to the wide public. We are in process of rectifying this. Until then if you need the access to the application, please, contact biocodz@protonmail.com to be added to the list of authorized users.
+The following methods can be used:
 
 ## Using GitHub release binaries
+
 Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
 
-The file [sortmerna-3.0.2-linux.tar.gz](https://github.com/biocore/sortmerna/releases/download/v3.0.2/sortmerna-3.0.2-linux.tar.gz) contains 3 binaries
-`indexdb`, `libstdc++.so.6`, `sortmerna`
+Any of the following 2 files can be used for installation:
+- `sortmerna-<SMR_VER>-linux.sh` (convenience script that embeds `sortmerna-<SMR_VER>-linux.tar.gz`)
+- `sortmerna-<SMR_VER>-linux.tar.gz`
 
-`libstdc++.so.6` is a dependency of `sortmerna`. It is needed on machines that have no GCC installed.
-
-The binaries were built on DNANexus Ubuntu 16.04 VM using [sortmerna-3.build.on.u16asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/applets/sortmerna-3.build.on.u16asset) and the [sortmerna-3.asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/assets/sortmerna-3.asset)
-
-The `sortmerna` binary was patched using `patchelf` utility to search for `libstdc++.so.6` in the same directory where `sortmerna` is located.
-
-Put all the binaries into the same location e.g. `SORTMERNA_HOME/bin`, and add the `bin` to the PATH.
-
-Below are all the necessary `bash` commands:
+Installation commands in `bash`:
 
 ```
-# get binary distro
-wget https://github.com/biocore/sortmerna/releases/download/v3.0.2/sortmerna-3.0.2-linux.tar.gz
+# get binary distro (substitute the release version as desired)
+wget https://github.com/biocore/sortmerna/releases/download/v3.0.3/sortmerna-3.0.3-linux.sh
 
-# get sources
-wget https://github.com/biocore/sortmerna/archive/v3.0.2.tar.gz
+# view the installer usage
+chmod +x ./sortmerna-3.0.3-linux.sh
+./sortmerna-3.0.3-linux.sh --help
+Usage: dist/sortmerna-3.0.3-Linux.sh [options]
+Options: [defaults in brackets after descriptions]
+  --help            print this message
+  --version         print cmake installer version
+  --prefix=dir      directory in which to install
+  --include-subdir  include the sortmerna-3.0.3-Linux subdirectory
+  --exclude-subdir  exclude the sortmerna-3.0.3-Linux subdirectory
+  --skip-license    accept license
 
-# list the source tar content
-less v3.0.2.tar.gz
-drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.2/
--rw-rw-r-- root/root       119 2018-10-29 08:13 sortmerna-3.0.2/.gitignore
--rw-rw-r-- root/root      4909 2018-10-29 08:13 sortmerna-3.0.2/.travis.yml
-drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.2/3rdparty/
-drwxrwxr-x root/root         0 2018-10-29 08:13 sortmerna-3.0.2/3rdparty/alp/
--rw-rw-r-- root/root      1344 2018-10-29 08:13 sortmerna-3.0.2/3rdparty/alp/CMakeLists.txt
-...
+./sortmerna-3.0.3-Linux.sh --prefix=$HOME/sortmerna --exclude-subdir --skip-license
+sortmerna Installer Version: 3.0.3, Copyright (c) Clarity Genomics
+This is a self-extracting archive.
+The archive will be extracted to: /home/biocodz/sortmerna
 
-# extract sources
-tar xzf v3.0.2.tar.gz
+Using target directory: /home/biocodz/sortmerna
+Extracting, please wait...
 
-# create bin/
-mkdir sortmerna-3.0.2/bin
+Unpacking finished successfully
 
-# extract binaries into bin/
-tar xzf sortmerna-3.0.2-linux.tar.gz -C sortmerna-3.0.2/bin/
-
-# list the binaries
-ls -lrt sortmerna-3.0.2/bin/
--rwxrwxr-x 1 biocodz biocodz  174560 Oct 30 06:48 indexdb
--rw-rw-r-- 1 biocodz biocodz 1607120 Oct 30 06:48 libstdc++.so.6
--rwxrwxr-x 1 biocodz biocodz  849928 Oct 30 06:56 sortmerna
+ls -lrt /home/biocodz/sortmerna/bin/
+indexdb
+sortmerna
 
 # set PATH
-export PATH=$PWD/sortmerna-3.0.2/bin:$PATH
+export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-SortMeRNA version 3.0.2
-Build Date: Oct 29 2018
+SortMeRNA version 3.0.3
+Build Date: Dec 11 2019
 sortmerna_build_git_sha:@bc47297ce3e8580ef32d161255bfcbe1f718c322@
-sortmerna_build_git_date:@2018/10/29 12:35:39@
+sortmerna_build_git_date:@2019/01/11 12:35:39@
 
 # view help
 sortmerna -h
@@ -125,20 +103,29 @@ sortmerna -h
 
 ### General notes
 
+General steps for building Sortmerna from the sources are as follows:
+1. Prepare the build environment
+2. Get the sources from GitHub or from GitHub releases
+3. Build
+
+`HINT`: The minute details on setting the build environment and performing the build can be found in [travis.yml](https://github.com/biocore/sortmerna/blob/master/.travis.yml), which is a [Travis CI](https://travis-ci.org) configuration file used for Sortmerna automated builds.
+
 The build was tested using the following environments:
 1. Linux
-	* Ubuntu 14.04 Trusty with GCC 7.3.0
-	* Ubuntu 16.04 Xenial with GCC 7.3.0
+	* Ubuntu 18.04 Bionic with GCC 7.3.0 or Clang 7.0.0
+	* Ubuntu 16.04 Xenial with GCC 7.3.0 or Cland 7.0.0
 	* Ubuntu 16.04 Xenial with GCC 5.4.0 (default)
+	* Ubuntu 14.04 Trusty with GCC 7.3.0 or Cland 7.0.0
 	* Centos 6.6 with GCC 7.3.0
 2. Windows
 	* Windows 10 with Visual Studio 15 2017 Win64
-3. MAC
+3. MacOS
 	* macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
+	* macOS 10.12.6 (64-bit) with clang-900.0.39.2
 
 Getting latest GCC on _old_ Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VirtualBox Windows 10 host).
 
-`CMake` is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+`CMake-3.13` of higher is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 The following libraries have to be installed using a packager or to be built
 * `ZLib` (zlib1g-dev)
@@ -148,47 +135,36 @@ The following libraries have to be installed using a packager or to be built
 `Git` has to be installed _if_ building from the GitHub repository sources.
 
 The following Flags can be used when generating the build files using CMake (`-D<FLAG>=VALUE`):
+* `ZLIB_ROOT` (ZLIB installation directory)
+* `ZLIB_LIBRARY_DEBUG` (path to ZLib debug library location. Use if location is custom)
+* `ZLIB_LIBRARY_RELEASE` (path to ZLib release library locations. Use if location is custom)
+* `ROCKSDB_SRC` (RocksDB source root directory)
+* `ROCKSDB_HOME` (RocksDB installation directory)
 * `ROCKSDB_INCLUDE_DIR` (path to RocksDB include directory)
 * `ROCKSDB_LIB_DEBUG` (path to RocksDB library for Debug)
 * `ROCKSDB_LIB_RELEASE` (path to RocksDB library for Release)
-* `ZLIB_LIB_DEBUG` (path to ZLib debug library location. Use if location is custom)
-* `ZLIB_LIB_RELEASE` (path to ZLib release library locations. Use if location is custom)
-* `SRC_ZLIB` (download Zlib sources. Use if ZLib is to be built)
-* `SRC_ROCKSDB` (download RocksDB sources. Use if RocksDB is to be built)
-* `SRC_RAPIDJSON` (download RapidJson sources. Use if 'apt install rapidjson' not available)
+* `RAPIDJSON_HOME` (RapidJSON installation directory)
 * `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary if RocksDB is installed using packager)
-* `SET_ZLIB` (set to 1 to indicate ZLib was built from sources.)
 
 The above flags can be ignored if the dependencies (`zlib`, `rocksdb`, `rapidjson`) are installed using a standard packager like `apt` (on Linux) or `homebrew` (on Mac)
 
-General steps for building Sortmerna from the sources are as follows:
-1. Prepare the build environment
-2. Get the sources from GitHub or from GitHub releases
-3. Build
-
-The minute details on setting the build environment and performing the build can be found in [dnanexus folder](https://github.com/biocore/sortmerna/tree/master/dnanexus), which includes code for the build automation.
-
-The build environment (step 1) for Ubuntu 16.04 is prepared using [sortmerna-3.asset](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset)
-* The dependencies available as standard distros are prepared in [dxasset.json](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/dxasset.json) ( see this [line](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/dxasset.json#L10)).
-* Non-standard packages (GCC-7 and CMake) are prepared in [Makefile](https://github.com/biocore/sortmerna/blob/master/dnanexus/assets/sortmerna-3.asset/Makefile)
-
-The build (steps 2, 3) is performed using the applet [sortmerna-3.build.on.u16asset](https://github.com/biocore/sortmerna/tree/master/dnanexus/applets/sortmerna-3.build.on.u16asset)
-* Git clone is called [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L37)
-* CMake called to generate the build files [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L40)
-* Make is called [here](https://github.com/biocore/sortmerna/blob/master/dnanexus/applets/sortmerna-3.build.on.u16asset/src/build.sh#L45)
 
 ### Obtaining the source code
 
-The source code can be obtained using the following methods
+The source code can be obtained using `any` of the following:
 
-1. Download GitHub Release
+1. Download archived sources from GitHub Releases
 2. Clone the GitHub repository and use either master head branch (development) or checkout a release (tag)
 
 #### Download GitHub Release
 
-Visit [GitHub releases](https://github.com/biocore/sortmerna/releases)
+Visit [GitHub releases](https://github.com/biocore/sortmerna/releases) and click `Source code` link to download the archive, or alternatively on command line:
 
-#### Clone the GitHub Repository and use the head or a release
+```
+wget https://github.com/biocore/sortmerna/archive/v3.0.3.tar.gz
+```
+
+#### Clone the GitHub Repository and use the HEAD or a release
 
 ```
 # clone the repository
@@ -197,16 +173,23 @@ git clone https://github.com/biocore/sortmerna.git
 pushd sortmerna
 
 # If you need a particular release (tag)
-git checkout v3.0.2
+git checkout v3.0.3
 ```
 
 ### building on Linux OS
 
-(1) Install GCC if not already installed. SortmeRNA is C++14 compliant, so the GCC needs to be fairly new e.g. 5.4.0 works OK.
+(1) Install GCC or/and LLVM Clang if not already installed. SortmeRNA is C++14 compliant, so the compiler needs to be fairly new e.g. GCC 5.4.0 works OK.
 
 ```bash
 gcc --version
 	gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
+
+# for Clang
+cc --version
+	clang version 7.0.1-svn348686-1~exp1~20181211132844.50 (branches/release_70)
+	Target: x86_64-pc-linux-gnu
+	Thread model: posix
+	InstalledDir: /usr/bin
 ```
 
 (2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
@@ -219,80 +202,168 @@ sudo apt install zlib1g-dev librocksdb-dev rapidjson-dev
 ```
 	
 If the dependencies cannot be installed using a package manager, they need to be built (read below).
+
+(3) Build Zlib (fast - under a minute)
+```
+git clone https://github.com/madler/zlib.git
+mkdir -p zlib/build/Release
+pushd zlib/build/Release
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist ../.. 
+cmake --build . 
+cmake --build . --target install
+ls -lrt ../../dist/lib/ 
+popd
+```
+
+(4) Build RocksDB (may take ~20min)
+
+```bash
+git clone https://github.com/facebook/rocksdb.git;
+pushd rocksdb
+
+# checkout the latest release
+ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
+
+# modify thirdparty.inc to point to correct ZLIB installation. 
+# For example:
+vi thirdparty.inc
+...
+set(ZLIB_HOME ${HOME}/zlib/dist)
+set(ZLIB_INCLUDE ${ZLIB_HOME}/include)
+set(ZLIB_LIB_DEBUG ${ZLIB_HOME}/lib/libz.a)
+set(ZLIB_LIB_RELEASE ${ZLIB_HOME}/lib/libz.a)
+...
+
+mkdir -p build/Release
+pushd build/Release;
+cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX=../../dist \
+    -DWITH_ZLIB=1 \
+	-DWITH_GFLAGS=0 \
+	-DPORTABLE=1 \
+	-DWITH_TESTS=0 \
+	-DWITH_TOOLS=0 ../..
+
+cmake --build . ;
+cmake --build . --target install;
+popd;
+# check the distro
+ls -l rocksdb/dist
+	drwxrwxr-x 3 biocodz biocodz 4096 Dec 27 13:58 include
+	drwxrwxr-x 3 biocodz biocodz 4096 Dec 27 13:58 lib
+
+ls -l dist/lib
+	/home/biocodz/rocksdb/dist/lib/librocksdb.a
+	/home/biocodz/rocksdb/dist/lib/librocksdb.so.5.18.0
+popd
+```
+
+(5) Build RapidJson (fast - under a minute)
+
+```
+git clone https://github.com/Tencent/rapidjson.git
+mkdir -p rapidjson/build/Release
+pushd rapidjson/build/Release
+
+cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX=../../dist \
+    -DRAPIDJSON_BUILD_EXAMPLES=OFF \
+	-DRAPIDJSON_BUILD_DOC=OFF ../..
+
+cmake --build .
+cmake --build . --target install
+popd
+# check the distro (only 'include/' is necessary)
+ls -l ~/rapidjson/dist/
+	drwxrwxr-x 3 biocodz biocodz 4096 Dec 27 14:52 include
+	drwxrwxr-x 4 biocodz biocodz 4096 Dec 27 14:52 lib
+	drwxrwxr-x 3 biocodz biocodz 4096 Dec 27 14:52 share
+```
 	
-(3) Clone the Git repository
+(6) Build Sortmerna
 
 ```
 git clone https://github.com/biocore/sortmerna.git
+
+mkdir -p $HOME/sortmerna/build/Release
+pushd $HOME/sortmerna/build/Release
+
+# If alternative toolchains (compilers) are installed on the system
+
+# to use Clang
+rm CMakeCache.txt
+cmake -E env CC=/usr/bin/clang-7 CXX=/usr/bin/clang++-7 \
+cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=Release \
+	... # other flags as necessary (see above)
+	../..
+
+# to use GCC
+rm CMakeCache.txt
+CC=gcc-7 CXX=g++-7 cmake \
+cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=Release \
+	... # other flags as necessary (see above)
+	../..
+
+# If all the dependencies are available on the system
+cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX=../../dist \
+	-DCPACK_BINARY_TGZ=ON ../..
+
+##				OR
+#  If ZLib, RocksDB, and RapidJson were built from sources (see above)
+
+cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX=../../dist \
+	-DCPACK_BINARY_TGZ=ON \
+	-DZLIB_ROOT=~/zlib/dist \
+	-DZLIB_LIBRARY_RELEASE=~/zlib/dist/lib/libz.a \
+	-DZLIB_LIBRARY_DEBUG=~/zlib/dist/lib/libzd.a \
+	-DROCKSDB_HOME=~/rocksdb/dist \
+	-DROCKSDB_SRC=~/rocksdb \
+	-DRAPIDJSON_HOME=~/rapidjson/dist ../..
+
+cmake --build .
+cmake --build . --target install
+cmake --build . --target package
+
+popd
+
+# check the distro
+ls -l ~/sortmerna/dist
+	drwxrwxr-x 2 biocodz biocodz    4096 Jan  2 18:09 bin
+	-rwxrwxrwx 1 biocodz biocodz 2074449 Jan  2 18:09 sortmerna-3.0.3-Linux.sh
+	-rw-rw-r-- 1 biocodz biocodz 2070507 Jan  2 18:09 sortmerna-3.0.3-Linux.tar.gz
+	-rw-rw-r-- 1 biocodz biocodz 2877845 Jan  2 18:09 sortmerna-3.0.3-Linux.tar.Z
+
+# add the build binaries to the PATH
+export PATH="$HOME/sortmerna/dist/bin/indexdb:$HOME/sortmerna/dist/bin/sortmerna:$PATH"
+
+# test
+sortmerna --version
+	SortMeRNA version 3.0.3
+	Build Date: Jan  9 2019
+	sortmerna_build_git_sha:@2a619c87cdcb6e98c5460630182f161359cfd1d1@
+	sortmerna_build_git_date:@2019/01/09 18:04:04@
+
+sortmerna -h
 ```
-	
-(4) Generate the build files using CMake:
-
-```bash
-mkdir -p $SMR_HOME/build/Release
-pushd $SMR_HOME/build/Release
-```
-
-(4.1) If all the dependencies are available on the system
-
-```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../..
-```
-	
-(4.2) If RocksDB and RapidJson have to be installed from sources (see the flags description above)
-	
-```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 ../..
-```
-
-The above will download RocksDB and RapidJson into default locations ($SMR_HOME/3rdparty/rocksdb) and ($SMR_HOME/3rdparty/rapidjson) correspondingly.
-
-OR with custom values for RocksDB include/lib
-	
-```bash
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DSRC_ROCKSDB=1 -DSRC_RAPIDJSON=1 -DSET_ROCKSDB=1 -DROCKSDB_INCLUDE_DIR=$SOME_DIR/rocksdb/include -DROCKSDB_LIB_RELEASE=$SOME_DIR/rocksdb/build/Release ../..
-```
-
-NOTE: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
 
 Other compiler/linker flags that might be necessary depending on the system:
 
 * -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
 
-The above commands will perform necessary system check-ups, dependencies, and generate Makefile.
 
-(5) Compile and build executables:
+### Building on MacOS
 
-(5.1) If RocksDB needs to be built
+The build can be performed using either `Clang` or `GCC`.
 
-```bash
-mdir -p SMR_HOME/3rdparty/rocksdb/build/Release
-pushd SMR_HOME/3rdparty/rocksdb/build/Release
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../..
-make
-popd
-```
-
-(5.2)
-
-Build SortMeRNA
-
-```bash
-make
-```
-
-The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-
-```
-# add the build binaries to the PATH
-export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
-```
-
-### Building on Mac OS
-
-We tested the build on macOS 10.13 High Sierra (64-bit).
-We recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages required to build SortmeRNA.
-The build can be performed using either Clang or GCC.
+For third-party software installation we recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages. 
 
 (1) Install Homebrew:
 
@@ -313,62 +384,7 @@ brew install rocksdb
 brew install rapidjson
 ```
 
-(3) Clone the GIt repository
-
-```
-git clone https://github.com/biocore/sortmerna.git
-```
-
-(4) Generate the build files:
-
-```bash
-mkdir -p $SMR_HOME/build/Release
-pushd $SMR_HOME/build/Release
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../..
-	-- The CXX compiler identification is AppleClang 9.0.0.9000039
-	-- The C compiler identification is AppleClang 9.0.0.9000039
-	-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++
-	-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ -- works
-	-- Detecting CXX compiler ABI info
-	-- Detecting CXX compiler ABI info - done
-	-- Detecting CXX compile features
-	-- Detecting CXX compile features - done
-	-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc
-	-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc -- works
-	-- Detecting C compiler ABI info
-	-- Detecting C compiler ABI info - done
-	-- Detecting C compile features
-	-- Detecting C compile features - done
-	CMAKE_CXX_COMPILER_ID = AppleClang
-	CMAKE_CONFIGURATION_TYPES =
-	CMAKE_CXX_FLAGS_RELEASE: -O3 -DNDEBUG
-	EXTRA_CXX_FLAGS_RELEASE: -pthread
-	Cloning into 'concurrentqueue'...
-	Checking out files: 100% (1613/1613), done.
-	-- Configuring done
-	-- Generating done
-	-- Build files have been written to: /Users/bc/sortmerna/build/Release
-```
-
-Note: `$SMR_HOME` is the top directory where sortmerna code (e.g. git repo) is located.
-
-CMake will perform necessary system check-ups, dependencies, and generate Makefile.
-
-(5) Compile and build executables:
-
-```bash
-make
-```
-
-The binaries are created in `$SMR_HOME/build/Release/src/indexdb` and `$SMR_HOME/build/Release/src/sortmerna`
-
-Simply add the build binaries to the PATH e.g.
-
-```
-export PATH="$SMR_HOME/build/Release/src/indexdb:$SMR_HOME/build/Release/src/sortmerna:$PATH"
-```
-
-#### Install Clang on Mac
+(3) Install `Clang` on Mac (if necessary)
 
 Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
 install the latest version of Clang supported with Xcode. 
@@ -379,56 +395,22 @@ Xcode -> Preferences -> Downloads
 
 Under "Components", click to install "Command Line Tools"
 
-#### Configure shell to use Clang compiler on Mac
-
-(1) Check if you have Clang installed:
-
-```bash
-clang --version
-```
-
-(2a) If Clang is installed, set your compiler to Clang:
-
-```bash
-export CC=clang
-export CXX=clang++
-```
-
-(2b) If Clang is not installed, see [Clang for Mac OS](#clang-for-mac-os)
-for installation instructions.
-
-#### Configure shell to use GCC compiler on Mac
-
-(1) Check if you have GCC installed:
-
-```bash
-gcc --version
-```
-
-(2a) If GCC is installed, set your compiler to GCC:
-
-```bash
-export CC=gcc-mp-5.4
-export CXX=g++-mp-5.4
-```
-
-(2b) If GCC is not installed, it can be installed through Homebrew or MacPorts.
+(4) Install `GCC` (if necessary) using Homebrew.
 
 ```
+# list available flags
+brew options gcc7
 brew tap homebrew/versions
-brew install [flags] gcc54
+brew install [flags] gcc7
 ```
 
-To list available flags
-```
-brew options gcc54
-```
+The rest is the same as for Linux (see above starting with step 3)
+For older versions of OSX you may need to use `-DEXTRA_CXX_FLAGS_RELEASE="-pthread"`.
+
 
 ### Building on Windows OS
 
 MS Visual Studio Community edition and CMake for Windows are required for building SortMeRNA.
-
-We tested the build using `Visual Studio 15 2017 Win64` and `Visual Studio 14 2015 Win64`
 
 (1) Download and Install VS Community edition from [Visual Studio community website](https://www.visualstudio.com/vs/community/)
 
@@ -437,11 +419,11 @@ We tested the build using `Visual Studio 15 2017 Win64` and `Visual Studio 14 20
 CMake can be installed using either Windows Installer or binaries from archive.
 Download binary distributions from [here](https://cmake.org/download/)
 
-If you choose portable binaries (not the installer) e.g. cmake-3.11.0-rc1-win64-x64.zip,
+If you choose `portable` binaries (not the installer) e.g. `cmake-3.13.1-win64-x644.zip`,
 just download and extract the archive in a directory of your choice e.g.
 
 ```
-C:\libs\cmake-3.11.0-rc1-win64-x64\
+C:\libs\cmake-3.13.1-win64-x64\
 	bin\
 	doc\
 	man\
@@ -452,7 +434,7 @@ The `bin` directory above contains `cmake.exe` and `cmake-gui.exe`. Add the `bin
 Start `cmd` and
 
 ```
-set PATH=C:\libs\cmake-3.11.0-rc1-win64-x64\bin;%PATH%
+set PATH=C:\libs\cmake-3.13.1-win64-x64\bin;%PATH%
 cmake --version
 cmake-gui
 ```
@@ -484,46 +466,17 @@ set PATH=%GIT_HOME%\bin;%GIT_HOME%\usr\bin;%GIT_HOME%\mingw64\bin;%PATH%
 git --version
 ```
 
-(4) Clone the GIt repository
+(4) Configure and build Zlib library
+
+Because we use CMake as the build tool, the steps are the same a for Linux (see Linux instructions above).
+For the toolchain specify `cmake -G "Visual Studio 15 2017 Win64"`.
+No need to specify `-DCMAKE_BUILD_TYPE` because Visual studio is a multi-type
 
 ```
-git clone https://github.com/biocore/sortmerna.git
+git clone https://github.com/madler/zlib.git
 ```
 
-(5) Prepare the build files:
-
-On Windows we recommend using the `cmake-gui` utility.
-Either navigate to CMake installation directory (using Windows Explorer) and double-click
-`cmake-gui`, or launch it from command line as shown below:
-
-```
-set PATH=C:\libs\cmake-3.11.0-rc1-win64-x64\bin;%PATH%
-cmake-gui
-```
-
-In the CMake GUI
- - click `Browse source` button and navigate to the directory where Sortmerna sources are located (SMR_HOME).
- - click `Browse Build` and navigate to the directory where to build the binaries e.g. %SMR_HOME%\build
- - at the prompt select the Generator from the list e.g. "Visual Studio 15 2017 Win64"
- - click `Configure`
- - Set the following variables:
-   - ZLIB_INCLUDE_DIR=%SMR_HOME%/3rdparty/zlib
-   - ZLIB_LIB_DEBUG=%SMR_HOME%/3rdparty/zlib/build/Debug
-   - ZLIB_LIB_RELEASE=%SMR_HOME%/3rdparty/zlib/build/Release
-   - ROCKSDB_INCLUDE_DIR=%SMR_HOME%/3rdparty/rocksdb/include
-   - ROCKSDB_LIB_DEBUG=%SMR_HOME%/3rdparty/rocksdb/build/Debug
-   - ROCKSDB_LIB_RELEASE=%SMR_HOME%/3rdparty/rocksdb/build/Release
- - click `Configure` again
- - click `Generate` if all variables were set OK (no red background)
-
-The `Generate` generates VS project files in `%SMR_HOME%\build\` directory.
-`%SMR_HOME%` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
-
-(6) Configure and build Zlib library
-
-When Cmake-gui `Configure` is run it downloads required 3rd party source packages into `%SMR_HOME%\3rdparty\` directory.
-
-In Cmake-gui:
+If using CMake GUI:
 - click `Browse Source...` and select `%SMR_HOME%\3rdparty\zlib\`
 - click `Browse Build...` and select `%SMR_HOME%\3rdparty\zlib\build\` (confirm to create the `build` directory if not already exists)
 - click `Configure` and set the required variables or accept defaults
@@ -533,44 +486,138 @@ In Visual Studio
 - `File -> Open -> Project/Solution` and select `%SMR_HOME%\3rdparty\zlib\build\zlib.sln`
 - In Solution Explorer right-click `ALL_BUILD` and select `build` from drop-down menu
 
-(7) COnfigure and build RockDB library
+(5) Configure and build RockDB library
 
-In Cmake-gui:
+See instructions for Linux.
+
+If using CMake GUI:
 - click `Browse Source...` and select `%SMR_HOME%\3rdparty\rocksdb\`
 - click `Browse Build...` and select `%SMR_HOME%\3rdparty\rocksdb\build\` (confirm to create the `build` directory if not already exists)
 - click `Configure` and set the following variables:
   - Ungrouped Entries
-    - PORTABLE (checkbox)
+    - PORTABLE (check)
 	- GIT_EXECUTABLE (select path to `git.exe` e.g. `C:/libs/git-2.16.2-64/bin/git.exe`
   - WITH
     - WITH_MD_LIBRARY
 	- WITH_ZLIB
+	- WITH_TESTS=0
+	- WITH_TOOLS=0
 	- Accept defaults for the rest
+  - CMAKE
+	- CMAKE_INSTALL_PREFIX=../../dist
 - click `Generate`
 
 In Visual Studio
 - `File -> Open -> Project/Solution` and select `%SMR_HOME%\3rdparty\rocksdb\build\rocksdb.sln`
 - In Solution Explorer right-click `ALL_BUILD` and select `build` from drop-down menu
 
-(8) Build SormeRNA
+(6) Configure and build RapidJson
 
-In Visual Studio:
+See instruactions for Linux
+
+(7) Configure and build Dirent for Windows [2]
+
+This is optional. If CMake won't find the Dirent when configuring Sortemrna, it will download it from GitHub [2] into `sortmerna/3rdparty/` folder. Only a single header file is used, so no build is required.
+
+(8) Configure and build Sortmerna
+
+Using standard `cmd` Windows shell:
+
+`SMR_HOME` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
+`LIBS_HOME` is the directory where third party libraries are installed i.e. ZLib, RocksDB etc.
+
+```
+git clone https://github.com/biocore/sortmerna.git
+
+set SMR_HOME=C:/projects/sortmerna 
+set LIBS_HOME=C:/libs
+
+mkdir %SMR_HOME%/build
+pushd %SMR_HOME%/build
+
+cmake -G "Visual Studio 15 2017 Win64" \
+	-DCMAKE_INSTALL_PREFIX=%SMR_HOME%/dist \
+	-DCPACK_BINARY_7Z=ON \
+	-DCPACK_SOURCE_7Z=ON \
+	-DCPACK_SOURCE_ZIP=OFF \
+	-DWITH_MD_LIBRARY=ON \
+	-DZLIB_ROOT="%LIBS_HOME%/zlib/dist" \
+	-DZLIB_LIBRARY_RELEASE="%LIBS_HOME%/zlib/dist/lib/zlibstatic.lib" \
+	-DZLIB_LIBRARY_DEBUG="%LIBS_HOME%/zlib/dist/lib/zlibstaticd.lib" \
+	-DROCKSDB_SRC="%LIBS_HOME%/rocksdb" \
+	-DROCKSDB_HOME="%LIBS_HOME%/rocksdb/dist" \
+	-DRAPIDJSON_HOME="%LIBS_HOME%s/rapidjson/dist" \
+	-DDIRENTWIN_HOME=%LIBS_HOME%/dirent ..
+
+# possible builds: Debug | Release | RelWithDebInfo | MinSizeRel
+# Debug - default
+cmake --build .
+#     OR Release
+cmake --build . --config Release
+
+# generate distro
+cmake --build . --target install
+cmake --build . --target package
+
+# test
+set PATH=%SMR_HOME%\dist\bin;%PATH%
+sortmerna --version
+```
+
+IF using CMake GUI
+
+To launch `CMake GUI` navigate to CMake installation directory (using Windows Explorer) and double-click
+`cmake-gui`, or launch it from command line:
+
+```
+set PATH=C:\libs\cmake-3.13.1-win64-x64\bin;%PATH%
+cmake-gui
+```
+
+In GUI:
+ - click `Browse source` button and navigate to the directory where Sortmerna sources are located (SMR_HOME).
+ - click `Browse Build` and navigate to the directory where to build the binaries e.g. `%SMR_HOME%\build`
+ - at the prompt select the Generator from the list e.g. "Visual Studio 15 2017 Win64"
+ - click `Configure`
+
+ - Set the same variables as shown above for command line i.e.:
+	- CMAKE_INSTALL_PREFIX
+	- CPACK_BINARY_7Z
+	- CPACK_SOURCE_7Z
+	- CPACK_SOURCE_ZIP
+	- WITH_MD_LIBRARY
+	- ZLIB_ROOT
+	- ZLIB_LIBRARY_RELEASE
+	- ZLIB_LIBRARY_DEBUG
+	- ROCKSDB_SRC
+	- ROCKSDB_HOME
+	- RAPIDJSON_HOME
+	- DIRENTWIN_HOME
+
+ - click `Configure` again
+ - click `Generate` if all variables are OK (no red background)
+
+The `Generate` generates VS project files in `%SMR_HOME%\build\` directory.
+Start Visual Studio and:
 - `File -> Open -> Project/Solution .. open %SMR_HOME%\build\sortmerna.sln`
 - Select desired build type: `Release | Debug | RelWithDebInfo | MinSizeRel`.
 - In Solution explorer right-click `ALL_BUILD' and select `build` in drop-down menu.
+- Execute target 'INSTALL'
+- Execute target 'PACKAGE'
 
-Depending on the build type the binaries are generated in 
-`%SMR_HOME%\build\src\sortmerna\Release` (or `Debug | RelWithDebInfo | MinSizeRel`).
+## DNANexus cloud
 
-(9) Add sortmerna executables to PATH
+So far (since 20181117) we were not able to make Sortmerna application public due DNANexus lack of interest or resources.
+If you need the access to the application, please, contact `biocodz at protonmail dot com` to be added to the list of authorized users.
 
-```
-set PATH=%SMR_HOME%\build\src\indexdb\Release;%SMR_HOME%\build\src\sortmerna\Release;%PATH%
-```
+* Ready-to-use `sortmerna` application is available on DNANexus cloud. Just upload your data and run the application.
+* Sortmerna distribution also contains DNANexus applets for building, testing and running Sortmerna. See [dnanexus](https://github.com/biocore/sortmerna/blob/master/dnanexus/README.md) subdirectory for detailed instructions.
+
+Note that DNANexus trial accounts can be used.
 
 # Running
 
-Python code is provided for running integration tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.5 or higher.
+Python code is provided for running integration tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.
 
 Tests can be run with the following command:
 
@@ -654,4 +701,5 @@ command was run.
 1. Homebrew 
 	- [home](https://brew.sh/)
 	- [github](https://github.com/Homebrew)
+2. [Dirent for Windows](https://github.com/tronkko/dirent.git)
 	
