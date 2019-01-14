@@ -50,8 +50,8 @@ The following methods can be used:
 Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
 
 Any of the following 2 files can be used for installation:
-- `sortmerna-<SMR_VER>-linux.sh` (convenience script that embeds `sortmerna-<SMR_VER>-linux.tar.gz`)
-- `sortmerna-<SMR_VER>-linux.tar.gz`
+- `sortmerna-<VERSION>-linux.sh` (convenience script that embeds `sortmerna-<VERSION>-linux.tar.gz`)
+- `sortmerna-<VERSION>-linux.tar.gz`
 
 Installation commands in `bash`:
 
@@ -135,16 +135,13 @@ The following libraries have to be installed using a packager or to be built
 `Git` has to be installed _if_ building from the GitHub repository sources.
 
 The following Flags can be used when generating the build files using CMake (`-D<FLAG>=VALUE`):
+* `CMAKE_INSTALL_PREFIX` (directory path to use for installation)
 * `ZLIB_ROOT` (ZLIB installation directory)
 * `ZLIB_LIBRARY_DEBUG` (path to ZLib debug library location. Use if location is custom)
 * `ZLIB_LIBRARY_RELEASE` (path to ZLib release library locations. Use if location is custom)
 * `ROCKSDB_SRC` (RocksDB source root directory)
 * `ROCKSDB_HOME` (RocksDB installation directory)
-* `ROCKSDB_INCLUDE_DIR` (path to RocksDB include directory)
-* `ROCKSDB_LIB_DEBUG` (path to RocksDB library for Debug)
-* `ROCKSDB_LIB_RELEASE` (path to RocksDB library for Release)
 * `RAPIDJSON_HOME` (RapidJSON installation directory)
-* `SET_ROCKSDB` (set to 1 to indicate RocksDB was built from sources. Not nesessary if RocksDB is installed using packager)
 
 The above flags can be ignored if the dependencies (`zlib`, `rocksdb`, `rapidjson`) are installed using a standard packager like `apt` (on Linux) or `homebrew` (on Mac)
 
@@ -455,9 +452,9 @@ C:\libs\git-2.16.2-64\
 	tmp\
 	usr\
 ```
-You can use either `bash.exe` or native Windows CMD `cmd.exe`.
+You can use either `bash.exe` provided with the Git distro, or native Windows CMD `cmd.exe`.
 
-If you choose to work with CMD, add the following to your path:
+If you choose to work with `cmd.exe`, add the following to your path:
 
 ```
 set GIT_HOME=C:\libs\git-2.16.2-64
@@ -470,36 +467,38 @@ git --version
 
 Because we use CMake as the build tool, the steps are the same a for Linux (see Linux instructions above).
 For the toolchain specify `cmake -G "Visual Studio 15 2017 Win64"`.
-No need to specify `-DCMAKE_BUILD_TYPE` because Visual studio is a multi-type
+No need to specify `-DCMAKE_BUILD_TYPE` because Visual studio is a multi-type configuration in CMake parlant.
 
 ```
 git clone https://github.com/madler/zlib.git
 ```
 
+If using command line the steps are the same as on Linux (see above)
+
 If using CMake GUI:
-- click `Browse Source...` and select `%SMR_HOME%\3rdparty\zlib\`
-- click `Browse Build...` and select `%SMR_HOME%\3rdparty\zlib\build\` (confirm to create the `build` directory if not already exists)
+- click `Browse Source...` and select `%ZLIB_HOME%` i.e. the root directory where the ZLib sources are.
+- click `Browse Build...` and select `%ZLIB_HOME%\build\` (confirm to create the `build` directory if not already exists)
 - click `Configure` and set the required variables or accept defaults
 - click `Generate`
 
 In Visual Studio
-- `File -> Open -> Project/Solution` and select `%SMR_HOME%\3rdparty\zlib\build\zlib.sln`
+- `File -> Open -> Project/Solution` and select `%ZLIB_HOME%\build\zlib.sln`
 - In Solution Explorer right-click `ALL_BUILD` and select `build` from drop-down menu
 
 (5) Configure and build RockDB library
 
-See instructions for Linux.
+See instructions for Linux if using command line.
 
 If using CMake GUI:
-- click `Browse Source...` and select `%SMR_HOME%\3rdparty\rocksdb\`
-- click `Browse Build...` and select `%SMR_HOME%\3rdparty\rocksdb\build\` (confirm to create the `build` directory if not already exists)
+- click `Browse Source...` and select `%ROCKSDB_SRC%"`
+- click `Browse Build...` and select `%ROCKSDB_SRC%\build\` (confirm to create the `build` directory if not already exists)
 - click `Configure` and set the following variables:
   - Ungrouped Entries
     - PORTABLE (check)
 	- GIT_EXECUTABLE (select path to `git.exe` e.g. `C:/libs/git-2.16.2-64/bin/git.exe`
   - WITH
-    - WITH_MD_LIBRARY
-	- WITH_ZLIB
+    - WITH_MD_LIBRARY=1
+	- WITH_ZLIB=1
 	- WITH_TESTS=0
 	- WITH_TOOLS=0
 	- Accept defaults for the rest
@@ -508,12 +507,12 @@ If using CMake GUI:
 - click `Generate`
 
 In Visual Studio
-- `File -> Open -> Project/Solution` and select `%SMR_HOME%\3rdparty\rocksdb\build\rocksdb.sln`
+- `File -> Open -> Project/Solution` and select `%ROCKSDB_SRC%\build\rocksdb.sln`
 - In Solution Explorer right-click `ALL_BUILD` and select `build` from drop-down menu
 
 (6) Configure and build RapidJson
 
-See instruactions for Linux
+See instructions for Linux if using command line.
 
 (7) Configure and build Dirent for Windows [2]
 
@@ -524,13 +523,11 @@ This is optional. If CMake won't find the Dirent when configuring Sortemrna, it 
 Using standard `cmd` Windows shell:
 
 `SMR_HOME` is the top directory where SortMeRNA source distribution (e.g. Git repo) is installed.
-`LIBS_HOME` is the directory where third party libraries are installed i.e. ZLib, RocksDB etc.
 
 ```
 git clone https://github.com/biocore/sortmerna.git
 
 set SMR_HOME=C:/projects/sortmerna 
-set LIBS_HOME=C:/libs
 
 mkdir %SMR_HOME%/build
 pushd %SMR_HOME%/build
@@ -542,12 +539,12 @@ cmake -G "Visual Studio 15 2017 Win64" \
 	-DCPACK_SOURCE_ZIP=OFF \
 	-DWITH_MD_LIBRARY=ON \
 	-DZLIB_ROOT="%LIBS_HOME%/zlib/dist" \
-	-DZLIB_LIBRARY_RELEASE="%LIBS_HOME%/zlib/dist/lib/zlibstatic.lib" \
-	-DZLIB_LIBRARY_DEBUG="%LIBS_HOME%/zlib/dist/lib/zlibstaticd.lib" \
-	-DROCKSDB_SRC="%LIBS_HOME%/rocksdb" \
-	-DROCKSDB_HOME="%LIBS_HOME%/rocksdb/dist" \
-	-DRAPIDJSON_HOME="%LIBS_HOME%s/rapidjson/dist" \
-	-DDIRENTWIN_HOME=%LIBS_HOME%/dirent ..
+	-DZLIB_LIBRARY_RELEASE="%ZLIB_HOME%/dist/lib/zlibstatic.lib" \
+	-DZLIB_LIBRARY_DEBUG="%ZLIB_HOME%/dist/lib/zlibstaticd.lib" \
+	-DROCKSDB_SRC="%ROCKSDB_SRC%" \
+	-DROCKSDB_HOME="%ROCKSDB_SRC%/dist" \
+	-DRAPIDJSON_HOME="%RAPIDJSON_SRC/dist" \
+	-DDIRENTWIN_HOME=%DIRENTWIN_SRC%/dist ..
 
 # possible builds: Debug | Release | RelWithDebInfo | MinSizeRel
 # Debug - default
@@ -564,7 +561,7 @@ set PATH=%SMR_HOME%\dist\bin;%PATH%
 sortmerna --version
 ```
 
-IF using CMake GUI
+If using CMake GUI
 
 To launch `CMake GUI` navigate to CMake installation directory (using Windows Explorer) and double-click
 `cmake-gui`, or launch it from command line:
