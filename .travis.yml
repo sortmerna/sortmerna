@@ -218,17 +218,7 @@ script:
   - if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
-after_success:
-  # TODO: move to 'before_deploy' after testing
-  - echo "move this to 'before_deploy' after testing'"
-  - find ${TRAVIS_BUILD_DIR}/dist -type f
-  - echo "Get git tag"
-  - |
-    xtag=$(git describe --exact-match HEAD 2>/dev/null); \
-    if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
-  - echo "Deploying SMR version [$SMR_VER]"
-  - pwd
-  - env
+#after_success:
 
 before_deploy:
   - find ${TRAVIS_BUILD_DIR}/dist -type f
