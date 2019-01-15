@@ -234,23 +234,25 @@ script:
 
 before_deploy:
   - find ${TRAVIS_BUILD_DIR}/dist -type f
-  - echo "Get git tag"
-  - |
-    xtag=$(git describe --exact-match HEAD 2>/dev/null); \
-    if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
-  - echo "Deploying SMR version [$SMR_VER]"
+  #- echo "Get git tag"
+  #- |
+  #  xtag=$(git describe --exact-match HEAD 2>/dev/null); \
+  #  if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
+  - echo "Deploying SMR version [${TRAVIS_TAG:1}]"
   - pwd
   - env
 
-deploy:
-  provider: releases
-  api_key: "GITHUB OAUTH TOKEN"
-  file: 
-    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${SMR_VER}-Linux.sh
-    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${SMR_VER}-Linux.tar.gz
-  overwrite: true
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $ENV = "Linux+LLVM_clang-7"
+# This fails with "401 - Bad credentials // See: https://developer.github.com/v3 (Octokit::Unauthorized)"
+# useless until the 'org' to 'com' migration is done.
+#deploy:
+#  provider: releases
+#  api_key: "GITHUB OAUTH TOKEN"
+#  file: 
+#    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
+#    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.tar.gz
+#  overwrite: true
+#  skip_cleanup: true
+#  on:
+#    tags: true
+#    condition: $ENV = "Linux+LLVM_clang-7"
 ## END .travis.yml
