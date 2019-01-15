@@ -144,8 +144,11 @@ script:
   - mkdir -p rapidjson/build/Release
   - pushd rapidjson/build/Release
   - |
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-    -DRAPIDJSON_BUILD_EXAMPLES=OFF  -DRAPIDJSON_BUILD_DOC=OFF -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
+    cmake -G "Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DRAPIDJSON_BUILD_EXAMPLES=OFF  \
+    -DRAPIDJSON_BUILD_DOC=OFF \
+    -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
   - cmake --build .
   - cmake --build . --target install
   - popd
@@ -154,7 +157,10 @@ script:
   - git clone https://github.com/madler/zlib.git;
   - mkdir -p zlib/build/Release;
   - pushd zlib/build/Release;
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
+  - |
+    cmake -G "Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE=Release\
+    -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
   - cmake --build . ;
   - cmake --build . --target install;
   - ls -lrt ../../dist/lib/ ; 
@@ -177,8 +183,14 @@ script:
   - mkdir -p build/Release;
   - pushd build/Release;
   - |
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist \
-    -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
+    cmake -G "Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=../../dist \
+    -DWITH_ZLIB=1 \
+    -DWITH_GFLAGS=0 \
+    -DPORTABLE=1 \
+    -DWITH_TESTS=0 \
+    -DWITH_TOOLS=0 ../.. ;
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
   #- if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then

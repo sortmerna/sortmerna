@@ -41,9 +41,11 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
 # Getting Started
 
-SortMeRNA can be run/built on Windows, Linux, and Mac.
+SortMeRNA can be run/built on Linux, Mac, and Windows. 
 
-The following methods can be used:
+`CMake` is used for performing portable builds and besides makes the building process quite the same on all the systems.
+
+The following methods are available to start using SortMeRNA:
 
 ## Using GitHub release binaries
 
@@ -614,7 +616,7 @@ Note that DNANexus trial accounts can be used.
 
 # Running
 
-Python code is provided for running integration tests in $SRM_HOME/tests (%SRM_HOME%\tests) and requires Python 3.
+Python code is provided for running integration tests in $SMR_HOME/tests (%SMR_HOME%\tests) and requires Python 3.
 
 Tests can be run with the following command:
 
@@ -677,7 +679,7 @@ For questions and comments, please use the SortMeRNA [forum](https://groups.goog
 # Documentation
 
 If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, you can generate the documentation
-by modifying the following lines in ```doxygen_configure.txt```:
+by modifying the following lines in `doxygen_configure.txt`:
 
 ```
 INPUT = /path/to/sortmerna/include /path/to/sortmerna/src
