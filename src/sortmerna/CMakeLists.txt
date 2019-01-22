@@ -18,6 +18,15 @@ find_package(RocksDB
   NO_DEFAULT_PATH
 )
 
+# fix for RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
+if(NOT WIN32)
+	if(ZLIB_LIBRARY_RELEASE)
+		set_target_properties(RocksDB::rocksdb PROPERTIES
+			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};-lpthread"
+		)
+	endif()
+endif()
+
 include(FindZLIB)
 # prevent CONFIG search mode
 find_package(ZLIB MODULE REQUIRED)

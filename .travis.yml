@@ -170,16 +170,6 @@ script:
   - git clone https://github.com/facebook/rocksdb.git;
   - pushd rocksdb
   - ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
-  # modify thirdparty.inc
-  - mv thirdparty.inc _thirdparty.inc
-  - |
-    ZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist; \
-    sed -E -e "s|set\(ZLIB_HOME .*\)|set\(ZLIB_HOME ${ZLIB_ROOT}\)|" \
-    -e 's/set\(ZLIB_INCLUDE .*\)/set\(ZLIB_INCLUDE ${ZLIB_HOME}\/include\)/' \
-    -e 's/set\(ZLIB_LIB_DEBUG .*\)/set\(ZLIB_LIB_DEBUG ${ZLIB_HOME}\/lib\/libz\.a\)/' \
-    -e 's/set\(ZLIB_LIB_RELEASE .*\)/set\(ZLIB_LIB_RELEASE ${ZLIB_HOME}\/lib\/libz\.a\)/' \
-    _thirdparty.inc > thirdparty.inc
-  - cat thirdparty.inc
   - mkdir -p build/Release;
   - pushd build/Release;
   - |
@@ -187,6 +177,7 @@ script:
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=../../dist \
     -DWITH_ZLIB=1 \
+    -DZLIB_ROOT_DIR=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
     -DWITH_GFLAGS=0 \
     -DPORTABLE=1 \
     -DWITH_TESTS=0 \

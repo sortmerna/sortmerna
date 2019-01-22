@@ -214,7 +214,7 @@ ls -lrt ../../dist/lib/
 popd
 ```
 
-(4) Build RocksDB (may take ~20min)
+(4) Build RocksDB (may take couple hours depending on the system)
 
 ```bash
 git clone https://github.com/facebook/rocksdb.git;
@@ -223,21 +223,12 @@ pushd rocksdb
 # checkout the latest release
 ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
 
-# modify thirdparty.inc to point to correct ZLIB installation. 
-# For example:
-vi thirdparty.inc
-...
-set(ZLIB_HOME ${HOME}/zlib/dist)
-set(ZLIB_INCLUDE ${ZLIB_HOME}/include)
-set(ZLIB_LIB_DEBUG ${ZLIB_HOME}/lib/libz.a)
-set(ZLIB_LIB_RELEASE ${ZLIB_HOME}/lib/libz.a)
-...
-
 mkdir -p build/Release
 pushd build/Release;
 cmake -G "Unix Makefiles" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_INSTALL_PREFIX=../../dist \
+	-DZLIB_ROOT_DIR=~/zlib/dist \
     -DWITH_ZLIB=1 \
 	-DWITH_GFLAGS=0 \
 	-DPORTABLE=1 \
@@ -254,7 +245,7 @@ ls -l rocksdb/dist
 
 ls -l dist/lib
 	/home/biocodz/rocksdb/dist/lib/librocksdb.a
-	/home/biocodz/rocksdb/dist/lib/librocksdb.so.5.18.0
+	/home/biocodz/rocksdb/dist/lib/librocksdb.so.5.17.2
 popd
 ```
 
@@ -322,10 +313,11 @@ cmake -G "Unix Makefiles" \
 	-DCPACK_BINARY_TGZ=ON \
 	-DZLIB_ROOT=~/zlib/dist \
 	-DZLIB_LIBRARY_RELEASE=~/zlib/dist/lib/libz.a \
-	-DZLIB_LIBRARY_DEBUG=~/zlib/dist/lib/libzd.a \
 	-DROCKSDB_HOME=~/rocksdb/dist \
 	-DROCKSDB_SRC=~/rocksdb \
 	-DRAPIDJSON_HOME=~/rapidjson/dist ../..
+
+# NOTE: use -DZLIB_LIBRARY_DEBUG=~/zlib/dist/lib/libzd.a if building for DEBUG (of course ZLIB has to be also DEBUG built)
 
 cmake --build .
 cmake --build . --target install
@@ -489,7 +481,45 @@ In Visual Studio
 
 (5) Configure and build RockDB library
 
-See instructions for Linux if using command line.
+```
+# modify thirdparty.inc to point to a correct ZLIB installation.
+# For example:
+...
+set(ZLIB_HOME C:/libs/zlib/dist)
+set(ZLIB_INCLUDE ${ZLIB_HOME}/include)
+set(ZLIB_LIB_DEBUG ${ZLIB_HOME}/lib/zlibstaticd.lib)
+set(ZLIB_LIB_RELEASE ${ZLIB_HOME}/lib/zlibstatic.lib)
+...
+```
+
+If using command line:
+
+```
+set SMR_HOME=C:/myprojects/sortmerna
+mkdir %SMR_HOME%\build
+pushd %SMR_HOME%\build
+
+cmake -G "Visual Studio 15 2017 Win64" \
+	-DCMAKE_INSTALL_PREFIX=%SMR_HOME%/dist \
+	-DCPACK_BINARY_7Z=ON \
+	-DCPACK_SOURCE_7Z=ON \
+	-DCPACK_SOURCE_ZIP=OFF \
+	-DWITH_MD_LIBRARY=ON \
+	-DZLIB_ROOT="C:/libs/zlib/dist" \
+	-DZLIB_LIBRARY_RELEASE="C:/libs/zlib/dist/lib/zlibstatic.lib" \
+	-DZLIB_LIBRARY_DEBUG="C:/libs/zlib/dist/lib/zlibstaticd.lib" \
+	-DROCKSDB_SRC="C:/libs/rocksdb" \
+	-DROCKSDB_HOME="C:/libs/rocksdb/dist/d4" \
+	-DRAPIDJSON_HOME="C:/libs/rapidjson/dist" \
+	-DDIRENTWIN_HOME=C:/libs/dirent ..
+
+cmake --build .                   # build DEBUG (default)
+# 		OR
+cmake --build . --config Release  # build RELEASE
+
+cmake --build . --target install
+cmake --build . --target package
+```
 
 If using CMake GUI:
 - click `Browse Source...` and select `%ROCKSDB_SRC%"`
