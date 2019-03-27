@@ -22,7 +22,7 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
-#include "reader.hpp"
+#include "read_control.hpp"
 #include "writer.hpp"
 
 // forward
@@ -213,7 +213,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 
 				for (int i = 0; i < N_READ_THREADS; ++i)
 				{
-					tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+					tpool.addJob(ReadControl(opts, readQueue, kvdb));
 				}
 
 				for (int i = 0; i < opts.num_write_thread; i++)

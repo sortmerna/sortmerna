@@ -37,6 +37,7 @@
 
 #include <sys/time.h>
 #include "config.h"
+//#include <filesystem> // C++ 17
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
@@ -113,6 +114,11 @@ const char DELIM = ':';
 #define READLEN 30000
 
 #define LOCKQEUEU // use Locking queue for storing the Reads
+#define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
+#define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
+
+#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << MSG << std::endl;
+#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << MSG << std::endl;
 
 #endif
 

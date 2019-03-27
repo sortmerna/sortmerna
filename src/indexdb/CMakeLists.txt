@@ -47,7 +47,15 @@ else()
 		${CMAKE_SOURCE_DIR}/include
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 	)
+	
+	if(PORTABLE)
+		target_link_options(indexdb -static)
+	endif(PORTABLE)
 endif()
+
+
+
+message("LINK_OPTIONS: ${LINK_OPTIONS}")
 
 if(WIN32)
 	add_dependencies(indexdb cmph winapi build_version)

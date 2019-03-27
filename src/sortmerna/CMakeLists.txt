@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(sortmerna CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
@@ -17,6 +17,8 @@ find_package(RocksDB
   PATHS ${ROCKSDB_HOME}
   NO_DEFAULT_PATH
 )
+
+find_package(gflags REQUIRED)
 
 # fix for RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
@@ -49,6 +51,7 @@ set(SMR_SRCS
 	paralleltraversal.cpp
 	processor.cpp
 	read.cpp
+	read_control.cpp
 	reader.cpp
 	readstats.cpp
 	references.cpp
@@ -67,6 +70,7 @@ target_link_libraries(smr_objs
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
 		alp
+		gflags
 )
 if(WIN32)
 	target_include_directories(smr_objs 
@@ -100,6 +104,7 @@ if(WIN32)
 		ZLIB::ZLIB
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
+		gflags
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
@@ -122,6 +127,7 @@ else()
 		ZLIB::ZLIB
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
+		gflags::gflags
 		${CMAKE_THREAD_LIBS_INIT}
 	)
 	add_dependencies(sortmerna 

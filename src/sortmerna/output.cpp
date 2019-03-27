@@ -41,7 +41,7 @@
 #include "readsqueue.hpp"
 #include "index.hpp"
 #include "references.hpp"
-#include "reader.hpp"
+#include "read_control.hpp"
 #include "processor.hpp"
 #include "readstats.hpp"
 #include "read.hpp"
@@ -805,10 +805,9 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;
-	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << std::endl << __func__ << ":" << __LINE__ << " Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
+	ss << std::endl << STAMP << " Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -834,10 +833,12 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << std::endl << __func__ << ":" << __LINE__ << " Loading reference " 
+			ss << std::endl << STAMP << " Loading reference " 
 				<< index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
+
 			auto starts = std::chrono::high_resolution_clock::now();
+
 			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
@@ -847,7 +848,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 
 			for (int i = 0; i < N_READ_THREADS; ++i)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+				tpool.addJob(ReadControl(opts, readQueue, kvdb));
 			}
 
 			// add processor jobs
@@ -855,7 +856,6 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 			{
 				tpool.addJob(ReportProcessor("report_proc_" + std::to_string(i), readQueue, opts, refs, output, refstats, reportsJob));
 			}
-			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part
 			refs.clear();
 			writeQueue.reset(N_PROC_THREADS);

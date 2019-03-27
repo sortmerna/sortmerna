@@ -13,6 +13,7 @@
 #include "build_version.h"
 #include "options.hpp"
 #include "common.hpp"
+#include "gzip.hpp"
 
  // standard
 #include <limits>
@@ -20,6 +21,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <cstring> // strerror, strrchr, memcpy, strcpy, strpbrk
 #include <fcntl.h>
 
@@ -35,596 +37,360 @@
 // forward
 void welcome();
 void printlist();
-std::string get_user_home();
+std::string get_user_home(); // util.cpp
 unsigned int list_dir(std::string dpath);
 bool dirExists(std::string dpath);
+std::string trim_leading_dashes(std::string const& name); // util.cpp
+std::string get_basename(const std::string &file); // util.cpp
+std::streampos filesize(const std::string &file); // util.cpp
+std::string string_hash(const std::string &val); // util.cpp
 
-void Runopts::optReads(char **argv, int &narg)
+Runopts::Runopts(int argc, char**argv, bool dryrun)
 {
-	if (have_reads_gz)
+	process(argc, argv, dryrun);
+	if (skiplengths.empty())
 	{
-		fprintf(stderr, "\n %sERROR%s: option --reads-gz has also been set, only one of "
-			"--reads-gz or --reads is permitted\n", RED, COLOFF);
+		for (int i = 0; i < indexfiles.size(); ++i)
+		{
+			skiplengths.push_back({ 0,0,0 });
+		}
+	}
+}
+
+/* 
+ * validates file be it plain or zipped and sets corresponding options 
+ */
+void Runopts::opt_reads(const std::string &file)
+{
+	std::stringstream ss;
+	if (file.size() == 0)
+	{
+		ERR(": option '--reads' requires a path to a reads FASTA/FASTQ file");
 		exit(EXIT_FAILURE);
 	}
-	if (argv[narg + 1] == NULL)
+
+	bool gzipped = "gz" == file.substr(file.rfind('.') + 1); // file ends with 'gz'
+	std::ifstream ifs(file, std::ios_base::in | std::ios_base::binary);
+	std::string line;
+	Gzip gzip(gzipped);
+	int stat = gzip.getline(ifs, line);
+	if (RL_OK == stat)
 	{
-		fprintf(stderr, "\n  %sERROR%s: a path to a reads FASTA/FASTQ file "
-			"must be given after the option --reads\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
+		is_gz = gzipped;
 	}
+	else if (!gzipped)
+	{
+		// try reading as gzipped even though file has no 'gz' extension
+		gzip.~Gzip(); // destroy
+		Gzip gzip(true);
+		stat = gzip.getline(ifs, line);
+		if (RL_OK == stat) is_gz = true;
+	}
+
+	if (RL_OK == stat) 
+		have_reads = true;
 	else
 	{
-		// check the file exists
-		if (FILE *file = fopen(argv[narg + 1], "rb"))
-		{
-			// get size of file
-			fseek(file, 0, SEEK_END);
-			size_t filesize = ftell(file);
-
-			// set exit BOOL to exit program after outputting
-			// empty files, sortmerna will not execute after
-			// that call (in paralleltraversal.cpp)
-			if (!filesize) exit_early = true;
-			// reset file pointer to start of file
-			fseek(file, 0, SEEK_SET);
-
-			readsfile = argv[narg + 1];
-			narg += 2;
-			fclose(file);
-
-			have_reads = true;
-		}
-		else
-		{
-			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				"%s.\n\n", RED, COLOFF, argv[narg + 1], strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	}
-} // ~Runopts::optReads
-
-void Runopts::optReadsGz(char **argv, int &narg)
-{
-	if (have_reads)
-	{
-		fprintf(stderr, "\n %sERROR%s: option --reads has also been set, only one of "
-			"--reads or --reads-gz is permitted\n", RED, COLOFF);
+		ss << ": Could not read from file " << file << " [" << strerror(errno) << "]";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
-	if (argv[narg + 1] == NULL)
-	{
-		fprintf(stderr, "\n  %sERROR%s: a path to a reads FASTA/FASTQ compressed (.zip, .gz) file "
-			"must be given after the option --reads-gz\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		// check the file exists
-		if (gzFile file = gzopen(argv[narg + 1], "r"))
-		{
-			// get size of file
-			gzseek(file, 0, SEEK_END);
-			size_t filesize = gztell(file);
 
-			// set exit BOOL to exit program after outputting
-			// empty files, sortmerna will not execute after
-			// that call (in paralleltraversal.cpp)
-			if (!filesize) exit_early = true;
-			// reset file pointer to start of file
-			gzseek(file, 0, SEEK_SET);
+	if (ifs.is_open())
+		ifs.close();
+} // ~Runopts::opt_reads
 
-			readsfile = argv[narg + 1];
-			narg += 2;
-			gzclose(file);
-
-			have_reads_gz = true;
-		}
-		else
-		{
-			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				"%s.\n\n", RED, COLOFF, argv[narg + 1], strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	}
-} // ~Runopts::optReadsGz
-
-void Runopts::optRef(char **argv, int &narg)
+void Runopts::opt_ref(const std::string &file)
 {
 	std::stringstream ss;
 
-	if (argv[narg + 1] == NULL)
+	if (file.size() == 0)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)"
-			<< std::endl << std::endl;
-		std::cerr << ss.str(); ss.str("");
+		ERR(": --ref must be followed by a file path (ex. --ref /path/to/file1.fasta)");
 		exit(EXIT_FAILURE);
 	}
 
-	// check path
-	char *ptr = argv[narg + 1];
-	while (*ptr != '\0')
+	std::string basename = get_basename(file);
+
+	// verify file exists and can be read
+	if (filesize(file) <= 0) 
 	{
-		// get the FASTA file path + name
-		char fastafile[2000];
-		char *ptr_fastafile = fastafile;
+		ss << ": [" << file << "] either non-existent or empty or corrupt";
+		ERR(ss.str())
+		exit(EXIT_FAILURE);
+	}
 
-		// the reference database FASTA file
-		while (*ptr != ',' && *ptr != '\0')
+	// if we are here the workdir is OK
+	// if WORKDIR is set -> use WORKDIR/idx/
+	// if WORKDIR is not set -> use USERDIR/idx/
+
+	// verify index file exists
+	std::string idx_file = workdir + "/idx/" + string_hash(basename);
+	if (filesize(idx_file) <= 0)
+	{
+		ss.str("");
+		ss << ": [" << idx_file << "] either non-existent or empty or corrupt";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+
+	// check index file names are distinct
+	for (int i = 0; i < (int)indexfiles.size(); i++)
+	{
+		if ((indexfiles[i].first).compare(file) == 0)
 		{
-			*ptr_fastafile++ = *ptr++;
+			ss.str("");
+			ss << ": the FASTA file " << file << " has been entered twice in the list. It will be searched twice";
+			WARN(ss.str())
 		}
-		*ptr_fastafile = '\0';
-		if (*ptr == '\0')
+		else if ((indexfiles[i].second).compare(idx_file) == 0)
 		{
-			fprintf(stderr, "   %sERROR%s: the FASTA reference file name %s must be followed "
-				" by an index name.\n\n", RED, COLOFF, fastafile);
-			exit(EXIT_FAILURE);
+			ss.str("");
+			ss << ": the Index file " << idx_file << " has been entered twice in the list. It will be searched twice";
+			WARN(ss.str())
 		}
-		ptr++; //skip the ',' delimiter
+	}
+	indexfiles.push_back(std::pair<std::string, std::string>(file, idx_file));
+} // ~Runopts::opt_ref
 
-			   // check reference FASTA file exists & is not empty
-		if (FILE *file = fopen(fastafile, "rb"))
-		{
-			// get file size
-			fseek(file, 0, SEEK_END);
-			size_t filesize = ftell(file);
-			if (!filesize) exit_early = true;
-			// reset file pointer to start of file
-			fseek(file, 0, SEEK_SET);
-			fclose(file);
-		}
-		else
-		{
-			fprintf(stderr, "\n  %sERROR%s: the file %s could not be opened: "
-				" %s.\n\n", RED, COLOFF, fastafile, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-
-		// get the index path + name
-		char indexfile[2000];
-		char *ptr_indexfile = indexfile;
-		// the reference database index name
-		while (*ptr != DELIM && *ptr != '\0') *ptr_indexfile++ = *ptr++;
-		*ptr_indexfile = '\0';
-		if (*ptr != '\0') ptr++; //skip the ':' delimiter
-
-								 // check the directory where to write the index exists
-		char dir[500];
-		char *ptr_end = strrchr(indexfile, '/');
-		if (ptr_end != NULL)
-		{
-			memcpy(dir, indexfile, (ptr_end - indexfile));
-			dir[(int)(ptr_end - indexfile)] = '\0';
-		}
-		else
-		{
-			strcpy(dir, "./");
-		}
-
-		if (DIR *dir_p = opendir(dir)) closedir(dir_p);
-		else
-		{
-			if (ptr_end != NULL)
-				fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
-					"'%s' could not be opened. The full directory path must be "
-					"provided (ex. no '~'). \n\n", RED, COLOFF,
-					dir, ptr_end + 1);
-			else
-				fprintf(stderr, "\n  %sERROR%s: the directory %s for writing index "
-					"'%s' could not be opened. The full directory path must be "
-					"provided (ex. no '~'). \n\n", RED, COLOFF,
-					dir, indexfile);
-
-			exit(EXIT_FAILURE);
-		}
-
-		// check index file names are distinct
-		for (int i = 0; i < (int)indexfiles.size(); i++)
-		{
-			if ((indexfiles[i].first).compare(fastafile) == 0)
-			{
-				fprintf(stderr, "\n  %sWARNING%s: the FASTA file %s has been entered "
-					"twice in the list. It will be searched twice. "
-					"\n\n", "\033[0;33m", COLOFF, fastafile);
-			}
-			else if ((indexfiles[i].second).compare(indexfile) == 0)
-			{
-				fprintf(stderr, "\n  %sWARNING%s: the index name %s has been entered "
-					"twice in the list. It will be searched twice.\n\n", "\033[0;33m",
-					COLOFF, indexfile);
-			}
-		}
-
-		indexfiles.push_back(std::pair<std::string, std::string>(fastafile, indexfile));
-
-	}//~while (*ptr != '\0')
-
-	narg += 2;
-} // ~Runopts::optRef
-
-void Runopts::optAligned(char **argv, int &narg)
+/* TODO: make optional */
+void Runopts::opt_aligned(const std::string &file)
 {
-	if ((argv[narg + 1] == NULL) || (argv[narg + 1][0] == '-'))
+	if (file.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option --aligned [STRING]\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
+		std::cout << STAMP << " File name was not provided with option '--aligned [FILE]'. Using default name 'aligned'" << std::endl;
 	}
-	else
-	{
-		// check if the directory where to write exists
-		char dir[500];
-		char *ptr = strrchr(argv[narg + 1], '/');
-		if (ptr != NULL)
-		{
-			memcpy(dir, argv[narg + 1], (ptr - argv[narg + 1]));
-			dir[(int)(ptr - argv[narg + 1])] = '\0';
-		}
-		else
-		{
-			strcpy(dir, "./");
-		}
+} // ~Runopts::opt_aligned
 
-		if (DIR *dir_p = opendir(dir))
-		{
-			filetype_ar.assign(argv[narg + 1]);
-			narg += 2;
-			closedir(dir_p);
-		}
-		else
-		{
-			fprintf(stderr, "\n  %sERROR%s: the --aligned <STRING> directory "
-				"%s could not be opened: %s.\n\n", RED, COLOFF,
-				dir, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	}
-} // ~Runopts::optAligned
-
-void Runopts::optOther(char **argv, int &narg)
+void Runopts::opt_other(const std::string &file)
 {
-	if ((argv[narg + 1] == NULL) || (argv[narg + 1][0] == '-'))
+	if (file.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: a filename must follow the option "
-			"--other [STRING]\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
+		std::cout << STAMP << " File name was not provided with option '--other [FILE]'. Using default name 'other'" << std::endl;
 	}
-	else
-	{
-		// check if the directory where to write exists
-		char dir[500];
-		char *ptr = strrchr(argv[narg + 1], '/');
-		if (ptr != NULL)
-		{
-			memcpy(dir, argv[narg + 1], (ptr - argv[narg + 1]));
-			dir[(int)(ptr - argv[narg + 1])] = '\0';
-		}
-		else
-		{
-			strcpy(dir, "./");
-		}
+} // ~Runopts::opt_other
 
-		if (DIR *dir_p = opendir(dir))
-		{
-			filetype_or.assign(argv[narg + 1]);
-			narg += 2;
-			closedir(dir_p);
-		}
-		else
-		{
-			fprintf(stderr, "\n  %sERROR%s: the --other %s directory could not be opened, please check it exists.\n\n", RED, COLOFF, dir);
-			exit(EXIT_FAILURE);
-		}
-	}
-} // ~Runopts::optOther
-
-void Runopts::optLog(char **argv, int &narg)
+void Runopts::opt_log(const std::string &val)
 {
 	if (doLog)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --log has already been set once.\n", RED, COLOFF);
+		ERR(": '--log' has already been set once");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		doLog = true;
-		narg++;
 	}
 } // ~Runopts::optLog
 
-void Runopts::optDeNovoOtu(char **argv, int &narg)
+void Runopts::opt_de_novo_otu(const std::string &val)
 {
-	if (de_novo_otu)
-	{
-		fprintf(stderr, "\n  %sERROR%s: --de_novo_otu has already been set once.\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		de_novo_otu = true;
-		narg++;
-	}
-} // ~Runopts::optDeNovoOtu
+	de_novo_otu = true;
+} // ~Runopts::opt_de_novo_otu
 
-void Runopts::optOtuMap(char **argv, int &narg)
+void Runopts::opt_otu_map(const std::string &val)
 {
-	if (otumapout)
-	{
-		fprintf(stderr, "\n  %sERROR%s: --otu_map has already been set once.\n",
-			RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		otumapout = true;
-		narg++;
-	}
-} // ~Runopts::optOtuMap
+	otumapout = true;
+} // ~Runopts::opt_otu_map
 
-void Runopts::optPrintAllReads(char **argv, int &narg)
+void Runopts::opt_print_all_reads(const std::string &val)
 {
-	if (print_all_reads)
-	{
-		fprintf(stderr, "\n  %sERROR%s: --print_all_reads has already been set once.\n",
-			RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		print_all_reads = true;
-		narg++;
-	}
+	print_all_reads = true;
 } // ~Runopts::optPrintAllReads
 
-void Runopts::optPid(char **argv, int &narg)
+void Runopts::opt_pid(const std::string &val)
 {
-	if (pid)
-	{
-		fprintf(stderr, "\n  %sERROR%s: --pid has already been set once.\n",
-			RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		pid = true;
-		narg++;
-	}
+	pid = true;
 } // ~Runopts::optPid
 
-void Runopts::optPairedIn(char **argv, int &narg)
-{
-	if (pairedin)
-	{
-		fprintf(stderr, "\n  %sERROR%s: --paired_in has already been set once.\n",
-			RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else if (pairedout)
-	{
-		fprintf(stderr, "\n  %sERROR%s: --paired_out has been set, please choose "
-			"one or the other, or use the default option.\n",
-			RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		pairedin = true;
-		narg++;
-	}
-} // ~Runopts::optPairedIn
-
-void Runopts::optPairedOut(char **argv, int &narg)
+void Runopts::opt_paired_in(const std::string &val)
 {
 	if (pairedout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --paired_out has already been set once.\n", RED, COLOFF);
+		ERR(": '--paired_out' has been set, please choose one or the other, or use the default option");
 		exit(EXIT_FAILURE);
 	}
-	else if (pairedin)
+
+	pairedin = true;
+} // ~Runopts::optPairedIn
+
+void Runopts::opt_paired_out(const std::string &val)
+{
+	if (pairedin)
 	{
-		fprintf(stderr, "\n %sERROR%s: --paired_in has been set, please choose one "
-			"or the other, or use the default option.\n", RED, COLOFF);
+		ERR(": '--paired_in' has been set, please choose one or the other, or use the default option");
 		exit(EXIT_FAILURE);
 	}
-	else
-	{
-		pairedout = true;
-		narg++;
-	}
+
+	pairedout = true;
 } // ~Runopts::optPairedOut
 
-void Runopts::optMatch(char **argv, int &narg)
+void Runopts::opt_match(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --match [INT] requires a positive integer as "
-			"input (ex. --match 2).\n", RED, COLOFF);
+		ERR(": '--match [INT]' requires a positive integer as input (ex. --match 2)");
 		exit(EXIT_FAILURE);
 	}
 	// set match
 	if (!match_set)
 	{
-		match = atoi(argv[narg + 1]);
-		narg += 2;
+		match = atoi(val.data());
 		match_set = true;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: --match [INT] has been set twice, please "
-			"verify your choice\n\n", RED, COLOFF);
+		ERR(": --match [INT] has been set twice, please verify your choice");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optMatch
 
-void Runopts::optMismatch(char **argv, int &narg)
+void Runopts::opt_mismatch(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --mismatch [INT] requires a negative integer "
-			"input (ex. --mismatch -2)\n", RED, COLOFF);
+		ERR(": --mismatch [INT] requires a negative integer input (ex. --mismatch -2)");
 		exit(EXIT_FAILURE);
 	}
+
 	// set mismatch
 	if (!mismatch_set)
 	{
-		mismatch = atoi(argv[narg + 1]);
+		mismatch = atoi(val.data());
 		if (mismatch > 0)
 		{
-			fprintf(stderr, "\n  %sERROR%s: --mismatch [INT] requires a negative "
-				"integer input (ex. --mismatch -2)\n", RED, COLOFF);
+			ERR(": --mismatch [INT] takes a negative integer (ex. --mismatch -2)");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 		mismatch_set = true;
 	}
 	else
 	{
-		printf("\n  %sERROR%s: --mismatch [INT] has been set twice, please verify "
-			"your choice\n\n", RED, COLOFF);
+		ERR(": --mismatch [INT] has been set twice, please verify your choice");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::optMismatch
+} // ~Runopts::opt_mismatch
 
-void Runopts::optGapOpen(char **argv, int &narg)
+void Runopts::opt_gap_open(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --gap_open [INT] requires a positive integer "
-			"as input (ex. --gap_open 5)\n", RED, COLOFF);
+		ERR(": --gap_open [INT] requires a positive integer as input (ex. --gap_open 5)");
 		exit(EXIT_FAILURE);
 	}
+
 	// set gap open
 	if (!gap_open_set)
 	{
-		gap_open = atoi(argv[narg + 1]);
+		gap_open = atoi(val.data());
 		if (gap_open < 0)
 		{
-			fprintf(stderr, "\n  %sERROR%s: --gap_open [INT] requires a positive "
-				"integer as input (ex. --gap_open 5)\n", RED, COLOFF);
+			ERR(": --gap_open [INT] requires a positive integer as input (ex. --gap_open 5)");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 		gap_open_set = true;
 	}
 	else
 	{
-		printf("\n  %sERROR%s: --gap_open [INT] has been set twice, please verify "
-			"your choice\n\n", RED, COLOFF);
+		ERR(": --gap_open [INT] has been set twice, please verify your choice");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::optGapOpen
+} // ~Runopts::opt_gap_open
 
-void Runopts::optGapExt(char **argv, int &narg)
+void Runopts::opt_gap_ext(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] requires a positive integer "
-			"as input (ex. --gap_ext 2)\n", RED, COLOFF);
+		ERR(": --gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)");
 		exit(EXIT_FAILURE);
 	}
 	// set gap extend
 	if (!gap_ext_set)
 	{
-		gap_extension = atoi(argv[narg + 1]);
+		gap_extension = atoi(val.data());
 		if (gap_extension < 0)
 		{
-			fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] requires a positive "
-				"integer as input (ex. --gap_ext 2)\n", RED, COLOFF);
+			ERR(": --gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 		gap_ext_set = true;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: --gap_ext [INT] has been set twice, please "
-			"verify your choice\n\n", RED, COLOFF);
+		ERR(": --gap_ext [INT] has been set twice, please verify your choice");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::optGapExt
+} // ~Runopts::opt_gap_ext
 
-void Runopts::optNumSeeds(char **argv, int &narg)
+void Runopts::opt_num_seeds(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] requires a positive integer "
-			"as input (ex. --num_seeds 6)\n", RED, COLOFF);
+		ERR(": --num_seeds [INT] requires a positive integer as input (ex. --num_seeds 6)");
 		exit(EXIT_FAILURE);
 	}
 	// set number of seeds
 	if (seed_hits < 0)
 	{
 		char* end = 0;
-		seed_hits = (int)strtol(argv[narg + 1], &end, 10); // convert to integer
+		seed_hits = (int)strtol(val.data(), &end, 10); // convert to integer
 		if (seed_hits <= 0)
 		{
-			fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] requires a positive "
-				"integer (>0) as input (ex. --num_seeds 6)\n", RED, COLOFF);
+			ERR(": --num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: --num_seeds [INT] has been set twice, please "
-			"verify your choice\n\n", RED, COLOFF);
+		ERR(": --num_seeds [INT] has been set twice, please verify your choice");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::optNumSeeds
+} // ~Runopts::opt_num_seeds
 
-  /* --fastx */
-void Runopts::optFastx(char **argv, int &narg)
+/* --fastx */
+void Runopts::opt_fastx(const std::string &val)
 {
 	if (fastxout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --fastx has already been set once.\n\n",
-			RED, COLOFF);
+		ERR(": --fastx has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		fastxout = true;
-		narg++;
 	}
-} // ~Runopts::optFastx
+} // ~Runopts::opt_fastx
 
-void Runopts::optSam(char **argv, int &narg)
+void Runopts::opt_sam(const std::string &val)
 {
 	if (samout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --sam has already been set once.\n\n",
-			RED, COLOFF);
+		ERR(": --sam has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		samout = true;
-		narg++;
 	}
-} // ~Runopts::optSam
+} // ~Runopts::opt_sam
 
-void Runopts::optBlast(char **argv, int &narg)
+void Runopts::opt_blast(const std::string &val)
 {
 	std::stringstream ss;
 
 	if (blastout)
 	{
-		ss << std::endl << "  " << RED << "ERROR" << COLOFF
-			<< ": --blast [STRING] has already been set once."
-			<< std::endl << std::endl;
-		std::cerr << ss.str();
+		ERR(": --blast [STRING] has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 
-	std::string str(argv[narg + 1]);
 	// split blast options into vector by space
-	std::istringstream iss(str);
+	std::istringstream iss(val);
 	do
 	{
 		std::string s;
@@ -664,279 +430,226 @@ void Runopts::optBlast(char **argv, int &narg)
 		}
 		if (!match_found)
 		{
-			ss << std::endl << "  " << RED << "ERROR" << COLOFF
-				<< ": `" << opt << "` is not supported in --blast [STRING]."
-				<< std::endl << std::endl;
-			std::cerr << ss.str();
+			ss.str("");
+			ss << ": `" << opt << "` is not supported in --blast [STRING].";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 	}
 	// more than 1 field with blast human-readable format given
 	if (blast_human_readable && (blastops.size() > 1))
 	{
-		ss << std::endl << "  " << RED << "ERROR" << COLOFF
-			<< ": for human-readable format, --blast [STRING] can only contain a single field '0'."
-			<< std::endl << std::endl;
-		std::cerr << ss.str();
+		ss.str("");
+		ss << ": for human-readable format, --blast [STRING] can only contain a single field '0'.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	// both human-readable and tabular format options have been chosen
 	if (blast_human_readable && blastFormat == BlastFormat::TABULAR)
 	{
-		ss << std::endl << "  " << RED << "ERROR" << COLOFF
-			<< ": --blast [STRING] can only have one of the options '0' (human-readable) or '1' (tabular)."
-			<< std::endl << std::endl;
-		std::cerr << ss.str();
+		ss.str("");
+		ss << ": --blast [STRING] can only have one of the options '0' (human-readable) or '1' (tabular).";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
 	blastout = true;
-	narg += 2;
-} // ~Runopts::optBlast
+} // ~Runopts::opt_blast
 
-void Runopts::optMinLis(char **argv, int &narg)
+void Runopts::opt_min_lis(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] requires an integer (>=0) as "
-			"input (ex. --min_lis 2) (note: 0 signifies to search all high scoring "
-			"reference sequences).\n\n", RED, COLOFF);
+		ERR(": --min_lis [INT] requires an integer (>=0) as input (ex. --min_lis 2)."
+			" Note: 0 signifies to search all high scoring reference sequences.");
 		exit(EXIT_FAILURE);
 	}
+
 	// min_lis_gv has already been set
-	else if (min_lis_set)
+	if (min_lis_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] has been set twice, please "
-			"verify your choice.\n\n", RED, COLOFF);
+		ERR(": --min_lis [INT] has been set twice, please verify your choice.");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		if ((sscanf(argv[narg + 1], "%d", &min_lis) != 1) || (min_lis < 0))
+		if ((sscanf(val.data(), "%d", &min_lis) != 1) || (min_lis < 0))
 		{
-			fprintf(stderr, "\n  %sERROR%s: --min_lis [INT] must be >= 0 (0 signifies "
-				"to search all high scoring reference sequences).\n\n",
-				RED, COLOFF);
+			ERR(": --min_lis [INT] must be >= 0 (0 signifies to search all high scoring reference sequences).");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 		min_lis_set = true;
 	}
-} // ~Runopts::optMinLis
+} // ~Runopts::opt_min_lis
 
-void Runopts::optBest(char **argv, int &narg)
+void Runopts::opt_best(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --best [INT] requires an integer (> 0) "
-			"as input (ex. --best 2).\n\n", RED, COLOFF);
+		ERR(": --best [INT] requires an integer (> 0) as input (ex. --best 2).");
 		exit(EXIT_FAILURE);
 	}
+
 	// best_set has already been set
-	else if (best_set)
+	if (best_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --best [INT] has been set twice, please "
-			"verify your choice.\n\n", RED, COLOFF);
+		ERR(" : --best [INT] has been set twice, please verify your choice.");
 		printlist();
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		if ((sscanf(argv[narg + 1], "%d", &num_best_hits) != 1))
+		if ((sscanf(val.data(), "%d", &num_best_hits) != 1))
 		{
-			fprintf(stderr, "\n  %sERROR%s: could not read --best [INT] as integer.\n\n",
-				RED, COLOFF);
+			ERR(": could not read --best [INT] as integer");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 		best_set = true;
 	}
-} // ~Runopts::optBest
+} // ~Runopts::opt_best
 
-  /* --num_alignments [INT] */
-void Runopts::optNumAlignments(char **argv, int &narg)
+void Runopts::opt_num_alignments(const std::string &val)
 {
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --num_alignments [INT] requires an integer "
-			"(>=0) as input (ex. --num_alignments 2) (note: 0 signifies to output all alignments).\n\n", RED, COLOFF);
+		ERR(": --num_alignments [INT] requires an integer (>=0) as input (ex. --num_alignments 2)"
+			" Note: 0 signifies to output all alignments.");
 		exit(EXIT_FAILURE);
 	}
-	// --num_alignments has already been set
-	else if (num_alignments_set)
-	{
-		fprintf(stderr, "\n  %sERROR%s:--num_alignments [INT] has been set twice, please verify your command parameters.\n\n", RED, COLOFF);
-		exit(EXIT_FAILURE);
-	}
-	// set number of alignments to output reaching the E-value
-	else
-	{
-		num_alignments = atoi(argv[narg + 1]);
-		if (num_alignments < 0)
-		{
-			fprintf(stderr, "\n  %sERROR%s: --num_alignments [INT] must be >= 0 (0 signifies to output all alignments).\n\n",
-				RED, COLOFF);
-			exit(EXIT_FAILURE);
-		}
-		narg += 2;
-		num_alignments_set = true;
-	}
-} // ~Runopts::optNumAlignments
 
-void Runopts::optEdges(char **argv, int &narg)
+	if (num_alignments_set)
+	{
+		ERR(" :--num_alignments [INT] has been set twice, please verify your command parameters.");
+		exit(EXIT_FAILURE);
+	}
+
+	// set number of alignments to output reaching the E-value
+	num_alignments = atoi(val.data());
+	if (num_alignments < 0)
+	{
+		ERR(": --num_alignments [INT] must be >= 0 (0 signifies to output all alignments).");
+		exit(EXIT_FAILURE);
+	}
+	num_alignments_set = true;
+} // ~Runopts::opt_num_alignments
+
+void Runopts::opt_edges(const std::string &val)
 {
 	// --edges is already set
 	if (edges_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --edges [INT]%% has already been set once.\n\n",
-			RED, COLOFF);
+		ERR(" : --edges [INT]%% has already been set once.");
 		exit(EXIT_FAILURE);
 	}
-	else
+
+	char *end = 0;
+	// find if % sign exists
+	if (val.find_first_of("%") != std::string::npos)
+		as_percent = true;
+
+	// convert to integer
+	edges = std::stoi(val); //edges = (int)strtol(val.data(), &end, 10);
+
+	if (edges < 1 || edges > 10)
 	{
-		char *end = 0;
-		// find if % sign exists
-		char* test = strpbrk(argv[narg + 1], "%");
-		if (test != NULL)
-			as_percent = true;
-		// convert to integer
-		edges = (int)strtol(argv[narg + 1], &end, 10);
-
-		if (edges < 1 || edges > 10)
-		{
-			fprintf(stderr, "\n  %sERROR%s: --edges [INT]%% requires a positive integer "
-				"between 0-10 as input (ex. --edges 4).\n", RED, COLOFF);
-			exit(EXIT_FAILURE);
-		}
-
-		narg += 2;
+		ERR(" : --edges [INT]%% requires a positive integer between 0-10 as input (ex. --edges 4).");
+		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optEdges
 
-void Runopts::optFullSearch(char **argv, int &narg)
+void Runopts::opt_full_search(const std::string &val)
 {
 	if (full_search_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: BOOL --full_search has been set twice, please "
-			"verify your choice.\n\n", RED, COLOFF);
+		ERR(" : BOOL --full_search has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
-	else
-	{
-		full_search_set = true;
-		full_search = true;
-		narg++;
-	}
-} // ~Runopts::optFullSearch
+	full_search_set = true;
+	full_search = true;
+} // ~Runopts::opt_full_search
 
-void Runopts::optSQ(char **argv, int &narg)
+void Runopts::opt_SQ(const std::string &val)
 {
 	if (yes_SQ)
 	{
-		fprintf(stderr, "\n  %sERROR%s: BOOL --SQ has been set twice, please verify "
-			"your choice.\n\n", RED, COLOFF);
+		ERR(" : BOOL --SQ has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
-	else
-	{
-		yes_SQ = true;
-		narg++;
-	}
+
+	yes_SQ = true;
 } // ~Runopts::optSQ
 
-void Runopts::optPasses(char **argv, int &narg)
+void Runopts::opt_passes(const std::string &val)
 {
 	if (passes_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: --passes [INT,INT,INT] has been set twice, "
-			"please verify your choice.\n\n", RED, COLOFF);
+		ERR(" : --passes [INT,INT,INT] has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
+
 	// set passes
-	else
+	for (auto pos = val.find(",", 0), pos_from = pos-pos, count = pos-pos; pos != std::string::npos; pos = val.find(",", pos_from))
 	{
-		std::vector<uint32_t> skiplengths_v;
-		char *end = 0;
-		int32_t t = (int)strtol(strtok(argv[narg + 1], ","), &end, 10);
-		if (t > 0) skiplengths_v.push_back(t);
-		else
+		auto tok = val.substr(pos_from, pos);
+		pos_from += pos +1;
+		if (++count > 3) 
 		{
-			fprintf(stderr, "\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
-				"must contain positive integers where 0<INT<(shortest read length)."
-				"\n\n", RED, COLOFF);
+			ERR(" : exactly 3 integers has to be provided with '--passes [INT,INT,INT]'");
 			exit(EXIT_FAILURE);
 		}
-		t = (int)strtol(strtok(NULL, ","), &end, 10);
-		if (t > 0) skiplengths_v.push_back(t);
+		auto skiplen = std::stoi(tok);
+		if (skiplen > 0)
+			skiplengths.emplace_back(skiplen);
 		else
 		{
-			fprintf(stderr, "\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
-				"must contain positive integers where 0<INT<(shortest read length). "
-				"\n\n", RED, COLOFF);
+			ERR(" : all three integers in --passes [INT,INT,INT] "
+				"must contain positive integers where 0<INT<(shortest read length).");
 			exit(EXIT_FAILURE);
 		}
-		t = (int)strtol(strtok(NULL, ","), &end, 10);
-		if (t > 0) skiplengths_v.push_back(t);
-		else
-		{
-			fprintf(stderr, "\n  %sERROR%s: all three integers in --passes [INT,INT,INT] "
-				"must contain positive integers where 0<INT<(shortest read length)."
-				"\n\n", RED, COLOFF);
-			exit(EXIT_FAILURE);
-		}
-
-		skiplengths.push_back(skiplengths_v);
-		narg += 2;
-		passes_set = true;
 	}
-} // ~Runopts::optPasses
+	passes_set = true;
+} // ~Runopts::opt_passes
 
-void Runopts::optId(char **argv, int &narg)
+void Runopts::opt_id(const std::string &val)
 {
 	// % id
 	if (align_id < 0)
 	{
-		if ((sscanf(argv[narg + 1], "%lf", &align_id) != 1) ||
+		if ((sscanf(val.data(), "%lf", &align_id) != 1) ||
 			(align_id < 0) || (align_id > 1))
 		{
-			fprintf(stderr, "\n  %sERROR%s: --id [DOUBLE] must be a positive float "
-				"with value 0<=id<=1.\n\n", RED, COLOFF);
+			ERR(" : --id [DOUBLE] must be a positive float with value 0<=id<=1.");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: --id [DOUBLE] has been set twice, please "
-			"verify your command parameters.\n\n", RED, COLOFF);
+		ERR(" : --id [DOUBLE] has been set twice, please verify your command parameters.");
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::optId
+} // ~Runopts::opt_id
 
-void Runopts::optCoverage(char **argv, int &narg)
+void Runopts::opt_coverage(const std::string &val)
 {
 	// % query coverage
 	if (align_cov < 0)
 	{
-		if ((sscanf(argv[narg + 1], "%lf", &align_cov) != 1) ||
+		if ((sscanf(val.data(), "%lf", &align_cov) != 1) ||
 			(align_cov < 0) || (align_cov > 1))
 		{
-			fprintf(stderr, "\n  %sERROR%s: --coverage [DOUBLE] must be a positive "
-				"float with value 0<=id<=1.\n\n", RED, COLOFF);
+			ERR(" : --coverage [DOUBLE] must be a positive float with value 0<=id<=1.");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: --coverage [DOUBLE] has been set twice, please "
-			"verify your command parameters.\n\n", RED, COLOFF);
+		ERR(" : --coverage [DOUBLE] has been set twice, please verify your command parameters.");
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::optCoverage
+} // ~Runopts::opt_coverage
 
-void Runopts::optVersion(char **argv, int &narg)
+void Runopts::opt_version(const std::string &val)
 {
 	std::cout << std::endl
 		<< "SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
@@ -944,145 +657,123 @@ void Runopts::optVersion(char **argv, int &narg)
 		<< sortmerna_build_git_sha << std::endl
 		<< sortmerna_build_git_date << std::endl;
 	exit(EXIT_SUCCESS);
-} // ~Runopts::optVersion
+} // ~Runopts::opt_version
 
-void Runopts::optUnknown(char **argv, int &narg, char * opt)
+void Runopts::opt_unknown(char **argv, int &narg, char * opt)
 {
 	std::stringstream ss;
-	ss << "\n  " << RED << "ERROR" << COLOFF << ": option --" << opt << " not recognized" << std::endl << std::endl;
-	std::cout << ss.str();
+	ss << " : option --" << opt << " not recognized";
+	ERR(ss.str());
 	printlist();
 	exit(EXIT_FAILURE);
-} // ~Runopts::optUnknown
+} // ~Runopts::opt_unknown
 
-void Runopts::opt_e_Evalue(char **argv, int &narg)
+void Runopts::opt_e(const std::string &val)
 {
 	std::stringstream ss;
 
 	// E-value
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)" << std::endl;
-		std::cerr << ss.str();
+		ERR(": -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)");
 		exit(EXIT_FAILURE);
 	}
 
 	if (evalue < 0)
 	{
-		sscanf(argv[narg + 1], "%lf", &evalue);
+		sscanf(val.data(), "%lf", &evalue);
 		if (evalue < 0)
 		{
-			fprintf(stderr, "\n  %sERROR%s: -e [DOUBLE] requires a positive double "
-				"as input (ex. --e 1e-5)\n", RED, COLOFF);
+			ERR(" : -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)");
 			exit(EXIT_FAILURE);
 		}
-		narg += 2;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: -e [DOUBLE] has been set twice, please verify "
-			"your command parameters.\n\n", RED, COLOFF);
+		ERR(" : -e [DOUBLE] has been set twice, please verify your command parameters.");
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::opt_e_Evalue
+} // ~Runopts::opt_e
 
-void Runopts::opt_F_ForwardOnly(char **argv, int &narg)
+void Runopts::opt_F(const std::string &val)
 {
 	// only forward strand
 	if (!forward)
 	{
 		forward = true;
-		narg++;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: BOOL -F has been set more than once, please check "
-			"your command parameters.\n", RED, COLOFF);
+		ERR(" : BOOL -F has been set more than once, please check your command parameters.");
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_F_ForwardOnly
 
-void Runopts::opt_R_ReverseOnly(char **argv, int &narg)
+void Runopts::opt_R(const std::string &val)
 {
 	// only reverse strand
 	if (!reverse)
 	{
 		reverse = true;
-		narg++;
 	}
 	else
 	{
-		fprintf(stderr, "\n  %sERROR%s: BOOL -R has been set more than once, please check "
-			"your command parameters.\n", RED, COLOFF);
+		ERR(" : BOOL '-R' has been set more than once, please check your command parameters.");
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::opt_R_ReverseOnly
+} // ~Runopts::opt_R
 
-void Runopts::opt_h_Help()
+/* Help */
+void Runopts::opt_h(const std::string &val)
 {
 	welcome();
 	printlist();
 	exit(0);
-} // ~Runopts::opt_h_Help
+} // ~Runopts::opt_h
 
-void Runopts::opt_v_Verbose(int & narg)
+void Runopts::opt_v(const std::string &val)
 {
 	verbose = true;
-	narg++;
-} // ~Runopts::opt_v_Verbose
+} // ~Runopts::opt_v
 
-void Runopts::opt_N_MatchAmbiguous(char **argv, int &narg)
+void Runopts::opt_N(const std::string &val)
 {
 	// match ambiguous N's
 	if (!match_ambiguous_N)
 	{
 		match_ambiguous_N = true;
-		score_N = atoi(argv[narg + 1]);
-		narg += 2;
+		score_N = std::stoi(val);
 	}
 	else
 	{
-		std::stringstream ss;
-		ss << std::endl << " " << RED << "ERROR" << COLOFF
-			<< ": BOOL -N has been set more than once, please check your command parameters." << std::endl;
-		std::cerr << ss.str();
+		ERR(": BOOL -N has been set more than once, please check your command parameters.");
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_N_MatchAmbiguous
 
   /* Number Processor threads to use */
-void Runopts::opt_a_numProcThreads(char **argv, int &narg)
+void Runopts::opt_a(const std::string &val)
 {
-	std::stringstream ss;
-
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": -a [INT] requires an integer for number of Processor threads (ex. -a 8)" << std::endl;
-		std::cerr << ss.str();
+		ERR(": -a [INT] requires an integer for number of Processor threads (ex. -a 8)");
 		exit(EXIT_FAILURE);
 	}
 
-	num_proc_thread = atoi(argv[narg + 1]);
-	narg += 2;
+	num_proc_thread = std::stoi(val);
 } // ~Runopts::opt_a_numProcThreads
 
   /* Number of threads to use */
-void Runopts::opt_threads(char **argv, int &narg)
+void Runopts::opt_threads(const std::string &val)
 {
-	std::stringstream ss;
-
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": --threads [INT:INT:INT] requires 3 integers for number of "
-			<< "Read:Write:Processor threads (ex. --threads 1:1:8)" << std::endl;
-		std::cerr << ss.str(); ss.str("");
+		ERR(": --threads [INT:INT:INT] requires 3 integers for number of "
+			<< "Read:Write:Processor threads (ex. --threads 1:1:8)");
 		exit(EXIT_FAILURE);
 	}
 
-	std::istringstream strm(argv[narg + 1]);
+	std::istringstream strm(val);
 	std::string tok;
 	for (int i = 0; std::getline(strm, tok, ':'); ++i)
 	{
@@ -1093,25 +784,19 @@ void Runopts::opt_threads(char **argv, int &narg)
 		case 2: num_proc_thread = std::stoi(tok); break;
 		}
 	}
-
-	narg += 2;
 } // ~Runopts::opt_threads
 
 
-void Runopts::opt_threads_pp(char **argv, int &narg)
+void Runopts::opt_thpp(const std::string &val)
 {
-	std::stringstream ss;
-
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": --thpp [INT:INT] requires 2 integers for number of "
-			<< "Read:Processor threads (ex. --thpp 1:1)" << std::endl;
-		std::cerr << ss.str(); ss.str("");
+		ERR(": --thpp [INT:INT] requires 2 integers for number of "
+			<< "Read:Processor threads (ex. --thpp 1:1)");
 		exit(EXIT_FAILURE);
 	}
 
-	std::istringstream strm(argv[narg + 1]);
+	std::istringstream strm(val);
 	std::string tok;
 	for (int i = 0; std::getline(strm, tok, ':'); ++i)
 	{
@@ -1121,25 +806,19 @@ void Runopts::opt_threads_pp(char **argv, int &narg)
 		case 1: num_proc_thread_pp = std::stoi(tok); break;
 		}
 	}
-
-	narg += 2;
 } // ~Runopts::opt_threads_pp
 
 
-void Runopts::opt_threads_rep(char **argv, int &narg)
+void Runopts::opt_threp(const std::string &val)
 {
-	std::stringstream ss;
-
-	if (argv[narg + 1] == NULL)
+	if (val.size() == 0)
 	{
-		ss << "\n  " << RED << "ERROR" << COLOFF
-			<< ": --threp [INT:INT] requires 2 integers for number of "
-			<< "Read:Processor threads (ex. --threp 1:1)" << std::endl;
-		std::cerr << ss.str(); ss.str("");
+		ERR(": --threp [INT:INT] requires 2 integers for number of "
+			<< "Read:Processor threads (ex. --threp 1:1)");
 		exit(EXIT_FAILURE);
 	}
 
-	std::istringstream strm(argv[narg + 1]);
+	std::istringstream strm(val);
 	std::string tok;
 	for (int i = 0; std::getline(strm, tok, ':'); ++i)
 	{
@@ -1149,53 +828,40 @@ void Runopts::opt_threads_rep(char **argv, int &narg)
 		case 1: num_proc_thread_rep = std::stoi(tok); break;
 		}
 	}
+} // ~Runopts::opt_threads
 
-	narg += 2;
-} // ~Runopts::opt_threads_rep
-
-  // Required parameter
-void Runopts::opt_d_KeyValDatabase(char **argv, int &narg)
+// KeyValDatabase
+void Runopts::opt_d(const std::string &val)
 {
-	std::stringstream ss;
-
-	// kvdb is specified
-	if (argv[narg + 1] != NULL)
-	{
-		kvdbPath.assign(argv[narg + 1]); // e.g. "C:/a01_projects/clarity_genomics/data/kvdb"
-		//ss << "\n  " << RED << "ERROR" << COLOFF
-		//	<< ": -d [STRING] requires a folder path for key-value database (ex. -d /var/data/kvdb)" << std::endl;
-		//std::cerr << ss.str();
-		//exit(EXIT_FAILURE);
-	}
-	narg += 2;
-} // ~Runopts::opt_d_KeyValDatabase
+	if (val.size() != 0)
+		kvdbPath = val;
+} // ~Runopts::opt_d
 
 
-void Runopts::opt_debug_put_kvdb(int &narg)
+void Runopts::opt_dbg_put_db(const std::string &val)
 {
 	dbg_put_kvdb = true;
-	narg++;
 }
 
-
-void Runopts::opt_Default(char **argv, int &narg)
+void Runopts::opt_default(const std::string &opt)
 {
 	std::stringstream ss;
-	ss << "\n  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__
-		<< "] '" << argv[narg][1] << "' is not one of the options." << std::endl;
-	std::cerr << ss.str(); ss.str("");
+	ss << STAMP << "Option: '" << opt << "' is not recognized";
+	ERR(ss.str());
 	printlist();
 	exit(EXIT_FAILURE);
-} // ~Runopts::opt_Default
+} // ~Runopts::opt_default
 
   /* Processing task */
-void Runopts::optTask(char **argv, int &narg)
+void Runopts::opt_task(const std::string &val)
 {
-	int taskOpt = 4;
-	sscanf(argv[narg + 1], "%d", &taskOpt);
+	int taskOpt = std::stoi(val);
 
-	if (taskOpt > 4) {
-		std::cerr << "Option −−task " << taskOpt << " Can only take values: [0..4] ... " << std::endl;
+	if (taskOpt > 4) 
+	{
+		std::stringstream ss;
+		ss << "Option '−−task' can only take values in range [0..4] Provided value is " << taskOpt;
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -1207,16 +873,25 @@ void Runopts::optTask(char **argv, int &narg)
 	case 3: alirep = alipost; break;
 	case 4: alirep = all; break;
 	}
-
-	narg += 2;
 } // ~Runopts::optReport
 
-  // interactive session '--cmd'
-void Runopts::optInteractive(char **argv, int &narg)
+// interactive session '--cmd'
+void Runopts::opt_cmd(const std::string &val)
 {
 	interactive = true;
-	++narg;
 } // ~Runopts::optInteractive
+
+/* Work directory setup */
+void Runopts::opt_workdir(const std::string &path)
+{
+	if (path.size() == 0)
+	{
+		workdir = get_user_home();
+		std::cout << "'workdir' option not provided. Using USERDIR as working directory: [" << workdir << "]" << std::endl;
+	}
+	else
+		workdir = path;
+}
 
 void Runopts::test_kvdb_path()
 {
@@ -1259,13 +934,12 @@ void Runopts::test_kvdb_path()
 	}
 } // ~test_kvdb_path
 
-
+/** 
+ * main method of this class. 
+ * Parses the command line options, validates, and sets the class member variables 
+ */
 void Runopts::process(int argc, char**argv, bool dryrun)
 {
-	if (dryrun) return;
-
-	int narg = 1; // parse the command line input
-
 #if defined(__APPLE__)
 	int sz[2] = { CTL_HW, HW_MEMSIZE };
 	u_int namelen = sizeof(sz) / sizeof(sz[0]);
@@ -1276,12 +950,6 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		fprintf(stderr, "\n  %sERROR%s: sysctl (main.cpp)\n", RED, COLOFF);
 		exit(EXIT_FAILURE);
 	}
-	//else
-	//{
-	//	maxpages_gv = size / pagesize_gv;
-	//}
-#else
-				  //maxpages_gv = sysconf(_SC_PHYS_PAGES);
 #endif
 
 #if defined(_WIN32)
@@ -1292,139 +960,121 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		verbose = true;
 		welcome();
-		fprintf(stderr, "  For help or more information on usage, type `./sortmerna %s-h%s'\n\n", BOLD, COLOFF);
+		ERR("Missing required command options");
 		exit(EXIT_FAILURE);
 	}
 
-	while (narg < argc)
+	// store the command line
+	for (int i = 0; i < argc; i++)
 	{
-		switch (argv[narg][1])
-		{
-			// options beginning with '--'
-		case '-':
-		{
-			char* opt = argv[narg];
-			opt += 2; // skip the '--'
+		cmdline.append(argv[i]);
+		cmdline.append(" ");
+	}
 
-					  // FASTA/FASTQ reads sequences
-			if (strcmp(opt, "reads") == 0) optReads(argv, narg);
-#ifdef HAVE_LIBZ
-			// FASTA/FASTQ compressed reads sequences
-			else if (strcmp(opt, "reads-gz") == 0) optReadsGz(argv, narg);
-#endif
-			// FASTA reference sequences
-			else if (strcmp(opt, "ref") == 0) optRef(argv, narg);
-			// the name of output aligned reads
-			else if (strcmp(opt, "aligned") == 0) optAligned(argv, narg);
-			// the name of output rejected reads
-			else if (strcmp(opt, "other") == 0) optOther(argv, narg);
-			// output overall statistics file
-			else if (strcmp(opt, "log") == 0) optLog(argv, narg);
-			// output FASTA/FASTQ reads passing E-value threshold but having < %id 
-			// and < %coverage scores for de novo OTU construction
-			else if (strcmp(opt, "de_novo_otu") == 0) optDeNovoOtu(argv, narg);
-			// output OTU map
-			else if (strcmp(opt, "otu_map") == 0) optOtuMap(argv, narg);
-			// output non-aligned reads to SAM/BLAST files
-			else if (strcmp(opt, "print_all_reads") == 0) optPrintAllReads(argv, narg);
-			// don't add pid to output files
-			else if (strcmp(opt, "pid") == 0) optPid(argv, narg);
-			// put both paired reads into --accept reads file
-			else if (strcmp(opt, "paired_in") == 0) optPairedIn(argv, narg);
-			// put both paired reads into --other reads file
-			else if (strcmp(opt, "paired_out") == 0) optPairedOut(argv, narg);
-			// the score for a match
-			else if (strcmp(opt, "match") == 0) optMatch(argv, narg);
-			// the score for a mismatch
-			else if (strcmp(opt, "mismatch") == 0) optMismatch(argv, narg);
-			// the score for a gap
-			else if (strcmp(opt, "gap_open") == 0) optGapOpen(argv, narg);
-			// the score for a gap extension
-			else if (strcmp(opt, "gap_ext") == 0) optGapExt(argv, narg);
-			// number of seed hits before searching for candidate LCS
-			else if (strcmp(opt, "num_seeds") == 0) optNumSeeds(argv, narg);
-			// output all hits in FASTX format
-			else if (strcmp(opt, "fastx") == 0) optFastx(argv, narg);
-			// output all hits in SAM format
-			else if (strcmp(opt, "sam") == 0) optSam(argv, narg);
-			// output all hits in BLAST format
-			else if (strcmp(opt, "blast") == 0) optBlast(argv, narg);
-			// output best alignment as predicted by the longest increasing subsequence
-			else if (strcmp(opt, "min_lis") == 0) optMinLis(argv, narg);
-			// output best alignment as predicted by the longest increasing subsequence
-			else if (strcmp(opt, "best") == 0) optBest(argv, narg);
-			// output all alignments
-			else if (strcmp(opt, "num_alignments") == 0) optNumAlignments(argv, narg);
-			// number of nucleotides to add to each edge of an alignment region before extension
-			else if (strcmp(opt, "edges") == 0) optEdges(argv, narg);
-			// execute full index search for 0-error and 1-error seed matches
-			else if (strcmp(opt, "full_search") == 0) optFullSearch(argv, narg);
-			// do not output SQ tags in the SAM file
-			else if (strcmp(opt, "SQ") == 0) optSQ(argv, narg);
-			else if (strcmp(opt, "passes") == 0) optPasses(argv, narg); // --passes
-			else if (strcmp(opt, "id") == 0) optId(argv, narg);
-			else if (strcmp(opt, "coverage") == 0) optCoverage(argv, narg);
-			else if (strcmp(opt, "version") == 0) optVersion(argv, narg); // version number
-			else if (strcmp(opt, "task") == 0) optTask(argv, narg);
-			else if (strcmp(opt, "cmd") == 0) optInteractive(argv, narg); // '--cmd' interactive session
-																		  // threads
-			else if (strcmp(opt, "threads") == 0) opt_threads(argv, narg); // '--threads 1:1:8' num alignment threads
-			else if (strcmp(opt, "thpp") == 0) opt_threads_pp(argv, narg); // '--thpp 1:1' num post-proc threads
-			else if (strcmp(opt, "threp") == 0) opt_threads_rep(argv, narg); // '--threp 1:1' num report threads
-			else if (strcmp(opt, "dbg_put_db") == 0) opt_debug_put_kvdb(narg); // '--dbg_put_db'
-			else optUnknown(argv, narg, opt);
+	std::string flag;
+
+	// parse cmd options and store into multimap mopt
+	for (auto i = argc - argc, flag_count = 0; i != argc; ++i)
+	{
+		// if arg starts with dash it is flag
+		bool is_flag = '-' == **(argv + i); // first character is dash '-'
+		if (is_flag && flag_count == 0) {
+			std::cout << "Found flag: " << *(argv + i) << std::endl;
+			if (i == argc - 1) {
+				flag = trim_leading_dashes(*(argv + i));
+				mopt.emplace(std::make_pair(flag, "")); // add the last boolean flag
+			}
+			++flag_count;
+			continue;
 		}
-		break;
-		case 'a': opt_a_numProcThreads(argv, narg); break;
-		case 'd': opt_d_KeyValDatabase(argv, narg); break; // required
-		case 'e': opt_e_Evalue(argv, narg);	break;
-		case 'F': opt_F_ForwardOnly(argv, narg); break;
-		case 'R': opt_R_ReverseOnly(argv, narg); break;
-		case 'h': opt_h_Help(); break;
-		case 'v': opt_v_Verbose(narg); break;
-		case 'N': opt_N_MatchAmbiguous(argv, narg); break;
-		default: opt_Default(argv, narg);
-		}//~switch
-	}//~while ( narg < argc )
 
-	// validate the options
+		if (is_flag && flag_count == 1) {
+			std::cout << "Previous flag: " << *(argv + i - 1) << " is Boolean. Setting to True" << std::endl;
+			std::cout << "Found flag: " << *(argv + i) << std::endl;
+			flag = trim_leading_dashes(*(argv + i - 1));
+			mopt.emplace(std::make_pair(flag, "")); // previous boolean flag
+			if (i == argc - 1) {
+				flag = trim_leading_dashes(*(argv + i));
+				mopt.emplace(std::make_pair(flag, "")); // add the last boolean flag
+			}
+			continue;
+		}
+
+		if (!is_flag && flag_count == 0) {
+			std::cout << "Found value: " << *(argv + i) << std::endl;
+			continue;
+		}
+
+		if (!is_flag && flag_count == 1) {
+			std::cout << "Found value: " << *(argv + i) << " of previous flag: " << *(argv + i - 1) << std::endl;
+			flag = trim_leading_dashes(*(argv + i - 1));
+			mopt.emplace(std::make_pair(flag, *(argv + i)));
+			--flag_count;
+			continue;
+		}
+	} // ~for parsing cmd options
+
+	// check required options were provided
+	for (auto opt : options)
+	{
+		if (std::get<0>(opt.second))
+		{
+			if (mopt.count(opt.first) == 0)
+			{
+				std::cout << "Missing required flag: " << opt.first << std::endl;
+			}
+		}
+	}
+
+	// Process options
+	// process WORKDIR first as other options depend on it
+	auto wd_it = mopt.find("workdir");
+	std::string wdir = "";
+	if (wd_it != mopt.end())
+	{
+		wdir = wd_it->second;
+		mopt.erase(wd_it); // remove to prevent repeated processing below
+	}
+	opt_workdir(wdir);
+
+	// loop through the rest of options
+	for (auto opt : mopt)
+	{
+		std::cout << "Processing option: " << opt.first << " with value: " << opt.second << std::endl;
+
+		int count = options.count(opt.first);
+		if (count > 0) 
+		{
+			//std::string descr = std::get<1>(options.at(opt.first));
+			//std::get<2>(options.at(opt.first))(opt.second); // call processing function for the given option
+			std::invoke(std::get<2>(options.at(opt.first)), this, opt.second);
+		}
+		// passed option is not recognized
+		else
+		{
+			opt_default(opt.first);
+		}
+	}
+
+	// validate the options. TODO: should be part of options validation
 	test_kvdb_path();
+	validate();
+} // ~Runopts::process
 
-	 // ERROR messages ******* 
-	 // Reads file is mandatory
-	if (readsfile.empty() || indexfiles.empty())
-	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] a reads file (--reads file.{fa/fq}) and a "
-			"reference sequence file (--ref /path/to/file1.fasta,/path/to/index1) "
-			"are mandatory input.\n\n", RED, COLOFF, __LINE__, __FILE__);
-		printlist();
-		exit(EXIT_FAILURE);
-	}
-
-	// Basename for aligned reads is mandatory
-	if (filetype_ar.size() == 0)
-	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
-			RED, COLOFF, __LINE__, __FILE__);
-		exit(EXIT_FAILURE);
-	}
-
+void Runopts::validate()
+{
 	// No output format has been chosen
-	else if (!(fastxout || blastout || samout || otumapout || doLog || de_novo_otu))
+	if (!(fastxout || blastout || samout || otumapout || doLog || de_novo_otu))
 	{
-		fprintf(stderr,
-			"\n  %sERROR%s: [Line %d: %s] no output format has been chosen (fastx/sam/blast/otu_map/log).\n\n",
-			RED, COLOFF, __LINE__, __FILE__);
+		ERR(": no output format has been chosen (fastx/sam/blast/otu_map/log)");
 		exit(EXIT_FAILURE);
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!fastxout && (pairedin || pairedout))
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] options --paired_in and --paired_out "
-			"must be accompanied by option --fastx.\n", RED, COLOFF, __LINE__, __FILE__);
-		fprintf(stderr, "  These BOOLs are for FASTA and FASTQ output files, for "
-			"maintaining paired reads together.\n");
+		ERR(": options '--paired_in' and '--paired_out' must be accompanied by option '--fastx'.\n"
+			"  These BOOLs are for FASTA and FASTQ output files to maintain paired reads together.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1433,8 +1083,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		if (!fastxout && (blastout || samout))
 		{
-			fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] option --other [STRING] can only be used together "
-				"with the --fastx option.\n\n", RED, COLOFF, __LINE__, __FILE__);
+			ERR(": option --other [STRING] can only be used together with the --fastx option.");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -1442,27 +1091,26 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// An OTU map can only be constructed with the single best alignment per read
 	if (otumapout && num_alignments_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --otu_map cannot be set together with "
-			"--num_alignments [INT].\n", RED, COLOFF, __LINE__, __FILE__);
-		fprintf(stderr, "  The option --num_alignments [INT] doesn't keep track of "
-			"the best alignment which is required for constructing an OTU map.\n");
-		fprintf(stderr, "  Use --otu_map with --best [INT] instead.\n\n");
+		ERR(" : --otu_map cannot be set together with --num_alignments [INT].\n"
+			"   The option --num_alignments [INT] doesn't keep track of"
+			" the best alignment which is required for constructing an OTU map.\n"
+			"   Use --otu_map with --best [INT] instead.");
 		exit(EXIT_FAILURE);
 	}
 
 	// If --num_alignments output was chosen, check an alignment format has also been chosen
 	if (num_alignments_set && !(blastout || samout || fastxout))
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --num_alignments [INT] has been set but no output "
-			"format has been chosen (--blast, --sam or --fastx).\n\n", RED, COLOFF, __LINE__, __FILE__);
+		ERR(" : --num_alignments [INT] has been set but no output "
+			"format has been chosen (--blast, --sam or --fastx).");
 		exit(EXIT_FAILURE);
 	}
 
 	// If --best output was chosen, check an alignment format has also been chosen
 	if (best_set && !(blastout || samout || otumapout))
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] has been set but no output "
-			"format has been chosen (--blast or --sam or --otu_map).\n\n", RED, COLOFF, __LINE__, __FILE__);
+		ERR(" : --best [INT] has been set but no output "
+			"format has been chosen (--blast or --sam or --otu_map).");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1580,15 +1228,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		if (otumapout) align_cov = 0.97;
 		else align_cov = 0;
 	}
-
-	for (int i = 0; i < argc; i++) {
-		cmdline.append(argv[i]);
-		cmdline.append(" ");
-	}
-} // ~Runopts::process
-
-
-
+} // ~Runopts::validate
 
   /*! @fn welcome()
   *  @brief outputs copyright, disclaimer and contact information
@@ -1633,11 +1273,7 @@ void printlist()
 	std::stringstream ss;
 
 	ss << std::endl
-		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads file.fa --aligned base_name_output [OPTIONS]:" << std::endl
-#ifdef HAVE_LIBZ
-		<< "  OR" << std::endl
-		<< "  usage:   ./sortmerna --ref db.fasta,db.idx --reads-gz file.fa.gz --aligned base_name_output [OPTIONS]:" << std::endl
-#endif
+		<< "  usage:   sortmerna --ref REFERENCE_FILE --reads READS_FILE [OPTIONS]:" << std::endl
 		<< std::endl
 		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
 		<< "  | option              type-format       description                                              default    |"  << std::endl
@@ -1654,13 +1290,6 @@ void printlist()
 		<<                       "  STRING       "                                                                            << COLOFF
 		<<                                       "   FASTA/FASTQ raw reads file                                "              << GREEN 
 		<<                                                                                                     "mandatory"    << COLOFF << std::endl
-#ifdef HAVE_LIBZ
-		<< "        OR"                                                                                                       << std::endl << BOLD                                                                                                    
-		<< "    --reads-gz       "                                                                                            << COLOFF << UNDL
-		<<                       "  STRING       "                                                                            << COLOFF
-		<<                                       "   FASTA/FASTQ compressed (with gzip) reads file             "              << GREEN 
-		<<                                                                                                     "mandatory"    << COLOFF << std::endl << BOLD
-#endif
 		<< "    --aligned        "                                                                                            << COLOFF << UNDL
 		<<                       "  STRING       "                                                                            << COLOFF
 		<<                                       "   aligned reads filepath + base file name                   "              << GREEN 

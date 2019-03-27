@@ -102,7 +102,7 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 		{
 			KeyValueDatabase kvdb(opts.kvdbPath);
 			read.clear();
-			read.init(opts, kvdb, std::stoi(readid));
+			read.init(std::stoi(readid), kvdb, opts);
 			ss << read.matchesToJson() << std::endl;
 		}
 		else

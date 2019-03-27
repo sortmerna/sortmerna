@@ -23,7 +23,7 @@ int Gzip::getline(std::ifstream & ifs, std::string & line)
 
 	line.clear();
 
-	if (opts.have_reads_gz)
+	if (gzipped)
 	{
 		bool line_ready = false;
 		for (; !line_ready; )

@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(sortmerna CXX C)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Git)
 
@@ -67,6 +67,9 @@ set(DIRENTWIN_URL https://github.com/tronkko/dirent CACHE STRING "Dirent-Windows
 set(DIRENTWIN_HOME ${EXTERNAL_DEPS}/dirent CACHE PATH "Dirent-Windows interface installation directory")
 set(CONCURRENTQUEUE_URL https://github.com/cameron314/concurrentqueue CACHE STRING "Concurrent queue library GitHub URL")
 set(CONCURRENTQUEUE_HOME ${EXTERNAL_DEPS}/concurrentqueue CACHE PATH "Concurrent queue library installation directory")
+#set(gflags_DIR  ${EXTERNAL_DEPS}/gflags/dist/lib/cmake/gflags CACHE PATH "GFlags library configuration")
+
+option(PORTABLE "Build portable/statically linked executable" ON)
 
 option(WITH_MD_LIBRARY "build with MD" ON)
 if(WIN32 AND MSVC)

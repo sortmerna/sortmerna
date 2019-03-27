@@ -69,6 +69,9 @@ public:
 		std::cout << ss.str(); ss.str("");
 	}
 
+	/** 
+	 * Blocks until queue has capacity for more reads
+	 */
 	void push(Read & rec) 
 	{
 #ifdef LOCKQEUEU

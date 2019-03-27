@@ -7,17 +7,27 @@
  *    skip lengths for pass 1, pass 2 and pass 3 in first step of sortmerna
  *    pipeline for each reference database searched
  */
-#include <vector>
 #include <string>
+#include <vector>
+#include <map>
+#include <tuple>
 
 #include "common.hpp"
 
-struct Runopts {
-	std::string kvdbPath; // '-d' (opt_d_KeyValDatabase) key-value database for alignment results
-	std::string readsfile; // '--reads | --reads-gz' reads file path
+struct Runopts 
+{
+	Runopts(int argc, char**argv, bool dryrun);
+	~Runopts() {}
+
+	typedef void (Runopts::*OptsMemFunc)(const std::string&); // pointer to member function
+
+	std::string kvdbPath; // '-d' (opt_d) key-value database for alignment results
+	std::string readsfile; // '--reads | --reads-gz' reads file path   '--reads' -> '--left' | '--left-gz'
+	std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
 	std::string filetype_ar; // '--aligned' aligned reads output file
 	std::string filetype_or; // '--other' rejected reads output file
 	std::string cmdline;
+	std::string workdir;
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
 	int num_write_thread = 1; // number of threads writing to Key-value database
@@ -55,6 +65,7 @@ struct Runopts {
 
 	bool forward = false; // '-F' search only the forward strand if true
 	bool reverse = false; // '-R' search only the reverse-complementary strand if true
+	bool paired = false; // '--paired' flags processing paired reads
 	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file. Only Fasta/q and De-novo reporting.
 	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file. Only Fasta/q and De-novo reporting.
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
@@ -68,8 +79,8 @@ struct Runopts {
 	bool as_percent = false;
 	bool full_search = false;
 	bool exit_early = false; // flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
-	bool verbose; /* Verbose mode */
-	bool have_reads_gz = false; // '--reads-gz' flags reads file is compressed and can be read
+	bool verbose; // Verbose mode
+	bool is_gz = false; // flags reads file is compressed and can be read
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 	bool interactive = false; // start interactive session
 
@@ -96,18 +107,61 @@ struct Runopts {
 		Defaults: 0 */
 	std::vector<std::vector<uint32_t>> skiplengths;
 
-	Runopts(int argc, char**argv, bool dryrun)
-	{ 
-		process(argc, argv, dryrun);
-		if (skiplengths.empty())
-		{
-			for ( int i = 0; i < indexfiles.size(); ++i )
-			{
-				skiplengths.push_back({ 0,0,0 });
-			}
-		}
-	}
-	~Runopts() {}
+private:
+	// methods
+	void process(int argc, char**argv, bool dryrun);
+	void validate();
+
+	void opt_reads(const std::string &val);
+	void opt_reads_gz(char **argv, int &narg);
+	void opt_ref(const std::string &val);
+	void opt_aligned(const std::string &val); // TODO: make optional. Aligned will be named automatically and put into WORKDIR
+	void opt_other(const std::string &val); // TODO: make optional. Similar to Aligned.
+	void opt_log(const std::string &val);
+	void opt_de_novo_otu(const std::string &val);
+	void opt_otu_map(const std::string &val);
+	void opt_print_all_reads(const std::string &val);
+	void opt_pid(const std::string &val);
+	void opt_paired_in(const std::string &val);
+	void opt_paired_out(const std::string &val);
+	void opt_match(const std::string &val);
+	void opt_mismatch(const std::string &val);
+	void opt_gap_open(const std::string &val);
+	void opt_gap_ext(const std::string &val);
+	void opt_num_seeds(const std::string &val);
+	void opt_fastx(const std::string &val);
+	void opt_sam(const std::string &val);
+	void opt_blast(const std::string &val);
+	void opt_min_lis(const std::string &val);
+	void opt_best(const std::string &val);
+	void opt_num_alignments(const std::string &val);
+	void opt_edges(const std::string &val);
+	void opt_full_search(const std::string &val);
+	void opt_SQ(const std::string &val);
+	void opt_passes(const std::string &val);
+	void opt_id(const std::string &val);
+	void opt_coverage(const std::string &val);
+	void opt_version(const std::string &val);
+	void opt_task(const std::string &val);
+	void opt_cmd(const std::string &val);
+	void opt_threads(const std::string &val);
+	void opt_thpp(const std::string &val); // post-proc threads --thpp 1:1
+	void opt_threp(const std::string &val); // report threads --threp 1:1 
+	void opt_a(const std::string &val);
+	void opt_e(const std::string &val); // opt_e_Evalue
+	void opt_F(const std::string &val); // opt_F_ForwardOnly
+	void opt_R(const std::string &val); // opt_R_ReverseOnly
+	void opt_h(const std::string &val);
+	void opt_v(const std::string &val); // opt_v_Verbose
+	void opt_N(const std::string &val); // opt_N_MatchAmbiguous
+	void opt_d(const std::string &val); // opt_d_KeyValDatabase Key-Value Database directory path (kvdbPath)
+	void opt_workdir(const std::string &path);
+
+	void opt_default(const std::string &opt);
+	void opt_dbg_put_db(const std::string &opt);
+	void opt_unknown(char **argv, int &narg, char * opt);
+
+	void test_kvdb_path();
 
 private:
 	// SW alignment parameters
@@ -124,55 +178,108 @@ private:
 	bool best_set = false;
 	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
 
-private:
-	// Functions
-	void process(int argc, char**argv, bool dryrun);
-	void optReads(char **argv, int &narg);
-	void optReadsGz(char **argv, int &narg);
-	void optRef(char **argv, int &narg);
-	void optAligned(char **argv, int &narg);
-	void optOther(char **argv, int &narg);
-	void optLog(char **argv, int &narg);
-	void optDeNovoOtu(char **argv, int &narg);
-	void optOtuMap(char **argv, int &narg);
-	void optPrintAllReads(char **argv, int &narg);
-	void optPid(char **argv, int &narg);
-	void optPairedIn(char **argv, int &narg);
-	void optPairedOut(char **argv, int &narg);
-	void optMatch(char **argv, int &narg);
-	void optMismatch(char **argv, int &narg);
-	void optGapOpen(char **argv, int &narg);
-	void optGapExt(char **argv, int &narg);
-	void optNumSeeds(char **argv, int &narg);
-	void optFastx(char **argv, int &narg);
-	void optSam(char **argv, int &narg);
-	void optBlast(char **argv, int &narg);
-	void optMinLis(char **argv, int &narg);
-	void optBest(char **argv, int &narg);
-	void optNumAlignments(char **argv, int &narg);
-	void optEdges(char **argv, int &narg);
-	void optFullSearch(char **argv, int &narg);
-	void optSQ(char **argv, int &narg);
-	void optPasses(char **argv, int &narg);
-	void optId(char **argv, int &narg);
-	void optCoverage(char **argv, int &narg);
-	void optVersion(char **argv, int &narg);
-	void optTask(char **argv, int &narg);
-	void optInteractive(char **argv, int &narg); // interactive session
-	void optUnknown(char **argv, int &narg, char * opt);
-	void opt_threads(char **argv, int &narg);
-	void opt_threads_pp(char **argv, int &narg); // post-proc threads --thpp 1:1
-	void opt_threads_rep(char **argv, int &narg); // report threads --threp 1:1 
-	void opt_a_numProcThreads(char **argv, int &narg);
-	void opt_e_Evalue(char **argv, int &narg);
-	void opt_F_ForwardOnly(char **argv, int &narg);
-	void opt_R_ReverseOnly(char **argv, int &narg);
-	void opt_h_Help();
-	void opt_v_Verbose(int & narg);
-	void opt_N_MatchAmbiguous(char **argv, int &narg);
-	void opt_d_KeyValDatabase(char **argv, int &narg); // Key-Value Database directory path (kvdbPath)
-	void opt_Default(char **argv, int &narg);
-	void opt_debug_put_kvdb(int &narg);
+	// help strings
+	std::string \
+		help_ref = "FASTA reference file. Use mutliple '--ref' options to specify multiple files",
+		help_reads = "FASTA/FASTQ raw reads file. Use multiple '--reads' options for multiple files",
+		help_aligned = "Aligned reads file",
+		help_other = "",
+		help_fastx = "",
+		help_workdir = "Working directory path where to put KVDB and all the output files.",
+		help_sam = "",
+		help_SQ = "",
+		help_blast = "",
+		help_dbg_put_db = "",
+		help_log = "",
+		help_num_alignments = "",
+		help_best = "",
+		help_min_lis = "",
+		help_print_all_reads = "",
+		help_paired_in = "",
+		help_paired_out = "",
+		help_match = "",
+		help_mismatch = "",
+		help_gap_open = "",
+		help_gap_ext = "",
+		help_N = "",
+		help_F = "",
+		help_R = "",
+		help_e = "",
+		help_v = "",
+		help_id = "",
+		help_coverage = "",
+		help_de_novo_otu = "",
+		help_otu_map = "",
+		help_passes = "",
+		help_edges = "",
+		help_num_seeds = "",
+		help_pid = "",
+		help_full_search = "",
+		help_h = "",
+		help_version = "",
+		help_cmd = "",
+		help_task = "",
+		help_d = "key-value datastore FULL folder path. Default: USERDIR/kvdb",
+		help_a = "",
+		help_threads = "",
+		help_thpp = "",
+		help_threp = ""
+		;
 
-	void test_kvdb_path();
-};
+	// container for options passed to the program
+	std::multimap<std::string, std::string> mopt;
+
+	// OPTIONS Map specifies all possible options
+	//std::map<std::string, std::tuple<bool, std::string, void(*)(const std::string&)>> options
+	std::map<std::string, std::tuple<bool, std::string, OptsMemFunc>> options
+	{
+		//     |                      |         |               |_pointer to option processing function
+		//     |                      |         |_option help string
+		//     |_option name          |_flag is option required
+		{"ref",             {true, help_ref, &Runopts::opt_ref}},
+		{"reads",           {true, help_reads, &Runopts::opt_reads}},
+		{"aligned",         {false, help_aligned, &Runopts::opt_aligned}},
+		{"other",           {false, help_other, &Runopts::opt_other}},
+		{"workdir",         {false, help_workdir, &Runopts::opt_workdir}},
+		{"fastx",           {false, help_fastx, &Runopts::opt_fastx}},
+		{"sam",             {false, help_sam, &Runopts::opt_sam}},
+		{"SQ",              {false, help_SQ, &Runopts::opt_SQ}},
+		{"blast",           {false, help_blast, &Runopts::opt_blast}},
+		{"log",             {false, help_log, &Runopts::opt_log}},
+		{"num_alignments",  {false, help_num_alignments, &Runopts::opt_num_alignments}},
+		{"best",            {false, help_best, &Runopts::opt_best}},
+		{"min_lis",         {false, help_min_lis, &Runopts::opt_min_lis}},
+		{"print_all_reads", {false, help_print_all_reads, &Runopts::opt_print_all_reads}},
+		{"paired_in",       {false, help_paired_in, &Runopts::opt_paired_in}},
+		{"paired_out",      {false, help_paired_out, &Runopts::opt_paired_out}},
+		{"match",           {false, help_match, &Runopts::opt_match}},
+		{"mismatch",        {false, help_mismatch, &Runopts::opt_mismatch}},
+		{"gap_open",        {false, help_gap_open, &Runopts::opt_gap_open}},
+		{"gap_ext",         {false, help_gap_ext, &Runopts::opt_gap_ext}},
+		{"N",               {false, help_N, &Runopts::opt_N}},
+		{"F",               {false, help_F, &Runopts::opt_F}},
+		{"R",               {false, help_R, &Runopts::opt_R}},
+		{"e",               {false, help_e, &Runopts::opt_e}},
+		{"v",               {false, help_v, &Runopts::opt_v}},
+		{"id",              {false, help_id, &Runopts::opt_id}},
+		{"coverage",        {false, help_coverage, &Runopts::opt_coverage}},
+		{"de_novo_otu",     {false, help_de_novo_otu, &Runopts::opt_de_novo_otu}},
+		{"otu_map",         {false, help_otu_map, &Runopts::opt_otu_map}},
+		{"passes",          {false, help_passes, &Runopts::opt_passes}},
+		{"edges",           {false, help_edges, &Runopts::opt_edges}},
+		{"num_seeds",       {false, help_num_seeds, &Runopts::opt_num_seeds}},
+		{"full_search",     {false, help_full_search, &Runopts::opt_full_search}},
+		{"pid",             {false, help_pid, &Runopts::opt_pid}},
+		{"h",               {false, help_h, &Runopts::opt_h}},
+		{"version",         {false, help_version, &Runopts::opt_version}},
+		{"cmd",             {false, help_cmd, &Runopts::opt_cmd}},
+		{"task",            {false, help_task, &Runopts::opt_task}},
+		{"d",               {false, help_d, &Runopts::opt_d}},
+		{"a",               {false, help_a, &Runopts::opt_a}},
+		{"threads",         {false, help_threads, &Runopts::opt_threads}},
+		{"thpp",            {false, help_thpp, &Runopts::opt_thpp}},
+		{"threp",           {false, help_threp, &Runopts::opt_threp}},
+		{"dbg_put_db",      {false, help_dbg_put_db, &Runopts::opt_dbg_put_db}}
+	}; // ~map options
+}; // ~struct Runopts
+// ~options.cpp

@@ -19,12 +19,12 @@
 class Gzip
 {
 public:
-	Gzip(Runopts & opts) : opts(opts), line_start(0), pstrm(0) { if (opts.have_reads_gz) init(); }
+	Gzip(bool gzipped) : gzipped(gzipped), line_start(0), pstrm(0) { if (gzipped) init(); }
 
 	int getline(std::ifstream & ifs, std::string & line);
 
 private:
-	Runopts & opts;
+	bool gzipped;
 	// zlib related
 	char* line_start; // pointer to the start of a line within the 'z_out' buffer
 	z_stream * pstrm;

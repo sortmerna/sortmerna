@@ -5,10 +5,19 @@
  */
 #include <iostream> // cerr
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <cstring>
 #include <dirent.h>
 #include <algorithm>
+
+#if defined(_WIN32)
+	#include <direct.h>
+	#define GetCurrentDir _getcwd
+#else
+	#include <unistd.h>
+	#define GetCurrentDir getcwd
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,6 +28,7 @@ unsigned int list_dir(std::string dpath);
 int clear_dir(std::string dpath);
 bool dirExists(std::string dpath);
 std::string get_user_home();
+std::streampos filesize(const std::string &file);
 
 unsigned int check_dir(std::string dpath)
 {
@@ -118,4 +128,61 @@ std::string get_user_home()
 	homedir.append(getenv("HOME"));
 #endif
 	return homedir;
+}
+
+/* remove dashes from the beginning of options like --ref */
+std::string trim_leading_dashes(std::string const& name)
+{
+	auto pos = name.find_first_not_of('-');
+	return std::string::npos != pos ? name.substr(pos) : name;
+}
+
+/* extract basename from the file path */
+std::string get_basename(const std::string &file)
+{
+	return file.substr(file.find_last_of("/\\") + 1);
+} // ~get_basename
+
+/* 
+ * calculate file size 
+ * @param file path 
+ */
+std::streampos filesize(const std::string &file)
+{
+	std::streampos pos = -1;
+	std::fstream ifs(file, std::ios_base::in | std::ios_base::binary);
+	if (!ifs.is_open()) {
+		std::cout << "failed to open " << file << std::endl;
+	}
+	else
+	{
+		ifs.seekg(0, std::ios_base::end);
+		pos = ifs.tellg();
+		if (ifs.is_open()) ifs.close();
+	}
+	return pos;
+} // ~std::streampos filesize
+
+std::string get_current_dir()
+{
+	std::string path;
+	char cCurrentPath[FILENAME_MAX];
+
+	if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
+	{
+		std::cerr << "[" << __func__ << ":" << __LINE__ << "]" << " ERROR getting current directory: [" << errno << "]" << std::endl;
+	}
+	else
+		path.assign(cCurrentPath);
+
+	//cCurrentPath[sizeof(cCurrentPath) - 1] = '\0';
+	return path;
+} // ~get_current_dir
+
+std::string string_hash(const std::string &val)
+{
+	std::stringstream ss;
+	std::hash<std::string> hash_fn;
+	ss << hash_fn(val);
+	return ss.str();
 }

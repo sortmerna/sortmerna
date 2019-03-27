@@ -54,6 +54,7 @@
 #include "reader.hpp"
 #include "writer.hpp"
 #include "output.hpp"
+#include "read_control.hpp"
 
 
 #if defined(_WIN32)
@@ -436,7 +437,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 			starts = std::chrono::high_resolution_clock::now();
 			for (int i = 0; i < opts.num_read_thread; i++)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+				tpool.addJob(ReadControl(opts, readQueue, kvdb));
 			}
 
 			for (int i = 0; i < opts.num_write_thread; i++)
@@ -458,7 +459,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 			readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << __func__ << ":" << __LINE__ << " paralleltraversal: Done index " << index_num << " Part: " << idx_part + 1 
+			ss << STAMP << " paralleltraversal: Done index " << index_num << " Part: " << idx_part + 1 
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)

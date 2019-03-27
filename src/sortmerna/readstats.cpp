@@ -35,8 +35,8 @@ void Readstats::calculate()
 
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		ss << "Failed to open Reads file: " << opts.readsfile << "\n";
-		std::cout << ss.str(); ss.str("");
+		ss << "Failed to open Reads file: " << opts.readsfile;
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -45,7 +45,7 @@ void Readstats::calculate()
 		std::string sequence; // full sequence of a Read (can contain multiple lines for Fasta files)
 		bool isFastq = false;
 		bool isFasta = false;
-		Gzip gzip(opts);
+		Gzip gzip(opts.is_gz);
 
 		auto t = std::chrono::high_resolution_clock::now();
 
@@ -69,8 +69,10 @@ void Readstats::calculate()
 
 			if (stat == RL_ERR)
 			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
-				exit(1);
+				ss.str("");
+				ss << STAMP << " ERROR reading from Reads file. Exiting...";
+				ERR(ss.str());
+				exit(EXIT_FAILURE);
 			}
 
 			if (line.empty()) 
@@ -91,8 +93,9 @@ void Readstats::calculate()
 
 				if (!(isFasta || isFastq))
 				{
-					std::cerr << __FILE__ << ":" << __LINE__
-						<< "  ERROR: the line [" << line << "] is not FASTA/Q header: " << std::endl;
+					ss.str("");
+					ss << STAMP << " the line [" << line << "] is not FASTA/Q header";
+					ERR(ss.str());
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -102,9 +105,10 @@ void Readstats::calculate()
 				count = 0;
 				if (line[0] != FASTQ_HEADER_START)
 				{
-					std::cerr << __FILE__ << ":" << __LINE__
-						<< "  ERROR: the line [" << line << "] is not FASTQ header. number_total_read= " 
-						<< number_total_read << " tcount= " << tcount << std::endl;
+					ss.str("");
+					ss << STAMP << " the line [" << line << "] is not FASTQ header. number_total_read= "
+						<< number_total_read << " tcount= " << tcount;
+					ERR(ss.str());
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -128,12 +132,13 @@ void Readstats::calculate()
 				{
 					if (count > 3)
 					{
-						ss << __FILE__ << ":" << __LINE__ << " Unexpected number of lines : " << count 
+						ss.str("");
+						ss << STAMP << " Unexpected number of lines : " << count 
 							<< " in a single FASTQ Read. Total reads processed: " << number_total_read
 							<< " Last sequence: " << sequence
 							<< " Last line read: " << line
-							<< " Exiting..." << std::endl;
-						std::cout << ss.str(); ss.str("");
+							<< " Exiting...";
+						ERR(ss.str()); 
 						exit(EXIT_FAILURE);
 					}
 					if ( count == 3 || line[0] == '+' ) 
@@ -148,7 +153,7 @@ void Readstats::calculate()
 		ss << std::setprecision(2) << std::fixed 
 			<< "Readstats::calculate done. Elapsed time: " << elapsed.count() 
 			<< " sec. Reads processed: " << number_total_read << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 	ifs.close();
 } // ~Readstats::calculate
@@ -170,9 +175,9 @@ bool Readstats::check_file_format()
 		filesig = seq->last_char;
 	else
 	{
-		ss << "[" << __func__ << ":" << __LINE__ << "]" << RED << "  ERROR" << COLOFF
-			<< ": unrecognized file format or empty file " << opts.readsfile << std::endl;
-		std::cerr << ss.str();
+		ss.str("");
+		ss << STAMP << " unrecognized file format or empty file " << opts.readsfile;
+		ERR(ss.str());
 		exit_early = true;
 	}
 	kseq_destroy(seq);
@@ -188,7 +193,7 @@ bool Readstats::check_file_format()
 void Readstats::calcSuffix()
 {
 	const std::string suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1);
-	if (suff.length() > 0 && !opts.have_reads_gz)
+	if (suff.length() > 0 && !opts.is_gz)
 		suffix.assign(suff);
 	else if (filesig == FASTA_HEADER_START)
 		suffix.assign("fasta");
