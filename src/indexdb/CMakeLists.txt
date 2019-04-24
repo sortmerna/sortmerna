@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(indexdb CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 if(WIN32)
 	set(IXDB_HDRS
@@ -27,38 +27,29 @@ if(WIN32)
 		$<TARGET_OBJECTS:build_version>
 		${IXDB_HDRS} ${IXDB_SRCS}
 	)
-else()
-	add_executable(indexdb 
-		$<TARGET_OBJECTS:cmph>
-		$<TARGET_OBJECTS:build_version>
-		${IXDB_HDRS} ${IXDB_SRCS}
-	)
-endif()
-
-if(WIN32)
 	target_include_directories(indexdb PUBLIC 
 		${CMAKE_SOURCE_DIR}/include
 		${DIRENTWIN_HOME}/include
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
 	)
+	add_dependencies(indexdb cmph winapi build_version)
 else()
+	add_executable(indexdb 
+		$<TARGET_OBJECTS:cmph>
+		$<TARGET_OBJECTS:build_version>
+		${IXDB_HDRS} ${IXDB_SRCS}
+	)
 	target_include_directories(indexdb PUBLIC 
 		${CMAKE_SOURCE_DIR}/include
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 	)
+	add_dependencies(indexdb cmph build_version)
 	
 	if(PORTABLE)
-		target_link_options(indexdb -static)
+		target_link_options(indexdb PRIVATE -static)
 	endif(PORTABLE)
 endif()
 
-
-
 message("LINK_OPTIONS: ${LINK_OPTIONS}")
 
-if(WIN32)
-	add_dependencies(indexdb cmph winapi build_version)
-else(WIN32)
-	add_dependencies(indexdb cmph build_version)
-endif(WIN32)

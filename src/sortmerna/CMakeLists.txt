@@ -18,8 +18,6 @@ find_package(RocksDB
   NO_DEFAULT_PATH
 )
 
-find_package(gflags REQUIRED)
-
 # fix for RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
 	if(ZLIB_LIBRARY_RELEASE)
@@ -70,7 +68,6 @@ target_link_libraries(smr_objs
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
 		alp
-		gflags
 )
 if(WIN32)
 	target_include_directories(smr_objs 
@@ -104,7 +101,6 @@ if(WIN32)
 		ZLIB::ZLIB
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
-		gflags
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
@@ -127,7 +123,6 @@ else()
 		ZLIB::ZLIB
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
-		gflags::gflags
 		${CMAKE_THREAD_LIBS_INIT}
 	)
 	add_dependencies(sortmerna 
@@ -135,4 +130,8 @@ else()
 		smr_objs 
 		build_version
 	)
+	
+	if(PORTABLE)
+		target_link_options(sortmerna PRIVATE -static)
+	endif(PORTABLE)
 endif()

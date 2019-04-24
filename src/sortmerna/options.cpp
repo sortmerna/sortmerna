@@ -24,6 +24,7 @@
 #include <fstream>
 #include <cstring> // strerror, strrchr, memcpy, strcpy, strpbrk
 #include <fcntl.h>
+#include <functional> // std::invoke
 
 
 #ifdef __APPLE__
