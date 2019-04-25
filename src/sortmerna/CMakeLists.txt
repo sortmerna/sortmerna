@@ -12,17 +12,17 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
-find_package(RocksDB 
-	REQUIRED
+find_package(RocksDB REQUIRED
   PATHS ${ROCKSDB_HOME}
   NO_DEFAULT_PATH
 )
 
-# fix for RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
+# fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
 	if(ZLIB_LIBRARY_RELEASE)
+		# modify the dependent libraries of the RocksDB::rocksdb target
 		set_target_properties(RocksDB::rocksdb PROPERTIES
-			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};-lpthread"
+			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};Threads::Threads)" # "${ZLIB_LIBRARY_RELEASE};-lpthread"
 		)
 	endif()
 endif()
@@ -64,10 +64,10 @@ set(SMR_SRCS
 add_library(smr_objs OBJECT ${SMR_SRCS})
 target_link_libraries(smr_objs
 	PUBLIC
-		ZLIB::ZLIB
+		alp
 		RocksDB::rocksdb
 		RapidJSON::RapidJSON
-		alp
+		ZLIB::ZLIB
 )
 if(WIN32)
 	target_include_directories(smr_objs 
@@ -104,31 +104,27 @@ if(WIN32)
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
-	add_dependencies(sortmerna 
-		winapi
-		alp
-		build_version
-		smr_objs
-	)
+	# seems this is not necessary because `target_link_libraries` above already specified these dependencies
+	#add_dependencies(sortmerna 
+	#	winapi
+	#	alp
+	#	build_version
+	#	smr_objs
+	#)
 else()
 	target_include_directories(sortmerna 
 		PRIVATE
 			${EXTERNAL_DEPS}/concurrentqueue
 			${CMAKE_SOURCE_DIR}/include
 	)
+	#get_property(rocksdb_trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
+	#message("rocksdb_trans_deps: ${rocksdb_trans_deps}")
 	target_link_libraries(sortmerna
 		build_version
 		smr_objs
-		alp
-		ZLIB::ZLIB
-		RocksDB::rocksdb
-		RapidJSON::RapidJSON
-		${CMAKE_THREAD_LIBS_INIT}
-	)
-	add_dependencies(sortmerna 
-		alp 
-		smr_objs 
-		build_version
+		alp # this is a transitive dependency of smr_objs but the linking fails without it. Why?
+		# the following are all transitive dependencies of smr_objs i.e. no need to link: 
+		# RocksDB::rocksdb RapidJSON::RapidJSON ZLIB::ZLIB Threads::Threads (rockdb deps)
 	)
 	
 	if(PORTABLE)

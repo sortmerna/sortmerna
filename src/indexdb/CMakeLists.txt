@@ -33,7 +33,7 @@ if(WIN32)
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
 	)
-	add_dependencies(indexdb cmph winapi build_version)
+	#add_dependencies(indexdb cmph winapi build_version)
 else()
 	add_executable(indexdb 
 		$<TARGET_OBJECTS:cmph>
@@ -44,7 +44,7 @@ else()
 		${CMAKE_SOURCE_DIR}/include
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 	)
-	add_dependencies(indexdb cmph build_version)
+	#add_dependencies(indexdb cmph build_version)
 	
 	if(PORTABLE)
 		target_link_options(indexdb PRIVATE -static)
