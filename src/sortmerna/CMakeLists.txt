@@ -17,6 +17,9 @@ find_package(RocksDB REQUIRED
   NO_DEFAULT_PATH
 )
 
+get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
+message("rocksdb transitive link dependencies: ${trans_deps}")
+
 # fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
 	if(ZLIB_LIBRARY_RELEASE)
@@ -24,6 +27,8 @@ if(NOT WIN32)
 		set_target_properties(RocksDB::rocksdb PROPERTIES
 			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};Threads::Threads)" # "${ZLIB_LIBRARY_RELEASE};-lpthread"
 		)
+		get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
+		message("rocksdb transitive link dependencies AFTER modification: ${trans_deps}")
 	endif()
 endif()
 
@@ -84,6 +89,9 @@ else()
 	)
 endif()
 
+get_property(trans_deps TARGET smr_objs PROPERTY INTERFACE_LINK_LIBRARIES)
+message("SMR Objects transitive link dependencies: ${trans_deps}")
+
 # SMR
 add_executable(sortmerna main.cpp)
 if(WIN32)
@@ -104,13 +112,6 @@ if(WIN32)
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)
-	# seems this is not necessary because `target_link_libraries` above already specified these dependencies
-	#add_dependencies(sortmerna 
-	#	winapi
-	#	alp
-	#	build_version
-	#	smr_objs
-	#)
 else()
 	target_include_directories(sortmerna 
 		PRIVATE
