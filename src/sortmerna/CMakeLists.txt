@@ -25,7 +25,7 @@ if(NOT WIN32)
 	if(ZLIB_LIBRARY_RELEASE)
 		# modify the dependent libraries of the RocksDB::rocksdb target
 		set_target_properties(RocksDB::rocksdb PROPERTIES
-			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};Threads::Threads)" # "${ZLIB_LIBRARY_RELEASE};-lpthread"
+			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};Threads::Threads"
 		)
 		get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
 		message("rocksdb transitive link dependencies AFTER modification: ${trans_deps}")
