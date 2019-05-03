@@ -40,12 +40,12 @@ void ReadControl::run()
 	}
 
 	std::string rid("reader_" + std::to_string(1));
-	Reader reader_fwd(rid, ifs, opts.is_gz, kvdb);
+	Reader reader_fwd(rid, opts.is_gz);
 	vreader.push_back(reader_fwd);
 	if (opts.paired)
 	{
 		rid = "reader_" + std::to_string(2);
-		Reader reader_rev(rid, ifs, opts.is_gz, kvdb);
+		Reader reader_rev(rid, opts.is_gz);
 		vreader.push_back(reader_rev);
 	}
 
@@ -60,9 +60,9 @@ void ReadControl::run()
 	for (; !reader_fwd.is_done || (opts.paired && !vreader[1].is_done);)
 	{
 		if (!reader_fwd.is_done)
-			read = reader_fwd.nextread(opts);
+			read = reader_fwd.nextread(opts, ifs, kvdb);
 		if (opts.paired && !vreader[1].is_done)
-			read = vreader[1].nextread(opts);
+			read = vreader[1].nextread(opts, ifs, kvdb);
 
 		if (!read.isEmpty)
 			readQueue.push(read);

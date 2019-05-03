@@ -17,20 +17,21 @@
 #include "reader.hpp"
 #include "gzip.hpp"
 
-Reader::Reader(std::string id, std::ifstream &ifs, bool is_gzipped, KeyValueDatabase & kvdb)
+Reader::Reader(std::string id, bool is_gzipped)
 	:
 	id(id),
 	is_gzipped(is_gzipped),
 	gzip(is_gzipped),
-	kvdb(kvdb),
-	ifs(ifs)
+	is_done(false),
+	read_count(0),
+	line_count(0),
+	last_count(0),
+	last_stat(0),
+	isFastq(false),
+	isFasta(false)
 {} // ~Reader::Reader
 
-Reader::~Reader()
-{
-	if (ifs.is_open())
-		ifs.close();
-}
+Reader::~Reader() {}
 
 bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 {
@@ -127,7 +128,7 @@ bool Reader::loadReadById(Runopts & opts, Read & read)
 /** 
  * return next read from the reads file on each call 
  */
-Read Reader::nextread(Runopts & opts)
+Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
 {
 	std::string line;
 	Read read; // an empty read
@@ -219,3 +220,109 @@ Read Reader::nextread(Runopts & opts)
 	} // ~for getline
 	return read;
 } // ~Reader::nextread
+
+/**
+ * get a next read sequence from the reads file
+ * @return true if record exists, else false
+ */
+bool Reader::nextread(std::ifstream& ifs, std::string &seq)
+{
+	bool has_seq = false;
+	seq = ""; // ensure empty
+	std::string line;
+
+	// read lines from the reads file and create Read object
+	for (int count = last_count, stat = last_stat; !is_done; ++count) // count lines in a single record/read
+	{
+		stat = gzip.getline(ifs, line);
+
+		if (stat == RL_ERR)
+		{
+			std::cerr << STAMP << "ERROR reading from file stream. Exiting..." << std::endl;
+			exit(1);
+		}
+
+		if (stat == RL_END)
+		{
+			// the last Read processed
+			if (!seq.empty())
+			{
+				++read_count;
+				is_done = true;
+				reset();
+			}
+			break;
+		}
+
+		++line_count; // total lines read so far
+
+		// skip empty lines
+		if (line.empty())
+		{
+			--count;
+			--line_count;
+			continue;
+		}
+
+		// left trim space and '>' or '@'
+		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+
+		if (line_count == 1)
+		{
+			isFastq = (line[0] == FASTQ_HEADER_START);
+			isFasta = (line[0] == FASTA_HEADER_START);
+		}
+
+		if (count == 4 && isFastq)
+		{
+			count = 0;
+		}
+
+		// fastq: 0(header), 1(seq), 2(+), 3(quality)
+		// fasta: 0(header), 1(seq)
+		if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0)) // header reached
+		{
+			if (!seq.empty())
+			{
+				++read_count;
+				last_count = 1;
+				last_stat = stat;
+				break;
+			}
+
+			count = 0; // FASTA record start
+		} // ~if header line
+		else
+		{
+			if (isFastq && (count == 2 || count == 3))
+			{
+				continue; // skip + and quality line in Fastq
+			}
+
+			seq += line; // FASTA multi-line sequence or FASTQ sequence
+		}
+	} // ~for getline
+
+	has_seq = seq.size() > 0 ? true : false;
+	return has_seq;
+} // ~Reader::nextread
+
+/**
+ * test if there is a next read in the reads file
+ */
+bool Reader::hasnext(std::ifstream& ifs)
+{
+	bool is_next = false;
+	return is_next;
+} // ~Reader::hasnext
+
+void Reader::reset()
+{
+	read_count = 0;
+	line_count = 0;
+	last_count = 0;
+	last_stat = 0;
+	bool isFastq = false;
+	bool isFasta = false;
+	is_done = false;
+}

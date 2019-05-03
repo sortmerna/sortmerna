@@ -22,10 +22,13 @@ class Read;
  */
 class Reader {
 public:
-	Reader(std::string id, std::ifstream &ifs, bool is_gzipped, KeyValueDatabase & kvdb);
+	Reader(std::string id, bool is_gzipped);
 	~Reader();
 
-	Read nextread(Runopts & opts);
+	Read nextread(Runopts & opts, std::ifstream & ifs, KeyValueDatabase & kvdb);
+	bool nextread(std::ifstream& ifs, std::string &seq);
+	void reset();
+	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Runopts & opts, Read & read);
 	static bool loadReadById(Runopts & opts, Read & read);
 
@@ -35,9 +38,7 @@ public:
 private:
 	std::string id;
 	bool is_gzipped;
-	KeyValueDatabase & kvdb; // key-value database
 	Gzip gzip;
-	std::ifstream &ifs; // reads file
 	unsigned int read_count; // count of reads
 	unsigned int line_count; // count of non-empty lines in the reads file
 	int last_count;

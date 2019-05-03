@@ -76,16 +76,17 @@ target_link_libraries(smr_objs
 )
 if(WIN32)
 	target_include_directories(smr_objs 
-		PRIVATE
+		PUBLIC
 			${CMAKE_SOURCE_DIR}/include
 			$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
 			${DIRENTWIN_HOME}/include
 			${EXTERNAL_DEPS}/concurrentqueue
 	)
 else()
-	target_include_directories(smr_objs PRIVATE
-		${CMAKE_SOURCE_DIR}/include
-		${EXTERNAL_DEPS}/concurrentqueue
+	target_include_directories(smr_objs 
+		PUBLIC
+			${CMAKE_SOURCE_DIR}/include
+			${EXTERNAL_DEPS}/concurrentqueue
 	)
 endif()
 

@@ -51,7 +51,7 @@ void Readstats::calculate()
 
 		std::cout << "Readstats::calculate starting ...   ";
 
-		for (int count = 0, stat = 0; ; ++count) // std::getline count lines in One record
+		for (int count = 0, stat = 0; ; ++count) // count of lines in a Single record
 		{
 			stat = gzip.getline(ifs, line);
 			++tcount;
