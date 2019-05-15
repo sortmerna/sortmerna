@@ -106,7 +106,7 @@ public:
 
 	void clear();
 
-	void init(unsigned int read_num, KeyValueDatabase & kvdb, Runopts & opts);
+	void init(Runopts & opts);
 
 	std::string matchesToJson(); // convert to Json string to store in DB
 
@@ -114,7 +114,7 @@ public:
 
 	std::string toString(); // convert to binary string to store in DB
 
-	bool restoreFromDb(KeyValueDatabase & kvdb); // deserialize matches from string
+	bool load_db(KeyValueDatabase & kvdb); // deserialize matches from string
 
 	void seqToIntStr();
 

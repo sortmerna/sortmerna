@@ -27,6 +27,7 @@ void reader_nextread(std::vector<std::string> &filev)
 	for (auto rfile : filev)
 	{
 		auto starts = std::chrono::high_resolution_clock::now();
+
 		std::ifstream ifs(rfile, std::ios_base::in | std::ios_base::binary);
 		std::string seq;
 		Reader reader("0", true);
@@ -34,7 +35,7 @@ void reader_nextread(std::vector<std::string> &filev)
 		size_t count = 0;
 		for (bool hasrec = true; hasrec;)
 		{
-			hasrec = reader.nextread(ifs, seq);
+			hasrec = reader.nextread(ifs, rfile, seq);
 			if (hasrec) ++count;
 			if (count % 1000000 == 0)
 				std::cout << "Number of records processed: " << count << std::endl;
@@ -50,6 +51,7 @@ void reader_nextread(std::vector<std::string> &filev)
 
 int main(int argc, char** argv)
 {
+	std::cout << STAMP << "Running with " << argc << " options" << std::endl;
 	//Runopts opts(argc, argv, false);
 	if (argc > 2)
 	{

@@ -69,6 +69,9 @@ set(CONCURRENTQUEUE_URL https://github.com/cameron314/concurrentqueue CACHE STRI
 set(CONCURRENTQUEUE_HOME ${EXTERNAL_DEPS}/concurrentqueue CACHE PATH "Concurrent queue library installation directory")
 #set(gflags_DIR  ${EXTERNAL_DEPS}/gflags/dist/lib/cmake/gflags CACHE PATH "GFlags library configuration")
 
+option(ROCKSDB_STATIC "Use static RocksDB library" ON)
+option(ZLIB_STATIC "Use static ZLib library" ON)
+
 option(PORTABLE "Build portable/statically linked executable" ON)
 
 option(WITH_MD_LIBRARY "build with MD" ON)
@@ -92,6 +95,24 @@ if(WIN32 AND MSVC)
   endif()
 endif()
 
+option(WITH_RUNTIME_DEBUG "Build with MDd/MTd on Windows. Ignored on non-Windows" OFF)
+if(WIN32 AND MSVC)
+  if(NOT WITH_RUNTIME_DEBUG)
+	foreach(flag_var
+		CMAKE_CXX_FLAGS_DEBUG 
+		CMAKE_C_FLAGS_DEBUG
+		)
+	   if(${flag_var} MATCHES "/MDd")
+		  string(REGEX REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
+		elseif(${flag_var} MATCHES "/MTd")
+		  string(REGEX REPLACE "/MTd" "/MT" ${flag_var} "${${flag_var}}")
+	   endif()
+	endforeach(flag_var)
+  endif()
+endif()
+
+message("CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
+message("CMAKE_C_FLAGS_DEBUG: ${CMAKE_C_FLAGS_DEBUG}")
 
 option(WITH_TESTS "Select whether to build tests" OFF)
 
@@ -178,7 +199,7 @@ if (WITH_TESTS)
 endif ()
 
 # Installation and packaging
-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories.")
 
 #include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

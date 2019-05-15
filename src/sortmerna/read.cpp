@@ -69,6 +69,7 @@ std::string alignment_struct2::toString()
 Read::Read()
 	:
 	id(0),
+	read_num(0),
 	isValid(false),
 	isEmpty(true),
 	is03(false),
@@ -167,16 +168,13 @@ void Read::generate_id()
 /**
  * 5 options are used here, which would make this method to take 7 args => use Runopts as arg
  */
-void Read::init(unsigned int read_num, KeyValueDatabase & kvdb, Runopts & opts)
+void Read::init(Runopts & opts)
 {
-	this->read_num = read_num;
 	generate_id();
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
 	validate();
 	seqToIntStr();
-	//unmarshallJson(kvdb); // get matches from Key-value database
-	restoreFromDb(kvdb); // get matches from Key-value database
 	initScoringMatrix(opts.match, opts.mismatch, opts.score_N);
 } // ~Read::init
 
@@ -368,7 +366,7 @@ std::string Read::toString()
 	return buf;
 } // ~Read::toString
 
-bool Read::restoreFromDb(KeyValueDatabase & kvdb)
+bool Read::load_db(KeyValueDatabase & kvdb)
 {
 	int id_win_hits_len = 0;
 	std::string bstr = kvdb.get(std::to_string(id));
@@ -429,7 +427,7 @@ bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 
 	isRestored = true;
 	return isRestored;
-} // ~Read::restoreFromDb
+} // ~Read::load_db
 
 void Read::unmarshallJson(KeyValueDatabase & kvdb)
 {

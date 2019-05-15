@@ -25,8 +25,8 @@ public:
 	Reader(std::string id, bool is_gzipped);
 	~Reader();
 
-	Read nextread(Runopts & opts, std::ifstream & ifs, KeyValueDatabase & kvdb);
-	bool nextread(std::ifstream& ifs, std::string &seq);
+	Read nextread(std::ifstream &ifs, const std::string &readsfile);
+	bool nextread(std::ifstream &ifs, const std::string &readsfile, std::string &seq);
 	void reset();
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Runopts & opts, Read & read);

@@ -22,7 +22,8 @@ struct Runopts
 	typedef void (Runopts::*OptsMemFunc)(const std::string&); // pointer to member function
 
 	std::string kvdbPath; // '-d' (opt_d) key-value database for alignment results
-	std::string readsfile; // '--reads | --reads-gz' reads file path   '--reads' -> '--left' | '--left-gz'
+	std::string readsfile; // TODO: replace with vector of pairs
+	std::vector<std::string> readfiles;
 	std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
 	std::string filetype_ar; // '--aligned' aligned reads output file
 	std::string filetype_or; // '--other' rejected reads output file

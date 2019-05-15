@@ -33,9 +33,19 @@ void ReadControl::run()
 	std::stringstream ss;
 
 	// open reads files for reading
-	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
-	if (!ifs.is_open()) {
-		ERR("failed to open " + opts.readsfile);
+	std::ifstream ifs_fwd(opts.readfiles[0], std::ios_base::in | std::ios_base::binary);
+
+	if (!ifs_fwd.is_open()) {
+		ERR("failed to open file: [" + opts.readfiles[0] + "]");
+		exit(EXIT_FAILURE);
+	}
+
+	std::ifstream ifs_rev;
+	if (opts.paired)
+		ifs_rev.open(opts.readfiles[1], std::ios_base::in | std::ios_base::binary);
+
+	if (!ifs_rev.is_open()) {
+		ERR("failed to open file: [" + opts.readfiles[0] + "]");
 		exit(EXIT_FAILURE);
 	}
 
@@ -60,12 +70,28 @@ void ReadControl::run()
 	for (; !reader_fwd.is_done || (opts.paired && !vreader[1].is_done);)
 	{
 		if (!reader_fwd.is_done)
-			read = reader_fwd.nextread(opts, ifs, kvdb);
-		if (opts.paired && !vreader[1].is_done)
-			read = vreader[1].nextread(opts, ifs, kvdb);
+		{
+			read = reader_fwd.nextread(ifs_fwd, opts.readfiles[0]);
 
-		if (!read.isEmpty)
-			readQueue.push(read);
+			if (!read.isEmpty)
+			{
+				read.init(opts);
+				read.load_db(kvdb); // get matches from Key-value database
+				//unmarshallJson(kvdb); // get matches from Key-value database
+				readQueue.push(read);
+			}
+		}
+		if (opts.paired && !vreader[1].is_done)
+		{
+			read = vreader[1].nextread(ifs_rev, opts.readfiles[1]);
+
+			if (!read.isEmpty)
+			{
+				read.init(opts);
+				read.load_db(kvdb); // get matches from Key-value database
+				readQueue.push(read);
+			}
+		}
 	}
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;

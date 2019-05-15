@@ -12,13 +12,47 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
-find_package(RocksDB REQUIRED
+find_package(RocksDB CONFIG REQUIRED
   PATHS ${ROCKSDB_HOME}
   NO_DEFAULT_PATH
 )
 
-get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
-message("rocksdb transitive link dependencies: ${trans_deps}")
+if(RocksDB_FOUND)
+	message("RocksDB package OK")
+else()
+	message("RocksDB package NOK")
+endif()
+
+# 
+get_target_property(lib RocksDB::rocksdb-shared LOCATION)
+message("RocksDB::rocksdb-shared LOCATION: ${lib}")
+get_target_property(lib RocksDB::rocksdb-shared LOCATION_DEBUG)
+message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
+get_target_property(lib RocksDB::rocksdb-shared IMPORTED_LOCATION_DEBUG)
+message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
+get_target_property(cfg RocksDB::rocksdb-shared IMPORTED_CONFIGURATIONS)
+message("RocksDB::rocksdb-shared IMPORTED_CONFIGURATIONS: ${cfg}")
+get_target_property(lib RocksDB::rocksdb-shared IMPORTED_IMPLIB)
+message("RocksDB::rocksdb-shared IMPORTED_IMPLIB: ${lib}")
+
+get_target_property(lib RocksDB::rocksdb LIBRARY_OUTPUT_NAME)
+message("RocksDB::rocksdb LIBRARY_OUTPUT_NAME: ${lib}")
+
+ if(ROCKSDB_STATIC)
+	message("Using Static RocksDB lib")
+    set(ROCKSDB_LIB RocksDB::rocksdb)
+ else()
+	message("Using Shared RocksDB lib")
+    set(ROCKSDB_LIB RocksDB::rocksdb-shared)
+	#if(WIN32 AND MSVC)
+	#	set_target_properties(RocksDB::rocksdb-shared PROPERTIES
+	#		IMPORTED_IMPLIB "${ROCKSDB_HOME}/lib/rocksdb-shared.lib"
+	#	)
+	#endif()
+endif()
+
+get_property(trans_deps TARGET ${ROCKSDB_LIB} PROPERTY INTERFACE_LINK_LIBRARIES)
+message("${ROCKSDB_LIB} transitive link dependencies: ${trans_deps}")
 
 # fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
@@ -27,10 +61,11 @@ if(NOT WIN32)
 		set_target_properties(RocksDB::rocksdb PROPERTIES
 			INTERFACE_LINK_LIBRARIES "${ZLIB_LIBRARY_RELEASE};Threads::Threads"
 		)
-		get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
-		message("rocksdb transitive link dependencies AFTER modification: ${trans_deps}")
 	endif()
 endif()
+
+get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
+message("rocksdb transitive link dependencies AFTER modification: ${trans_deps}")
 
 include(FindZLIB)
 # prevent CONFIG search mode
@@ -70,7 +105,7 @@ add_library(smr_objs OBJECT ${SMR_SRCS})
 target_link_libraries(smr_objs
 	PUBLIC
 		alp
-		RocksDB::rocksdb
+		${ROCKSDB_LIB}
 		RapidJSON::RapidJSON
 		ZLIB::ZLIB
 )
@@ -108,7 +143,7 @@ if(WIN32)
 		winapi
 		alp
 		ZLIB::ZLIB
-		RocksDB::rocksdb
+		${ROCKSDB_LIB}
 		RapidJSON::RapidJSON
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor

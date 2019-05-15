@@ -38,10 +38,10 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 	std::stringstream ss;
 	bool isok = false;
 
-	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
+	std::ifstream ifs(read.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) 
 	{
-		std::cerr << STAMP << "failed to open " << opts.readsfile << std::endl;
+		std::cerr << STAMP << "failed to open " << read.readsfile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -128,25 +128,24 @@ bool Reader::loadReadById(Runopts & opts, Read & read)
 /** 
  * return next read from the reads file on each call 
  */
-Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
+Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile)
 {
 	std::string line;
 	Read read; // an empty read
 
 	// read lines from the reads file and create Read object
-	for (int count = 0, stat = last_stat; ; ++count) // count lines in a single record/read
+	for (int count = 0, stat = last_stat; !is_done; ++count) // count lines in a single record/read
 	{
 		stat = gzip.getline(ifs, line);
-		++line_count;
 
 		if (stat == RL_END)
 		{
 			// push the last Read to the queue
 			if (!read.isEmpty)
 			{
+				read.read_num = read_count;
+				read.generate_id();
 				++read_count;
-				read.init(read_count, kvdb, opts); // load alignment statistics from DB
-				//readQueue.push(read); // the last read
 				is_done = true;
 			}
 			break;
@@ -154,16 +153,17 @@ Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from file stream. Exiting..." << std::endl;
+			std::cerr << STAMP << "ERROR reading from file: [" << readsfile << "]. Exiting..." << std::endl;
 			exit(1);
 		}
 
 		if (line.empty())
 		{
 			--count;
-			--line_count;
 			continue;
 		}
+
+		++line_count;
 
 		// left trim space and '>' or '@'
 		//line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
@@ -187,10 +187,10 @@ Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
 		if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0))
 		{ // add header -->
 			if (!read.isEmpty)
-			{ // push previous read object to queue
+			{
+				read.read_num = read_count;
 				++read_count;
-				read.init(read_count, kvdb, opts);
-				//readQueue.push(read);
+				//read.init(read_count, kvdb, opts); // TODO: move this to the caller i.e. separate file reading and DB access.
 				break; // return the read here
 			}
 
@@ -206,7 +206,7 @@ Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
 		{ // add sequence -->
 			if (isFastq)
 			{
-				if (count == 2) // line[0] == '+' validation is already by readstats::calculate
+				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
 					continue;
 				if (count == 3)
 				{
@@ -214,7 +214,6 @@ Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
 					continue;
 				}
 			}
-
 			read.sequence += line; // FASTA multi-line sequence or FASTQ sequence
 		}
 	} // ~for getline
@@ -225,7 +224,7 @@ Read Reader::nextread(Runopts &opts, std::ifstream &ifs, KeyValueDatabase &kvdb)
  * get a next read sequence from the reads file
  * @return true if record exists, else false
  */
-bool Reader::nextread(std::ifstream& ifs, std::string &seq)
+bool Reader::nextread(std::ifstream& ifs, const std::string &readsfile, std::string &seq)
 {
 	bool has_seq = false;
 	seq = ""; // ensure empty
@@ -238,7 +237,7 @@ bool Reader::nextread(std::ifstream& ifs, std::string &seq)
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from file stream. Exiting..." << std::endl;
+			std::cerr << STAMP << "ERROR reading from file: [" << readsfile << "]. Exiting..." << std::endl;
 			exit(1);
 		}
 
@@ -254,15 +253,14 @@ bool Reader::nextread(std::ifstream& ifs, std::string &seq)
 			break;
 		}
 
-		++line_count; // total lines read so far
-
 		// skip empty lines
 		if (line.empty())
 		{
 			--count;
-			--line_count;
 			continue;
 		}
+
+		++line_count; // total lines read so far
 
 		// left trim space and '>' or '@'
 		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());

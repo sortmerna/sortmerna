@@ -59,7 +59,8 @@ Runopts::Runopts(int argc, char**argv, bool dryrun)
 }
 
 /* 
- * validates file be it plain or zipped and sets corresponding options 
+ * validates file (be it plain or zipped) and sets corresponding options
+ * For paired reads files use --reads file1 --reads file2
  */
 void Runopts::opt_reads(const std::string &file)
 {
@@ -88,8 +89,11 @@ void Runopts::opt_reads(const std::string &file)
 		if (RL_OK == stat) is_gz = true;
 	}
 
-	if (RL_OK == stat) 
+	if (RL_OK == stat)
+	{
 		have_reads = true;
+		readfiles.push_back(file);
+	}
 	else
 	{
 		ss << ": Could not read from file " << file << " [" << strerror(errno) << "]";
