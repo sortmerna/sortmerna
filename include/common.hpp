@@ -117,8 +117,8 @@ const char DELIM = ':';
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
 
-#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << MSG << std::endl;
-#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << MSG << std::endl;
+#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << ": " << MSG << std::endl;
+#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << ": " << MSG << std::endl;
 
 #endif
 
