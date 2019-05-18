@@ -51,26 +51,7 @@ struct Readstats {
 	static const std::string dbkey;
 	bool stats_calc_done; // flags 'computeStats' was called
 
-	Readstats(Runopts & opts)
-		:
-		opts(opts),
-		min_read_len(READLEN),
-		max_read_len(0),
-		total_reads_mapped(0),
-		total_reads_mapped_cov(0),
-		number_total_read(0),
-		full_file_size(0),
-		full_read_main(0),
-		reads_matched_per_db(opts.indexfiles.size(), 0),
-		total_reads_denovo_clustering(0),
-		stats_calc_done(false)
-	{
-		opts.exit_early = check_file_format();
-		calcSuffix();
-		if (!opts.exit_early)
-			calculate(); // number_total_read only
-	}
-
+	Readstats(Runopts & opts);
 	~Readstats() {}
 
 	void calculate(); // calculate statistics from readsfile

@@ -28,6 +28,26 @@
 
 const std::string Readstats::dbkey = "Readstats";
 
+Readstats::Readstats(Runopts & opts)
+	:
+	opts(opts),
+	min_read_len(READLEN),
+	max_read_len(0),
+	total_reads_mapped(0),
+	total_reads_mapped_cov(0),
+	number_total_read(0),
+	full_file_size(0),
+	full_read_main(0),
+	reads_matched_per_db(opts.indexfiles.size(), 0),
+	total_reads_denovo_clustering(0),
+	stats_calc_done(false)
+{
+	opts.exit_early = check_file_format();
+	calcSuffix();
+	if (!opts.exit_early)
+		calculate(); // number_total_read only
+}
+
 void Readstats::calculate()
 {
 	std::stringstream ss;

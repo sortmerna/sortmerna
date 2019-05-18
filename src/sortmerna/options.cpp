@@ -67,7 +67,7 @@ void Runopts::opt_reads(const std::string &file)
 	std::stringstream ss;
 	if (file.size() == 0)
 	{
-		ERR(": option '--reads' requires a path to a reads FASTA/FASTQ file");
+		ERR("option '--reads' requires a path to a reads FASTA/FASTQ file");
 		exit(EXIT_FAILURE);
 	}
 
@@ -96,7 +96,7 @@ void Runopts::opt_reads(const std::string &file)
 	}
 	else
 	{
-		ss << ": Could not read from file " << file << " [" << strerror(errno) << "]";
+		ss << "Could not read from file " << file << " [" << strerror(errno) << "]";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
@@ -115,28 +115,36 @@ void Runopts::opt_ref(const std::string &file)
 		exit(EXIT_FAILURE);
 	}
 
-	std::string basename = get_basename(file);
-
-	// verify file exists and can be read
-	if (filesize(file) <= 0) 
+	// verify the reference file exists and can be read
+	// TODO:
+	// if index already exists, no refs files are needed (only the names) =>
+	// verify first the index exists based on the ref name. 
+	// Verify physical presence and compare against metadata that can be stored 
+	// in the RocksDB DB. For this the options would need handle to the DB (is it OK?)
+	// if (exists_index(file))
+	if (filesize(file) <= 0)
 	{
 		ss << ": [" << file << "] either non-existent or empty or corrupt";
-		ERR(ss.str())
-		exit(EXIT_FAILURE);
-	}
-
-	// if we are here the workdir is OK
-	// if WORKDIR is set -> use WORKDIR/idx/
-	// if WORKDIR is not set -> use USERDIR/idx/
-
-	// verify index file exists
-	std::string idx_file = workdir + "/idx/" + string_hash(basename);
-	if (filesize(idx_file) <= 0)
-	{
-		ss.str("");
-		ss << ": [" << idx_file << "] either non-existent or empty or corrupt";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		std::cout << STAMP << "(" << file << ")" << std::endl;
+	}
+
+	std::string basename = get_basename(file);
+	// derive index file name from the reference file name
+	// if we are here the Workdir is OK
+	// if WORKDIR is set -> use WORKDIR/idx/
+	// if WORKDIR is not set -> use USERDIR/idx/
+	std::string idx_file = workdir + "/idx/" + string_hash(basename);
+
+	// verify index file already exists
+	if (filesize(idx_file) <= 0)
+	{
+		std::cout << STAMP << "File (" << idx_file
+			<< ") either non-existent or empty or corrupt. Will be generated" << std::endl;
 	}
 
 	// check index file names are distinct
@@ -145,14 +153,9 @@ void Runopts::opt_ref(const std::string &file)
 		if ((indexfiles[i].first).compare(file) == 0)
 		{
 			ss.str("");
-			ss << ": the FASTA file " << file << " has been entered twice in the list. It will be searched twice";
-			WARN(ss.str())
-		}
-		else if ((indexfiles[i].second).compare(idx_file) == 0)
-		{
-			ss.str("");
-			ss << ": the Index file " << idx_file << " has been entered twice in the list. It will be searched twice";
-			WARN(ss.str())
+			ss << "Reference file (" << file << ") has been entered more than once. Ignoring redundant enties";
+			WARN(ss.str());
+			return;
 		}
 	}
 	indexfiles.push_back(std::pair<std::string, std::string>(file, idx_file));
@@ -891,8 +894,8 @@ void Runopts::opt_workdir(const std::string &path)
 {
 	if (path.size() == 0)
 	{
-		workdir = get_user_home();
-		std::cout << "'workdir' option not provided. Using USERDIR as working directory: [" << workdir << "]" << std::endl;
+		workdir = get_user_home() + "/sortmerna";
+		std::cout << "'workdir' option not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
 	}
 	else
 		workdir = path;
@@ -902,11 +905,10 @@ void Runopts::test_kvdb_path()
 {
 	if (kvdbPath.size() == 0)
 	{
-		kvdbPath = get_user_home() + "/kvdb";
-		std::cout << __func__ << ": Key-value DB location was not specified. Setting default" << std::endl;
+		kvdbPath = workdir + "/kvdb";
 	}
 
-	std::cout << __func__ << ": Using Key-value DB location: " << kvdbPath << std::endl;
+	std::cout << STAMP << "Key-value DB location (" << kvdbPath << ")" << std::endl;
 
 	if (dirExists(kvdbPath))
 	{
@@ -914,20 +916,20 @@ void Runopts::test_kvdb_path()
 		auto count = list_dir(kvdbPath);
 		if (count > 0) 
 		{
+			// TODO
+			// Store some metadata in DB to verify the alignment.
+			// kvdb.verify()
 			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alipost == alirep)
 			{
-				std::cerr << __func__ << ": Directory " << kvdbPath
-					<< " exists and is Not empty. Please, make sure the directory is empty, or specify a different directory using option '-d'" << std::endl;
-				exit(1);
+				// if (kvdb.verify()) // TODO
+				std::cout << STAMP << "Database (" << kvdbPath << ") exists. Alignment information OK" << std::endl;
 			}
 		}
 		else
 		{
 			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
 			{
-				std::cerr << __func__ << ": Directory " << kvdbPath
-					<< " is empty. Alignment has to be performed first. Please, use option '--task 0 | 3 | 4'" << std::endl;
-				exit(1);
+				std::cout << STAMP << "KVDB (" << kvdbPath << " is empty. Will run alignment" << std::endl;
 			}
 			// dir exists and empty -> use
 		}
@@ -935,7 +937,7 @@ void Runopts::test_kvdb_path()
 	else
 	{
 		// dir does not exist -> try creating
-		std::cout << __func__ << ": Directory " << kvdbPath << " does not exists - will attempt to create";
+		std::cout << STAMP << "Database (" << kvdbPath << ") will be created" << std::endl;
 	}
 } // ~test_kvdb_path
 
@@ -1066,13 +1068,17 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	validate();
 } // ~Runopts::process
 
+/**
+ * Validate the options and setup defaults
+ */
 void Runopts::validate()
 {
 	// No output format has been chosen
 	if (!(fastxout || blastout || samout || otumapout || doLog || de_novo_otu))
 	{
-		ERR(": no output format has been chosen (fastx/sam/blast/otu_map/log)");
-		exit(EXIT_FAILURE);
+		blastout = true;
+		doLog = true;
+		std::cout << STAMP << "No output format has been chosen (fastx/sam/blast/otu_map/log), Using default blast + log" << std::endl;
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
@@ -1285,12 +1291,11 @@ void printlist()
 		<< "  -------------------------------------------------------------------------------------------------------------"  << std::endl
 		<< "  [REQUIRED OPTIONS]: "                                                                                           << std::endl << BOLD
 		<< "    --ref            "                                                                                            << COLOFF << UNDL
-		<<                       "  STRING,STRING"                                                                            << COLOFF
-		<<                                       "   FASTA reference file:index file                           "              << GREEN 
+		<<                       "  STRING       "                                                                            << COLOFF
+		<<                                       "   FASTA reference file                                      "              << GREEN 
 		<<                                                                                                     "mandatory"    << COLOFF << std::endl
-		<< "                                         If passing multiple reference files, separate them"                      << std::endl
-		<< "                                         using the delimiter ':' (Linux) or ';' (Windows),"                       << std::endl
-		<< "                 (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)"            << std::endl << BOLD
+		<< "                                         Use multiple 'ref' options to specify multiple            "              << std::endl
+		<< "                                         reference files e.g. --ref FILE_1 --ref FILE_2 ...        "              << std::endl << BOLD
 		<< "    --reads          "                                                                                            << COLOFF << UNDL
 		<<                       "  STRING       "                                                                            << COLOFF
 		<<                                       "   FASTA/FASTQ raw reads file                                "              << GREEN 

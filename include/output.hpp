@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "common.hpp"
+#include "kvdb.hpp"
 
 // forward
 struct Index;
@@ -99,4 +100,4 @@ private:
 }; // ~class Output
 
 
-void generateReports(Runopts & opts, Readstats & readstats, Output & output);
+void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb);

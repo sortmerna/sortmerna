@@ -37,9 +37,10 @@
 #include "output.hpp"
 #include "readstats.hpp"
 #include "cmd.hpp"
+#include "kvdb.hpp"
 
 // forward
-void postProcess(Runopts & opts, Readstats & readstats, Output & output); // processor.cpp
+void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb); // processor.cpp
 
 /*! @fn main()
 	@brief main function, parses command line arguments and launches the processing
@@ -51,6 +52,7 @@ int main(int argc, char** argv)
 {
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
+	KeyValueDatabase kvdb(opts.kvdbPath);
 
 	std::cout << STAMP << "Running task ALIGN_REPORT: " << opts.alirep << std::endl;
 
@@ -66,22 +68,22 @@ int main(int argc, char** argv)
 		switch (opts.alirep)
 		{
 		case Runopts::ALIGN_REPORT::align:
-			align(opts, readstats, output);
+			align(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::postproc:
-			postProcess(opts, readstats, output);
+			postProcess(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::report:
-			generateReports(opts, readstats, output);
+			generateReports(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::alipost:
-			align(opts, readstats, output);
-			postProcess(opts, readstats, output);
+			align(opts, readstats, output, kvdb);
+			postProcess(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::all:
-			align(opts, readstats, output);
-			postProcess(opts, readstats, output);
-			generateReports(opts, readstats, output);
+			align(opts, readstats, output, kvdb);
+			postProcess(opts, readstats, output, kvdb);
+			generateReports(opts, readstats, output, kvdb);
 			break;
 		}
 	}

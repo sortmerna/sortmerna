@@ -1,3 +1,4 @@
+#pragma once
 /*
  * @file indexdb.hpp
  * @brief Function and variable definitions for indexdb.cpp
@@ -31,11 +32,7 @@
  *
  */
 
- 
-#ifndef INDEXDB_H
-#define INDEXDB_H
-
-#include <sys/types.h>
+ #include <sys/types.h>
 #include "ssw.h"
 #include "common.hpp"
 
@@ -100,7 +97,3 @@ struct index_parts_stats {
     unsigned long int seq_part_size; // number of bytes of reference sequences to read
     uint32_t numseq_part; // the number of sequences in this part
 };
-
-
-
-#endif

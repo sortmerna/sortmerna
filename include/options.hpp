@@ -102,7 +102,7 @@ struct Runopts
 		+ --blast '1 cigar qcov strand': tabular format + CIGAR string + % query coverage + strand\n
 	*/
 	std::vector<std::string> blastops;
-	/* '--refs' (required): Pairs (Reference file, Index name) */
+	// "--refs" Pairs (Reference file, Index name)
 	std::vector<std::pair<std::string, std::string>> indexfiles;
 	/* '--passes' (optional): for each index file three intervals at which to place the seed on the read. <-- Refstats::load
 		Defaults: 0 */

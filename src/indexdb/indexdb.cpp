@@ -979,14 +979,15 @@ namespace {
 
 
 
-/*
+/**
  *
- * @function parse the fasta file, build the burst tries
+ * parse the fasta file, build the burst tries
+
  * @param ./indexdb --db [file name]
  * @return void
  * @version 1.0 Dec 10, 2012
  *
- **************************************************************************************************************/
+ */
 int main(int argc, char** argv)
 {
 	int narg = 1;
@@ -1015,8 +1016,8 @@ int main(int argc, char** argv)
 	{
 		verbose = true;
 		welcome();
-		std::cout << "  For help or more information on usage, type 'indexdb " << BOLD << "-h" << COLOFF << "'" << std::endl << std::endl;
-		exit(EXIT_FAILURE);
+		std::cout << "  For help or more information on usage, type 'indexdb " << BOLD << "-h" << COLOFF << "'" << std::endl;
+		exit(0);
 	}
 
 	while (narg < argc)

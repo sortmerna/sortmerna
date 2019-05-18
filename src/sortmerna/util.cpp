@@ -3,6 +3,8 @@
  * Created: Jun 10, 2018 Sun
  * @copyright 2016-19 Clarity Genomics BVBA
  */
+#include "common.hpp"
+
 #include <iostream> // cerr
 #include <fstream>
 #include <sstream>
@@ -52,7 +54,7 @@ unsigned int list_dir(std::string dpath)
 
 	if (pdir == NULL)
 	{
-		std::cerr << __FILE__ << ":" << __LINE__ << " Failed to open path " << dpath << std::endl;
+		ERR("Failed to open (" + dpath + ")");
 		exit(1);
 	}
 
@@ -64,7 +66,7 @@ unsigned int list_dir(std::string dpath)
 	}
 	closedir(pdir);
 
-	std::cout << __func__ << ":" << __LINE__ << " Directory " << dpath << " has " << count << " files" << std::endl;
+	std::cout << STAMP << "Directory (" << dpath << ") has " << count << " files" << std::endl;
  	return count;
 }
 
@@ -76,11 +78,11 @@ int clear_dir(std::string dpath)
 	struct dirent *next_file;
 	std::string fpath;
 
-	std::cout << "Cleaning directory: " << dpath << std::endl;
+	std::cout << STAMP << "Cleaning directory: (" << dpath << ")" << std::endl;
 
 	if (pdir == NULL)
 	{
-		std::cerr << __FILE__ << ":" << __LINE__ << " Failed to open path " << dpath << std::endl;
+		ERR("Failed to open path (" + dpath + ")");
 		return 1;
 	}
 
@@ -105,14 +107,14 @@ bool dirExists(std::string dpath)
 	struct stat info;
 
 	if (stat(dpath.data(), &info) != 0)
-		std::cout << __FUNCTION__ << ": Path does not exist: " << dpath << std::endl;
+		std::cout << STAMP << "Path does not exist: " << dpath << std::endl;
 	else if (info.st_mode & S_IFDIR)  // S_ISDIR() doesn't exist on my windows 
 	{
-		std::cout << __FUNCTION__ << ": Path is a directory: " << dpath << std::endl;
+		std::cout << STAMP << "Path is a directory: " << dpath << std::endl;
 		exists = true;
 	}
 	else
-		std::cout << __FUNCTION__ << ": Path is Not a directory: " << dpath << std::endl;
+		std::cout << STAMP << "Path is Not a directory: " << dpath << std::endl;
 	return exists;
 }
 

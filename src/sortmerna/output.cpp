@@ -801,7 +801,7 @@ void Output::closefiles()
 }
 
 // called from main. TODO: move into a class?
-void generateReports(Runopts & opts, Readstats & readstats, Output & output)
+void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;
@@ -811,7 +811,6 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
-	KeyValueDatabase kvdb(opts.kvdbPath);
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {

@@ -363,7 +363,7 @@ void alignmentCb
 } // ~alignmentCb
 
 // called from main
-void align(Runopts & opts, Readstats & readstats, Output & output)
+void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
 {
 	std::stringstream ss;
 
@@ -393,7 +393,6 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(numThreads);
-	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
 	Refstats refstats(opts, readstats);

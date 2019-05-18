@@ -167,7 +167,7 @@ void ReportProcessor::run()
 } // ~ReportProcessor::run
 
 // called from main
-void postProcess(Runopts & opts, Readstats & readstats, Output & output)
+void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_pp;
 	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
@@ -177,7 +177,6 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 	std::cout <<std::endl << __func__ << ":" << __LINE__ << " Log file generation starts" << std::endl;
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
-	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // shared: Processor pushes, Writer pops
 	bool indb = readstats.restoreFromDb(kvdb);
