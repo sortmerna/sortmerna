@@ -31,7 +31,7 @@ struct Index {
 	//long _gap_open = 0; /* Smith-Waterman score for gap opening */
 	//long _gap_extension = 0; /* Smith-Waterman score for gap extension */
 
-	Index() {}
+	Index(Runopts & opts);
 	~Index() {}
 
 	void load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats);

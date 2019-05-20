@@ -28,6 +28,8 @@ target_link_libraries(tests
 	build_version
 	alp
 	smr_objs
+	winapi
+	$<TARGET_OBJECTS:cmph>
 )
 
 #add_executable("test_${test}" ${test}.cpp $<TARGET_OBJECTS:smr_objs>)

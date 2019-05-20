@@ -49,6 +49,7 @@
 #include "indexdb.hpp"
 #include "cmph.h"
 #include <sys/stat.h> //for creating tmp dir
+#include "options.hpp"
 
 #if defined(_WIN32)
 #include <Winsock.h>
@@ -100,9 +101,9 @@ const char map_nt[122] = {
 	2,   1 };
 
 /* length of the sliding window parameters */
-uint32_t lnwin_gv = 0;
-uint32_t pread_gv = 0;
-uint32_t partialwin_gv = 0;
+//uint32_t lnwin_gv = 0;
+uint32_t pread_gv = 0; // lnwin_gv + 1
+uint32_t partialwin_gv = 0; // lnwin_gv / 2
 
 /* bit masking during sliding of window by 1 character */
 uint32_t mask32 = 0;
@@ -123,8 +124,6 @@ uint32_t all_lengths_elements_in_buckets = 0;
 uint32_t all_elem_in_buckets = 0;
 uint32_t avg_len[11] = { 0 };
 uint32_t num_elem[100] = { 0 };
-
-bool verbose = false;
 
 /*
  *
@@ -163,8 +162,7 @@ inline void insert_prefix(NodeElement* trie_node,
 		node_elem->nodetype.bucket = (void*)malloc(ENTRYSIZE);
 		if (node_elem->nodetype.bucket == NULL)
 		{
-			std::cerr << RED << "  ERROR"<< COLOFF 
-				<< ": could not allocate memory for bucket (insert_prefix() in indexdb.cpp)" << std::endl;
+			ERR("Could not allocate memory for bucket (insert_prefix() in indexdb.cpp)");
 			exit(EXIT_FAILURE);
 		}
 		// initialize bucket memory to 0
@@ -183,8 +181,7 @@ inline void insert_prefix(NodeElement* trie_node,
 		node_elem->nodetype.bucket = (void*)malloc(node_elem_size + ENTRYSIZE);
 		if (node_elem->nodetype.bucket == NULL)
 		{
-			std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for bucket "
-				"resize (insert_prefix() in indexdb.cpp): " <<  strerror(errno) << std::endl;
+			ERR(": could not allocate memory for bucket resize (insert_prefix() in indexdb.cpp)");
 			exit(EXIT_FAILURE);
 		}
 
@@ -707,7 +704,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
  * @version 1.0 Jan 16, 2013
  *
  *******************************************************************/
-void load_index(kmer* lookup_table, char* outfile)
+void load_index(kmer* lookup_table, char* outfile, Runopts &opts)
 {
 	// output the mini-burst tries
 	std::ofstream btrie(outfile, std::ofstream::binary);
@@ -715,7 +712,7 @@ void load_index(kmer* lookup_table, char* outfile)
 	uint32_t sizeoftries[2] = { 0 };
 
 	// loop through all 9-mers
-	for (uint32_t i = 0; i < (uint32_t)(1 << lnwin_gv); i++)
+	for (uint32_t i = 0; i < (uint32_t)(1 << opts.lnwin_gv); i++)
 	{
 		NodeElement* trienode = NULL;
 
@@ -874,7 +871,7 @@ void load_index(kmer* lookup_table, char* outfile)
  * PURPOSE	: program name, copyright information and contact
  *
  **************************************************************************************************************/
-void welcome()
+void _about()
 {
 	std::stringstream ss;
 
@@ -910,9 +907,10 @@ void welcome()
  *
  *******************************************************************/
 namespace {
-	void printlist()
+	void help()
 	{
 		std::stringstream ss;
+		// ref tmpdir interval m L max_pos v h
 		ss << std::endl
 			<< "  usage:   ./indexdb --ref db.fasta,db.idx [OPTIONS]:" << std::endl << std::endl
 			<< "  --------------------------------------------------------------------------------------------------------" << std::endl
@@ -988,15 +986,15 @@ namespace {
  * @version 1.0 Dec 10, 2012
  *
  */
-int main(int argc, char** argv)
+int build_index(Runopts &opts)
 {
+	std::stringstream ss;
 	int narg = 1;
-	// time
-	double s = 0.0;
-	double f = 0.0;
+	double start = 0.0;
+	double end = 0.0;
 
 	// memory of index
-	double mem = 0;
+	//double mem = 0;
 	bool mem_is_set = false;
 	bool lnwin_set = false;
 	bool interval_set = false;
@@ -1007,377 +1005,13 @@ int main(int argc, char** argv)
 
 	// pointer to temporary directory
 	char* ptr_tmpdir = NULL;
-	uint32_t interval = 0;
-	uint32_t max_pos = 0;
 
 	timeval t;
 
-	if (argc == 1)
-	{
-		verbose = true;
-		welcome();
-		std::cout << "  For help or more information on usage, type 'indexdb " << BOLD << "-h" << COLOFF << "'" << std::endl;
-		exit(0);
-	}
+	pread_gv = opts.lnwin_gv + 1;
+	partialwin_gv = opts.lnwin_gv / 2;
 
-	while (narg < argc)
-	{
-		switch (argv[narg][1])
-		{
-		case '-':
-		{
-			char* myoption = argv[narg];
-			// skip the '--'
-			myoption += 2;
-
-			// path to reference sequence file
-			if (strcmp(myoption, "ref") == 0)
-			{
-				// no files are given
-				if (argv[narg + 1] == NULL)
-				{
-					std::cerr << std::endl << RED <<"  ERROR"<< COLOFF 
-						<< ": --ref must be followed by at least one entry (ex. --ref /path/to/file1.fasta,/path/to/index1)"<< std::endl;
-					exit(EXIT_FAILURE);
-				}
-				else
-				{
-					char *ptr = argv[narg + 1];
-					while (*ptr != '\0')
-					{
-						// get the FASTA file path + name
-						char fastafile[2000];
-						char *ptr_fastafile = fastafile;
-
-						// the reference database FASTA file
-						while (*ptr != ',' && *ptr != '\0')
-						{
-							*ptr_fastafile++ = *ptr++;
-						}
-						*ptr_fastafile = '\0';
-						ptr++; //skip the ',' delimiter
-
-						// check FASTA file exists & is not empty
-						if (FILE *file = fopen(fastafile, "r"))
-						{
-							// get file size
-							fseek(file, 0, SEEK_END);
-							size_t filesize = ftell(file);
-							// file size is 0, create empty index file and exit the program
-							if (!filesize)
-							{
-								// get the index filepath
-								char indexfile[2000];
-								char *ptr_indexfile = indexfile;
-								while (*ptr != DELIM && *ptr != '\0')
-								{
-									*ptr_indexfile++ = *ptr++;
-								}
-								*ptr_indexfile = '\0';
-
-								char bases[4][50] = { ".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats" };
-
-								// output empty index files
-								for (int file = 0; file < 4; file++)
-								{
-									char str[2000];
-									strcpy(str, indexfile);
-									strcat(str, bases[file]);
-									FILE *t = fopen(str, "w");
-									fclose(t);
-								}
-								// exit
-								std::cout << "  The input file is empty, an index was not built." << std::endl;
-								exit(EXIT_SUCCESS);
-							}
-							// file size > 0, reset file pointer to start of file
-							fseek(file, 0, SEEK_SET);
-							fclose(file);
-						}
-						else
-						{
-							std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
-								<<": the file "<< fastafile << " could not be opened: " << strerror(errno) << std::endl;
-							exit(EXIT_FAILURE);
-						}
-
-						// get the index path + name
-						char indexfile[2000];
-						char *ptr_indexfile = indexfile;
-						// the reference database index name
-						while (*ptr != DELIM && *ptr != '\0')
-						{
-							*ptr_indexfile++ = *ptr++;
-						}
-						*ptr_indexfile = '\0';
-						if (*ptr != '\0') ptr++; //skip the ':' delimiter
-
-						// check the directory where to write the index exists
-						char dir[500];
-						char *ptr_end = strrchr(indexfile, '/');
-						if (ptr_end != NULL)
-						{
-							memcpy(dir, indexfile, (ptr_end - indexfile));
-							dir[(int)(ptr_end - indexfile)] = '\0';
-						}
-						else
-						{
-							strcpy(dir, "./");
-						}
-
-						if (DIR *dir_p = opendir(dir)) closedir(dir_p);
-						else
-						{
-							if (ptr_end != NULL)
-							{
-								std::cerr << std::endl << RED << "  ERROR" << COLOFF
-									<< ": the directory " << dir << " for writing index '" << ptr_end + 1
-									<< "' could not be opened. The full directory path must be provided (ex. no '~')." << std::endl;
-							}
-							else
-							{
-								std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
-									<< ": the directory " << dir << " for writing index '" << indexfile 
-									<< "' could not be opened. The full directory path must be provided (ex. no '~')." << std::endl;
-							}
-
-							exit(EXIT_FAILURE);
-						}
-
-						// check index file names are distinct
-						for (int i = 0; i < (int)myfiles.size(); i++)
-						{
-							if ((myfiles[i].first).compare(fastafile) == 0)
-							{
-								std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF 
-									<< ": the FASTA file "<< fastafile 
-									<< " has been entered twice in the list. It will be indexed twice." << std::endl;
-							}
-							else if ((myfiles[i].second).compare(indexfile) == 0)
-							{
-								std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-									<< ": the index name " << indexfile 
-									<< " has been entered twice in the list. Index names must be unique." << std::endl;
-								exit(EXIT_FAILURE);
-							}
-						}
-						myfiles.push_back(std::pair<std::string, std::string>(fastafile, indexfile));
-					}
-					narg += 2;
-				}
-			}
-			// the tmpdir
-			else if (strcmp(myoption, "tmpdir") == 0)
-			{
-				if (argv[narg + 1] == NULL)
-				{
-					std::cerr << std::endl << RED << "  ERROR" << COLOFF
-						<< ": a directory path must follow the option --tmpdir (ex. /path/to/dir )" << std::endl;
-					exit(EXIT_FAILURE);
-				}
-				else
-				{
-					ptr_tmpdir = argv[narg + 1];
-					narg += 2;
-				}
-			}
-			// Interval for constructing index on every INT words
-			else if (strcmp(myoption, "interval") == 0)
-			{
-				if (argv[narg + 1] == NULL)
-				{
-					std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-						<< ": --interval requires a positive integer as input (ex. --interval 2)." << std::endl;
-					exit(EXIT_FAILURE);
-				}
-				// set interval
-				if (!interval_set)
-				{
-					if (argv[narg + 1][0] == '-')
-					{
-						std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-							<< ": --interval requires a positive integer as input (ex. --interval 2)." << std::endl;
-						exit(EXIT_FAILURE);
-					}
-					else if (isdigit(argv[narg + 1][0]))
-					{
-						interval = atoi(argv[narg + 1]);
-						narg += 2;
-						interval_set = true;
-					}
-					else
-					{
-						std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
-							<< ": --interval requires a positive integer as input (ex. --interval 2)."<< std::endl;
-						exit(EXIT_FAILURE);
-					}
-				}
-				else
-				{
-					std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
-						<< ": --interval has been set twice, please verify your choice" << std::endl;
-					printlist();
-				}
-			}
-			// maximum positions to store for a unique L-mer
-			else if (strcmp(myoption, "max_pos") == 0)
-			{
-				if (argv[narg + 1] == NULL)
-				{
-					std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-						<< ": --max_pos requires a positive integer as input (ex. --max_pos 250)." << std::endl;
-					exit(EXIT_FAILURE);
-				}
-				// set max_pos
-				if (!max_pos_set)
-				{
-					if (argv[narg + 1][0] == '-')
-					{
-						std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
-							<< ": --max_pos requires a positive integer as input (ex. --max_pos 250)." << std::endl;
-						exit(EXIT_FAILURE);
-					}
-					else if (isdigit(argv[narg + 1][0]))
-					{
-						max_pos = atoi(argv[narg + 1]);
-						narg += 2;
-						max_pos_set = true;
-					}
-					else
-					{
-						std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-							<<": --max_pos requires a positive integer as input (ex. --max_pos 250)."<< std::endl;
-						exit(EXIT_FAILURE);
-					}
-				}
-				else
-				{
-					std::cerr << std::endl << RED << "  ERROR"<< COLOFF 
-						<< ": --max_pos has been set twice, please verify your choice" << std::endl;
-					printlist();
-				}
-			}
-			else
-			{
-				std::cerr << std::endl << RED << "  ERROR"<< COLOFF <<": unknown option --" << myoption << std::endl;
-				printlist();
-				exit(EXIT_FAILURE);
-			}
-		}
-		break;
-		case 'L':
-		{
-			if (lnwin_set)
-			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF << ": option -L can only be set once." << std::endl;
-				exit(EXIT_FAILURE);
-			}
-
-			int lnwin_t = atoi(argv[narg + 1]);
-			lnwin_set = true;
-
-			if (lnwin_t <= 0)
-			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-					<< ": -L must be a positive integer (10, 12, 14, .. , 20)." << std::endl;
-				exit(EXIT_FAILURE);
-			}
-			else if (lnwin_t % 2 == 1)
-			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-					<< ": -L must be an even integer (10, 12, 14, .. , 20)." << std::endl;
-				exit(EXIT_FAILURE);
-			}
-			else if ((lnwin_t < 8) || (lnwin_t > 26))
-			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-					<< ": -L must be between 8 and 26, inclusive." << std::endl;
-				exit(EXIT_FAILURE);
-			}
-			else
-			{
-				lnwin_gv = lnwin_t;
-				pread_gv = lnwin_gv + 1;
-				partialwin_gv = lnwin_gv / 2;
-				narg += 2;
-			}
-		}
-		break;
-		case 'm':
-		{
-			// set memory for index (in Mbytes)
-			if (!mem_is_set)
-			{
-				// RAM limit for mmap'ing reads in megabytes
-				char *pEnd = NULL;
-				mem = strtod(argv[narg + 1], &pEnd);
-				if (!mem)
-				{
-					std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-						<< ": -m [INT] must be a positive integer value (in Mbyte)." << std::endl;
-					exit(EXIT_FAILURE);
-				}
-				narg += 2;
-				mem_is_set = true;
-			}
-			else
-			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF << ": option -m can only be set once." << std::endl;
-				exit(EXIT_FAILURE);
-			}
-		}
-		break;
-		case 'v':
-		{
-			// verbose
-			if (!verbose)
-			{
-				verbose = true;
-				narg++;
-			}
-		}
-		break;
-		case 'h':
-		{
-			// help
-			welcome();
-			printlist();
-		}
-		break;
-		default:
-		{
-			std::cerr << std::endl 
-				<< RED << "  ERROR" << COLOFF 
-				<< ": " << argv[narg][1] << " is not one of the options" << std::endl;
-			exit(EXIT_FAILURE);
-		}
-		}//~switch
-	}//~while ( narg < argc )
-
-	// check that the database file has been provided
-	if (myfiles.empty())
-	{
-		std::cerr << std::endl << RED << "ERROR" << COLOFF 
-			<< ": a FASTA reference database & index name "
-			<< "(--ref /path/to/file1.fasta,/path/to/index1) is mandatory input."
-			<< std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-	// set the default value for seed length
-	if (!lnwin_set) lnwin_gv = 18;
-	// set the default interval length
-	if (!interval_set) interval = 1;
-	// set the default max_pos, store maximum 10000 positions for each L-mer
-	if (!max_pos_set) max_pos = 10000;
-
-	pread_gv = lnwin_gv + 1;
-	partialwin_gv = lnwin_gv / 2;
-
-	// default memory for building index (3072 Mbytes)
-	if (!mem_is_set) mem = 3072;
-
-	mask32 = (1 << lnwin_gv) - 1;
+	mask32 = (1 << opts.lnwin_gv) - 1;
 	mask64 = (2ULL << ((pread_gv * 2) - 1)) - 1;
 
 	// temporary file to store keys for building the CMPH
@@ -1516,22 +1150,22 @@ int main(int argc, char** argv)
 	strcat(keys_str, pidStr);
 	strcat(keys_str, ".txt");
 
-	// the list of arguments is correct, welcome the user!
-	if (verbose) welcome();
+	// the list of arguments is correct
+	//if (verbose) about();
 
-	eprintf("\n  Parameters summary: \n");
-	eprintf("    K-mer size: %d\n", lnwin_gv + 1);
-	eprintf("    K-mer interval: %d\n", interval);
+	DBG(opts.verbose, "\n  Parameters summary: \n");
+	DBG(opts.verbose, "    K-mer size: %d\n", opts.lnwin_gv + 1);
+	DBG(opts.verbose, "    K-mer interval: %d\n", opts.interval);
 
-	if (max_pos == 0)
-		eprintf("    Maximum positions to store per unique K-mer: all\n");
+	if (opts.max_pos == 0)
+		DBG(opts.verbose, "    Maximum positions to store per unique K-mer: all\n");
 	else
-		eprintf("    Maximum positions to store per unique K-mer: %d\n", max_pos);
+		DBG(opts.verbose, "    Maximum positions to store per unique K-mer: %d\n", opts.max_pos);
 
-	eprintf("\n  Total number of databases to index: %d\n", (int)myfiles.size());
+	DBG(opts.verbose, "\n  Total number of databases to index: %d\n", (int)opts.indexfiles.size());
 
-	// build index for each pair in --ref list
-	for (int newindex = 0; newindex < (int)myfiles.size(); newindex++)
+	// build index for each pair in indexfiles vector
+	for (auto idxpair: opts.indexfiles)
 	{
 		std::vector< std::pair<std::string, uint32_t> > sam_sq_header;
 		// vector of structs storing information on which sequences from 
@@ -1539,16 +1173,18 @@ int main(int argc, char** argv)
 		std::vector<index_parts_stats> index_parts_stats_vec;
 
 		// Process reference input file
-		FILE *fp = fopen((char*)(myfiles[newindex].first).c_str(), "r");
+		FILE *fp = fopen((char*)(idxpair.first).c_str(), "r");
 		if (fp == NULL)
 		{
-			std::cerr << RED << "  ERROR" << COLOFF << ": could not open file " << myfiles[newindex].first << std::endl;
+			ss.str("");
+			ss << "Could not open file: " << idxpair.first;
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 
-		eprintf("\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
-			BLUE, (char*)(myfiles[newindex].first).c_str(),
-			COLOFF, BLUE, (char*)(myfiles[newindex].second).c_str(),
+		DBG(opts.verbose, "\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
+			BLUE, (char*)(idxpair.first).c_str(),
+			COLOFF, BLUE, (char*)(idxpair.second).c_str(),
 			COLOFF);
 
 		// get full file size
@@ -1573,9 +1209,9 @@ int main(int argc, char** argv)
 		uint64_t full_len = 0;
 		int nt = 0;
 
-		eprintf("  Collecting sequence distribution statistics ..");
+		DBG(opts.verbose, "  Collecting sequence distribution statistics ..");
 
-		TIME(s);
+		TIME(start);
 		do
 		{
 			nt = fgetc(fp);
@@ -1636,12 +1272,12 @@ int main(int argc, char** argv)
 			len > maxlen ? maxlen = len : maxlen;
 		} while (nt != EOF); // read until end of file
 
-		TIME(f);
+		TIME(end);
 
 		// set file pointer back to the beginning of file
 		rewind(fp);
 
-		eprintf("  done  [%f sec]\n", (f - s));
+		DBG(opts.verbose, "  done  [%f sec]\n", (end - start));
 
 
 		/* STEP 1 END ***************************************************************************/
@@ -1686,25 +1322,25 @@ int main(int argc, char** argv)
 
 			// table storing occurrence of each 9-mer and pointers to
 			// the forward and reverse burst tries
-			kmer *lookup_table = (kmer*)malloc((1 << lnwin_gv) * sizeof(kmer));
+			kmer *lookup_table = (kmer*)malloc((1 << opts.lnwin_gv) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
 				std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for 9-mer look-up table (indexdb.cpp)" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
-			memset(lookup_table, 0, (1 << lnwin_gv) * sizeof(kmer));
+			memset(lookup_table, 0, (1 << opts.lnwin_gv) * sizeof(kmer));
 
 			// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
-			std::vector<bool> incremented_by_forward((1 << lnwin_gv));
+			std::vector<bool> incremented_by_forward((1 << opts.lnwin_gv));
 
 			// total size of index so far in bytes
 			index_size = 0;
 
-			eprintf("\n  start index part # %d: \n", part);
-			eprintf("    (1/3) building burst tries ..");
+			DBG(opts.verbose, "\n  start index part # %d: \n", part);
+			DBG(opts.verbose, "    (1/3) building burst tries ..");
 
-			TIME(s);
+			TIME(start);
 			// for the number of sequences for which the index is less than maximum (set by -m)
 			// indexing the 19-mers will be done in the following manner:
 			//
@@ -1754,7 +1390,7 @@ int main(int argc, char** argv)
 
 				// the sequence alone is too large, it will not fit into maximum
 				// memory, skip it
-				if (estimated_seq_mem > mem)
+				if (estimated_seq_mem > opts.mem)
 				{
 					fseek(fp, start_seq, SEEK_SET);
 					std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF << ": the index for sequence `";
@@ -1765,14 +1401,14 @@ int main(int argc, char** argv)
 						std::cerr << c;
 					} while (c != '\n');
 
-					std::cerr << "` will not fit into " << mem << " Mbytes memory, it will be skipped.";
+					std::cerr << "` will not fit into " << opts.mem << " Mbytes memory, it will be skipped.";
 					std::cerr << "  If memory can be increased, please try `-m " << estimated_seq_mem << "` Mbytes.";
 					fseek(fp, end_seq, SEEK_SET);
 					continue;
 				}
 				// the additional sequence will overflow the maximum index memory,
 				// write existing index to disk and start a new index
-				else if (index_size + estimated_seq_mem > mem)
+				else if (index_size + estimated_seq_mem > opts.mem)
 				{
 					// set the character to something other than EOF
 					if (nt == EOF) nt = 'A';
@@ -1824,7 +1460,7 @@ int main(int argc, char** argv)
 				// initialize the 19-mer
 				for (uint32_t j = 0; j < pread_gv; j++) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
 
-				uint32_t numwin = (len - pread_gv + interval) / interval; //TESTING
+				uint32_t numwin = (len - pread_gv + opts.interval) / opts.interval; //TESTING
 				uint32_t index_pos = 0;
 
 				// for all 19-mers on the sequence
@@ -1893,7 +1529,7 @@ int main(int argc, char** argv)
 					// shift 19-mer window and both 9-mers
 					if (j != numwin - 1)
 					{
-						for (uint32_t shift = 0; shift < interval; shift++)
+						for (uint32_t shift = 0; shift < opts.interval; shift++)
 						{
 							((kmer_key_short_f <<= 2) &= mask32) |= (int)*kmer_key_short_f_p++;
 							((kmer_key_short_r <<= 2) &= mask32) |= (int)*kmer_key_short_r_p++;
@@ -1910,14 +1546,14 @@ int main(int argc, char** argv)
 
 			} while (nt != EOF); // all file
 
-			TIME(f);
+			TIME(end);
 
 			// no index can be created, all reference sequences are too large to fit alone into maximum memory
 			if (index_size == 0)
 			{
-				eprintf("\n  %sERROR%s: no index was created, all of your sequences are "
+				DBG(opts.verbose, "\n  %sERROR%s: no index was created, all of your sequences are "
 					"too large to be indexed with the current memory limit of %e Mbytes.\n",
-					RED, COLOFF, mem);
+					RED, COLOFF, opts.mem);
 				break;
 			}
 			// continue to build hash and positions tables
@@ -1925,11 +1561,11 @@ int main(int argc, char** argv)
 
 			rewind(keys);
 
-			eprintf(" done  [%f sec]\n", (f - s));
+			DBG(opts.verbose, " done  [%f sec]\n", (end - start));
 
 			// 4. build MPHF on the unique 18-mers
-			eprintf("    (2/3) building CMPH hash ..");
-			TIME(s);
+			DBG(opts.verbose, "    (2/3) building CMPH hash ..");
+			TIME(start);
 			cmph_t *hash = NULL;
 
 			FILE * keys_fd = keys;
@@ -1949,9 +1585,9 @@ int main(int argc, char** argv)
 			cmph_io_nlfile_adapter_destroy(source);
 			fclose(keys_fd);
 
-			TIME(f);
+			TIME(end);
 
-			eprintf(" done  [%f sec]\n", (f - s));
+			DBG(opts.verbose, " done  [%f sec]\n", (end - start));
 
 			int ret = remove(keys_str);
 			if (ret != 0)
@@ -1962,7 +1598,7 @@ int main(int argc, char** argv)
 			// 5. add ids to burst trie
 			// 6. build the positions lookup table using MPHF
 
-			eprintf("    (3/3) building position lookup tables ..");
+			DBG(opts.verbose, "    (3/3) building position lookup tables ..");
 
 			// positions_tbl[kmer_id] will return a pointer to an array of pairs, each pair
 			// stores the sequence number and index on the sequence of the kmer_id 19-mer
@@ -1983,7 +1619,7 @@ int main(int argc, char** argv)
 			// reset the file pointer to the beginning of the current part
 			fseek(fp, start_part, SEEK_SET);
 
-			TIME(s);
+			TIME(start);
 			do
 			{
 				long int start_seq = ftell(fp);
@@ -2024,10 +1660,10 @@ int main(int argc, char** argv)
 				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6;
 
 				// the sequence alone is too large, it will not fit into maximum memory, skip it
-				if (estimated_seq_mem > mem) continue;
+				if (estimated_seq_mem > opts.mem) continue;
 				// the additional sequence will overflow the maximum index memory,
 				// write existing index to disk and start a new index
-				else if (index_size + estimated_seq_mem > mem)
+				else if (index_size + estimated_seq_mem > opts.mem)
 				{
 					// set the character to something other than EOF
 					if (nt == EOF) nt = 'A';
@@ -2065,7 +1701,7 @@ int main(int argc, char** argv)
 				// initialize the 19-mer
 				for (uint32_t j = 0; j < pread_gv; j++) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
 
-				uint32_t numwin = (len - pread_gv + interval) / interval; //TESTING
+				uint32_t numwin = (len - pread_gv + opts.interval) / opts.interval; //TESTING
 				uint32_t id = 0;
 
 				uint32_t index_pos = 0; //TESTING
@@ -2084,12 +1720,12 @@ int main(int argc, char** argv)
 					add_id_to_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id);
 					add_id_to_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id);
 
-					add_kmer_to_table(positions_tbl + id, i, index_pos, max_pos);
+					add_kmer_to_table(positions_tbl + id, i, index_pos, opts.max_pos);
 
 					// shift the 19-mer and 9-mers
 					if (j != numwin - 1)
 					{
-						for (uint32_t shift = 0; shift < interval; shift++)
+						for (uint32_t shift = 0; shift < opts.interval; shift++)
 						{
 							((kmer_key_short_f <<= 2) &= mask32) |= (int)*kmer_key_short_f_p++;
 							((kmer_key_short_r <<= 2) &= mask32) |= (int)*kmer_key_short_r_p++;
@@ -2108,10 +1744,10 @@ int main(int argc, char** argv)
 
 			} while (nt != EOF); // for all file     
 
-			TIME(f);
-			eprintf(" done [%f sec]\n", (f - s));
+			TIME(end);
+			DBG(opts.verbose, " done [%f sec]\n", (end - start));
 
-			eprintf("    total number of sequences in this part = %d\n", i);
+			DBG(opts.verbose, "    total number of sequences in this part = %d\n", i);
 
 			// Destroy hash
 			cmph_destroy(hash);
@@ -2301,17 +1937,17 @@ int main(int argc, char** argv)
 			std::stringstream prt_str;
 			prt_str << part;
 			std::string part_str = prt_str.str();
-			eprintf("      temporary file was here: %s\n", keys_str);
+			DBG(opts.verbose, "      temporary file was here: %s\n", keys_str);
 			// 1. load the kmer 'count' variable /index/kmer.dat
-			std::ofstream oskmer((char*)(myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str(), std::ios::binary);
-			eprintf("      writing kmer data to %s\n", (myfiles[newindex].second + ".kmer_" + part_str + ".dat").c_str());
+			std::ofstream oskmer((char*)(idxpair.second + ".kmer_" + part_str + ".dat").c_str(), std::ios::binary);
+			DBG(opts.verbose, "      writing kmer data to %s\n", (idxpair.second + ".kmer_" + part_str + ".dat").c_str());
 			index_parts_stats thispart;
 			thispart.start_part = start_part;
 			thispart.seq_part_size = seq_part_size;
 			thispart.numseq_part = numseq_part;
 			index_parts_stats_vec.push_back(thispart);
 			// the 9-mer look up tables
-			for (uint32_t j = 0; j < (uint32_t)(1 << lnwin_gv); j++)
+			for (uint32_t j = 0; j < (uint32_t)(1 << opts.lnwin_gv); j++)
 			{
 				oskmer.write(reinterpret_cast<const char*>(&(lookup_table[j].count)),
 					sizeof(uint32_t));
@@ -2319,15 +1955,15 @@ int main(int argc, char** argv)
 			oskmer.close();
 			// 2. mini-burst tries
 			// load 9-mer look-up table and mini-burst tries to /index/bursttrief.dat
-			eprintf("      writing burst tries to %s\n",
-				(myfiles[newindex].second + ".bursttrie_" + part_str + ".dat").c_str());
-			load_index(lookup_table, (char*)(myfiles[newindex].second + ".bursttrie_" +
-				part_str + ".dat").c_str());
+			DBG(opts.verbose, "      writing burst tries to %s\n",
+				(idxpair.second + ".bursttrie_" + part_str + ".dat").c_str());
+			load_index(lookup_table, (char*)(idxpair.second + ".bursttrie_" +
+				part_str + ".dat").c_str(), opts);
 			// 3. 19-mer position look up tables
-			std::ofstream ospos((char*)(myfiles[newindex].second + ".pos_" +
+			std::ofstream ospos((char*)(idxpair.second + ".pos_" +
 				part_str + ".dat").c_str(), std::ios::binary);
-			eprintf("      writing position lookup table to %s\n",
-				(myfiles[newindex].second + ".pos_" + part_str + ".dat").c_str());
+			DBG(opts.verbose, "      writing position lookup table to %s\n",
+				(idxpair.second + ".pos_" + part_str + ".dat").c_str());
 			// number of unique 19-mers
 			ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));
 			// the positions
@@ -2344,7 +1980,7 @@ int main(int argc, char** argv)
 				free(positions_tbl[z].arr);
 			free(positions_tbl);
 			// 9-mer look-up table and mini-burst tries
-			for (uint32_t z = 0; z < (uint32_t)(1 << lnwin_gv); z++)
+			for (uint32_t z = 0; z < (uint32_t)(1 << opts.lnwin_gv); z++)
 			{
 				if (lookup_table[z].trie_F != NULL)
 				{
@@ -2363,22 +1999,23 @@ int main(int argc, char** argv)
 
 		if (index_size != 0)
 		{
-			eprintf("      writing nucleotide distribution statistics to %s\n", (myfiles[newindex].second + ".stats").c_str());
-			std::ofstream stats((char*)(myfiles[newindex].second + ".stats").c_str(), std::ios::binary);
+			DBG(opts.verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").c_str());
+			std::ofstream stats((char*)(idxpair.second + ".stats").c_str(), std::ios::binary);
 			if (!stats.good())
 			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-					<< ": The file '" << myfiles[newindex].second + ".stats" << "' cannot be created: " << strerror(errno) << std::endl;
+				ss.str("");
+				ss << STAMP << "The file '" << idxpair.second + ".stats" << "' cannot be created: " << strerror(errno);
+				ERR(ss.str());
 				exit(EXIT_FAILURE);
 			}
 
 			// file size for file used to build the index
 			stats.write(reinterpret_cast<const char*>(&filesize), sizeof(size_t));
 			// length of fasta file name (incl. path)
-			uint32_t fasta_len = (myfiles[newindex].first).length() + 1;
+			uint32_t fasta_len = (idxpair.first).length() + 1;
 			stats.write(reinterpret_cast<const char*>(&fasta_len), sizeof(uint32_t));
 			// the fasta file name (incl. path)
-			stats.write(reinterpret_cast<const char*>((myfiles[newindex].first).c_str()), sizeof(char)*fasta_len);
+			stats.write(reinterpret_cast<const char*>((idxpair.first).c_str()), sizeof(char)*fasta_len);
 			// number of sequences in the reference file
 			uint32_t num_sq = sam_sq_header.size();
 
@@ -2395,7 +2032,7 @@ int main(int argc, char** argv)
 			// the length of all sequences in the database
 			stats.write(reinterpret_cast<const char*>(&full_len), sizeof(uint64_t));
 			// sliding window length
-			stats.write(reinterpret_cast<const char*>(&lnwin_gv), sizeof(uint32_t));
+			stats.write(reinterpret_cast<const char*>(&opts.lnwin_gv), sizeof(uint32_t));
 			uint64_t numseq = strs / 2;
 			// number of reference sequences in the database
 			stats.write(reinterpret_cast<const char*>(&numseq), sizeof(uint64_t));
@@ -2423,7 +2060,7 @@ int main(int argc, char** argv)
 
 			stats.close();
 
-			eprintf("    done.\n\n");
+			DBG(opts.verbose, "    done.\n\n");
 		}
 
 		// Free map'd memory
@@ -2431,6 +2068,8 @@ int main(int argc, char** argv)
 
 	} // for every FASTA file, index name pair listed after --ref option
 
+	opts.is_index_built = true;
+
 	return 0;
 
-}//~main
+}//~build_index

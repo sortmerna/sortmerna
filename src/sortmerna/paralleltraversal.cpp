@@ -132,11 +132,10 @@ void alignmentCb
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])
 	{
 		std::stringstream ss;
-		ss << "\n  " << YELLOW << "WARNING " << COLOFF
-			<< __FILE__ << ":" << __LINE__ << ": Processor thread: " << std::this_thread::get_id()
+		ss << STAMP << "Processor thread: " << std::this_thread::get_id()
 			<< " The read.id: " << read.id << " read.header: " << read.header << " is shorter than "
-			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
-		std::cout << ss.str(); ss.str("");
+			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched";
+		WARN(ss.str());
 
 		read.isValid = false;
 		return;
@@ -203,15 +202,15 @@ void alignmentCb
 					unsigned int id = read.id;
 					bool is03 = read.is03;
 					bool is04 = read.is04;
-					ss << __FILE__ << ":" << __LINE__
-						<< " ERROR: lookup index: " << keyf << " is larger than lookup_tbl.size: " << vsize 
+					ss << STAMP
+						<< "lookup index: " << keyf << " is larger than lookup_tbl.size: " << vsize 
 						<< " Index: " << idxn
 						<< " Part: " << idxp
 						<< " Read.id: " << id
 						<< " Read.is03: " << is03
 						<< " Read.is04: " << is04
 						<< " Aborting.." << std::endl;
-					std::cout << ss.str();
+					ERR(ss.str());
 					exit(EXIT_FAILURE);
 				}
 
@@ -267,7 +266,7 @@ void alignmentCb
 						unsigned int id = read.id;
 						bool is03 = read.is03;
 						bool is04 = read.is04;
-						ss << __LINE__ << " Thread: " << std::this_thread::get_id()
+						ss << STAMP << "Thread: " << std::this_thread::get_id()
 							<< " ERROR: lookup index: " << keyr << " is larger than lookup_tbl.size: " << vsize
 							<< " Index: " << idxn
 							<< " Part: " << idxp
@@ -363,7 +362,7 @@ void alignmentCb
 } // ~alignmentCb
 
 // called from main
-void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
+void align(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
 {
 	std::stringstream ss;
 
@@ -373,13 +372,13 @@ void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatab
 	int numProcThread = 0;
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
-		ss << __func__ << ":" << __LINE__ << " Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
+		ss << STAMP << " Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
 		std::cout << ss.str(); ss.str("");
 	}
 	else
 	{
 		numProcThread = opts.num_proc_thread; // set using '--thread'
-		ss << __func__ << ":" << __LINE__ << " Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
+		ss << STAMP << " Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -396,7 +395,6 @@ void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatab
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
 	Refstats refstats(opts, readstats);
-	Index index;
 	References refs;
 
 	int loopCount = 0; // counter of total number of processing iterations
@@ -411,7 +409,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatab
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << __func__ << ":" << __LINE__ << " Loading index " << index_num 
+			ss << STAMP << "Loading index " << index_num 
 				<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
 			std::cout << ss.str(); ss.str("");
 			starts = std::chrono::high_resolution_clock::now();
@@ -422,7 +420,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatab
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
 			std::cout << ss.str(); ss.str("");
 
-			ss << __func__ << ":" << __LINE__ << " Loading references " << " ... ";
+			ss << STAMP << "Loading references " << " ... ";
 			std::cout << ss.str(); ss.str("");
 			starts = std::chrono::high_resolution_clock::now();
 
@@ -458,7 +456,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatab
 			readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << STAMP << " paralleltraversal: Done index " << index_num << " Part: " << idx_part + 1 
+			ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1 
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl << std::endl;
 			std::cout << ss.str(); ss.str("");
 		} // ~for(idx_part)

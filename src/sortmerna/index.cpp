@@ -39,6 +39,10 @@
 #include <cstdint>
 #include <fstream>
 #include <ios>
+#include <iostream>
+#include <sstream>
+#include <array>
+#include <sstream>
 
 #include "index.hpp"
 #include "indexdb.hpp"
@@ -46,17 +50,51 @@
 #include "references.hpp"
 #include "refstats.hpp"
 
+ /**
+  * Initilize the index.
+  * If index files do not exist or are empty build the index.
+  */
+Index::Index(Runopts & opts)
+{
+	std::stringstream ss;
+	std::array<std::string, 4> sfxarr{ {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"} };
+
+	if (!opts.is_index_built)
+	{
+		// init index files
+		for (auto file_pfx : opts.indexfiles)
+		{
+			for (auto sfx : sfxarr)
+			{
+				auto idxfile = file_pfx.second + sfx;
+				std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
+				if (!fstrm.good())
+				{
+					ss.str("");
+					ss << STAMP << "Failed to open file [" << idxfile << "] for writing: " << strerror(errno);
+					ERR(ss.str());
+					exit(EXIT_FAILURE);
+				}
+				if (fstrm.is_open())
+					fstrm.close();
+			}
+		}
+		build_index(opts);
+	}
+}
 
 void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
+	std::stringstream ss;
 	// STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
 	std::string idxfile = opts.indexfiles[idx_num].second + ".kmer_" + std::to_string(idx_part) + ".dat";
 	std::ifstream inkmer(idxfile, std::ios::in | std::ios::binary);
 
 	if (!inkmer.good())
 	{
-		fprintf(stderr, "\n  ERROR: The index '%s' does not exist.\n", idxfile.c_str()); // (char*)
-		fprintf(stderr, "  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
+		ss.str("");
+		ss << STAMP << "The index " << idxfile << " does not exist.";
+		ERR(ss.str())
 		exit(EXIT_FAILURE);
 	}
 
@@ -74,8 +112,9 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 	std::ifstream btrie(btriefile, std::ios::in | std::ios::binary);
 	if (!btrie.good())
 	{
-		fprintf(stderr, "\n  ERROR: The index '%s' does not exist.\n", btriefile.c_str()); // (char*)
-		fprintf(stderr, "  Make sure you have constructed your index using the command `indexdb'. See `indexdb -h' for help.\n\n");
+		ss.str("");
+		ss << STAMP << "The index " << btriefile << " does not exist.";
+		ERR(ss.str())
 		exit(EXIT_FAILURE);
 	}
 
@@ -97,7 +136,9 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 			dst = new char[(sizeoftries[0] + sizeoftries[1])]();
 			if (dst == NULL)
 			{
-				fprintf(stderr, "  ERROR: failed to allocate memory for mini-burst tries\n");
+				ss.str("");
+				ss << STAMP << "Failed to allocate memory for mini-burst tries";
+				ERR(ss.str())
 				exit(EXIT_FAILURE);
 			}
 			// load 2 burst tries per 9-mer
@@ -174,7 +215,9 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 								char* bucket = new char[sizeofbucket]();
 								if (bucket == NULL)
 								{
-									fprintf(stderr, "\n  %sERROR%s: failed to allocate memory for allocate bucket (paralleltraversal.cpp)\n", RED, COLOFF);
+									ss.str("");
+									ss << STAMP << "Failed to allocate memory for allocate bucket";
+									fprintf(stderr, "\n  %sERROR%s:  (paralleltraversal.cpp)\n", RED, COLOFF);
 									exit(EXIT_FAILURE);
 								}
 								btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);

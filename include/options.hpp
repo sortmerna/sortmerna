@@ -29,6 +29,9 @@ struct Runopts
 	std::string filetype_or; // '--other' rejected reads output file
 	std::string cmdline;
 	std::string workdir;
+	const std::string IDX_DIR  = "idx";
+	const std::string KVDB_DIR = "kvdb";
+	const std::string OUT_DIR  = "out";
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
 	int num_write_thread = 1; // number of threads writing to Key-value database
@@ -64,6 +67,12 @@ struct Runopts
 
 	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
 
+	// indexing options
+	double mem = 3072;
+	uint32_t lnwin_gv = 18;
+	uint32_t interval = 1;
+	uint32_t max_pos = 10000;
+
 	bool forward = false; // '-F' search only the forward strand if true
 	bool reverse = false; // '-R' search only the reverse-complementary strand if true
 	bool paired = false; // '--paired' flags processing paired reads
@@ -84,6 +93,7 @@ struct Runopts
 	bool is_gz = false; // flags reads file is compressed and can be read
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 	bool interactive = false; // start interactive session
+	bool is_index_built = false; // flags the index is built and ready for use
 
 	// DEBUG options
 	bool dbg_put_kvdb = false; // if True - do Not put records into Key-value DB. Debugging Memory Consumption.
@@ -158,6 +168,13 @@ private:
 	void opt_d(const std::string &val); // opt_d_KeyValDatabase Key-Value Database directory path (kvdbPath)
 	void opt_workdir(const std::string &path);
 
+	// ref tmpdir interval m L max_pos v h  // indexing options
+	void opt_tmpdir(const std::string &val);
+	void opt_interval(const std::string &val);
+	void opt_m(const std::string &val);
+	void opt_L(const std::string &val);
+	void opt_max_pos(const std::string &val);
+
 	void opt_default(const std::string &opt);
 	void opt_dbg_put_db(const std::string &opt);
 	void opt_unknown(char **argv, int &narg, char * opt);
@@ -224,7 +241,12 @@ private:
 		help_a = "",
 		help_threads = "",
 		help_thpp = "",
-		help_threp = ""
+		help_threp = "",
+		help_tmpdir = "Indexing: directory for writing temporary files when building the reference index",
+		help_interval = "Indexing: Positive integer: index every Nth L-mer in the reference database e.g. '--interval 2'. Default 1",
+		help_m = "Indexing: the amount of memory (in Mbytes) for building the index. Default 3072",
+		help_L = "Indexing: seed length. Default 18",
+		help_max_pos = "Indexing: maximum (integer) number of positions to store for each unique L-mer. Default 1000. If 0 all positions are stored."
 		;
 
 	// container for options passed to the program
@@ -280,7 +302,12 @@ private:
 		{"threads",         {false, help_threads, &Runopts::opt_threads}},
 		{"thpp",            {false, help_thpp, &Runopts::opt_thpp}},
 		{"threp",           {false, help_threp, &Runopts::opt_threp}},
-		{"dbg_put_db",      {false, help_dbg_put_db, &Runopts::opt_dbg_put_db}}
+		{"dbg_put_db",      {false, help_dbg_put_db, &Runopts::opt_dbg_put_db}},
+		{"tmpdir",          {false, help_tmpdir, &Runopts::opt_tmpdir}},
+		{"interval",        {false, help_interval, &Runopts::opt_interval}},
+		{"m",               {false, help_m, &Runopts::opt_m}},
+		{"L",               {false, help_L, &Runopts::opt_L}},
+		{"max_pos",         {false, help_max_pos, &Runopts::opt_max_pos}}
 	}; // ~map options
 }; // ~struct Runopts
 // ~options.cpp

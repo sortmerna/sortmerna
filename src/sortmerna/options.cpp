@@ -36,8 +36,8 @@
 //timeval t;
 
 // forward
-void welcome();
-void printlist();
+void about();
+void help();
 std::string get_user_home(); // util.cpp
 unsigned int list_dir(std::string dpath);
 bool dirExists(std::string dpath);
@@ -65,6 +65,12 @@ Runopts::Runopts(int argc, char**argv, bool dryrun)
 void Runopts::opt_reads(const std::string &file)
 {
 	std::stringstream ss;
+
+	auto numread = mopt.count("reads");
+	auto readcnt = indexfiles.size();
+
+	std::cout << STAMP << "Processing reads file [" << readcnt + 1 << "] out of total [" << numread << "] files" << std::endl;
+
 	if (file.size() == 0)
 	{
 		ERR("option '--reads' requires a path to a reads FASTA/FASTQ file");
@@ -109,6 +115,11 @@ void Runopts::opt_ref(const std::string &file)
 {
 	std::stringstream ss;
 
+	auto numref = mopt.count("ref");
+	auto refcnt = indexfiles.size();
+
+	std::cout << STAMP << "Processing reference [" << refcnt + 1 << "] out of total [" << numref << "] references" << std::endl;
+
 	if (file.size() == 0)
 	{
 		ERR(": --ref must be followed by a file path (ex. --ref /path/to/file1.fasta)");
@@ -138,14 +149,7 @@ void Runopts::opt_ref(const std::string &file)
 	// if we are here the Workdir is OK
 	// if WORKDIR is set -> use WORKDIR/idx/
 	// if WORKDIR is not set -> use USERDIR/idx/
-	std::string idx_file = workdir + "/idx/" + string_hash(basename);
-
-	// verify index file already exists
-	if (filesize(idx_file) <= 0)
-	{
-		std::cout << STAMP << "File (" << idx_file
-			<< ") either non-existent or empty or corrupt. Will be generated" << std::endl;
-	}
+	std::string idx_file = workdir + "/" + IDX_DIR + "/" + string_hash(basename);
 
 	// check index file names are distinct
 	for (int i = 0; i < (int)indexfiles.size(); i++)
@@ -158,6 +162,16 @@ void Runopts::opt_ref(const std::string &file)
 			return;
 		}
 	}
+
+	// verify index file already exists
+	if (filesize(idx_file) <= 0)
+	{
+		std::cout << STAMP << "File (" << idx_file
+			<< ") either non-existent or empty or corrupt. Will be generated" << std::endl;
+	}
+	else
+		is_index_built = true;
+
 	indexfiles.push_back(std::pair<std::string, std::string>(file, idx_file));
 } // ~Runopts::opt_ref
 
@@ -249,7 +263,7 @@ void Runopts::opt_match(const std::string &val)
 	else
 	{
 		ERR(": --match [INT] has been set twice, please verify your choice");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optMatch
@@ -276,7 +290,7 @@ void Runopts::opt_mismatch(const std::string &val)
 	else
 	{
 		ERR(": --mismatch [INT] has been set twice, please verify your choice");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_mismatch
@@ -303,7 +317,7 @@ void Runopts::opt_gap_open(const std::string &val)
 	else
 	{
 		ERR(": --gap_open [INT] has been set twice, please verify your choice");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_gap_open
@@ -329,7 +343,7 @@ void Runopts::opt_gap_ext(const std::string &val)
 	else
 	{
 		ERR(": --gap_ext [INT] has been set twice, please verify your choice");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_gap_ext
@@ -355,7 +369,7 @@ void Runopts::opt_num_seeds(const std::string &val)
 	else
 	{
 		ERR(": --num_seeds [INT] has been set twice, please verify your choice");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_num_seeds
@@ -477,7 +491,7 @@ void Runopts::opt_min_lis(const std::string &val)
 	if (min_lis_set)
 	{
 		ERR(": --min_lis [INT] has been set twice, please verify your choice.");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -503,7 +517,7 @@ void Runopts::opt_best(const std::string &val)
 	if (best_set)
 	{
 		ERR(" : --best [INT] has been set twice, please verify your choice.");
-		printlist();
+		help();
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -672,7 +686,7 @@ void Runopts::opt_unknown(char **argv, int &narg, char * opt)
 	std::stringstream ss;
 	ss << " : option --" << opt << " not recognized";
 	ERR(ss.str());
-	printlist();
+	help();
 	exit(EXIT_FAILURE);
 } // ~Runopts::opt_unknown
 
@@ -734,8 +748,8 @@ void Runopts::opt_R(const std::string &val)
 /* Help */
 void Runopts::opt_h(const std::string &val)
 {
-	welcome();
-	printlist();
+	about();
+	help();
 	exit(0);
 } // ~Runopts::opt_h
 
@@ -757,7 +771,7 @@ void Runopts::opt_N(const std::string &val)
 		ERR(": BOOL -N has been set more than once, please check your command parameters.");
 		exit(EXIT_FAILURE);
 	}
-} // ~Runopts::opt_N_MatchAmbiguous
+} // ~Runopts::opt_N
 
   /* Number Processor threads to use */
 void Runopts::opt_a(const std::string &val)
@@ -856,7 +870,7 @@ void Runopts::opt_default(const std::string &opt)
 	std::stringstream ss;
 	ss << STAMP << "Option: '" << opt << "' is not recognized";
 	ERR(ss.str());
-	printlist();
+	help();
 	exit(EXIT_FAILURE);
 } // ~Runopts::opt_default
 
@@ -899,6 +913,109 @@ void Runopts::opt_workdir(const std::string &path)
 	}
 	else
 		workdir = path;
+}
+
+// indexing options
+void Runopts::opt_tmpdir(const std::string &val)
+{
+	std::cout << STAMP << "TODO: deprecated indexing option: " << help_tmpdir << " To be removed." << std::endl;
+}
+
+void Runopts::opt_interval(const std::string &val)
+{
+	std::stringstream ss;
+	auto count = mopt.count("interval");
+	if (count > 1)
+	{
+		ss << " Option 'interval' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		WARN(ss.str());
+	}
+
+	if (val.size() == 0)
+	{
+		WARN("Option 'interval' given without value. Using default: 1");
+	}
+	else
+	{
+		interval = std::stoi(val);
+	}
+}
+
+void Runopts::opt_m(const std::string &val)
+{
+	std::stringstream ss;
+	auto count = mopt.count("m");
+	if (count > 1)
+	{
+		ss << " Option 'm' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		WARN(ss.str());
+	}
+
+	if (val.size() == 0)
+	{
+		WARN("Option 'interval' given without value. Using default: 3072 MB");
+	}
+	else
+	{
+		mem = std::stod(val);
+	}
+}
+
+void Runopts::opt_L(const std::string &val)
+{
+	std::stringstream ss;
+	auto count = mopt.count("L");
+	if (count > 1)
+	{
+		ss << " Option 'L' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		WARN(ss.str());
+	}
+
+	if (val.size() == 0)
+	{
+		ss.str("");
+		ss << "Option 'L' given without value. Using default: " << lnwin_gv;
+		WARN(ss.str());
+	}
+	else
+	{
+		int lnwin_t = std::stoi(val);
+
+		if (lnwin_t <= 0 || lnwin_t % 2 == 1 || lnwin_t < 8 || lnwin_t > 26)
+		{
+			ss.str("");
+			ss << STAMP 
+				<< "Option L takes a Positive Even integer between 8 and 26 inclusive e.g. 10, 12, 14, .. , 20. Provided value: " 
+				<< lnwin_t << " Default will be used: " << lnwin_gv;
+			WARN(ss.str());
+		}
+		else
+		{
+			lnwin_gv = lnwin_t;
+		}
+	}
+} // ~Runopts::opt_L
+
+void Runopts::opt_max_pos(const std::string &val)
+{
+	std::stringstream ss;
+	auto count = mopt.count("max_pos");
+	if (count > 1)
+	{
+		ss << " Option 'max_pos' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		WARN(ss.str());
+	}
+
+	if (val.size() == 0)
+	{
+		ss.str("");
+		ss << "Options 'max_pos' takes a positive integer e.g. 250. Using default: " << max_pos;
+		WARN(ss.str());
+	}
+	else
+	{
+		max_pos = std::stoi(val);
+	}
 }
 
 void Runopts::test_kvdb_path()
@@ -966,7 +1083,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (argc == 1)
 	{
 		verbose = true;
-		welcome();
+		about();
 		ERR("Missing required command options");
 		exit(EXIT_FAILURE);
 	}
@@ -1182,7 +1299,7 @@ void Runopts::validate()
 	}
 
 	// the list of arguments is correct, welcome the user!
-	if (verbose) welcome();
+	if (verbose) about();
 	// if neither strand was selected for search, search both
 	if (!forward && !reverse)
 	{
@@ -1246,7 +1363,7 @@ void Runopts::validate()
   *  @param none
   #  @return none
   */
-void welcome()
+void about()
 {
 	std::stringstream ss;
 
@@ -1279,7 +1396,7 @@ void welcome()
 *  @param none
 *  @return none
 */
-void printlist()
+void help()
 {
 	std::stringstream ss;
 
@@ -1505,4 +1622,4 @@ void printlist()
 		<<                                                                                                     "1:1"          << COLOFF << std::endl << std::endl;
 		
 	std::cout << ss.str();
-}//~printlist()
+}//~help()

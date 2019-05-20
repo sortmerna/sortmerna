@@ -189,7 +189,7 @@ if(WIN32)
 endif()
 
 ## build indexdb
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
+#add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
 
 ## build sortmerna
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
@@ -218,7 +218,7 @@ write_basic_package_version_file(
 	COMPATIBILITY SameMajorVersion
 )  
 
-install(TARGETS sortmerna indexdb
+install(TARGETS sortmerna
 	EXPORT sortmernaTargets
 	RUNTIME 
 	DESTINATION bin

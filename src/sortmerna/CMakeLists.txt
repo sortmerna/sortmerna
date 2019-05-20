@@ -82,6 +82,7 @@ set(SMR_SRCS
 	cmd.cpp
 	gzip.cpp
 	index.cpp
+	indexdb.cpp
 	kseq_load.cpp
 	kvdb.cpp
 	options.cpp
@@ -114,6 +115,7 @@ if(WIN32)
 		PUBLIC
 			${CMAKE_SOURCE_DIR}/include
 			$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
+			$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 			${DIRENTWIN_HOME}/include
 			${EXTERNAL_DEPS}/concurrentqueue
 	)
@@ -121,6 +123,7 @@ else()
 	target_include_directories(smr_objs 
 		PUBLIC
 			${CMAKE_SOURCE_DIR}/include
+			$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 			${EXTERNAL_DEPS}/concurrentqueue
 	)
 endif()
@@ -142,6 +145,7 @@ if(WIN32)
 		smr_objs
 		winapi
 		alp
+		$<TARGET_OBJECTS:cmph>
 		ZLIB::ZLIB
 		${ROCKSDB_LIB}
 		RapidJSON::RapidJSON
@@ -162,6 +166,7 @@ else()
 		alp # this is a transitive dependency of smr_objs but the linking fails without it. Why?
 		# the following are all transitive dependencies of smr_objs i.e. no need to link: 
 		# RocksDB::rocksdb RapidJSON::RapidJSON ZLIB::ZLIB Threads::Threads (rockdb deps)
+		$<TARGET_OBJECTS:cmph>
 	)
 	
 	if(PORTABLE)

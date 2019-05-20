@@ -146,7 +146,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	Readstats readstats(opts);
 	Refstats refstats(opts, readstats);
 	References refs;
-	Index index;
+	Index index(opts);
 	Read read;
 
 	// find half-kmer prefix/suffix matches

@@ -36,6 +36,7 @@
  
 #include "options.hpp"
 #include "kvdb.hpp"
+#include "index.hpp"
 
 // forward
 struct Readstats;
@@ -69,6 +70,6 @@ class Output;
 		   L-mers using smaller intervals </li>
 	</ol>
 */
-void align(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb);
+void align(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb);
 
 // ~PARALLELTRAVERSAL_H
