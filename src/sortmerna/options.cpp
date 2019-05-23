@@ -122,7 +122,7 @@ void Runopts::opt_ref(const std::string &file)
 
 	if (file.size() == 0)
 	{
-		ERR(": --ref must be followed by a file path (ex. --ref /path/to/file1.fasta)");
+		ERR("--ref must be followed by a file path (ex. --ref /path/to/file1.fasta)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -130,26 +130,18 @@ void Runopts::opt_ref(const std::string &file)
 	// TODO:
 	// if index already exists, no refs files are needed (only the names) =>
 	// verify first the index exists based on the ref name. 
-	// Verify physical presence and compare against metadata that can be stored 
-	// in the RocksDB DB. For this the options would need handle to the DB (is it OK?)
-	// if (exists_index(file))
+	// Verify physical presence and compare against metadata that can be stored in an index descriptor
+	// or in the RocksDB DB (for this the options would need handle to the DB - OK?). 
 	if (filesize(file) <= 0)
 	{
-		ss << ": [" << file << "] either non-existent or empty or corrupt";
+		ss << STAMP << "File '" << file << "' either non-existent or empty or corrupt";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		std::cout << STAMP << "(" << file << ")" << std::endl;
+		std::cout << STAMP << "'" << file << "'" << std::endl;
 	}
-
-	std::string basename = get_basename(file);
-	// derive index file name from the reference file name
-	// if we are here the Workdir is OK
-	// if WORKDIR is set -> use WORKDIR/idx/
-	// if WORKDIR is not set -> use USERDIR/idx/
-	std::string idx_file = workdir + "/" + IDX_DIR + "/" + string_hash(basename);
 
 	// check index file names are distinct
 	for (int i = 0; i < (int)indexfiles.size(); i++)
@@ -157,25 +149,19 @@ void Runopts::opt_ref(const std::string &file)
 		if ((indexfiles[i].first).compare(file) == 0)
 		{
 			ss.str("");
-			ss << "Reference file (" << file << ") has been entered more than once. Ignoring redundant enties";
+			ss << STAMP << "Reference file (" << file << ") has been entered more than once. Ignoring redundant enties";
 			WARN(ss.str());
-			return;
 		}
 	}
 
-	// verify index file already exists
-	if (filesize(idx_file) <= 0)
-	{
-		std::cout << STAMP << "File (" << idx_file
-			<< ") either non-existent or empty or corrupt. Will be generated" << std::endl;
-	}
-	else
-		is_index_built = true;
+	std::string basename = get_basename(file);
+	// derive index file prefix from the reference file name
+	// if we are here the Workdir is OK
+	std::string idx_file_pfx = workdir + "/" + IDX_DIR + "/" + string_hash(basename);
 
-	indexfiles.push_back(std::pair<std::string, std::string>(file, idx_file));
+	indexfiles.push_back(std::pair<std::string, std::string>(file, idx_file_pfx));
 } // ~Runopts::opt_ref
 
-/* TODO: make optional */
 void Runopts::opt_aligned(const std::string &file)
 {
 	if (file.size() == 0)
@@ -188,7 +174,7 @@ void Runopts::opt_other(const std::string &file)
 {
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << " File name was not provided with option '--other [FILE]'. Using default name 'other'" << std::endl;
+		std::cout << STAMP << "File name was not provided with option '--other [FILE]'. Using default name 'other'" << std::endl;
 	}
 } // ~Runopts::opt_other
 
@@ -196,7 +182,7 @@ void Runopts::opt_log(const std::string &val)
 {
 	if (doLog)
 	{
-		ERR(": '--log' has already been set once");
+		ERR("'--log' has already been set once");
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -229,7 +215,7 @@ void Runopts::opt_paired_in(const std::string &val)
 {
 	if (pairedout)
 	{
-		ERR(": '--paired_out' has been set, please choose one or the other, or use the default option");
+		ERR("'--paired_out' has been set, please choose one or the other, or use the default option");
 		exit(EXIT_FAILURE);
 	}
 
@@ -240,7 +226,7 @@ void Runopts::opt_paired_out(const std::string &val)
 {
 	if (pairedin)
 	{
-		ERR(": '--paired_in' has been set, please choose one or the other, or use the default option");
+		ERR("'--paired_in' has been set, please choose one or the other, or use the default option");
 		exit(EXIT_FAILURE);
 	}
 
@@ -251,7 +237,7 @@ void Runopts::opt_match(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": '--match [INT]' requires a positive integer as input (ex. --match 2)");
+		ERR("'--match [INT]' requires a positive integer as input (ex. --match 2)");
 		exit(EXIT_FAILURE);
 	}
 	// set match
@@ -262,7 +248,7 @@ void Runopts::opt_match(const std::string &val)
 	}
 	else
 	{
-		ERR(": --match [INT] has been set twice, please verify your choice");
+		ERR("--match [INT] has been set twice, please verify your choice");
 		help();
 		exit(EXIT_FAILURE);
 	}
@@ -272,7 +258,7 @@ void Runopts::opt_mismatch(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": --mismatch [INT] requires a negative integer input (ex. --mismatch -2)");
+		ERR("--mismatch [INT] requires a negative integer input (ex. --mismatch -2)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -282,14 +268,14 @@ void Runopts::opt_mismatch(const std::string &val)
 		mismatch = atoi(val.data());
 		if (mismatch > 0)
 		{
-			ERR(": --mismatch [INT] takes a negative integer (ex. --mismatch -2)");
+			ERR("--mismatch [INT] takes a negative integer (ex. --mismatch -2)");
 			exit(EXIT_FAILURE);
 		}
 		mismatch_set = true;
 	}
 	else
 	{
-		ERR(": --mismatch [INT] has been set twice, please verify your choice");
+		ERR("--mismatch [INT] has been set twice, please verify your choice");
 		help();
 		exit(EXIT_FAILURE);
 	}
@@ -299,7 +285,7 @@ void Runopts::opt_gap_open(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": --gap_open [INT] requires a positive integer as input (ex. --gap_open 5)");
+		ERR("--gap_open [INT] requires a positive integer as input (ex. --gap_open 5)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -309,14 +295,14 @@ void Runopts::opt_gap_open(const std::string &val)
 		gap_open = atoi(val.data());
 		if (gap_open < 0)
 		{
-			ERR(": --gap_open [INT] requires a positive integer as input (ex. --gap_open 5)");
+			ERR("--gap_open [INT] requires a positive integer as input (ex. --gap_open 5)");
 			exit(EXIT_FAILURE);
 		}
 		gap_open_set = true;
 	}
 	else
 	{
-		ERR(": --gap_open [INT] has been set twice, please verify your choice");
+		ERR("--gap_open [INT] has been set twice, please verify your choice");
 		help();
 		exit(EXIT_FAILURE);
 	}
@@ -326,7 +312,7 @@ void Runopts::opt_gap_ext(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": --gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)");
+		ERR("--gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)");
 		exit(EXIT_FAILURE);
 	}
 	// set gap extend
@@ -335,14 +321,14 @@ void Runopts::opt_gap_ext(const std::string &val)
 		gap_extension = atoi(val.data());
 		if (gap_extension < 0)
 		{
-			ERR(": --gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)");
+			ERR("--gap_ext [INT] requires a positive integer as input (ex. --gap_ext 2)");
 			exit(EXIT_FAILURE);
 		}
 		gap_ext_set = true;
 	}
 	else
 	{
-		ERR(": --gap_ext [INT] has been set twice, please verify your choice");
+		ERR("--gap_ext [INT] has been set twice, please verify your choice");
 		help();
 		exit(EXIT_FAILURE);
 	}
@@ -352,7 +338,7 @@ void Runopts::opt_num_seeds(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": --num_seeds [INT] requires a positive integer as input (ex. --num_seeds 6)");
+		ERR("--num_seeds [INT] requires a positive integer as input (ex. --num_seeds 6)");
 		exit(EXIT_FAILURE);
 	}
 	// set number of seeds
@@ -362,13 +348,13 @@ void Runopts::opt_num_seeds(const std::string &val)
 		seed_hits = (int)strtol(val.data(), &end, 10); // convert to integer
 		if (seed_hits <= 0)
 		{
-			ERR(": --num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
+			ERR("--num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
 			exit(EXIT_FAILURE);
 		}
 	}
 	else
 	{
-		ERR(": --num_seeds [INT] has been set twice, please verify your choice");
+		ERR("--num_seeds [INT] has been set twice, please verify your choice");
 		help();
 		exit(EXIT_FAILURE);
 	}
@@ -379,7 +365,7 @@ void Runopts::opt_fastx(const std::string &val)
 {
 	if (fastxout)
 	{
-		ERR(": --fastx has already been set once.");
+		ERR("--fastx has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -392,7 +378,7 @@ void Runopts::opt_sam(const std::string &val)
 {
 	if (samout)
 	{
-		ERR(": --sam has already been set once.");
+		ERR("--sam has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -407,7 +393,7 @@ void Runopts::opt_blast(const std::string &val)
 
 	if (blastout)
 	{
-		ERR(": --blast [STRING] has already been set once.");
+		ERR("--blast [STRING] has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -941,6 +927,9 @@ void Runopts::opt_interval(const std::string &val)
 	}
 }
 
+/**
+ * Max size of an index file/part 
+ */
 void Runopts::opt_m(const std::string &val)
 {
 	std::stringstream ss;
@@ -957,7 +946,7 @@ void Runopts::opt_m(const std::string &val)
 	}
 	else
 	{
-		mem = std::stod(val);
+		max_file_size = std::stod(val);
 	}
 }
 

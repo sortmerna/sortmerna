@@ -42,7 +42,6 @@ Readstats::Readstats(Runopts & opts)
 	total_reads_denovo_clustering(0),
 	stats_calc_done(false)
 {
-	opts.exit_early = check_file_format();
 	calcSuffix();
 	if (!opts.exit_early)
 		calculate(); // number_total_read only
@@ -53,9 +52,9 @@ void Readstats::calculate()
 	std::stringstream ss;
 	uint64_t tcount = 0;
 
-	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
+	std::ifstream ifs(opts.readfiles[0], std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		ss << "Failed to open Reads file: " << opts.readsfile;
+		ss << "Failed to open Reads file: " << opts.readfiles[0];
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
@@ -178,41 +177,10 @@ void Readstats::calculate()
 	ifs.close();
 } // ~Readstats::calculate
 
-bool Readstats::check_file_format()
-{
-	std::stringstream ss;
-	bool exit_early = false;
-#ifdef HAVE_LIBZ
-	// Check file format (if ZLIB supported)
-	gzFile fp = gzopen(opts.readsfile.c_str(), "r");
-	kseq_t *seq = kseq_init(fp);
-#else
-	FILE* fp = fopen(opts.readsfile.c_str(), "rb");
-	kseq_t *seq = kseq_init(fileno(fp));
-#endif
-	int l;
-	if ((l = kseq_read(seq)) >= 0)
-		filesig = seq->last_char;
-	else
-	{
-		ss.str("");
-		ss << STAMP << " unrecognized file format or empty file " << opts.readsfile;
-		ERR(ss.str());
-		exit_early = true;
-	}
-	kseq_destroy(seq);
-#ifdef HAVE_LIBZ
-	gzclose(fp);
-#else
-	fclose(fp);
-#endif
-	return exit_early;
-} // ~Readstats::check_file_format
-
 // determine the suffix (fasta, fastq, ...) of aligned strings
 void Readstats::calcSuffix()
 {
-	const std::string suff = opts.readsfile.substr(opts.readsfile.rfind('.') + 1);
+	const std::string suff = opts.readfiles[0].substr(opts.readfiles[0].rfind('.') + 1);
 	if (suff.length() > 0 && !opts.is_gz)
 		suffix.assign(suff);
 	else if (filesig == FASTA_HEADER_START)

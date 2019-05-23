@@ -22,7 +22,6 @@ struct Runopts
 	typedef void (Runopts::*OptsMemFunc)(const std::string&); // pointer to member function
 
 	std::string kvdbPath; // '-d' (opt_d) key-value database for alignment results
-	std::string readsfile; // TODO: replace with vector of pairs
 	std::vector<std::string> readfiles;
 	std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
 	std::string filetype_ar; // '--aligned' aligned reads output file
@@ -68,7 +67,7 @@ struct Runopts
 	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
 
 	// indexing options
-	double mem = 3072;
+	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.
 	uint32_t lnwin_gv = 18;
 	uint32_t interval = 1;
 	uint32_t max_pos = 10000;

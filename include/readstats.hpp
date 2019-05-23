@@ -55,7 +55,6 @@ struct Readstats {
 	~Readstats() {}
 
 	void calculate(); // calculate statistics from readsfile
-	bool check_file_format();
 	void calcSuffix();
 	std::string toString();
 	bool restoreFromDb(KeyValueDatabase & kvdb);

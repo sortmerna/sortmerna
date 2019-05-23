@@ -119,7 +119,7 @@ void PostProcessor::run()
 	writeQueue.decrPushers(); // signal this processor done adding
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 
-	ss << __func__ << ":" << __LINE__ << " " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
+	ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
 	std::cout << ss.str();
 } // ~PostProcessor::run
 
@@ -161,9 +161,8 @@ void ReportProcessor::run()
 		countReads+=i;
 	}
 
-	ss << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
+	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
 	std::cout << ss.str(); ss.str("");
-
 } // ~ReportProcessor::run
 
 // called from main
@@ -174,7 +173,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	std::cout <<std::endl << __func__ << ":" << __LINE__ << " Log file generation starts" << std::endl;
+	std::cout <<std::endl << STAMP << "Log file generation starts" << std::endl;
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
@@ -182,7 +181,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss << __func__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
+		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -199,7 +198,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 			// iterate parts of reference files
 			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 			{
-				ss << std::endl << __func__ << ":" << __LINE__ << ": Loading reference " << index_num 
+				ss << STAMP << "Loading reference " << index_num 
 					<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 				std::cout << ss.str(); ss.str("");
 				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
@@ -232,7 +231,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 				writeQueue.reset(N_PROC_THREADS);
 
 				elapsed = std::chrono::high_resolution_clock::now() - starts;
-				ss << "Done reference " << index_num << " Part: " << idx_part + 1
+				ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
 					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 				std::cout << ss.str(); ss.str("");
 			} // ~for(idx_part)
@@ -249,7 +248,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 
 	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
 
-	std::cout << __func__ << ":" << __LINE__ << " Done" << std::endl;
+	std::cout << STAMP << " Done" << std::endl;
 } // ~postProcess
 
 void writeLog(Runopts & opts, Readstats & readstats, Output & output)
@@ -258,24 +257,24 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 
 	// output total number of reads
 	output.logstream << " Results:\n";
-	output.logstream << "    Total reads = " << readstats.number_total_read << "\n";
+	output.logstream << "    Total reads = " << readstats.number_total_read << std::endl;
 	if (opts.de_novo_otu)
 	{
 		// all reads that have read::hit_denovo == true
-		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
+		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << std::endl;
 	}
 	// output total non-rrna + rrna reads
 	output.logstream << std::setprecision(2) << std::fixed;
 	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
-		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read) * 100 << ")\n";
+		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read) * 100 << ")" << std::endl;
 	output.logstream << "    Total reads failing E-value threshold = "
 		<< readstats.number_total_read - readstats.total_reads_mapped.load()
-		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read))) * 100 << ")\n";
-	output.logstream << "    Minimum read length = " << readstats.min_read_len.load() << "\n";
-	output.logstream << "    Maximum read length = " << readstats.max_read_len.load() << "\n";
-	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
+		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read))) * 100 << ")" << std::endl;
+	output.logstream << "    Minimum read length = " << readstats.min_read_len.load() << std::endl;
+	output.logstream << "    Maximum read length = " << readstats.max_read_len.load() << std::endl;
+	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << std::endl;
 
-	output.logstream << " By database:\n";
+	output.logstream << " By database:" << std::endl;
 
 	// output stats by database
 	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
@@ -291,5 +290,5 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 	}
 	time_t q = time(0);
 	struct tm * now = localtime(&q);
-	output.logstream << "\n " << asctime(now) << "\n";
+	output.logstream << std::endl << " " << asctime(now) << std::endl;
 } // ~writeLog

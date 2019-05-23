@@ -43,6 +43,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <iostream>
+#include <filesystem>
 
 #include "version.h"
 #include "build_version.h"
@@ -975,38 +976,171 @@ namespace {
 	}//~printlist()
 }
 
+void get_keys_file(std::string &keys_file, Runopts &opts)
+{
+	std::stringstream ss;
 
+	int32_t pid = getpid();
+	ss << pid;
+	std::string s_pid = ss.str();
+	// verify can write in the workdir
+	std::string tmp_file = opts.workdir + "test" + s_pid + ".txt";
+	std::fstream ifs(tmp_file, std::ios_base::out | std::ios_base::binary);
+	if (ifs.is_open())
+	{
+		ifs.close();
+		bool stat = std::filesystem::remove(tmp_file, std::error_code::error_code());
+		if (stat)
+		{
+			keys_file = opts.workdir + "/sortmerna_keys_" + s_pid + ".txt";
+		}
+		else
+		{
+			WARN("Failed deleting temp file: " + tmp_file);
+		}
+	}
+	else
+	{
+		ERR("Failed writing to file: " + tmp_file + " Error: " + strerror(errno));
+	}
+} //~get_keys_file
+
+/**
+ * TODO: remove - outdated
+ *
+ * Prepare the temporary file for storing keys of all s-mer (19-mer) words
+ * of the reference sequences.
+ * Required for CMPH to build the hash functions. See 'cmph_io_nlfile_adapter(keys)'
+ */
+void get_keys_str(std::string &keys_str)
+{
+	std::stringstream ss;
+
+	char* tmpdir_env = NULL;
+	char pidStr[4000];
+
+	int32_t pid = getpid();
+	sprintf(pidStr, "%d", pid);
+
+	// try $TMPDIR, /tmp and local directories
+	bool try_further = true;
+
+	// try TMPDIR
+	tmpdir_env = getenv(ENV_TMPDIR.data());
+	if (tmpdir_env != NULL && strcmp(tmpdir_env, "") != 0)
+	{
+		std::string tmp_dir(tmpdir_env);
+		if (tmp_dir[tmp_dir.size() - 1] != PATH_SEPARATOR)
+			tmp_dir += PATH_SEPARATOR;
+
+		std::string tmp_file = tmp_dir + "test" + pidStr + ".txt";
+
+		FILE *tmp = fopen(tmp_file.data(), "w+");
+		if (tmp == NULL)
+		{
+			ss.str("");
+			ss << "No write permissions in directory [" << tmpdir_env << "]: " << strerror(errno) << std::endl
+				<< "  will try /tmp/.";
+			WARN(ss.str());
+		}
+		else
+		{
+			// remove the temporary test file
+			fclose(tmp);
+			if (remove(tmp_file.data()) != 0)
+			{
+				ss.str("");
+				ss << "Could not delete temporary file " << tmp_file.data();
+				WARN(ss.str());
+			}
+			// set working directory
+			keys_str += tmp_dir;
+			//memcpy(keys_str.data(), tmp_dir.data(), 4000);
+			try_further = false;
+		}
+	}
+
+	// try "/tmp" directory
+	if (try_further)
+	{
+		char tmp_str[4000] = "";
+		strcat(tmp_str, "/tmp/test_");
+		strcat(tmp_str, pidStr);
+		strcat(tmp_str, ".txt");
+
+		FILE *tmp = fopen(tmp_str, "w+");
+		if (tmp == NULL)
+		{
+			ss.str("");
+			ss << "No write permissions in directory /tmp/: " << strerror(errno) << std::endl
+				<< "  will try local directory.";
+			WARN(ss.str());
+		}
+		else
+		{
+			// remove the temporary test file
+			if (remove(tmp_str) != 0)
+				std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_str << std::endl;
+
+			// set working directory
+			strcat(keys_str.data(), "/tmp/");
+
+			try_further = false;
+		}
+	}
+
+	// try the local directory
+	if (try_further)
+	{
+		char tmp_str[4000] = "";
+		strcat(tmp_str, "./test_");
+		strcat(tmp_str, pidStr);
+		strcat(tmp_str, ".txt");
+
+		FILE *tmp = fopen(tmp_str, "w+");
+		if (tmp == NULL)
+		{
+			ss.str("");
+			ss << "No write permissions in current directory: " << strerror(errno) << std::endl
+				<< "  Please set --tmpdir to a writable directory,"
+				<< " or change the write permissions in $TMPDIR, e.g. /tmp/ (Linux), or current directory.";
+			ERR(ss.str());
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			// remove the temporary test file
+			if (remove(tmp_str) != 0)
+				std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_str << std::endl;
+
+			// set working directory
+			strcat(keys_str.data(), "./");
+			try_further = false;
+		}
+	}
+
+	keys_str = keys_str + "sortmerna_keys_" + pidStr + ".txt";
+} // ~get_keys_str
 
 /**
  *
- * parse the fasta file, build the burst tries
-
- * @param ./indexdb --db [file name]
+ * parse the fasta file, and build the burst tries
+ *
  * @return void
- * @version 1.0 Dec 10, 2012
  *
  */
 int build_index(Runopts &opts)
 {
 	std::stringstream ss;
-	int narg = 1;
+	timeval t;
 	double start = 0.0;
 	double end = 0.0;
 
 	// memory of index
-	//double mem = 0;
 	bool mem_is_set = false;
 	bool lnwin_set = false;
 	bool interval_set = false;
 	bool max_pos_set = false;
-
-	// vector of (FASTA file, index name) pairs for constructing index
-	std::vector<std::pair<std::string, std::string>> myfiles;
-
-	// pointer to temporary directory
-	char* ptr_tmpdir = NULL;
-
-	timeval t;
 
 	pread_gv = opts.lnwin_gv + 1;
 	partialwin_gv = opts.lnwin_gv / 2;
@@ -1014,144 +1148,10 @@ int build_index(Runopts &opts)
 	mask32 = (1 << opts.lnwin_gv) - 1;
 	mask64 = (2ULL << ((pread_gv * 2) - 1)) - 1;
 
-	// temporary file to store keys for building the CMPH
-	int32_t pid = getpid();
-	char pidStr[4000];
-	sprintf(pidStr, "%d", pid);
-	char keys_str[4000] = "";
-	char* tmpdir_env = NULL;
-
-	// tmpdir provided
-	if (ptr_tmpdir != NULL)
-	{
-		char tmp_str[4000] = "";
-		strcat(tmp_str, ptr_tmpdir);
-		char* ptr_tmpdir_t = ptr_tmpdir;
-		while (*ptr_tmpdir_t++ != '\0');
-		if (*(ptr_tmpdir_t - 2) != '/') strcat(tmp_str, "/");
-
-		// test_pid.txt
-		char tmp_str_test[4100] = "";
-		strcat(tmp_str_test, tmp_str);
-		strcat(tmp_str_test, "test_");
-		strcat(tmp_str_test, pidStr);
-		strcat(tmp_str_test, ".txt");
-
-		FILE *tmp = fopen(tmp_str_test, "w+");
-		if (tmp == NULL)
-		{
-			std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-				<< ": cannot access directory " << ptr_tmpdir << ": " << strerror(errno) << std::endl;
-			exit(EXIT_FAILURE);
-		}
-		else
-		{
-			// remove temporary test file
-			if (remove(tmp_str_test) != 0)
-				std::cerr << YELLOW << "WARNING" << COLOFF << ": could not delete temporary file " << tmp_str_test << std::endl;
-
-			// set the working directory
-			memcpy(keys_str, tmp_str, 4000);
-		}
-	}
-	// tmpdir not provided, try $TMPDIR, /tmp and local directories
-	else
-	{
-		bool try_further = true;
-
-		// try TMPDIR
-		tmpdir_env = getenv(ENV_TMPDIR.data());
-		if ( tmpdir_env != NULL && strcmp(tmpdir_env, "") != 0 )
-		{
-			std::string tmp_dir(tmpdir_env);
-			if (tmp_dir[tmp_dir.size() - 1] != PATH_SEPARATOR)
-				tmp_dir += PATH_SEPARATOR;
-
-			std::string tmp_file = tmp_dir + "test" + pidStr + ".txt";
-
-			FILE *tmp = fopen(tmp_file.data(), "w+");
-			if (tmp == NULL)
-			{
-				std::cerr << std::endl << YELLOW << "  WARNING"<< COLOFF 
-					<< ": no write permissions in directory "<< tmpdir_env << ": "<< strerror(errno) << std::endl
-					<< "  will try /tmp/." << std::endl;
-			}
-			else
-			{
-				// remove the temporary test file
-				fclose(tmp);
-				if (remove(tmp_file.data()) != 0)
-					std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_file.data() << std::endl;
-
-				// set working directory
-				memcpy(keys_str, tmp_dir.data(), 4000);
-
-				try_further = false;
-			}
-		}
-		// try "/tmp" directory
-		if (try_further)
-		{
-			char tmp_str[4000] = "";
-			strcat(tmp_str, "/tmp/test_");
-			strcat(tmp_str, pidStr);
-			strcat(tmp_str, ".txt");
-
-			FILE *tmp = fopen(tmp_str, "w+");
-			if (tmp == NULL)
-			{
-				std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF 
-					<< ": no write permissions in directory /tmp/: " << strerror(errno) << std::endl
-					<< "  will try local directory." << std::endl;
-			}
-			else
-			{
-				// remove the temporary test file
-				if (remove(tmp_str) != 0)
-					std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_str << std::endl;
-
-				// set working directory
-				strcat(keys_str, "/tmp/");
-
-				try_further = false;
-			}
-		}
-		// try the local directory
-		if (try_further)
-		{
-			char tmp_str[4000] = "";
-			strcat(tmp_str, "./test_");
-			strcat(tmp_str, pidStr);
-			strcat(tmp_str, ".txt");
-
-			FILE *tmp = fopen(tmp_str, "w+");
-			if (tmp == NULL)
-			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF 
-					<< ": no write permissions in current directory: "<< strerror(errno) << std::endl
-					<< "  Please set --tmpdir to a writable directory,"
-					<< " or change the write permissions in $TMPDIR, e.g. /tmp/ (Linux), or current directory." << std::endl;
-				exit(EXIT_FAILURE);
-			}
-			else
-			{
-				// remove the temporary test file
-				if (remove(tmp_str) != 0)
-					std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << tmp_str << std::endl;
-
-				// set working directory
-				strcat(keys_str, "./");
-				try_further = false;
-			}
-		}
-	}
-
-	strcat(keys_str, "sortmerna_keys_");
-	strcat(keys_str, pidStr);
-	strcat(keys_str, ".txt");
-
-	// the list of arguments is correct
-	//if (verbose) about();
+	// temp file for storing keys of all s-mer (19-mer) words of the reference sequences. 
+	// Required for CMPH to build minimal perfect hash functions
+	std::string keys_file;
+	get_keys_file(keys_file, opts);
 
 	DBG(opts.verbose, "\n  Parameters summary: \n");
 	DBG(opts.verbose, "    K-mer size: %d\n", opts.lnwin_gv + 1);
@@ -1165,15 +1165,17 @@ int build_index(Runopts &opts)
 	DBG(opts.verbose, "\n  Total number of databases to index: %d\n", (int)opts.indexfiles.size());
 
 	// build index for each pair in indexfiles vector
+	// Split the index into smaller parts when 'opts.max_file_size' is exceeded
 	for (auto idxpair: opts.indexfiles)
 	{
 		std::vector< std::pair<std::string, uint32_t> > sam_sq_header;
+
 		// vector of structs storing information on which sequences from 
 		// the original FASTA file were added to each index part
 		std::vector<index_parts_stats> index_parts_stats_vec;
 
-		// Process reference input file
-		FILE *fp = fopen((char*)(idxpair.first).c_str(), "r");
+		// Open reference file for reading
+		FILE *fp = fopen(idxpair.first.data(), "r");
 		if (fp == NULL)
 		{
 			ss.str("");
@@ -1182,20 +1184,26 @@ int build_index(Runopts &opts)
 			exit(EXIT_FAILURE);
 		}
 
-		DBG(opts.verbose, "\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
-			BLUE, (char*)(idxpair.first).c_str(),
-			COLOFF, BLUE, (char*)(idxpair.second).c_str(),
-			COLOFF);
-
-		// get full file size
+		// get the size of the reads file
 		fseek(fp, 0L, SEEK_END);
 		size_t filesize = ftell(fp);
 		fseek(fp, 0L, SEEK_SET);
 
+		ss.str("");
+		ss << std::endl 
+			<< "  Begin indexing file " << BLUE << idxpair.first << COLOFF 
+			<< " of size: " << filesize
+			<< " under index name " << BLUE << idxpair.second << COLOFF << std::endl;
+		DBG(opts.verbose, ss.str().data());
+		//DBG(opts.verbose, "\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
+		//	BLUE, idxpair.first.data(),	COLOFF, 
+		//	BLUE, idxpair.second.data(), COLOFF);
+
 		// STEP 1 ************************************************************
-		// For file part_0, (a) compute the nucleotide background frequencies;
-		// (b) length of total reference sequences (for Gumbel parameters);
-		// (c) number of total sequences (for SW alignment)
+		//   For file part_0 compute
+		//     (a) the nucleotide background frequencies
+		//     (b) length of total reference sequences (for Gumbel parameters)
+		//     (c) number of total sequences (for SW alignment)
 
 		// total number of reference sequences
 		uint64_t strs = 0;
@@ -1203,8 +1211,8 @@ int build_index(Runopts &opts)
 		uint32_t maxlen = 0;
 		// length of single sequence
 		uint32_t len = 0;
-		// the percentage of each A/C/G/T in the database
-		double background_freq[4] = { 0.0,0.0,0.0,0.0 };
+		// the percentage of each nucleotide A/C/G/T in the database
+		double background_freq[4] = { 0.0, 0.0, 0.0, 0.0 };
 		// total length of reference sequences
 		uint64_t full_len = 0;
 		int nt = 0;
@@ -1218,15 +1226,17 @@ int build_index(Runopts &opts)
 
 			// name of sequence for SAM format @SQ
 			char read_header[2000];
-			char *pt_h = read_header;
+			char *p_header = read_header;
 
 			// start of read header
 			if (nt == '>') strs += 2;
 			else
 			{
-				std::cerr << __func__ << ":" << __LINE__ << RED << "ERROR" << COLOFF
-					<< ": each read header of the database fasta file must begin with '>';" << std::endl
-					<< "  check sequence # " << strs << std::endl;
+				ss.str("");
+				ss << STAMP
+					<< "Each read header of the database fasta file must begin with '>';" << std::endl
+					<< "  check sequence # " << strs;
+				ERR(ss.str());
 				exit(EXIT_FAILURE);
 			}
 
@@ -1236,11 +1246,11 @@ int build_index(Runopts &opts)
 			{
 				nt = fgetc(fp);
 				if (nt != '\n' && nt != ' ' && nt != '\t' && !stop)
-					*pt_h++ = nt;
+					*p_header++ = nt;
 				else stop = true;
 			}
 
-			*pt_h = '\0';
+			*p_header = '\0';
 			len = 0;
 
 			// scan through the sequence, count its length
@@ -1255,6 +1265,7 @@ int build_index(Runopts &opts)
 				}
 				nt = fgetc(fp);
 			}
+
 			// add sequence name and length to sam_header_
 			std::string s(read_header);
 			sam_sq_header.push_back(std::pair<std::string, uint32_t>(s, len));
@@ -1262,25 +1273,25 @@ int build_index(Runopts &opts)
 			full_len += len;
 			if (len < pread_gv)
 			{
-				std::cerr << std::endl << RED << "  ERROR" << COLOFF << ": [" << __func__ << ":" << __LINE__ 
-					<< "] at least one of your sequences is shorter than the seed length " << pread_gv 
+				ss.str("");
+				ss << "At least one of your sequences is shorter than the seed length " << pread_gv 
 					<< ", please filter out all sequences shorter than " << pread_gv 
-					<< " to continue index construction." << std::endl;
+					<< " to continue index construction.";
+				ERR(ss.str());
 				exit(EXIT_FAILURE);
 			}
 			// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
 			len > maxlen ? maxlen = len : maxlen;
 		} while (nt != EOF); // read until end of file
 
-		TIME(end);
+		TIME(end); // End collecting the sequence distribution statistics
+
+		DBG(opts.verbose, "  done  [%f sec]\n", (end - start));
 
 		// set file pointer back to the beginning of file
 		rewind(fp);
 
-		DBG(opts.verbose, "  done  [%f sec]\n", (end - start));
-
-
-		/* STEP 1 END ***************************************************************************/
+		/* END STEP 1 ***************************************************************************/
 
 		/* STEP 2 *******************************************************************************/
 		/* For every part of total index,
@@ -1288,8 +1299,8 @@ int build_index(Runopts &opts)
 			 (b) count the number of unique 19-mers in the database
 			 (c) output the unique 19-mers into a file for MPHF */
 
-			 // number of the index part
-		uint16_t part = 0;
+		// number of the index part
+		uint16_t part_num = 0;
 		// starting position given by ftell() where to
 		// begin reading the reference sequences
 		unsigned long int start_part = 0;
@@ -1301,19 +1312,20 @@ int build_index(Runopts &opts)
 		// for each index part of the reference sequences
 		do
 		{
-			// number of sequences in part size
+			// number of sequences in part
 			uint32_t numseq_part = 0;
 
 			// set the file pointer to the beginning of the current part
 			start_part = ftell(fp);
 
-			// output file storing all s-mer (19-mer) words in the reference
-			// sequences, required for CMPH to build minimal perfect
-			// hash functions
-			FILE *keys = fopen(keys_str, "w+");
+			// store all s-mer (19-mer) words of the reference sequences in a file. 
+			// Required for CMPH to build minimal perfect hash functions
+			FILE *keys = fopen(keys_file.c_str(), "w+");
 			if (keys == NULL)
 			{
-				std::cerr << RED << "  ERROR" << COLOFF << ": could not open " << keys_str << " file for writing" << std::endl;
+				ss.str("");
+				ss << "Could not open [" << keys_file << "] file for writing";
+				ERR(ss.str());
 				exit(EXIT_FAILURE);
 			}
 
@@ -1325,22 +1337,25 @@ int build_index(Runopts &opts)
 			kmer *lookup_table = (kmer*)malloc((1 << opts.lnwin_gv) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
-				std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for 9-mer look-up table (indexdb.cpp)" << std::endl;
+				ss.str("");
+				ss << STAMP << "Could not allocate memory for 9-mer look-up table";
+				ERR(ss.str());
 				exit(EXIT_FAILURE);
 			}
 
 			memset(lookup_table, 0, (1 << opts.lnwin_gv) * sizeof(kmer));
 
-			// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer
+			// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer window
 			std::vector<bool> incremented_by_forward((1 << opts.lnwin_gv));
 
 			// total size of index so far in bytes
 			index_size = 0;
 
-			DBG(opts.verbose, "\n  start index part # %d: \n", part);
+			DBG(opts.verbose, "\n  start index part # %d: \n", part_num);
 			DBG(opts.verbose, "    (1/3) building burst tries ..");
 
 			TIME(start);
+
 			// for the number of sequences for which the index is less than maximum (set by -m)
 			// indexing the 19-mers will be done in the following manner:
 			//
@@ -1351,6 +1366,8 @@ int build_index(Runopts &opts)
 			//  --------- ---------
 			// we store all unique 18-mer positions (not 19-mer) because if an 18-mer on a read matches exactly to the prefix
 			// or suffix of a 19-mer in the mini-burst trie, we need to recover all of the 18-mer occurrences in the database
+			//
+			// read the reads file char by char
 			do
 			{
 				// start of current sequence in file
@@ -1390,7 +1407,7 @@ int build_index(Runopts &opts)
 
 				// the sequence alone is too large, it will not fit into maximum
 				// memory, skip it
-				if (estimated_seq_mem > opts.mem)
+				if (estimated_seq_mem > opts.max_file_size)
 				{
 					fseek(fp, start_seq, SEEK_SET);
 					std::cerr << std::endl << YELLOW << "  WARNING" << COLOFF << ": the index for sequence `";
@@ -1401,14 +1418,14 @@ int build_index(Runopts &opts)
 						std::cerr << c;
 					} while (c != '\n');
 
-					std::cerr << "` will not fit into " << opts.mem << " Mbytes memory, it will be skipped.";
+					std::cerr << "` will not fit into " << opts.max_file_size << " Mbytes memory, it will be skipped.";
 					std::cerr << "  If memory can be increased, please try `-m " << estimated_seq_mem << "` Mbytes.";
 					fseek(fp, end_seq, SEEK_SET);
 					continue;
 				}
 				// the additional sequence will overflow the maximum index memory,
 				// write existing index to disk and start a new index
-				else if (index_size + estimated_seq_mem > opts.mem)
+				else if (index_size + estimated_seq_mem > opts.max_file_size)
 				{
 					// set the character to something other than EOF
 					if (nt == EOF) nt = 'A';
@@ -1538,13 +1555,12 @@ int build_index(Runopts &opts)
 							index_pos++;
 						}
 					}
-
 				}//~for all 19-mers on the sequence
 
 				delete[] myseq;
 				delete[] myseqr;
 
-			} while (nt != EOF); // all file
+			} while (nt != EOF); // end of reads file
 
 			TIME(end);
 
@@ -1553,7 +1569,7 @@ int build_index(Runopts &opts)
 			{
 				DBG(opts.verbose, "\n  %sERROR%s: no index was created, all of your sequences are "
 					"too large to be indexed with the current memory limit of %e Mbytes.\n",
-					RED, COLOFF, opts.mem);
+					RED, COLOFF, opts.max_file_size);
 				break;
 			}
 			// continue to build hash and positions tables
@@ -1571,7 +1587,7 @@ int build_index(Runopts &opts)
 			FILE * keys_fd = keys;
 			if (keys_fd == NULL)
 			{
-				std::cerr << "File '"<< keys_str << "' not found" << std::endl;
+				std::cerr << "File '"<< keys_file << "' not found" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 			cmph_io_adapter_t *source = cmph_io_nlfile_adapter(keys_fd);
@@ -1589,10 +1605,12 @@ int build_index(Runopts &opts)
 
 			DBG(opts.verbose, " done  [%f sec]\n", (end - start));
 
-			int ret = remove(keys_str);
+			int ret = remove(keys_file.c_str());
 			if (ret != 0)
 			{
-				std::cerr << YELLOW << "  WARNING" << COLOFF << ": could not delete temporary file " << keys_str << std::endl;
+				ss.str("");
+				ss << STAMP << "Could not delete temporary file " << keys_file;
+				WARN(ss.str());
 			}
 
 			// 5. add ids to burst trie
@@ -1660,10 +1678,10 @@ int build_index(Runopts &opts)
 				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6;
 
 				// the sequence alone is too large, it will not fit into maximum memory, skip it
-				if (estimated_seq_mem > opts.mem) continue;
+				if (estimated_seq_mem > opts.max_file_size) continue;
 				// the additional sequence will overflow the maximum index memory,
 				// write existing index to disk and start a new index
-				else if (index_size + estimated_seq_mem > opts.mem)
+				else if (index_size + estimated_seq_mem > opts.max_file_size)
 				{
 					// set the character to something other than EOF
 					if (nt == EOF) nt = 'A';
@@ -1699,7 +1717,8 @@ int build_index(Runopts &opts)
 				}
 
 				// initialize the 19-mer
-				for (uint32_t j = 0; j < pread_gv; j++) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
+				for (uint32_t j = 0; j < pread_gv; j++)
+					(kmer_key <<= 2) |= (int)*kmer_key_ptr++;
 
 				uint32_t numwin = (len - pread_gv + opts.interval) / opts.interval; //TESTING
 				uint32_t id = 0;
@@ -1752,9 +1771,6 @@ int build_index(Runopts &opts)
 			// Destroy hash
 			cmph_destroy(hash);
 
-
-
-
 			// *********** Check ID's in Burst trie are correct *****
 
 			// TESTING
@@ -1784,7 +1800,7 @@ int build_index(Runopts &opts)
 			//cout << "total_entries_f = " << total_entries_f << endl;
 			//cout << "total_entries_f = " << total_entries_r << endl;
 
-			/*
+/*
 			// sequence number
 			i = 0;
 
@@ -1927,25 +1943,37 @@ int build_index(Runopts &opts)
 			i++;
 
 		  } while ( nt != EOF ); /// for all file
-		  */
+*/
 		  // ********** DONE Check! **********
 
 
 		  // Load constructed index part to binary file
 
-		  // covert part number into a string
-			std::stringstream prt_str;
-			prt_str << part;
-			std::string part_str = prt_str.str();
-			DBG(opts.verbose, "      temporary file was here: %s\n", keys_str);
+			// covert part number into a string
+			ss.str("");
+			ss << part_num;
+			std::string part_str = ss.str();
+
 			// 1. load the kmer 'count' variable /index/kmer.dat
-			std::ofstream oskmer((char*)(idxpair.second + ".kmer_" + part_str + ".dat").c_str(), std::ios::binary);
-			DBG(opts.verbose, "      writing kmer data to %s\n", (idxpair.second + ".kmer_" + part_str + ".dat").c_str());
+			std::string idx_file = idxpair.second + ".kmer_" + part_str + ".dat";
+			std::ofstream oskmer(idx_file, std::ios::binary);
+			if (!oskmer.is_open())
+			{
+				ss.str("");
+				ss << STAMP << "Failed to open file: " << idx_file << " for writing. Error: " << strerror(errno);
+				ERR(ss.str());
+				exit(1);
+			}
+
+			DBG(opts.verbose, "      temporary file was here: %s\n", keys_file.data());
+			DBG(opts.verbose, "      writing kmer data to %s\n", idx_file.data());
+
 			index_parts_stats thispart;
 			thispart.start_part = start_part;
 			thispart.seq_part_size = seq_part_size;
 			thispart.numseq_part = numseq_part;
 			index_parts_stats_vec.push_back(thispart);
+
 			// the 9-mer look up tables
 			for (uint32_t j = 0; j < (uint32_t)(1 << opts.lnwin_gv); j++)
 			{
@@ -1953,17 +1981,22 @@ int build_index(Runopts &opts)
 					sizeof(uint32_t));
 			}
 			oskmer.close();
+
 			// 2. mini-burst tries
 			// load 9-mer look-up table and mini-burst tries to /index/bursttrief.dat
-			DBG(opts.verbose, "      writing burst tries to %s\n",
-				(idxpair.second + ".bursttrie_" + part_str + ".dat").c_str());
-			load_index(lookup_table, (char*)(idxpair.second + ".bursttrie_" +
-				part_str + ".dat").c_str(), opts);
+			ss.str("");
+			idx_file = idxpair.second + ".bursttrie_" + part_str + ".dat";
+			ss << std::endl << "      writing burst tries to " << idx_file << std::endl;
+			DBG(opts.verbose, ss.str().data());
+
+			load_index(lookup_table, (char*)idx_file.data(), opts);
+
 			// 3. 19-mer position look up tables
-			std::ofstream ospos((char*)(idxpair.second + ".pos_" +
-				part_str + ".dat").c_str(), std::ios::binary);
-			DBG(opts.verbose, "      writing position lookup table to %s\n",
-				(idxpair.second + ".pos_" + part_str + ".dat").c_str());
+			idx_file = idxpair.second + ".pos_" + part_str + ".dat";
+			std::ofstream ospos(idx_file, std::ios::binary);
+
+			DBG(opts.verbose, "      writing position lookup table to %s\n", idx_file.data());
+
 			// number of unique 19-mers
 			ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));
 			// the positions
@@ -1974,11 +2007,13 @@ int build_index(Runopts &opts)
 				ospos.write(reinterpret_cast<const char*>(positions_tbl[j].arr), sizeof(seq_pos)*size);
 			}
 			ospos.close();
+
 			// Free malloc'd memory
 			// Table of unique 19-mer positions
 			for (uint32_t z = 0; z < number_elements; z++)
 				free(positions_tbl[z].arr);
 			free(positions_tbl);
+
 			// 9-mer look-up table and mini-burst tries
 			for (uint32_t z = 0; z < (uint32_t)(1 << opts.lnwin_gv); z++)
 			{
@@ -1994,13 +2029,14 @@ int build_index(Runopts &opts)
 				}
 			}
 			free(lookup_table);
-			part++;
+			part_num++;
 		} while (nt != EOF); // for all index parts
 
 		if (index_size != 0)
 		{
-			DBG(opts.verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").c_str());
-			std::ofstream stats((char*)(idxpair.second + ".stats").c_str(), std::ios::binary);
+			DBG(opts.verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").data());
+
+			std::ofstream stats((char*)(idxpair.second + ".stats").data(), std::ios::binary);
 			if (!stats.good())
 			{
 				ss.str("");
@@ -2037,27 +2073,26 @@ int build_index(Runopts &opts)
 			// number of reference sequences in the database
 			stats.write(reinterpret_cast<const char*>(&numseq), sizeof(uint64_t));
 			// number of index parts
-			stats.write(reinterpret_cast<const char*>(&part), sizeof(uint16_t));
+			stats.write(reinterpret_cast<const char*>(&part_num), sizeof(uint16_t));
 			// information on the location and size of sequences used to build each index part
-			for (uint16_t j = 0; j < part; j++)
+			for (uint16_t j = 0; j < part_num; j++)
 			{
 				stats.write(reinterpret_cast<const char*>(&index_parts_stats_vec[j]), sizeof(index_parts_stats));
 			}
 			stats.write(reinterpret_cast<const char*>(&num_sq), sizeof(uint32_t));
 
-			for (uint32_t j = 0; j < sam_sq_header.size(); j++)
+			for (auto samheader: sam_sq_header)
 			{
 				// length of the sequence id
-				uint32_t len_id = sam_sq_header[j].first.length();
+				uint32_t len_id = samheader.first.length();
 				stats.write(reinterpret_cast<const char*>(&len_id), sizeof(uint32_t));
 
 				// the sequence id
-				stats.write(reinterpret_cast<const char*>(&(sam_sq_header[j].first[0])), sizeof(char)*len_id);
+				stats.write(reinterpret_cast<const char*>(&(samheader.first[0])), sizeof(char)*len_id);
 
 				// the length of the sequence itself
-				stats.write(reinterpret_cast<const char*>(&(sam_sq_header[j].second)), sizeof(uint32_t));
+				stats.write(reinterpret_cast<const char*>(&(samheader.second)), sizeof(uint32_t));
 			}
-
 			stats.close();
 
 			DBG(opts.verbose, "    done.\n\n");
@@ -2069,7 +2104,5 @@ int build_index(Runopts &opts)
 	} // for every FASTA file, index name pair listed after --ref option
 
 	opts.is_index_built = true;
-
 	return 0;
-
 }//~build_index

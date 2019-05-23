@@ -43,6 +43,7 @@
 #include <sstream>
 #include <array>
 #include <sstream>
+#include <filesystem>
 
 #include "index.hpp"
 #include "indexdb.hpp"
@@ -59,6 +60,8 @@ Index::Index(Runopts & opts)
 	std::stringstream ss;
 	std::array<std::string, 4> sfxarr{ {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"} };
 
+	int count_indexed = 0;
+
 	if (!opts.is_index_built)
 	{
 		// init index files
@@ -67,21 +70,41 @@ Index::Index(Runopts & opts)
 			for (auto sfx : sfxarr)
 			{
 				auto idxfile = file_pfx.second + sfx;
-				std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
-				if (!fstrm.good())
+				// verify file exists
+				bool exists = std::filesystem::exists(idxfile);
+				bool is_empty = std::filesystem::is_empty(idxfile);
+				if (exists && !is_empty)
 				{
-					ss.str("");
-					ss << STAMP << "Failed to open file [" << idxfile << "] for writing: " << strerror(errno);
-					ERR(ss.str());
-					exit(EXIT_FAILURE);
+					std::cout << STAMP << "Index file [" << idxfile << "] already exists and is not empty." << std::endl;
+					++count_indexed;
 				}
-				if (fstrm.is_open())
-					fstrm.close();
+				else
+				{
+					std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
+					if (!fstrm.good())
+					{
+						ss.str("");
+						ss << STAMP << "Failed to open file [" << idxfile << "] for writing: " << strerror(errno);
+						ERR(ss.str());
+						exit(EXIT_FAILURE);
+					}
+					if (fstrm.is_open())
+						fstrm.close();
+				}
 			}
 		}
-		build_index(opts);
+		if (count_indexed > 0)
+		{
+			opts.is_index_built = true;
+			std::cout << STAMP << "Found " << count_indexed << " non-empty index files. Skipping indexing." << std::endl;
+			std::cout << STAMP << "TODO: a better validation using an index descriptor to decide on indexing" << std::endl;
+		}
+		else
+		{
+			build_index(opts);
+		}
 	}
-}
+} // ~Index::Index
 
 void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {

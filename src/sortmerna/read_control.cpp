@@ -59,8 +59,9 @@ void ReadControl::run()
 		vreader.push_back(reader_rev);
 	}
 
+	ss.str("");
 	ss << STAMP << " thread: " << std::this_thread::get_id() << " started" << std::endl;
-	std::cout << ss.str(); ss.str("");
+	std::cout << ss.str();
 	auto t = std::chrono::high_resolution_clock::now();
 
 	Read read;
@@ -98,10 +99,11 @@ void ReadControl::run()
 	readQueue.decrPushers(); // signal the reader done adding
 	readQueue.notify(); // notify processor that might be waiting to pop
 
+	ss.str("");
 	ss << STAMP << " thread: " << std::this_thread::get_id() << " done. Elapsed time: "
 		<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read.id + 1
 		<< " readQueue.size: " << readQueue.size() << std::endl;
-	std::cout << ss.str(); ss.str("");
+	std::cout << ss.str();
 
 } // ~ReadControl::run
 
