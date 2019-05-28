@@ -3,6 +3,7 @@
  * Created: Nov 26, 2017 Sun
  * @copyright 2016-19 Clarity Genomics BVBA
  */
+#include <filesystem>
 
 // 3rd party
 #include "rapidjson/writer.h"
@@ -70,6 +71,7 @@ Read::Read()
 	:
 	id(0),
 	read_num(0),
+	readfile_num(0),
 	isValid(false),
 	isEmpty(true),
 	is03(false),
@@ -93,6 +95,8 @@ Read::Read(int id, std::string header, std::string sequence, std::string quality
 Read::Read(const Read & that)
 {
 	id = that.id;
+	read_num = that.read_num;
+	readfile_num = that.readfile_num;
 	isValid = that.isValid;
 	isEmpty = that.isEmpty;
 	is03 = that.is03;
@@ -126,6 +130,8 @@ Read & Read::operator=(const Read & that)
 
 	//printf("Read copy assignment called\n");
 	id = that.id;
+	read_num = that.read_num;
+	readfile_num = that.readfile_num;
 	isValid = that.isValid;
 	isEmpty = that.isEmpty;
 	is03 = that.is03;
@@ -157,10 +163,10 @@ Read & Read::operator=(const Read & that)
 /** 
  * Generate ID of the read
  */
-void Read::generate_id()
+void Read::generate_id(Runopts &opts)
 {
 	std::stringstream ss;
-	ss << read_num << "_" << readsfile;
+	ss << read_num << "_" << std::filesystem::path(opts.readfiles[readfile_num]).filename();
 	std::hash<std::string> hash_fn;
 	id = hash_fn(ss.str());
 } // ~Read::generate_id
@@ -170,7 +176,7 @@ void Read::generate_id()
  */
 void Read::init(Runopts & opts)
 {
-	generate_id();
+	generate_id(opts);
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
 	validate();
@@ -252,8 +258,9 @@ void Read::seqToIntStr()
 	is03 = true;
 }
 
-// reverse complement the integer sequence in 03 encoding
-void Read::revIntStr() {
+/* reverse complement the integer sequence in 03 encoding */
+void Read::revIntStr() 
+{
 	std::reverse(isequence.begin(), isequence.end());
 	for (int i = 0; i < isequence.length(); i++) {
 		isequence[i] = complement[(int)isequence[i]];
@@ -307,6 +314,7 @@ void Read::flip34()
 	}
 } // ~flip34
 
+/* convert to Json string to store in DB */
 std::string Read::matchesToJson() {
 	rapidjson::StringBuffer sbuf;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
@@ -334,6 +342,7 @@ std::string Read::matchesToJson() {
 	return sbuf.GetString();
 } // ~Read::matchesToJsonString
 
+/* serialize the data to binary string to store in DB */
 std::string Read::toString()
 {
 	if (hits_align_info.alignv.size() == 0)
@@ -366,6 +375,7 @@ std::string Read::toString()
 	return buf;
 } // ~Read::toString
 
+/* deserialize matches from string stored in DB */
 bool Read::load_db(KeyValueDatabase & kvdb)
 {
 	int id_win_hits_len = 0;
@@ -429,6 +439,7 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 	return isRestored;
 } // ~Read::load_db
 
+/* deserialize matches from JSON and populate the read */
 void Read::unmarshallJson(KeyValueDatabase & kvdb)
 {
 	printf("Read::unmarshallJson: Not yet Implemented\n");

@@ -74,7 +74,6 @@ struct Runopts
 
 	bool forward = false; // '-F' search only the forward strand if true
 	bool reverse = false; // '-R' search only the reverse-complementary strand if true
-	bool paired = false; // '--paired' flags processing paired reads
 	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file. Only Fasta/q and De-novo reporting.
 	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file. Only Fasta/q and De-novo reporting.
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)

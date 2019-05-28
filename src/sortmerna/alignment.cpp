@@ -407,8 +407,8 @@ void compute_lis_alignment
 							if (!read.hit)
 							{
 								read.hit = true;
-								readstats.total_reads_mapped++;
-								readstats.reads_matched_per_db[index.index_num]++;
+								++readstats.total_reads_mapped;
+								++readstats.reads_matched_per_db[index.index_num];
 							}
 
 							// add the offset calculated by the LCS (from the beginning of the sequence)
@@ -490,10 +490,10 @@ void compute_lis_alignment
 											read.hits_align_info.max_index = smallest_score_index;
 
 										// decrement number of reads mapped to database with lower score
-										readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--;
+										--readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num];
 
 										// increment number of reads mapped to database with higher score
-										readstats.reads_matched_per_db[index.index_num]++;
+										++readstats.reads_matched_per_db[index.index_num];
 
 										// replace an old smallest scored alignment with the new one
 										read.hits_align_info.alignv[smallest_score_index] = copyAlignment(result);

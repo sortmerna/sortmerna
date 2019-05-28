@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		Readstats readstats(opts);
+		Readstats readstats(opts, kvdb);
 		Output output(opts, readstats);
 
 		switch (opts.alirep)

@@ -31,28 +31,34 @@ ReadControl::~ReadControl(){}
 void ReadControl::run()
 {
 	std::stringstream ss;
+	bool is_paired = (opts.readfiles.size() == 2); // reads are paired i.e. 2 read files are supplied
 
 	// open reads files for reading
-	std::ifstream ifs_fwd(opts.readfiles[0], std::ios_base::in | std::ios_base::binary);
+	auto fwd_file = opts.readfiles[0];
+	std::ifstream ifs_fwd(fwd_file, std::ios_base::in | std::ios_base::binary);
 
-	if (!ifs_fwd.is_open()) {
-		ERR("failed to open file: [" + opts.readfiles[0] + "]");
+	if (!ifs_fwd.is_open()) 
+	{
+		ERR("failed to open file: [" + fwd_file + "]");
 		exit(EXIT_FAILURE);
 	}
 
 	std::ifstream ifs_rev;
-	if (opts.paired)
-		ifs_rev.open(opts.readfiles[1], std::ios_base::in | std::ios_base::binary);
+	if (opts.readfiles.size() == 2)
+	{
+		auto rev_file = opts.readfiles[1];
+		ifs_rev.open(rev_file, std::ios_base::in | std::ios_base::binary);
 
-	if (!ifs_rev.is_open()) {
-		ERR("failed to open file: [" + opts.readfiles[0] + "]");
-		exit(EXIT_FAILURE);
+		if (!ifs_rev.is_open()) {
+			ERR("failed to open file: [" + rev_file + "]");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	std::string rid("reader_" + std::to_string(1));
 	Reader reader_fwd(rid, opts.is_gz);
 	vreader.push_back(reader_fwd);
-	if (opts.paired)
+	if (is_paired)
 	{
 		rid = "reader_" + std::to_string(2);
 		Reader reader_rev(rid, opts.is_gz);
@@ -60,19 +66,22 @@ void ReadControl::run()
 	}
 
 	ss.str("");
-	ss << STAMP << " thread: " << std::this_thread::get_id() << " started" << std::endl;
+	ss << STAMP << "thread: " << std::this_thread::get_id() << " started" << std::endl;
 	std::cout << ss.str();
 	auto t = std::chrono::high_resolution_clock::now();
 
 	Read read;
 	bool done_fwd = false;
 	bool done_rev = false;
+	uint8_t idx_fwd_reads = 0;
+	uint8_t idx_rev_reads = 1;
 	// loop calling Readers
-	for (; !reader_fwd.is_done || (opts.paired && !vreader[1].is_done);)
+	for (; !reader_fwd.is_done || (is_paired && !vreader[idx_rev_reads].is_done);)
 	{
+		// first push FWD read
 		if (!reader_fwd.is_done)
 		{
-			read = reader_fwd.nextread(ifs_fwd, opts.readfiles[0]);
+			read = reader_fwd.nextread(ifs_fwd, opts.readfiles[idx_fwd_reads], opts);
 
 			if (!read.isEmpty)
 			{
@@ -82,9 +91,10 @@ void ReadControl::run()
 				readQueue.push(read);
 			}
 		}
-		if (opts.paired && !vreader[1].is_done)
+		// second push REV read (if paired)
+		if (is_paired && !vreader[1].is_done)
 		{
-			read = vreader[1].nextread(ifs_rev, opts.readfiles[1]);
+			read = vreader[1].nextread(ifs_rev, opts.readfiles[idx_rev_reads], opts);
 
 			if (!read.isEmpty)
 			{
@@ -100,7 +110,7 @@ void ReadControl::run()
 	readQueue.notify(); // notify processor that might be waiting to pop
 
 	ss.str("");
-	ss << STAMP << " thread: " << std::this_thread::get_id() << " done. Elapsed time: "
+	ss << STAMP << "thread: " << std::this_thread::get_id() << " done. Elapsed time: "
 		<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read.id + 1
 		<< " readQueue.size: " << readQueue.size() << std::endl;
 	std::cout << ss.str();

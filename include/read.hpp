@@ -45,11 +45,23 @@ struct alignment_struct2
 	}
 };
 
-class Read {
+/* 
+ * 1. id_win_hits  std::vector<id_win> id_win_hits
+ *	  array of positions of window hits on the reference sequence in given index/part.
+ *	  Only used during alignment on a particular index/part. No need to store on disk.
+ *	  Reset on each new index part
+ *    [0] : {id = 568 win = 0 	}
+ *	  ...
+ *	  [4] : {id = 1248788 win = 72 }
+ *	          |            |_k-mer start position on read
+ *	          |_k-mer id on reference (index into 'positions_tbl')
+ */
+class Read 
+{
 public:
 	std::size_t id; // Read ID: hash combinations of read_num and readsfile
 	std::size_t read_num; // Read number in the reads file. Use as key into Key-value Database.
-	std::string readsfile; // reads file name
+	uint8_t readfile_num; // index into Runopts::readfiles
 	bool isValid; // flags the record valid/non-valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
 	bool is03; // indicates Read::isequence is in 0..3 alphabet
@@ -78,55 +90,35 @@ public:
 	uint32_t readhit = 0; // number of seeds matches between read and database. (? readhit == id_win_hits.size)
 	int32_t best = 0; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
 
-	// array of positions of window hits on the reference sequence in given index/part. 
-	// Only used during alignment on a particular index/part. No need to store on disk.
-	// Reset on each new index part
-	// [0] : {id = 568 win = 0 	}
-	// ...
-	// [4] : {id = 1248788 win = 72 }
-	//        |            |_k-mer start position on read
-	//        |_k-mer id on reference (index into 'positions_tbl')
-	std::vector<id_win> id_win_hits;
+	std::vector<id_win> id_win_hits; // [1] positions of hits on the reference sequence in given index/part
 
 	alignment_struct2 hits_align_info; // stored in DB
 
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
-	// <------------------------------ store in database
+	// <------------------------------ END store in database
 
+public:
 	Read();
 	Read(int id, std::string header, std::string sequence, std::string quality, Format format);
-	~Read();
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment
+	~Read();
 
-	void generate_id();
+public:
+	void generate_id(Runopts &opts);
 	void initScoringMatrix(long match, long mismatch, long score_N);
-
 	void validate();
-
 	void clear();
-
 	void init(Runopts & opts);
-
-	std::string matchesToJson(); // convert to Json string to store in DB
-
-	void unmarshallJson(KeyValueDatabase & kvdb); // deserialize matches from JSON and populate the read
-
-	std::string toString(); // convert to binary string to store in DB
-
-	bool load_db(KeyValueDatabase & kvdb); // deserialize matches from string
-
+	std::string matchesToJson();
+	void unmarshallJson(KeyValueDatabase & kvdb);
+	std::string toString();
+	bool load_db(KeyValueDatabase & kvdb);
 	void seqToIntStr();
-
-	void revIntStr(); // reverse complement the integer sequence in 03 encoding
-
-	std::string get04alphaSeq(); // convert isequence to alphabetic form i.e. to A,C,G,T,N
-
-	void flip34(); // flip isequence between 03 - 04 alphabets
-
-	void calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id);
-
+	void revIntStr();
+	std::string get04alphaSeq();
+	void flip34();
+	void calcMismatchGapId(References &refs, int alignIdx, uint32_t &mismatches, uint32_t &gaps, uint32_t &id);
 	std::string getSeqId();
-
 	uint32_t hashKmer(uint32_t pos, uint32_t len);
 }; // ~class Read

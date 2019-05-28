@@ -67,7 +67,7 @@ void Runopts::opt_reads(const std::string &file)
 	std::stringstream ss;
 
 	auto numread = mopt.count("reads");
-	auto readcnt = indexfiles.size();
+	auto readcnt = readfiles.size();
 
 	std::cout << STAMP << "Processing reads file [" << readcnt + 1 << "] out of total [" << numread << "] files" << std::endl;
 
@@ -1086,7 +1086,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 
 	std::string flag;
 
-	// parse cmd options and store into multimap mopt
+	// parse cmd options and store into 'mopt' multimap
 	for (auto i = argc - argc, flag_count = 0; i != argc; ++i)
 	{
 		// if arg starts with dash it is flag
@@ -1153,7 +1153,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// loop through the rest of options
 	for (auto opt : mopt)
 	{
-		std::cout << "Processing option: " << opt.first << " with value: " << opt.second << std::endl;
+		std::cout << STAMP << "Processing option: " << opt.first << " with value: " << opt.second << std::endl;
 
 		int count = options.count(opt.first);
 		if (count > 0) 

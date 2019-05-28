@@ -143,7 +143,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	}
 
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	Readstats readstats(opts);
+	Readstats readstats(opts, kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
 	Index index(opts);
@@ -269,7 +269,8 @@ void CmdSession::cmd_max_ref_part(Runopts & opts, std::string & cmd)
 		return;
 	}
 
-	Readstats readstats(opts);
+	KeyValueDatabase kvdb(opts.kvdbPath);
+	Readstats readstats(opts, kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
 

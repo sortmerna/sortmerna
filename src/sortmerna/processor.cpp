@@ -29,6 +29,7 @@
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
 void writeLog(Runopts & opts, Readstats & readstats, Output & output);
 
+/* Runs in a thread. Pops reads from the Reads Queue */
 void Processor::run()
 {
 	int countReads = 0;
@@ -53,22 +54,23 @@ void Processor::run()
 		}
 
 		// search the forward and/or reverse strands depending on Run options
-		int32_t strandCount = 0;
+		int32_t num_strands = 0;
 		//opts.forward = true; // TODO: this discards the possiblity of forward = false
-		bool singleStrand = opts.forward ^ opts.reverse; // search single strand
-		if (singleStrand)
-			strandCount = 1; // only search the forward xor reverse strand
+		bool search_single_strand = opts.forward ^ opts.reverse; // search only a single strand
+		if (search_single_strand)
+			num_strands = 1; // only search the forward xor reverse strand
 		else 
-			strandCount = 2; // search both strands. The default when neither -F or -R were specified
+			num_strands = 2; // search both strands. The default when neither -F or -R were specified
 
-		for (int32_t count = 0; count < strandCount; ++count)
+		for (int32_t count = 0; count < num_strands; ++count)
 		{
-			if ((singleStrand && opts.reverse) || count == 1)
+			if ((search_single_strand && opts.reverse) || count == 1)
 			{
 				if (!read.reversed)
 					read.revIntStr();
 			}
-			callback(opts, index, refs, output, readstats, refstats, read, singleStrand || count == 1);
+			// call 'paralleltraversal.cpp::alignmentCb'
+			callback(opts, index, refs, output, readstats, refstats, read, search_single_strand || count == 1);
 			//opts.forward = false;
 			read.id_win_hits.clear(); // bug 46
 		}
@@ -237,11 +239,12 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 			} // ~for(idx_part)
 		} // ~for(index_num)
 
-		ss << "readstats.total_reads_denovo_clustering: " << readstats.total_reads_denovo_clustering << std::endl;
-		std::cout << ss.str(); ss.str("");
+		ss.str("");
+		ss << STAMP << "total_reads_denovo_clustering = " << readstats.total_reads_denovo_clustering << std::endl;
+		std::cout << ss.str();
 
 		readstats.stats_calc_done = true;
-		kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
+		kvdb.put(readstats.dbkey, readstats.toString()); // store statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
 	writeLog(opts, readstats, output);
@@ -257,7 +260,7 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 
 	// output total number of reads
 	output.logstream << " Results:\n";
-	output.logstream << "    Total reads = " << readstats.number_total_read << std::endl;
+	output.logstream << "    Total reads = " << readstats.all_reads_count << std::endl;
 	if (opts.de_novo_otu)
 	{
 		// all reads that have read::hit_denovo == true
@@ -266,13 +269,13 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 	// output total non-rrna + rrna reads
 	output.logstream << std::setprecision(2) << std::fixed;
 	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
-		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read) * 100 << ")" << std::endl;
+		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count) * 100 << ")" << std::endl;
 	output.logstream << "    Total reads failing E-value threshold = "
-		<< readstats.number_total_read - readstats.total_reads_mapped.load()
-		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read))) * 100 << ")" << std::endl;
+		<< readstats.all_reads_count - readstats.total_reads_mapped.load()
+		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count))) * 100 << ")" << std::endl;
 	output.logstream << "    Minimum read length = " << readstats.min_read_len.load() << std::endl;
 	output.logstream << "    Maximum read length = " << readstats.max_read_len.load() << std::endl;
-	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << std::endl;
+	output.logstream << "    Mean read length    = " << readstats.all_reads_len / readstats.all_reads_count << std::endl;
 
 	output.logstream << " By database:" << std::endl;
 
@@ -280,7 +283,7 @@ void writeLog(Runopts & opts, Readstats & readstats, Output & output)
 	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
 	{
 		output.logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
-			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100 << "\n";
+			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100 << "\n";
 	}
 
 	if (opts.otumapout)

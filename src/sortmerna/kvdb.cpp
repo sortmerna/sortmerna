@@ -4,8 +4,22 @@
  * @copyright 2016-19 Clarity Genomics BVBA
  */
 #include "kvdb.hpp"
+#include "common.hpp"
 
-KeyValueDatabase::KeyValueDatabase(std::string const &kvdbPath) {
+#include <iostream>
+#include <filesystem>
+
+KeyValueDatabase::KeyValueDatabase(std::string const &kvdbPath) 
+{
+	auto exists = std::filesystem::exists(kvdbPath);
+	auto is_empty = std::filesystem::is_empty(kvdbPath);
+	if (exists && !is_empty)
+	{
+		std::cout << STAMP << "Path '" << kvdbPath << "' exists with the following content:" << std::endl;
+
+		for (auto& subpath : std::filesystem::directory_iterator(kvdbPath))
+			std::cout << subpath.path().filename() << std::endl;
+	}
 	// init and open key-value database for read matches
 	options.IncreaseParallelism();
 #if defined(_WIN32)

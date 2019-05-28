@@ -38,10 +38,10 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 	std::stringstream ss;
 	bool isok = false;
 
-	std::ifstream ifs(read.readsfile, std::ios_base::in | std::ios_base::binary);
+	std::ifstream ifs(opts.readfiles[read.readfile_num], std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) 
 	{
-		std::cerr << STAMP << "failed to open " << read.readsfile << std::endl;
+		std::cerr << STAMP << "failed to open " << opts.readfiles[read.readfile_num] << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -128,7 +128,7 @@ bool Reader::loadReadById(Runopts & opts, Read & read)
 /** 
  * return next read from the reads file on each call 
  */
-Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile)
+Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts & opts)
 {
 	std::string line;
 	Read read; // an empty read
@@ -144,7 +144,7 @@ Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile)
 			if (!read.isEmpty)
 			{
 				read.read_num = read_count;
-				read.generate_id();
+				read.generate_id(opts);
 				++read_count;
 				is_done = true;
 			}
