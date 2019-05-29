@@ -1196,12 +1196,12 @@ void Runopts::validate()
 	}
 
 	// Basename for non-aligned reads is mandatory
-	if (filetype_or.size() != 0)
+	if (other_out_pfx.size() != 0)
 	{
 		if (!fastxout && (blastout || samout))
 		{
-			ERR(": option --other [STRING] can only be used together with the --fastx option.");
-			exit(EXIT_FAILURE);
+			ERR("Option --other [STRING] can only be used together with the --fastx option.");
+			//exit(EXIT_FAILURE);
 		}
 	}
 

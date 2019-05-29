@@ -55,14 +55,12 @@ void ReadControl::run()
 		}
 	}
 
-	std::string rid("reader_" + std::to_string(1));
-	Reader reader_fwd(rid, opts.is_gz);
-	vreader.push_back(reader_fwd);
+	Reader reader_fwd("reader_fwd", opts.is_gz);
+	Reader *preader_rev;
 	if (is_paired)
 	{
-		rid = "reader_" + std::to_string(2);
-		Reader reader_rev(rid, opts.is_gz);
-		vreader.push_back(reader_rev);
+		Reader reader_rev("reader_rev", opts.is_gz);
+		preader_rev = &reader_rev;
 	}
 
 	ss.str("");
@@ -76,7 +74,7 @@ void ReadControl::run()
 	uint8_t idx_fwd_reads = 0;
 	uint8_t idx_rev_reads = 1;
 	// loop calling Readers
-	for (; !reader_fwd.is_done || (is_paired && !vreader[idx_rev_reads].is_done);)
+	for (; !reader_fwd.is_done || (is_paired && !preader_rev->is_done);)
 	{
 		// first push FWD read
 		if (!reader_fwd.is_done)
@@ -92,9 +90,9 @@ void ReadControl::run()
 			}
 		}
 		// second push REV read (if paired)
-		if (is_paired && !vreader[1].is_done)
+		if (is_paired && !preader_rev->is_done)
 		{
-			read = vreader[1].nextread(ifs_rev, opts.readfiles[idx_rev_reads], opts);
+			read = preader_rev->nextread(ifs_rev, opts.readfiles[idx_rev_reads], opts);
 
 			if (!read.isEmpty)
 			{
@@ -103,7 +101,7 @@ void ReadControl::run()
 				readQueue.push(read);
 			}
 		}
-	}
+	} // ~for
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 	readQueue.decrPushers(); // signal the reader done adding

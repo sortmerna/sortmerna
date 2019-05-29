@@ -163,7 +163,7 @@ public:
 	{
 		--pushers;
 		ss.str("");
-		ss << __func__ << ":" << __LINE__ << " id: " << id << " pushers: " << pushers.load() << std::endl;
+		ss << STAMP << "id= [" << id << "] pushers: [" << pushers.load() << "]" << std::endl;
 		std::cout << ss.str();
 	}
 }; // ~class ReadsQueue

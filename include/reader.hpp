@@ -43,6 +43,7 @@ private:
 	unsigned int line_count; // count of non-empty lines in the reads file
 	int last_count;
 	int last_stat;
+	std::string last_header; // header line last read
 	bool isFastq; // flags the file is FASTQ
 	bool isFasta; // flags the file is FASTA
 };

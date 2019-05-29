@@ -24,8 +24,8 @@ struct Runopts
 	std::string kvdbPath; // '-d' (opt_d) key-value database for alignment results
 	std::vector<std::string> readfiles;
 	std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
-	std::string filetype_ar; // '--aligned' aligned reads output file
-	std::string filetype_or; // '--other' rejected reads output file
+	std::string aligned_out_pfx = "aligned"; // '--aligned' aligned reads output file prefix
+	std::string other_out_pfx = "other"; // '--other' rejected reads output file prefix
 	std::string cmdline;
 	std::string workdir;
 	const std::string IDX_DIR  = "idx";

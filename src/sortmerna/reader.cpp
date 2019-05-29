@@ -134,8 +134,18 @@ Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts 
 	Read read; // an empty read
 
 	// read lines from the reads file and create Read object
-	for (int count = 0, stat = last_stat; !is_done; ++count) // count lines in a single record/read
+	for (int count = last_count, stat = last_stat; !is_done; ++count) // count lines in a single record/read
 	{
+		if (last_header.size() > 0)
+		{
+			// start new record
+			read.clear();
+			read.format = isFastq ? Format::FASTQ : Format::FASTA;
+			read.header = last_header;
+			read.isEmpty = false;
+			last_header.clear();
+		}
+
 		stat = gzip.getline(ifs, line);
 
 		if (stat == RL_END)
@@ -184,13 +194,15 @@ Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts 
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0))
-		{ // add header -->
+		if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0)) // header line reached
+		{
 			if (!read.isEmpty)
 			{
 				read.read_num = read_count;
 				++read_count;
-				//read.init(read_count, kvdb, opts); // TODO: move this to the caller i.e. separate file reading and DB access.
+				last_header = line;
+				last_count = 1;
+				last_stat = stat;
 				break; // return the read here
 			}
 
