@@ -72,7 +72,12 @@ Index::Index(Runopts & opts)
 				auto idxfile = file_pfx.second + sfx;
 				// verify file exists
 				bool exists = std::filesystem::exists(idxfile);
-				bool is_empty = std::filesystem::is_empty(idxfile);
+				bool is_empty = true;
+				if (exists)
+				{
+					is_empty = std::filesystem::is_empty(idxfile);
+				}
+
 				if (exists && !is_empty)
 				{
 					std::cout << STAMP << "Index file [" << idxfile << "] already exists and is not empty." << std::endl;

@@ -24,7 +24,7 @@ class KeyValueDatabase;
  * 1. 'all_reads_count' - Should be known before processing and index loading. 
  * 2. 'total_reads_mapped_cov' Synchronize. Thread accessed from 'compute_lis_alignment'
  * 3. 'reads_matched_per_db' - Synchronize.
- *			Calculated in 'compute_lis_alignment' during alignment. Thread access.
+ *			Calculated in 'compute_lis_alignment' during alignment. Thread accessed.
  * 4. 'total_reads_denovo_clustering'
  *			TODO: currently accessed in single thread ('computeStats') but potentially could be multiple threads
  *          Setter: 'computeStats'.
@@ -43,7 +43,7 @@ struct Readstats
 
 	std::atomic<uint32_t> min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
 	std::atomic<uint32_t> max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
-	std::atomic<uint64_t> total_reads_mapped; // total number of reads mapped passing E-value threshold. Thread set in 'compute_lis_alignment'
+	std::atomic<uint64_t> total_reads_mapped; // total number of reads mapped passing E-value threshold. Set in 'compute_lis_alignment'
 	std::atomic<uint64_t> total_reads_mapped_cov; // [2] total number of reads mapped passing E-value, %id, %query coverage thresholds
 
 	uint64_t all_reads_count; // [1] total number of reads in file. Non-sync. 'Readstats::calculate'
@@ -60,6 +60,7 @@ struct Readstats
 
 	void calculate(Runopts &opts); // calculate statistics from readsfile
 	void calcSuffix(Runopts &opts);
+	std::string toBstring();
 	std::string toString();
 	bool restoreFromDb(KeyValueDatabase & kvdb);
 	void store_to_db(KeyValueDatabase & kvdb);

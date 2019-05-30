@@ -228,7 +228,10 @@ void Readstats::calcSuffix(Runopts &opts)
 		suffix.assign("fastq");
 }
 
-std::string Readstats::toString()
+/**
+ * put readstats data into binary string for storing in DB
+ */
+std::string Readstats::toBstring()
 {
 	std::string buf;
 	// min_read_len
@@ -257,6 +260,21 @@ std::string Readstats::toString()
 	std::copy_n(static_cast<char*>(static_cast<void*>(&stats_calc_done)), sizeof(stats_calc_done), std::back_inserter(buf));
 
 	return buf;
+} // ~Readstats::toBstring
+
+/**
+ * generate human readable data representation of this object 
+ */
+std::string Readstats::toString()
+{
+	std::stringstream ss;
+	ss << "min_read_len= " << min_read_len << " max_read_len= " << max_read_len
+		<< " total_reads_mapped= " << total_reads_mapped
+		<< " total_reads_mapped_cov= " << total_reads_mapped_cov
+		<< " all_reads_count= " << all_reads_count
+		<< " all_reads_len= " << all_reads_len
+		<< " reads_matched_per_db= " << "TODO" << std::endl;
+	return ss.str();
 } // ~Readstats::toString
 
 /**
@@ -361,5 +379,8 @@ void Readstats::printOtuMap(std::string otumapfile)
 
 void Readstats::store_to_db(KeyValueDatabase & kvdb)
 {
-	kvdb.put(dbkey, toString());
+	kvdb.put(dbkey, toBstring());
+
+	std::cout << STAMP << "Stored statistics to DB:" << std::endl
+		<< toString() << std::endl;
 }

@@ -244,54 +244,12 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		std::cout << ss.str();
 
 		readstats.stats_calc_done = true;
-		kvdb.put(readstats.dbkey, readstats.toString()); // store statistics computed by post-processor
+		kvdb.put(readstats.dbkey, readstats.toBstring()); // store statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
-	writeLog(opts, readstats, output);
+	output.writeLog(opts, readstats);
 
 	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
 
-	std::cout << STAMP << " Done" << std::endl;
+	std::cout << STAMP << "Done" << std::endl;
 } // ~postProcess
-
-void writeLog(Runopts & opts, Readstats & readstats, Output & output)
-{
-	output.openfiles(opts);
-
-	// output total number of reads
-	output.logstream << " Results:\n";
-	output.logstream << "    Total reads = " << readstats.all_reads_count << std::endl;
-	if (opts.de_novo_otu)
-	{
-		// all reads that have read::hit_denovo == true
-		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << std::endl;
-	}
-	// output total non-rrna + rrna reads
-	output.logstream << std::setprecision(2) << std::fixed;
-	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
-		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count) * 100 << ")" << std::endl;
-	output.logstream << "    Total reads failing E-value threshold = "
-		<< readstats.all_reads_count - readstats.total_reads_mapped.load()
-		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count))) * 100 << ")" << std::endl;
-	output.logstream << "    Minimum read length = " << readstats.min_read_len.load() << std::endl;
-	output.logstream << "    Maximum read length = " << readstats.max_read_len.load() << std::endl;
-	output.logstream << "    Mean read length    = " << readstats.all_reads_len / readstats.all_reads_count << std::endl;
-
-	output.logstream << " By database:" << std::endl;
-
-	// output stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
-		output.logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
-			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100 << "\n";
-	}
-
-	if (opts.otumapout)
-	{
-		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << "\n";
-		output.logstream << " Total OTUs = " << readstats.otu_map.size() << "\n";
-	}
-	time_t q = time(0);
-	struct tm * now = localtime(&q);
-	output.logstream << std::endl << " " << asctime(now) << std::endl;
-} // ~writeLog

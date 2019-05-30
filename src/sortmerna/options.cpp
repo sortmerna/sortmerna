@@ -180,15 +180,8 @@ void Runopts::opt_other(const std::string &file)
 
 void Runopts::opt_log(const std::string &val)
 {
-	if (doLog)
-	{
-		ERR("'--log' has already been set once");
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		doLog = true;
-	}
+	if (write_log)
+		WARN("'--log' is deprecated. True by default.");
 } // ~Runopts::optLog
 
 void Runopts::opt_de_novo_otu(const std::string &val)
@@ -570,8 +563,7 @@ void Runopts::opt_full_search(const std::string &val)
 {
 	if (full_search_set)
 	{
-		ERR(" : BOOL --full_search has been set twice, please verify your choice.");
-		exit(EXIT_FAILURE);
+		WARN("Options '--full_search' has been set more than once. Only the last flag is considered.");
 	}
 	full_search_set = true;
 	full_search = true;
@@ -1011,19 +1003,18 @@ void Runopts::test_kvdb_path()
 {
 	if (kvdbPath.size() == 0)
 	{
-		kvdbPath = workdir + "/kvdb";
+		kvdbPath = workdir + "/" + KVDB_DIR;
 	}
 
 	std::cout << STAMP << "Key-value DB location (" << kvdbPath << ")" << std::endl;
 
 	if (dirExists(kvdbPath))
 	{
-		// dir exists and not empty -> exception
+		// dir exists and not empty
 		auto count = list_dir(kvdbPath);
 		if (count > 0) 
 		{
-			// TODO
-			// Store some metadata in DB to verify the alignment.
+			// TODO: Store some metadata in DB to verify the alignment.
 			// kvdb.verify()
 			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alipost == alirep)
 			{
@@ -1180,11 +1171,10 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 void Runopts::validate()
 {
 	// No output format has been chosen
-	if (!(fastxout || blastout || samout || otumapout || doLog || de_novo_otu))
+	if (!(fastxout || blastout || samout || otumapout || de_novo_otu))
 	{
 		blastout = true;
-		doLog = true;
-		std::cout << STAMP << "No output format has been chosen (fastx/sam/blast/otu_map/log), Using default blast + log" << std::endl;
+		std::cout << STAMP << "No output format has been chosen (fastx/sam/blast/otu_map/log), Using default blast" << std::endl;
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
@@ -1310,7 +1300,7 @@ void Runopts::validate()
 	if (!best_set && !num_alignments_set)
 	{
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		if (fastxout && !(blastout || samout || otumapout || doLog || de_novo_otu))
+		if (fastxout && !(blastout || samout || otumapout || write_log || de_novo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
 		else

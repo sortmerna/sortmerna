@@ -58,9 +58,9 @@ public:
 	std::ofstream biomout;
 
 	// file names
-	std::string fastaOutFile; // fasta/fastq
-	std::string samoutFile; //
-	std::string blastoutFile; // BLAST out file
+	std::string fastaOutFile;
+	std::string samoutFile;
+	std::string blastoutFile;
 	std::string logfile;
 	std::string denovo_otus_file;
 	std::string otumapFile;
@@ -87,9 +87,10 @@ public:
 
 	void writeSamHeader(Runopts & opts);
 
-	void report_fasta(Runopts & opts, std::vector<Read> & reads);
-	void report_denovo(Runopts & opts, std::vector<Read> & reads);
+	void report_fasta(Runopts & opts, std::vector<Read> &reads);
+	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
+	void writeLog(Runopts &opts, Readstats &readstats);
 
 	void openfiles(Runopts & opts);
 	void closefiles();

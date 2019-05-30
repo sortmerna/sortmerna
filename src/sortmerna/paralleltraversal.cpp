@@ -463,5 +463,5 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 	} // ~for(index_num)
 
 	// store readstats calculated in alignment
-	kvdb.put("Readstats", readstats.toString());
+	readstats.store_to_db(kvdb);
 } // ~align

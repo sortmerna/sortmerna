@@ -14,35 +14,57 @@
 
 #include "common.hpp"
 
+/* 
+ * 1. 'blastops' 
+ *     Vector of strings to store result from option --blast STRING.
+ *    + --blast '0': output pairwise alignments\n
+ *    + --blast '1': output BLAST Tabular format with the fields:
+ *		   queryId, subjectId, percIdentity, alnLength, mismatchCount,
+ *		   gapOpenCount, queryStart, queryEnd, subjectStart, subjectEnd, eVal, bitScore\n
+ *    + --blast '1 cigar': tabular format + CIGAR string\n
+ *    + --blast '1 cigar qcov': tabular format + CIGAR string + % query coverage\n
+ *    + --blast '1 cigar qcov strand': tabular format + CIGAR string + % query coverage + strand\n
+ * 2. 'skiplengths'
+ *      '--passes' - for each index file three intervals at which to place the k-mer window on the read. 
+ *      Defaults: {0,0,0}
+ * 3. 'num_alignments'
+ *      unlike '--best', which searches many alignments(specified by '--min_lis') prior to outputting the best ones.
+ * 4. 'align_cov'
+ *      query coverage threshold (the alignment must still pass the E-value threshold)
+ */
 struct Runopts 
 {
+public:
 	Runopts(int argc, char**argv, bool dryrun);
 	~Runopts() {}
 
 	typedef void (Runopts::*OptsMemFunc)(const std::string&); // pointer to member function
 
+public:
+	std::string workdir;
+	std::string cmdline;
 	std::string kvdbPath; // '-d' (opt_d) key-value database for alignment results
-	std::vector<std::string> readfiles;
-	std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
+	//std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
 	std::string aligned_out_pfx = "aligned"; // '--aligned' aligned reads output file prefix
 	std::string other_out_pfx = "other"; // '--other' rejected reads output file prefix
-	std::string cmdline;
-	std::string workdir;
-	const std::string IDX_DIR  = "idx";
-	const std::string KVDB_DIR = "kvdb";
-	const std::string OUT_DIR  = "out";
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
 	int num_write_thread = 1; // number of threads writing to Key-value database
 	int num_proc_thread = 0; // '-a' number of threads to use for alignment, post-processing, reporting. Default - all available cores.
-
 	int num_read_thread_pp = 1; // number of post-processing read threads
 	int num_proc_thread_pp = 1; // number of post-processing processor threads
-
 	int num_read_thread_rep = 1; // number of report reader threads
 	int num_proc_thread_rep = 1; // number of report processor threads
 
 	int queue_size_max = 100; // max number of Reads in the Read and Write queues. 10 works OK.
+
+	int32_t num_alignments = -1; // [3] '--num_alignments': output the first 'num_alignments'
+	int32_t min_lis = -1; // '--min_lis N' search all alignments having the first N longest LIS
+	int32_t seed_hits = -1;
+	int32_t num_best_hits = 0;
+	int32_t edges = -1;
+
+	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
 
 	long match = 2; // '--match' SW score (positive integer) for a match               TODO: change to int8_t
 	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch   TODO: change to int8_t
@@ -50,40 +72,29 @@ struct Runopts
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
 	long score_N = 0; // '-N' SW penalty for ambiguous letters (N's)                   TODO: change to int8_t
 
-	double evalue = -1.0; /* '-e' E-value threshold */
-	double align_id = -1.0; /* OTU-picking option: minimum %%id to keep alignment */
-	/* '--coverage' query coverage threshold (the alignment must still pass the E-value threshold) 
-		OTU-picking option: minimum %%coverage to keep alignment. */
-	double align_cov = -1.0;
-
-	/* '--num_alignments': output the first '--num_alignments' found, unlike '--best', 
-		which searches many alignments(specified by '--min_lis') prior to outputting the best ones. */
-	int32_t num_alignments = -1; // 
-	int32_t min_lis = -1; // '--min_lis' search all alignments having the first N longest LIS
-	int32_t seed_hits = -1;
-	int32_t num_best_hits = 0;
-	int32_t edges = -1;
-
-	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
+	double evalue = -1.0; // '-e' E-value threshold
+	double align_id = -1.0; // OTU-picking option: minimum %%id to keep alignment
+	double align_cov = -1.0; // [4] '--coverage': OTU-picking option: minimum %%coverage to keep alignment.
 
 	// indexing options
 	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.
 	uint32_t lnwin_gv = 18;
 	uint32_t interval = 1;
 	uint32_t max_pos = 10000;
+	// ~ END indexing options
 
 	bool forward = false; // '-F' search only the forward strand if true
 	bool reverse = false; // '-R' search only the reverse-complementary strand if true
-	bool pairedin = false; // '--paired_in' both paired-end reads go in --aligned fasta/q file. Only Fasta/q and De-novo reporting.
-	bool pairedout = false; // '--paired_out' both paired-end reads go in --other fasta/q file. Only Fasta/q and De-novo reporting.
+	bool pairedin = false; // '--paired_in' both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
+	bool pairedout = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
-	bool doLog = false; // '--log' output overall statistics
+	bool write_log = true; // '--log' output overall statistics. TODO: remove this option, always generate the log.
 	bool print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
 	bool samout = false; // '--sam' output SAM alignment (for aligned reads only)
 	bool blastout = false; // '--blast' output alignments in various Blast-like formats
 	bool fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
-	bool pid = false;
+	bool pid = false; // --pid add pid to output file names
 	bool as_percent = false;
 	bool full_search = false;
 	bool exit_early = false; // flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
@@ -93,28 +104,21 @@ struct Runopts
 	bool interactive = false; // start interactive session
 	bool is_index_built = false; // flags the index is built and ready for use
 
-	// DEBUG options
-	bool dbg_put_kvdb = false; // if True - do Not put records into Key-value DB. Debugging Memory Consumption.
+	bool dbg_put_kvdb = false; // DEBUG option. if True - do Not put records into Key-value DB. Debugging Memory Consumption.
+
+	std::vector<std::string> blastops; // [1]
+	std::vector<std::string> readfiles; // '--reads'
+	std::vector<std::pair<std::string, std::string>> indexfiles; // "--refs" Pairs (Reference file, Index name)
+	std::vector<std::vector<uint32_t>> skiplengths; // --passes K-mer window shift sizes [2]
+
+public:
+	const std::string IDX_DIR  = "idx";
+	const std::string KVDB_DIR = "kvdb";
+	const std::string OUT_DIR  = "out";
 
 	enum ALIGN_REPORT { align, postproc, report, alipost, all };
 	ALIGN_REPORT alirep = all;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
-
-	/*! @brief Vector of strings to store result from option --blast STRING.
-		+ --blast '0': output pairwise alignments\n
-		+ --blast '1': output BLAST Tabular format with the fields:
-				queryId, subjectId, percIdentity, alnLength, mismatchCount, 
-				gapOpenCount, queryStart, queryEnd, subjectStart, subjectEnd, eVal, bitScore\n
-		+ --blast '1 cigar': tabular format + CIGAR string\n
-		+ --blast '1 cigar qcov': tabular format + CIGAR string + % query coverage\n
-		+ --blast '1 cigar qcov strand': tabular format + CIGAR string + % query coverage + strand\n
-	*/
-	std::vector<std::string> blastops;
-	// "--refs" Pairs (Reference file, Index name)
-	std::vector<std::pair<std::string, std::string>> indexfiles;
-	/* '--passes' (optional): for each index file three intervals at which to place the seed on the read. <-- Refstats::load
-		Defaults: 0 */
-	std::vector<std::vector<uint32_t>> skiplengths;
 
 private:
 	// methods
@@ -196,17 +200,17 @@ private:
 
 	// help strings
 	std::string \
-		help_ref = "FASTA reference file. Use mutliple '--ref' options to specify multiple files",
-		help_reads = "FASTA/FASTQ raw reads file. Use multiple '--reads' options for multiple files",
+		help_ref = "Reference file (FASTA). Use mutliple '--ref' options to specify multiple files",
+		help_reads = "Raw reads file (FASTA/FASTQ). Use multiple '--reads' options for multiple files",
 		help_aligned = "Aligned reads file",
 		help_other = "",
 		help_fastx = "",
-		help_workdir = "Working directory path where to put KVDB and all the output files.",
+		help_workdir = "Working directory path where to put Reference index, KVDB and the output. Default: USERDIR/sortmerna/",
 		help_sam = "",
 		help_SQ = "",
 		help_blast = "",
 		help_dbg_put_db = "",
-		help_log = "",
+		help_log = "'--log' : Output overall statistics. Default: Yes/True",
 		help_num_alignments = "",
 		help_best = "",
 		help_min_lis = "",
@@ -229,7 +233,7 @@ private:
 		help_passes = "",
 		help_edges = "",
 		help_num_seeds = "",
-		help_pid = "",
+		help_pid = "'--pid' Add pid to output file names. Default: No/False",
 		help_full_search = "",
 		help_h = "",
 		help_version = "",

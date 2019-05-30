@@ -62,111 +62,86 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 
 	// associate the streams with reference sequence file names
-	if (opts.aligned_out_pfx.size() != 0)
+	if (opts.fastxout)
 	{
-		// WORKDIR/out/aligned.fastq
-		if (opts.fastxout)
+		// fasta/fastq output  WORKDIR/out/aligned.fastq
+		fastaOutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		if (opts.pid)
 		{
-			// fasta/fastq output
-			fastaOutFile = opts.workdir + "/out/" + opts.aligned_out_pfx;
-			if (opts.pid)
-			{
-				fastaOutFile.append("_");
-				fastaOutFile.append(pidStr.str());
-			}
-			fastaOutFile.append(".");
-			fastaOutFile.append(readstats.suffix);
-
-			fastaout.open(fastaOutFile);
-			fastaout.close();
+			fastaOutFile += "_" + pidStr.str();
 		}
+		fastaOutFile += "." + readstats.suffix;
+		fastaout.open(fastaOutFile);
+		fastaout.close();
+	}
 
-		if (opts.samout)
+	if (opts.samout)
+	{
+		// sam output  WORKDIR/out/aligned.sam
+		samoutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		if (opts.pid)
 		{
-			// sam output
-			samoutFile = opts.workdir + "/out/" + opts.aligned_out_pfx;
-			if (opts.pid)
-			{
-				samoutFile.append("_");
-				samoutFile.append(pidStr.str());
-			}
-			samoutFile.append(".sam");
-			samout.open(samoutFile);
-			samout.close();
+			samoutFile += "_" + pidStr.str();
 		}
+		samoutFile += ".sam";
+		samout.open(samoutFile);
+		samout.close();
+	}
 
-		if (opts.blastout)
+	if (opts.blastout)
+	{
+		// blast output  WORKDIR/out/aligned.blast
+		blastoutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		if (opts.pid)
 		{
-			// blast output
-			blastoutFile = opts.workdir + "/out/" + opts.aligned_out_pfx;
-			if (opts.pid)
-			{
-				blastoutFile.append("_");
-				blastoutFile.append(pidStr.str());
-			}
-			blastoutFile.append(".blast");
-			blastout.open(blastoutFile);
-			blastout.close();
+			blastoutFile += "_" + pidStr.str();
 		}
+		blastoutFile += ".blast";
+		blastout.open(blastoutFile);
+		blastout.close();
+	}
 
-		if (opts.otumapout)
+	if (opts.otumapout)
+	{
+		// OTU map output file  WORKDIR/out/aligned_otus.txt
+		std::ofstream otumap;
+		otumapFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		if (opts.pid)
 		{
-			// OTU map output file
-			std::ofstream otumap;
-			otumapFile = opts.workdir + "/out/" + opts.aligned_out_pfx;
-			if (opts.pid)
-			{
-				otumapFile.append("_");
-				otumapFile.append(pidStr.str());
-			}
-			otumapFile.append("_otus.txt");
-			otumap.open(otumapFile);
-			otumap.close();
+			otumapFile += "_" + pidStr.str();
 		}
+		otumapFile += "_otus.txt";
+		otumap.open(otumapFile);
+		otumap.close();
+	}
 
-		// WORKDIR/out/aligned_denovo.fastq
-		if (opts.de_novo_otu)
+	if (opts.de_novo_otu)
+	{
+		//  WORKDIR/out/aligned_denovo.fastq
+		std::ofstream denovo_otu;
+		denovo_otus_file = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		if (opts.pid)
 		{
-			std::ofstream denovo_otu;
-			denovo_otus_file = opts.workdir + "/out/" + opts.aligned_out_pfx;
-			if (opts.pid)
-			{
-				denovo_otus_file.append("_");
-				denovo_otus_file.append(pidStr.str());
-			}
-			denovo_otus_file.append("_denovo.");
-			denovo_otus_file.append(readstats.suffix);
-
-			denovo_otu.open(denovo_otus_file);
-			denovo_otu.close();
+			denovo_otus_file += "_" + pidStr.str();
 		}
+		denovo_otus_file += "_denovo." + readstats.suffix;
+		denovo_otu.open(denovo_otus_file);
+		denovo_otu.close();
+	}
 
-		// don't touch the log if only reports are generated
-		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
+	// don't touch the log if only reports are generated
+	if (opts.write_log && opts.alirep != Runopts::ALIGN_REPORT::report)
+	{
+		// statistics file output  WORKDIR/out/aligned.log
+		logfile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		if (opts.pid)
 		{
-			// statistics file output
-			logfile = opts.workdir + "/out/" + opts.aligned_out_pfx;
-			if (opts.pid)
-			{
-				logfile.append("_");
-				logfile.append(pidStr.str());
-			}
-			logfile.append(".log");
-
-			logstream.open(logfile);
-
-			// TODO: this is truly an ad hoc place for this code
-			if (opts.exit_early) {
-				logstream << "  The input reads file or reference file is empty, "
-					<< "or the reads file is not in FASTA or FASTQ format, "
-					<< "no analysis could be made." << std::endl;
-				logstream.close();
-				exit(EXIT_SUCCESS);
-			}
-
-			logstream.close();
+			logfile += "_" + pidStr.str();
 		}
-	}//~if ( ptr_filetype_ar != NULL ) 
+		logfile += ".log";
+		logstream.open(logfile);
+		logstream.close();
+	}
 
 	if (opts.other_out_pfx.size() != 0)
 	{
@@ -177,11 +152,9 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			// add suffix database name to accepted reads file
 			if (opts.pid)
 			{
-				opts.other_out_pfx += "_";
-				opts.other_out_pfx += pidStr.str();
+				opts.other_out_pfx += "_" + pidStr.str();
 			}
-			opts.other_out_pfx += ".";
-			opts.other_out_pfx += readstats.suffix;
+			opts.other_out_pfx += "." + readstats.suffix;
 			// create the other reads file
 			fastaNonAlignOut.open(opts.other_out_pfx);
 			fastaNonAlignOut.close();
@@ -205,7 +178,6 @@ void Output::report_blast
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 	char strandmark = '+';
-	//bool flip03 = false; // flag to flip back to 03 on return
 
 	if (read.is03) read.flip34();
 
@@ -782,17 +754,17 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.doLog && logfile.size() > 0 && !logstream.is_open())
-	{
-		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
-		if (!logstream.good())
-		{
-			ss.str("");
-			ss << STAMP << "Could not open logfile: [" << logfile << "]";
-			ERR(ss.str());
-			exit(EXIT_FAILURE);
-		}
-	}
+	//if (opts.write_log && logfile.size() > 0 && !logstream.is_open())
+	//{
+	//	logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
+	//	if (!logstream.good())
+	//	{
+	//		ss.str("");
+	//		ss << STAMP << "Could not open logfile: [" << logfile << "]";
+	//		ERR(ss.str());
+	//		exit(EXIT_FAILURE);
+	//	}
+	//}
 } // ~Output::openfiles
 
 void Output::closefiles()
@@ -803,8 +775,56 @@ void Output::closefiles()
 	if (fastaNonAlignOut.is_open()) { fastaNonAlignOut.flush(); fastaNonAlignOut.close(); }
 	if (denovoreads.is_open()) { denovoreads.flush(); denovoreads.close(); }
 
-	std::cout << "Output.closefiles called. Flushed and closed" << std::endl;
+	std::cout << STAMP << "Flushed and closed" << std::endl;
 }
+
+/** 
+ * called from postProcess 
+ */
+void Output::writeLog(Runopts &opts, Readstats &readstats)
+{
+	if (!logstream.is_open())
+	{
+		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
+	}
+
+	// output total number of reads
+	logstream << " Results:\n";
+	logstream << "    Total reads = " << readstats.all_reads_count << std::endl;
+	if (opts.de_novo_otu)
+	{
+		// all reads that have read::hit_denovo == true
+		logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << std::endl;
+	}
+	// output total non-rrna + rrna reads
+	logstream << std::setprecision(2) << std::fixed
+		<< "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
+		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count) * 100 << ")" << std::endl
+		<< "    Total reads failing E-value threshold = "
+		<< readstats.all_reads_count - readstats.total_reads_mapped.load()
+		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count))) * 100 << ")" << std::endl
+		<< "    Minimum read length = " << readstats.min_read_len.load() << std::endl
+		<< "    Maximum read length = " << readstats.max_read_len.load() << std::endl
+		<< "    Mean read length    = " << readstats.all_reads_len / readstats.all_reads_count << std::endl
+		<< " By database:" << std::endl;
+
+	// output stats by database
+	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
+	{
+		logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
+			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100 << std::endl;
+	}
+
+	if (opts.otumapout)
+	{
+		logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << std::endl;
+		logstream << " Total OTUs = " << readstats.otu_map.size() << std::endl;
+	}
+	time_t q = time(0);
+	struct tm * now = localtime(&q);
+	logstream << std::endl << " " << asctime(now) << std::endl;
+	logstream.close();
+} // ~Output::writeLog
 
 // called from main. TODO: move into a class?
 void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
