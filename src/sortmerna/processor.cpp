@@ -95,8 +95,8 @@ void PostProcessor::run()
 	int countReads = 0;
 	std::stringstream ss;
 
-	ss << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-	std::cout << ss.str(); ss.str("");
+	ss << STAMP << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+	std::cout << ss.str();
 
 	for (;;)
 	{
@@ -121,7 +121,8 @@ void PostProcessor::run()
 	writeQueue.decrPushers(); // signal this processor done adding
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 
-	ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
+	ss.str("");
+	ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed [" << countReads << "] reads" << std::endl;
 	std::cout << ss.str();
 } // ~PostProcessor::run
 
@@ -130,8 +131,9 @@ void ReportProcessor::run()
 	int countReads = 0;
 	std::stringstream ss;
 
-	ss << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started\n";
-	std::cout << ss.str(); ss.str("");
+	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+	std::cout << ss.str();
+
 	int cap = opts.pairedin || opts.pairedout ? 2 : 1;
 	std::vector<Read> reads;
 	Read read;
@@ -163,8 +165,9 @@ void ReportProcessor::run()
 		countReads+=i;
 	}
 
-	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
-	std::cout << ss.str(); ss.str("");
+	ss.str("");
+	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed [" << countReads << "] reads" << std::endl;
+	std::cout << ss.str();
 } // ~ReportProcessor::run
 
 // called from main

@@ -162,6 +162,9 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 } // ~Output::init
 
+/**
+ * called on each read => keep stream handle between calls 
+ */
 void Output::report_blast
 (
 	Runopts & opts,
@@ -426,8 +429,6 @@ void Output::report_blast
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
-
-	//if (flip03) read.flip34();
 } // ~ Output::report_blast
 
 
@@ -753,18 +754,6 @@ void Output::openfiles(Runopts & opts)
 			exit(EXIT_FAILURE);
 		}
 	}
-
-	//if (opts.write_log && logfile.size() > 0 && !logstream.is_open())
-	//{
-	//	logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
-	//	if (!logstream.good())
-	//	{
-	//		ss.str("");
-	//		ss << STAMP << "Could not open logfile: [" << logfile << "]";
-	//		ERR(ss.str());
-	//		exit(EXIT_FAILURE);
-	//	}
-	//}
 } // ~Output::openfiles
 
 void Output::closefiles()

@@ -32,8 +32,8 @@ std::string string_hash(const std::string &val);
 
 Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
 	:
-	min_read_len(READLEN),
-	max_read_len(0),
+	min_read_len(0),
+	max_read_len(READLEN),
 	total_reads_mapped(0),
 	total_reads_mapped_cov(0),
 	all_reads_count(0),
