@@ -13,6 +13,112 @@
 #include <tuple>
 
 #include "common.hpp"
+#include "kvdb.hpp"
+
+// global constants
+const std::string \
+OPT_REF = "ref",
+OPT_READS = "reads",
+OPT_ALIGNED = "aligned",
+OPT_OTHER = "other",
+OPT_WORKDIR = "workdir",
+OPT_FASTX = "fastx",
+OPT_SAM = "sam",
+OPT_SQ = "SQ",
+OPT_BLAST = "blast",
+OPT_LOG = "log",
+OPT_NUM_ALIGNMENTS = "num_alignments",
+OPT_BEST = "best",
+OPT_MIN_LIS = "min_lis",
+OPT_PRINT_ALL_READS = "print_all_reads",
+OPT_PAIRED_IN = "paired_in",
+OPT_PAIRED_OUT = "paired_out",
+OPT_MATCH = "match",
+OPT_MISMATCH = "mismatch",
+OPT_GAP_OPEN = "gap_open",
+OPT_GAP_EXT = "gap_ext",
+OPT_A = "a",
+OPT_D = "d",
+OPT_E = "e",
+OPT_F = "F",
+OPT_H = "h",
+OPT_L = "L",
+OPT_M = "m",
+OPT_N = "N",
+OPT_R = "R",
+OPT_V = "v",
+OPT_ID = "id",
+OPT_COVERAGE = "coverage",
+OPT_DE_NOVO_OTU = "de_novo_otu",
+OPT_OUT_MAP = "otu_map",
+OPT_PASSES = "passes",
+OPT_EDGES = "edges",
+OPT_NUM_SEEDS = "num_seeds",
+OPT_FULL_SEARCH = "full_search",
+OPT_PID = "pid",
+OPT_VERSION = "version",
+OPT_CMD = "cmd",
+OPT_TASK = "task",
+OPT_THREADS = "threads",
+OPT_THPP = "thpp",
+OPT_THREP = "threp",
+OPT_DBG_PUT_DB = "dbg_put_db",
+OPT_TMPDIR = "tmpdir",
+OPT_INTERVAL = "INTERVAL",
+OPT_MAX_POS = "max_pos";
+
+// help strings
+const std::string \
+help_ref = "Reference file (FASTA). Use mutliple '--ref' options to specify multiple files",
+help_reads = "Raw reads file (FASTA/FASTQ). Use '--reads' twice for files with paired reads",
+help_aligned = "Aligned reads file name prefix. Default: 'aligned'",
+help_other = "Non-aligned reads output file name prefix. Default 'other'",
+help_fastx = "",
+help_workdir = "Working directory path for storing Reference index, Key-value database and the output. Default: USERDIR/sortmerna/",
+help_sam = "",
+help_SQ = "",
+help_blast = "",
+help_dbg_put_db = "",
+help_log = "'--log' : Output overall statistics. Default: Yes/True",
+help_num_alignments = "",
+help_best = "",
+help_min_lis = "",
+help_print_all_reads = "",
+help_paired_in = "",
+help_paired_out = "",
+help_match = "",
+help_mismatch = "",
+help_gap_open = "",
+help_gap_ext = "",
+help_N = "",
+help_F = "",
+help_R = "",
+help_e = "",
+help_v = "",
+help_id = "",
+help_coverage = "",
+help_de_novo_otu = "",
+help_otu_map = "",
+help_passes = "",
+help_edges = "",
+help_num_seeds = "",
+help_pid = "'--pid' Add pid to output file names. Default: No/False",
+help_full_search = "",
+help_h = "",
+help_version = "",
+help_cmd = "",
+help_task = "",
+help_d = "key-value datastore FULL folder path. Default: USERDIR/kvdb",
+help_a = "",
+help_threads = "",
+help_thpp = "",
+help_threp = "",
+help_tmpdir = "Indexing: directory for writing temporary files when building the reference index",
+help_interval = "Indexing: Positive integer: index every Nth L-mer in the reference database e.g. '--interval 2'. Default 1",
+help_m = "Indexing: the amount of memory (in Mbytes) for building the index. Default 3072",
+help_L = "Indexing: seed length. Default 18",
+help_max_pos = "Indexing: maximum (integer) number of positions to store for each unique L-mer. Default 1000. If 0 all positions are stored."
+;
 
 /* 
  * 1. 'blastops' 
@@ -25,8 +131,14 @@
  *    + --blast '1 cigar qcov': tabular format + CIGAR string + % query coverage\n
  *    + --blast '1 cigar qcov strand': tabular format + CIGAR string + % query coverage + strand\n
  * 2. 'skiplengths'
- *      '--passes' - for each index file three intervals at which to place the k-mer window on the read. 
- *      Defaults: {0,0,0}
+ *      '--passes' - for each index file three intervals at which to place the k-mer window on the read when searching for matches. 
+ *      Defaults are calculated in Refstats::load e.g. {18,9,3} as follows:
+ *
+ *      ------------------------------------------------------	Read len = 54 (example). Max 13 positions to test
+ *      1                 2                 3					Pass 1, step: 18 ------------------
+ *      ^        4        ^        5        ^        			Pass 2, step: 9  ---------
+ *      ^  6  7  ^ 	8  9  ^  |  |  ^  |  |  ^					Pass 3, step: 3  ---
+ *
  * 3. 'num_alignments'
  *      unlike '--best', which searches many alignments(specified by '--min_lis') prior to outputting the best ones.
  * 4. 'align_cov'
@@ -79,7 +191,7 @@ public:
 	// indexing options
 	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.
 	uint32_t lnwin_gv = 18;
-	uint32_t interval = 1;
+	uint32_t interval = 1; // size of k-mer window shift. Default 1 is the min possible to generate max number of k-mers.
 	uint32_t max_pos = 10000;
 	// ~ END indexing options
 
@@ -92,7 +204,7 @@ public:
 	bool print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
 	bool samout = false; // '--sam' output SAM alignment (for aligned reads only)
 	bool blastout = false; // '--blast' output alignments in various Blast-like formats
-	bool fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
+	bool is_fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
 	bool pid = false; // --pid add pid to output file names
 	bool as_percent = false;
@@ -103,15 +215,17 @@ public:
 	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
 	bool interactive = false; // start interactive session
 	bool is_index_built = false; // flags the index is built and ready for use
+	bool is_other = false; // flags to produce 'other' files
 
 	bool dbg_put_kvdb = false; // DEBUG option. if True - do Not put records into Key-value DB. Debugging Memory Consumption.
 
 	std::vector<std::string> blastops; // [1]
 	std::vector<std::string> readfiles; // '--reads'
 	std::vector<std::pair<std::string, std::string>> indexfiles; // "--refs" Pairs (Reference file, Index name)
-	std::vector<std::vector<uint32_t>> skiplengths; // --passes K-mer window shift sizes [2]
+	std::vector<std::vector<uint32_t>> skiplengths; // [2] '--passes' K-mer window shift sizes. Refstats::load
 
 public:
+	std::string dbkey = "run_options";
 	const std::string IDX_DIR  = "idx";
 	const std::string KVDB_DIR = "kvdb";
 	const std::string OUT_DIR  = "out";
@@ -182,6 +296,9 @@ private:
 	void opt_unknown(char **argv, int &narg, char * opt);
 
 	void test_kvdb_path();
+	std::string to_string();
+	std::string to_bin_string();
+	void store_to_db(KeyValueDatabase &kvdb);
 
 private:
 	// SW alignment parameters
@@ -198,59 +315,6 @@ private:
 	bool best_set = false;
 	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
 
-	// help strings
-	std::string \
-		help_ref = "Reference file (FASTA). Use mutliple '--ref' options to specify multiple files",
-		help_reads = "Raw reads file (FASTA/FASTQ). Use multiple '--reads' options for multiple files",
-		help_aligned = "Aligned reads file",
-		help_other = "",
-		help_fastx = "",
-		help_workdir = "Working directory path where to put Reference index, KVDB and the output. Default: USERDIR/sortmerna/",
-		help_sam = "",
-		help_SQ = "",
-		help_blast = "",
-		help_dbg_put_db = "",
-		help_log = "'--log' : Output overall statistics. Default: Yes/True",
-		help_num_alignments = "",
-		help_best = "",
-		help_min_lis = "",
-		help_print_all_reads = "",
-		help_paired_in = "",
-		help_paired_out = "",
-		help_match = "",
-		help_mismatch = "",
-		help_gap_open = "",
-		help_gap_ext = "",
-		help_N = "",
-		help_F = "",
-		help_R = "",
-		help_e = "",
-		help_v = "",
-		help_id = "",
-		help_coverage = "",
-		help_de_novo_otu = "",
-		help_otu_map = "",
-		help_passes = "",
-		help_edges = "",
-		help_num_seeds = "",
-		help_pid = "'--pid' Add pid to output file names. Default: No/False",
-		help_full_search = "",
-		help_h = "",
-		help_version = "",
-		help_cmd = "",
-		help_task = "",
-		help_d = "key-value datastore FULL folder path. Default: USERDIR/kvdb",
-		help_a = "",
-		help_threads = "",
-		help_thpp = "",
-		help_threp = "",
-		help_tmpdir = "Indexing: directory for writing temporary files when building the reference index",
-		help_interval = "Indexing: Positive integer: index every Nth L-mer in the reference database e.g. '--interval 2'. Default 1",
-		help_m = "Indexing: the amount of memory (in Mbytes) for building the index. Default 3072",
-		help_L = "Indexing: seed length. Default 18",
-		help_max_pos = "Indexing: maximum (integer) number of positions to store for each unique L-mer. Default 1000. If 0 all positions are stored."
-		;
-
 	// container for options passed to the program
 	std::multimap<std::string, std::string> mopt;
 
@@ -261,55 +325,55 @@ private:
 		//     |                      |         |               |_pointer to option processing function
 		//     |                      |         |_option help string
 		//     |_option name          |_flag is option required
-		{"ref",             {true, help_ref, &Runopts::opt_ref}},
-		{"reads",           {true, help_reads, &Runopts::opt_reads}},
-		{"aligned",         {false, help_aligned, &Runopts::opt_aligned}},
-		{"other",           {false, help_other, &Runopts::opt_other}},
-		{"workdir",         {false, help_workdir, &Runopts::opt_workdir}},
-		{"fastx",           {false, help_fastx, &Runopts::opt_fastx}},
-		{"sam",             {false, help_sam, &Runopts::opt_sam}},
-		{"SQ",              {false, help_SQ, &Runopts::opt_SQ}},
-		{"blast",           {false, help_blast, &Runopts::opt_blast}},
-		{"log",             {false, help_log, &Runopts::opt_log}},
-		{"num_alignments",  {false, help_num_alignments, &Runopts::opt_num_alignments}},
-		{"best",            {false, help_best, &Runopts::opt_best}},
-		{"min_lis",         {false, help_min_lis, &Runopts::opt_min_lis}},
-		{"print_all_reads", {false, help_print_all_reads, &Runopts::opt_print_all_reads}},
-		{"paired_in",       {false, help_paired_in, &Runopts::opt_paired_in}},
-		{"paired_out",      {false, help_paired_out, &Runopts::opt_paired_out}},
-		{"match",           {false, help_match, &Runopts::opt_match}},
-		{"mismatch",        {false, help_mismatch, &Runopts::opt_mismatch}},
-		{"gap_open",        {false, help_gap_open, &Runopts::opt_gap_open}},
-		{"gap_ext",         {false, help_gap_ext, &Runopts::opt_gap_ext}},
-		{"N",               {false, help_N, &Runopts::opt_N}},
-		{"F",               {false, help_F, &Runopts::opt_F}},
-		{"R",               {false, help_R, &Runopts::opt_R}},
-		{"e",               {false, help_e, &Runopts::opt_e}},
-		{"v",               {false, help_v, &Runopts::opt_v}},
-		{"id",              {false, help_id, &Runopts::opt_id}},
-		{"coverage",        {false, help_coverage, &Runopts::opt_coverage}},
-		{"de_novo_otu",     {false, help_de_novo_otu, &Runopts::opt_de_novo_otu}},
-		{"otu_map",         {false, help_otu_map, &Runopts::opt_otu_map}},
-		{"passes",          {false, help_passes, &Runopts::opt_passes}},
-		{"edges",           {false, help_edges, &Runopts::opt_edges}},
-		{"num_seeds",       {false, help_num_seeds, &Runopts::opt_num_seeds}},
-		{"full_search",     {false, help_full_search, &Runopts::opt_full_search}},
-		{"pid",             {false, help_pid, &Runopts::opt_pid}},
-		{"h",               {false, help_h, &Runopts::opt_h}},
-		{"version",         {false, help_version, &Runopts::opt_version}},
-		{"cmd",             {false, help_cmd, &Runopts::opt_cmd}},
-		{"task",            {false, help_task, &Runopts::opt_task}},
-		{"d",               {false, help_d, &Runopts::opt_d}},
-		{"a",               {false, help_a, &Runopts::opt_a}},
-		{"threads",         {false, help_threads, &Runopts::opt_threads}},
-		{"thpp",            {false, help_thpp, &Runopts::opt_thpp}},
-		{"threp",           {false, help_threp, &Runopts::opt_threp}},
-		{"dbg_put_db",      {false, help_dbg_put_db, &Runopts::opt_dbg_put_db}},
-		{"tmpdir",          {false, help_tmpdir, &Runopts::opt_tmpdir}},
-		{"interval",        {false, help_interval, &Runopts::opt_interval}},
-		{"m",               {false, help_m, &Runopts::opt_m}},
-		{"L",               {false, help_L, &Runopts::opt_L}},
-		{"max_pos",         {false, help_max_pos, &Runopts::opt_max_pos}}
+		{OPT_REF,             {true, help_ref, &Runopts::opt_ref}},
+		{OPT_READS,           {true, help_reads, &Runopts::opt_reads}},
+		{OPT_ALIGNED,         {false, help_aligned, &Runopts::opt_aligned}},
+		{OPT_OTHER,           {false, help_other, &Runopts::opt_other}},
+		{OPT_WORKDIR,         {false, help_workdir, &Runopts::opt_workdir}},
+		{OPT_FASTX,           {false, help_fastx, &Runopts::opt_fastx}},
+		{OPT_SAM,             {false, help_sam, &Runopts::opt_sam}},
+		{OPT_SQ,              {false, help_SQ, &Runopts::opt_SQ}},
+		{OPT_BLAST,           {false, help_blast, &Runopts::opt_blast}},
+		{OPT_LOG,             {false, help_log, &Runopts::opt_log}},
+		{OPT_NUM_ALIGNMENTS,  {false, help_num_alignments, &Runopts::opt_num_alignments}},
+		{OPT_BEST,            {false, help_best, &Runopts::opt_best}},
+		{OPT_MIN_LIS,         {false, help_min_lis, &Runopts::opt_min_lis}},
+		{OPT_PRINT_ALL_READS, {false, help_print_all_reads, &Runopts::opt_print_all_reads}},
+		{OPT_PAIRED_IN,       {false, help_paired_in, &Runopts::opt_paired_in}},
+		{OPT_PAIRED_OUT,      {false, help_paired_out, &Runopts::opt_paired_out}},
+		{OPT_MATCH,           {false, help_match, &Runopts::opt_match}},
+		{OPT_MISMATCH,        {false, help_mismatch, &Runopts::opt_mismatch}},
+		{OPT_GAP_OPEN,        {false, help_gap_open, &Runopts::opt_gap_open}},
+		{OPT_GAP_EXT,         {false, help_gap_ext, &Runopts::opt_gap_ext}},
+		{OPT_N,               {false, help_N, &Runopts::opt_N}},
+		{OPT_F,               {false, help_F, &Runopts::opt_F}},
+		{OPT_R,               {false, help_R, &Runopts::opt_R}},
+		{OPT_E,               {false, help_e, &Runopts::opt_e}},
+		{OPT_V,               {false, help_v, &Runopts::opt_v}},
+		{OPT_ID,              {false, help_id, &Runopts::opt_id}},
+		{OPT_COVERAGE,        {false, help_coverage, &Runopts::opt_coverage}},
+		{OPT_DE_NOVO_OTU,     {false, help_de_novo_otu, &Runopts::opt_de_novo_otu}},
+		{OPT_OUT_MAP,         {false, help_otu_map, &Runopts::opt_otu_map}},
+		{OPT_PASSES,          {false, help_passes, &Runopts::opt_passes}},
+		{OPT_EDGES,           {false, help_edges, &Runopts::opt_edges}},
+		{OPT_NUM_SEEDS,       {false, help_num_seeds, &Runopts::opt_num_seeds}},
+		{OPT_FULL_SEARCH,     {false, help_full_search, &Runopts::opt_full_search}},
+		{OPT_PID,             {false, help_pid, &Runopts::opt_pid}},
+		{OPT_H,               {false, help_h, &Runopts::opt_h}},
+		{OPT_VERSION,         {false, help_version, &Runopts::opt_version}},
+		{OPT_CMD,             {false, help_cmd, &Runopts::opt_cmd}},
+		{OPT_TASK,            {false, help_task, &Runopts::opt_task}},
+		{OPT_D,               {false, help_d, &Runopts::opt_d}},
+		{OPT_A,               {false, help_a, &Runopts::opt_a}},
+		{OPT_THREADS,         {false, help_threads, &Runopts::opt_threads}},
+		{OPT_THPP,            {false, help_thpp, &Runopts::opt_thpp}},
+		{OPT_THREP,           {false, help_threp, &Runopts::opt_threp}},
+		{OPT_DBG_PUT_DB,      {false, help_dbg_put_db, &Runopts::opt_dbg_put_db}},
+		{OPT_TMPDIR,          {false, help_tmpdir, &Runopts::opt_tmpdir}},
+		{OPT_INTERVAL,        {false, help_interval, &Runopts::opt_interval}},
+		{OPT_M,               {false, help_m, &Runopts::opt_m}},
+		{OPT_L,               {false, help_L, &Runopts::opt_L}},
+		{OPT_MAX_POS,         {false, help_max_pos, &Runopts::opt_max_pos}}
 	}; // ~map options
 }; // ~struct Runopts
 // ~options.cpp

@@ -69,18 +69,6 @@ int clear_dir(std::string dpath);
  // see "heuristic 1" below
  //#define HEURISTIC1_OFF
 
- /*! @brief Return complement of a nucleotide in
-	 integer format.
-
-	 <table>
-	  <tr><th>i</th> <th>complement[i]</th></tr>
-	  <tr><td>0 (A)</td> <td>3 (T)</td></tr>
-	  <tr><td>1 (C)</td> <td>2 (G)</td></tr>
-	  <tr><td>2 (G)</td> <td>1 (C)</td></tr>
-	  <tr><td>3 (T)</td> <td>0 (A)</td></tr>
-	 </table>
-  */
-//char complement[4] = { 3,2,1,0 };
 
 /* 
  * Callback run in a Processor thread
@@ -373,23 +361,25 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
 		ss << STAMP << "Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 	else
 	{
 		numProcThread = opts.num_proc_thread; // set using '--thread'
+		ss.str("");
 		ss << STAMP << "Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 
 	int numThreads = opts.num_read_thread + opts.num_write_thread + numProcThread;
 
+	ss.str("");
 	ss << "Number of cores: " << numCores 
 		<< " Read threads:  " << opts.num_read_thread
 		<< " Write threads: " << opts.num_write_thread
 		<< " Processor threads: " << numProcThread
 		<< std::endl;
-	std::cout << ss.str(); ss.str("");
+	std::cout << ss.str();
 
 	ThreadPool tpool(numThreads);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
@@ -409,27 +399,32 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
+			ss.str("");
 			ss << STAMP << "Loading index " << index_num 
 				<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 			starts = std::chrono::high_resolution_clock::now();
 
 			index.load(index_num, idx_part, opts, refstats);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+			ss.str("");
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 
+			ss.str("");
 			ss << STAMP << "Loading references " << " ... ";
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 			starts = std::chrono::high_resolution_clock::now();
 
 			refs.load(index_num, idx_part, opts, refstats);
 
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+
+			ss.str("");
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 
 			starts = std::chrono::high_resolution_clock::now();
 			for (int i = 0; i < opts.num_read_thread; i++)
@@ -456,12 +451,37 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 			readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
+
+			ss.str("");
 			ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1 
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl << std::endl;
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
 	// store readstats calculated in alignment
 	readstats.store_to_db(kvdb);
 } // ~align
+
+/**
+ * verify the alignment was already performed by querying the KVDB
+ * Alignment descriptor:
+ *   List all index files: hash, size
+ *   List read files: hash, size
+ *   List reference files: hash, size
+ *   List number of aligned reads
+ *   Store options and compare to the current. Add '==' operator.
+ *   Store the list of DBKeys of all aligned reads (?)
+ *
+ * Alignment IS Done IF
+ *  - reads files are the same
+ *  - references are the same
+ *  - index is present and the names/hashes are the same as stored in DB
+ *  - alignment results are stored
+ *  - read statistics are stored and is_done = True
+ */
+bool is_aligned(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
+{
+	std::cout << STAMP << "TODO" << std::endl;
+	return false;
+}

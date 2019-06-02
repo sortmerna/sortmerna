@@ -23,13 +23,11 @@
 #include "index.hpp"
 #include "reader.hpp"
 
-const std::string OPT_ID   = "--id";
 const std::string OPT_DB   = "--db";
 const std::string OPT_IDX  = "--idx";
 const std::string OPT_PART = "--part";
 const std::string OPT_READ = "--read";
 const std::string OPT_POS  = "--pos";
-const std::string OPT_REF = "--ref";
 
 void CmdSession::run(Runopts & opts)
 {

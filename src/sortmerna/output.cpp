@@ -62,7 +62,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 
 	// associate the streams with reference sequence file names
-	if (opts.fastxout)
+	if (opts.is_fastxout)
 	{
 		// fasta/fastq output  WORKDIR/out/aligned.fastq
 		fastaOutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
@@ -145,7 +145,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 	if (opts.other_out_pfx.size() != 0)
 	{
-		if (opts.fastxout)
+		if (opts.is_fastxout)
 		{
 			// output stream for other reads
 			std::ofstream fastaNonAlignOut;
@@ -571,7 +571,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	std::stringstream ss;
 
 	// output accepted reads
-	if (opts.fastxout && fastaout.is_open())
+	if (opts.is_fastxout && fastaout.is_open())
 	{
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
@@ -581,7 +581,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				((reads[0].hit || reads[1].hit) && opts.pairedin))
 			{
 				// output aligned read
-				if (opts.fastxout)
+				if (opts.is_fastxout)
 				{
 					for (Read read: reads)
 					{
@@ -598,7 +598,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			if (reads[0].hit)
 			{
 				// output aligned read
-				if (opts.fastxout)
+				if (opts.is_fastxout)
 				{
 					fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
 					if (reads[0].format == Format::FASTQ)
@@ -609,7 +609,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	}//~if ( ptr_filetype_ar != NULL )
 
 	// output other reads
-	if (opts.fastxout && fastaNonAlignOut.is_open())
+	if (opts.is_fastxout && fastaNonAlignOut.is_open())
 	{
 		// pair-ended reads
 		if (opts.pairedin || opts.pairedout)
@@ -720,7 +720,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.fastxout && !fastaout.is_open()) {
+	if (opts.is_fastxout && !fastaout.is_open()) {
 		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
 		if (!fastaout.good())
 		{
@@ -731,7 +731,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.fastxout && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
+	if (opts.is_fastxout && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
 	{
 		fastaNonAlignOut.open(opts.other_out_pfx, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())

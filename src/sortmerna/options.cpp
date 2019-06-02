@@ -14,6 +14,7 @@
 #include "options.hpp"
 #include "common.hpp"
 #include "gzip.hpp"
+#include "kvdb.hpp"
 
  // standard
 #include <limits>
@@ -170,18 +171,29 @@ void Runopts::opt_aligned(const std::string &file)
 	}
 } // ~Runopts::opt_aligned
 
+/**
+ * depends on '--fastxout'
+ */
 void Runopts::opt_other(const std::string &file)
 {
+	auto cnt = mopt.count("fastxout");
+	if (cnt < 0)
+	{
+		ERR("Option '--other' can only be used together with '--fastx' option.");
+		exit(EXIT_FAILURE);
+	}
+
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << "File name was not provided with option '--other [FILE]'. Using default name 'other'" << std::endl;
+		std::cout << STAMP << "File name was not provided with option '--other [FILE]'. Using default name: [" << other_out_pfx << "]" << std::endl;
 	}
+	is_other = true;
 } // ~Runopts::opt_other
 
 void Runopts::opt_log(const std::string &val)
 {
 	if (write_log)
-		WARN("'--log' is deprecated. True by default.");
+		WARN("'--" << OPT_LOG << "' is deprecated. True by default.");
 } // ~Runopts::optLog
 
 void Runopts::opt_de_novo_otu(const std::string &val)
@@ -356,14 +368,14 @@ void Runopts::opt_num_seeds(const std::string &val)
 /* --fastx */
 void Runopts::opt_fastx(const std::string &val)
 {
-	if (fastxout)
+	if (is_fastxout)
 	{
 		ERR("--fastx has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		fastxout = true;
+		is_fastxout = true;
 	}
 } // ~Runopts::opt_fastx
 
@@ -911,7 +923,7 @@ void Runopts::opt_interval(const std::string &val)
 
 	if (val.size() == 0)
 	{
-		WARN("Option 'interval' given without value. Using default: 1");
+		WARN("Option 'interval' given without value. Using default: " + interval);
 	}
 	else
 	{
@@ -928,7 +940,7 @@ void Runopts::opt_m(const std::string &val)
 	auto count = mopt.count("m");
 	if (count > 1)
 	{
-		ss << " Option 'm' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		ss << " Option 'm' entered [" << count << "] times. Only the last value will be used. " << help_m;
 		WARN(ss.str());
 	}
 
@@ -945,10 +957,10 @@ void Runopts::opt_m(const std::string &val)
 void Runopts::opt_L(const std::string &val)
 {
 	std::stringstream ss;
-	auto count = mopt.count("L");
+	auto count = mopt.count(OPT_L);
 	if (count > 1)
 	{
-		ss << " Option 'L' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		ss << " Option '" << OPT_L << "' entered [" << count << "] times. Only the last value will be used." << std::endl << "\tHelp: " << help_L;
 		WARN(ss.str());
 	}
 
@@ -980,10 +992,11 @@ void Runopts::opt_L(const std::string &val)
 void Runopts::opt_max_pos(const std::string &val)
 {
 	std::stringstream ss;
-	auto count = mopt.count("max_pos");
+	auto count = mopt.count(OPT_MAX_POS);
 	if (count > 1)
 	{
-		ss << " Option 'max_pos' entered [" << count << "] times. Only the last value will be used. " << help_interval;
+		ss << " Option '" << OPT_MAX_POS << "' entered [" << count << "] times. Only the last value will be used" << std::endl 
+			<< "\tHelp: " << help_max_pos;
 		WARN(ss.str());
 	}
 
@@ -1171,34 +1184,24 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 void Runopts::validate()
 {
 	// No output format has been chosen
-	if (!(fastxout || blastout || samout || otumapout || de_novo_otu))
+	if (!(is_fastxout || blastout || samout || otumapout || de_novo_otu))
 	{
 		blastout = true;
 		std::cout << STAMP << "No output format has been chosen (fastx/sam/blast/otu_map/log), Using default blast" << std::endl;
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
-	if (!fastxout && (pairedin || pairedout))
+	if (!is_fastxout && (pairedin || pairedout))
 	{
 		ERR(": options '--paired_in' and '--paired_out' must be accompanied by option '--fastx'.\n"
 			"  These BOOLs are for FASTA and FASTQ output files to maintain paired reads together.");
 		exit(EXIT_FAILURE);
 	}
 
-	// Basename for non-aligned reads is mandatory
-	if (other_out_pfx.size() != 0)
-	{
-		if (!fastxout && (blastout || samout))
-		{
-			ERR("Option --other [STRING] can only be used together with the --fastx option.");
-			//exit(EXIT_FAILURE);
-		}
-	}
-
 	// An OTU map can only be constructed with the single best alignment per read
 	if (otumapout && num_alignments_set)
 	{
-		ERR(" : --otu_map cannot be set together with --num_alignments [INT].\n"
+		ERR("'--otu_map' cannot be set together with --num_alignments [INT].\n"
 			"   The option --num_alignments [INT] doesn't keep track of"
 			" the best alignment which is required for constructing an OTU map.\n"
 			"   Use --otu_map with --best [INT] instead.");
@@ -1206,7 +1209,7 @@ void Runopts::validate()
 	}
 
 	// If --num_alignments output was chosen, check an alignment format has also been chosen
-	if (num_alignments_set && !(blastout || samout || fastxout))
+	if (num_alignments_set && !(blastout || samout || is_fastxout))
 	{
 		ERR(" : --num_alignments [INT] has been set but no output "
 			"format has been chosen (--blast, --sam or --fastx).");
@@ -1300,7 +1303,7 @@ void Runopts::validate()
 	if (!best_set && !num_alignments_set)
 	{
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		if (fastxout && !(blastout || samout || otumapout || write_log || de_novo_otu))
+		if (is_fastxout && !(blastout || samout || otumapout || write_log || de_novo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
 		else
@@ -1336,6 +1339,25 @@ void Runopts::validate()
 		else align_cov = 0;
 	}
 } // ~Runopts::validate
+
+/* 
+ * human readable representation of the options
+ */
+std::string Runopts::to_string()
+{
+	return "TODO";
+}
+
+/** 
+ * encoded options for storing in the Key-value database 
+ */
+std::string Runopts::to_bin_string()
+{
+	return "TODO";
+}
+
+void Runopts::store_to_db(KeyValueDatabase &kvdb)
+{}
 
   /*! @fn welcome()
   *  @brief outputs copyright, disclaimer and contact information

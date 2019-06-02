@@ -982,31 +982,21 @@ void get_keys_file(std::string &keys_file, Runopts &opts)
 
 	int32_t pid = getpid();
 	ss << pid;
-	std::string s_pid = ss.str();
-	// verify can write in the workdir
-	std::string tmp_file = opts.workdir + "test" + s_pid + ".txt";
-	std::fstream ifs(tmp_file, std::ios_base::out | std::ios_base::binary);
+	keys_file = opts.workdir + "/sortmerna_keys_" + ss.str() + ".txt";
+
+	std::fstream ifs(keys_file, std::ios_base::out | std::ios_base::binary);
 	if (ifs.is_open())
 	{
 		ifs.close();
-		bool stat = std::filesystem::remove(tmp_file, std::error_code::error_code());
-		if (stat)
-		{
-			keys_file = opts.workdir + "/sortmerna_keys_" + s_pid + ".txt";
-		}
-		else
-		{
-			WARN("Failed deleting temp file: " + tmp_file);
-		}
 	}
 	else
 	{
-		ERR("Failed writing to file: " + tmp_file + " Error: " + strerror(errno));
+		ERR("Failed writing to file: " + keys_file + " Error: " + strerror(errno));
 	}
 } //~get_keys_file
 
 /**
- * TODO: remove - outdated
+ * TODO: remove - not used any longer. Outdated
  *
  * Prepare the temporary file for storing keys of all s-mer (19-mer) words
  * of the reference sequences.
@@ -1124,7 +1114,7 @@ void get_keys_str(std::string &keys_str)
 
 /**
  *
- * parse the fasta file, and build the burst tries
+ * parse each reference file (FASTA), and build the burst tries
  *
  * @return void
  *
@@ -1190,14 +1180,11 @@ int build_index(Runopts &opts)
 		fseek(fp, 0L, SEEK_SET);
 
 		ss.str("");
-		ss << std::endl 
-			<< "  Begin indexing file " << BLUE << idxpair.first << COLOFF 
+		ss << std::endl << STAMP
+			<< "Begin indexing file " << BLUE << idxpair.first << COLOFF 
 			<< " of size: " << filesize
 			<< " under index name " << BLUE << idxpair.second << COLOFF << std::endl;
 		DBG(opts.verbose, ss.str().data());
-		//DBG(opts.verbose, "\n  Begin indexing file %s%s%s under index name %s%s%s: \n",
-		//	BLUE, idxpair.first.data(),	COLOFF, 
-		//	BLUE, idxpair.second.data(), COLOFF);
 
 		// STEP 1 ************************************************************
 		//   For file part_0 compute
@@ -1217,7 +1204,7 @@ int build_index(Runopts &opts)
 		uint64_t full_len = 0;
 		int nt = 0;
 
-		DBG(opts.verbose, "  Collecting sequence distribution statistics ..");
+		DBG(opts.verbose, "  Collecting nucleotide distribution statistics ..");
 
 		TIME(start);
 		do
@@ -1284,7 +1271,7 @@ int build_index(Runopts &opts)
 			len > maxlen ? maxlen = len : maxlen;
 		} while (nt != EOF); // read until end of file
 
-		TIME(end); // End collecting the sequence distribution statistics
+		TIME(end); // End collecting the nucleotide distribution statistics
 
 		DBG(opts.verbose, "  done  [%f sec]\n", (end - start));
 
@@ -1496,7 +1483,8 @@ int build_index(Runopts &opts)
 
 					// forward 19-mer does not exist in the burst trie (duplicates not allowed)
 					if (lookup_table[kmer_key_short_f].trie_F == NULL ||
-						((lookup_table[kmer_key_short_f].trie_F != NULL) && !search_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, new_position)))
+						(lookup_table[kmer_key_short_f].trie_F != NULL && 
+						!search_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, new_position)))
 					{
 						// create a trie node if it doesn't exist
 						if (lookup_table[kmer_key_short_f].trie_F == NULL)
@@ -1526,7 +1514,8 @@ int build_index(Runopts &opts)
 
 					// reverse 19-mer does not exist in the burst trie
 					if (lookup_table[kmer_key_short_r].trie_R == NULL ||
-						((lookup_table[kmer_key_short_r].trie_R != NULL) && !search_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, new_position)))
+						((lookup_table[kmer_key_short_r].trie_R != NULL) && 
+						!search_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, new_position)))
 					{
 						// create a trie node if it doesn't exist
 						if (lookup_table[kmer_key_short_r].trie_R == NULL)
@@ -2036,7 +2025,7 @@ int build_index(Runopts &opts)
 		{
 			DBG(opts.verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").data());
 
-			std::ofstream stats((char*)(idxpair.second + ".stats").data(), std::ios::binary);
+			std::ofstream stats(idxpair.second + ".stats", std::ios::binary);
 			if (!stats.good())
 			{
 				ss.str("");
@@ -2052,8 +2041,6 @@ int build_index(Runopts &opts)
 			stats.write(reinterpret_cast<const char*>(&fasta_len), sizeof(uint32_t));
 			// the fasta file name (incl. path)
 			stats.write(reinterpret_cast<const char*>((idxpair.first).c_str()), sizeof(char)*fasta_len);
-			// number of sequences in the reference file
-			uint32_t num_sq = sam_sq_header.size();
 
 			// background frequencies, size of the database, window length
 			// and number of reference sequences in a separate stats file
@@ -2079,6 +2066,9 @@ int build_index(Runopts &opts)
 			{
 				stats.write(reinterpret_cast<const char*>(&index_parts_stats_vec[j]), sizeof(index_parts_stats));
 			}
+
+			// number of sequences in the reference file
+			uint32_t num_sq = sam_sq_header.size();
 			stats.write(reinterpret_cast<const char*>(&num_sq), sizeof(uint32_t));
 
 			for (auto samheader: sam_sq_header)

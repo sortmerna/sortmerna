@@ -28,7 +28,7 @@ void reportsJob(
 )
 {
 	// only needs one loop through all read, no reference file dependency
-	if (opts.fastxout && refs.num == 0 && refs.part == 0) 
+	if (opts.is_fastxout && refs.num == 0 && refs.part == 0)
 	{
 		output.report_fasta(opts, reads);
 	}
@@ -129,9 +129,13 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 	}//~for all alignments
 
 	// only call once per read, on the last index/part
-	if ( opts.de_novo_otu && 
-		refs.num == opts.indexfiles.size() - 1 && refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 &&
-		read.hit && read.hit_denovo )
+	if ( opts.de_novo_otu 
+		&& refs.num == opts.indexfiles.size() - 1 
+		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 
+		&& read.hit 
+		&& read.hit_denovo )
+	{
 		++readstats.total_reads_denovo_clustering;
+	}
 
 } // ~computeStats

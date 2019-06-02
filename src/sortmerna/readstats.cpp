@@ -43,7 +43,6 @@ Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
 	stats_calc_done(false)
 {
 	// calculate this->dbkey
-	// hashed concatenation of underscore separated read files basenames 
 	std::string key_str_tmp("");
 	for (auto readsfile : opts.readfiles)
 	{

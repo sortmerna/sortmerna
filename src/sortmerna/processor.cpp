@@ -27,7 +27,6 @@
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
-void writeLog(Runopts & opts, Readstats & readstats, Output & output);
 
 /* Runs in a thread. Pops reads from the Reads Queue */
 void Processor::run()
@@ -190,7 +189,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		std::cout << ss.str(); ss.str("");
 	}
 
-	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent increment of the stored value. Change this if ever using 'stats_calc_done"
+	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
 
 	//if (!readstats.stats_calc_done)
 	//{
@@ -247,7 +246,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		std::cout << ss.str();
 
 		readstats.stats_calc_done = true;
-		kvdb.put(readstats.dbkey, readstats.toBstring()); // store statistics computed by post-processor
+		readstats.store_to_db(kvdb); // store reads statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
 	output.writeLog(opts, readstats);

@@ -16,7 +16,11 @@
 #include "options.hpp"
 #include "common.hpp"
 
-// prototype: 'load_ref'
+
+/**
+ * load to memory the Reference records from a given index part
+ * Read the reference file, extract the part's references into an array (vector) of reference objects
+ */
 void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
 	std::stringstream ss;
@@ -28,9 +32,9 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 
 	if (!ifs.is_open())
 	{
-		ss << "  " << RED << "ERROR" << COLOFF  << ": [Line " << __LINE__ << ": " << __FILE__ 
-			<< "] could not open file " << opts.indexfiles[idx_num].first  << std::endl;
-		std::cerr << ss.str(); ss.str("");
+		ss << STAMP << "Could not open file " << opts.indexfiles[idx_num].first;
+		ERR(ss.str());
+		std::cerr << ss.str();
 		exit(EXIT_FAILURE);
 	}
 
@@ -38,11 +42,9 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 	ifs.seekg(refstats.index_parts_stats_vec[idx_num][idx_part].start_part);
 	if (ifs.fail())
 	{
-		ss << "  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__
-			<< "] could not locate the sequences used to construct the index" << std::endl
-			<< "  Check that your --ref <FASTA file, index name> correspond correctly for the FASTA file: " 
-			<< opts.indexfiles[idx_num].first << std::endl;
-		std::cerr << ss.str(); ss.str("");
+		ss << STAMP << "Could not locate the reference file " << opts.indexfiles[idx_num].first << " used to construct the index";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
 	}
 
 	// load references sequences, skipping the empty lines & spaces
@@ -103,8 +105,8 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		{
 			if (isFastq && count > 3) 
 			{
-				ss << "  " << RED << "ERROR" << COLOFF << " too many lines (> 4) for FASTQ file" << std::endl;
-				std::cerr << ss.str(); ss.str("");
+				ss << STAMP <<  "too many lines (> 4) for FASTQ file";
+				ERR(ss.str());
 				exit(EXIT_FAILURE);
 			}
 
