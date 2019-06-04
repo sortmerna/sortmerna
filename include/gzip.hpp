@@ -19,7 +19,8 @@
 class Gzip
 {
 public:
-	Gzip(bool gzipped) : gzipped(gzipped), line_start(0), pstrm(0) { if (gzipped) init(); }
+	Gzip(bool gzipped);
+	~Gzip(){}
 
 	int getline(std::ifstream & ifs, std::string & line);
 

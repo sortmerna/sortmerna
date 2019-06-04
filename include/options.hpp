@@ -69,15 +69,22 @@ OPT_MAX_POS = "max_pos";
 
 // help strings
 const std::string \
-help_ref = "Reference file (FASTA). Use mutliple '--ref' options to specify multiple files",
-help_reads = "Raw reads file (FASTA/FASTQ). Use '--reads' twice for files with paired reads",
-help_aligned = "Aligned reads file name prefix. Default: 'aligned'",
-help_other = "Non-aligned reads output file name prefix. Default 'other'",
-help_fastx = "",
-help_workdir = "Working directory path for storing Reference index, Key-value database and the output. Default: USERDIR/sortmerna/",
-help_sam = "",
-help_SQ = "",
-help_blast = "",
+help_ref = "'--ref FILE'. String. Required. Reference file (FASTA). Use mutliple '--ref' options to specify multiple files",
+help_reads = "'--reads FILE'. Required. Raw reads file (FASTA/FASTQ). Use '--reads' twice for files with paired reads",
+help_aligned = "'--aligned FILE'. Optional. String. Aligned reads file name prefix. Default: 'aligned'",
+help_other = "'--other FILE'. Optional. String. Non-aligned reads output file name prefix. Default 'other'",
+help_fastx = "'--fastx'. Boolean. Optional. Output aligned reads into FASTA/FASTQ file",
+help_workdir = "'--workdir PATH'. String. Optional. Working directory path for storing Reference index, Key-value database and the output. Default: USERDIR/sortmerna/",
+help_sam = "'--sam' Boolean. Optional. Output SAM alignment for aligned reads.",
+help_SQ = "'--SQ' Boolean. Optional. Add SQ tags to the SAM file",
+help_blast = "output alignments in various Blast - like formats"\
+			 "'0' - pairwise"\
+			 "'1' - tabular(Blast - m 8 format)"\
+			 "'1 cigar' - tabular + column for CIGAR "\
+			 "'1 cigar qcov' - tabular + columns for CIGAR"\
+			 "and query coverage"\
+			 "'1 cigar qcov qstrand' - tabular + columns for CIGAR, "\
+			 "query coverage and strand",
 help_dbg_put_db = "",
 help_log = "'--log' : Output overall statistics. Default: Yes/True",
 help_num_alignments = "",

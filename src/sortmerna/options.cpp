@@ -26,6 +26,7 @@
 #include <cstring> // strerror, strrchr, memcpy, strcpy, strpbrk
 #include <fcntl.h>
 #include <functional> // std::invoke
+#include <filesystem>
 
 
 #ifdef __APPLE__
@@ -78,8 +79,41 @@ void Runopts::opt_reads(const std::string &file)
 		exit(EXIT_FAILURE);
 	}
 
+	// check file exists and can be read
+	auto fpath = std::filesystem::path(file);
+	auto fpath_a = std::filesystem::path(); // absolute path
+
+	if (std::filesystem::exists(fpath))
+	{
+		fpath_a = fpath;
+	}
+	else if (fpath.is_relative())
+	{
+		std::cout << "File  [" << file << "] appears to be a relative path. Trying to locate in current directory and in work directory";
+		fpath_a = std::filesystem::current_path() / file; // std::filesystem::path(file) makes no difference
+		if (std::filesystem::exists(fpath_a))
+		{
+			std::cout << "File [" << fpath_a << "] exists" << std::endl;
+		}
+		else
+		{
+			fpath_a = std::filesystem::path(workdir) / file;
+			if (!std::filesystem::exists(fpath_a))
+			{
+				std::cout << "File [" << fpath_a << "] does not exists" << std::endl;
+			}
+		}
+	}
+
+	std::ifstream ifs(fpath_a, std::ios_base::in | std::ios_base::binary);
+	if (!ifs.is_open())
+	{
+		ss << STAMP << "Failed to open file [" << fpath_a << "]";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+
 	bool gzipped = "gz" == file.substr(file.rfind('.') + 1); // file ends with 'gz'
-	std::ifstream ifs(file, std::ios_base::in | std::ios_base::binary);
 	std::string line;
 	Gzip gzip(gzipped);
 	int stat = gzip.getline(ifs, line);
@@ -96,10 +130,10 @@ void Runopts::opt_reads(const std::string &file)
 		if (RL_OK == stat) is_gz = true;
 	}
 
-	if (RL_OK == stat)
+	if (RL_OK == stat && line.size() > 0)
 	{
 		have_reads = true;
-		readfiles.push_back(file);
+		readfiles.push_back(fpath_a.generic_string());
 	}
 	else
 	{
@@ -167,7 +201,7 @@ void Runopts::opt_aligned(const std::string &file)
 {
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << " File name was not provided with option '--aligned [FILE]'. Using default name 'aligned'" << std::endl;
+		std::cout << STAMP << "File name was not provided with option '--aligned [FILE]'. Using default name 'aligned'" << std::endl;
 	}
 } // ~Runopts::opt_aligned
 

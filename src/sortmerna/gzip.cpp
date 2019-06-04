@@ -13,8 +13,50 @@
 
 #include "gzip.hpp"
 
+
+Gzip::Gzip(bool gzipped) 
+	: 
+	gzipped(gzipped), 
+	line_start(0), 
+	pstrm(0) 
+{ 
+	if (gzipped) 
+		init(); 
+}
+
+/*
+ * Called from constructor
+ */
+void Gzip::init()
+{
+	static z_stream strm; // TODO: better way i.e. no 'static' ?
+	pstrm = &strm;
+
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+	int ret = inflateInit2(&strm, 47);
+	if (ret != Z_OK) {
+		std::cerr << "Reader::initZstream failed. Error: " << ret << std::endl;
+		exit(EXIT_FAILURE);;
+	}
+
+	strm.avail_out = 0;
+
+	z_in.resize(IN_SIZE);
+	z_out.resize(OUT_SIZE);
+	std::fill(z_in.begin(), z_in.end(), 0); // fill IN buffer with 0s
+	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer wiht 0s
+} // ~Gzip::init
+
 /* 
  * return values: RL_OK (0) | RL_END (1)  | RL_ERR (-1)
+ *
+ * TODO: Make sure the stream is OK before calling this function.
+ *       std::getline doesn't return error if the stream is not 
+ *       readable/closed. It returns the same input it was passed.
  */
 int Gzip::getline(std::ifstream & ifs, std::string & line)
 {
@@ -155,30 +197,3 @@ int Gzip::inflatez(std::ifstream & ifs)
 
 	return ret;// == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 } // ~Gzip::inflatez
-
-/* 
- * Called from constructor
- */
-void Gzip::init()
-{
-	static z_stream strm; // TODO: better way i.e. no 'static' ?
-	pstrm = &strm;
-
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	int ret = inflateInit2(&strm, 47);
-	if (ret != Z_OK) {
-		std::cerr << "Reader::initZstream failed. Error: " << ret << std::endl;
-		exit(EXIT_FAILURE);;
-	}
-
-	strm.avail_out = 0;
-
-	z_in.resize(IN_SIZE);
-	z_out.resize(OUT_SIZE);
-	std::fill(z_in.begin(), z_in.end(), 0); // fill IN buffer with 0s
-	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer wiht 0s
-} // ~Gzip::init
