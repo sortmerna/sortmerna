@@ -75,7 +75,7 @@ void Runopts::opt_reads(const std::string &file)
 
 	if (file.size() == 0)
 	{
-		ERR("option '--reads' requires a path to a reads FASTA/FASTQ file");
+		ERR(help_reads);
 		exit(EXIT_FAILURE);
 	}
 
@@ -89,7 +89,7 @@ void Runopts::opt_reads(const std::string &file)
 	}
 	else if (fpath.is_relative())
 	{
-		std::cout << "File  [" << file << "] appears to be a relative path. Trying to locate in current directory and in work directory";
+		std::cout << "File  [" << file << "] appears to be a relative path. Trying to locate in current directory and in the working directory ...";
 		fpath_a = std::filesystem::current_path() / file; // std::filesystem::path(file) makes no difference
 		if (std::filesystem::exists(fpath_a))
 		{
@@ -97,10 +97,15 @@ void Runopts::opt_reads(const std::string &file)
 		}
 		else
 		{
+			std::cout << "File  [" << file << "] has not been found in the current directory. Trying the working directory ...";
 			fpath_a = std::filesystem::path(workdir) / file;
 			if (!std::filesystem::exists(fpath_a))
 			{
-				std::cout << "File [" << fpath_a << "] does not exists" << std::endl;
+				std::cout << STAMP
+					<< "Could not locate File [" << file << "] neither at current path [" << std::filesystem::current_path()
+					<< "] nor in Workdir [" << workdir << "]" << std::endl;
+				ERR(help_reads);
+				exit(EXIT_FAILURE);
 			}
 		}
 	}
@@ -157,25 +162,39 @@ void Runopts::opt_ref(const std::string &file)
 
 	if (file.size() == 0)
 	{
-		ERR("--ref must be followed by a file path (ex. --ref /path/to/file1.fasta)");
+		ERR(help_ref);
 		exit(EXIT_FAILURE);
 	}
 
-	// verify the reference file exists and can be read
-	// TODO:
-	// if index already exists, no refs files are needed (only the names) =>
-	// verify first the index exists based on the ref name. 
-	// Verify physical presence and compare against metadata that can be stored in an index descriptor
-	// or in the RocksDB DB (for this the options would need handle to the DB - OK?). 
-	if (filesize(file) <= 0)
+	// check file exists and can be read
+	auto fpath = std::filesystem::path(file);
+	auto fpath_a = std::filesystem::path(); // absolute path
+
+	if (std::filesystem::exists(fpath))
 	{
-		ss << STAMP << "File '" << file << "' either non-existent or empty or corrupt";
-		ERR(ss.str());
-		exit(EXIT_FAILURE);
+		fpath_a = fpath;
 	}
-	else
+	else if (fpath.is_relative())
 	{
-		std::cout << STAMP << "'" << file << "'" << std::endl;
+		std::cout << "File  [" << file << "] appears to be a relative path. Trying to locate in current directory and in the working directory ...";
+		fpath_a = std::filesystem::current_path() / file; // std::filesystem::path(file) makes no difference
+		if (std::filesystem::exists(fpath_a))
+		{
+			std::cout << "File [" << fpath_a << "] exists" << std::endl;
+		}
+		else
+		{
+			std::cout << "File  [" << file << "] has not been found in the current directory. Trying the working directory ...";
+			fpath_a = std::filesystem::path(workdir) / file;
+			if (!std::filesystem::exists(fpath_a))
+			{
+				std::cout << STAMP 
+					<< "Could not locate File [" << file << "] neither at current path [" << std::filesystem::current_path() 
+					<< "] nor in Workdir [" << workdir << "]" << std::endl;
+				ERR(help_ref);
+				exit(EXIT_FAILURE);
+			}
+		}
 	}
 
 	// check index file names are distinct
@@ -189,12 +208,14 @@ void Runopts::opt_ref(const std::string &file)
 		}
 	}
 
-	std::string basename = get_basename(file);
 	// derive index file prefix from the reference file name
 	// if we are here the Workdir is OK
-	std::string idx_file_pfx = workdir + "/" + IDX_DIR + "/" + string_hash(basename);
+	//std::string basename = get_basename(file);
+	//std::string idx_file_pfx = workdir + "/" + IDX_DIR + "/" + string_hash(basename);
+	auto fpath_base = std::filesystem::path(file).filename();
+	auto idx_file_pfx = std::filesystem::path(workdir) / IDX_DIR / string_hash(fpath_base.generic_string());
 
-	indexfiles.push_back(std::pair<std::string, std::string>(file, idx_file_pfx));
+	indexfiles.push_back(std::pair<std::string, std::string>(fpath_a.generic_string(), idx_file_pfx.generic_string()));
 } // ~Runopts::opt_ref
 
 void Runopts::opt_aligned(const std::string &file)

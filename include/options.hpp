@@ -69,30 +69,46 @@ OPT_MAX_POS = "max_pos";
 
 // help strings
 const std::string \
-help_ref = "'--ref FILE'. String. Required. Reference file (FASTA). Use mutliple '--ref' options to specify multiple files",
-help_reads = "'--reads FILE'. Required. Raw reads file (FASTA/FASTQ). Use '--reads' twice for files with paired reads",
-help_aligned = "'--aligned FILE'. Optional. String. Aligned reads file name prefix. Default: 'aligned'",
-help_other = "'--other FILE'. Optional. String. Non-aligned reads output file name prefix. Default 'other'",
+help_ref = 
+	"'--ref FILE'. String. Required. Reference file (FASTA).\n"
+		"\tUse mutliple times, once per each reference file",
+help_reads = 
+	"'--reads FILE'. String. Required. Raw reads file (FASTA/FASTQ).\n"
+		"\tUse two '--reads' for files with paired reads",
+help_aligned = "'--aligned FILE'. String. Optional. Aligned reads file name prefix. Default: 'aligned'",
+help_other = "'--other FILE'. String. Optional. Non-aligned reads output file name prefix. Default 'other'",
 help_fastx = "'--fastx'. Boolean. Optional. Output aligned reads into FASTA/FASTQ file",
-help_workdir = "'--workdir PATH'. String. Optional. Working directory path for storing Reference index, Key-value database and the output. Default: USERDIR/sortmerna/",
+help_workdir = 
+	"'--workdir PATH'. String. Optional.\n"
+	"Working directory path for storing Reference index,\n"
+	"Key-value database and the output.\n"
+	"Default: USERDIR/sortmerna/",
 help_sam = "'--sam' Boolean. Optional. Output SAM alignment for aligned reads.",
 help_SQ = "'--SQ' Boolean. Optional. Add SQ tags to the SAM file",
-help_blast = "output alignments in various Blast - like formats"\
-			 "'0' - pairwise"\
-			 "'1' - tabular(Blast - m 8 format)"\
-			 "'1 cigar' - tabular + column for CIGAR "\
-			 "'1 cigar qcov' - tabular + columns for CIGAR"\
-			 "and query coverage"\
-			 "'1 cigar qcov qstrand' - tabular + columns for CIGAR, "\
-			 "query coverage and strand",
+help_blast = 
+	"output alignments in various Blast - like formats\n"
+		"\t'0' - pairwise\n"
+		"\t'1' - tabular(Blast - m 8 format)\n"
+		"\t'1 cigar' - tabular + column for CIGAR\n"
+		"\t'1 cigar qcov' - tabular + columns for CIGAR\n"
+		"\t\tand query coverage\n"
+		"\t'1 cigar qcov qstrand' - tabular + columns for CIGAR,\n"
+		"\t\tquery coverage and strand",
 help_dbg_put_db = "",
 help_log = "'--log' : Output overall statistics. Default: Yes/True",
-help_num_alignments = "",
+help_num_alignments = 
+	"'--num_alignments INT' Positive integer (INT >=0). Optional.\n"
+	"Report first INT alignments per read reaching E-value\n"
+	"If INT = 0, all alignments will be output",
 help_best = "",
 help_min_lis = "",
 help_print_all_reads = "",
-help_paired_in = "",
-help_paired_out = "",
+help_paired_in = 
+	"'--paired_in' Boolean. If one of the paired-end reads is Aligned,\n"
+	"\tput both reads into Aligned fasta/q file",
+help_paired_out = 
+	"'--paired_out' Boolean. If one of the paired-end reads is Non-aligned,\n"
+	"\tput both reads into Non-Aligned fasta/q file",
 help_match = "",
 help_mismatch = "",
 help_gap_open = "",
@@ -160,10 +176,9 @@ public:
 	typedef void (Runopts::*OptsMemFunc)(const std::string&); // pointer to member function
 
 public:
-	std::string workdir;
+	std::string workdir; // Directory for index, KVDB, Output
 	std::string cmdline;
-	std::string kvdbPath; // '-d' (opt_d) key-value database for alignment results
-	//std::string readsrev; // '--reads' | '--reads-gz' reversed reads file when processing paired reads
+	std::string kvdbPath; // help_d TODO: remove
 	std::string aligned_out_pfx = "aligned"; // '--aligned' aligned reads output file prefix
 	std::string other_out_pfx = "other"; // '--other' rejected reads output file prefix
 
@@ -177,7 +192,7 @@ public:
 
 	int queue_size_max = 100; // max number of Reads in the Read and Write queues. 10 works OK.
 
-	int32_t num_alignments = -1; // [3] '--num_alignments': output the first 'num_alignments'
+	int32_t num_alignments = -1; // [3] help_num_alignments
 	int32_t min_lis = -1; // '--min_lis N' search all alignments having the first N longest LIS
 	int32_t seed_hits = -1;
 	int32_t num_best_hits = 0;
