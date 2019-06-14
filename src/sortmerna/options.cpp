@@ -39,7 +39,7 @@
 
 // forward
 void about();
-void help();
+//void help();
 std::string get_user_home(); // util.cpp
 unsigned int list_dir(std::string dpath);
 bool dirExists(std::string dpath);
@@ -108,6 +108,13 @@ void Runopts::opt_reads(const std::string &file)
 				exit(EXIT_FAILURE);
 			}
 		}
+	}
+	else
+	{
+		ss << STAMP <<
+			"The file [" << file << "] is not an existing/valid absolute or relative path\n" << help_reads;
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
 	}
 
 	std::ifstream ifs(fpath_a, std::ios_base::in | std::ios_base::binary);
@@ -195,6 +202,13 @@ void Runopts::opt_ref(const std::string &file)
 				exit(EXIT_FAILURE);
 			}
 		}
+	}
+	else
+	{
+		ss << STAMP <<
+			"The file [" << file << "] is not an existing/valid absolute or relative path\n" << help_ref;
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
 	}
 
 	// check index file names are distinct
@@ -309,7 +323,7 @@ void Runopts::opt_match(const std::string &val)
 	else
 	{
 		ERR("--match [INT] has been set twice, please verify your choice");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optMatch
@@ -336,7 +350,7 @@ void Runopts::opt_mismatch(const std::string &val)
 	else
 	{
 		ERR("--mismatch [INT] has been set twice, please verify your choice");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_mismatch
@@ -363,7 +377,7 @@ void Runopts::opt_gap_open(const std::string &val)
 	else
 	{
 		ERR("--gap_open [INT] has been set twice, please verify your choice");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_gap_open
@@ -389,7 +403,7 @@ void Runopts::opt_gap_ext(const std::string &val)
 	else
 	{
 		ERR("--gap_ext [INT] has been set twice, please verify your choice");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_gap_ext
@@ -415,7 +429,7 @@ void Runopts::opt_num_seeds(const std::string &val)
 	else
 	{
 		ERR("--num_seeds [INT] has been set twice, please verify your choice");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::opt_num_seeds
@@ -537,7 +551,7 @@ void Runopts::opt_min_lis(const std::string &val)
 	if (min_lis_set)
 	{
 		ERR(": --min_lis [INT] has been set twice, please verify your choice.");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -563,7 +577,7 @@ void Runopts::opt_best(const std::string &val)
 	if (best_set)
 	{
 		ERR(" : --best [INT] has been set twice, please verify your choice.");
-		help();
+		print_help();
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -731,7 +745,7 @@ void Runopts::opt_unknown(char **argv, int &narg, char * opt)
 	std::stringstream ss;
 	ss << " : option --" << opt << " not recognized";
 	ERR(ss.str());
-	help();
+	print_help();
 	exit(EXIT_FAILURE);
 } // ~Runopts::opt_unknown
 
@@ -794,7 +808,8 @@ void Runopts::opt_R(const std::string &val)
 void Runopts::opt_h(const std::string &val)
 {
 	about();
-	help();
+	print_help();
+	//help();
 	exit(0);
 } // ~Runopts::opt_h
 
@@ -915,7 +930,7 @@ void Runopts::opt_default(const std::string &opt)
 	std::stringstream ss;
 	ss << STAMP << "Option: '" << opt << "' is not recognized";
 	ERR(ss.str());
-	help();
+	print_help();
 	exit(EXIT_FAILURE);
 } // ~Runopts::opt_default
 
@@ -1219,7 +1234,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		{
 			//std::string descr = std::get<1>(options.at(opt.first));
 			//std::get<2>(options.at(opt.first))(opt.second); // call processing function for the given option
-			std::invoke(std::get<2>(options.at(opt.first)), this, opt.second);
+			std::invoke(std::get<3>(options.at(opt.first)), this, opt.second);
 		}
 		// passed option is not recognized
 		else
@@ -1242,14 +1257,15 @@ void Runopts::validate()
 	if (!(is_fastxout || blastout || samout || otumapout || de_novo_otu))
 	{
 		blastout = true;
-		std::cout << STAMP << "No output format has been chosen (fastx/sam/blast/otu_map/log), Using default blast" << std::endl;
+		std::cout << STAMP 
+			<< "No output format has been chosen (fastx/sam/blast/otu_map). Using default blast" 
+			<< std::endl;
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!is_fastxout && (pairedin || pairedout))
 	{
-		ERR(": options '--paired_in' and '--paired_out' must be accompanied by option '--fastx'.\n"
-			"  These BOOLs are for FASTA and FASTQ output files to maintain paired reads together.");
+		ERR("options '--paired_in' and '--paired_out' must be accompanied by option '--fastx'.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1257,33 +1273,32 @@ void Runopts::validate()
 	if (otumapout && num_alignments_set)
 	{
 		ERR("'--otu_map' cannot be set together with --num_alignments [INT].\n"
-			"   The option --num_alignments [INT] doesn't keep track of"
-			" the best alignment which is required for constructing an OTU map.\n"
-			"   Use --otu_map with --best [INT] instead.");
+			"\tThe option --num_alignments [INT] doesn't keep track of"
+			"\tthe best alignment which is required for constructing an OTU map.\n"
+			"\tUse --otu_map with --best [INT] instead.");
 		exit(EXIT_FAILURE);
 	}
 
 	// If --num_alignments output was chosen, check an alignment format has also been chosen
 	if (num_alignments_set && !(blastout || samout || is_fastxout))
 	{
-		ERR(" : --num_alignments [INT] has been set but no output "
-			"format has been chosen (--blast, --sam or --fastx).");
+		ERR("--num_alignments [INT] has been set but no output format has been chosen (--blast | --sam | --fastx).");
 		exit(EXIT_FAILURE);
 	}
 
 	// If --best output was chosen, check an alignment format has also been chosen
 	if (best_set && !(blastout || samout || otumapout))
 	{
-		ERR(" : --best [INT] has been set but no output "
-			"format has been chosen (--blast or --sam or --otu_map).");
+		ERR("--best [INT] has been set but no output format has been chosen (--blast | --sam | --otu_map).");
 		exit(EXIT_FAILURE);
 	}
 
 	// Check gap extend score < gap open score
 	if (gap_extension > gap_open)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --gap_ext [INT] must be less than --gap_open [INT].\n\n",
-			RED, COLOFF, __LINE__, __FILE__);
+		std::stringstream ss;
+		ss << STAMP << "--gap_ext [INT] must be less than --gap_open [INT].";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -1291,8 +1306,9 @@ void Runopts::validate()
 	// and SAM formats (not pairwise)
 	if (print_all_reads && blastout && blastFormat != BlastFormat::TABULAR)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --print_all_reads [BOOL] can only be used with BLAST-like "
-			"tabular format.\n\n", RED, COLOFF, __LINE__, __FILE__);
+		std::stringstream ss;
+		ss << STAMP << "--print_all_reads [BOOL] can only be used with BLAST-like";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -1300,38 +1316,46 @@ void Runopts::validate()
 	// --num_alignments outputs > 1 alignments)
 	if (best_set && num_alignments_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --best [INT] and --num_alignments [INT] cannot "
-			"be set together. \n", RED, COLOFF, __LINE__, __FILE__);
-		fprintf(stderr, "  (--best [INT] will search INT highest scoring reference sequences "
-			"and output a single best alignment, whereas --num_alignments [INT] will "
-			"output the first INT alignments).\n\n");
+		std::stringstream ss;
+		ss << STAMP 
+			<< "--best [INT] and --num_alignments [INT] cannot be set together.\n" 
+				"--best [INT] will search INT highest scoring reference sequences\n"
+				"and output a single best alignment, whereas --num_alignments [INT]\n"
+				"will output the first INT alignments.";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
 	}
 
 	// Option --min_lis [INT] can only accompany --best [INT]
 	if (min_lis_set && num_alignments_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --min_lis [INT] and --num_alignments [INT] cannot "
-			"be set together. \n", RED, COLOFF, __LINE__, __FILE__);
-		fprintf(stderr, "  --min_lis [INT] can only be used with --best [INT] (refer to "
-			"the User manual on this option).\n\n");
+		std::stringstream ss;
+		ss << STAMP
+			<< "--min_lis [INT] and --num_alignments [INT] cannot be set together.\n"
+			"\t--min_lis [INT] can only be used with --best [INT] (see the User manual).";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
 	// Option --mis_lis INT accompanies --best INT, cannot be set alone
 	if (min_lis_set && !best_set)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --min_lis [INT] must be set together with --best "
-			"[INT].\n\n", RED, COLOFF, __LINE__, __FILE__);
+		std::stringstream ss;
+		ss << STAMP
+			<< "--min_lis [INT] must be set together with --best [INT].";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
 	// %id and %coverage can only be used with --otu_map
-	if (((align_id > 0) || (align_cov > 0)) && !otumapout)
+	if ((align_id > 0 || align_cov > 0) && !otumapout)
 	{
-		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] --id [INT] and --coverage [INT] can only be used "
-			"together with --otu_map.\n", RED, COLOFF, __LINE__, __FILE__);
-		fprintf(stderr, "  These two options are used for constructing the OTU map by "
-			"filtering alignments passing the E-value threshold.\n\n");
+		std::stringstream ss;
+		ss << STAMP
+			<< "--id [INT] and --coverage [INT] can only be used together with --otu_map.\n"
+			"\tThese two options are used for constructing the OTU map\n"
+			"\tby filtering alignments passing the E-value threshold.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -1411,6 +1435,34 @@ std::string Runopts::to_bin_string()
 	return "TODO";
 }
 
+void Runopts::print_help()
+{
+	std::stringstream ss;
+	std::string req;
+	std::string pfx;
+
+	// description width: 56
+
+	ss << help_header << std::endl;
+	for (auto opt : options)
+	{
+		req = std::get<0>(opt.second) ? " Required " : " Optional ";
+		pfx = opt.first.size() > 1 ? "--" : "-";
+		std::string space_0 = "    "; // 4 chars
+		std::string space_1 = "";
+		std::string space_2 = "";
+		int space_1_size = opt.first.size() == 1 ? 16 - opt.first.size() : 15 - opt.first.size();
+		int space_2_size = 8 - std::get<1>(opt.second).size();
+		for (int cnt = 0; cnt < space_1_size; ++cnt)
+			space_1 += " ";
+		for (int cnt = 0; cnt < space_2_size; ++cnt)
+			space_2 += " ";
+
+		ss << space_0 << pfx << opt.first << space_1 << std::get<1>(opt.second) << space_2 << req << "  " << std::get<2>(opt.second) << std::endl;
+	}
+	std::cout << ss.str();
+}
+
 void Runopts::store_to_db(KeyValueDatabase &kvdb)
 {}
 
@@ -1434,7 +1486,7 @@ void about()
 		<< "  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the" << std::endl
 		<< "                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl
 		<< "                See the GNU Lesser General Public License for more details." << std::endl
-		<< "  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com " << std::endl
+		<< "  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com" << std::endl
 		<< "                Laurent Noé      laurent.noe@lifl.fr"      << std::endl
 		<< "                Pierre Pericard  pierre.pericard@lifl.fr"  << std::endl
 		<< "                Daniel McDonald  wasade@gmail.com"         << std::endl
@@ -1447,7 +1499,7 @@ void about()
 
 
 
-/*! @fn printlist()
+/*! TODO: Remove. Replaced with Readopts::print_help  20190614
 *  @brief outputs options menu
 *  @param none
 *  @return none

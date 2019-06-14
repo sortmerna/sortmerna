@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /**
  * FILE: options.hpp
  * Created: Aug 19, 2017 Sat
@@ -64,83 +64,158 @@ OPT_THPP = "thpp",
 OPT_THREP = "threp",
 OPT_DBG_PUT_DB = "dbg_put_db",
 OPT_TMPDIR = "tmpdir",
-OPT_INTERVAL = "INTERVAL",
+OPT_INTERVAL = "interval",
 OPT_MAX_POS = "max_pos";
 
 // help strings
 const std::string \
+help_header =
+"  Usage:   sortmerna --ref FILE [--ref FILE] --reads FWD_READS [--reads REV_READS] [OPTIONS]:\n"
+"  -------------------------------------------------------------------------------------------------------------\n"
+"  | option              type-format       description                                              default    |\n"
+"  -------------------------------------------------------------------------------------------------------------\n",
 help_ref = 
-	"'--ref FILE'. String. Required. Reference file (FASTA).\n"
-		"\tUse mutliple times, once per each reference file",
+	"Absolute or relative path to a Reference file (FASTA).\n"
+	"                                         Use mutliple times, once per each reference file",
 help_reads = 
-	"'--reads FILE'. String. Required. Raw reads file (FASTA/FASTQ).\n"
-		"\tUse two '--reads' for files with paired reads",
-help_aligned = "'--aligned FILE'. String. Optional. Aligned reads file name prefix. Default: 'aligned'",
-help_other = "'--other FILE'. String. Optional. Non-aligned reads output file name prefix. Default 'other'",
-help_fastx = "'--fastx'. Boolean. Optional. Output aligned reads into FASTA/FASTQ file",
+	"Raw reads file (FASTA/FASTQ).\n"
+	"                                         Use twice for files with paired reads",
+help_aligned = 
+	"Aligned reads file name prefix.                            'aligned'\n"
+	"                                         TODO: Remove",
+help_other = 
+	"Non-aligned reads output file name prefix                  'other'\n"
+	"                                         TODO: Remove.",
+help_fastx = 
+	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 
-	"'--workdir PATH'. String. Optional.\n"
-	"Working directory path for storing Reference index,\n"
-	"Key-value database and the output.\n"
-	"Default: USERDIR/sortmerna/",
-help_sam = "'--sam' Boolean. Optional. Output SAM alignment for aligned reads.",
-help_SQ = "'--SQ' Boolean. Optional. Add SQ tags to the SAM file",
+	"Working directory path for storing Reference index.          USERDIR/sortmerna/\n"
+	"                                         Key-value database and the output.\n",
+help_sam = 
+	"Output SAM alignment for aligned reads.",
+help_SQ = 
+	"Add SQ tags to the SAM file",
 help_blast = 
 	"output alignments in various Blast - like formats\n"
-		"\t'0' - pairwise\n"
-		"\t'1' - tabular(Blast - m 8 format)\n"
-		"\t'1 cigar' - tabular + column for CIGAR\n"
-		"\t'1 cigar qcov' - tabular + columns for CIGAR\n"
-		"\t\tand query coverage\n"
-		"\t'1 cigar qcov qstrand' - tabular + columns for CIGAR,\n"
-		"\t\tquery coverage and strand",
-help_dbg_put_db = "",
-help_log = "'--log' : Output overall statistics. Default: Yes/True",
+	"                                         '0'                    - pairwise\n"
+	"                                         '1'                    - tabular(Blast - m 8 format)\n"
+	"                                         '1 cigar'              - tabular + column for CIGAR\n"
+	"                                         '1 cigar qcov'         - tabular + columns for CIGAR\n"
+	"                                                                  and query coverage\n"
+	"                                         '1 cigar qcov qstrand' - tabular + columns for CIGAR,\n"
+	"                                                                  query coverage and strand",
+help_dbg_put_db = 
+	"",
+help_log = 
+	"Output overall statistics.                                 True\n"
+	"                                         TODO: remove",
 help_num_alignments = 
-	"'--num_alignments INT' Positive integer (INT >=0). Optional.\n"
-	"Report first INT alignments per read reaching E-value\n"
-	"If INT = 0, all alignments will be output",
-help_best = "",
-help_min_lis = "",
-help_print_all_reads = "",
+	"Positive integer (INT >=0). Optional.\n"
+	"                                         Report first INT alignments per read reaching E-value\n"
+	"                                         If INT = 0, all alignments will be output",
+help_best = 
+	"Report INT best alignments per read reaching E-value       1\n"
+	"                                         by searching --min_lis INT candidate alignments\n"
+	"                                         (if 0 - all candidate alignments will be searched)",
+help_min_lis = 
+	"Search all alignments having the first INT longest LIS\n"
+	"                                         LIS stands for Longest Increasing Subsequence,\n"
+	"                                         it is computed using seeds' positions to expand hits into\n"
+	"                                         longer matches prior to Smith - Waterman alignment.",
+help_print_all_reads = 
+	"Output null alignment strings for non-aligned reads        False\n"
+	"                                         to SAM and/or BLAST tabular files",
 help_paired_in = 
-	"'--paired_in' Boolean. If one of the paired-end reads is Aligned,\n"
-	"\tput both reads into Aligned fasta/q file",
+	"If one of the paired-end reads is Aligned,                 False\n"
+	"                                         put both reads into Aligned FASTA/Q file",
 help_paired_out = 
-	"'--paired_out' Boolean. If one of the paired-end reads is Non-aligned,\n"
-	"\tput both reads into Non-Aligned fasta/q file",
-help_match = "",
-help_mismatch = "",
-help_gap_open = "",
-help_gap_ext = "",
-help_N = "",
-help_F = "",
-help_R = "",
-help_e = "",
-help_v = "",
-help_id = "",
-help_coverage = "",
-help_de_novo_otu = "",
-help_otu_map = "",
-help_passes = "",
-help_edges = "",
-help_num_seeds = "",
-help_pid = "'--pid' Add pid to output file names. Default: No/False",
-help_full_search = "",
-help_h = "",
-help_version = "",
-help_cmd = "",
-help_task = "",
-help_d = "key-value datastore FULL folder path. Default: USERDIR/kvdb",
-help_a = "",
-help_threads = "",
-help_thpp = "",
-help_threp = "",
-help_tmpdir = "Indexing: directory for writing temporary files when building the reference index",
-help_interval = "Indexing: Positive integer: index every Nth L-mer in the reference database e.g. '--interval 2'. Default 1",
-help_m = "Indexing: the amount of memory (in Mbytes) for building the index. Default 3072",
-help_L = "Indexing: seed length. Default 18",
-help_max_pos = "Indexing: maximum (integer) number of positions to store for each unique L-mer. Default 1000. If 0 all positions are stored."
+	"If one of the paired-end reads is Non-aligned,             False\n"
+	"                                         put both reads into Non-Aligned FASTA/Q file",
+help_match = 
+	"SW score (positive integer) for a match.                   2",
+help_mismatch = 
+	"SW penalty (negative integer) for a mismatch.             -3",
+help_gap_open = 
+	"SW penalty (positive integer) for introducing a gap.       5",
+help_gap_ext = 
+	"SW penalty (positive integer) for extending a gap.         2",
+help_N = 
+	"SW penalty for ambiguous letters (N's) scored\n"
+	"                                         as --mismatch",
+help_F = 
+	"Search only the forward strand.                            False",
+help_R = 
+	"Search only the reverse-complementary strand.              False",
+help_e = 
+	"E-value threshold.                                         1",
+help_v = 
+	"Produce verbose output.                                    False",
+help_id = 
+	"%%id similarity threshold (the alignment                   0.97\n"
+	"                                         must still pass the E-value threshold).",
+help_coverage = 
+	"%%query coverage threshold (the alignment must             0.97\n"
+	"                                         still pass the E-value threshold)",
+help_de_novo_otu = 
+	"FASTA/FASTQ file for reads matching database < %%id        False\n"
+	"                                         (set using --id) and < %%cov (set using --coverage)\n"
+	"                                         (alignment must still pass the E-value threshold).",
+help_otu_map = 
+	"Output OTU map (input to QIIME's make_otu_table.py).       False",
+help_passes = 
+	"Three intervals at which to place the seed on the read     L,L/2,3\n"
+	"                                         (L is the seed length)",
+help_edges = 
+	"Number (or percent if INT followed by %% sign) of          4\n"
+	"                                         nucleotides to add to each edge of the read\n"
+	"                                         prior to SW local alignment",
+help_num_seeds = 
+	"Number of seeds matched before searching                   2\n"
+	"                                         for candidate LIS",
+help_pid = 
+	"Add pid to output file names.                              False",
+help_full_search = 
+	"Search for all 0-error and 1-error seed                    False\n"
+	"                                         matches in the index rather than stopping\n"
+	"                                         after finding a 0-error match (<1%% gain in\n"
+	"                                         sensitivity with up four-fold decrease in speed)",
+help_h = 
+	"Print help information",
+help_version = 
+	"Print SortMeRNA version number",
+help_cmd = 
+	"Launch an interactive session (command prompt)             False",
+help_task = 
+	"Processing Task:                                           4\n"
+	"                                         0 - align. Only perform alignment\n"
+	"                                         1 - post-processing (log writing)\n"
+	"                                         2 - generate reports\n"
+	"                                         3 - align and post-process\n"
+	"                                         4 - all",
+help_d 
+	= "key-value datastore FULL folder path.                    USERDIR/kvdb",
+help_a = 
+	"Number of threads to use                                   numCores",
+help_threads = 
+	"Number of Read:Write:Process threads to use                1:1:numCores",
+help_thpp = 
+	"Number of Post-Processing Read:Process threads to use      1:1",
+help_threp = 
+	"Number of Report Read:Process threads to use               1:1",
+help_tmpdir = 
+	"Indexing: directory for writing temporary files when\n"
+	"                                         building the reference index",
+help_interval = 
+	"Indexing: Positive integer: index every Nth L-mer in       1\n"
+	"                                         the reference database e.g. '--interval 2'.",
+help_m = 
+	"Indexing: the amount of memory (in Mbytes) for building    3072\n"
+	"                                         the index.",
+help_L = 
+	"Indexing: seed length.                                     18",
+help_max_pos = 
+	"Indexing: maximum (integer) number of positions to store   1000\n"
+	"                                         for each unique L-mer. If 0 all positions are stored."
 ;
 
 /* 
@@ -174,6 +249,8 @@ public:
 	~Runopts() {}
 
 	typedef void (Runopts::*OptsMemFunc)(const std::string&); // pointer to member function
+
+	void print_help();
 
 public:
 	std::string workdir; // Directory for index, KVDB, Output
@@ -335,67 +412,68 @@ private:
 	bool min_lis_set = false;
 	bool num_alignments_set = false;
 	bool best_set = false;
-	bool have_reads = false; // '--reads' flags reads file is plain text and can be read
+	bool have_reads = false; // flags reads file is plain text and can be read
 
 	// container for options passed to the program
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map specifies all possible options
 	//std::map<std::string, std::tuple<bool, std::string, void(*)(const std::string&)>> options
-	std::map<std::string, std::tuple<bool, std::string, OptsMemFunc>> options
+	std::map<std::string, std::tuple<bool, std::string, std::string, OptsMemFunc>> options
 	{
-		//     |                      |         |               |_pointer to option processing function
-		//     |                      |         |_option help string
+		//     |                      |        |            |          |_ pointer to option processing function
+		//     |                      |        |            |_ option help string
+		//     |                      |        |_ option value type
 		//     |_option name          |_flag is option required
-		{OPT_REF,             {true, help_ref, &Runopts::opt_ref}},
-		{OPT_READS,           {true, help_reads, &Runopts::opt_reads}},
-		{OPT_ALIGNED,         {false, help_aligned, &Runopts::opt_aligned}},
-		{OPT_OTHER,           {false, help_other, &Runopts::opt_other}},
-		{OPT_WORKDIR,         {false, help_workdir, &Runopts::opt_workdir}},
-		{OPT_FASTX,           {false, help_fastx, &Runopts::opt_fastx}},
-		{OPT_SAM,             {false, help_sam, &Runopts::opt_sam}},
-		{OPT_SQ,              {false, help_SQ, &Runopts::opt_SQ}},
-		{OPT_BLAST,           {false, help_blast, &Runopts::opt_blast}},
-		{OPT_LOG,             {false, help_log, &Runopts::opt_log}},
-		{OPT_NUM_ALIGNMENTS,  {false, help_num_alignments, &Runopts::opt_num_alignments}},
-		{OPT_BEST,            {false, help_best, &Runopts::opt_best}},
-		{OPT_MIN_LIS,         {false, help_min_lis, &Runopts::opt_min_lis}},
-		{OPT_PRINT_ALL_READS, {false, help_print_all_reads, &Runopts::opt_print_all_reads}},
-		{OPT_PAIRED_IN,       {false, help_paired_in, &Runopts::opt_paired_in}},
-		{OPT_PAIRED_OUT,      {false, help_paired_out, &Runopts::opt_paired_out}},
-		{OPT_MATCH,           {false, help_match, &Runopts::opt_match}},
-		{OPT_MISMATCH,        {false, help_mismatch, &Runopts::opt_mismatch}},
-		{OPT_GAP_OPEN,        {false, help_gap_open, &Runopts::opt_gap_open}},
-		{OPT_GAP_EXT,         {false, help_gap_ext, &Runopts::opt_gap_ext}},
-		{OPT_N,               {false, help_N, &Runopts::opt_N}},
-		{OPT_F,               {false, help_F, &Runopts::opt_F}},
-		{OPT_R,               {false, help_R, &Runopts::opt_R}},
-		{OPT_E,               {false, help_e, &Runopts::opt_e}},
-		{OPT_V,               {false, help_v, &Runopts::opt_v}},
-		{OPT_ID,              {false, help_id, &Runopts::opt_id}},
-		{OPT_COVERAGE,        {false, help_coverage, &Runopts::opt_coverage}},
-		{OPT_DE_NOVO_OTU,     {false, help_de_novo_otu, &Runopts::opt_de_novo_otu}},
-		{OPT_OUT_MAP,         {false, help_otu_map, &Runopts::opt_otu_map}},
-		{OPT_PASSES,          {false, help_passes, &Runopts::opt_passes}},
-		{OPT_EDGES,           {false, help_edges, &Runopts::opt_edges}},
-		{OPT_NUM_SEEDS,       {false, help_num_seeds, &Runopts::opt_num_seeds}},
-		{OPT_FULL_SEARCH,     {false, help_full_search, &Runopts::opt_full_search}},
-		{OPT_PID,             {false, help_pid, &Runopts::opt_pid}},
-		{OPT_H,               {false, help_h, &Runopts::opt_h}},
-		{OPT_VERSION,         {false, help_version, &Runopts::opt_version}},
-		{OPT_CMD,             {false, help_cmd, &Runopts::opt_cmd}},
-		{OPT_TASK,            {false, help_task, &Runopts::opt_task}},
-		{OPT_D,               {false, help_d, &Runopts::opt_d}},
-		{OPT_A,               {false, help_a, &Runopts::opt_a}},
-		{OPT_THREADS,         {false, help_threads, &Runopts::opt_threads}},
-		{OPT_THPP,            {false, help_thpp, &Runopts::opt_thpp}},
-		{OPT_THREP,           {false, help_threp, &Runopts::opt_threp}},
-		{OPT_DBG_PUT_DB,      {false, help_dbg_put_db, &Runopts::opt_dbg_put_db}},
-		{OPT_TMPDIR,          {false, help_tmpdir, &Runopts::opt_tmpdir}},
-		{OPT_INTERVAL,        {false, help_interval, &Runopts::opt_interval}},
-		{OPT_M,               {false, help_m, &Runopts::opt_m}},
-		{OPT_L,               {false, help_L, &Runopts::opt_L}},
-		{OPT_MAX_POS,         {false, help_max_pos, &Runopts::opt_max_pos}}
+		{OPT_REF,             {true,  "PATH",   help_ref, &Runopts::opt_ref}},
+		{OPT_READS,           {true,  "PATH" ,  help_reads, &Runopts::opt_reads}},
+		{OPT_ALIGNED,         {false, "string", help_aligned, &Runopts::opt_aligned}},
+		{OPT_OTHER,           {false, "string", help_other, &Runopts::opt_other}},
+		{OPT_WORKDIR,         {false, "PATH",   help_workdir, &Runopts::opt_workdir}},
+		{OPT_FASTX,           {false, "BOOL",   help_fastx, &Runopts::opt_fastx}},
+		{OPT_SAM,             {false, "BOOL",   help_sam, &Runopts::opt_sam}},
+		{OPT_SQ,              {false, "BOOL",   help_SQ, &Runopts::opt_SQ}},
+		{OPT_BLAST,           {false, "BOOL",   help_blast, &Runopts::opt_blast}},
+		{OPT_LOG,             {false, "BOOL",   help_log, &Runopts::opt_log}},
+		{OPT_NUM_ALIGNMENTS,  {false, "INT",    help_num_alignments, &Runopts::opt_num_alignments}},
+		{OPT_BEST,            {false, "INT",    help_best, &Runopts::opt_best}},
+		{OPT_MIN_LIS,         {false, "INT",    help_min_lis, &Runopts::opt_min_lis}},
+		{OPT_PRINT_ALL_READS, {false, "BOOL",   help_print_all_reads, &Runopts::opt_print_all_reads}},
+		{OPT_PAIRED_IN,       {false, "BOOL",   help_paired_in, &Runopts::opt_paired_in}},
+		{OPT_PAIRED_OUT,      {false, "BOOL",   help_paired_out, &Runopts::opt_paired_out}},
+		{OPT_MATCH,           {false, "INT",    help_match, &Runopts::opt_match}},
+		{OPT_MISMATCH,        {false, "INT",    help_mismatch, &Runopts::opt_mismatch}},
+		{OPT_GAP_OPEN,        {false, "INT",    help_gap_open, &Runopts::opt_gap_open}},
+		{OPT_GAP_EXT,         {false, "INT",    help_gap_ext, &Runopts::opt_gap_ext}},
+		{OPT_N,               {false, "INT",    help_N, &Runopts::opt_N}},
+		{OPT_F,               {false, "BOOL",   help_F, &Runopts::opt_F}},
+		{OPT_R,               {false, "BOOL",   help_R, &Runopts::opt_R}},
+		{OPT_E,               {false, "DOUBLE", help_e, &Runopts::opt_e}},
+		{OPT_V,               {false, "BOOL",   help_v, &Runopts::opt_v}},
+		{OPT_ID,              {false, "DOUBLE", help_id, &Runopts::opt_id}},
+		{OPT_COVERAGE,        {false, "DOUBLE", help_coverage, &Runopts::opt_coverage}},
+		{OPT_DE_NOVO_OTU,     {false, "BOOL",   help_de_novo_otu, &Runopts::opt_de_novo_otu}},
+		{OPT_OUT_MAP,         {false, "BOOL",   help_otu_map, &Runopts::opt_otu_map}},
+		{OPT_PASSES,          {false, "INT,INT,INT", help_passes, &Runopts::opt_passes}},
+		{OPT_EDGES,           {false, "INT",    help_edges, &Runopts::opt_edges}},
+		{OPT_NUM_SEEDS,       {false, "INT",    help_num_seeds, &Runopts::opt_num_seeds}},
+		{OPT_FULL_SEARCH,     {false, "BOOL",   help_full_search, &Runopts::opt_full_search}},
+		{OPT_PID,             {false, "BOOL",   help_pid, &Runopts::opt_pid}},
+		{OPT_H,               {false, "BOOL",   help_h, &Runopts::opt_h}},
+		{OPT_VERSION,         {false, "BOOL",   help_version, &Runopts::opt_version}},
+		{OPT_CMD,             {false, "BOOL",   help_cmd, &Runopts::opt_cmd}},
+		{OPT_TASK,            {false, "INT",    help_task, &Runopts::opt_task}},
+		{OPT_D,               {false, "PATH",   help_d, &Runopts::opt_d}},
+		{OPT_A,               {false, "INT",    help_a, &Runopts::opt_a}},
+		{OPT_THREADS,         {false, "INT:INT:INT", help_threads, &Runopts::opt_threads}},
+		{OPT_THPP,            {false, "INT:INT:INT", help_thpp, &Runopts::opt_thpp}},
+		{OPT_THREP,           {false, "INT:INT:INT", help_threp, &Runopts::opt_threp}},
+		{OPT_DBG_PUT_DB,      {false, "BOOL",   help_dbg_put_db, &Runopts::opt_dbg_put_db}},
+		{OPT_TMPDIR,          {false, "PATH",   help_tmpdir, &Runopts::opt_tmpdir}},
+		{OPT_INTERVAL,        {false, "INT",    help_interval, &Runopts::opt_interval}},
+		{OPT_M,               {false, "INT",    help_m, &Runopts::opt_m}},
+		{OPT_L,               {false, "INT",    help_L, &Runopts::opt_L}},
+		{OPT_MAX_POS,         {false, "INT",    help_max_pos, &Runopts::opt_max_pos}}
 	}; // ~map options
 }; // ~struct Runopts
 // ~options.cpp

@@ -164,9 +164,11 @@ else()
 		build_version
 		smr_objs
 		alp # this is a transitive dependency of smr_objs but the linking fails without it. Why?
-		# the following are all transitive dependencies of smr_objs i.e. no need to link: 
-		# RocksDB::rocksdb RapidJSON::RapidJSON ZLIB::ZLIB Threads::Threads (rockdb deps)
 		$<TARGET_OBJECTS:cmph>
+		${ROCKSDB_LIB}
+		${CMAKE_DL_LIBS}
+		# the following are all transitive dependencies of smr_objs i.e. no need to link: 
+		# RapidJSON::RapidJSON ZLIB::ZLIB Threads::Threads (rockdb deps)
 	)
 	
 	if(PORTABLE)
