@@ -1204,11 +1204,11 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// check required options were provided
 	for (auto opt : options)
 	{
-		if (std::get<0>(opt.second))
+		if (std::get<3>(opt))
 		{
-			if (mopt.count(opt.first) == 0)
+			if (mopt.count(std::get<0>(opt)) == 0)
 			{
-				std::cout << "Missing required flag: " << opt.first << std::endl;
+				std::cout << "Missing required flag: " << std::get<0>(opt) << std::endl;
 			}
 		}
 	}
@@ -1229,16 +1229,20 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		std::cout << STAMP << "Processing option: " << opt.first << " with value: " << opt.second << std::endl;
 
-		int count = options.count(opt.first);
-		if (count > 0) 
+		bool has_opt = false;
+		for (auto optx : options)
 		{
-			//std::string descr = std::get<1>(options.at(opt.first));
-			//std::get<2>(options.at(opt.first))(opt.second); // call processing function for the given option
-			std::invoke(std::get<3>(options.at(opt.first)), this, opt.second);
+			if (std::get<0>(optx) == opt.first)
+			{
+				// call processing function for the given option
+				std::invoke(std::get<5>(optx), this, opt.second);
+				has_opt = true;
+			}
 		}
-		// passed option is not recognized
-		else
+
+		if (!has_opt) 
 		{
+			// passed option is not recognized
 			opt_default(opt.first);
 		}
 	}
@@ -1441,24 +1445,33 @@ void Runopts::print_help()
 	std::string req;
 	std::string pfx;
 
+	// Name Type Required Descr Default
+	//  20   12     10     47     20
+	int name_w  = 18;
+	int type_w  = 12;
+	int req_w   = 9;
+	int descr_w = 47;
+	int def_w = 20;
 	// description width: 56
-
+	// Type and Defaults are underlined
+	// 'Required' is green
+	// Options are in Bold
 	ss << help_header << std::endl;
 	for (auto opt : options)
 	{
-		req = std::get<0>(opt.second) ? " Required " : " Optional ";
-		pfx = opt.first.size() > 1 ? "--" : "-";
+		req = std::get<3>(opt) ? "Required" : "Optional";
+		pfx = std::get<0>(opt).size() > 1 ? "--" : "-";
 		std::string space_0 = "    "; // 4 chars
 		std::string space_1 = "";
 		std::string space_2 = "";
-		int space_1_size = opt.first.size() == 1 ? 16 - opt.first.size() : 15 - opt.first.size();
-		int space_2_size = 8 - std::get<1>(opt.second).size();
+		int space_1_size = name_w - std::get<0>(opt).size() - pfx.size(); // name
+		int space_2_size = type_w - std::get<1>(opt).size(); // type
 		for (int cnt = 0; cnt < space_1_size; ++cnt)
 			space_1 += " ";
 		for (int cnt = 0; cnt < space_2_size; ++cnt)
 			space_2 += " ";
 
-		ss << space_0 << pfx << opt.first << space_1 << std::get<1>(opt.second) << space_2 << req << "  " << std::get<2>(opt.second) << std::endl;
+		ss << space_0 << pfx << std::get<0>(opt) << space_1 << std::get<1>(opt) << space_2 << req << "  " << std::get<4>(opt) << std::endl;
 	}
 	std::cout << ss.str();
 }
