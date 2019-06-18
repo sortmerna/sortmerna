@@ -128,10 +128,14 @@ help_print_all_reads =
 	"                                            to SAM and/or BLAST tabular files",
 help_paired_in = 
 	"If one of the paired-end reads is Aligned,              False\n"
-	"                                            put both reads into Aligned FASTA/Q file",
+	"                                            put both reads into Aligned FASTA/Q file\n"
+	"                                            Mutually exclusive with '" + OPT_PAIRED_OUT + "'.\n"
+	"                                            Must be used with '" + OPT_FASTX + "'.",
 help_paired_out = 
 	"If one of the paired-end reads is Non-aligned,          False\n"
-	"                                            put both reads into Non-Aligned FASTA/Q file",
+	"                                            put both reads into Non-Aligned FASTA/Q file\n"
+	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.\n"
+	"                                            Must be used with '" + OPT_FASTX + "'.",
 help_match = 
 	"SW score (positive integer) for a match.                2",
 help_mismatch = 

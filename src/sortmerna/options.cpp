@@ -287,9 +287,11 @@ void Runopts::opt_pid(const std::string &val)
 
 void Runopts::opt_paired_in(const std::string &val)
 {
+	std::stringstream ss;
 	if (pairedout)
 	{
-		ERR("'--paired_out' has been set, please choose one or the other, or use the default option");
+		ss << STAMP << "Options '"<< OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT <<"' are mutually exclusive. Please choose one or the other";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -298,9 +300,11 @@ void Runopts::opt_paired_in(const std::string &val)
 
 void Runopts::opt_paired_out(const std::string &val)
 {
+	std::stringstream ss;
 	if (pairedin)
 	{
-		ERR("'--paired_in' has been set, please choose one or the other, or use the default option");
+		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT << "' are mutually exclusive. Please choose one or the other";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -1265,6 +1269,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
  */
 void Runopts::validate()
 {
+	std::stringstream ss;
 	// No output format has been chosen
 	if (!(is_fastxout || blastout || samout || otumapout || de_novo_otu))
 	{
@@ -1277,7 +1282,10 @@ void Runopts::validate()
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!is_fastxout && (pairedin || pairedout))
 	{
-		ERR("options '--paired_in' and '--paired_out' must be accompanied by option '--fastx'.");
+		ss.str("");
+		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT
+			<< "' must be accompanied by option '" << OPT_FASTX << "'.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
