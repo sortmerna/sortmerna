@@ -1201,28 +1201,33 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		}
 	} // ~for parsing cmd options
 
-	// check required options were provided
-	for (auto opt : options)
+	// is this only Help options?
+	bool is_help_opt = mopt.count(OPT_H) + mopt.count(OPT_VERSION) > 0;
+
+	if (!is_help_opt)
 	{
-		if (std::get<3>(opt))
+		// check required options were provided
+		for (auto opt : options)
 		{
-			if (mopt.count(std::get<0>(opt)) == 0)
+			if (std::get<3>(opt))
 			{
-				std::cout << "Missing required flag: " << std::get<0>(opt) << std::endl;
+				if (mopt.count(std::get<0>(opt)) == 0)
+				{
+					std::cout << "Missing required flag: " << std::get<0>(opt) << std::endl;
+				}
 			}
 		}
-	}
 
-	// Process options
-	// process WORKDIR first as other options depend on it
-	auto wd_it = mopt.find("workdir");
-	std::string wdir = "";
-	if (wd_it != mopt.end())
-	{
-		wdir = wd_it->second;
-		mopt.erase(wd_it); // remove to prevent repeated processing below
+		// process WORKDIR first as other options depend on it
+		auto wd_it = mopt.find("workdir");
+		std::string wdir = "";
+		if (wd_it != mopt.end())
+		{
+			wdir = wd_it->second;
+			mopt.erase(wd_it); // remove to prevent repeated processing below
+		}
+		opt_workdir(wdir);
 	}
-	opt_workdir(wdir);
 
 	// loop through the rest of options
 	for (auto opt : mopt)
@@ -1247,9 +1252,12 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		}
 	}
 
-	// validate the options. TODO: should be part of options validation
-	test_kvdb_path();
-	validate();
+	if (!is_help_opt)
+	{
+		// validate the options. TODO: should be part of options validation
+		test_kvdb_path();
+		validate();
+	}
 } // ~Runopts::process
 
 /**
@@ -1445,25 +1453,92 @@ void Runopts::print_help()
 	std::string req;
 	std::string pfx;
 
+	bool set_req = false;
+	bool set_com = false;
+	bool set_otu = false;
+	bool set_adv = false;
+	bool set_idx = false;
+	bool set_hlp = false;
+	bool set_dev = false;
+
+	std::string HDR_REQ = "[REQUIRED]";
+	std::string HDR_COM = "[COMMON]";
+	std::string HDR_OTU = "[OTU_PICKING]";
+	std::string HDR_ADV = "[ADVANCED]";
+	std::string HDR_IDX = "[INDEXING]";
+	std::string HDR_HLP = "[HELP]";
+	std::string HDR_DEV = "[DEVELOPER]";
+
+	// Type and Defaults are underlined
+	// 'Required' is green
+	// Options are in Bold
 	// Name Type Required Descr Default
 	//  20   12     10     47     20
 	int name_w  = 18;
 	int type_w  = 12;
 	int req_w   = 9;
-	int descr_w = 47;
+	int descr_w = 47; // description width
 	int def_w = 20;
-	// description width: 56
-	// Type and Defaults are underlined
-	// 'Required' is green
-	// Options are in Bold
 	ss << help_header << std::endl;
 	for (auto opt : options)
 	{
-		req = std::get<3>(opt) ? "Required" : "Optional";
-		pfx = std::get<0>(opt).size() > 1 ? "--" : "-";
 		std::string space_0 = "    "; // 4 chars
 		std::string space_1 = "";
 		std::string space_2 = "";
+
+		req = std::get<3>(opt) ? "Required" : "Optional";
+		pfx = std::get<0>(opt).size() > 1 ? "--" : "-";
+		switch (std::get<2>(opt))
+		{
+		case OPT_CATEGORY::COMMON:
+			if (std::get<3>(opt))
+			{
+				if (!set_req) {
+					ss << space_0 << HDR_REQ << std::endl;
+					set_req = true;
+				}
+			}
+			else
+			{
+				if (!set_com)
+				{
+					ss << std::endl << space_0 << HDR_COM << std::endl;
+					set_com = true;
+				}
+			}
+			break;
+		case OPT_CATEGORY::ADVANCED: 
+			if (!set_adv) {
+				ss << std::endl << space_0 << HDR_ADV << std::endl;
+				set_adv = true;
+			}
+			break;
+		case OPT_CATEGORY::OTU_PICKING:
+			if (!set_otu) {
+				ss << std::endl << space_0 << HDR_OTU << std::endl;
+				set_otu = true;
+			}
+			break;
+		case OPT_CATEGORY::HELP:
+			if (!set_hlp) {
+				ss << std::endl << space_0 << HDR_HLP << std::endl;
+				set_hlp = true;
+			}
+			break;
+		case OPT_CATEGORY::INDEXING:
+			if (!set_idx) {
+				ss << std::endl << space_0 << HDR_IDX << std::endl;
+				set_idx = true;
+			}
+			break;
+		case OPT_CATEGORY::DEVELOPER:
+			if (!set_dev) {
+				ss << std::endl << space_0 << HDR_DEV << std::endl;
+				set_dev = true;
+			}
+			break;
+		}
+
 		int space_1_size = name_w - std::get<0>(opt).size() - pfx.size(); // name
 		int space_2_size = type_w - std::get<1>(opt).size(); // type
 		for (int cnt = 0; cnt < space_1_size; ++cnt)
@@ -1719,7 +1794,7 @@ void help()
 		<< "                                           0 - align Only perform alignment"                                      << std::endl
 		<< "                                           1 - post-processing (log writing)"                                     << std::endl
 		<< "                                           2 - generate reports"                                                  << std::endl
-		<< "                                           3 - align and post−process"                                            << std::endl
+		<< "                                           3 - align and post-process"                                            << std::endl
 		<< "                                           4 - all (default)"                                                     << std::endl << std::endl << BOLD
 		<< "    -d              "                                                                                             << COLOFF << UNDL
 		<<                      "  STRING        "                                                                            << COLOFF

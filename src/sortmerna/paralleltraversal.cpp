@@ -108,13 +108,14 @@ void alignmentCb
 
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
+	// Moved to Readstats::calculate
 	// find the minimum sequence length
-	if (read.sequence.size() < readstats.min_read_len.load())
-		readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
+	//if (read.sequence.size() < readstats.min_read_len.load())
+	//	readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// find the maximum sequence length
-	if (read.sequence.size()  > readstats.max_read_len.load())
-		readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
+	//if (read.sequence.size()  > readstats.max_read_len.load())
+	//	readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// the read length is too short
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])

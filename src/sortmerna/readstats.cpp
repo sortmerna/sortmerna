@@ -32,8 +32,8 @@ std::string string_hash(const std::string &val);
 
 Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
 	:
-	min_read_len(0),
-	max_read_len(READLEN),
+	min_read_len(MAX_READ_LEN),
+	max_read_len(0),
 	total_reads_mapped(0),
 	total_reads_mapped_cov(0),
 	all_reads_count(0),
@@ -116,6 +116,14 @@ void Readstats::calculate(Runopts &opts)
 						// process the last record
 						++all_reads_count;
 						all_reads_len += sequence.length();
+
+						// update the minimum sequence length
+						if (sequence.size() < min_read_len.load())
+							min_read_len = static_cast<uint32_t>(sequence.size());
+
+						// update the maximum sequence length
+						if (sequence.size() > max_read_len.load())
+							max_read_len = static_cast<uint32_t>(sequence.size());
 					}
 					break;
 				}
@@ -174,6 +182,14 @@ void Readstats::calculate(Runopts &opts)
 					{ // process previous sequence
 						++all_reads_count;
 						all_reads_len += sequence.length();
+
+						// update the minimum sequence length
+						if (sequence.size() < min_read_len.load())
+							min_read_len = static_cast<uint32_t>(sequence.size());
+
+						// update the maximum sequence length
+						if (sequence.size() > max_read_len.load())
+							max_read_len = static_cast<uint32_t>(sequence.size());
 					}
 
 					count = 0; // FASTA record start

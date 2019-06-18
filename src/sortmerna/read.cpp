@@ -203,10 +203,10 @@ void Read::initScoringMatrix(long match, long mismatch, long score_N)
 
 void Read::validate() {
 	std::stringstream ss;
-	if (sequence.size() > READLEN)
+	if (sequence.size() > MAX_READ_LEN)
 	{
 		ss << std::endl << RED << "ERROR" << COLOFF << ": [" << __FILE__ << ":" << __LINE__
-			<< "] Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > " << READLEN << " nt " << std::endl
+			<< "] Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > " << MAX_READ_LEN << " nt " << std::endl
 			<< "  Please check your reads or contact the authors." << std::endl;
 		std::cerr << ss.str();
 		exit(EXIT_FAILURE);

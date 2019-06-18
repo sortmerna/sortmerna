@@ -777,6 +777,8 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
 	}
 
+	logstream << " Command: [" << opts.cmdline << "]\n\n";
+
 	// output total number of reads
 	logstream << " Results:\n";
 	logstream << "    Total reads = " << readstats.all_reads_count << std::endl;

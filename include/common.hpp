@@ -112,7 +112,7 @@ const char DELIM = ':';
 /*! @brief Maximum length of input reads
 	(not limited to this length algorithmically)
 */
-#define READLEN 30000
+#define MAX_READ_LEN 30000
 
 #define LOCKQEUEU // use Locking queue for storing the Reads
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "

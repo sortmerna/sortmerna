@@ -77,7 +77,7 @@ help_header =
 "  -------------------------------------------------------------------------------------------------------------\n",
 help_ref = 
 	"Reference file (FASTA) absolute or relative path.\n"
-	"                                            Use mutliple times, once per each reference file",
+	"                                            Use mutliple times, once per a reference file",
 help_reads = 
 	"Raw reads file (FASTA/FASTQ).\n"
 	"                                            Use twice for files with paired reads",
@@ -439,17 +439,21 @@ private:
 
 	// OPTIONS Map - specifies all possible options
 	//std::map<std::string, std::tuple<bool, std::string, void(*)(const std::string&)>> options
-	const std::array<opt_6_tuple, 49> options = {
+	//
+	//std::make_tuple(OPT_ALIGNED,        "STRING",      COMMON,      false, help_aligned, &Runopts::opt_aligned),
+	//std::make_tuple(OPT_OTHER,          "STRING",      COMMON,      false, help_other, &Runopts::opt_other),
+	//std::make_tuple(OPT_LOG,            "BOOL",        COMMON,      false, help_log, &Runopts::opt_log),
+	//std::make_tuple(OPT_D,              "BOOL",        COMMON,      false, help_d, &Runopts::opt_d),
+	//std::make_tuple(OPT_TMPDIR,         "INT",         INDEXING,    false, help_tmpdir, &Runopts::opt_tmpdir),
+	//
+	const std::array<opt_6_tuple, 44> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
-		std::make_tuple(OPT_ALIGNED,        "STRING",      COMMON,      false, help_aligned, &Runopts::opt_aligned),
-		std::make_tuple(OPT_OTHER,          "STRING",      COMMON,      false, help_other, &Runopts::opt_other),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),
 		std::make_tuple(OPT_BLAST,          "BOOL",        COMMON,      false, help_blast, &Runopts::opt_blast),
-		std::make_tuple(OPT_LOG,            "BOOL",        COMMON,      false, help_log, &Runopts::opt_log),
 		std::make_tuple(OPT_NUM_ALIGNMENTS, "INT",         COMMON,      false, help_num_alignments, &Runopts::opt_num_alignments),
 		std::make_tuple(OPT_BEST,           "INT",         COMMON,      false, help_best, &Runopts::opt_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),
@@ -461,34 +465,32 @@ private:
 		std::make_tuple(OPT_GAP_OPEN,       "INT",         COMMON,      false, help_gap_open, &Runopts::opt_gap_open),
 		std::make_tuple(OPT_GAP_EXT,        "INT",         COMMON,      false, help_gap_ext, &Runopts::opt_gap_ext),
 		std::make_tuple(OPT_A,              "INT",         COMMON,      false, help_a, &Runopts::opt_a),
-		std::make_tuple(OPT_D,              "BOOL",        COMMON,      false, help_d, &Runopts::opt_d),
-		std::make_tuple(OPT_E,              "BOOL",        COMMON,      false, help_e, &Runopts::opt_e),
-		std::make_tuple(OPT_F,              "DOUBLE",      COMMON,      false, help_F, &Runopts::opt_F),
-		std::make_tuple(OPT_H,              "BOOL",        HELP,      false, help_h, &Runopts::opt_h),
-		std::make_tuple(OPT_VERSION,        "INT",         HELP,   false, help_version, &Runopts::opt_version),
-		std::make_tuple(OPT_L,              "DOUBLE",      COMMON, false, help_L, &Runopts::opt_L),
-		std::make_tuple(OPT_M,              "DOUBLE",      COMMON, false, help_m, &Runopts::opt_m),
-		std::make_tuple(OPT_N,              "BOOL",        COMMON, false, help_N, &Runopts::opt_N),
-		std::make_tuple(OPT_R,              "BOOL",        COMMON, false, help_R, &Runopts::opt_R),
-		std::make_tuple(OPT_V,              "INT,INT,INT", COMMON,    false, help_v, &Runopts::opt_v),
-		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING,    false, help_id, &Runopts::opt_id),
-		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING,    false, help_coverage, &Runopts::opt_coverage),
-		std::make_tuple(OPT_DE_NOVO_OTU,    "BOOL",        OTU_PICKING,    false, help_de_novo_otu, &Runopts::opt_de_novo_otu),
-		std::make_tuple(OPT_OTU_MAP,        "BOOL",        OTU_PICKING,    false, help_otu_map, &Runopts::opt_otu_map),
-		std::make_tuple(OPT_PASSES,         "BOOL",        ADVANCED,        false, help_passes, &Runopts::opt_passes),
-		std::make_tuple(OPT_EDGES,          "BOOL",        ADVANCED,        false, help_edges, &Runopts::opt_edges),
-		std::make_tuple(OPT_NUM_SEEDS,      "BOOL",        ADVANCED,   false, help_num_seeds, &Runopts::opt_num_seeds),
-		std::make_tuple(OPT_FULL_SEARCH,    "INT",         ADVANCED,      false, help_full_search, &Runopts::opt_full_search),
-		std::make_tuple(OPT_PID,            "PATH",        ADVANCED,   false, help_pid, &Runopts::opt_pid),
+		std::make_tuple(OPT_E,              "DOUBLE",      COMMON,      false, help_e, &Runopts::opt_e),
+		std::make_tuple(OPT_F,              "BOOL",        COMMON,      false, help_F, &Runopts::opt_F),
+		std::make_tuple(OPT_N,              "BOOL",        COMMON,      false, help_N, &Runopts::opt_N),
+		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
+		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
+		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),
+		std::make_tuple(OPT_DE_NOVO_OTU,    "BOOL",        OTU_PICKING, false, help_de_novo_otu, &Runopts::opt_de_novo_otu),
+		std::make_tuple(OPT_OTU_MAP,        "BOOL",        OTU_PICKING, false, help_otu_map, &Runopts::opt_otu_map),
+		std::make_tuple(OPT_PASSES,         "BOOL",        ADVANCED,    false, help_passes, &Runopts::opt_passes),
+		std::make_tuple(OPT_EDGES,          "BOOL",        ADVANCED,    false, help_edges, &Runopts::opt_edges),
+		std::make_tuple(OPT_NUM_SEEDS,      "BOOL",        ADVANCED,    false, help_num_seeds, &Runopts::opt_num_seeds),
+		std::make_tuple(OPT_FULL_SEARCH,    "INT",         ADVANCED,    false, help_full_search, &Runopts::opt_full_search),
+		std::make_tuple(OPT_PID,            "BOOL",        ADVANCED,    false, help_pid, &Runopts::opt_pid),
+		std::make_tuple(OPT_L,              "DOUBLE",      INDEXING,    false, help_L, &Runopts::opt_L),
+		std::make_tuple(OPT_M,              "DOUBLE",      INDEXING,    false, help_m, &Runopts::opt_m),
+		std::make_tuple(OPT_V,              "INT,INT,INT", INDEXING,    false, help_v, &Runopts::opt_v),
+		std::make_tuple(OPT_INTERVAL,       "INT",         INDEXING,    false, help_interval, &Runopts::opt_interval),
+		std::make_tuple(OPT_MAX_POS,        "INT",         INDEXING,    false, help_max_pos, &Runopts::opt_max_pos),
+		std::make_tuple(OPT_H,              "BOOL",        HELP,        false, help_h, &Runopts::opt_h),
+		std::make_tuple(OPT_VERSION,        "INT",         HELP,        false, help_version, &Runopts::opt_version),
+		std::make_tuple(OPT_DBG_PUT_DB,     "BOOL",        DEVELOPER,   false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
 		std::make_tuple(OPT_CMD,            "INT:INT:INT", DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
 		std::make_tuple(OPT_TASK,           "INT:INT:INT", DEVELOPER,   false, help_task, &Runopts::opt_task),
 		std::make_tuple(OPT_THREADS,        "INT:INT:INT", DEVELOPER,   false, help_threads, &Runopts::opt_threads),
 		std::make_tuple(OPT_THPP,           "BOOL",        DEVELOPER,   false, help_thpp, &Runopts::opt_thpp),
-		std::make_tuple(OPT_THREP,          "PATH",        DEVELOPER,   false, help_threp, &Runopts::opt_threp),
-		std::make_tuple(OPT_DBG_PUT_DB,     "INT",         INDEXING,    false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
-		std::make_tuple(OPT_TMPDIR,         "INT",         INDEXING,    false, help_tmpdir, &Runopts::opt_tmpdir),
-		std::make_tuple(OPT_INTERVAL,       "INT",         INDEXING,    false, help_interval, &Runopts::opt_interval),
-		std::make_tuple(OPT_MAX_POS,        "INT",         INDEXING,    false, help_max_pos, &Runopts::opt_max_pos)
+		std::make_tuple(OPT_THREP,          "PATH",        DEVELOPER,   false, help_threp, &Runopts::opt_threp)
 	};
 	// ~map options
 }; // ~struct Runopts
