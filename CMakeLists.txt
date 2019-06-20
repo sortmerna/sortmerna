@@ -175,7 +175,7 @@ if (WITH_TESTS)
 endif ()
 
 # Installation and packaging
-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
+#set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
 
 #include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
