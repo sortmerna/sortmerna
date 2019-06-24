@@ -34,6 +34,7 @@
 #include <iomanip>
 #include <fstream>
 #include <cmath> // log, exp
+#include <filesystem>
 
 #include "output.hpp"
 #include "ThreadPool.hpp"
@@ -54,49 +55,54 @@ void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Re
 
 void Output::init(Runopts & opts, Readstats & readstats)
 {
-	// attach pid to output files
 	std::stringstream pidStr;
 	if (opts.pid)
 	{
 		pidStr << getpid();
 	}
 
-	// associate the streams with reference sequence file names
+	// init output files
 	if (opts.is_fastxout)
 	{
 		// fasta/fastq output  WORKDIR/out/aligned.fastq
-		fastaOutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		std::string sfx;
 		if (opts.pid)
 		{
-			fastaOutFile += "_" + pidStr.str();
+			sfx += "_" + pidStr.str();
 		}
-		fastaOutFile += "." + readstats.suffix;
+		sfx += "." + readstats.suffix;
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		fastaOutFile = fpath.string();
 		fastaout.open(fastaOutFile);
 		fastaout.close();
 	}
 
 	if (opts.samout)
 	{
-		// sam output  WORKDIR/out/aligned.sam
-		samoutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		std::string sfx;
 		if (opts.pid)
 		{
 			samoutFile += "_" + pidStr.str();
 		}
 		samoutFile += ".sam";
+		// sam output  WORKDIR/out/aligned.sam
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		samoutFile = fpath.string();
 		samout.open(samoutFile);
 		samout.close();
 	}
 
 	if (opts.blastout)
 	{
-		// blast output  WORKDIR/out/aligned.blast
-		blastoutFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		std::string sfx;
 		if (opts.pid)
 		{
-			blastoutFile += "_" + pidStr.str();
+			sfx += "_" + pidStr.str();
 		}
-		blastoutFile += ".blast";
+		sfx += ".blast";
+		// blast output  WORKDIR/out/aligned.blast
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		blastoutFile = fpath.string();
 		blastout.open(blastoutFile);
 		blastout.close();
 	}
@@ -105,40 +111,46 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	{
 		// OTU map output file  WORKDIR/out/aligned_otus.txt
 		std::ofstream otumap;
-		otumapFile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		std::string sfx;
 		if (opts.pid)
 		{
-			otumapFile += "_" + pidStr.str();
+			sfx += "_" + pidStr.str();
 		}
-		otumapFile += "_otus.txt";
-		otumap.open(otumapFile);
+		sfx += "_otus.txt";
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		otumapFile = fpath.string();
+		otumap.open(fpath);
 		otumap.close();
 	}
 
 	if (opts.de_novo_otu)
 	{
-		//  WORKDIR/out/aligned_denovo.fastq
 		std::ofstream denovo_otu;
-		denovo_otus_file = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		std::string sfx;
 		if (opts.pid)
 		{
-			denovo_otus_file += "_" + pidStr.str();
+			sfx += "_" + pidStr.str();
 		}
-		denovo_otus_file += "_denovo." + readstats.suffix;
-		denovo_otu.open(denovo_otus_file);
+		sfx += "_denovo." + readstats.suffix;
+		//  WORKDIR/out/aligned_denovo.fastq
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		denovo_otus_file = fpath.string();
+		denovo_otu.open(fpath);
 		denovo_otu.close();
 	}
 
 	// don't touch the log if only reports are generated
 	if (opts.write_log && opts.alirep != Runopts::ALIGN_REPORT::report)
 	{
-		// statistics file output  WORKDIR/out/aligned.log
-		logfile = opts.workdir + "/" + opts.OUT_DIR + "/" + opts.aligned_out_pfx;
+		std::string sfx;
 		if (opts.pid)
 		{
-			logfile += "_" + pidStr.str();
+			sfx += "_" + pidStr.str();
 		}
-		logfile += ".log";
+		sfx += ".log";
+		// WORKDIR/out/aligned.log
+		auto logpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		logfile = logpath.string();
 		logstream.open(logfile);
 		logstream.close();
 	}
@@ -147,16 +159,16 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	{
 		if (opts.is_fastxout)
 		{
-			// output stream for other reads
-			std::ofstream fastaNonAlignOut;
-			// add suffix database name to accepted reads file
+			std::string sfx;
 			if (opts.pid)
 			{
-				opts.other_out_pfx += "_" + pidStr.str();
+				sfx += "_" + pidStr.str();
 			}
-			opts.other_out_pfx += "." + readstats.suffix;
-			// create the other reads file
-			fastaNonAlignOut.open(opts.other_out_pfx);
+			sfx += "." + readstats.suffix;
+			// WORKDIR/out/other.fasta
+			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx);
+			otherfile = fpath.string();
+			fastaNonAlignOut.open(otherfile);
 			fastaNonAlignOut.close();
 		}
 	}
@@ -733,11 +745,11 @@ void Output::openfiles(Runopts & opts)
 
 	if (opts.is_fastxout && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
 	{
-		fastaNonAlignOut.open(opts.other_out_pfx, std::ios::app | std::ios::binary);
+		fastaNonAlignOut.open(otherfile, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())
 		{
 			ss.str("");
-			ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << opts.other_out_pfx << "] for writing.";
+			ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << otherfile << "] for writing.";
 			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
@@ -776,6 +788,8 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 	{
 		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
 	}
+
+	std::cout << STAMP << "Using Log file: " << logfile << std::endl;
 
 	logstream << " Command: [" << opts.cmdline << "]\n\n";
 

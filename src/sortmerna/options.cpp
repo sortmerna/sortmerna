@@ -972,7 +972,8 @@ void Runopts::opt_workdir(const std::string &path)
 {
 	if (path.size() == 0)
 	{
-		workdir = get_user_home() + "/sortmerna";
+		auto wdpath = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
+		workdir = wdpath.string();
 		std::cout << "'workdir' option not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
 	}
 	else

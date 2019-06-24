@@ -65,6 +65,7 @@ public:
 	std::string denovo_otus_file;
 	std::string otumapFile;
 	std::string biomfile;
+	std::string otherfile;
 
 	Output(Runopts & opts, Readstats & readstats)
 	{

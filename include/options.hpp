@@ -90,7 +90,7 @@ help_other =
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 
-	"Working directory path for storing Reference   USRDIR/sortmerna/\n"
+	"Working directory path for storing Reference   USRDIR/sortmerna/run/\n"
 	"                                            index, Key-value database and the output.\n",
 help_sam = 
 	"Output SAM alignment for aligned reads.",
@@ -154,7 +154,7 @@ help_R =
 help_e = 
 	"E-value threshold.                                      1",
 help_v = 
-	"Produce verbose output.                                 False",
+	"Produce verbose output when building the index          True",
 help_id = 
 	"%%id similarity threshold (the alignment                0.97\n"
 	"                                            must still pass the E-value threshold).",
@@ -222,6 +222,8 @@ help_max_pos =
 	"Indexing: maximum (integer) number of positions to store  1000\n"
 	"                                            for each unique L-mer. If 0 all positions are stored."
 ;
+
+const std::string WORKDIR_DEF_SFX = "sortmerna/run";
 
 /* 
  * 1. 'blastops' 
