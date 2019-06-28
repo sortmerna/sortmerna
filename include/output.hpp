@@ -46,6 +46,31 @@ class Refstats;
 struct Readstats;
 struct Runopts;
 
+/**
+ * Summary report (log) data structure
+ */
+class Summary {
+public:
+	Summary() {};
+	~Summary() {};
+
+	std::string to_string();
+
+	bool is_de_novo_otu = false;
+	bool is_otumapout = false;
+	std::string cmd;
+	std::string timestamp;
+	uint64_t total_reads;
+	uint64_t total_reads_denovo_clustering;
+	uint64_t total_reads_mapped;
+	uint64_t total_reads_mapped_cov;
+	uint32_t min_read_len;
+	uint32_t max_read_len;
+	uint64_t all_reads_len;
+	size_t total_otu;
+	std::vector<std::pair<std::string, float>> db_matches;
+};
+
 class Output {
 public:
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
@@ -66,6 +91,8 @@ public:
 	std::string otumapFile;
 	std::string biomfile;
 	std::string otherfile;
+
+	Summary summary;
 
 	Output(Runopts & opts, Readstats & readstats)
 	{

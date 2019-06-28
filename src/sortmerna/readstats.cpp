@@ -40,7 +40,8 @@ Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
 	all_reads_len(0),
 	reads_matched_per_db(opts.indexfiles.size(), 0),
 	total_reads_denovo_clustering(0),
-	stats_calc_done(false)
+	is_stats_calc(false),
+	is_total_reads_mapped_cov(false)
 {
 	// calculate this->dbkey
 	std::string key_str_tmp("");
@@ -272,7 +273,9 @@ std::string Readstats::toBstring()
 		std::copy_n(static_cast<char*>(static_cast<void*>(&entry)), sizeof(entry), std::back_inserter(buf));
 
 	// stats_calc_done (bool)
-	std::copy_n(static_cast<char*>(static_cast<void*>(&stats_calc_done)), sizeof(stats_calc_done), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_stats_calc)), sizeof(is_stats_calc), std::back_inserter(buf));
+	// is_total_reads_mapped_cov
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_total_reads_mapped_cov)), sizeof(is_total_reads_mapped_cov), std::back_inserter(buf));
 
 	return buf;
 } // ~Readstats::toBstring
@@ -283,14 +286,23 @@ std::string Readstats::toBstring()
 std::string Readstats::toString()
 {
 	std::stringstream ss;
-	ss << "min_read_len= " << min_read_len << " max_read_len= " << max_read_len
-		<< " total_reads_mapped= " << total_reads_mapped
-		<< " total_reads_mapped_cov= " << total_reads_mapped_cov
+	ss << "min_read_len= " << min_read_len 
+		<< " max_read_len= " << max_read_len
 		<< " all_reads_count= " << all_reads_count
 		<< " all_reads_len= " << all_reads_len
-		<< " reads_matched_per_db= " << "TODO" << std::endl;
+		<< " total_reads_mapped= " << total_reads_mapped
+		<< " total_reads_mapped_cov= " << total_reads_mapped_cov
+		<< " reads_matched_per_db= " << "TODO"
+		<< " is_total_reads_mapped_cov= " << is_total_reads_mapped_cov
+		<< " is_stats_calc= " << is_stats_calc << std::endl;
 	return ss.str();
 } // ~Readstats::toString
+
+void Readstats::set_is_total_reads_mapped_cov()
+{
+	if (!is_total_reads_mapped_cov && total_reads_mapped_cov > 0)
+		is_total_reads_mapped_cov = true;
+}
 
 /**
  * restore Readstats object using values stored in Key-value database 
@@ -352,8 +364,12 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		}
 
 		// stats_calc_done
-		std::memcpy(static_cast<void*>(&stats_calc_done), bstr.data() + offset, sizeof(stats_calc_done));
-		offset += sizeof(stats_calc_done);
+		std::memcpy(static_cast<void*>(&is_stats_calc), bstr.data() + offset, sizeof(is_stats_calc));
+		offset += sizeof(is_stats_calc);
+
+		// stats_calc_done
+		std::memcpy(static_cast<void*>(&is_total_reads_mapped_cov), bstr.data() + offset, sizeof(is_total_reads_mapped_cov));
+		offset += sizeof(is_total_reads_mapped_cov);
 	} // ~if data found in DB
 
 	return ret;
@@ -396,6 +412,5 @@ void Readstats::store_to_db(KeyValueDatabase & kvdb)
 {
 	kvdb.put(dbkey, toBstring());
 
-	std::cout << STAMP << "Stored statistics to DB:" << std::endl
-		<< toString() << std::endl;
+	std::cout << STAMP << "Stored Reads statistics to DB:\n    " << toString() << std::endl;
 }

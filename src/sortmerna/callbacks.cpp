@@ -94,8 +94,8 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 				// alignment with the highest SW score passed %id and %coverage thresholds
 				if (align_id_round >= opts.align_id && align_cov_round >= opts.align_cov)
 				{
-					// increment number of reads passing identity and coverage threshold
-					++readstats.total_reads_mapped_cov;
+					if (!readstats.is_total_reads_mapped_cov)
+						++readstats.total_reads_mapped_cov; // if not already calculated.
 
 					// TODO: this check is already performed during alignment (alignmentCb and compute_lis_alignment) 
 					//       for (opts.num_alignments > -1)

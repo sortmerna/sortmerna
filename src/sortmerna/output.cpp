@@ -791,6 +791,38 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 
 	std::cout << STAMP << "Using Log file: " << logfile << std::endl;
 
+	summary.cmd = opts.cmdline;
+	summary.total_reads = readstats.all_reads_count;
+	if (opts.de_novo_otu) {
+		summary.is_de_novo_otu = opts.de_novo_otu;
+		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
+	}
+	summary.total_reads_mapped = readstats.total_reads_mapped.load();
+	summary.min_read_len = readstats.min_read_len.load();
+	summary.max_read_len = readstats.max_read_len.load();
+	summary.all_reads_len = readstats.all_reads_len;
+
+	// stats by database
+	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
+	{
+		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
+		summary.db_matches.emplace_back(std::make_pair(opts.indexfiles[index_num].first, pcn));
+	}
+
+	if (opts.otumapout) {
+		summary.is_otumapout = opts.otumapout;
+		summary.total_reads_mapped_cov = readstats.total_reads_mapped_cov.load();
+		summary.total_otu = readstats.otu_map.size();
+	}
+
+	std::stringstream ss;
+	time_t q = time(0);
+	struct tm *now = localtime(&q);
+	ss << asctime(now);
+	summary.timestamp = ss.str();
+
+	logstream << summary.to_string();
+#if 0
 	logstream << " Command: [" << opts.cmdline << "]\n\n";
 
 	// output total number of reads
@@ -816,8 +848,9 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 	// output stats by database
 	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
 	{
-		logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
-			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100 << std::endl;
+		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
+		std::make_pair(opts.indexfiles[index_num].first, pcn);
+		logstream << "    " << opts.indexfiles[index_num].first << "\t\t" << pcn << std::endl;
 	}
 
 	if (opts.otumapout)
@@ -825,11 +858,49 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 		logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << std::endl;
 		logstream << " Total OTUs = " << readstats.otu_map.size() << std::endl;
 	}
-	time_t q = time(0);
-	struct tm * now = localtime(&q);
 	logstream << std::endl << " " << asctime(now) << std::endl;
+#endif
 	logstream.close();
 } // ~Output::writeLog
+
+std::string Summary::to_string()
+{
+	std::stringstream ss;
+
+	ss << " Command: [" << cmd << "]\n\n";
+	ss << "    Total reads = " << total_reads << std::endl;
+	if (is_de_novo_otu)
+	{
+		// all reads that have read::hit_denovo == true
+		ss << "    Total reads for de novo clustering = " << total_reads_denovo_clustering << std::endl;
+	}
+	// output total non-rrna + rrna reads
+	ss << std::setprecision(2) << std::fixed
+		<< "    Total reads passing E-value threshold = " << total_reads_mapped
+		<< " (" << ((float)total_reads_mapped / (float)total_reads * 100) << ")" << std::endl
+		<< "    Total reads failing E-value threshold = " << total_reads - total_reads_mapped
+		<< " (" << (1 - ((float)((float)total_reads_mapped / (float)total_reads))) * 100 << ")" << std::endl
+		<< "    Minimum read length = " << min_read_len << std::endl
+		<< "    Maximum read length = " << max_read_len << std::endl
+		<< "    Mean read length    = " << all_reads_len / total_reads << std::endl
+		<< " By database:" << std::endl;
+
+	// output stats by database
+	for (auto match: db_matches)
+	{
+		ss << "    " << match.first << "\t\t" << match.second << std::endl;
+	}
+
+	if (is_otumapout)
+	{
+		ss << " Total reads passing %%id and %%coverage thresholds = " << total_reads_mapped_cov << std::endl;
+		ss << " Total OTUs = " << total_otu << std::endl;
+	}
+
+	ss << std::endl << " " << timestamp << std::endl;
+
+	return ss.str();
+} // ~Summary::to_string
 
 // called from main. TODO: move into a class?
 void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)

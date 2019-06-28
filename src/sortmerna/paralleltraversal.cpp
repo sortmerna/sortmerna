@@ -355,12 +355,16 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 {
 	std::stringstream ss;
 
+	ss << STAMP << "\n\n==== Starting alignment routine ====\n\n";
+	std::cout << ss.str();
+
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 
 	// Init thread pool with the given number of threads
 	int numProcThread = 0;
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
+		ss.str("");
 		ss << STAMP << "Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
 		std::cout << ss.str();
 	}
@@ -460,7 +464,12 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
+	ss.str("");
+	ss << STAMP << "\n\n==== Done alignment routine ====\n\n";
+	std::cout << ss.str();
+
 	// store readstats calculated in alignment
+	readstats.set_is_total_reads_mapped_cov(); // TODO: seems not necessary here. See TODO: alignment.cpp:569
 	readstats.store_to_db(kvdb);
 } // ~align
 

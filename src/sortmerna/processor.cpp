@@ -177,7 +177,8 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	std::cout <<std::endl << STAMP << "Log file generation starts" << std::endl;
+	ss << STAMP << "\n\n==== Starting Post-processing routine (alignment statistics report) ====\n\n";
+	std::cout << ss.str();
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
@@ -185,8 +186,10 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
-		std::cout << ss.str(); ss.str("");
+		ss.str("");
+		ss << STAMP << "Restored Readstats from DB:\n    " << readstats.toString() << std::endl;
+		std::cout << ss.str();
+		ss.str("");
 	}
 
 	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
@@ -245,7 +248,8 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		ss << STAMP << "total_reads_denovo_clustering = " << readstats.total_reads_denovo_clustering << std::endl;
 		std::cout << ss.str();
 
-		readstats.stats_calc_done = true;
+		readstats.set_is_total_reads_mapped_cov();
+		readstats.is_stats_calc = true;
 		readstats.store_to_db(kvdb); // store reads statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
@@ -253,5 +257,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 
 	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
 
-	std::cout << STAMP << "Done" << std::endl;
+	ss.str("");
+	ss << STAMP << "\n\n==== Done Post-processing routine (alignment statistics report) ====\n\n";
+	std::cout << ss.str();
 } // ~postProcess

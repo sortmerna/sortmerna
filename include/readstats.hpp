@@ -22,7 +22,9 @@ class KeyValueDatabase;
 
 /*
  * 1. 'all_reads_count' - Should be known before processing and index loading. 
- * 2. 'total_reads_mapped_cov' Synchronize. Thread accessed from 'compute_lis_alignment'
+ * 2. 'total_reads_mapped_cov'
+ *        Calculated during alignment and stored to KVDB (see paralleltraversal.cpp:align)
+ *        Thread accessed from 'compute_lis_alignment' - Synchronize
  * 3. 'reads_matched_per_db' - Synchronize.
  *			Calculated in 'compute_lis_alignment' during alignment. Thread accessed.
  * 4. 'total_reads_denovo_clustering'
@@ -53,7 +55,8 @@ struct Readstats
 	std::vector<uint64_t> reads_matched_per_db; // [3] total number of reads matched for each database. `compute_lis_alignment`.
 	std::map<std::string, std::vector<std::string>> otu_map; // [5] Populated in 'computeStats' post-processor callback
 
-	bool stats_calc_done; // flags 'computeStats' was called. Set in 'postProcess'
+	bool is_stats_calc; // flags 'computeStats' was called. Set in 'postProcess'
+	bool is_total_reads_mapped_cov; // flag 'total_reads_mapped_cov' was calculated
 
 	Readstats(Runopts & opts, KeyValueDatabase &kvdb);
 	~Readstats() {}
@@ -66,4 +69,5 @@ struct Readstats
 	void store_to_db(KeyValueDatabase & kvdb);
 	void pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str);
 	void printOtuMap(std::string otumapfile);
+	void set_is_total_reads_mapped_cov();
 }; // ~struct Readstats

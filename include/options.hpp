@@ -444,14 +444,6 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	//std::map<std::string, std::tuple<bool, std::string, void(*)(const std::string&)>> options
-	//
-	//std::make_tuple(OPT_ALIGNED,        "STRING",      COMMON,      false, help_aligned, &Runopts::opt_aligned),
-	//std::make_tuple(OPT_OTHER,          "STRING",      COMMON,      false, help_other, &Runopts::opt_other),
-	//std::make_tuple(OPT_LOG,            "BOOL",        COMMON,      false, help_log, &Runopts::opt_log),
-	//std::make_tuple(OPT_D,              "BOOL",        COMMON,      false, help_d, &Runopts::opt_d),
-	//std::make_tuple(OPT_TMPDIR,         "INT",         INDEXING,    false, help_tmpdir, &Runopts::opt_tmpdir),
-	//
 	const std::array<opt_6_tuple, 44> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
@@ -479,24 +471,24 @@ private:
 		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),
 		std::make_tuple(OPT_DE_NOVO_OTU,    "BOOL",        OTU_PICKING, false, help_de_novo_otu, &Runopts::opt_de_novo_otu),
 		std::make_tuple(OPT_OTU_MAP,        "BOOL",        OTU_PICKING, false, help_otu_map, &Runopts::opt_otu_map),
-		std::make_tuple(OPT_PASSES,         "BOOL",        ADVANCED,    false, help_passes, &Runopts::opt_passes),
-		std::make_tuple(OPT_EDGES,          "BOOL",        ADVANCED,    false, help_edges, &Runopts::opt_edges),
+		std::make_tuple(OPT_PASSES,         "INT,INT,INT", ADVANCED,    false, help_passes, &Runopts::opt_passes),
+		std::make_tuple(OPT_EDGES,          "INT",         ADVANCED,    false, help_edges, &Runopts::opt_edges),
 		std::make_tuple(OPT_NUM_SEEDS,      "BOOL",        ADVANCED,    false, help_num_seeds, &Runopts::opt_num_seeds),
 		std::make_tuple(OPT_FULL_SEARCH,    "INT",         ADVANCED,    false, help_full_search, &Runopts::opt_full_search),
 		std::make_tuple(OPT_PID,            "BOOL",        ADVANCED,    false, help_pid, &Runopts::opt_pid),
 		std::make_tuple(OPT_L,              "DOUBLE",      INDEXING,    false, help_L, &Runopts::opt_L),
 		std::make_tuple(OPT_M,              "DOUBLE",      INDEXING,    false, help_m, &Runopts::opt_m),
-		std::make_tuple(OPT_V,              "INT,INT,INT", INDEXING,    false, help_v, &Runopts::opt_v),
+		std::make_tuple(OPT_V,              "BOOL",        INDEXING,    false, help_v, &Runopts::opt_v),
 		std::make_tuple(OPT_INTERVAL,       "INT",         INDEXING,    false, help_interval, &Runopts::opt_interval),
 		std::make_tuple(OPT_MAX_POS,        "INT",         INDEXING,    false, help_max_pos, &Runopts::opt_max_pos),
 		std::make_tuple(OPT_H,              "BOOL",        HELP,        false, help_h, &Runopts::opt_h),
-		std::make_tuple(OPT_VERSION,        "INT",         HELP,        false, help_version, &Runopts::opt_version),
+		std::make_tuple(OPT_VERSION,        "BOOL",        HELP,        false, help_version, &Runopts::opt_version),
 		std::make_tuple(OPT_DBG_PUT_DB,     "BOOL",        DEVELOPER,   false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
-		std::make_tuple(OPT_CMD,            "INT:INT:INT", DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
-		std::make_tuple(OPT_TASK,           "INT:INT:INT", DEVELOPER,   false, help_task, &Runopts::opt_task),
+		std::make_tuple(OPT_CMD,            "BOOL",        DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
+		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task),
 		std::make_tuple(OPT_THREADS,        "INT:INT:INT", DEVELOPER,   false, help_threads, &Runopts::opt_threads),
-		std::make_tuple(OPT_THPP,           "BOOL",        DEVELOPER,   false, help_thpp, &Runopts::opt_thpp),
-		std::make_tuple(OPT_THREP,          "PATH",        DEVELOPER,   false, help_threp, &Runopts::opt_threp)
+		std::make_tuple(OPT_THPP,           "INT:INT",     DEVELOPER,   false, help_thpp, &Runopts::opt_thpp),
+		std::make_tuple(OPT_THREP,          "INT:INT",     DEVELOPER,   false, help_threp, &Runopts::opt_threp)
 	};
 	// ~map options
 }; // ~struct Runopts

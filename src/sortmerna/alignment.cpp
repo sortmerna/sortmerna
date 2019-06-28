@@ -565,21 +565,25 @@ void compute_lis_alignment
 								stringstream ss;
 								ss.precision(3);
 								ss << (double)id / total_pos << ' ' << (double)align_len / read.sequence.length();
+
+								// TODO: ---------------------------------------->
+								// the 'if' below seems to be always false 
 								double align_id_round = 0.0;
 								double align_cov_round = 0.0;
 								ss >> align_id_round >> align_cov_round;
 
 								// the alignment passed the %id and %query coverage threshold
-								// output it (SAM, BLAST and FASTA/Q)
 								if ( align_id_round >= opts.align_id && align_cov_round >= opts.align_cov && read_to_count)
 								{
-									++readstats.total_reads_mapped_cov;
+									if (!readstats.is_total_reads_mapped_cov)
+										++readstats.total_reads_mapped_cov; // also calculated in post-processor 'computeStats'
 									read_to_count = false;
 
 									// do not output read for de novo OTU clustering
 									// it passed the %id/coverage thersholds
 									if (opts.de_novo_otu) read.hit_denovo = false;
 								}
+								// <----------------------------------------- TODO
 
 								if (result != 0) 
 								{
