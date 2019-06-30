@@ -62,7 +62,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 
 	// init output files
-	if (opts.is_fastxout)
+	if (opts.is_fast)
 	{
 		// fasta/fastq output  WORKDIR/out/aligned.fastq
 		std::string sfx;
@@ -77,7 +77,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		fastaout.close();
 	}
 
-	if (opts.samout)
+	if (opts.is_sam)
 	{
 		std::string sfx;
 		if (opts.pid)
@@ -92,7 +92,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		samout.close();
 	}
 
-	if (opts.blastout)
+	if (opts.is_blast)
 	{
 		std::string sfx;
 		if (opts.pid)
@@ -157,7 +157,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 	if (opts.other_out_pfx.size() != 0)
 	{
-		if (opts.is_fastxout)
+		if (opts.is_fast)
 		{
 			std::string sfx;
 			if (opts.pid)
@@ -583,17 +583,17 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	std::stringstream ss;
 
 	// output accepted reads
-	if (opts.is_fastxout && fastaout.is_open())
+	if (opts.is_fast && fastaout.is_open())
 	{
 		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
+		if (opts.is_paired_in || opts.is_paired_out)
 		{
 			// either both reads are accepted, or one is accepted and pairedin
 			if ((reads[0].hit && reads[1].hit) ||
-				((reads[0].hit || reads[1].hit) && opts.pairedin))
+				((reads[0].hit || reads[1].hit) && opts.is_paired_in))
 			{
 				// output aligned read
-				if (opts.is_fastxout)
+				if (opts.is_fast)
 				{
 					for (Read read: reads)
 					{
@@ -610,7 +610,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			if (reads[0].hit)
 			{
 				// output aligned read
-				if (opts.is_fastxout)
+				if (opts.is_fast)
 				{
 					fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
 					if (reads[0].format == Format::FASTQ)
@@ -621,14 +621,14 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	}//~if ( ptr_filetype_ar != NULL )
 
 	// output other reads
-	if (opts.is_fastxout && fastaNonAlignOut.is_open())
+	if (opts.is_fast && fastaNonAlignOut.is_open())
 	{
 		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
+		if (opts.is_paired_in || opts.is_paired_out)
 		{
 			// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
 			if ((!reads[0].hit && !reads[1].hit) ||
-				((reads[0].hit ^ reads[1].hit) && opts.pairedout))
+				((reads[0].hit ^ reads[1].hit) && opts.is_paired_out))
 			{
 				for (Read read : reads)
 				{
@@ -659,10 +659,10 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 	if (denovo_otus_file.size() != 0)
 	{
 		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
+		if (opts.is_paired_in || opts.is_paired_out)
 		{
 			// either both reads are accepted, or one is accepted and pairedin_gv
-			if ( opts.pairedin && reads[0].hit && reads[1].hit && (reads[0].hit_denovo || reads[1].hit_denovo) )
+			if ( opts.is_paired_in && reads[0].hit && reads[1].hit && (reads[0].hit_denovo || reads[1].hit_denovo) )
 			{
 				// output aligned read
 				for (Read read : reads)
@@ -710,7 +710,7 @@ void Output::openfiles(Runopts & opts)
 {
 	std::stringstream ss;
 
-	if (opts.blastout && !blastout.is_open()) {
+	if (opts.is_blast && !blastout.is_open()) {
 		blastout.open(blastoutFile);
 		if (!blastout.good())
 		{
@@ -721,7 +721,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.samout && !samout.is_open()) {
+	if (opts.is_sam && !samout.is_open()) {
 		samout.open(samoutFile);
 		if (!samout.good())
 		{
@@ -732,7 +732,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fastxout && !fastaout.is_open()) {
+	if (opts.is_fast && !fastaout.is_open()) {
 		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
 		if (!fastaout.good())
 		{
@@ -743,7 +743,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fastxout && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
+	if (opts.is_fast && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
 	{
 		fastaNonAlignOut.open(otherfile, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())
@@ -928,7 +928,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 	References refs;
 
 	output.openfiles(opts);
-	if (opts.samout) output.writeSamHeader(opts);
+	if (opts.is_sam) output.writeSamHeader(opts);
 
 	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
@@ -969,7 +969,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 			ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 			std::cout << ss.str();
-			if (!opts.blastout && !opts.samout)	break;;
+			if (!opts.is_blast && !opts.is_sam)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
 

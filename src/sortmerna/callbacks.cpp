@@ -28,7 +28,7 @@ void reportsJob(
 )
 {
 	// only needs one loop through all read, no reference file dependency
-	if (opts.is_fastxout && refs.num == 0 && refs.part == 0)
+	if (opts.is_fast && refs.num == 0 && refs.part == 0)
 	{
 		output.report_fasta(opts, reads);
 	}
@@ -40,12 +40,12 @@ void reportsJob(
 
 	for (Read read : reads)
 	{
-		if (opts.blastout)
+		if (opts.is_blast)
 		{
 			output.report_blast(opts, refstats, refs, read);
 		}
 
-		if (opts.samout)
+		if (opts.is_sam)
 		{
 			output.report_sam(opts, refs, read);
 		}

@@ -111,7 +111,7 @@ help_log =
 	"Output overall statistics.                              True\n"
 	"                                            TODO: remove",
 help_num_alignments = 
-	"Positive integer (INT >=0). Optional.\n"
+	"Positive integer (INT >=0).\n"
 	"                                            Report first INT alignments per read reaching E-value\n"
 	"                                            If INT = 0, all alignments will be output",
 help_best = 
@@ -122,20 +122,22 @@ help_min_lis =
 	"Search all alignments having the first INT longest LIS\n"
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
 	"                                            it is computed using seeds' positions to expand hits into\n"
-	"                                            longer matches prior to Smith - Waterman alignment.",
+	"                                            longer matches prior to Smith - Waterman alignment.\n"
+	"                                            Requires option 'best'.\n"
+	"                                            Mutually exclusive with option 'num_alignments'",
 help_print_all_reads = 
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files",
 help_paired_in = 
 	"If one of the paired-end reads is Aligned,              False\n"
 	"                                            put both reads into Aligned FASTA/Q file\n"
-	"                                            Mutually exclusive with '" + OPT_PAIRED_OUT + "'.\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.",
+	"                                            Must be used with '" + OPT_FASTX + "'.\n"
+	"                                            Mutually exclusive with '" + OPT_PAIRED_OUT + "'.",
 help_paired_out = 
 	"If one of the paired-end reads is Non-aligned,          False\n"
 	"                                            put both reads into Non-Aligned FASTA/Q file\n"
-	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.",
+	"                                            Must be used with '" + OPT_FASTX + "'.\n"
+	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.",
 help_match = 
 	"SW score (positive integer) for a match.                2",
 help_mismatch = 
@@ -321,14 +323,17 @@ public:
 
 	bool forward = false; // '-F' search only the forward strand if true
 	bool reverse = false; // '-R' search only the reverse-complementary strand if true
-	bool pairedin = false; // '--paired_in' both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
-	bool pairedout = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
+	bool is_paired_in = false; // '--paired_in' both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
+	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
 	bool write_log = true; // '--log' output overall statistics. TODO: remove this option, always generate the log.
 	bool print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
-	bool samout = false; // '--sam' output SAM alignment (for aligned reads only)
-	bool blastout = false; // '--blast' output alignments in various Blast-like formats
-	bool is_fastxout = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
+	bool is_sam = false; // OPT_SAM was specified. output SAM alignment (for aligned reads only)
+	bool is_blast = false; // flags '--blast' option was specified
+	bool is_fast = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
+	bool is_best = false; // OPT_BEST was specified
+	bool is_min_lis = false;
+	bool is_num_alignments = false;
 	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
 	bool pid = false; // --pid add pid to output file names
 	bool as_percent = false;
@@ -435,9 +440,6 @@ private:
 	bool passes_set = false;
 	bool edges_set = false;
 	bool match_ambiguous_N = false; // -N flags to match the ambiguous characters using score_N
-	bool min_lis_set = false;
-	bool num_alignments_set = false;
-	bool best_set = false;
 	bool have_reads = false; // flags reads file is plain text and can be read
 
 	// container for options passed to the program
@@ -451,7 +453,7 @@ private:
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),
-		std::make_tuple(OPT_BLAST,          "BOOL",        COMMON,      false, help_blast, &Runopts::opt_blast),
+		std::make_tuple(OPT_BLAST,          "STRING",      COMMON,      false, help_blast, &Runopts::opt_blast),
 		std::make_tuple(OPT_NUM_ALIGNMENTS, "INT",         COMMON,      false, help_num_alignments, &Runopts::opt_num_alignments),
 		std::make_tuple(OPT_BEST,           "INT",         COMMON,      false, help_best, &Runopts::opt_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),

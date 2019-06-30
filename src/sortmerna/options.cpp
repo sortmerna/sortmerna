@@ -287,35 +287,21 @@ void Runopts::opt_pid(const std::string &val)
 
 void Runopts::opt_paired_in(const std::string &val)
 {
-	std::stringstream ss;
-	if (pairedout)
-	{
-		ss << STAMP << "Options '"<< OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT <<"' are mutually exclusive. Please choose one or the other";
-		ERR(ss.str());
-		exit(EXIT_FAILURE);
-	}
-
-	pairedin = true;
+	is_paired_in = true;
 } // ~Runopts::optPairedIn
 
 void Runopts::opt_paired_out(const std::string &val)
 {
-	std::stringstream ss;
-	if (pairedin)
-	{
-		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT << "' are mutually exclusive. Please choose one or the other";
-		ERR(ss.str());
-		exit(EXIT_FAILURE);
-	}
-
-	pairedout = true;
+	is_paired_out = true;
 } // ~Runopts::optPairedOut
 
 void Runopts::opt_match(const std::string &val)
 {
+	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ERR("'--match [INT]' requires a positive integer as input (ex. --match 2)");
+		ss << STAMP << "'" << OPT_MATCH << "' " << "requires a positive integer as input e.g. 2";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	// set match
@@ -326,8 +312,9 @@ void Runopts::opt_match(const std::string &val)
 	}
 	else
 	{
-		ERR("--match [INT] has been set twice, please verify your choice");
-		print_help();
+		ss.str("");
+		ss << STAMP << "'" << OPT_MATCH << "' " << "[INT] has been set twice, please verify your choice";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 } // ~Runopts::optMatch
@@ -441,27 +428,28 @@ void Runopts::opt_num_seeds(const std::string &val)
 /* --fastx */
 void Runopts::opt_fastx(const std::string &val)
 {
-	if (is_fastxout)
+	if (is_fast)
 	{
 		ERR("--fastx has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		is_fastxout = true;
+		is_fast = true;
 	}
 } // ~Runopts::opt_fastx
 
 void Runopts::opt_sam(const std::string &val)
 {
-	if (samout)
+	std::stringstream ss;
+	if (is_sam)
 	{
-		ERR("--sam has already been set once.");
-		exit(EXIT_FAILURE);
+		ss << STAMP << "'" << OPT_SAM << "' has already been set. Ignoring second flag.";
+		WARN(ss.str());
 	}
 	else
 	{
-		samout = true;
+		is_sam = true;
 	}
 } // ~Runopts::opt_sam
 
@@ -469,10 +457,10 @@ void Runopts::opt_blast(const std::string &val)
 {
 	std::stringstream ss;
 
-	if (blastout)
+	if (is_blast)
 	{
-		ERR("--blast [STRING] has already been set once.");
-		exit(EXIT_FAILURE);
+		ss << STAMP << "'" << OPT_BLAST << "' [STRING] has already been set once. Ignoring the second value";
+		WARN(ss.str());
 	}
 
 	// split blast options into vector by space
@@ -539,74 +527,88 @@ void Runopts::opt_blast(const std::string &val)
 		exit(EXIT_FAILURE);
 	}
 
-	blastout = true;
+	is_blast = true;
 } // ~Runopts::opt_blast
 
 void Runopts::opt_min_lis(const std::string &val)
 {
+	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ERR(": --min_lis [INT] requires an integer (>=0) as input (ex. --min_lis 2)."
-			" Note: 0 signifies to search all high scoring reference sequences.");
+		ss << STAMP << "'" << OPT_MIN_LIS
+			<< "' [INT] requires a positive integer as input e.g. 2. (if 0 - all high scoring reference sequences are searched)";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
 	// min_lis_gv has already been set
-	if (min_lis_set)
+	if (is_min_lis)
 	{
-		ERR(": --min_lis [INT] has been set twice, please verify your choice.");
-		print_help();
+		ss.str("");
+		ss << STAMP << "'" << OPT_MIN_LIS << "' [INT] has been set twice, please verify your choice.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		if ((sscanf(val.data(), "%d", &min_lis) != 1) || (min_lis < 0))
 		{
-			ERR(": --min_lis [INT] must be >= 0 (0 signifies to search all high scoring reference sequences).");
+			ss.str("");
+			ss << STAMP << "'" << OPT_MIN_LIS
+				<< "' [INT] requires a positive integer as input e.g. 2. If 0, all high scoring reference sequences are searched)";
 			exit(EXIT_FAILURE);
 		}
-		min_lis_set = true;
+		is_min_lis = true;
 	}
 } // ~Runopts::opt_min_lis
 
 void Runopts::opt_best(const std::string &val)
 {
+	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ERR(": --best [INT] requires an integer (> 0) as input (ex. --best 2).");
+		ss << STAMP << "'" << OPT_BEST << "'" << " [INT] requires a positive integer e.g. 2).";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
-	// best_set has already been set
-	if (best_set)
+	if (is_best)
 	{
-		ERR(" : --best [INT] has been set twice, please verify your choice.");
-		print_help();
+		ss.str("");
+		ss << STAMP << "'" << OPT_BEST << "'" << " [INT] has been set twice, please verify your choice.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		if ((sscanf(val.data(), "%d", &num_best_hits) != 1))
 		{
-			ERR(": could not read --best [INT] as integer");
+			ss.str("");
+			ss << STAMP << "Could not read '" << OPT_BEST << "' [INT] as integer";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
-		best_set = true;
+		is_best = true;
 	}
 } // ~Runopts::opt_best
 
 void Runopts::opt_num_alignments(const std::string &val)
 {
+	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ERR(": --num_alignments [INT] requires an integer (>=0) as input (ex. --num_alignments 2)"
-			" Note: 0 signifies to output all alignments.");
+		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
+			<< "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
-	if (num_alignments_set)
+	if (is_num_alignments)
 	{
-		ERR(" :--num_alignments [INT] has been set twice, please verify your command parameters.");
+		ss.str("");
+		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS 
+			<< "' [INT] has been set twice, please verify your parameters.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -614,10 +616,13 @@ void Runopts::opt_num_alignments(const std::string &val)
 	num_alignments = atoi(val.data());
 	if (num_alignments < 0)
 	{
-		ERR(": --num_alignments [INT] must be >= 0 (0 signifies to output all alignments).");
+		ss.str("");
+		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
+			<< "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
-	num_alignments_set = true;
+	is_num_alignments = true;
 } // ~Runopts::opt_num_alignments
 
 void Runopts::opt_edges(const std::string &val)
@@ -808,12 +813,10 @@ void Runopts::opt_R(const std::string &val)
 	}
 } // ~Runopts::opt_R
 
-/* Help */
 void Runopts::opt_h(const std::string &val)
 {
 	about();
 	print_help();
-	//help();
 	exit(0);
 } // ~Runopts::opt_h
 
@@ -824,7 +827,6 @@ void Runopts::opt_v(const std::string &val)
 
 void Runopts::opt_N(const std::string &val)
 {
-	// match ambiguous N's
 	if (!match_ambiguous_N)
 	{
 		match_ambiguous_N = true;
@@ -1271,27 +1273,34 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 void Runopts::validate()
 {
 	std::stringstream ss;
+
 	// No output format has been chosen
-	if (!(is_fastxout || blastout || samout || otumapout || de_novo_otu))
+	if (!(is_fast || is_blast || is_sam || otumapout || de_novo_otu))
 	{
-		blastout = true;
+		is_blast = true;
 		std::cout << STAMP 
-			<< "No output format has been chosen (fastx/sam/blast/otu_map). Using default blast" 
-			<< std::endl;
+			<< "No output format has been chosen (fastx/sam/blast/otu_map). Using default '" 
+			<< OPT_BLAST << "'" << std::endl;
 	}
 
-	// Options --paired_in and --paired_out can only be used with FASTA/Q output
-	if (!is_fastxout && (pairedin || pairedout))
+	if (is_paired_in && is_paired_out)
 	{
-		ss.str("");
-		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT
-			<< "' must be accompanied by option '" << OPT_FASTX << "'.";
+		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT << "' are mutually exclusive. Please choose one or the other";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
+	// Options --paired_in and --paired_out can only be used with FASTA/Q output
+	if (!is_fast && (is_paired_in || is_paired_out))
+	{
+		ss.str("");
+		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT
+			<< "' must be accompanied by option '" << OPT_FASTX << "'. Setting to true.";
+		is_fast = true;
+	}
+
 	// An OTU map can only be constructed with the single best alignment per read
-	if (otumapout && num_alignments_set)
+	if (otumapout && is_num_alignments)
 	{
 		ERR("'--otu_map' cannot be set together with --num_alignments [INT].\n"
 			"\tThe option --num_alignments [INT] doesn't keep track of"
@@ -1300,18 +1309,24 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
-	// If --num_alignments output was chosen, check an alignment format has also been chosen
-	if (num_alignments_set && !(blastout || samout || is_fastxout))
+	if (is_num_alignments && !(is_blast || is_sam || is_fast))
 	{
-		ERR("--num_alignments [INT] has been set but no output format has been chosen (--blast | --sam | --fastx).");
+		ss.str("");
+		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
+			<< "' [INT] has been set but no output format has been chosen (--blast | --sam | --fastx). Using default '" 
+			<< OPT_BLAST << "'";
+		WARN(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
 	// If --best output was chosen, check an alignment format has also been chosen
-	if (best_set && !(blastout || samout || otumapout))
+	if (is_best && !(is_blast || is_sam || otumapout))
 	{
-		ERR("--best [INT] has been set but no output format has been chosen (--blast | --sam | --otu_map).");
-		exit(EXIT_FAILURE);
+		ss.str("");
+		ss << STAMP << "'" << OPT_BEST 
+			<< "' [INT] has been set but no output format has been chosen (--blast | --sam | --otu_map). Using default '" 
+			<< OPT_BLAST << "'";
+		WARN(ss.str());
 	}
 
 	// Check gap extend score < gap open score
@@ -1325,7 +1340,7 @@ void Runopts::validate()
 
 	// Option --print_all_reads can only be used with Blast-like tabular
 	// and SAM formats (not pairwise)
-	if (print_all_reads && blastout && blastFormat != BlastFormat::TABULAR)
+	if (print_all_reads && is_blast && blastFormat != BlastFormat::TABULAR)
 	{
 		std::stringstream ss;
 		ss << STAMP << "--print_all_reads [BOOL] can only be used with BLAST-like";
@@ -1335,7 +1350,7 @@ void Runopts::validate()
 
 	// Only one of these options is allowed (--best outputs one alignment,
 	// --num_alignments outputs > 1 alignments)
-	if (best_set && num_alignments_set)
+	if (is_best && is_num_alignments)
 	{
 		std::stringstream ss;
 		ss << STAMP 
@@ -1347,23 +1362,21 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
-	// Option --min_lis [INT] can only accompany --best [INT]
-	if (min_lis_set && num_alignments_set)
-	{
-		std::stringstream ss;
-		ss << STAMP
-			<< "--min_lis [INT] and --num_alignments [INT] cannot be set together.\n"
-			"\t--min_lis [INT] can only be used with --best [INT] (see the User manual).";
-		ERR(ss.str());
-		exit(EXIT_FAILURE);
-	}
-
 	// Option --mis_lis INT accompanies --best INT, cannot be set alone
-	if (min_lis_set && !best_set)
+	if (is_min_lis && !is_best)
 	{
 		std::stringstream ss;
 		ss << STAMP
 			<< "--min_lis [INT] must be set together with --best [INT].";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+
+	// Option --min_lis [INT] can only accompany --best [INT]
+	if (is_min_lis && is_num_alignments)
+	{
+		std::stringstream ss;
+		ss << STAMP << "'" << OPT_MIN_LIS << "' [INT] and '" << OPT_NUM_ALIGNMENTS << "' [INT] cannot be set together.\n";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
@@ -1390,20 +1403,30 @@ void Runopts::validate()
 	}
 	// default number of threads is 1
 	//if (numcpu_gv < 0) numcpu_gv = 1;
-	// default E-value
+	// default E-value 
 	if (evalue < 0.0) evalue = 1;
+
 	// SW alignment parameters
-	if (!match_set) match = 2;
-	if (!mismatch_set) mismatch = -3;
-	if (!gap_open_set) gap_open = 5;
-	if (!gap_ext_set) gap_extension = 2;
-	if (!match_ambiguous_N) score_N = mismatch;
+	if (!match_set) 
+		match = 2;
+
+	if (!mismatch_set) 
+		mismatch = -3;
+
+	if (!gap_open_set) 
+		gap_open = 5;
+
+	if (!gap_ext_set) 
+		gap_extension = 2;
+
+	if (!match_ambiguous_N) 
+		score_N = mismatch;
 
 	// default method for searching alignments
-	if (!best_set && !num_alignments_set)
+	if (!is_best && !is_num_alignments)
 	{
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		if (is_fastxout && !(blastout || samout || otumapout || write_log || de_novo_otu))
+		if (is_fast && !(is_blast || is_sam || otumapout || write_log || de_novo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
 		else
@@ -1415,15 +1438,23 @@ void Runopts::validate()
 
 	// default minimum LIS used for setting the number of
 	// alignments to search prior to outputting --best INT
-	if (best_set && !min_lis_set) min_lis = 2;
+	if (is_best && !is_min_lis) 
+		min_lis = 2;
+
 	// default number of seed hits before searching for candidate LIS
-	if (seed_hits < 0) seed_hits = 2;
+	if (seed_hits < 0) 
+		seed_hits = 2;
+
 	// default number of nucleotides to add to each edge of an alignment
 	// region before extension
-	if (edges < 0) edges = 4;
+	if (edges < 0) 
+		edges = 4;
+
 	// activate heuristic for stopping search (of 1-error matches) after
 	// finding 0-error match
-	if (!full_search_set) full_search = false;
+	if (!full_search_set) 
+		full_search = false;
+
 	// default %id to keep alignment
 	if (align_id < 0)
 	{
@@ -1431,6 +1462,7 @@ void Runopts::validate()
 		if (otumapout) align_id = 0.97;
 		else align_id = 0;
 	}
+
 	// default %query coverage to keep alignment
 	if (align_cov < 0)
 	{

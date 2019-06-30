@@ -133,7 +133,7 @@ void ReportProcessor::run()
 	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 	std::cout << ss.str();
 
-	int cap = opts.pairedin || opts.pairedout ? 2 : 1;
+	int cap = opts.is_paired_in || opts.is_paired_out ? 2 : 1;
 	std::vector<Read> reads;
 	Read read;
 	int i = 0;

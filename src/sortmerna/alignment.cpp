@@ -550,7 +550,7 @@ void compute_lis_alignment
 
 								// update number of alignments to output per read
 								if (opts.num_alignments > 0) {
-									read.num_alignments--; // TODO: why decrement?
+									read.num_alignments--; // when 0 reached, alignment output stops
 								}
 
 								// get the edit distance between reference and read (serves for
