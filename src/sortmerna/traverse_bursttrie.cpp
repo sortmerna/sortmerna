@@ -239,7 +239,7 @@ void traversetrie_align(
 										accept_zero_kmer = true;
 
 										// turn off heuristic to stop search after finding 0-error match
-										if (opts.full_search) accept_zero_kmer = false;
+										if (opts.is_full_search) accept_zero_kmer = false;
 									}
 								}
 							}//~last 3 characters in entry

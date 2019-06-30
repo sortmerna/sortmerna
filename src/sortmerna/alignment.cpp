@@ -288,7 +288,7 @@ void compute_lis_alignment
 						uint32_t align_length = 0;
 						uint32_t reflen = refs.buffer[max_ref].sequence.length();
 						uint32_t edges = 0;
-						if (opts.as_percent)
+						if (opts.is_as_percent)
 							edges = (((double)opts.edges / 100.0)*read.sequence.length());
 						else
 							edges = opts.edges;
@@ -581,7 +581,7 @@ void compute_lis_alignment
 
 									// do not output read for de novo OTU clustering
 									// it passed the %id/coverage thersholds
-									if (opts.de_novo_otu) read.hit_denovo = false;
+									if (opts.is_de_novo_otu) read.hit_denovo = false;
 								}
 								// <----------------------------------------- TODO
 

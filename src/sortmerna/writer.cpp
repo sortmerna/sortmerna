@@ -34,7 +34,7 @@ void Writer::write()
 		++numPopped;
 		//std::string matchResultsStr = read.matchesToJson();
 		std::string readstr = read.toString();
-		if (!opts.dbg_put_kvdb && readstr.size() > 0)
+		if (!opts.is_dbg_put_kvdb && readstr.size() > 0)
 		{
 			kvdb.put(std::to_string(read.id), readstr);
 		}

@@ -261,28 +261,28 @@ void Runopts::opt_other(const std::string &file)
 
 void Runopts::opt_log(const std::string &val)
 {
-	if (write_log)
+	if (is_log)
 		WARN("'--" << OPT_LOG << "' is deprecated. True by default.");
 } // ~Runopts::optLog
 
 void Runopts::opt_de_novo_otu(const std::string &val)
 {
-	de_novo_otu = true;
+	is_de_novo_otu = true;
 } // ~Runopts::opt_de_novo_otu
 
 void Runopts::opt_otu_map(const std::string &val)
 {
-	otumapout = true;
+	is_otu_map = true;
 } // ~Runopts::opt_otu_map
 
 void Runopts::opt_print_all_reads(const std::string &val)
 {
-	print_all_reads = true;
+	is_print_all_reads = true;
 } // ~Runopts::optPrintAllReads
 
 void Runopts::opt_pid(const std::string &val)
 {
-	pid = true;
+	is_pid = true;
 } // ~Runopts::optPid
 
 void Runopts::opt_paired_in(const std::string &val)
@@ -428,14 +428,14 @@ void Runopts::opt_num_seeds(const std::string &val)
 /* --fastx */
 void Runopts::opt_fastx(const std::string &val)
 {
-	if (is_fast)
+	if (is_fastx)
 	{
 		ERR("--fastx has already been set once.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		is_fast = true;
+		is_fastx = true;
 	}
 } // ~Runopts::opt_fastx
 
@@ -637,7 +637,7 @@ void Runopts::opt_edges(const std::string &val)
 	char *end = 0;
 	// find if % sign exists
 	if (val.find_first_of("%") != std::string::npos)
-		as_percent = true;
+		is_as_percent = true;
 
 	// convert to integer
 	edges = std::stoi(val); //edges = (int)strtol(val.data(), &end, 10);
@@ -656,7 +656,7 @@ void Runopts::opt_full_search(const std::string &val)
 		WARN("Options '--full_search' has been set more than once. Only the last flag is considered.");
 	}
 	full_search_set = true;
-	full_search = true;
+	is_full_search = true;
 } // ~Runopts::opt_full_search
 
 void Runopts::opt_SQ(const std::string &val)
@@ -788,9 +788,9 @@ void Runopts::opt_e(const std::string &val)
 void Runopts::opt_F(const std::string &val)
 {
 	// only forward strand
-	if (!forward)
+	if (!is_forward)
 	{
-		forward = true;
+		is_forward = true;
 	}
 	else
 	{
@@ -802,9 +802,9 @@ void Runopts::opt_F(const std::string &val)
 void Runopts::opt_R(const std::string &val)
 {
 	// only reverse strand
-	if (!reverse)
+	if (!is_reverse)
 	{
-		reverse = true;
+		is_reverse = true;
 	}
 	else
 	{
@@ -822,7 +822,7 @@ void Runopts::opt_h(const std::string &val)
 
 void Runopts::opt_v(const std::string &val)
 {
-	verbose = true;
+	is_verbose = true;
 } // ~Runopts::opt_v
 
 void Runopts::opt_N(const std::string &val)
@@ -928,7 +928,7 @@ void Runopts::opt_d(const std::string &val)
 
 void Runopts::opt_dbg_put_db(const std::string &val)
 {
-	dbg_put_kvdb = true;
+	is_dbg_put_kvdb = true;
 }
 
 void Runopts::opt_default(const std::string &opt)
@@ -943,17 +943,17 @@ void Runopts::opt_default(const std::string &opt)
   /* Processing task */
 void Runopts::opt_task(const std::string &val)
 {
-	int taskOpt = std::stoi(val);
+	int task_num = std::stoi(val);
 
-	if (taskOpt > 4) 
+	if (task_num > 4)
 	{
 		std::stringstream ss;
-		ss << "Option '−−task' can only take values in range [0..4] Provided value is " << taskOpt;
+		ss << "Option '" << OPT_TASK << "' can only take values in range [0..4] Provided value is [" << task_num << "'";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
-	switch (taskOpt)
+	switch (task_num)
 	{
 	case 0: alirep = align; break;
 	case 1: alirep = postproc; break;
@@ -966,7 +966,7 @@ void Runopts::opt_task(const std::string &val)
 // interactive session '--cmd'
 void Runopts::opt_cmd(const std::string &val)
 {
-	interactive = true;
+	is_cmd = true;
 } // ~Runopts::optInteractive
 
 /* Work directory setup */
@@ -1152,7 +1152,6 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 
 	if (argc == 1)
 	{
-		verbose = true;
 		about();
 		ERR("Missing required command options");
 		exit(EXIT_FAILURE);
@@ -1261,9 +1260,10 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 
 	if (!is_help_opt)
 	{
-		// validate the options. TODO: should be part of options validation
+		// validate the options. TODO: should be part of options validation?
 		test_kvdb_path();
 		validate();
+		about(); // if we are here, args are OK, welcome the user
 	}
 } // ~Runopts::process
 
@@ -1275,7 +1275,7 @@ void Runopts::validate()
 	std::stringstream ss;
 
 	// No output format has been chosen
-	if (!(is_fast || is_blast || is_sam || otumapout || de_novo_otu))
+	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_de_novo_otu))
 	{
 		is_blast = true;
 		std::cout << STAMP 
@@ -1291,16 +1291,16 @@ void Runopts::validate()
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
-	if (!is_fast && (is_paired_in || is_paired_out))
+	if (!is_fastx && (is_paired_in || is_paired_out))
 	{
 		ss.str("");
 		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT
 			<< "' must be accompanied by option '" << OPT_FASTX << "'. Setting to true.";
-		is_fast = true;
+		is_fastx = true;
 	}
 
 	// An OTU map can only be constructed with the single best alignment per read
-	if (otumapout && is_num_alignments)
+	if (is_otu_map && is_num_alignments)
 	{
 		ERR("'--otu_map' cannot be set together with --num_alignments [INT].\n"
 			"\tThe option --num_alignments [INT] doesn't keep track of"
@@ -1309,7 +1309,7 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
-	if (is_num_alignments && !(is_blast || is_sam || is_fast))
+	if (is_num_alignments && !(is_blast || is_sam || is_fastx))
 	{
 		ss.str("");
 		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
@@ -1320,7 +1320,7 @@ void Runopts::validate()
 	}
 
 	// If --best output was chosen, check an alignment format has also been chosen
-	if (is_best && !(is_blast || is_sam || otumapout))
+	if (is_best && !(is_blast || is_sam || is_otu_map))
 	{
 		ss.str("");
 		ss << STAMP << "'" << OPT_BEST 
@@ -1340,7 +1340,7 @@ void Runopts::validate()
 
 	// Option --print_all_reads can only be used with Blast-like tabular
 	// and SAM formats (not pairwise)
-	if (print_all_reads && is_blast && blastFormat != BlastFormat::TABULAR)
+	if (is_print_all_reads && is_blast && blastFormat != BlastFormat::TABULAR)
 	{
 		std::stringstream ss;
 		ss << STAMP << "--print_all_reads [BOOL] can only be used with BLAST-like";
@@ -1382,7 +1382,7 @@ void Runopts::validate()
 	}
 
 	// %id and %coverage can only be used with --otu_map
-	if ((align_id > 0 || align_cov > 0) && !otumapout)
+	if ((align_id > 0 || align_cov > 0) && !is_otu_map)
 	{
 		std::stringstream ss;
 		ss << STAMP
@@ -1393,13 +1393,11 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
-	// the list of arguments is correct, welcome the user!
-	if (verbose) about();
 	// if neither strand was selected for search, search both
-	if (!forward && !reverse)
+	if (!is_forward && !is_reverse)
 	{
-		forward = true;
-		reverse = true;
+		is_forward = true;
+		is_reverse = true;
 	}
 	// default number of threads is 1
 	//if (numcpu_gv < 0) numcpu_gv = 1;
@@ -1426,7 +1424,8 @@ void Runopts::validate()
 	if (!is_best && !is_num_alignments)
 	{
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		if (is_fast && !(is_blast || is_sam || otumapout || write_log || de_novo_otu))
+		// TODO: looks arbitrary e.g. if is_fast && is_blast: num_alignments = 1 else min_lis = 2
+		if (is_fastx && !(is_blast || is_sam || is_otu_map || is_log || is_de_novo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
 		else
@@ -1453,13 +1452,13 @@ void Runopts::validate()
 	// activate heuristic for stopping search (of 1-error matches) after
 	// finding 0-error match
 	if (!full_search_set) 
-		full_search = false;
+		is_full_search = false;
 
 	// default %id to keep alignment
 	if (align_id < 0)
 	{
 		// if OTU-map is chosen, set default similarity to 0.97
-		if (otumapout) align_id = 0.97;
+		if (is_otu_map) align_id = 0.97;
 		else align_id = 0;
 	}
 
@@ -1467,7 +1466,7 @@ void Runopts::validate()
 	if (align_cov < 0)
 	{
 		// if OTU-map is chosen, set default coverage to 0.97
-		if (otumapout) align_cov = 0.97;
+		if (is_otu_map) align_cov = 0.97;
 		else align_cov = 0;
 	}
 } // ~Runopts::validate

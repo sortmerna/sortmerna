@@ -280,6 +280,41 @@ public:
 	void print_help();
 
 public:
+
+	// Option selection Flags
+	//    alignment control
+	bool is_best = false; // OPT_BEST was specified
+	bool is_min_lis = false;
+	bool is_num_alignments = false;
+	bool is_full_search = false; // OPT_FULL_SEARCH was selected
+	bool is_forward = false; // OPT_F was selected i.e. search only the forward strand
+	bool is_reverse = false; // OPT_R was selected i.e. search only the reverse-complementary strand
+	//    output control
+	bool is_paired_in = false; // OPT_PAIRED_IN was selected i.e. both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
+	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
+	bool is_de_novo_otu = false; // OPT_DE_NOVO_OTU: FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
+	bool is_log = true; // OPT_LOG was selected i.e. output overall statistics. TODO: remove this option, always generate.
+	bool is_print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
+	bool is_sam = false; // OPT_SAM was specified. output SAM alignment (for aligned reads only)
+	bool yes_SQ = false; // OPT_SQ add SQ tags to the SAM file
+	bool is_blast = false; // OPT_BLAST was specified
+	bool is_fastx = false; // OPT_FASTX was selected i.e. output FASTA/FASTQ file (for aligned and/or rejected reads)
+	bool is_other = false; // OPT_OTHER was selected i.e. flags to produce 'other' file
+	bool is_otu_map = false; // OPT_OTU_MAP was selected i.e. output OTU map (input to QIIME's make_otu_table.py)
+	bool is_verbose; // OPT_V was selected (indexing)
+	bool is_pid = false; // --pid add pid to output file names
+	bool is_cmd = false; // OPT_CMD was selected i.e. start interactive session
+	bool is_dbg_put_kvdb = false; // OPT_DBG_PUT_DB: DEBUG. if True - do Not put records into Key-value DB. Debugging Memory Consumption.
+
+	// Option derived Flags
+	bool is_as_percent = false; // derived from OPT_EDGES
+
+	// Other flags
+	bool exit_early = false; // TODO: has no action? Flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
+	bool is_index_built = false; // flags the index is built and ready for use. TODO: this is no Option flag is any respect. Move to a more appropriate place.
+	bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
+
+
 	std::string workdir; // Directory for index, KVDB, Output
 	std::string cmdline;
 	std::string kvdbPath; // help_d TODO: remove
@@ -320,33 +355,6 @@ public:
 	uint32_t interval = 1; // size of k-mer window shift. Default 1 is the min possible to generate max number of k-mers.
 	uint32_t max_pos = 10000;
 	// ~ END indexing options
-
-	bool forward = false; // '-F' search only the forward strand if true
-	bool reverse = false; // '-R' search only the reverse-complementary strand if true
-	bool is_paired_in = false; // '--paired_in' both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
-	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
-	bool de_novo_otu = false; // '--de_novo_otu' FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
-	bool write_log = true; // '--log' output overall statistics. TODO: remove this option, always generate the log.
-	bool print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
-	bool is_sam = false; // OPT_SAM was specified. output SAM alignment (for aligned reads only)
-	bool is_blast = false; // flags '--blast' option was specified
-	bool is_fast = false; // '--fastx' output FASTA/FASTQ file (for aligned and/or rejected reads)
-	bool is_best = false; // OPT_BEST was specified
-	bool is_min_lis = false;
-	bool is_num_alignments = false;
-	bool otumapout = false; // '--otu_map' output OTU map (input to QIIME's make_otu_table.py)
-	bool pid = false; // --pid add pid to output file names
-	bool as_percent = false;
-	bool full_search = false;
-	bool exit_early = false; // flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
-	bool verbose; // Verbose mode
-	bool is_gz = false; // flags reads file is compressed and can be read
-	bool yes_SQ = false; // --SQ add SQ tags to the SAM file
-	bool interactive = false; // start interactive session
-	bool is_index_built = false; // flags the index is built and ready for use
-	bool is_other = false; // flags to produce 'other' files
-
-	bool dbg_put_kvdb = false; // DEBUG option. if True - do Not put records into Key-value DB. Debugging Memory Consumption.
 
 	std::vector<std::string> blastops; // [1]
 	std::vector<std::string> readfiles; // '--reads'

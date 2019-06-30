@@ -1143,16 +1143,16 @@ int build_index(Runopts &opts)
 	std::string keys_file;
 	get_keys_file(keys_file, opts);
 
-	DBG(opts.verbose, "\n  Parameters summary: \n");
-	DBG(opts.verbose, "    K-mer size: %d\n", opts.lnwin_gv + 1);
-	DBG(opts.verbose, "    K-mer interval: %d\n", opts.interval);
+	DBG(opts.is_verbose, "\n  Parameters summary: \n");
+	DBG(opts.is_verbose, "    K-mer size: %d\n", opts.lnwin_gv + 1);
+	DBG(opts.is_verbose, "    K-mer interval: %d\n", opts.interval);
 
 	if (opts.max_pos == 0)
-		DBG(opts.verbose, "    Maximum positions to store per unique K-mer: all\n");
+		DBG(opts.is_verbose, "    Maximum positions to store per unique K-mer: all\n");
 	else
-		DBG(opts.verbose, "    Maximum positions to store per unique K-mer: %d\n", opts.max_pos);
+		DBG(opts.is_verbose, "    Maximum positions to store per unique K-mer: %d\n", opts.max_pos);
 
-	DBG(opts.verbose, "\n  Total number of databases to index: %d\n", (int)opts.indexfiles.size());
+	DBG(opts.is_verbose, "\n  Total number of databases to index: %d\n", (int)opts.indexfiles.size());
 
 	// build index for each pair in indexfiles vector
 	// Split the index into smaller parts when 'opts.max_file_size' is exceeded
@@ -1184,7 +1184,7 @@ int build_index(Runopts &opts)
 			<< "Begin indexing file " << BLUE << idxpair.first << COLOFF 
 			<< " of size: " << filesize
 			<< " under index name " << BLUE << idxpair.second << COLOFF << std::endl;
-		DBG(opts.verbose, ss.str().data());
+		DBG(opts.is_verbose, ss.str().data());
 
 		// STEP 1 ************************************************************
 		//   For file part_0 compute
@@ -1204,7 +1204,7 @@ int build_index(Runopts &opts)
 		uint64_t full_len = 0;
 		int nt = 0;
 
-		DBG(opts.verbose, "  Collecting nucleotide distribution statistics ..");
+		DBG(opts.is_verbose, "  Collecting nucleotide distribution statistics ..");
 
 		TIME(start);
 		do
@@ -1273,7 +1273,7 @@ int build_index(Runopts &opts)
 
 		TIME(end); // End collecting the nucleotide distribution statistics
 
-		DBG(opts.verbose, "  done  [%f sec]\n", (end - start));
+		DBG(opts.is_verbose, "  done  [%f sec]\n", (end - start));
 
 		// set file pointer back to the beginning of file
 		rewind(fp);
@@ -1338,8 +1338,8 @@ int build_index(Runopts &opts)
 			// total size of index so far in bytes
 			index_size = 0;
 
-			DBG(opts.verbose, "\n  start index part # %d: \n", part_num);
-			DBG(opts.verbose, "    (1/3) building burst tries ..");
+			DBG(opts.is_verbose, "\n  start index part # %d: \n", part_num);
+			DBG(opts.is_verbose, "    (1/3) building burst tries ..");
 
 			TIME(start);
 
@@ -1556,7 +1556,7 @@ int build_index(Runopts &opts)
 			// no index can be created, all reference sequences are too large to fit alone into maximum memory
 			if (index_size == 0)
 			{
-				DBG(opts.verbose, "\n  %sERROR%s: no index was created, all of your sequences are "
+				DBG(opts.is_verbose, "\n  %sERROR%s: no index was created, all of your sequences are "
 					"too large to be indexed with the current memory limit of %e Mbytes.\n",
 					RED, COLOFF, opts.max_file_size);
 				break;
@@ -1566,10 +1566,10 @@ int build_index(Runopts &opts)
 
 			rewind(keys);
 
-			DBG(opts.verbose, " done  [%f sec]\n", (end - start));
+			DBG(opts.is_verbose, " done  [%f sec]\n", (end - start));
 
 			// 4. build MPHF on the unique 18-mers
-			DBG(opts.verbose, "    (2/3) building CMPH hash ..");
+			DBG(opts.is_verbose, "    (2/3) building CMPH hash ..");
 			TIME(start);
 			cmph_t *hash = NULL;
 
@@ -1592,7 +1592,7 @@ int build_index(Runopts &opts)
 
 			TIME(end);
 
-			DBG(opts.verbose, " done  [%f sec]\n", (end - start));
+			DBG(opts.is_verbose, " done  [%f sec]\n", (end - start));
 
 			int ret = remove(keys_file.c_str());
 			if (ret != 0)
@@ -1605,7 +1605,7 @@ int build_index(Runopts &opts)
 			// 5. add ids to burst trie
 			// 6. build the positions lookup table using MPHF
 
-			DBG(opts.verbose, "    (3/3) building position lookup tables ..");
+			DBG(opts.is_verbose, "    (3/3) building position lookup tables ..");
 
 			// positions_tbl[kmer_id] will return a pointer to an array of pairs, each pair
 			// stores the sequence number and index on the sequence of the kmer_id 19-mer
@@ -1753,9 +1753,9 @@ int build_index(Runopts &opts)
 			} while (nt != EOF); // for all file     
 
 			TIME(end);
-			DBG(opts.verbose, " done [%f sec]\n", (end - start));
+			DBG(opts.is_verbose, " done [%f sec]\n", (end - start));
 
-			DBG(opts.verbose, "    total number of sequences in this part = %d\n", i);
+			DBG(opts.is_verbose, "    total number of sequences in this part = %d\n", i);
 
 			// Destroy hash
 			cmph_destroy(hash);
@@ -1954,8 +1954,8 @@ int build_index(Runopts &opts)
 				exit(1);
 			}
 
-			DBG(opts.verbose, "      temporary file was here: %s\n", keys_file.data());
-			DBG(opts.verbose, "      writing kmer data to %s\n", idx_file.data());
+			DBG(opts.is_verbose, "      temporary file was here: %s\n", keys_file.data());
+			DBG(opts.is_verbose, "      writing kmer data to %s\n", idx_file.data());
 
 			index_parts_stats thispart;
 			thispart.start_part = start_part;
@@ -1976,7 +1976,7 @@ int build_index(Runopts &opts)
 			ss.str("");
 			idx_file = idxpair.second + ".bursttrie_" + part_str + ".dat";
 			ss << std::endl << "      writing burst tries to " << idx_file << std::endl;
-			DBG(opts.verbose, ss.str().data());
+			DBG(opts.is_verbose, ss.str().data());
 
 			load_index(lookup_table, (char*)idx_file.data(), opts);
 
@@ -1984,7 +1984,7 @@ int build_index(Runopts &opts)
 			idx_file = idxpair.second + ".pos_" + part_str + ".dat";
 			std::ofstream ospos(idx_file, std::ios::binary);
 
-			DBG(opts.verbose, "      writing position lookup table to %s\n", idx_file.data());
+			DBG(opts.is_verbose, "      writing position lookup table to %s\n", idx_file.data());
 
 			// number of unique 19-mers
 			ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));
@@ -2023,7 +2023,7 @@ int build_index(Runopts &opts)
 
 		if (index_size != 0)
 		{
-			DBG(opts.verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").data());
+			DBG(opts.is_verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").data());
 
 			std::ofstream stats(idxpair.second + ".stats", std::ios::binary);
 			if (!stats.good())
@@ -2085,7 +2085,7 @@ int build_index(Runopts &opts)
 			}
 			stats.close();
 
-			DBG(opts.verbose, "    done.\n\n");
+			DBG(opts.is_verbose, "    done.\n\n");
 		}
 
 		// Free map'd memory

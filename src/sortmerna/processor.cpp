@@ -55,7 +55,7 @@ void Processor::run()
 		// search the forward and/or reverse strands depending on Run options
 		int32_t num_strands = 0;
 		//opts.forward = true; // TODO: this discards the possiblity of forward = false
-		bool search_single_strand = opts.forward ^ opts.reverse; // search only a single strand
+		bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
 		if (search_single_strand)
 			num_strands = 1; // only search the forward xor reverse strand
 		else 
@@ -63,7 +63,7 @@ void Processor::run()
 
 		for (int32_t count = 0; count < num_strands; ++count)
 		{
-			if ((search_single_strand && opts.reverse) || count == 1)
+			if ((search_single_strand && opts.is_reverse) || count == 1)
 			{
 				if (!read.reversed)
 					read.revIntStr();
@@ -255,7 +255,8 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 
 	output.writeLog(opts, readstats);
 
-	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
+	if (opts.is_otu_map)
+		readstats.printOtuMap(output.otumapFile);
 
 	ss.str("");
 	ss << STAMP << "\n\n==== Done Post-processing routine (alignment statistics report) ====\n\n";

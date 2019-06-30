@@ -28,13 +28,13 @@ void reportsJob(
 )
 {
 	// only needs one loop through all read, no reference file dependency
-	if (opts.is_fast && refs.num == 0 && refs.part == 0)
+	if (opts.is_fastx && refs.num == 0 && refs.part == 0)
 	{
 		output.report_fasta(opts, reads);
 	}
 
 	// only needs one loop through all read, no reference file dependency
-	if (opts.de_novo_otu && refs.num == 0 && refs.part == 0) {
+	if (opts.is_de_novo_otu && refs.num == 0 && refs.part == 0) {
 		output.report_denovo(opts, reads);
 	}
 
@@ -101,10 +101,10 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 					//       for (opts.num_alignments > -1)
 					//  here for (opts.num_alignments == -1)
 					// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
-					if (opts.de_novo_otu) read.hit_denovo = false;
+					if (opts.is_de_novo_otu) read.hit_denovo = false;
 
 					// fill OTU map with highest-scoring alignment for the read
-					if (opts.otumapout)
+					if (opts.is_otu_map)
 					{
 						// reference sequence identifier for mapped read
 						std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
@@ -129,7 +129,7 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 	}//~for all alignments
 
 	// only call once per read, on the last index/part
-	if ( opts.de_novo_otu 
+	if ( opts.is_de_novo_otu
 		&& refs.num == opts.indexfiles.size() - 1 
 		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 
 		&& read.hit 

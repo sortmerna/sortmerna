@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 
 	std::cout << STAMP << "Running task ALIGN_REPORT: " << opts.alirep << std::endl;
 
-	if (opts.interactive) {
+	if (opts.is_cmd) {
 		CmdSession cmd;
 		cmd.run(opts);
 	}

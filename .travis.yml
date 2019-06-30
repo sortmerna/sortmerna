@@ -15,11 +15,11 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-7
-            - g++-7
+            - gcc-9
+            - g++-9
           #  - zlib1g-dev # for RocksDB # build from sources
       env:
-        - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="ENV=Linux+gcc-9 && CC=gcc-9 && CXX=g++-9"
       
     - os: linux
       compiler: clang

@@ -346,7 +346,7 @@ void alignmentCb
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
-		if (opts.de_novo_otu) read.hit_denovo = false;
+		if (opts.is_de_novo_otu) read.hit_denovo = false;
 	}//~if read didn't align
 } // ~alignmentCb
 

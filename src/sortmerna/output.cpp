@@ -56,17 +56,17 @@ void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Re
 void Output::init(Runopts & opts, Readstats & readstats)
 {
 	std::stringstream pidStr;
-	if (opts.pid)
+	if (opts.is_pid)
 	{
 		pidStr << getpid();
 	}
 
 	// init output files
-	if (opts.is_fast)
+	if (opts.is_fastx)
 	{
 		// fasta/fastq output  WORKDIR/out/aligned.fastq
 		std::string sfx;
-		if (opts.pid)
+		if (opts.is_pid)
 		{
 			sfx += "_" + pidStr.str();
 		}
@@ -80,7 +80,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	if (opts.is_sam)
 	{
 		std::string sfx;
-		if (opts.pid)
+		if (opts.is_pid)
 		{
 			samoutFile += "_" + pidStr.str();
 		}
@@ -95,7 +95,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	if (opts.is_blast)
 	{
 		std::string sfx;
-		if (opts.pid)
+		if (opts.is_pid)
 		{
 			sfx += "_" + pidStr.str();
 		}
@@ -107,12 +107,12 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		blastout.close();
 	}
 
-	if (opts.otumapout)
+	if (opts.is_otu_map)
 	{
 		// OTU map output file  WORKDIR/out/aligned_otus.txt
 		std::ofstream otumap;
 		std::string sfx;
-		if (opts.pid)
+		if (opts.is_pid)
 		{
 			sfx += "_" + pidStr.str();
 		}
@@ -123,11 +123,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		otumap.close();
 	}
 
-	if (opts.de_novo_otu)
+	if (opts.is_de_novo_otu)
 	{
 		std::ofstream denovo_otu;
 		std::string sfx;
-		if (opts.pid)
+		if (opts.is_pid)
 		{
 			sfx += "_" + pidStr.str();
 		}
@@ -140,10 +140,10 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 
 	// don't touch the log if only reports are generated
-	if (opts.write_log && opts.alirep != Runopts::ALIGN_REPORT::report)
+	if (opts.is_log && opts.alirep != Runopts::ALIGN_REPORT::report)
 	{
 		std::string sfx;
-		if (opts.pid)
+		if (opts.is_pid)
 		{
 			sfx += "_" + pidStr.str();
 		}
@@ -157,10 +157,10 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 	if (opts.other_out_pfx.size() != 0)
 	{
-		if (opts.is_fast)
+		if (opts.is_fastx)
 		{
 			std::string sfx;
-			if (opts.pid)
+			if (opts.is_pid)
 			{
 				sfx += "_" + pidStr.str();
 			}
@@ -353,7 +353,7 @@ void Output::report_blast
 				blastout << read.getSeqId();
 
 				// print null alignment for non-aligned read
-				if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
+				if (opts.is_print_all_reads && (read.hits_align_info.alignv.size() == 0))
 				{
 					blastout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
 					for (uint32_t l = 0; l < opts.blastops.size(); l++)
@@ -493,7 +493,7 @@ void Output::report_sam
 	//	return;
 
 	// read did not align, output null string
-	if (opts.print_all_reads && read.hits_align_info.alignv.size() == 0)
+	if (opts.is_print_all_reads && read.hits_align_info.alignv.size() == 0)
 	{
 		// (1) Query
 		samout << read.getSeqId();
@@ -583,7 +583,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	std::stringstream ss;
 
 	// output accepted reads
-	if (opts.is_fast && fastaout.is_open())
+	if (opts.is_fastx && fastaout.is_open())
 	{
 		// pair-ended reads
 		if (opts.is_paired_in || opts.is_paired_out)
@@ -593,7 +593,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				((reads[0].hit || reads[1].hit) && opts.is_paired_in))
 			{
 				// output aligned read
-				if (opts.is_fast)
+				if (opts.is_fastx)
 				{
 					for (Read read: reads)
 					{
@@ -610,7 +610,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			if (reads[0].hit)
 			{
 				// output aligned read
-				if (opts.is_fast)
+				if (opts.is_fastx)
 				{
 					fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
 					if (reads[0].format == Format::FASTQ)
@@ -621,7 +621,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	}//~if ( ptr_filetype_ar != NULL )
 
 	// output other reads
-	if (opts.is_fast && fastaNonAlignOut.is_open())
+	if (opts.is_fastx && fastaNonAlignOut.is_open())
 	{
 		// pair-ended reads
 		if (opts.is_paired_in || opts.is_paired_out)
@@ -732,7 +732,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fast && !fastaout.is_open()) {
+	if (opts.is_fastx && !fastaout.is_open()) {
 		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
 		if (!fastaout.good())
 		{
@@ -743,7 +743,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fast && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
+	if (opts.is_fastx && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
 	{
 		fastaNonAlignOut.open(otherfile, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())
@@ -793,8 +793,8 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 
 	summary.cmd = opts.cmdline;
 	summary.total_reads = readstats.all_reads_count;
-	if (opts.de_novo_otu) {
-		summary.is_de_novo_otu = opts.de_novo_otu;
+	if (opts.is_de_novo_otu) {
+		summary.is_de_novo_otu = opts.is_de_novo_otu;
 		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
 	}
 	summary.total_reads_mapped = readstats.total_reads_mapped.load();
@@ -809,8 +809,8 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 		summary.db_matches.emplace_back(std::make_pair(opts.indexfiles[index_num].first, pcn));
 	}
 
-	if (opts.otumapout) {
-		summary.is_otumapout = opts.otumapout;
+	if (opts.is_otu_map) {
+		summary.is_otumapout = opts.is_otu_map;
 		summary.total_reads_mapped_cov = readstats.total_reads_mapped_cov.load();
 		summary.total_otu = readstats.otu_map.size();
 	}
