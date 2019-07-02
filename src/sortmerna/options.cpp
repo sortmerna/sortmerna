@@ -969,14 +969,14 @@ void Runopts::opt_cmd(const std::string &val)
 	is_cmd = true;
 } // ~Runopts::optInteractive
 
-/* Work directory setup */
 void Runopts::opt_workdir(const std::string &path)
 {
 	if (path.size() == 0)
 	{
 		auto wdpath = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
 		workdir = wdpath.string();
-		std::cout << "'workdir' option not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
+		std::cout << STAMP << "'" << OPT_WORKDIR 
+			<< "' option was not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
 	}
 	else
 		workdir = path;
@@ -1354,10 +1354,20 @@ void Runopts::validate()
 	{
 		std::stringstream ss;
 		ss << STAMP 
-			<< "--best [INT] and --num_alignments [INT] cannot be set together.\n" 
-				"--best [INT] will search INT highest scoring reference sequences\n"
-				"and output a single best alignment, whereas --num_alignments [INT]\n"
-				"will output the first INT alignments.";
+			<< "'"<< OPT_BEST << "' [INT] and '" 
+			<< OPT_NUM_ALIGNMENTS << "' [INT] cannot be set together.\n'" 
+			<< OPT_BEST <<"' searches [INT] highest scoring reference sequences\n"
+				"and outputs a single best alignment, whereas '" 
+			<< OPT_NUM_ALIGNMENTS << "'\n" << "outputs the first [INT] alignments.";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+
+	// Option --min_lis [INT] can only accompany --best [INT]
+	if (is_min_lis && is_num_alignments)
+	{
+		std::stringstream ss;
+		ss << STAMP << "'" << OPT_MIN_LIS << "' [INT] and '" << OPT_NUM_ALIGNMENTS << "' [INT] cannot be set together.\n";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
@@ -1368,15 +1378,6 @@ void Runopts::validate()
 		std::stringstream ss;
 		ss << STAMP
 			<< "--min_lis [INT] must be set together with --best [INT].";
-		ERR(ss.str());
-		exit(EXIT_FAILURE);
-	}
-
-	// Option --min_lis [INT] can only accompany --best [INT]
-	if (is_min_lis && is_num_alignments)
-	{
-		std::stringstream ss;
-		ss << STAMP << "'" << OPT_MIN_LIS << "' [INT] and '" << OPT_NUM_ALIGNMENTS << "' [INT] cannot be set together.\n";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
@@ -1423,8 +1424,8 @@ void Runopts::validate()
 	// default method for searching alignments
 	if (!is_best && !is_num_alignments)
 	{
+		// TODO: looks arbitrary. Why the alignment contolling options would depend on the output?
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		// TODO: looks arbitrary e.g. if is_fast && is_blast: num_alignments = 1 else min_lis = 2
 		if (is_fastx && !(is_blast || is_sam || is_otu_map || is_log || is_de_novo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits

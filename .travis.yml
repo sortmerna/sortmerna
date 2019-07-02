@@ -167,7 +167,8 @@ script:
   - popd;
 
   # RocksDB
-  - git clone https://github.com/facebook/rocksdb.git;
+  - git clone https://github.com/biocodz/rocksdb;
+  #- git clone https://github.com/facebook/rocksdb.git; # BUG: https://github.com/facebook/rocksdb/pull/5426
   - pushd rocksdb
   - ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
   - mkdir -p build/Release;
