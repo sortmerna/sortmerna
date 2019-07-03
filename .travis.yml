@@ -218,7 +218,7 @@ script:
   - export PATH="$PWD/dist/bin:$PATH"
   - sortmerna --version
   - sortmerna -h
-  - if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then python ./tests/test_sortmerna.py; fi
+  #- if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
 #after_success:
