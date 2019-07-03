@@ -661,20 +661,22 @@ void Runopts::opt_full_search(const std::string &val)
 
 void Runopts::opt_SQ(const std::string &val)
 {
-	if (yes_SQ)
+	if (is_SQ)
 	{
 		ERR(" : BOOL --SQ has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
 
-	yes_SQ = true;
+	is_SQ = true;
 } // ~Runopts::optSQ
 
 void Runopts::opt_passes(const std::string &val)
 {
+	std::stringstream ss;
 	if (passes_set)
 	{
-		ERR(" : --passes [INT,INT,INT] has been set twice, please verify your choice.");
+		ss << STAMP << "'" << OPT_PASSES << "' [INT,INT,INT] has been set twice, please verify your choice.";
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -685,7 +687,9 @@ void Runopts::opt_passes(const std::string &val)
 		pos_from += pos +1;
 		if (++count > 3) 
 		{
-			ERR(" : exactly 3 integers has to be provided with '--passes [INT,INT,INT]'");
+			ss.str("");
+			ss << STAMP << "Exactly 3 integers has to be provided with '" << OPT_PASSES << "' [INT,INT,INT]";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 		auto skiplen = std::stoi(tok);
@@ -693,8 +697,10 @@ void Runopts::opt_passes(const std::string &val)
 			skiplengths.emplace_back(skiplen);
 		else
 		{
-			ERR(" : all three integers in --passes [INT,INT,INT] "
-				"must contain positive integers where 0<INT<(shortest read length).");
+			ss.str("");
+			ss << STAMP << "All three integers in '" << OPT_PASSES
+				<< "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -1044,7 +1050,7 @@ void Runopts::opt_L(const std::string &val)
 	if (val.size() == 0)
 	{
 		ss.str("");
-		ss << "Option 'L' given without value. Using default: " << lnwin_gv;
+		ss << "Option 'L' given without value. Using default: " << seed_win_len;
 		WARN(ss.str());
 	}
 	else
@@ -1055,13 +1061,13 @@ void Runopts::opt_L(const std::string &val)
 		{
 			ss.str("");
 			ss << STAMP 
-				<< "Option L takes a Positive Even integer between 8 and 26 inclusive e.g. 10, 12, 14, .. , 20. Provided value: " 
-				<< lnwin_t << " Default will be used: " << lnwin_gv;
+				<< "Option '" << OPT_L <<"' takes a Positive Even integer between 8 and 26 inclusive e.g. 10, 12, 14, .. , 20. Provided value: " 
+				<< lnwin_t << " Default will be used: " << seed_win_len;
 			WARN(ss.str());
 		}
 		else
 		{
-			lnwin_gv = lnwin_t;
+			seed_win_len = lnwin_t;
 		}
 	}
 } // ~Runopts::opt_L

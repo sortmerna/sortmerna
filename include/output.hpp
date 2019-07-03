@@ -54,12 +54,13 @@ public:
 	Summary() {};
 	~Summary() {};
 
-	std::string to_string();
+	std::string to_string(Runopts &opts, Refstats &refstats);
 
 	bool is_de_novo_otu = false;
 	bool is_otumapout = false;
 	std::string cmd;
 	std::string timestamp;
+	std::string pid_str;
 	uint64_t total_reads;
 	uint64_t total_reads_denovo_clustering;
 	uint64_t total_reads_mapped;
@@ -118,7 +119,7 @@ public:
 	void report_fasta(Runopts & opts, std::vector<Read> &reads);
 	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
-	void writeLog(Runopts &opts, Readstats &readstats);
+	void writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats);
 
 	void openfiles(Runopts & opts);
 	void closefiles();

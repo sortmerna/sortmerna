@@ -296,7 +296,7 @@ public:
 	bool is_log = true; // OPT_LOG was selected i.e. output overall statistics. TODO: remove this option, always generate.
 	bool is_print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
 	bool is_sam = false; // OPT_SAM was specified. output SAM alignment (for aligned reads only)
-	bool yes_SQ = false; // OPT_SQ add SQ tags to the SAM file
+	bool is_SQ = false; // OPT_SQ add SQ tags to the SAM file
 	bool is_blast = false; // OPT_BLAST was specified
 	bool is_fastx = false; // OPT_FASTX was selected i.e. output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool is_other = false; // OPT_OTHER was selected i.e. flags to produce 'other' file
@@ -351,7 +351,7 @@ public:
 
 	// indexing options
 	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.
-	uint32_t lnwin_gv = 18;
+	uint32_t seed_win_len = 18; // OPT_L seed length
 	uint32_t interval = 1; // size of k-mer window shift. Default 1 is the min possible to generate max number of k-mers.
 	uint32_t max_pos = 10000;
 	// ~ END indexing options
@@ -359,7 +359,7 @@ public:
 	std::vector<std::string> blastops; // [1]
 	std::vector<std::string> readfiles; // '--reads'
 	std::vector<std::pair<std::string, std::string>> indexfiles; // "--refs" Pairs (Reference file, Index name)
-	std::vector<std::vector<uint32_t>> skiplengths; // [2] '--passes' K-mer window shift sizes. Refstats::load
+	std::vector<std::vector<uint32_t>> skiplengths; // [2] OPT_PASSES K-mer window shift sizes. Refstats::load
 
 public:
 	std::string dbkey = "run_options";

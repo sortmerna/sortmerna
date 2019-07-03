@@ -713,7 +713,7 @@ void load_index(kmer* lookup_table, char* outfile, Runopts &opts)
 	uint32_t sizeoftries[2] = { 0 };
 
 	// loop through all 9-mers
-	for (uint32_t i = 0; i < (uint32_t)(1 << opts.lnwin_gv); i++)
+	for (uint32_t i = 0; i < (uint32_t)(1 << opts.seed_win_len); i++)
 	{
 		NodeElement* trienode = NULL;
 
@@ -1132,10 +1132,10 @@ int build_index(Runopts &opts)
 	bool interval_set = false;
 	bool max_pos_set = false;
 
-	pread_gv = opts.lnwin_gv + 1;
-	partialwin_gv = opts.lnwin_gv / 2;
+	pread_gv = opts.seed_win_len + 1;
+	partialwin_gv = opts.seed_win_len / 2;
 
-	mask32 = (1 << opts.lnwin_gv) - 1;
+	mask32 = (1 << opts.seed_win_len) - 1;
 	mask64 = (2ULL << ((pread_gv * 2) - 1)) - 1;
 
 	// temp file for storing keys of all s-mer (19-mer) words of the reference sequences. 
@@ -1144,7 +1144,7 @@ int build_index(Runopts &opts)
 	get_keys_file(keys_file, opts);
 
 	DBG(opts.is_verbose, "\n  Parameters summary: \n");
-	DBG(opts.is_verbose, "    K-mer size: %d\n", opts.lnwin_gv + 1);
+	DBG(opts.is_verbose, "    K-mer size: %d\n", opts.seed_win_len + 1);
 	DBG(opts.is_verbose, "    K-mer interval: %d\n", opts.interval);
 
 	if (opts.max_pos == 0)
@@ -1321,7 +1321,7 @@ int build_index(Runopts &opts)
 
 			// table storing occurrence of each 9-mer and pointers to
 			// the forward and reverse burst tries
-			kmer *lookup_table = (kmer*)malloc((1 << opts.lnwin_gv) * sizeof(kmer));
+			kmer *lookup_table = (kmer*)malloc((1 << opts.seed_win_len) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
 				ss.str("");
@@ -1330,10 +1330,10 @@ int build_index(Runopts &opts)
 				exit(EXIT_FAILURE);
 			}
 
-			memset(lookup_table, 0, (1 << opts.lnwin_gv) * sizeof(kmer));
+			memset(lookup_table, 0, (1 << opts.seed_win_len) * sizeof(kmer));
 
 			// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer window
-			std::vector<bool> incremented_by_forward((1 << opts.lnwin_gv));
+			std::vector<bool> incremented_by_forward((1 << opts.seed_win_len));
 
 			// total size of index so far in bytes
 			index_size = 0;
@@ -1964,7 +1964,7 @@ int build_index(Runopts &opts)
 			index_parts_stats_vec.push_back(thispart);
 
 			// the 9-mer look up tables
-			for (uint32_t j = 0; j < (uint32_t)(1 << opts.lnwin_gv); j++)
+			for (uint32_t j = 0; j < (uint32_t)(1 << opts.seed_win_len); j++)
 			{
 				oskmer.write(reinterpret_cast<const char*>(&(lookup_table[j].count)),
 					sizeof(uint32_t));
@@ -2004,7 +2004,7 @@ int build_index(Runopts &opts)
 			free(positions_tbl);
 
 			// 9-mer look-up table and mini-burst tries
-			for (uint32_t z = 0; z < (uint32_t)(1 << opts.lnwin_gv); z++)
+			for (uint32_t z = 0; z < (uint32_t)(1 << opts.seed_win_len); z++)
 			{
 				if (lookup_table[z].trie_F != NULL)
 				{
@@ -2055,7 +2055,7 @@ int build_index(Runopts &opts)
 			// the length of all sequences in the database
 			stats.write(reinterpret_cast<const char*>(&full_len), sizeof(uint64_t));
 			// sliding window length
-			stats.write(reinterpret_cast<const char*>(&opts.lnwin_gv), sizeof(uint32_t));
+			stats.write(reinterpret_cast<const char*>(&opts.seed_win_len), sizeof(uint32_t));
 			uint64_t numseq = strs / 2;
 			// number of reference sequences in the database
 			stats.write(reinterpret_cast<const char*>(&numseq), sizeof(uint64_t));

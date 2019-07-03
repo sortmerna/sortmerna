@@ -55,11 +55,7 @@ void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Re
 
 void Output::init(Runopts & opts, Readstats & readstats)
 {
-	std::stringstream pidStr;
-	if (opts.is_pid)
-	{
-		pidStr << getpid();
-	}
+	summary.pid_str = std::to_string(getpid());
 
 	// init output files
 	if (opts.is_fastx)
@@ -68,7 +64,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			sfx += "_" + pidStr.str();
+			sfx += "_" + summary.pid_str;
 		}
 		sfx += "." + readstats.suffix;
 		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
@@ -82,7 +78,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			samoutFile += "_" + pidStr.str();
+			samoutFile += "_" + summary.pid_str;
 		}
 		samoutFile += ".sam";
 		// sam output  WORKDIR/out/aligned.sam
@@ -97,7 +93,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			sfx += "_" + pidStr.str();
+			sfx += "_" + summary.pid_str;
 		}
 		sfx += ".blast";
 		// blast output  WORKDIR/out/aligned.blast
@@ -114,7 +110,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			sfx += "_" + pidStr.str();
+			sfx += "_" + summary.pid_str;
 		}
 		sfx += "_otus.txt";
 		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
@@ -129,7 +125,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			sfx += "_" + pidStr.str();
+			sfx += "_" + summary.pid_str;
 		}
 		sfx += "_denovo." + readstats.suffix;
 		//  WORKDIR/out/aligned_denovo.fastq
@@ -145,7 +141,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			sfx += "_" + pidStr.str();
+			sfx += "_" + summary.pid_str;
 		}
 		sfx += ".log";
 		// WORKDIR/out/aligned.log
@@ -162,7 +158,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			std::string sfx;
 			if (opts.is_pid)
 			{
-				sfx += "_" + pidStr.str();
+				sfx += "_" + summary.pid_str;
 			}
 			sfx += "." + readstats.suffix;
 			// WORKDIR/out/other.fasta
@@ -782,7 +778,7 @@ void Output::closefiles()
 /** 
  * called from postProcess 
  */
-void Output::writeLog(Runopts &opts, Readstats &readstats)
+void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
 {
 	if (!logstream.is_open())
 	{
@@ -821,7 +817,7 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 	ss << asctime(now);
 	summary.timestamp = ss.str();
 
-	logstream << summary.to_string();
+	logstream << summary.to_string(opts, refstats);
 #if 0
 	logstream << " Command: [" << opts.cmdline << "]\n\n";
 
@@ -863,12 +859,42 @@ void Output::writeLog(Runopts &opts, Readstats &readstats)
 	logstream.close();
 } // ~Output::writeLog
 
-std::string Summary::to_string()
+std::string Summary::to_string(Runopts &opts, Refstats &refstats)
 {
 	std::stringstream ss;
 
-	ss << " Command: [" << cmd << "]\n\n";
-	ss << "    Total reads = " << total_reads << std::endl;
+	ss << " Command:\n    " << cmd << std::endl << std::endl;
+
+	ss << " Process pid = " << pid_str << std::endl << std::endl;
+
+	ss << " Parameters summary: " << std::endl;
+	int idx = 0;
+	for (auto ref : opts.indexfiles) {
+		ss << "    Reference file: " << ref.first << std::endl;
+		ss << "      Seed length = " << opts.seed_win_len << std::endl;
+		ss << "      Pass 1 = " << opts.skiplengths[idx][0] 
+			<< ", Pass 2 = " << opts.skiplengths[idx][1] 
+			<< ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl;
+		ss << "      Gumbel lambda = " << refstats.gumbel[idx].first << std::endl;
+		ss << "      Gumbel K = " << refstats.gumbel[idx].second << std::endl;
+		ss << "      Minimal SW score based on E-value = " << 36 << std::endl;
+		++idx;
+	}
+	ss << "    Number of seeds = " << 2 << std::endl;
+	ss << "    Edges = " << 4 << std::endl;
+	ss << "    SW match = " << opts.match << std::endl;
+	ss << "    SW mismatch = " << opts.mismatch << std::endl;
+	ss << "    SW gap open penalty = " << opts.gap_open << std::endl;
+	ss << "    SW gap extend penalty = " << opts.gap_extension << std::endl;
+	ss << "    SW ambiguous nucleotide = " << opts.score_N << std::endl;
+	ss << "    SQ tags are " << (opts.is_SQ ? "" : "not ") << "output" << std::endl;
+	ss << "    Number of alignment processing threads = " << opts.num_proc_thread << std::endl;
+	for (auto readf : opts.readfiles) {
+		ss << "    Reads file: " << readf << std::endl;
+	}
+	ss << "    Total reads = " << total_reads << std::endl << std::endl;
+
+	ss << " Results:" << std::endl;
 	if (is_de_novo_otu)
 	{
 		// all reads that have read::hit_denovo == true
@@ -882,8 +908,9 @@ std::string Summary::to_string()
 		<< " (" << (1 - ((float)((float)total_reads_mapped / (float)total_reads))) * 100 << ")" << std::endl
 		<< "    Minimum read length = " << min_read_len << std::endl
 		<< "    Maximum read length = " << max_read_len << std::endl
-		<< "    Mean read length    = " << all_reads_len / total_reads << std::endl
-		<< " By database:" << std::endl;
+		<< "    Mean read length    = " << all_reads_len / total_reads << std::endl << std::endl;
+
+	ss << " Coverage by database:" << std::endl;
 
 	// output stats by database
 	for (auto match: db_matches)

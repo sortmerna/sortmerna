@@ -253,7 +253,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		readstats.store_to_db(kvdb); // store reads statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
-	output.writeLog(opts, readstats);
+	output.writeLog(opts, refstats, readstats);
 
 	if (opts.is_otu_map)
 		readstats.printOtuMap(output.otumapFile);
