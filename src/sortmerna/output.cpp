@@ -871,17 +871,17 @@ std::string Summary::to_string(Runopts &opts, Refstats &refstats)
 	int idx = 0;
 	for (auto ref : opts.indexfiles) {
 		ss << "    Reference file: " << ref.first << std::endl;
-		ss << "      Seed length = " << opts.seed_win_len << std::endl;
-		ss << "      Pass 1 = " << opts.skiplengths[idx][0] 
-			<< ", Pass 2 = " << opts.skiplengths[idx][1] 
-			<< ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl;
-		ss << "      Gumbel lambda = " << refstats.gumbel[idx].first << std::endl;
-		ss << "      Gumbel K = " << refstats.gumbel[idx].second << std::endl;
-		ss << "      Minimal SW score based on E-value = " << 36 << std::endl;
+		ss << "        Seed length = " << opts.seed_win_len << std::endl;
+		ss << "        Pass 1 = " << opts.skiplengths[idx][0] 
+				<< ", Pass 2 = " << opts.skiplengths[idx][1] 
+				<< ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl;
+		ss << "        Gumbel lambda = " << refstats.gumbel[idx].first << std::endl;
+		ss << "        Gumbel K = " << refstats.gumbel[idx].second << std::endl;
+		ss << "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
 		++idx;
 	}
-	ss << "    Number of seeds = " << 2 << std::endl;
-	ss << "    Edges = " << 4 << std::endl;
+	ss << "    Number of seeds = " << opts.seed_hits << std::endl;
+	ss << "    Edges = " << opts.edges << std::endl;
 	ss << "    SW match = " << opts.match << std::endl;
 	ss << "    SW mismatch = " << opts.mismatch << std::endl;
 	ss << "    SW gap open penalty = " << opts.gap_open << std::endl;

@@ -333,9 +333,9 @@ public:
 
 	int32_t num_alignments = -1; // [3] help_num_alignments
 	int32_t min_lis = -1; // '--min_lis N' search all alignments having the first N longest LIS
-	int32_t seed_hits = -1;
+	int32_t seed_hits = -1; // OPT_NUM_SEEDS number of seeds
 	int32_t num_best_hits = 0;
-	int32_t edges = -1;
+	int32_t edges = -1; // OPT_EDGES
 
 	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
 
