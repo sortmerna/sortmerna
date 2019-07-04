@@ -318,8 +318,8 @@ public:
 	std::string workdir; // Directory for index, KVDB, Output
 	std::string cmdline;
 	std::string kvdbPath; // help_d TODO: remove
-	std::string aligned_out_pfx = "aligned"; // '--aligned' aligned reads output file prefix
-	std::string other_out_pfx = "other"; // '--other' rejected reads output file prefix
+	std::string aligned_out_pfx = OPT_ALIGNED; // aligned reads output file prefix
+	std::string other_out_pfx = OPT_OTHER; // rejected reads output file prefix
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
 	int num_write_thread = 1; // number of threads writing to Key-value database
@@ -332,7 +332,7 @@ public:
 	int queue_size_max = 100; // max number of Reads in the Read and Write queues. 10 works OK.
 
 	int32_t num_alignments = -1; // [3] help_num_alignments
-	int32_t min_lis = -1; // '--min_lis N' search all alignments having the first N longest LIS
+	int32_t min_lis = -1; // OPT_MIN_LIS search all alignments having the first N longest LIS
 	int32_t seed_hits = -1; // OPT_NUM_SEEDS number of seeds
 	int32_t num_best_hits = 0;
 	int32_t edges = -1; // OPT_EDGES

@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(sortmerna CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 

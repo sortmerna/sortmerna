@@ -8,6 +8,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(alp CXX)
 
+set(CMAKE_CXX_STANDARD 11)
+
 set(ALP_HDRS
 	njn_approx.hpp
 	njn_doubletype.hpp
