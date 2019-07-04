@@ -19,7 +19,7 @@ matrix:
             - g++-9
           #  - zlib1g-dev # for RocksDB # build from sources
       env:
-        - MATRIX_EVAL="ENV=Linux+gcc-9 && CC=gcc-9 && CXX=g++-9"
+        - MATRIX_EVAL="ENV=Linux+gcc-9 && CC=gcc-9 && CXX=g++-9 && TCH=gcc"
       
     - os: linux
       compiler: clang
@@ -33,13 +33,13 @@ matrix:
           packages:
             - clang-7
       env:
-        - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7"
+        - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7 && TCH=clang"
       
     - os: osx
       osx_image: xcode10.2 # xcode9.2 (macOS 10.12) xcode10.2 (macOS 10.14)
       compiler: clang
       env:
-        - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL"
+        - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL && TCH=clang"
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
@@ -47,7 +47,7 @@ matrix:
       osx_image: xcode10.2 #
       compiler: gcc
       env:
-        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
+        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && TCH=gcc && gcc --version" # default gcc installed with OSX
         #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
         
 # does nothing
@@ -99,6 +99,15 @@ install:
   - which cmake
   - cmake --version
   - popd
+
+  # check library paths, includes etc. for debugging
+  - if [[ "$TCH" == "gcc" ]]; then
+      echo "" | gcc -xc - -v -E ;
+    fi
+
+  - if [[ "$TCH" == "clang" ]]; then
+      echo "" | clang++ -v -xc++ - ;
+    fi
 
   # Miniconda
   #- wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh;
@@ -193,7 +202,9 @@ script:
   - popd; # return to sortmerna
 
   # build SortmeRNA
-  - find /usr/include -type f -name 'filesystem'
+  - if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then
+      find /usr/include -type f -name 'filesystem' ;
+    fi
   - mkdir -p build/Release; pushd build/Release;
   - |
     cmake -G "Unix Makefiles" \
