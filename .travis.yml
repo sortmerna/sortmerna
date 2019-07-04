@@ -28,15 +28,12 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           # the latest official clang on Xenial is clang-4.0 [https://packages.ubuntu.com/xenial/devel] => use llvm
-            - llvm-toolchain-xenial-8
+            - llvm-toolchain-xenial-7
           #  - llvm-toolchain-trusty-6.0
           packages:
-            - clang-8
-          #  - clang-6.0
-          #  - zlib1g-dev # for RocksDB
+            - clang-7
       env:
-        - MATRIX_EVAL="ENV=Linux+LLVM_clang-8 && CC=clang-8 && CXX=clang++-8"
-      #  - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
+        - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7"
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
@@ -170,6 +167,7 @@ script:
   - git clone https://github.com/biocodz/rocksdb;
   #- git clone https://github.com/facebook/rocksdb.git; # BUG: https://github.com/facebook/rocksdb/pull/5426
   - pushd rocksdb
+  - git show --summary
   #- ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
   - mkdir -p build/Release;
   - pushd build/Release;
