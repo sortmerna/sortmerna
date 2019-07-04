@@ -36,7 +36,7 @@ matrix:
         - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7"
       
     - os: osx
-      osx_image: xcode9.2 # OS X 10.12 Sierra
+      osx_image: xcode10.2 # xcode9.2 (macOS 10.12) xcode10.2 (macOS 10.14)
       compiler: clang
       env:
         - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL"
@@ -44,7 +44,7 @@ matrix:
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
     - os: osx
-      osx_image: xcode9.2 # OS X 10.12 Sierra
+      osx_image: xcode10.2 #
       compiler: gcc
       env:
         - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
