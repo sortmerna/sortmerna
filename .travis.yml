@@ -193,6 +193,7 @@ script:
   - popd; # return to sortmerna
 
   # build SortmeRNA
+  - find /usr/include -type f -name 'filesystem'
   - mkdir -p build/Release; pushd build/Release;
   - |
     cmake -G "Unix Makefiles" \
