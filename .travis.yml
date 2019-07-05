@@ -100,21 +100,6 @@ install:
   - cmake --version
   - popd
 
-  # check C++17 <filesystem>
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      find /usr/include -type f -name 'filesystem' ;
-      find /usr/lib -type f -name '*fs.a' ;
-    fi
-
-  - echo "Filesystem Status= $?"
-
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      find /Applications -type f -name 'filesystem' ;
-      find /usr/lib -type f -name '*fs.a' ;
-    fi
-
-  - echo "Filesystem Status= $?"
-
   # Miniconda
   #- wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh;
   #- wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh;
@@ -147,6 +132,21 @@ install:
 script:
   - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
   - pushd "${TRAVIS_BUILD_DIR}"
+
+  # check C++17 <filesystem>
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      find /usr/include -type f -name 'filesystem' ;
+      find /usr/lib -type f -name '*fs.a' ;
+    fi
+
+  - echo "Filesystem Status= $?"
+
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      find /Applications -type f -name 'filesystem' ;
+      find /usr/lib -type f -name '*fs.a' ;
+    fi
+
+  - echo "Filesystem Status= $?"
 
   # Install 3rd party libraries
   - pushd ./3rdparty;
