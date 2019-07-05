@@ -140,7 +140,7 @@ script:
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      ls -lrt /Applications
+      ls -lrt /Applications ;
       find /Applications -type f -name 'filesystem' ;
       find /Applications -type f -name '*fs.a' ;
     fi
