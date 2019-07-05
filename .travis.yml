@@ -139,14 +139,11 @@ script:
       find /usr/lib -type f -name '*fs.a' ;
     fi
 
-  - echo "Filesystem Status= $?"
-
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      ls -lrt /Applications
       find /Applications -type f -name 'filesystem' ;
-      find /usr/lib -type f -name '*fs.a' ;
+      find /Applications -type f -name '*fs.a' ;
     fi
-
-  - echo "Filesystem Status= $?"
 
   # Install 3rd party libraries
   - pushd ./3rdparty;
