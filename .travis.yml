@@ -3,27 +3,27 @@
 # Travis CI build configuration
 #==============================================================================
 
-os:
-  - linux
-  - osx
+#os:
+#  - linux
+#  - osx
 
-language: cpp
-compiler:
-  - clang
-  - gcc
+#language: cpp
+#compiler:
+#  - clang
+#  - gcc
 
-dist: xenial
-osx_image: xcode10.2
+#dist: xenial
+#osx_image: xcode10.2
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-xenial-7
-    packages:
-      - gcc-9
-      - g++-9
-      - clang-7
+#addons:
+#  apt:
+#    sources:
+#      - ubuntu-toolchain-r-test
+#      - llvm-toolchain-xenial-7
+#    packages:
+#      - gcc-9
+#      - g++-9
+#      - clang-7
 
 #sudo: false # required
 
@@ -45,13 +45,13 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-#      addons:
-#        apt:
-#          sources:
-#            - ubuntu-toolchain-r-test
-#          packages:
-#            - gcc-9
-#            - g++-9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-9
+            - g++-9
           #  - zlib1g-dev # for RocksDB # build from sources
       env:
         - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-9 && gcc --version"
