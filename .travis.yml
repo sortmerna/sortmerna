@@ -32,8 +32,10 @@ matrix:
   exclude:
     - os : linux
       compiler: clang
+      osx_image: xcode10.2
       
     - os : osx
+      osx_image: xcode10.2
       compiler: 
         - gcc
         - clang
