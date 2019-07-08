@@ -91,21 +91,27 @@ install:
   # $HOME  /home/travis (Linux), /Users/travis (MacOS), /c/Users/travis (Windows)
   - pushd $HOME
   - env
-
-  # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
   - echo $PWD
   - echo $PATH
+  - which gcc-9
+  - gcc-9 --version
+  - gcc --version
+  - echo $CC
+  - echo $CXX
   - which cmake
   - cmake --version
-  # Linux+CLang - use binary distro. Problem building CMake from source
+  # Upgrade CMake
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
-      sudo apt remove cmake; 
-      sudo apt purge --auto-remove cmake;
-      wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2-Linux-x86_64.sh;
-      chmod +x cmake-3.13.2-Linux-x86_64.sh;
-      ./cmake-3.13.2-Linux-x86_64.sh --skip-license;
-      /usr/local/bin/cmake --version;
-      export PATH=/usr/local/bin:$PATH;
+      CMAKE_VER=v3.15.0-rc3 ;
+      CMAKE_URL=https://github.com/Kitware/CMake/releases/download ;
+      CMAKE_SH=cmake-${CMAKE_VER}-Linux-x86_64.sh ;
+      wget ${CMAKE_URL}/${CMAKE_VER}/${CMAKE_SH} ;
+      sudo apt remove cmake ; 
+      sudo apt purge --auto-remove cmake ;
+      chmod +x ${CMAKE_SH} ;
+      ./${CMAKE_SH} --skip-license ;
+      /usr/local/bin/cmake --version ;
+      export PATH=/usr/local/bin:$PATH ;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew upgrade cmake;
