@@ -88,8 +88,8 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9 ;
-      update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60 ;
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9 ;
+      sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60 ;
     fi
   
 install:
