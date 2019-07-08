@@ -29,18 +29,18 @@ addons:
 
 matrix:
   # does nothing
-  exclude:
-    - os : linux
-      language: cpp
-      compiler: clang
-      osx_image: xcode10.2
+#  exclude:
+#    - os : linux
+#      language: cpp
+#      compiler: clang
+#      osx_image: xcode10.2
       
-    - os : osx
-      language: cpp
-      compiler: 
-        - gcc
-        - clang
-      osx_image: xcode10.2
+#    - os : osx
+#      language: cpp
+#      compiler: 
+#        - gcc
+#        - clang
+#      osx_image: xcode10.2
 
   include:
     - os: linux
