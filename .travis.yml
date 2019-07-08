@@ -45,6 +45,7 @@ matrix:
   include:
     - os: linux
       compiler: gcc
+      dist: xenial
       addons:
         apt:
           sources:
