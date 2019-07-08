@@ -56,8 +56,8 @@ matrix:
       env:
         - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-9 && gcc --version"
       
-    - os: linux
-      compiler: clang
+#    - os: linux
+#      compiler: clang
 #      addons:
 #        apt:
 #          sources:
@@ -67,22 +67,22 @@ matrix:
           #  - llvm-toolchain-trusty-6.0
 #          packages:
 #            - clang-7
-      env:
-        - MATRIX_EVAL="ENV=Linux_clang-7_LLVM && CC=clang-7 && CXX=clang++-7 && clang --version"
+#      env:
+#        - MATRIX_EVAL="ENV=Linux_clang-7_LLVM && CC=clang-7 && CXX=clang++-7 && clang --version"
       
-    - os: osx
+#    - os: osx
 #      osx_image: xcode10.2 # xcode9.2 (macOS 10.12) xcode10.2 (macOS 10.14)
-      compiler: clang
-      env:
-        - MATRIX_EVAL="ENV=Osx_clang-9.0_APPL && clang --version"
+#      compiler: clang
+#      env:
+#        - MATRIX_EVAL="ENV=Osx_clang-9.0_APPL && clang --version"
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
-    - os: osx
+#    - os: osx
 #      osx_image: xcode10.2 #
-      compiler: gcc
-      env:
-        - MATRIX_EVAL="ENV=Osx_gcc_APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
+#      compiler: gcc
+#      env:
+#        - MATRIX_EVAL="ENV=Osx_gcc_APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
         #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
         
 before_install:
