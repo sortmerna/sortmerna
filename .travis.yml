@@ -102,10 +102,10 @@ install:
   - cmake --version
   # Upgrade CMake
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
-      CMAKE_VER=v3.15.0-rc3 ;
+      CMAKE_VER=3.15.0-rc3 ;
       CMAKE_URL=https://github.com/Kitware/CMake/releases/download ;
       CMAKE_SH=cmake-${CMAKE_VER}-Linux-x86_64.sh ;
-      wget ${CMAKE_URL}/${CMAKE_VER}/${CMAKE_SH} ;
+      wget ${CMAKE_URL}/v${CMAKE_VER}/${CMAKE_SH} ;
       sudo apt remove cmake ; 
       sudo apt purge --auto-remove cmake ;
       chmod +x ${CMAKE_SH} ;
