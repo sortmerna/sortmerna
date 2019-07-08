@@ -52,7 +52,6 @@ matrix:
           packages:
             - gcc-9
             - g++-9
-          #  - zlib1g-dev # for RocksDB # build from sources
       env:
         - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-9 && gcc --version"
       
@@ -91,6 +90,7 @@ before_install:
 install:
   # $HOME  /home/travis (Linux), /Users/travis (MacOS), /c/Users/travis (Windows)
   - pushd $HOME
+  - env
 
   # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
   - echo $PWD
