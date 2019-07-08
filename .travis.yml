@@ -2,63 +2,85 @@
 # FILE: .travis.yml
 # Travis CI build configuration
 #==============================================================================
-dist: xenial
+
+os:
+  - linux
+  - osx
+
 language: cpp
+compiler:
+  - clang
+  - gcc
+
+dist: xenial
+osx_image: xcode10.2
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-xenial-7
+    packages:
+      - gcc-9
+      - g++-9
+      - clang-7
+
 #sudo: false # required
 
 matrix:
-  include:
-    - os: linux
-      compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-9
-            - g++-9
-          #  - zlib1g-dev # for RocksDB # build from sources
-      env:
-        - MATRIX_EVAL="ENV=Linux+gcc-9 && CC=gcc-9 && CXX=g++-9 && gcc --version"
-      
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          # the latest official clang on Xenial is clang-4.0 [https://packages.ubuntu.com/xenial/devel] => use llvm
-            - llvm-toolchain-xenial-7
-          #  - llvm-toolchain-trusty-6.0
-          packages:
-            - clang-7
-      env:
-        - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7 && clang --version"
-      
-    - os: osx
-      osx_image: xcode10.2 # xcode9.2 (macOS 10.12) xcode10.2 (macOS 10.14)
-      compiler: clang
-      env:
-        - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL && clang --version"
-        #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
-      
-    # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
-    - os: osx
-      osx_image: xcode10.2 #
-      compiler: gcc
-      env:
-        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
-        #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
-        
-# does nothing
+  # does nothing
   exclude:
     - os : linux
       compiler: clang
       
     - os : osx
+      compiler: 
+        - gcc
+        - clang
+
+  include:
+    - os: linux
       compiler: gcc
-
-
+#      addons:
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#          packages:
+#            - gcc-9
+#            - g++-9
+          #  - zlib1g-dev # for RocksDB # build from sources
+      env:
+        - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-9 && gcc --version"
+      
+    - os: linux
+      compiler: clang
+#      addons:
+#        apt:
+#          sources:
+          #  - ubuntu-toolchain-r-test
+          # the latest official clang on Xenial is clang-4.0 [https://packages.ubuntu.com/xenial/devel] => use llvm
+#            - llvm-toolchain-xenial-7
+          #  - llvm-toolchain-trusty-6.0
+#          packages:
+#            - clang-7
+      env:
+        - MATRIX_EVAL="ENV=Linux_clang-7_LLVM && CC=clang-7 && CXX=clang++-7 && clang --version"
+      
+    - os: osx
+#      osx_image: xcode10.2 # xcode9.2 (macOS 10.12) xcode10.2 (macOS 10.14)
+      compiler: clang
+      env:
+        - MATRIX_EVAL="ENV=Osx_clang-9.0_APPL && clang --version"
+        #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
+      
+    # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
+    - os: osx
+#      osx_image: xcode10.2 #
+      compiler: gcc
+      env:
+        - MATRIX_EVAL="ENV=Osx_gcc_APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
+        #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
+        
 before_install:
   - eval "${MATRIX_EVAL}"
   
@@ -228,7 +250,7 @@ script:
   - export PATH="$PWD/dist/bin:$PATH"
   - sortmerna --version
   - sortmerna -h
-  #- if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then python ./tests/test_sortmerna.py; fi
+  #- if [[ "$ENV" == "Linux+clang-7_LLVM" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
 #after_success:
