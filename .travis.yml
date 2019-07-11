@@ -3,6 +3,20 @@
 # Travis CI build configuration
 #==============================================================================
 
+# 20190708
+#   Build matrix is a Total Mess! Exclude seems to have no action at all. All the
+#   logic of 'include' and 'exclude' is unpredictable.
+#
+#   OSX 'xcode10.2' packages Apple Clang 9.0 based on LLVM 7.0 and doesn't support
+#   <filesystem> at ALL (not even experimental)
+#
+#   LLVM Clang 8.0 screws RocksDB on deprecations and doesn't support <filesystem>
+#
+#   Wait until LLVM 9.0 which should be ready by the end of this year with 
+#   <filesystem> support
+#
+#   For now only build on Linux with GCC
+
 #os:
 #  - linux
 #  - osx
@@ -87,6 +101,7 @@ matrix:
         
 before_install:
   - eval "${MATRIX_EVAL}"
+  # Used to work without this 20190708. Now it stubbornly uses pre-installed older GCC.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9 ;
       sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60 ;

@@ -25,9 +25,7 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 			* [Download GitHub Release](#download-github-release)
 			* [Clone the GitHub Repository and use the head or a release](#clone-the-github-repository-and-use-the-head-or-a-release)
 		* [building on Linux OS](#building-on-linux-os)
-		* [Building on MacOS](#building-on-macos)
 		* [Building on Windows OS](#building-on-windows-os)
-	* [DNANexus cloud](#dnanexus-cloud)
 * [Running tests](#running)
 * [User Manual](#user-manual)
 * [Third-party libraries](#third-party-libraries)
@@ -43,11 +41,11 @@ Visit http://bioinfo.lifl.fr/RNA/sortmerna/ for more information.
 
 SortMeRNA can be run/built on Linux, Mac, and Windows. 
 
-`CMake` is used for performing portable builds and besides makes the building process quite the same on all the systems.
+`CMake` is used for performing portable builds, and makes the building similar on all supported systems.
 
 The following methods are available to start using SortMeRNA:
 
-## Using GitHub release binaries
+## Using GitHub release binaries for Linux
 
 Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
 
@@ -59,22 +57,22 @@ Installation commands in `bash`:
 
 ```
 # get binary distro (substitute the release version as desired)
-wget https://github.com/biocore/sortmerna/releases/download/v3.0.3/sortmerna-3.0.3-linux.sh
+wget https://github.com/biocore/sortmerna/releases/download/v4.0.0/sortmerna-4.0.0-linux.sh
 
 # view the installer usage
-chmod +x ./sortmerna-3.0.3-linux.sh
-./sortmerna-3.0.3-linux.sh --help
-Usage: dist/sortmerna-3.0.3-Linux.sh [options]
+chmod +x ./sortmerna-4.0.0-linux.sh
+./sortmerna-4.0.0-linux.sh --help
+Usage: dist/sortmerna-4.0.0-Linux.sh [options]
 Options: [defaults in brackets after descriptions]
   --help            print this message
   --version         print cmake installer version
   --prefix=dir      directory in which to install
-  --include-subdir  include the sortmerna-3.0.3-Linux subdirectory
-  --exclude-subdir  exclude the sortmerna-3.0.3-Linux subdirectory
+  --include-subdir  include the sortmerna-4.0.0-Linux subdirectory
+  --exclude-subdir  exclude the sortmerna-4.0.0-Linux subdirectory
   --skip-license    accept license
 
-./sortmerna-3.0.3-Linux.sh --prefix=$HOME/sortmerna --exclude-subdir --skip-license
-sortmerna Installer Version: 3.0.3, Copyright (c) Clarity Genomics
+./sortmerna-4.0.0-Linux.sh --prefix=$HOME/sortmerna --exclude-subdir --skip-license
+sortmerna Installer Version: 4.0.0, Copyright (c) Clarity Genomics
 This is a self-extracting archive.
 The archive will be extracted to: /home/biocodz/sortmerna
 
@@ -92,7 +90,7 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-SortMeRNA version 3.0.3
+SortMeRNA version 4.0.0
 Build Date: Dec 11 2019
 sortmerna_build_git_sha:@bc47297ce3e8580ef32d161255bfcbe1f718c322@
 sortmerna_build_git_date:@2019/01/11 12:35:39@
@@ -114,20 +112,19 @@ General steps for building Sortmerna from the sources are as follows:
 
 The build was tested using the following environments:
 1. Linux
-	* Ubuntu 18.04 Bionic with GCC 7.3.0 or Clang 7.0.0
-	* Ubuntu 16.04 Xenial with GCC 7.3.0 or Cland 7.0.0
-	* Ubuntu 16.04 Xenial with GCC 5.4.0 (default)
-	* Ubuntu 14.04 Trusty with GCC 7.3.0 or Cland 7.0.0
-	* Centos 6.6 with GCC 7.3.0
+	* Ubuntu 18.04 Bionic with GCC 9.1.0
+	* Ubuntu 16.04 Xenial with GCC 9.1.0
 2. Windows
-	* Windows 10 with Visual Studio 15 2017 Win64
-3. MacOS
-	* macOS 10.13 High Sierra (64-bit) with AppleClang 9.0.0.9000039
-	* macOS 10.12.6 (64-bit) with clang-900.0.39.2
+	* Windows 10 with Visual Studio 15 2017 Win64 version 15.9.12
+
+The latest version of SortmeRNA is C++17 compliant, and requires a compiler that supports `filesystem` standard library.
+LLVM Clang 7 and 8 support this feature only experimentally, and Apple Clang 9.0 based on LLVM 7.0 doesn't support
+it at ALL (not even experimental).
+LLVM 9.0 due to be released later this year will have support for `filesystem`. At that time we'll get back to supporting builds with Clang on Linux and OSX.
 
 Getting latest GCC on _old_ Linux distros requires either installing GCC from PPA (Ubuntu), or building from sources - a lengthy process (around 10 hours on Centos VM running on VirtualBox Windows 10 host).
 
-`CMake-3.13` of higher is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
+`CMake-3.14` of higher is necessary for building. The distributions are available for all major operating systems. CMake can be easily built _if_ not available through a standard packager. Please visit [CMake project website](https://cmake.org/) for download and installation instructions.
 
 The following libraries have to be installed using a packager or to be built
 * `ZLib` (zlib1g-dev)
@@ -160,7 +157,7 @@ The source code can be obtained using `any` of the following:
 Visit [GitHub releases](https://github.com/biocore/sortmerna/releases) and click `Source code` link to download the archive, or alternatively on command line:
 
 ```
-wget https://github.com/biocore/sortmerna/archive/v3.0.3.tar.gz
+wget https://github.com/biocore/sortmerna/archive/v4.0.0.tar.gz
 ```
 
 #### Clone the GitHub Repository and use the HEAD or a release
@@ -172,23 +169,21 @@ git clone https://github.com/biocore/sortmerna.git
 pushd sortmerna
 
 # If you need a particular release (tag)
-git checkout v3.0.3
+git checkout v4.0.0
 ```
 
-### building on Linux OS
+### Building on Linux (Ubuntu)
 
-(1) Install GCC or/and LLVM Clang if not already installed. SortmeRNA is C++14 compliant, so the compiler needs to be fairly new e.g. GCC 5.4.0 works OK.
+(1) Install GCC 9
 
 ```bash
-gcc --version
-	gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
-
-# for Clang
-cc --version
-	clang version 7.0.1-svn348686-1~exp1~20181211132844.50 (branches/release_70)
-	Target: x86_64-pc-linux-gnu
-	Thread model: posix
-	InstalledDir: /usr/bin
+	sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+	sudo apt update
+	sudo apt install gcc-9 g++-9
+	sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+	sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60
+	gcc --version
+	gcc (Ubuntu 9.1.0-2ubuntu2~18.04) 9.1.0
 ```
 
 (2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
@@ -216,12 +211,14 @@ popd
 
 (4) Build RocksDB (may take couple hours depending on the system)
 
+Note that building RocksDB using `GCC 9` fails on warnings. We patched the code and submitted the [PR 5426](https://github.com/facebook/rocksdb/pull/5426), which has not been merged so far. Until that is done, we maintain a [fork with the fix](https://github.com/biocodz/rocksdb)
+
 ```bash
-git clone https://github.com/facebook/rocksdb.git;
+git clone https://github.com/biocodz/rocksdb.git;
 pushd rocksdb
 
-# checkout the latest release
-ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
+# checkout the latest release (or just use master top)
+ROCKSDB_RELEASE=vXXX; git checkout tags/${ROCKSDB_RELEASE}
 
 mkdir -p build/Release
 pushd build/Release;
@@ -280,19 +277,9 @@ git clone https://github.com/biocore/sortmerna.git
 mkdir -p $HOME/sortmerna/build/Release
 pushd $HOME/sortmerna/build/Release
 
-# If alternative toolchains (compilers) are installed on the system
-
-# to use Clang
-rm CMakeCache.txt
-cmake -E env CC=/usr/bin/clang-7 CXX=/usr/bin/clang++-7 \
-cmake -G "Unix Makefiles" \
-	-DCMAKE_BUILD_TYPE=Release \
-	... # other flags as necessary (see above)
-	../..
-
 # to use GCC
 rm CMakeCache.txt
-CC=gcc-7 CXX=g++-7 cmake \
+CC=gcc-9 CXX=g++-9 cmake \
 cmake -G "Unix Makefiles" \
 	-DCMAKE_BUILD_TYPE=Release \
 	... # other flags as necessary (see above)
@@ -328,19 +315,19 @@ popd
 # check the distro
 ls -l ~/sortmerna/dist
 	drwxrwxr-x 2 biocodz biocodz    4096 Jan  2 18:09 bin
-	-rwxrwxrwx 1 biocodz biocodz 2074449 Jan  2 18:09 sortmerna-3.0.3-Linux.sh
-	-rw-rw-r-- 1 biocodz biocodz 2070507 Jan  2 18:09 sortmerna-3.0.3-Linux.tar.gz
-	-rw-rw-r-- 1 biocodz biocodz 2877845 Jan  2 18:09 sortmerna-3.0.3-Linux.tar.Z
+	-rwxrwxrwx 1 biocodz biocodz 2074449 Jan  2 18:09 sortmerna-4.0.0-Linux.sh
+	-rw-rw-r-- 1 biocodz biocodz 2070507 Jan  2 18:09 sortmerna-4.0.0-Linux.tar.gz
+	-rw-rw-r-- 1 biocodz biocodz 2877845 Jan  2 18:09 sortmerna-4.0.0-Linux.tar.Z
 
 # add the build binaries to the PATH
 export PATH="$HOME/sortmerna/dist/bin/indexdb:$HOME/sortmerna/dist/bin/sortmerna:$PATH"
 
 # test
 sortmerna --version
-	SortMeRNA version 3.0.3
-	Build Date: Jan  9 2019
-	sortmerna_build_git_sha:@2a619c87cdcb6e98c5460630182f161359cfd1d1@
-	sortmerna_build_git_date:@2019/01/09 18:04:04@
+	SortMeRNA version 4.0.0
+	Build Date: Jul  8 2019
+	sortmerna_build_git_sha:@4025d679c177b92b5824252b70370383e33c5ea5@
+	sortmerna_build_git_date:@2019/07/08 19:34:33@
 
 sortmerna -h
 ```
@@ -348,55 +335,6 @@ sortmerna -h
 Other compiler/linker flags that might be necessary depending on the system:
 
 * -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
-
-
-### Building on MacOS
-
-The build can be performed using either `Clang` or `GCC`.
-
-For third-party software installation we recommend the Homebrew - an excellent packager for Mac [1], which has all the latest packages. 
-
-(1) Install Homebrew:
-
-```bash
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" [1]
-
-brew --version
-brew help
-```
-	
-(2) Install pre-requisites (CMake, Git, Zlib, RocksDB, RapidJson)
-
-```bash
-brew install cmake
-brew install git
-brew install zlib
-brew install rocksdb
-brew install rapidjson
-```
-
-(3) Install `Clang` on Mac (if necessary)
-
-Installing Xcode (free through the App Store) and Xcode command line tools will automatically 
-install the latest version of Clang supported with Xcode. 
-
-After installing Xcode, the Xcode command line tools may be installed via:
-
-Xcode -> Preferences -> Downloads
-
-Under "Components", click to install "Command Line Tools"
-
-(4) Install `GCC` (if necessary) using Homebrew.
-
-```
-# list available flags
-brew options gcc7
-brew tap homebrew/versions
-brew install [flags] gcc7
-```
-
-The rest is the same as for Linux (see above starting with step 3)
-For older versions of OSX you may need to use `-DEXTRA_CXX_FLAGS_RELEASE="-pthread"`.
 
 
 ### Building on Windows OS
@@ -633,16 +571,6 @@ Start Visual Studio and:
 - In Solution explorer right-click `ALL_BUILD' and select `build` in drop-down menu.
 - Execute target 'INSTALL'
 - Execute target 'PACKAGE'
-
-## DNANexus cloud
-
-So far (since 20181117) we were not able to make Sortmerna application public due DNANexus lack of interest or resources.
-If you need the access to the application, please, contact `biocodz at protonmail dot com` to be added to the list of authorized users.
-
-* Ready-to-use `sortmerna` application is available on DNANexus cloud. Just upload your data and run the application.
-* Sortmerna distribution also contains DNANexus applets for building, testing and running Sortmerna. See [dnanexus](https://github.com/biocore/sortmerna/blob/master/dnanexus/README.md) subdirectory for detailed instructions.
-
-Note that DNANexus trial accounts can be used.
 
 # Running
 

@@ -97,7 +97,7 @@ help_sam =
 help_SQ = 
 	"Add SQ tags to the SAM file",
 help_blast = 
-	"output alignments in various Blast - like formats\n"
+	"output alignments in various Blast-like formats\n"
 	"                                            '0'                    - pairwise\n"
 	"                                            '1'                    - tabular(Blast - m 8 format)\n"
 	"                                            '1 cigar'              - tabular + column for CIGAR\n"
