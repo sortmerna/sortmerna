@@ -14,15 +14,15 @@ if "%1" == "release" set btype=Release
 
 @echo on
 :build
-set RAPIDJSON_HOME=C:\Users\ak\a03_libs\rapidjson
+set RAPIDJSON_HOME=%USERPROFILE:\=/%/a03_libs/rapidjson
 set RAPIDJSON_BUILD_EXAMPLES=0
 set RAPIDJSON_BUILD_DOC=0
 set CMAKE_INSTALL_PREFIX=%RAPIDJSON_HOME%/dist
 set CMAKE_GEN=Visual Studio 16 2019
 ::set CMAKE_GEN=Visual Studio 15 2017 Win64
 
-mkdir %RAPIDJSON_HOME%\build
-pushd %RAPIDJSON_HOME%\build
+mkdir %RAPIDJSON_HOME:/=\%\build
+pushd %RAPIDJSON_HOME:/=\%\build
 
 :: print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
 ::"%VS_HOME%"\bin\Hostx86\x86\cl.exe

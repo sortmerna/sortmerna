@@ -21,7 +21,7 @@ if "%ptype%" == "t3" (
 
 @echo on
 :build
-set ROCKSDB_HOME=C:\Users\ak\a03_libs\rocksdb
+set ROCKSDB_HOME=%USERPROFILE:\=/%/a03_libs/rocksdb
 ::set PORTABLE=1
 set OPTDBG=0
 set WITH_MD_LIBRARY=1
@@ -35,8 +35,8 @@ set CMAKE_INSTALL_PREFIX=%ROCKSDB_HOME%/dist/%ptype%/%btype%
 set CMAKE_GEN=Visual Studio 16 2019
 ::set CMAKE_GEN=Visual Studio 15 2017 Win64
 
-mkdir %ROCKSDB_HOME%\build
-pushd %ROCKSDB_HOME%\build
+mkdir %ROCKSDB_HOME:/=\%\build
+pushd %ROCKSDB_HOME:/=\%\build
 
 :: print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
 ::"%VS_HOME%"\bin\Hostx86\x86\cl.exe

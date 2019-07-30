@@ -16,7 +16,7 @@ if "%2" == "" ( set ptype=t1 ) else ( set ptype=%2 )
 
 @echo on
 :build
-set ZLIB_HOME=C:/Users/ak/a03_libs/zlib
+set ZLIB_HOME=%USERPROFILE:\=/%/a03_libs/zlib
 :: trim whitespace, otherwise a space will be put between INSTALL_PREFIX and '/bin'. Strange bug.
 set CMAKE_INSTALL_PREFIX=%ZLIB_HOME: =%/dist/%ptype: =%
 set INSTALL_BIN_DIR=%CMAKE_INSTALL_PREFIX%/bin
