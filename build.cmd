@@ -21,6 +21,7 @@ if "%ptype%" == "t3" (
 
 @echo on
 :build
+set UHOME=C:/Users/ak
 set PORTABLE=0
 set WITH_MD_LIBRARY=1
 set WITH_RUNTIME_DEBUG=0
@@ -31,21 +32,23 @@ set CPACK_SOURCE_7Z=1
 set CPACK_SOURCE_ZIP=1
 set ROCKSDB_STATIC=1
 set ZLIB_STATIC=1
-set ZLIB_ROOT=C:/a03_libs/zlib/dist/t1
+set ZLIB_ROOT=%UHOME%/a03_libs/zlib/dist/t1
 set ZLIB_LIBRARY_RELEASE=%ZLIB_ROOT%/lib/zlibstatic.lib
 set ZLIB_LIBRARY_DEBUG=%ZLIB_ROOT%/lib/zlibstaticd.lib
-set ROCKSDB_SRC=C:/a03_libs/rocksdb
-set ROCKSDB_HOME=C:/a02_projects/rocksdb/dist/Release
-set RAPIDJSON_HOME=C:/a03_libs/rapidjson/dist
-set DIRENTWIN_HOME=C:/a03_libs/dirent
-set CMAKE_INSTALL_PREFIX=C:/a02_projects/sortmerna/dist/%ptype%/%btype%
+set ROCKSDB_SRC=%UHOME%/a03_libs/rocksdb
+set ROCKSDB_HOME=%UHOME%/a03_libs/rocksdb/dist/t3/Release
+set RAPIDJSON_HOME=%UHOME%/a03_libs/rapidjson/dist
+set DIRENTWIN_HOME=%UHOME%/a03_libs/dirent
+set CMAKE_INSTALL_PREFIX=%UHOME%/a02_projects/sortmerna/dist/%ptype%/%btype%
+set CMAKE_GEN=Visual Studio 16 2019
+::set CMAKE_GEN=Visual Studio 15 2017 Win64
 
 pushd .\build
 
 :: print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
 "%VS_HOME%"\bin\Hostx86\x86\cl.exe
 
-cmake -G "Visual Studio 15 2017 Win64" ^
+cmake -G "%CMAKE_GEN%" ^
 -DPORTABLE=0 ^
 -DCPACK_BINARY_NSIS=0 ^
 -DCPACK_BINARY_7Z=1 ^
