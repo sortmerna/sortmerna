@@ -12,7 +12,7 @@ from os.path import abspath, join, dirname
 from tempfile import mkdtemp
 from shutil import rmtree
 
-from skbio.parse.sequences import parse_fasta
+import skbio.io
 
 
 # ----------------------------------------------------------------------------
@@ -76,15 +76,14 @@ class SortmernaTestsZlib(TestCase):
         # Correct number of reads mapped
         self.assertEqual("99999", num_hits)
         # Correct number of clusters recorded
-        self.assertEqual("272", num_clusters_log)
+        self.assertEqual("264", num_clusters_log)
         # Correct number of clusters in OTU-map
-        with open(aligned_basename + "_otus.txt", 'U') as f_otumap:
+        with open(aligned_basename + "_otus.txt") as f_otumap:
             num_clusters_file = sum(1 for line in f_otumap)
-        self.assertEqual(272, num_clusters_file)
+        self.assertEqual(264, num_clusters_file)
         num_failures_file = 0
-        with open(aligned_basename + "_denovo.fasta", 'U') as f_denovo:
-            for label, seq in parse_fasta(f_denovo):
-                num_failures_file += 1
+        for seq in skbio.io.read(aligned_basename + "_denovo.fasta", format='fasta'):
+            num_failures_file += 1
         # Correct number of reads for de novo clustering
         self.assertEqual(num_failures_log, str(num_failures_file))
 
