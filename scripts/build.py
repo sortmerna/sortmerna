@@ -109,10 +109,10 @@ def cmake_run(cmd, cwd):
         #proc = subprocess.run(cmd, cwd=build_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as err:
         print(err)
-        raise
+        sys.exit()
     except:
         for info in sys.exc_info(): print(info)
-        raise
+        sys.exit()
     #print(proc.stdout)
     #print(proc.stderr)
 #END cmake_run
@@ -317,8 +317,11 @@ if __name__ == "__main__":
     RAPID = 'rapidjson'
     DIRENT = 'dirent'
 
+    DIRENT_DIST = None
+
     pf = platform.platform()
     IS_WIN = 'Windows' in pf
+    # Windows Subsystem for Linux (WSL)
     IS_WSL = 'Linux' in pf and 'Microsoft' in pf
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
@@ -337,6 +340,9 @@ if __name__ == "__main__":
     (opts, args) = optpar.parse_args()
 
     UHOME_WIN = opts.winhome if IS_WSL else None
+    if IS_WSL and not opts.winhome:
+        print('--winhome is a required options on Windows Subsyste for Linux')
+        sys.exit()
 
     if IS_WIN:
         if not opts.pt_smr: opts.pt_smr = 't3'
@@ -371,8 +377,8 @@ if __name__ == "__main__":
         ZLIB_DIST = os.path.join(UHOME, ZLIB, 'dist')
 
         ROCKS_SRC = os.path.join(UHOME_WIN, 'a01_libs', ROCKS)
-        ROCKS_BUILD = os.path.join(UHOME, ZLIB, 'build')
-        ROCKS_DIST = os.path.join(UHOME, ZLIB, 'dist')
+        ROCKS_BUILD = os.path.join(UHOME, ROCKS, 'build')
+        ROCKS_DIST = os.path.join(UHOME, ROCKS, 'dist')
 
         RAPID_SRC = os.path.join(UHOME_WIN, 'a01_libs', RAPID)
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
@@ -381,6 +387,18 @@ if __name__ == "__main__":
         SMR_SRC = os.path.join(UHOME, 'a01_code', SMR)
         SMR_BUILD = os.path.join(SMR_SRC, 'build')
         SMR_DIST = os.path.join(SMR_SRC, 'dist')
+
+        ZLIB_SRC = os.path.join(UHOME, 'a01_libs', ZLIB)
+        ZLIB_BUILD = os.path.join(ZLIB_SRC, 'build')
+        ZLIB_DIST = os.path.join(ZLIB_SRC, 'dist')
+
+        ROCKS_SRC = os.path.join(UHOME, 'a01_libs', ROCKS)
+        ROCKS_BUILD = os.path.join(ROCKS_SRC, 'build')
+        ROCKS_DIST = os.path.join(ROCKS_SRC, 'dist')
+
+        RAPID_SRC = os.path.join(UHOME, 'a01_libs', RAPID)
+        RAPID_BUILD = os.path.join(RAPID_SRC, 'build')
+        RAPID_DIST = os.path.join(RAPID_SRC, 'dist')
 
     if opts.name:
         if opts.name == SMR: 
