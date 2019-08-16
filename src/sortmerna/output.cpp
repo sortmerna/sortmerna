@@ -78,9 +78,9 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		std::string sfx;
 		if (opts.is_pid)
 		{
-			samoutFile += "_" + summary.pid_str;
+			sfx += "_" + summary.pid_str;
 		}
-		samoutFile += ".sam";
+		sfx += ".sam";
 		// sam output  WORKDIR/out/aligned.sam
 		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
 		samoutFile = fpath.string();
