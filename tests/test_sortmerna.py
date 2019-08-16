@@ -1253,32 +1253,38 @@ class SortmernaTests(unittest.TestCase):
         proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
-        sam_alignments_expected = [['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-                                    '0',
-                                    'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-                                    '1',
-                                    '255',
-                                    '101M',
-                                    '*',
-                                    '0',
-                                    '0',
-                                    'GCTGGCACGGAGTTAGCCGGGGCTTATAAATGGTACCGTCATTGATTCTTCCCATTCTTTCGAAGTTTACATCCCGAGGGACTTCATCCTTCACGCGGCGT',
-                                    '*',
-                                    'AS:i:202',
-                                    'NM:i:0'],
-                                   ['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-                                    '16',
-                                    'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-                                    '102',
-                                    '255',
-                                    '101M',
-                                    '*',
-                                    '0',
-                                    '0',
-                                    'ACGCCGCGTGAAGGATGAAGTCCCTCGGGATGTAAACTTCGAAAGAATGGGAAGAATCAATGACGGTACCATTTATAAGCCCCGGCTAACTCCGTGCCAGC',
-                                    '*',
-                                    'AS:i:202',
-                                    'NM:i:0']]
+        sam_alignments_expected = [
+            [
+                'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                '0',
+                'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                '1',
+                '255',
+                '101M',
+                '*',
+                '0',
+                '0',
+                'GCTGGCACGGAGTTAGCCGGGGCTTATAAATGGTACCGTCATTGATTCTTCCCATTCTTTCGAAGTTTACATCCCGAGGGACTTCATCCTTCACGCGGCGT',
+                '*',
+                'AS:i:202',
+                'NM:i:0'
+            ],
+            [
+                'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                '16',
+                'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+                '102',
+                '255',
+                '101M',
+                '*',
+                '0',
+                '0',
+                'ACGCCGCGTGAAGGATGAAGTCCCTCGGGATGTAAACTTCGAAAGAATGGGAAGAATCAATGACGGTACCATTTATAAGCCCCGGCTAACTCCGTGCCAGC',
+                '*',
+                'AS:i:202',
+                'NM:i:0'
+            ]
+        ]
         sam_alignments = []
         with open("%s.sam" % aligned_basename) as aligned_f:
             for line in aligned_f:
