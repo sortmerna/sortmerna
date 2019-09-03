@@ -126,7 +126,7 @@ Read::Read(const Read & that)
 // copy assignment
 Read & Read::operator=(const Read & that)
 {
-	if (&that == this) return *this;
+	if (&that == this) return *this; // else *this = that
 
 	//printf("Read copy assignment called\n");
 	id = that.id;
