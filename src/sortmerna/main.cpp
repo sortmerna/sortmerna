@@ -68,11 +68,12 @@ int main(int argc, char** argv)
 {
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
+
+	std::cout << STAMP << "Running command:\n" << opts.cmdline << std::endl;
+
 	setup_workspace(opts);
 	Index index(opts); // reference index DB
 	KeyValueDatabase kvdb(opts.kvdbPath);
-
-	std::cout << STAMP << "Running task ALIGN_REPORT: " << opts.alirep << std::endl;
 
 	if (opts.is_cmd) {
 		CmdSession cmd;
