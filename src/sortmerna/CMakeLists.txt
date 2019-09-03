@@ -75,6 +75,26 @@ include(FindRapidJson)
  # prevent CONFIG search mode
 find_package(RapidJson MODULE REQUIRED)
 
+# set additional compile flags
+if(MSVC)
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi /nologo /EHsc /GS /Gd /GR /GF /fp:precise /Zc:wchar_t /Zc:forScope /errorReport:queue")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FC /d2Zi+ /W4 /wd4127 /wd4800 /wd4996 /wd4351 /wd4100 /wd4204 /wd4324")
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wextra -Wall")
+  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -v -da -Q") # for segfault
+  #                                                    |  |   |_show which function is causing the crash.
+  #                                                    |  |_dumps the RTL to a file after each stage
+  #                                                    |_show how the program was invoked
+  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -v -da -Q -O0") # for segfault
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-compare -Wshadow -Wno-unused-parameter -Wno-unused-variable -Woverloaded-virtual -Wnon-virtual-dtor -Wno-missing-field-initializers -Wno-strict-aliasing")
+endif()
+
+#set(MY_OPTS -g -Wall) # using quotes "-g -Wall" throws error
+#target_compile_options(smr_objs PUBLIC ${MY_OPTS})
+#target_compile_options(smr_objs PUBLIC "$<$<CONFIG:DEBUG>:${MY_OPTS}>")
+#target_compile_options(smr_objs PUBLIC "$<$<CONFIG:RELEASE>:${MY_OPTS}>")
+#set_target_properties(smr_objs PROPERTIES COMPILE_OPTIONS ${MY_OPTS})
+
 set(SMR_SRCS
 	alignment.cpp
 	bitvector.cpp
@@ -130,6 +150,10 @@ endif()
 
 get_property(trans_deps TARGET smr_objs PROPERTY INTERFACE_LINK_LIBRARIES)
 message("SMR Objects transitive link dependencies: ${trans_deps}")
+
+get_target_property(COMPILE_OPT smr_objs COMPILE_OPTIONS)
+get_target_property(COMPILE_FLG smr_objs COMPILE_FLAGS)
+message("SMR Objects COMPILE_OPT: ${COMPILE_OPT}  COMPILE_FLG: ${COMPILE_FLG}")
 
 # SMR
 add_executable(sortmerna main.cpp)
