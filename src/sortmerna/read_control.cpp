@@ -33,7 +33,8 @@ void ReadControl::run()
 	std::stringstream ss;
 	bool is_paired = (opts.readfiles.size() == 2); // reads are paired i.e. 2 read files are supplied
 
-	// open reads files for reading
+	// setup FWD Reader
+	Reader reader_fwd("reader_fwd", opts.is_gz);
 	auto fwd_file = opts.readfiles[0];
 	std::ifstream ifs_fwd(fwd_file, std::ios_base::in | std::ios_base::binary);
 
@@ -43,8 +44,10 @@ void ReadControl::run()
 		exit(EXIT_FAILURE);
 	}
 
+	// setup REV Reader
 	std::ifstream ifs_rev;
-	if (opts.readfiles.size() == 2)
+	Reader reader_rev("reader_rev", opts.is_gz);
+	if (is_paired)
 	{
 		auto rev_file = opts.readfiles[1];
 		ifs_rev.open(rev_file, std::ios_base::in | std::ios_base::binary);
@@ -55,49 +58,45 @@ void ReadControl::run()
 		}
 	}
 
-	Reader reader_fwd("reader_fwd", opts.is_gz);
-	Reader *preader_rev;
-	if (is_paired)
-	{
-		Reader reader_rev("reader_rev", opts.is_gz);
-		preader_rev = &reader_rev;
-	}
-
 	ss.str("");
 	ss << STAMP << "thread: " << std::this_thread::get_id() << " started" << std::endl;
 	std::cout << ss.str();
 	auto t = std::chrono::high_resolution_clock::now();
 
-	Read read;
+	//Read read;
+	size_t read_cnt = 0;
 	bool done_fwd = false;
 	bool done_rev = false;
 	uint8_t idx_fwd_reads = 0;
 	uint8_t idx_rev_reads = 1;
+
 	// loop calling Readers
-	for (; !reader_fwd.is_done || (is_paired && !preader_rev->is_done);)
+	for (; !reader_fwd.is_done || (is_paired && !reader_rev.is_done);)
 	{
 		// first push FWD read
 		if (!reader_fwd.is_done)
 		{
-			read = reader_fwd.nextread(ifs_fwd, opts.readfiles[idx_fwd_reads], opts);
+			Read read = reader_fwd.nextread(ifs_fwd, opts.readfiles[idx_fwd_reads], opts);
 
 			if (!read.isEmpty)
 			{
 				read.init(opts);
 				read.load_db(kvdb); // get matches from Key-value database
 				//unmarshallJson(kvdb); // get matches from Key-value database
+				++read_cnt; // save because push(read) uses move(read)
 				readQueue.push(read);
 			}
 		}
 		// second push REV read (if paired)
-		if (is_paired && !preader_rev->is_done)
+		if (is_paired && !reader_rev.is_done)
 		{
-			read = preader_rev->nextread(ifs_rev, opts.readfiles[idx_rev_reads], opts);
+			Read read = reader_rev.nextread(ifs_rev, opts.readfiles[idx_rev_reads], opts);
 
 			if (!read.isEmpty)
 			{
 				read.init(opts);
 				read.load_db(kvdb); // get matches from Key-value database
+				++read_cnt;
 				readQueue.push(read);
 			}
 		}
@@ -109,7 +108,7 @@ void ReadControl::run()
 
 	ss.str("");
 	ss << STAMP << "thread: " << std::this_thread::get_id() << " done. Elapsed time: "
-		<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read.id + 1
+		<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_cnt
 		<< " readQueue.size: " << readQueue.size() << std::endl;
 	std::cout << ss.str();
 
