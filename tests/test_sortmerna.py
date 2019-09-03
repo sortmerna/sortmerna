@@ -667,6 +667,8 @@ class SortmernaTests(unittest.TestCase):
             Conditions: reference index and input
             query FASTA file both processed as one
             section using the generic buffer (kseq lib).
+
+            TODO: looks exactly the same as 'test_simulated_amplicon_1_part_map'
         """
         FUNC = "test_simulated_amplicon_generic_buffer"
         print(FUNC)
