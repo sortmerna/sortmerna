@@ -99,14 +99,17 @@ def rapidjson_clone():
 def cmake_run(cmd, cwd):
     '''
     '''
+    print('[cmake_run] Running command:\n{} in {}'.format(cmd, cwd))
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
     if not os.path.exists(cwd):
         os.makedirs(cwd)
     # cmake configure and generate
     try:
-        subprocess.run(cmd, cwd=cwd)
+        proc = subprocess.run(cmd, cwd=cwd)
         #proc = subprocess.run(cmd, cwd=build_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if proc.returncode:
+            for info in sys.exc_info(): print(info)
     except OSError as err:
         print(err)
         sys.exit()
@@ -149,6 +152,8 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
     if 'Linux' in pf:
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'libz.a')
         ZLIB_LIBRARY_DEBUG = ZLIB_LIBRARY_RELEASE
+        BUILD_DIR = os.path.join(build, btype.title())
+        PORTABLE = 1 # sets '-static' flag
     elif 'Windows' in pf:
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'zlibstatic.lib')
         ZLIB_LIBRARY_DEBUG = os.path.join(ZLIB_DIST, 'lib', 'zlibstaticd.lib')
@@ -177,13 +182,22 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         '-DROCKSDB_HOME={}'.format(ROCKSDB_DIST),
         '-DRAPIDJSON_HOME={}'.format(RAPIDJSON_DIST),
         '-DDIRENTWIN_HOME={}'.format(DIRENTWIN_DIST),
-        '-DCMAKE_INSTALL_PREFIX={}'.format(DIST_DIR), 
-        SRC_DIR
+        '-DCMAKE_INSTALL_PREFIX={}'.format(DIST_DIR)
     ]
+
+    if 'Linux' in pf:
+        cmd.append('-DCMAKE_BUILD_TYPE={}'.format(btype))
+    if opts.vb:
+        cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
+    if opts.loglevel:
+        cmd.append('--loglevel={}'.format(opts.loglevel.upper()))
+    elif opts.trace:
+        cmd.append('--trace')
+    cmd.append(SRC_DIR)
     cmake_run(cmd, BUILD_DIR)
 
     # build
-    cmd = [ 'cmake', '--build', '.', '--config', btype, '--target', 'install' ]
+    cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'install' ]
     cmake_run(cmd, BUILD_DIR)
 
     # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
@@ -310,7 +324,11 @@ def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, b
 #END rocksdb_build
 
 if __name__ == "__main__":
-#    import pdb; pdb.set_trace()
+    '''
+    python scripts/build.py --name sortmerna
+    python /mnt/c/Users/XX/a01_code/sortmerna/scripts/build.py --name sortmerna --winhome /mnt/c/Users/XX --btype debug
+    '''
+    import pdb; pdb.set_trace()
     SMR = 'sortmerna'
     ZLIB = 'zlib'
     ROCKS = 'rocksdb'
@@ -328,7 +346,7 @@ if __name__ == "__main__":
     CMAKE_GEN = 'Visual Studio 16 2019' if IS_WIN else 'Unix Makefiles'
 
     optpar = OptionParser()
-    optpar.add_option('-n', '--name', dest='name', help='Module to build e.g. smr | zlib | rocksdb |')
+    optpar.add_option('-n', '--name', dest='name', help='Module to build e.g. sortmerna | zlib | rocksdb | all')
     optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory for the given name')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
@@ -336,6 +354,9 @@ if __name__ == "__main__":
     optpar.add_option('--pt_zlib', dest='pt_zlib', help = 'Zlib Linkage type t1 | t2 | t3')
     optpar.add_option('--pt_rocks', dest='pt_rocks', help = 'ROcksdb Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='When building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
+    optpar.add_option('--trace', action="store_true", help='Run cmake with --trace')
+    optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
+    optpar.add_option('--vb', action="store_true", help='Export compile commands')
 
     (opts, args) = optpar.parse_args()
 
@@ -384,21 +405,21 @@ if __name__ == "__main__":
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
         RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
     else:
-        SMR_SRC = os.path.join(UHOME, 'a01_code', SMR)
-        SMR_BUILD = os.path.join(SMR_SRC, 'build')
-        SMR_DIST = os.path.join(SMR_SRC, 'dist')
+        SMR_SRC = '/media/sf_a01_code/sortmerna'
+        SMR_BUILD = os.path.join(UHOME, SMR, 'build')
+        SMR_DIST = os.path.join(UHOME, SMR, 'dist')
 
-        ZLIB_SRC = os.path.join(UHOME, 'a01_libs', ZLIB)
-        ZLIB_BUILD = os.path.join(ZLIB_SRC, 'build')
-        ZLIB_DIST = os.path.join(ZLIB_SRC, 'dist')
+        ZLIB_SRC = os.path.join('/media/sf_a01_libs', ZLIB)
+        ZLIB_BUILD = os.path.join(UHOME, ZLIB, 'build')
+        ZLIB_DIST = os.path.join(UHOME, ZLIB, 'dist')
 
-        ROCKS_SRC = os.path.join(UHOME, 'a01_libs', ROCKS)
-        ROCKS_BUILD = os.path.join(ROCKS_SRC, 'build')
-        ROCKS_DIST = os.path.join(ROCKS_SRC, 'dist')
+        ROCKS_SRC = os.path.join('/media/sf_a01_libs', ROCKS)
+        ROCKS_BUILD = os.path.join(UHOME, ROCKS, 'build')
+        ROCKS_DIST = os.path.join(UHOME, ROCKS, 'dist')
 
-        RAPID_SRC = os.path.join(UHOME, 'a01_libs', RAPID)
-        RAPID_BUILD = os.path.join(RAPID_SRC, 'build')
-        RAPID_DIST = os.path.join(RAPID_SRC, 'dist')
+        RAPID_SRC = os.path.join('/media/sf_a01_libs', RAPID)
+        RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
+        RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
 
     if opts.name:
         if opts.name == SMR: 
