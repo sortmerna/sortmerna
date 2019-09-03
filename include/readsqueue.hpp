@@ -40,8 +40,6 @@ class ReadsQueue
 	std::mutex qlock; // lock for push/pop on queue
 	std::condition_variable cvQueue;
 
-	std::stringstream ss;
-
 public:
 	ReadsQueue(std::string id, int capacity, int numPushers)
 		:
@@ -55,8 +53,9 @@ public:
 		recs(capacity) // set initial capacity
 #endif
 	{
-		ss << id << " created" << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::stringstream ss;
+		ss << STAMP << "[" << id << "] created with [" << numPushers << "] Pushers" << std::endl;
+		std::cout << ss.str();
 	}
 
 	~ReadsQueue() {
@@ -65,8 +64,9 @@ public:
 #else
 		size_t recsize = recs.size_approx();
 #endif
+		std::stringstream ss;
 		ss << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed.load() << "  popped: " << numPopped << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 
 	/** 
@@ -103,8 +103,9 @@ public:
 			++numPopped;
 			if (numPopped.load() % 100000 == 0)
 			{
-				ss << id << " Popped id: " << rec.id << "\r";
-				std::cout << ss.str(); ss.str("");
+				std::stringstream ss;
+				ss << id << " Popped read number: " << rec.read_num << "\r";
+				std::cout << ss.str();
 			}
 		}
 		cvQueue.notify_one();
@@ -130,8 +131,10 @@ public:
 
 	// call from main thread when no other threads running
 	void reset(int nPushers) {
+		std::stringstream ss;
 		pushers = nPushers;
-		ss << __func__ << ":" << __LINE__ << " " << id << ": pushers: " << pushers.load() << std::endl; std::cout << ss.str(); ss.str("");
+		ss << STAMP << "[" << id << "] pushers: [" << pushers.load() << "]" << std::endl;
+		std::cout << ss.str();
 	}
 
 	size_t size()
@@ -161,9 +164,10 @@ public:
 
 	void decrPushers()
 	{
+		std::stringstream ss;
 		--pushers;
-		ss.str("");
-		ss << STAMP << "id= [" << id << "] pushers: [" << pushers.load() << "]" << std::endl;
+		unsigned int np = pushers.load();
+		ss << STAMP << "id: [" << id << "] thread: [" << std::this_thread::get_id() << "] pushers: [" << np << "]" << std::endl;
 		std::cout << ss.str();
 	}
 }; // ~class ReadsQueue
