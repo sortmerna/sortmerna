@@ -118,7 +118,6 @@ id %: members of the cluster must have identity at least this % id with the repr
                                     (ex. --ref /path/to/file1.fasta,/path/to/index1:/path/to/file2.fasta,path/to/index2)
     [OPTIONS]:
     --tmpdir        STRING          directory where to write temporary files
-    -m              INT             the amount of memory (in Mbytes) for building the index     3072
     -L              INT             seed length                                                 18
     --max_pos       INT             maximum number of positions to store for each unique L-mer  10000
                                     (setting --max_pos 0 will store all positions)
@@ -368,10 +367,6 @@ In SortMeRNA users have the option to output sequence alignments for their match
     --thpp            INT:INT:INT      number of Post-Processing Read:Process threads to use     1:1
     --threp           INT:INT:INT      number of Report Read:Process threads to use              1:1
 </pre>
-
-<p>
-The user can adjust the amount of memory allocated for loading the reads through the command option <em>-m</em>. By default, <em>-m</em> is set to be high enough for 1GB. If the reads file is larger than 1GB, then sortmerna internally divides the file into partial sections of 1GB and executes one section at a time. Hence, if a user has an input file of 15GB and only 1GB of RAM to store it, the file will be processed in partial sections using mmap without having to physically split it prior to execution. Otherwise, the user can increase -m to map larger portions of the file. The limit for -m is given by typing <em>sortmerna -h</em>.
-</p>
 
 <h4>4.3.1 Example 3: multiple databases and the fastest alignment option</h4>
 <p class="code">
