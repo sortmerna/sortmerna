@@ -67,6 +67,12 @@ set(DIRENTWIN_URL https://github.com/tronkko/dirent CACHE STRING "Dirent-Windows
 set(DIRENTWIN_HOME ${EXTERNAL_DEPS}/dirent CACHE PATH "Dirent-Windows interface installation directory")
 set(CONCURRENTQUEUE_URL https://github.com/cameron314/concurrentqueue CACHE STRING "Concurrent queue library GitHub URL")
 set(CONCURRENTQUEUE_HOME ${EXTERNAL_DEPS}/concurrentqueue CACHE PATH "Concurrent queue library installation directory")
+#set(gflags_DIR  ${EXTERNAL_DEPS}/gflags/dist/lib/cmake/gflags CACHE PATH "GFlags library configuration")
+
+option(ROCKSDB_STATIC "Use static RocksDB library" ON)
+option(ZLIB_STATIC "Use static ZLib library" ON)
+
+option(PORTABLE "Build portable/statically linked executable" ON)
 
 option(WITH_MD_LIBRARY "build with MD" ON)
 if(WIN32 AND MSVC)
@@ -84,11 +90,29 @@ if(WIN32 AND MSVC)
 		CMAKE_C_FLAGS_RELWITHDEBINFO)
 	   if(${flag_var} MATCHES "/MD")
 		  string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	   endif(${flag_var} MATCHES "/MD")
+	   endif()
 	endforeach(flag_var)
   endif()
 endif()
 
+option(WITH_RUNTIME_DEBUG "Build with MDd/MTd on Windows. Ignored on non-Windows" OFF)
+if(WIN32 AND MSVC)
+  if(NOT WITH_RUNTIME_DEBUG)
+	foreach(flag_var
+		CMAKE_CXX_FLAGS_DEBUG 
+		CMAKE_C_FLAGS_DEBUG
+		)
+	   if(${flag_var} MATCHES "/MDd")
+		  string(REGEX REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
+		elseif(${flag_var} MATCHES "/MTd")
+		  string(REGEX REPLACE "/MTd" "/MT" ${flag_var} "${${flag_var}}")
+	   endif()
+	endforeach(flag_var)
+  endif()
+endif()
+
+message("CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
+message("CMAKE_C_FLAGS_DEBUG: ${CMAKE_C_FLAGS_DEBUG}")
 
 option(WITH_TESTS "Select whether to build tests" OFF)
 
