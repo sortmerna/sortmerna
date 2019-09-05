@@ -17,6 +17,7 @@ matrix:
           packages:
             - gcc-7
             - g++-7
+            - dos2unix
           #  - zlib1g-dev # for RocksDB # build from sources
       env:
         - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
@@ -32,6 +33,7 @@ matrix:
           #  - llvm-toolchain-trusty-6.0
           packages:
             - clang-7
+            - dos2unix
           #  - clang-6.0
           #  - zlib1g-dev # for RocksDB
       env:
@@ -83,9 +85,11 @@ install:
       ./cmake-3.13.2-Linux-x86_64.sh --skip-license;
       /usr/local/bin/cmake --version;
       export PATH=/usr/local/bin:$PATH;
+      sudo apt install dos2unix
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew upgrade cmake;
+      brew install dos2unix;
     fi
   # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
   #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
@@ -198,12 +202,17 @@ script:
   - |
     cmake -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
+    -DPORTABLE=1 \
+    -DWITH_RUNTIME_DEBUG=0 \
+    -DWITH_TESTS=1 \
+    -DZLIB_STATIC=1 \
+    -DROCKSDB_STATIC=1 \
     -DZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
     -DZLIB_LIBRARY_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist/lib/libz.a \
     -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
-    -DROCKSDB_3RDPARTY_INC=1 \
     -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
+    -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
     -DCPACK_BINARY_TGZ=ON ../.. ;
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
@@ -214,6 +223,7 @@ script:
   - popd; # return to sortmerna/
 
   # run tests
+  - find ./tests/data -type f -name '*.fasta' -o -name '*.fastq' | xargs dos2unix
   - export PATH="$PWD/dist/bin:$PATH"
   - sortmerna --version
   - sortmerna -h
