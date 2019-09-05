@@ -47,6 +47,10 @@ else()
 		${CMAKE_SOURCE_DIR}/include
 		$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 	)
+	
+	if(PORTABLE)
+		target_link_options(indexdb PRIVATE -static)
+	endif(PORTABLE)
 endif()
 
 if(WIN32)
