@@ -177,7 +177,6 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         #'-DROCKSDB_SRC={}'.format(ROCKSDB_SRC),
         '-DROCKSDB_HOME={}'.format(ROCKSDB_DIST),
         '-DRAPIDJSON_HOME={}'.format(RAPIDJSON_DIST),
-        '-DDIRENTWIN_HOME={}'.format(DIRENTWIN_DIST),
         '-DCMAKE_INSTALL_PREFIX={}'.format(DIST_DIR)
     ]
 
@@ -185,6 +184,7 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         cmd.append('-DCMAKE_BUILD_TYPE={}'.format(btype))
         cmd.append('-DCPACK_BINARY_TGZ={}'.format(CPACK_BINARY_TGZ))
     elif 'Windows' in pf:
+        cmd.append('-DDIRENTWIN_HOME={}'.format(DIRENTWIN_DIST))
         cmd.append('-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY))
         cmd.append('-DCPACK_BINARY_NSIS={}'.format(CPACK_BINARY_NSIS))
         cmd.append('-DCPACK_BINARY_7Z={}'.format(CPACK_BINARY_7Z))
