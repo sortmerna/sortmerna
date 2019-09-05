@@ -85,7 +85,6 @@ install:
       ./cmake-3.13.2-Linux-x86_64.sh --skip-license;
       /usr/local/bin/cmake --version;
       export PATH=/usr/local/bin:$PATH;
-      sudo apt install dos2unix
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew upgrade cmake;
