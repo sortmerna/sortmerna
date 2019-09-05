@@ -228,7 +228,8 @@ class SortmernaTests(unittest.TestCase):
     def test_indexdb_rna_tmp_dir_system(self):
         """ Test writing to /tmp folder
         """
-        print("test_indexdb_rna_tmp_dir_system")
+        FUNC = 'test_indexdb_rna_tmp_dir_system'
+        print(FUNC)
         start = time.time()
         
         if 'Windows' in platform.platform():
@@ -238,17 +239,17 @@ class SortmernaTests(unittest.TestCase):
         index_db = join(self.output_dir, "GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         
-        indexdb_command = [self.indexdb_rna,
+        cmd = [self.indexdb_rna,
                            "--ref", index_path,
                            "-v"]
         
-        print('test_indexdb_rna_tmp_dir_system: {}'.format(indexdb_command))
+        print('{}: {}'.format(FUNC, ' '.join(cmd)))
         
         if 'Windows' in platform.platform():
-            proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
             stdout = proc.stdout
         else:
-            proc = Popen(indexdb_command,
+            proc = Popen(cmd,
                          stdout=PIPE,
                          stderr=PIPE,
                          close_fds=True)
@@ -780,7 +781,8 @@ class SortmernaTests(unittest.TestCase):
             as one unit and input query FASTA file
             in 6 sections.
         """
-        print("test_simulated_amplicon_6_part_map")
+        FUNC = 'test_simulated_amplicon_6_part_map'
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "db_bac16s")
@@ -791,7 +793,7 @@ class SortmernaTests(unittest.TestCase):
                 "--ref", index_path,
                 "-v"]
         
-        print("test_simulated_amplicon_6_part_map: {}".format(cmd))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
         if 'Windows' in platform.platform():
             proc = run(cmd, stdout=PIPE, stderr=PIPE)
@@ -804,27 +806,27 @@ class SortmernaTests(unittest.TestCase):
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set5,
-                             "--aligned", aligned_basename,
-                             "--other", other_basename,
-                             "--id", "0.97",
-                             "--coverage", "0.97",
-                             "--log",
-                             "--otu_map",
-                             "--de_novo_otu",
-                             "--blast", "1 cigar qcov",
-                             "--fastx",
-                             "-v",
-                             "-d", datadir]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set5,
+                "--aligned", aligned_basename,
+                "--other", other_basename,
+                "--id", "0.97",
+                "--coverage", "0.97",
+                "--log",
+                "--otu_map",
+                "--de_novo_otu",
+                "--blast", "1 cigar qcov",
+                "--fastx",
+                "-v",
+                "-d", datadir]
         
-        print("test_simulated_amplicon_6_part_map: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, cmd))
         
         if 'Windows' in platform.platform():
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
         else:
-            proc = Popen(sortmerna_command,
+            proc = Popen(cmd,
                          stdout=PIPE,
                          stderr=PIPE,
                          close_fds=True)
@@ -835,7 +837,7 @@ class SortmernaTests(unittest.TestCase):
             proc.stderr.close()
         self.output_test(aligned_basename, other_basename)
             
-        print("test_simulated_amplicon_6_part_map: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_simulated_amplicon_6_part_map
 
     def test_simulated_amplicon_12_part_index(self):
@@ -855,37 +857,37 @@ class SortmernaTests(unittest.TestCase):
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v",
-                           "-m", "10"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v",
+                "-m", "10"]
         
-        print("test_simulated_amplicon_12_part_index: {}".format(indexdb_command))
+        print("test_simulated_amplicon_12_part_index: {}".format(cmd))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
 
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set5,
-                             "--aligned", aligned_basename,
-                             "--other", other_basename,
-                             "--id", "0.97",
-                             "--coverage", "0.97",
-                             "--log",
-                             "--otu_map",
-                             "--de_novo_otu",
-                             "--blast", "1 cigar qcov",
-                             "--fastx",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set5,
+                "--aligned", aligned_basename,
+                "--other", other_basename,
+                "--id", "0.97",
+                "--coverage", "0.97",
+                "--log",
+                "--otu_map",
+                "--de_novo_otu",
+                "--blast", "1 cigar qcov",
+                "--fastx",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_simulated_amplicon_12_part_index: {}".format(sortmerna_command))
+        print("test_simulated_amplicon_12_part_index: {}".format(cmd))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
         self.output_test(aligned_basename, other_basename)
@@ -900,40 +902,41 @@ class SortmernaTests(unittest.TestCase):
             Conditions: input FASTA file is processed in
             one mapped section.
         """
-        print("test_environmental_output")
+        FUNC = 'test_environmental_output'
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "--max_pos", "250",
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "--max_pos", "250",
+                "-v"]
         
-        print("test_environmental_output: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set2,
-                             "--aligned", aligned_basename,
-                             "--id", "0.97",
-                             "--coverage", "0.97",
-                             "--log",
-                             "--otu_map",
-                             "--de_novo_otu",
-                             "--fastx",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set2,
+                "--aligned", aligned_basename,
+                "--id", "0.97",
+                "--coverage", "0.97",
+                "--log",
+                "--otu_map",
+                "--de_novo_otu",
+                "--fastx",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_environmental_output: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         stderr = proc.stderr
         if stderr: print(stderr)
         
@@ -972,57 +975,58 @@ class SortmernaTests(unittest.TestCase):
         # Correct number of reads for de novo clustering
         self.assertEqual(num_failures_log, str(num_failures_file))
             
-        print("test_environmental_output: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_environmental_output
 
     def test_empty_query_file(self):
         """ Test SortMeRNA with an empty reads file.
         """
-        print("test_empty_query_file")
+        FUNC = "test_empty_query_file"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "db_gg_13_8")
         index_path = "%s,%s" % (self.db_gg_13_8, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "--max_pos", "250",
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "--max_pos", "250",
+                "-v"]
         
-        print("test_empty_query_file: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set3,
-                             "--aligned", aligned_basename,
-                             "--id", "0.97",
-                             "--coverage", "0.97",
-                             "--log",
-                             "--otu_map",
-                             "--de_novo_otu",
-                             "--fastx",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set3,
+                "--aligned", aligned_basename,
+                "--id", "0.97",
+                "--coverage", "0.97",
+                "--log",
+                "--otu_map",
+                "--de_novo_otu",
+                "--fastx",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_empty_query_file: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
         try:
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
             if proc.stderr: print(proc.stderr)
         except:
-            msg = 'test_empty_query_file: ERROR running sortmerna: {}'.format(sys.exc_info()[0])
+            msg = '{}: ERROR running sortmerna: {}'.format(FUNC, sys.exc_info()[0])
             print(msg)
         
         # Correct number of clusters in OTU-map
         with open(aligned_basename + ".log") as f_log:
             self.assertTrue("The input reads file or reference file is empty" in f_log.read())
             
-        print("test_empty_query_file: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_empty_query_file
            
     @unittest.skip("Skip until bug 54 fixed")
@@ -1048,41 +1052,42 @@ class SortmernaTests(unittest.TestCase):
             With --paired_out, the --aligned file will contain 2000 reads
                                the --other file will contain 8000 reads
         """
-        print("test_mate_pairs")
+        FUNC = "test_mate_pairs"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "db_bac16s")
         index_path = "%s,%s" % (self.db_bac16s, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "--max_pos", "250",
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "--max_pos", "250",
+                "-v"]
         
-        print("test_mate_pairs: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
         aligned_basename = join(self.output_dir, "aligned")
         nonaligned_basename = join(self.output_dir, "nonaligned")
         
         # launch normally
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set4,
-                             "--aligned", aligned_basename,
-                             "--other", nonaligned_basename,
-                             "--fastx",
-                             "--log",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set4,
+                "--aligned", aligned_basename,
+                "--other", nonaligned_basename,
+                "--fastx",
+                "--log",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_mate_pairs: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
         f_log = open(aligned_basename + ".log")
@@ -1116,21 +1121,21 @@ class SortmernaTests(unittest.TestCase):
         self.cleanData(datadir)
         
         # launch with option --paired_in
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set4,
-                             "--aligned", aligned_basename,
-                             "--other", nonaligned_basename,
-                             "--paired_in",
-                             "--fastx",
-                             "--log",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ONLY_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set4,
+                "--aligned", aligned_basename,
+                "--other", nonaligned_basename,
+                "--paired_in",
+                "--fastx",
+                "--log",
+                "-v",
+                "-d", datadir,
+                "--task", self.ONLY_REPORT]
         
-        print("test_mate_pairs: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
@@ -1169,21 +1174,21 @@ class SortmernaTests(unittest.TestCase):
         self.cleanData(datadir)
         
         # launch with option --paired_out
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.set4,
-                             "--aligned", aligned_basename,
-                             "--other", nonaligned_basename,
-                             "--paired_out",
-                             "--fastx",
-                             "--log",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ONLY_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.set4,
+                "--aligned", aligned_basename,
+                "--other", nonaligned_basename,
+                "--paired_out",
+                "--fastx",
+                "--log",
+                "-v",
+                "-d", datadir,
+                "--task", self.ONLY_REPORT]
         
-        print("test_mate_pairs: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         f_log = open(aligned_basename + ".log")
         f_log_str = f_log.read()
@@ -1212,7 +1217,7 @@ class SortmernaTests(unittest.TestCase):
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
         self.assertEqual(8000, num_nonaligned_reads/4)
             
-        print("test_mate_pairs: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_mate_pairs
 
     def test_output_all_alignments_f_rc(self):
@@ -1220,37 +1225,38 @@ class SortmernaTests(unittest.TestCase):
             search both forward and reverse-complement query for
             alignments
         """
-        print("test_output_all_alignments_f_rc")
+        FUNC = "test_output_all_alignments_f_rc"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "ref_GQ099317")
         index_path = "%s,%s" % (self.db_GQ099317, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print("test_output_all_alignments_f_rc: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
 
         aligned_basename = join(self.output_dir, "aligned")
         
         # num_alignments 0
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.read_GQ099317,
-                             "--aligned", aligned_basename,
-                             "--num_alignments", "0",
-                             "--sam",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.read_GQ099317,
+                "--aligned", aligned_basename,
+                "--num_alignments", "0",
+                "--sam",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_output_all_alignments_f_rc: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
         sam_alignments_expected = [['GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
@@ -1290,7 +1296,7 @@ class SortmernaTests(unittest.TestCase):
         for alignment in sam_alignments_expected:
             self.assertTrue(alignment in sam_alignments)
             
-        print("test_output_all_alignments_f_rc: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_output_all_alignments_f_rc
 
     def test_cigar_lcs_1(self):
@@ -1303,35 +1309,36 @@ class SortmernaTests(unittest.TestCase):
                           ^
                           align_que_start
         """
-        print("test_cigar_lcs_1")
+        FUNC = "test_cigar_lcs_1"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print("test_cigar_lcs_1: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.query_str_fp,
-                             "--aligned", aligned_basename,
-                             "--sam",
-                             "--blast", "1 qstrand cigar",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.query_str_fp,
+                "--aligned", aligned_basename,
+                "--sam",
+                "--blast", "1 qstrand cigar",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_cigar_lcs_1: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
         expected_alignment = ["AB271211", "Unc49508", "93.5", "1430",
@@ -1346,29 +1353,30 @@ class SortmernaTests(unittest.TestCase):
         actual_alignment.sort()
         self.assertEqual(expected_alignment, actual_alignment)
             
-        print("test_cigar_lcs_1: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_cigar_lcs_1
 
     def test_blast_format_0(self):
         """ Test BLAST-like pairwise format
         """
-        print("test_blast_format_0")
+        FUNC = "test_blast_format_0"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print('test_blast_format_0: {}'.format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
         if 'Windows' in platform.platform():
-            proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
         else:
-            proc = Popen(indexdb_command,
+            proc = Popen(cmd,
                          stdout=PIPE,
                          stderr=PIPE,
                          close_fds=True)
@@ -1381,22 +1389,22 @@ class SortmernaTests(unittest.TestCase):
             
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.query_str_fp,
-                             "--aligned", aligned_basename,
-                             "--sam",
-                             "--blast", "0",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.query_str_fp,
+                "--aligned", aligned_basename,
+                "--sam",
+                "--blast", "0",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print('test_blast_format_0: {}'.format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
         if 'Windows' in platform.platform():
-            proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+            proc = run(cmd, stdout=PIPE, stderr=PIPE)
         else:
-            proc = Popen(sortmerna_command,
+            proc = Popen(cmd,
                          stdout=PIPE,
                          stderr=PIPE,
                          close_fds=True)
@@ -1512,7 +1520,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
             actual_alignment = aligned_f.readlines()
         self.assertTrue(expected_alignment, actual_alignment)
             
-        print("test_blast_format_0: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_blast_format_0
 
     def test_blast_format_1(self):
