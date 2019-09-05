@@ -212,8 +212,8 @@ script:
     -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
     -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
     -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
-		-DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-    -DCPACK_BINARY_TGZ=ON ../.. ;
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCPACK_BINARY_TGZ=1 ../.. ;
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
   #  fi
