@@ -99,7 +99,7 @@ def rapidjson_clone():
 def cmake_run(cmd, cwd):
     '''
     '''
-    print('[cmake_run] Running command:\n{} in {}'.format(cmd, cwd))
+    print('[cmake_run] Running command:\n{} in {}'.format(' '.join(cmd), cwd))
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
     if not os.path.exists(cwd):
@@ -136,14 +136,15 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
     DIRENTWIN_DIST = dirent
 
     PORTABLE = 0
-    WITH_MD_LIBRARY = 1
+    WITH_MD_LIBRARY = 0 # only Windows
     WITH_RUNTIME_DEBUG = 0
     WITH_TESTS = 1
-    CPACK_BINARY_NSIS = 0
-    CPACK_BINARY_7Z = 1
-    CPACK_BINARY_ZIP = 1
-    CPACK_SOURCE_7Z = 1
-    CPACK_SOURCE_ZIP = 1
+    CPACK_BINARY_NSIS = 0 # Win
+    CPACK_BINARY_7Z = 1 # Win
+    CPACK_BINARY_ZIP = 1 # Win
+    CPACK_SOURCE_7Z = 1 # Win
+    CPACK_SOURCE_ZIP = 1 # Win
+    CPACK_BINARY_TGZ = 1 # Lin
     ROCKSDB_STATIC = 1
     ZLIB_STATIC = 1
 
@@ -158,6 +159,7 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'zlibstatic.lib')
         ZLIB_LIBRARY_DEBUG = os.path.join(ZLIB_DIST, 'lib', 'zlibstaticd.lib')
         #ROCKSDB_SRC = os.path.join(LIBDIR, 'rocksdb')
+        WITH_MD_LIBRARY = 1
 
     #:: print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
@@ -165,12 +167,6 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
     cmd = [
         'cmake', '-G', CMAKE_GEN,
         '-DPORTABLE={}'.format(PORTABLE),
-        '-DCPACK_BINARY_NSIS={}'.format(CPACK_BINARY_NSIS),
-        '-DCPACK_BINARY_7Z={}'.format(CPACK_BINARY_7Z),
-        '-DCPACK_BINARY_ZIP={}'.format(CPACK_BINARY_ZIP),
-        '-DCPACK_SOURCE_7Z={}'.format(CPACK_SOURCE_7Z),
-        '-DCPACK_SOURCE_ZIP={}'.format(CPACK_SOURCE_ZIP),
-        '-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY),
         '-DWITH_RUNTIME_DEBUG={}'.format(WITH_RUNTIME_DEBUG),
         '-DWITH_TESTS={}'.format(WITH_TESTS),
         '-DZLIB_STATIC={}'.format(ZLIB_STATIC),
@@ -187,17 +183,30 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
 
     if 'Linux' in pf:
         cmd.append('-DCMAKE_BUILD_TYPE={}'.format(btype))
+        cmd.append('-DCPACK_BINARY_TGZ={}'.format(CPACK_BINARY_TGZ))
+    elif 'Windows' in pf:
+        cmd.append('-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY))
+        cmd.append('-DCPACK_BINARY_NSIS={}'.format(CPACK_BINARY_NSIS))
+        cmd.append('-DCPACK_BINARY_7Z={}'.format(CPACK_BINARY_7Z))
+        cmd.append('-DCPACK_BINARY_ZIP={}'.format(CPACK_BINARY_ZIP))
+        cmd.append('-DCPACK_SOURCE_7Z={}'.format(CPACK_SOURCE_7Z))
+        cmd.append('-DCPACK_SOURCE_ZIP={}'.format(CPACK_SOURCE_ZIP))
+
     if opts.vb:
         cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
     if opts.loglevel:
         cmd.append('--loglevel={}'.format(opts.loglevel.upper()))
     elif opts.trace:
         cmd.append('--trace')
+
     cmd.append(SRC_DIR)
     cmake_run(cmd, BUILD_DIR)
 
-    # build
+    # build adn install
     cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'install' ]
+    cmake_run(cmd, BUILD_DIR)
+    # generate installation package
+    cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'package' ]
     cmake_run(cmd, BUILD_DIR)
 
     # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
