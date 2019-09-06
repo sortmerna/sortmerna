@@ -679,18 +679,11 @@ class SortmernaTests(unittest.TestCase):
         
         cmd = [self.indexdb_rna, "--ref", index_path, "-v"]
         
-        print("{}: {}".format(FUNC, cmd))
-        
-        if 'Windows' in platform.platform():
-            proc = run(cmd, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(cmd,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            proc.stdout.close()
-            proc.stderr.close()
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
+
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
+
         aligned_basename = join(self.output_dir, "aligned")
         other_basename = join(self.output_dir, "other")
         
@@ -710,22 +703,10 @@ class SortmernaTests(unittest.TestCase):
                 "-v",
                 "-d", datadir]
         
-        print("{}: {}".format(FUNC, cmd))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        if 'Windows' in platform.platform():
-            proc = run(cmd, stdout=PIPE, stderr=PIPE)
-            stderr = proc.stderr
-        else:
-            proc = Popen(cmd,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-            proc.stdout.close()
-            proc.stderr.close()
-            
-        if stderr: print(stderr)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
         self.output_test(aligned_basename, other_basename)
         
         # Clean up before next call
@@ -755,17 +736,10 @@ class SortmernaTests(unittest.TestCase):
                 "-d", datadir,
                 "--task", self.ALIGN_REPORT]
         
-        print("{}: {}".format(FUNC, cmd))
-        
-        if 'Windows' in platform.platform():
-            proc = run(cmd, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-            proc.stdout.close()
-            proc.stderr.close()
-            if stderr: print(stderr)
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
+
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
         self.output_test(aligned_basename, other_basename)
             
         print("{}: Run time: {}".format(FUNC, time.time() - start))
@@ -823,18 +797,9 @@ class SortmernaTests(unittest.TestCase):
         
         print("{}: {}".format(FUNC, cmd))
         
-        if 'Windows' in platform.platform():
-            proc = run(cmd, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(cmd,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-            if stderr: print(stderr)
-            proc.stdout.close()
-            proc.stderr.close()
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
+
         self.output_test(aligned_basename, other_basename)
             
         print("{}: Run time: {}".format(FUNC, time.time() - start))
@@ -1373,19 +1338,8 @@ class SortmernaTests(unittest.TestCase):
         
         print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        if 'Windows' in platform.platform():
-            proc = run(cmd, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(cmd,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-            proc.stdout.close()
-            proc.stderr.close()
-            if stderr: print(stderr)
-            if stdout: print(stdout)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
             
         aligned_basename = join(self.output_dir, "aligned")
         
@@ -1401,19 +1355,8 @@ class SortmernaTests(unittest.TestCase):
         
         print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        if 'Windows' in platform.platform():
-            proc = run(cmd, stdout=PIPE, stderr=PIPE)
-        else:
-            proc = Popen(cmd,
-                         stdout=PIPE,
-                         stderr=PIPE,
-                         close_fds=True)
-            proc.wait()
-            stdout, stderr = proc.communicate()
-            proc.stdout.close()
-            proc.stderr.close()
-            if stderr: print(stderr); self.assertFalse(stderr)
-            if stdout: print(stdout)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
         
         expected_alignment = """Sequence ID: Unc49508 count=1; cluster_weight=4; cluster=Unc49508; cluster_score=1.000000; cluster_center=True; 
 Query ID: AB271211 1487 residues
@@ -1526,35 +1469,36 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
     def test_blast_format_1(self):
         """ Test BLAST-like pairwise format -m8
         """
-        print("test_blast_format_1")
+        FUNC = 'test_blast_format_1'
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print("test_blast_format_1: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.query_str_fp,
-                             "--aligned", aligned_basename,
-                             "--sam",
-                             "--blast", "1",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.query_str_fp,
+                "--aligned", aligned_basename,
+                "--sam",
+                "--blast", "1",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_blast_format_1: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         if proc.stderr: print(proc.stderr)
         
         expected_alignment = ["AB271211", "Unc49508", "93.5", "1430", "64", "30", "58", "1487", "1", "1446", "0", "2069"]
@@ -1567,87 +1511,89 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
         actual_alignment.sort()
         self.assertEqual(expected_alignment, actual_alignment)
             
-        print("test_blast_format_1: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_blast_format_1
 
     def test_blast_format_0_other(self):
         """ Test BLAST-like pairwise format with option '0 qstrand'
         """
-        print("test_blast_format_0_other")
+        FUNC = "test_blast_format_0_other"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print("test_blast_format_0_other: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.query_str_fp,
-                             "--aligned", aligned_basename,
-                             "--sam",
-                             "--blast", "0 qstrand",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT
-                            ]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.query_str_fp,
+                "--aligned", aligned_basename,
+                "--sam",
+                "--blast", "0 qstrand",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_blast_format_0_other: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
         self.assertTrue(proc.stderr)
         if 'Windows' in platform.platform():
             error_msg = """for human-readable format, --blast [STRING] can only contain a single field '0'"""
         else:
             error_msg = """\n  \x1b[0;31mERROR\x1b[0m: for human-readable format, --blast [STRING] can only contain a single field '0'.\n\n"""
-        print("test_blast_format_0_other: Asserting [{}] in [{}]".format(error_msg, proc.stderr))
+        print("{}: Asserting [{}] in [{}]".format(FUNC, error_msg, proc.stderr))
         self.assertTrue(error_msg in proc.stderr.decode('utf-8'))
         #self.assertEqual(error_msg, proc.stderr.decode('utf-8'))
             
-        print("test_blast_format_0_other: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_blast_format_0_other
 
     def test_blast_format_1_other(self):
         """ Test BLAST-like -m8 tabular format with unsupported field
         """
-        print("test_blast_format_1_other")
+        FUNC = "test_blast_format_1_other"
+        print(FUNC)
         start = time.time()
         
         index_db = join(self.output_dir, "subject_str")
         index_path = "%s,%s" % (self.subject_str_fp, index_db)
         datadir = join(self.output_dir, 'kvdb')
         
-        indexdb_command = [self.indexdb_rna,
-                           "--ref", index_path,
-                           "-v"]
+        cmd = [self.indexdb_rna,
+                "--ref", index_path,
+                "-v"]
         
-        print("test_blast_format_1_other: {}".format(indexdb_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(indexdb_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
+        if proc.stderr: print(proc.stderr)
+
         aligned_basename = join(self.output_dir, "aligned")
         
-        sortmerna_command = [self.sortmerna,
-                             "--ref", index_path,
-                             "--reads", self.query_str_fp,
-                             "--aligned", aligned_basename,
-                             "--sam",
-                             "--blast", "1 sstrand",
-                             "-v",
-                             "-d", datadir,
-                             "--task", self.ALIGN_REPORT
-                            ]
+        cmd = [self.sortmerna,
+                "--ref", index_path,
+                "--reads", self.query_str_fp,
+                "--aligned", aligned_basename,
+                "--sam",
+                "--blast", "1 sstrand",
+                "-v",
+                "-d", datadir,
+                "--task", self.ALIGN_REPORT]
         
-        print("test_blast_format_1_other: {}".format(sortmerna_command))
+        print("{}: {}".format(FUNC, ' '.join(cmd)))
         
-        proc = run(sortmerna_command, stdout=PIPE, stderr=PIPE)
+        proc = run(cmd, stdout=PIPE, stderr=PIPE)
 
         self.assertTrue(proc.stderr)
         if 'Windows' in platform.platform():
@@ -1656,7 +1602,7 @@ Query:      1416    AGCTGGTCACGCCCGAAGTCATTACCTCAACCGCAAGGAGGGGGATGCCTAAGGC    1
             error_msg = """\n  \x1b[0;31mERROR\x1b[0m: `sstrand` is not supported in --blast [STRING].\n\n"""
         self.assertEqual(error_msg, proc.stderr.decode('utf-8'))
             
-        print("test_blast_format_1_other: Run time: {}".format(time.time() - start))
+        print("{}: Run time: {}".format(FUNC, time.time() - start))
     #END test_blast_format_1_other
 #END class SortmernaTests
 
