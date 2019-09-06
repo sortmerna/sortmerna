@@ -22,6 +22,7 @@ matrix:
       env:
         - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
         - STATIC_LINK=1
+        - TEST=0
       
     - os: linux
       compiler: clang
@@ -39,7 +40,9 @@ matrix:
           #  - zlib1g-dev # for RocksDB
       env:
         - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7"
-        - STATIC_LINK=1
+        # BUG: python 'subprocess.run' has problem with statically linked runtime
+        - STATIC_LINK=0
+        - TEST=1
       #  - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
       
     - os: osx
@@ -48,6 +51,7 @@ matrix:
       env:
         - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL"
         - STATIC_LINK=0
+        - TEST=0
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
@@ -57,6 +61,7 @@ matrix:
       env:
         - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
         - STATIC_LINK=0
+        - TEST=0
         #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
         
 # does nothing
@@ -231,17 +236,10 @@ script:
   - ls -lrth $PWD/dist/bin
   - sortmerna --version
   - sortmerna -h
-  # disable tests for 3.0.4 
-  # Need fixing for Py3.7. see below
-  # F/home/travis/miniconda/lib/python3.7/unittest/case.py:643: ResourceWarning: 
-  #  unclosed file <_io.TextIOWrapper name='/tmp/tmpqrwchnn9/aligned.log' mode='r' encoding='UTF-8'>
-  #    outcome.errors.clear()
-  #  ResourceWarning: Enable tracemalloc to get the object allocation traceback
-  #
-  #- if [[ "$ENV" == "Linux+LLVM_clang-7" ]]; then 
-  #    python ./tests/test_sortmerna.py; 
-  #  fi
-  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
+  - if [[ ${TEST} == 1 ]]; then 
+      python ./tests/test_sortmerna.py; 
+    fi
+  #- if [[ ${TEST} == 1 ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
 #after_success:
 
