@@ -231,12 +231,12 @@ script:
   - popd; # return to sortmerna/
 
   # run tests
-  - find ./tests/data -type f -name '*.fasta' -o -name '*.fastq' | xargs dos2unix
   - export PATH="$PWD/dist/bin:$PATH"
   - ls -lrth $PWD/dist/bin
   - sortmerna --version
   - sortmerna -h
   - if [[ ${TEST} == 1 ]]; then 
+      find ./tests/data -type f -name '*.fasta' -o -name '*.fastq' | xargs dos2unix ;
       python ./tests/test_sortmerna.py; 
     fi
   #- if [[ ${TEST} == 1 ]]; then python ./tests/test_sortmerna_zlib.py; fi
