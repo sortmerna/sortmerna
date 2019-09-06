@@ -120,11 +120,14 @@ def cmake_run(cmd, cwd):
     #print(proc.stderr)
 #END cmake_run
 
-def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3', 
+def smr_build(gen='Unix Makefiles', btype='Release', ptype='t1', 
         src=None, build=None, dist=None, zlib=None, rocks=None, rapid=None, dirent=None):
     '''
     @param btype Build type Release | Debug
-    @param ptype Linking type
+    @param ptype Linking type: t1 | t2 | t3
+        t1 all static
+        t2 static 3rd party + dynamic runtime
+        t3 all dynamic
     '''
     SRC_DIR = src
     BUILD_DIR = build
@@ -154,7 +157,8 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'libz.a')
         ZLIB_LIBRARY_DEBUG = ZLIB_LIBRARY_RELEASE
         BUILD_DIR = os.path.join(build, btype.title())
-        PORTABLE = 1 # sets '-static' flag
+        if 't1' == ptype:
+            PORTABLE = 1 # sets '-static' flag
     elif 'Windows' in pf:
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'zlibstatic.lib')
         ZLIB_LIBRARY_DEBUG = os.path.join(ZLIB_DIST, 'lib', 'zlibstaticd.lib')
@@ -359,7 +363,7 @@ if __name__ == "__main__":
     optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory for the given name')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
-    optpar.add_option('--pt_smr', dest='pt_smr', help = 'Sortmerna Linkage type t1 | t2 | t3')
+    optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--pt_zlib', dest='pt_zlib', help = 'Zlib Linkage type t1 | t2 | t3')
     optpar.add_option('--pt_rocks', dest='pt_rocks', help = 'ROcksdb Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='When building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
@@ -375,7 +379,6 @@ if __name__ == "__main__":
         sys.exit()
 
     if IS_WIN:
-        if not opts.pt_smr: opts.pt_smr = 't3'
         SMR_SRC = os.path.join(UHOME, 'a01_code', SMR)
         SMR_BUILD = os.path.join(SMR_SRC, 'build')
         SMR_DIST = os.path.join(SMR_SRC, 'dist', opts.pt_smr, opts.btype)
