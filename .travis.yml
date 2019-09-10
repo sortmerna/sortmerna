@@ -232,7 +232,8 @@ script:
 
   # run tests
   - export PATH="$PWD/dist/bin:$PATH"
-  - ls -lrth $PWD/dist/bin
+  - find $PWD/dist -type f | xargs ls -lh
+  #- ls -lrth $PWD/dist/bin
   - sortmerna --version
   - sortmerna -h
   - if [[ ${TEST} == 1 ]]; then 
