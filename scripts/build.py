@@ -30,51 +30,7 @@ def git_clone(url, pdir):
     except:
         for info in sys.exc_info(): print(info)
         raise
-#END git_clone
-
-def zlib_clone():
-    '''
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a03_libs')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
-
-    url = 'https://github.com/madler/zlib.git'
-    git_clone(url, PDIR)
-
-def dirent_clone():
-    '''
-    dirent win
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a03_libs')
-    else:
-        print('Used only for Windows')
-        return
-    url = 'https://github.com/tronkko/dirent'
-    git_clone(url, PDIR)
-
-def rocksdb_clone():
-    '''
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a03_libs')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
-    url = 'https://github.com/facebook/rocksdb.git'
-    git_clone(url, PDIR)
-
-def smr_clone():
-    '''
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a01_code')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
-
-    url = 'https://github.com/biocore/sortmerna.git'
-    git_clone(url, PDIR)
+#END git_clone  
 
 def clean(dir):
     '''
@@ -85,16 +41,6 @@ def clean(dir):
     cmd = ['rm', '-rf', './*']
     cmake_run(cmd, dir)
 #END clean
-
-def rapidjson_clone():
-    '''
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a01_code')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
-    url = 'https://github.com/Tencent/rapidjson'
-    git_clone(url, PDIR)
 
 def cmake_run(cmd, cwd):
     '''
@@ -342,22 +288,8 @@ if __name__ == "__main__":
     python /mnt/c/Users/XX/a01_code/sortmerna/scripts/build.py --name sortmerna --winhome /mnt/c/Users/XX --btype debug
     '''
     import pdb; pdb.set_trace()
-    SMR = 'sortmerna'
-    ZLIB = 'zlib'
-    ROCKS = 'rocksdb'
-    RAPID = 'rapidjson'
-    DIRENT = 'dirent'
 
-    DIRENT_DIST = None
-
-    pf = platform.platform()
-    IS_WIN = 'Windows' in pf
-    # Windows Subsystem for Linux (WSL)
-    IS_WSL = 'Linux' in pf and 'Microsoft' in pf
-    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-
-    CMAKE_GEN = 'Visual Studio 16 2019' if IS_WIN else 'Unix Makefiles'
-
+    # options
     optpar = OptionParser()
     optpar.add_option('-n', '--name', dest='name', help='Module to build e.g. sortmerna | zlib | rocksdb | all')
     optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
@@ -370,8 +302,30 @@ if __name__ == "__main__":
     optpar.add_option('--trace', action="store_true", help='Run cmake with --trace')
     optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
     optpar.add_option('--vb', action="store_true", help='Export compile commands')
-
     (opts, args) = optpar.parse_args()
+
+    SMR = 'sortmerna'
+    ZLIB = 'zlib'
+    ROCKS = 'rocksdb'
+    RAPID = 'rapidjson'
+    DIRENT = 'dirent'
+
+    URL_ZLIB = 'https://github.com/madler/zlib.git'
+    URL_ROCKSDB = 'https://github.com/facebook/rocksdb.git'
+    URL_DIRENT = 'https://github.com/tronkko/dirent'
+    URL_RAPIDJSON = 'https://github.com/Tencent/rapidjson'
+    URL_SMR = 'https://github.com/biocore/sortmerna.git'
+
+    DIRENT_DIST = None
+
+    pf = platform.platform()
+    IS_WIN = 'Windows' in pf
+    IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
+    IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
+
+    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
+
+    CMAKE_GEN = 'Visual Studio 16 2019' if IS_WIN else 'Unix Makefiles'
 
     UHOME_WIN = opts.winhome if IS_WSL else None
     if IS_WSL and not opts.winhome:
@@ -383,37 +337,39 @@ if __name__ == "__main__":
         SMR_BUILD = os.path.join(SMR_SRC, 'build')
         SMR_DIST = os.path.join(SMR_SRC, 'dist', opts.pt_smr, opts.btype)
 
+        LIB_ROOT = os.path.join(UHOME, 'a01_libs')
         # zlib puts both Debug and Release at the same location => no btype
         if not opts.pt_zlib: opts.pt_zlib = 't1'
-        ZLIB_SRC = os.path.join(UHOME, 'a01_libs', ZLIB)
+        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
         ZLIB_BUILD = os.path.join(ZLIB_SRC, 'build')
         ZLIB_DIST = os.path.join(ZLIB_SRC, 'dist', opts.pt_zlib)
 
         if not opts.pt_rocks: opts.pt_rocks = 't3'
-        ROCKS_SRC = os.path.join(UHOME, 'a01_libs', ROCKS)
+        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
         ROCKS_BUILD = os.path.join(ROCKS_SRC, 'build')
         ROCKS_DIST = os.path.join(ROCKS_SRC, 'dist', opts.pt_rocks, opts.btype)
 
         # no binaries, so always build Release only
-        RAPID_SRC = os.path.join(UHOME, 'a01_libs', RAPID)
+        RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(RAPID_SRC, 'build')
         RAPID_DIST = os.path.join(RAPID_SRC, 'dist')
 
-        DIRENT_DIST = os.path.join(UHOME, 'a01_libs', DIRENT)
+        DIRENT_DIST = os.path.join(LIB_ROOT, DIRENT)
     elif IS_WSL:
         SMR_SRC = os.path.join(UHOME_WIN, 'a01_code', SMR)
         SMR_BUILD = os.path.join(UHOME, SMR, 'build')
         SMR_DIST = os.path.join(UHOME, SMR, 'dist')
 
-        ZLIB_SRC = os.path.join(UHOME_WIN, 'a01_libs', ZLIB)
+        LIB_ROOT = os.path.join(UHOME_WIN, 'a01_libs')
+        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
         ZLIB_BUILD = os.path.join(UHOME, ZLIB, 'build')
         ZLIB_DIST = os.path.join(UHOME, ZLIB, 'dist')
 
-        ROCKS_SRC = os.path.join(UHOME_WIN, 'a01_libs', ROCKS)
+        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
         ROCKS_BUILD = os.path.join(UHOME, ROCKS, 'build')
         ROCKS_DIST = os.path.join(UHOME, ROCKS, 'dist')
 
-        RAPID_SRC = os.path.join(UHOME_WIN, 'a01_libs', RAPID)
+        RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
         RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
     else:
@@ -421,22 +377,23 @@ if __name__ == "__main__":
         SMR_BUILD = os.path.join(UHOME, SMR, 'build')
         SMR_DIST = os.path.join(UHOME, SMR, 'dist')
 
-        ZLIB_SRC = os.path.join('/media/sf_a01_libs', ZLIB)
+        LIB_ROOT = '/media/sf_a01_libs'
+        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
         ZLIB_BUILD = os.path.join(UHOME, ZLIB, 'build')
         ZLIB_DIST = os.path.join(UHOME, ZLIB, 'dist')
 
-        ROCKS_SRC = os.path.join('/media/sf_a01_libs', ROCKS)
+        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
         ROCKS_BUILD = os.path.join(UHOME, ROCKS, 'build')
         ROCKS_DIST = os.path.join(UHOME, ROCKS, 'dist')
 
-        RAPID_SRC = os.path.join('/media/sf_a01_libs', RAPID)
+        RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
         RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
 
     if opts.name:
         if opts.name == SMR: 
             if opts.clone:
-                smr_clone()
+                git_clone(URL_SMR, LIB_ROOT)
             elif opts.clean:
                 clean(SMR_BUILD)
             else:
@@ -445,22 +402,22 @@ if __name__ == "__main__":
                         zlib=ZLIB_DIST, rocks=ROCKS_DIST, rapid=RAPID_DIST, dirent=DIRENT_DIST)
         elif opts.name == ZLIB: 
             if opts.clone:
-                zlib_clone()
+                git_clone(URL_ZLIB, LIB_ROOT)
             else:
                 zlib_build(gen=CMAKE_GEN, src=ZLIB_SRC, build=ZLIB_BUILD, dist=ZLIB_DIST)
         elif opts.name == RAPID: 
             if opts.clone:
-                rapidjson_clone()
+                git_clone(URL_RAPIDJSON, LIB_ROOT)
             else:
                 rapidjson_build(gen=CMAKE_GEN, src=RAPID_SRC, build=RAPID_BUILD, dist=RAPID_DIST)
         elif opts.name == ROCKS: 
             if opts.clone:
-                rocksdb_clone()
+                git_clone(URL_ROCKSDB, LIB_ROOT)
             elif opts.clean:
                 clean(ROCKS_BUILD)
             else:
                 rocksdb_build(gen=CMAKE_GEN, src=ROCKS_SRC, build=ROCKS_BUILD, dist=ROCKS_DIST, zlib=ZLIB_DIST)
         elif opts.name == DIRENT: 
             if opts.clone:
-                dirent_clone()
+                git_clone(URL_DIRENT, LIB_ROOT) 
         else: test()
