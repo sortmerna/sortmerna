@@ -233,8 +233,11 @@ script:
   # run tests
   - export PATH="$PWD/dist/bin:$PATH"
   - find $PWD/dist -type f | xargs ls -lh
-  - if [[ ${STATIC_LINK} == 0 ]]; then
+  - if [[ ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "linux" ]]; then
       ldd $PWD/dist/bin/sortmerna;
+    fi
+  - if [[ ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "osx" ]]; then
+      otool -L $PWD/dist/bin/sortmerna;
     fi
   - sortmerna --version
   - sortmerna -h
