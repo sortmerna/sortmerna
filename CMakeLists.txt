@@ -243,7 +243,9 @@ if(UNIX AND NOT APPLE) # CMAKE_HOST_SYSTEM_NAME = Linux
 	set(CPACK_GENERATOR "DEB")
 	set(CPACK_DEBIAN_PACKAGE_DEBUG ON) # output Deb generator trace debug information
 	#set(CPACK_DEB_COMPONENT_INSTALL ON) # Enable component packaging for CPackDEB
-	set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+	if(NOT PORTABLE)
+		set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+	endif()
 	set(CPACK_DEBIAN_PACKAGE_MAINTAINER "biocodz")
 endif()
 include(CPack)
