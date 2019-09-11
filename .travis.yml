@@ -233,7 +233,9 @@ script:
   # run tests
   - export PATH="$PWD/dist/bin:$PATH"
   - find $PWD/dist -type f | xargs ls -lh
-  #- ls -lrth $PWD/dist/bin
+  - if [[ ${STATIC_LINK} == 0 ]]; then
+      ldd $PWD/dist/bin/sortmerna;
+    fi
   - sortmerna --version
   - sortmerna -h
   - if [[ ${TEST} == 1 ]]; then 
