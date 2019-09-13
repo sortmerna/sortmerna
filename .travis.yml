@@ -6,7 +6,8 @@ dist: xenial
 language: cpp
 #sudo: false # required
 env:
-  - OAUTH_TOK="EuYf7saNINb7bK8XrT7h5cvKPOea+"
+  global:
+    - OAUTH_TOK="EuYf7saNINb7bK8XrT7h5cvKPOea+"
 
 matrix:
   include:
@@ -65,7 +66,6 @@ matrix:
         skip_cleanup: true
         on:
           tags: true
-          condition: ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "linux"
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
     - os: osx
