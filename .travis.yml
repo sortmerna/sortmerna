@@ -5,6 +5,8 @@
 dist: xenial
 language: cpp
 #sudo: false # required
+env:
+  - OAUTH_TOK="EuYf7saNINb7bK8XrT7h5cvKPOea+"
 
 matrix:
   include:
@@ -53,6 +55,17 @@ matrix:
         - STATIC_LINK=0
         - TEST=0
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
+      deploy:
+        provider: releases
+        api_key: "$OAUTH_TOK"
+        file: 
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.sh
+      #    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.tar.gz
+        overwrite: true
+        skip_cleanup: true
+        on:
+          tags: true
+          condition: ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "linux"
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
     - os: osx
@@ -83,6 +96,7 @@ install:
   # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
   - echo $PWD
   - echo $PATH
+  - echo "OAUTH_TOK= $OAUTH_TOK"
   - which cmake
   - cmake --version
   # Linux+CLang - use binary distro. Problem building CMake from source
@@ -261,15 +275,16 @@ before_deploy:
 
 # This fails with "401 - Bad credentials // See: https://developer.github.com/v3 (Octokit::Unauthorized)"
 # useless until the 'org' to 'com' migration is done.
-#deploy:
-#  provider: releases
-#  api_key: "GITHUB OAUTH TOKEN"
-#  file: 
-#    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
+deploy:
+  provider: releases
+  api_key: "$OAUTH_TOK"
+  file: 
+    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
+    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb
 #    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.tar.gz
-#  overwrite: true
-#  skip_cleanup: true
-#  on:
-#    tags: true
-#    condition: $ENV = "Linux+LLVM_clang-7"
+  overwrite: true
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "linux"
 ## END .travis.yml
