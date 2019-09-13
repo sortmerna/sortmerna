@@ -57,7 +57,7 @@ matrix:
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
       deploy:
         provider: releases
-        api_key: "$OAUTH_TOK"
+        api_key: "${OAUTH_TOK}"
         file: 
           - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.sh
       #    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.tar.gz
@@ -96,7 +96,7 @@ install:
   # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
   - echo $PWD
   - echo $PATH
-  - echo "OAUTH_TOK= $OAUTH_TOK"
+  - echo "OAUTH_TOK= ${OAUTH_TOK}"
   - which cmake
   - cmake --version
   # Linux+CLang - use binary distro. Problem building CMake from source
@@ -277,7 +277,7 @@ before_deploy:
 # useless until the 'org' to 'com' migration is done.
 deploy:
   provider: releases
-  api_key: "$OAUTH_TOK"
+  api_key: "${OAUTH_TOK}"
   file: 
     - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
     - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb
