@@ -7,7 +7,8 @@ language: cpp
 #sudo: false # required
 env:
   global:
-    - OAUTH_TOK="EuYf7saNINb7bK8XrT7h5cvKPOea+"
+    - OAUTH="EuYf7saNINb7bK8XrT7h5cvKPOea+i4vcHr2Ss3EGSSMl9Vz/+3bSWGXp4nVs/xpq2Tp4NlZdVvIp2DLq7smRLJgJuuj/RqbUP3VSMp0ir3JCvuRSMCXSb76vDPEO0hgoqnDxCEJt80UKQyQxiz+7gnaCk3uHVZzGhpho7uYU1E="
+    - STATIC_SFX="static"
 
 matrix:
   include:
@@ -26,6 +27,18 @@ matrix:
         - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
         - STATIC_LINK=1
         - TEST=0
+        - OS_SFX="U16"
+      deploy:
+        provider: releases
+        api_key: "${OAUTH}"
+        file: 
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.sh
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.deb
+        overwrite: true
+        skip_cleanup: true
+        on:
+          tags: true
+          condition: ${STATIC_LINK} == 1
       
     - os: linux
       compiler: clang
@@ -46,7 +59,19 @@ matrix:
         # BUG: python 'subprocess.run' has problem with statically linked runtime
         - STATIC_LINK=0
         - TEST=1
+        - OS_SFX="U16"
       #  - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
+      deploy:
+        provider: releases
+        api_key: "${OAUTH}"
+        file: 
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.sh
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.deb
+        overwrite: true
+        skip_cleanup: true
+        on:
+          tags: true
+          condition: ${STATIC_LINK} == 0 
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
@@ -58,7 +83,7 @@ matrix:
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
       deploy:
         provider: releases
-        api_key: "${OAUTH_TOK}"
+        api_key: "${OAUTH}"
         file: 
           - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.sh
       #    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.tar.gz
@@ -96,7 +121,6 @@ install:
   # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
   - echo $PWD
   - echo $PATH
-  - echo "OAUTH_TOK= ${OAUTH_TOK}"
   - which cmake
   - cmake --version
   # Linux+CLang - use binary distro. Problem building CMake from source
@@ -265,19 +289,28 @@ script:
 
 before_deploy:
   - find ${TRAVIS_BUILD_DIR}/dist -type f
+  - echo "Deploying SMR version [${TRAVIS_TAG:1}]"
+  # add suffixes to installation files to indicate OS and linkage type
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      if [[ ${STATIC_LINK} == 1 ]]; then
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.sh ;
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.deb ;
+      else
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.sh ;
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.deb ;
+      fi
+    fi
   #- echo "Get git tag"
   #- |
   #  xtag=$(git describe --exact-match HEAD 2>/dev/null); \
   #  if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
-  - echo "Deploying SMR version [${TRAVIS_TAG:1}]"
-  - pwd
-  - env
 
 # This fails with "401 - Bad credentials // See: https://developer.github.com/v3 (Octokit::Unauthorized)"
 # useless until the 'org' to 'com' migration is done.
+# NOTE: supposed to be overridden by the matrix:include:deploy. Keeping here just for reference
 deploy:
   provider: releases
-  api_key: "${OAUTH_TOK}"
+  api_key: "${OAUTH}"
   file: 
     - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
     - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb
