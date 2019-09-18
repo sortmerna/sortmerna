@@ -22,11 +22,9 @@
 
 void Reader::read()
 {
-	std::stringstream ss;
-
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		std::cerr << __FILE__ << ":" << __LINE__ << " failed to open " << opts.readsfile << std::endl;
+		std::cerr << STAMP << "failed to open " << opts.readsfile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -40,8 +38,11 @@ void Reader::read()
 		//bool lastRec = false; // lastRec is to make one iteration past the EOF
 		Gzip gzip(opts); // reads both zipped and non-zipped files
 
-		ss << id << " thread: " << std::this_thread::get_id() << " started\n";
-		std::cout << ss.str(); ss.str("");
+		{
+			std::stringstream ss;
+			ss << STAMP << id << "thread: " << std::this_thread::get_id() << " started\n";
+			std::cout << ss.str();
+		}
 		auto t = std::chrono::high_resolution_clock::now();
 
 		// read lines from the files and create read objects
@@ -64,7 +65,7 @@ void Reader::read()
 
 			if (stat == RL_ERR)
 			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				std::cerr << STAMP << " ERROR reading from Reads file. Exiting..." << std::endl;
 				exit(1);
 			}
 
@@ -133,10 +134,13 @@ void Reader::read()
 		readQueue.decrPushers(); // signal the reader done adding
 		readQueue.notify(); // notify processor that might be waiting to pop
 
-		ss << __func__ << ":" << __LINE__ << " " << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: " 
-			<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id + 1 
-			<< " readQueue.size: " << readQueue.size() << std::endl;
-		std::cout << ss.str(); ss.str("");
+		{
+			std::stringstream ss;
+			ss << STAMP << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: "
+				<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id + 1
+				<< " readQueue.size: " << readQueue.size() << std::endl;
+			std::cout << ss.str();
+		}
 	}
 	ifs.close();
 } // ~Reader::read
@@ -149,7 +153,7 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 	std::ifstream ifs(opts.readsfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) 
 	{
-		std::cerr << __FILE__ << ":" << __LINE__ << " failed to open " << opts.readsfile << std::endl;
+		std::cerr << STAMP << "failed to open " << opts.readsfile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -169,7 +173,7 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 
 			if (stat == RL_ERR)
 			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				std::cerr << STAMP << "ERROR reading from Reads file. Exiting..." << std::endl;
 				exit(1);
 			}
 

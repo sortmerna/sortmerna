@@ -40,8 +40,6 @@ class ReadsQueue
 	std::mutex qlock; // lock for push/pop on queue
 	std::condition_variable cvQueue;
 
-	std::stringstream ss;
-
 public:
 	ReadsQueue(std::string id, int capacity, int numPushers)
 		:
@@ -55,18 +53,20 @@ public:
 		recs(capacity) // set initial capacity
 #endif
 	{
-		ss << id << " created" << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::stringstream ss;
+		ss << STAMP << id << " created" << std::endl;
+		std::cout << ss.str();
 	}
 
 	~ReadsQueue() {
 #ifdef LOCKQEUEU
 		size_t recsize = recs.size();
+		std::stringstream ss;
 #else
 		size_t recsize = recs.size_approx();
 #endif
-		ss << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed.load() << "  popped: " << numPopped << std::endl;
-		std::cout << ss.str(); ss.str("");
+		ss << STAMP << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed.load() << "  popped: " << numPopped << std::endl;
+		std::cout << ss.str();
 	}
 
 	void push(Read & rec) 
@@ -100,8 +100,9 @@ public:
 			++numPopped;
 			if (numPopped.load() % 100000 == 0)
 			{
-				ss << id << " Popped id: " << rec.id << "\r";
-				std::cout << ss.str(); ss.str("");
+				std::stringstream ss;
+				ss << STAMP << id << " Popped id: " << rec.id << "\r";
+				std::cout << ss.str();
 			}
 		}
 		cvQueue.notify_one();
@@ -128,7 +129,9 @@ public:
 	// call from main thread when no other threads running
 	void reset(int nPushers) {
 		pushers = nPushers;
-		ss << __func__ << ":" << __LINE__ << " " << id << ": pushers: " << pushers.load() << std::endl; std::cout << ss.str(); ss.str("");
+		std::stringstream ss;
+		ss << STAMP << id << ": pushers: " << pushers.load() << std::endl;
+		std::cout << ss.str();
 	}
 
 	size_t size()
@@ -159,8 +162,8 @@ public:
 	void decrPushers()
 	{
 		--pushers;
-		ss.str("");
-		ss << __func__ << ":" << __LINE__ << " id: " << id << " pushers: " << pushers.load() << std::endl;
+		std::stringstream ss;
+		ss << STAMP << "id: " << id << " pushers: " << pushers.load() << std::endl;
 		std::cout << ss.str();
 	}
 }; // ~class ReadsQueue

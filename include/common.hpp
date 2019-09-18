@@ -113,6 +113,8 @@ const char DELIM = ':';
 #define READLEN 30000
 
 #define LOCKQEUEU // use Locking queue for storing the Reads
+#define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
+#define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
 
 #endif
 

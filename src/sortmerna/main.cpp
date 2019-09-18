@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
 
-	std::cout << __func__ << ":" << __LINE__ << " Running task ALIGN_REPORT: " << opts.alirep << std::endl;
+	std::cout << STAMP << "Running task ALIGN_REPORT: " << opts.alirep << std::endl;
 
 	if (opts.interactive) {
 		CmdSession cmd;
