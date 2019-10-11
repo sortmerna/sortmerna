@@ -7,8 +7,9 @@ language: cpp
 #sudo: false # required
 env:
   global:
-    - OAUTH="EuYf7saNINb7bK8XrT7h5cvKPOea+i4vcHr2Ss3EGSSMl9Vz/+3bSWGXp4nVs/xpq2Tp4NlZdVvIp2DLq7smRLJgJuuj/RqbUP3VSMp0ir3JCvuRSMCXSb76vDPEO0hgoqnDxCEJt80UKQyQxiz+7gnaCk3uHVZzGhpho7uYU1E="
+    - OAUTH=""
     - STATIC_SFX="static"
+    - DO_DEPLOY=0
 
 matrix:
   include:
@@ -38,7 +39,7 @@ matrix:
         skip_cleanup: true
         on:
           tags: true
-          condition: ${STATIC_LINK} == 1
+          condition: $DO_DEPLOY = 1 && $STATIC_LINK = 1
       
     - os: linux
       compiler: clang
@@ -71,7 +72,7 @@ matrix:
         skip_cleanup: true
         on:
           tags: true
-          condition: ${STATIC_LINK} == 0 
+          condition: $DO_DEPLOY = 1 && $STATIC_LINK = 0 
       
     - os: osx
       osx_image: xcode9.2 # OS X 10.12 Sierra
@@ -91,6 +92,7 @@ matrix:
         skip_cleanup: true
         on:
           tags: true
+          condition: $DO_DEPLOY = 1
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
     - os: osx
