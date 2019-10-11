@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <sstream>
 #include <atomic>
+#include  <iomanip> // std::setw, setfill
 
 #include "common.hpp"
 #include "read.hpp"
@@ -101,8 +102,8 @@ public:
 			if (numPopped.load() % 100000 == 0)
 			{
 				std::stringstream ss;
-				ss << STAMP << id << " Popped id: " << rec.id << "\r";
-				std::cout << ss.str();
+				ss << STAMP << id << " Popped id: " << std::setw(20) << rec.id << "\r"; // << std::setfill('0')
+				std::cout << ss.str(); // std::flush
 			}
 		}
 		cvQueue.notify_one();

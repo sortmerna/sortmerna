@@ -212,7 +212,7 @@ public:
 	// reverse complement the integer sequence in 03 encoding
 	void revIntStr() {
 		std::reverse(isequence.begin(), isequence.end());
-		for (int i = 0; i < isequence.length(); i++) {
+		for (size_t i = 0; i < isequence.length(); i++) {
 			isequence[i] = complement[(int)isequence[i]];
 		}
 		reversed = !reversed;
@@ -224,7 +224,7 @@ public:
 		std::string seq;
 		if (is03) flip34();
 		// convert to alphabetic
-		for (int i = 0; i < isequence.size(); ++i)
+		for (size_t i = 0; i < isequence.size(); ++i)
 			seq += nt_map[(int)isequence[i]];
 
 		//if (rev03) flip34();
@@ -302,14 +302,14 @@ public:
 			int val = is03 ? 4 : 0;
 			if (reversed)
 			{
-				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+				for (size_t p = 0; p < ambiguous_nt.size(); p++)
 				{
 					isequence[(isequence.length() - ambiguous_nt[p]) - 1] = val;
 				}
 			}
 			else
 			{
-				for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+				for (size_t p = 0; p < ambiguous_nt.size(); p++)
 				{
 					isequence[ambiguous_nt[p]] = val;
 				}

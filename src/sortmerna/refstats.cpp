@@ -29,7 +29,7 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	numseq(opts.indexfiles.size(), 0)
 {
 	std::stringstream ss;
-	ss << __func__ << ":" << __LINE__ << " Index Statistics calculation Start ...";
+	ss << std::endl << STAMP << "Index Statistics calculation Start ...";
 	std::cout << ss.str(); ss.str("");
 
 	auto starts = std::chrono::high_resolution_clock::now();

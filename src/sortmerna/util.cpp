@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "common.hpp"
+
 // forward
 unsigned int check_dir(std::string dpath);
 unsigned int list_dir(std::string dpath);
@@ -25,7 +27,7 @@ unsigned int check_dir(std::string dpath)
 	unsigned int retval = 0;
 	auto count = list_dir(dpath);
 	if (count > 0) {
-		std::cout << __func__ << ":" << __LINE__ << " Directory " << dpath << " exists and is not empty" << std::endl;
+		std::cout << STAMP << "Directory " << dpath << " exists and is not empty" << std::endl;
 		retval = 1;
 	}
 	return retval;
@@ -42,7 +44,7 @@ unsigned int list_dir(std::string dpath)
 
 	if (pdir == NULL)
 	{
-		std::cerr << __FILE__ << ":" << __LINE__ << " Failed to open path " << dpath << std::endl;
+		std::cerr << STAMP << "Failed to open path " << dpath << std::endl;
 		exit(1);
 	}
 
@@ -54,7 +56,7 @@ unsigned int list_dir(std::string dpath)
 	}
 	closedir(pdir);
 
-	std::cout << __func__ << ":" << __LINE__ << " Directory " << dpath << " has " << count << " files" << std::endl;
+	std::cout << STAMP << "Directory " << dpath << " has " << count << " files" << std::endl;
  	return count;
 }
 
@@ -70,7 +72,7 @@ int clear_dir(std::string dpath)
 
 	if (pdir == NULL)
 	{
-		std::cerr << __FILE__ << ":" << __LINE__ << " Failed to open path " << dpath << std::endl;
+		std::cerr << STAMP << "Failed to open path " << dpath << std::endl;
 		return 1;
 	}
 

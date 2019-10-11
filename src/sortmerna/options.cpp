@@ -268,7 +268,7 @@ void Runopts::optAligned(char **argv, int &narg)
 
 		if (DIR *dir_p = opendir(dir))
 		{
-			filetype_ar.assign(argv[narg + 1]);
+			aligned_pfx.assign(argv[narg + 1]);
 			narg += 2;
 			closedir(dir_p);
 		}
@@ -307,7 +307,7 @@ void Runopts::optOther(char **argv, int &narg)
 
 		if (DIR *dir_p = opendir(dir))
 		{
-			filetype_or.assign(argv[narg + 1]);
+			other_pfx.assign(argv[narg + 1]);
 			narg += 2;
 			closedir(dir_p);
 		}
@@ -1222,11 +1222,11 @@ void Runopts::test_kvdb_path()
 {
 	if (kvdbPath.size() == 0)
 	{
-		kvdbPath = get_user_home() + "/kvdb";
-		std::cout << __func__ << ": Key-value DB location was not specified. Setting default" << std::endl;
+		kvdbPath = get_user_home() + "/sortmerna/run/kvdb";
+		std::cout << STAMP << "Key-value DB location was not specified. Setting default" << std::endl;
 	}
 
-	std::cout << __func__ << ": Using Key-value DB location: " << kvdbPath << std::endl;
+	std::cout << STAMP << "Using Key-value DB location: " << kvdbPath << std::endl;
 
 	if (dirExists(kvdbPath))
 	{
@@ -1236,7 +1236,7 @@ void Runopts::test_kvdb_path()
 		{
 			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alipost == alirep)
 			{
-				std::cerr << __func__ << ": Directory " << kvdbPath
+				std::cerr << STAMP << "Directory " << kvdbPath
 					<< " exists and is Not empty. Please, make sure the directory is empty, or specify a different directory using option '-d'" << std::endl;
 				exit(1);
 			}
@@ -1245,7 +1245,7 @@ void Runopts::test_kvdb_path()
 		{
 			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
 			{
-				std::cerr << __func__ << ": Directory " << kvdbPath
+				std::cerr << STAMP << ": Directory " << kvdbPath
 					<< " is empty. Alignment has to be performed first. Please, use option '--task 0 | 3 | 4'" << std::endl;
 				exit(1);
 			}
@@ -1255,7 +1255,7 @@ void Runopts::test_kvdb_path()
 	else
 	{
 		// dir does not exist -> try creating
-		std::cout << __func__ << ": Directory " << kvdbPath << " does not exists - will attempt to create";
+		std::cout << STAMP << ": Directory " << kvdbPath << " does not exists - will attempt to create";
 	}
 } // ~test_kvdb_path
 
@@ -1402,7 +1402,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 
 	// Basename for aligned reads is mandatory
-	if (filetype_ar.size() == 0)
+	if (aligned_pfx.size() == 0)
 	{
 		fprintf(stderr, "\n  %sERROR%s: [Line %d: %s] parameter --aligned [STRING] is mandatory.\n\n",
 			RED, COLOFF, __LINE__, __FILE__);
@@ -1429,7 +1429,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 
 	// Basename for non-aligned reads is mandatory
-	if (filetype_or.size() != 0)
+	if (other_pfx.size() != 0)
 	{
 		if (!fastxout && (blastout || samout))
 		{

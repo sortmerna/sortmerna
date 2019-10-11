@@ -15,8 +15,8 @@
 struct Runopts {
 	std::string kvdbPath; // '-d' (opt_d_KeyValDatabase) key-value database for alignment results
 	std::string readsfile; // '--reads | --reads-gz' reads file path
-	std::string filetype_ar; // '--aligned' aligned reads output file
-	std::string filetype_or; // '--other' rejected reads output file
+	std::string aligned_pfx; // '--aligned' aligned reads output file prefix
+	std::string other_pfx; // '--other' rejected reads output file
 	std::string cmdline;
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
@@ -101,7 +101,7 @@ struct Runopts {
 		process(argc, argv, dryrun);
 		if (skiplengths.empty())
 		{
-			for ( int i = 0; i < indexfiles.size(); ++i )
+			for ( size_t i = 0; i < indexfiles.size(); ++i )
 			{
 				skiplengths.push_back({ 0,0,0 });
 			}

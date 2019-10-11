@@ -62,12 +62,12 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	}
 
 	// associate the streams with reference sequence file names
-	if (opts.filetype_ar.size() != 0)
+	if (opts.aligned_pfx.size() != 0)
 	{
 		if (opts.fastxout)
 		{
 			// fasta/fastq output
-			fastaOutFile = opts.filetype_ar;
+			fastaOutFile = opts.aligned_pfx;
 			if (opts.pid)
 			{
 				fastaOutFile.append("_");
@@ -83,7 +83,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.samout)
 		{
 			// sam output
-			samoutFile = opts.filetype_ar;
+			samoutFile = opts.aligned_pfx;
 			if (opts.pid)
 			{
 				samoutFile.append("_");
@@ -97,7 +97,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.blastout)
 		{
 			// blast output
-			blastoutFile = opts.filetype_ar;
+			blastoutFile = opts.aligned_pfx;
 			if (opts.pid)
 			{
 				blastoutFile.append("_");
@@ -112,7 +112,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		{
 			// OTU map output file
 			std::ofstream otumap;
-			otumapFile = opts.filetype_ar;
+			otumapFile = opts.aligned_pfx;
 			if (opts.pid)
 			{
 				otumapFile.append("_");
@@ -126,7 +126,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.de_novo_otu)
 		{
 			std::ofstream denovo_otu;
-			denovo_otus_file = opts.filetype_ar;
+			denovo_otus_file = opts.aligned_pfx;
 			if (opts.pid)
 			{
 				denovo_otus_file.append("_");
@@ -143,7 +143,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
 		{
 			// statistics file output
-			logfile = opts.filetype_ar;
+			logfile = opts.aligned_pfx;
 			if (opts.pid)
 			{
 				logfile.append("_");
@@ -166,7 +166,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 	}//~if ( ptr_filetype_ar != NULL ) 
 
-	if (opts.filetype_or.size() != 0)
+	if (opts.other_pfx.size() != 0)
 	{
 		if (opts.fastxout)
 		{
@@ -175,13 +175,13 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			// add suffix database name to accepted reads file
 			if (opts.pid)
 			{
-				opts.filetype_or += "_";
-				opts.filetype_or += pidStr.str();
+				opts.other_pfx += "_";
+				opts.other_pfx += pidStr.str();
 			}
-			opts.filetype_or += ".";
-			opts.filetype_or += readstats.suffix;
+			opts.other_pfx += ".";
+			opts.other_pfx += readstats.suffix;
 			// create the other reads file
-			fastaNonAlignOut.open(opts.filetype_or);
+			fastaNonAlignOut.open(opts.other_pfx);
 			fastaNonAlignOut.close();
 		}
 	}
@@ -753,9 +753,9 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.fastxout && opts.filetype_or.size() != 0 && !fastaNonAlignOut.is_open())
+	if (opts.fastxout && opts.other_pfx.size() != 0 && !fastaNonAlignOut.is_open())
 	{
-		fastaNonAlignOut.open(opts.filetype_or, std::ios::app | std::ios::binary);
+		fastaNonAlignOut.open(opts.other_pfx, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())
 		{
 			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q Non-aligned output file for writing." << std::endl;
@@ -808,7 +808,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << std::endl << __func__ << ":" << __LINE__ << " Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
+	ss << std::endl << STAMP << "Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -816,7 +816,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss << __func__ << ":" << __LINE__ << " Restored Readstats from DB: " << indb << std::endl;
+		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 
@@ -834,7 +834,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << std::endl << __func__ << ":" << __LINE__ << " Loading reference " 
+			ss << std::endl << STAMP << "Loading reference " 
 				<< index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
 			auto starts = std::chrono::high_resolution_clock::now();
@@ -862,12 +862,12 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 			readQueue.reset(N_READ_THREADS);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
-			ss << __func__ << ":" << __LINE__ << " Done reference " << index_num << " Part: " << idx_part + 1
+			ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 			std::cout << ss.str(); ss.str("");
 			if (!opts.blastout && !opts.samout)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	std::cout << __func__ << ":" << __LINE__ << " Done Reports generation" << std::endl;
+	std::cout << STAMP << "Done Reports generation" << std::endl;
 } // ~generateReports

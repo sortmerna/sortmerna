@@ -49,7 +49,7 @@ void Readstats::calculate()
 
 		auto t = std::chrono::high_resolution_clock::now();
 
-		std::cout << "Readstats::calculate starting ...   ";
+		std::cout << std::endl << STAMP << "Starting ...   ";
 
 		for (int count = 0, stat = 0; ; ++count) // std::getline count lines in One record
 		{
@@ -69,7 +69,7 @@ void Readstats::calculate()
 
 			if (stat == RL_ERR)
 			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " ERROR reading from Reads file. Exiting..." << std::endl;
+				std::cerr << STAMP << "ERROR reading from Reads file. Exiting..." << std::endl;
 				exit(1);
 			}
 
@@ -91,8 +91,7 @@ void Readstats::calculate()
 
 				if (!(isFasta || isFastq))
 				{
-					std::cerr << __FILE__ << ":" << __LINE__
-						<< "  ERROR: the line [" << line << "] is not FASTA/Q header: " << std::endl;
+					std::cerr << STAMP << "  ERROR: the line [" << line << "] is not FASTA/Q header: " << std::endl;
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -102,8 +101,8 @@ void Readstats::calculate()
 				count = 0;
 				if (line[0] != FASTQ_HEADER_START)
 				{
-					std::cerr << __FILE__ << ":" << __LINE__
-						<< "  ERROR: the line [" << line << "] is not FASTQ header. number_total_read= " 
+					std::cerr << STAMP
+						<< " ERROR: the line [" << line << "] is not FASTQ header. number_total_read= " 
 						<< number_total_read << " tcount= " << tcount << std::endl;
 					exit(EXIT_FAILURE);
 				}
@@ -128,7 +127,7 @@ void Readstats::calculate()
 				{
 					if (count > 3)
 					{
-						ss << __FILE__ << ":" << __LINE__ << " Unexpected number of lines : " << count 
+						ss << STAMP << "Unexpected number of lines : " << count 
 							<< " in a single FASTQ Read. Total reads processed: " << number_total_read
 							<< " Last sequence: " << sequence
 							<< " Last line read: " << line
@@ -145,9 +144,9 @@ void Readstats::calculate()
 		} // ~for getline
 
 		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-		ss << std::setprecision(2) << std::fixed 
-			<< "Readstats::calculate done. Elapsed time: " << elapsed.count() 
-			<< " sec. Reads processed: " << number_total_read << std::endl;
+		ss << std::setprecision(2) << std::fixed << STAMP
+			<< "Done. Elapsed time: " << elapsed.count() 
+			<< " sec. Reads processed: " << number_total_read << std::endl << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 	ifs.close();
@@ -170,7 +169,7 @@ bool Readstats::check_file_format()
 		filesig = seq->last_char;
 	else
 	{
-		ss << "[" << __func__ << ":" << __LINE__ << "]" << RED << "  ERROR" << COLOFF
+		ss << "[" << STAMP << "]" << RED << "  ERROR" << COLOFF
 			<< ": unrecognized file format or empty file " << opts.readsfile << std::endl;
 		std::cerr << ss.str();
 		exit_early = true;
@@ -223,7 +222,6 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 	std::string bstr = kvdb.get(Readstats::dbkey);
 	if (bstr.size() == 0) { return ret; }
 	size_t offset = 0;
-	std::stringstream ss;
 
 	std::memcpy(static_cast<void*>(&min_read_len), bstr.data() + offset, sizeof(min_read_len));
 	offset += sizeof(min_read_len);
@@ -261,7 +259,8 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 	}
 	else
 	{
-		ss << "Readstats::restoreFromDb: reads_matched_per_db.size stored in DB: " << reads_matched_per_db_size 
+		std::stringstream ss;
+		ss << STAMP << "reads_matched_per_db.size stored in DB: " << reads_matched_per_db_size 
 			<< " doesn't match the number of reference files: "	<< reads_matched_per_db.size() << std::endl;
 		std::cout << ss.str(); ss.str("");
 		ret = false;
@@ -282,7 +281,7 @@ void Readstats::printOtuMap(std::string otumapfile)
 	std::ofstream omstrm;
 	omstrm.open(otumapfile);
 
-	ss << __FILE__ << ":" << __LINE__ << " Printing OTU Map.." << std::endl;
+	ss << STAMP << " Printing OTU Map.." << std::endl;
 	std::cout << ss.str(); ss.str("");
 
 	for (std::map<std::string, std::vector<std::string>>::iterator it = otu_map.begin(); it != otu_map.end(); ++it)
