@@ -113,14 +113,13 @@ Index::Index(Runopts & opts)
 
 void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
-	std::stringstream ss;
 	// STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
 	std::string idxfile = opts.indexfiles[idx_num].second + ".kmer_" + std::to_string(idx_part) + ".dat";
 	std::ifstream inkmer(idxfile, std::ios::in | std::ios::binary);
 
 	if (!inkmer.good())
 	{
-		ss.str("");
+		std::stringstream ss;
 		ss << STAMP << "The index " << idxfile << " does not exist.";
 		ERR(ss.str())
 		exit(EXIT_FAILURE);
@@ -140,7 +139,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 	std::ifstream btrie(btriefile, std::ios::in | std::ios::binary);
 	if (!btrie.good())
 	{
-		ss.str("");
+		std::stringstream ss;
 		ss << STAMP << "The index " << btriefile << " does not exist.";
 		ERR(ss.str())
 		exit(EXIT_FAILURE);
@@ -164,7 +163,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 			dst = new char[(sizeoftries[0] + sizeoftries[1])]();
 			if (dst == NULL)
 			{
-				ss.str("");
+				std::stringstream ss;
 				ss << STAMP << "Failed to allocate memory for mini-burst tries";
 				ERR(ss.str())
 				exit(EXIT_FAILURE);
@@ -243,7 +242,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 								char* bucket = new char[sizeofbucket]();
 								if (bucket == NULL)
 								{
-									ss.str("");
+									std::stringstream ss;
 									ss << STAMP << "Failed to allocate memory for allocate bucket";
 									fprintf(stderr, "\n  %sERROR%s:  (paralleltraversal.cpp)\n", RED, COLOFF);
 									exit(EXIT_FAILURE);

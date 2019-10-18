@@ -65,7 +65,7 @@ public:
 		size_t recsize = recs.size_approx();
 #endif
 		std::stringstream ss;
-		ss << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed.load() << "  popped: " << numPopped << std::endl;
+		ss << STAMP << "Destructor called on " << id << "  recs.size= " << recsize << " pushed: " << numPushed.load() << "  popped: " << numPopped << std::endl;
 		std::cout << ss.str();
 	}
 
@@ -104,7 +104,7 @@ public:
 			if (numPopped.load() % 100000 == 0)
 			{
 				std::stringstream ss;
-				ss << id << " Popped read number: " << rec.read_num << "\r";
+				ss << STAMP << id << " Popped read number: " << rec.read_num << "\r";
 				std::cout << ss.str();
 			}
 		}

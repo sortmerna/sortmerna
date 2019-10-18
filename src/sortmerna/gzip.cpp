@@ -159,7 +159,7 @@ int Gzip::inflatez(std::ifstream & ifs)
 
 			if (ret != Z_STREAM_END)
 			{
-				std::cout << __FILE__ << ":" << __LINE__ << "  WARNING: inflateEnd status is " << ret << std::endl;
+				std::cout << STAMP << "WARNING: inflateEnd status is " << ret << std::endl;
 			}
 
 			return Z_STREAM_END;

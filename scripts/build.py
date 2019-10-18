@@ -7,6 +7,8 @@ import sys
 import subprocess
 import platform
 from optparse import OptionParser
+import urllib.request
+import tarfile
 
 def test():
     '''
@@ -30,51 +32,80 @@ def git_clone(url, pdir):
     except:
         for info in sys.exc_info(): print(info)
         raise
-#END git_clone
+#END git_clone  
 
-def zlib_clone():
+def conda_install(url, dir=None):
     '''
     '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a03_libs')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
+    FUNC = '[conda_install]'
+    if not dir: dir = UHOME
+    fsh = 'miniconda.sh'
+    os.chdir(dir)
+    try:
+        with urllib.request.urlopen(url) as surl:
+            with open(fsh, 'wb') as fp:
+                fp.write(surl.read()) # loads all file into memory first before writing to disk. No good for very big files.
+    except urllib.request.HTTPError as ex:
+        print(ex.read())
 
-    url = 'https://github.com/madler/zlib.git'
-    git_clone(url, PDIR)
+    cmd = ['bash', fsh, '-b']
+    #cmd = ['bash', fsh, '-b', '-p', '{}/miniconda'.format(dir)]
+    proc_run(cmd, dir)
 
-def dirent_clone():
-    '''
-    dirent win
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a03_libs')
-    else:
-        print('Used only for Windows')
-        return
-    url = 'https://github.com/tronkko/dirent'
-    git_clone(url, PDIR)
+    print('{} Installed conda in {}'.format(FUNC, os.path.join(dir, 'miniconda3')))
+#END conda_install
 
-def rocksdb_clone():
+def cmake_install(url, dir=None):
     '''
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a03_libs')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
-    url = 'https://github.com/facebook/rocksdb.git'
-    git_clone(url, PDIR)
+    @param url CMake download URL
+    @param dir installation directory. Default User Home
 
-def smr_clone():
+    Download and extract CMake release archive
+    python build.py --name cmake --clone
     '''
-    '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a01_code')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
+    FUNC = '[cmake_install]'
+    targz = url.split('/')[-1]
+    if not dir: dir = UHOME
+    os.chdir(dir)
+    try:
+        with urllib.request.urlopen(url) as surl:
+            with open(targz, 'wb') as fp:
+                fp.write(surl.read()) # loads all file into memory first before writing to disk. No good for very big files.
+    except urllib.request.HTTPError as ex:
+        print(ex.read())
 
-    url = 'https://github.com/biocore/sortmerna.git'
-    git_clone(url, PDIR)
+    tar = tarfile.open(targz)
+    tar.extractall()
+    tar.close()
+    path = os.path.join(dir, targz)
+
+    print('{} Installed CMake in {}'.format(FUNC, path))
+    #os.environ('PATH') 
+#END cmake_install
+
+def gcc_install():
+    '''
+    sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    sudo apt update
+    sudo apt install gcc-7 g++-7
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+											|		 |			|		|_priority
+											|		 |			|_path (target)
+											|		 |_name of the symlink (alias)
+											|_link
+    sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60
+    '''
+    cmd = ['add-apt-repository', 'ppa:ubuntu-toolchain-r/test']
+    proc_run(cmd)
+
+    cmd = ['apt', 'update']
+#END gcc_install
+
+def make_install():
+    '''
+    sudo apt install make
+    '''
+#END make_install
 
 def clean(dir):
     '''
@@ -83,23 +114,13 @@ def clean(dir):
     remove content of the given directory.
     '''
     cmd = ['rm', '-rf', './*']
-    cmake_run(cmd, dir)
+    proc_run(cmd, dir)
 #END clean
 
-def rapidjson_clone():
+def proc_run(cmd, cwd):
     '''
     '''
-    if 'Windows' in platform.platform():
-        PDIR = os.path.join(os.environ['USERPROFILE'], 'a01_code')
-    else:
-        PDIR = os.path.join(os.environ['HOME'])
-    url = 'https://github.com/Tencent/rapidjson'
-    git_clone(url, PDIR)
-
-def cmake_run(cmd, cwd):
-    '''
-    '''
-    print('[cmake_run] Running command:\n{} in {}'.format(cmd, cwd))
+    print('[proc_run] Running command:\n{} in {}'.format(' '.join(cmd), cwd))
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
     if not os.path.exists(cwd):
@@ -118,13 +139,16 @@ def cmake_run(cmd, cwd):
         sys.exit()
     #print(proc.stdout)
     #print(proc.stderr)
-#END cmake_run
+#END proc_run
 
-def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3', 
+def smr_build(gen='Unix Makefiles', btype='Release', ptype='t1', 
         src=None, build=None, dist=None, zlib=None, rocks=None, rapid=None, dirent=None):
     '''
     @param btype Build type Release | Debug
-    @param ptype Linking type
+    @param ptype Linking type: t1 | t2 | t3
+        t1 all static
+        t2 static 3rd party + dynamic runtime
+        t3 all dynamic
     '''
     SRC_DIR = src
     BUILD_DIR = build
@@ -136,14 +160,15 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
     DIRENTWIN_DIST = dirent
 
     PORTABLE = 0
-    WITH_MD_LIBRARY = 1
+    WITH_MD_LIBRARY = 0 # only Windows
     WITH_RUNTIME_DEBUG = 0
     WITH_TESTS = 1
-    CPACK_BINARY_NSIS = 0
-    CPACK_BINARY_7Z = 1
-    CPACK_BINARY_ZIP = 1
-    CPACK_SOURCE_7Z = 1
-    CPACK_SOURCE_ZIP = 1
+    CPACK_BINARY_NSIS = 0 # Win
+    CPACK_BINARY_7Z = 1 # Win
+    CPACK_BINARY_ZIP = 1 # Win
+    CPACK_SOURCE_7Z = 1 # Win
+    CPACK_SOURCE_ZIP = 1 # Win
+    CPACK_BINARY_TGZ = 1 # Lin
     ROCKSDB_STATIC = 1
     ZLIB_STATIC = 1
 
@@ -153,11 +178,13 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'libz.a')
         ZLIB_LIBRARY_DEBUG = ZLIB_LIBRARY_RELEASE
         BUILD_DIR = os.path.join(build, btype.title())
-        PORTABLE = 1 # sets '-static' flag
+        if 't1' == ptype:
+            PORTABLE = 1 # sets '-static' flag
     elif 'Windows' in pf:
         ZLIB_LIBRARY_RELEASE = os.path.join(ZLIB_DIST, 'lib', 'zlibstatic.lib')
         ZLIB_LIBRARY_DEBUG = os.path.join(ZLIB_DIST, 'lib', 'zlibstaticd.lib')
         #ROCKSDB_SRC = os.path.join(LIBDIR, 'rocksdb')
+        WITH_MD_LIBRARY = 1
 
     #:: print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
@@ -165,12 +192,6 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
     cmd = [
         'cmake', '-G', CMAKE_GEN,
         '-DPORTABLE={}'.format(PORTABLE),
-        '-DCPACK_BINARY_NSIS={}'.format(CPACK_BINARY_NSIS),
-        '-DCPACK_BINARY_7Z={}'.format(CPACK_BINARY_7Z),
-        '-DCPACK_BINARY_ZIP={}'.format(CPACK_BINARY_ZIP),
-        '-DCPACK_SOURCE_7Z={}'.format(CPACK_SOURCE_7Z),
-        '-DCPACK_SOURCE_ZIP={}'.format(CPACK_SOURCE_ZIP),
-        '-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY),
         '-DWITH_RUNTIME_DEBUG={}'.format(WITH_RUNTIME_DEBUG),
         '-DWITH_TESTS={}'.format(WITH_TESTS),
         '-DZLIB_STATIC={}'.format(ZLIB_STATIC),
@@ -181,12 +202,21 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
         #'-DROCKSDB_SRC={}'.format(ROCKSDB_SRC),
         '-DROCKSDB_HOME={}'.format(ROCKSDB_DIST),
         '-DRAPIDJSON_HOME={}'.format(RAPIDJSON_DIST),
-        '-DDIRENTWIN_HOME={}'.format(DIRENTWIN_DIST),
         '-DCMAKE_INSTALL_PREFIX={}'.format(DIST_DIR)
     ]
 
     if 'Linux' in pf:
         cmd.append('-DCMAKE_BUILD_TYPE={}'.format(btype))
+        cmd.append('-DCPACK_BINARY_TGZ={}'.format(CPACK_BINARY_TGZ))
+    elif 'Windows' in pf:
+        cmd.append('-DDIRENTWIN_HOME={}'.format(DIRENTWIN_DIST))
+        cmd.append('-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY))
+        cmd.append('-DCPACK_BINARY_NSIS={}'.format(CPACK_BINARY_NSIS))
+        cmd.append('-DCPACK_BINARY_7Z={}'.format(CPACK_BINARY_7Z))
+        cmd.append('-DCPACK_BINARY_ZIP={}'.format(CPACK_BINARY_ZIP))
+        cmd.append('-DCPACK_SOURCE_7Z={}'.format(CPACK_SOURCE_7Z))
+        cmd.append('-DCPACK_SOURCE_ZIP={}'.format(CPACK_SOURCE_ZIP))
+
     if opts.vb:
         cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
     if opts.loglevel:
@@ -194,19 +224,22 @@ def smr_build(gen='Unix Makefiles', btype='Release', ptype='t3',
     elif opts.trace:
         cmd.append('--trace')
     cmd.append(SRC_DIR)
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 
-    # build
+    # build adn install
     cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'install' ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
+    # generate installation package
+    cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'package' ]
+    proc_run(cmd, BUILD_DIR)
 
     # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
     cmd = [ os.path.join(DIST_DIR, 'bin', 'sortmerna'), '--version' ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 
     # CMAKE_INSTALL_PREFIX\bin\sortmerna -h
     cmd = [ os.path.join(DIST_DIR, 'bin', 'sortmerna'), '-h' ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 
 #END smr_build
 
@@ -239,10 +272,10 @@ def zlib_build(gen='Unix Makefiles', btype='Release', src=None, build=None, dist
         #'-DINSTALL_MAN_DIR={}'.format(INSTALL_MAN_DIR),
         #'-DINSTALL_PKGCONFIG_DIR={}'.format(INSTALL_PKGCONFIG_DIR),
     ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 
     cmd = [ 'cmake', '--build', '.', '--config', btype, '--target', 'install' ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 #END zlib_build
 
 def rapidjson_build(gen='Unix Makefiles', btype='Release', src=None, build=None, dist=None):
@@ -263,17 +296,20 @@ def rapidjson_build(gen='Unix Makefiles', btype='Release', src=None, build=None,
         '-DCMAKE_INSTALL_PREFIX={}'.format(DIST_DIR), 
         SRC_DIR
     ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 
     cmd = [ 'cmake', '--build', '.', '--config', btype, '--target', 'install' ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 #END rapidjson_build
 
 def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, build=None, dist=None, zlib=None):
     '''
     @param btype  Build type Release | Debug
     @param ptype  Linkage type on Windows t1 | t2 | t3
+
+    NOTE: on Windows 'thridparty.inc' file has to be modified.
     '''
+    STAMP = '[rocksdb_build]'
     SRC_DIR = src
     BUILD_DIR = build
     DIST_DIR = dist
@@ -294,6 +330,8 @@ def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, b
     pf = platform.platform()    
 
     if 'Windows' in pf:
+        print('{} NOTE: verify \'thirdparty.inc\' when building on Windows'.format(STAMP))
+
         if ptype == "t3": print("Type 3 linkage: /MD + static ZLib")
 
         WITH_MD_LIBRARY = 1
@@ -305,10 +343,12 @@ def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, b
         'cmake', '-G', CMAKE_GEN,
         '-DOPTDBG={}'.format(OPTDBG),
         '-DPORTABLE={}'.format(PORTABLE),
+        '-DCMAKE_BUILD_TYPE={}'.format(btype),
         '-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY),
         '-DWITH_RUNTIME_DEBUG={}'.format(WITH_RUNTIME_DEBUG),
         '-DWITH_GFLAGS={}'.format(WITH_GFLAGS),
-        '-DZLIB_ROOT={}'.format(ZLIB_DIST),
+        '-DZLIB_ROOT={}'.format(ZLIB_DIST), # v6
+        '-DZLIB_ROOT_DIR={}'.format(ZLIB_DIST), # v5.x.x
         '-DWITH_ZLIB={}'.format(WITH_ZLIB),
         '-DWITH_XPRESS={}'.format(WITH_XPRESS),
         '-DWITH_TESTS={}'.format(WITH_TESTS),
@@ -317,10 +357,10 @@ def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, b
         '-DCMAKE_INSTALL_PREFIX={}'.format(DIST_DIR), 
         SRC_DIR
     ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 
     cmd = [ 'cmake', '--build', '.', '--config', btype, '--target', 'install' ]
-    cmake_run(cmd, BUILD_DIR)
+    proc_run(cmd, BUILD_DIR)
 #END rocksdb_build
 
 if __name__ == "__main__":
@@ -329,36 +369,51 @@ if __name__ == "__main__":
     python /mnt/c/Users/XX/a01_code/sortmerna/scripts/build.py --name sortmerna --winhome /mnt/c/Users/XX --btype debug
     '''
     import pdb; pdb.set_trace()
-    SMR = 'sortmerna'
-    ZLIB = 'zlib'
-    ROCKS = 'rocksdb'
-    RAPID = 'rapidjson'
-    DIRENT = 'dirent'
 
-    DIRENT_DIST = None
-
-    pf = platform.platform()
-    IS_WIN = 'Windows' in pf
-    # Windows Subsystem for Linux (WSL)
-    IS_WSL = 'Linux' in pf and 'Microsoft' in pf
-    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-
-    CMAKE_GEN = 'Visual Studio 16 2019' if IS_WIN else 'Unix Makefiles'
-
+    # options
     optpar = OptionParser()
     optpar.add_option('-n', '--name', dest='name', help='Module to build e.g. sortmerna | zlib | rocksdb | all')
     optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory for the given name')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
-    optpar.add_option('--pt_smr', dest='pt_smr', help = 'Sortmerna Linkage type t1 | t2 | t3')
+    optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--pt_zlib', dest='pt_zlib', help = 'Zlib Linkage type t1 | t2 | t3')
-    optpar.add_option('--pt_rocks', dest='pt_rocks', help = 'ROcksdb Linkage type t1 | t2 | t3')
+    optpar.add_option('--pt_rocks', dest='pt_rocks', help = 'Rocksdb Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='When building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     optpar.add_option('--trace', action="store_true", help='Run cmake with --trace')
     optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
     optpar.add_option('--vb', action="store_true", help='Export compile commands')
-
     (opts, args) = optpar.parse_args()
+
+    SMR = 'sortmerna'
+    ZLIB = 'zlib'
+    ROCKS = 'rocksdb'
+    RAPID = 'rapidjson'
+    DIRENT = 'dirent'
+    CMAKE = 'cmake'
+    CONDA = 'conda'
+
+    URL_ZLIB = 'https://github.com/madler/zlib.git'
+    URL_ROCKSDB = 'https://github.com/facebook/rocksdb.git'
+    URL_DIRENT = 'https://github.com/tronkko/dirent'
+    URL_RAPIDJSON = 'https://github.com/Tencent/rapidjson'
+    URL_SMR = 'https://github.com/biocore/sortmerna.git'
+
+    VER_CMAKE = '3.15.3'
+    URL_CMAKE = 'https://github.com/Kitware/CMake/releases/download/v{}/cmake-{}-Linux-x86_64.tar.gz'.format(VER_CMAKE, VER_CMAKE)
+
+    URL_CONDA = 'http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh'
+
+    DIRENT_DIST = None
+
+    pf = platform.platform()
+    IS_WIN = 'Windows' in pf
+    IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
+    IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
+
+    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
+
+    CMAKE_GEN = 'Visual Studio 16 2019' if IS_WIN else 'Unix Makefiles'
 
     UHOME_WIN = opts.winhome if IS_WSL else None
     if IS_WSL and not opts.winhome:
@@ -366,65 +421,69 @@ if __name__ == "__main__":
         sys.exit()
 
     if IS_WIN:
-        if not opts.pt_smr: opts.pt_smr = 't3'
         SMR_SRC = os.path.join(UHOME, 'a01_code', SMR)
         SMR_BUILD = os.path.join(SMR_SRC, 'build')
         SMR_DIST = os.path.join(SMR_SRC, 'dist', opts.pt_smr, opts.btype)
 
+        LIB_ROOT = os.path.join(UHOME, 'a01_libs')
         # zlib puts both Debug and Release at the same location => no btype
         if not opts.pt_zlib: opts.pt_zlib = 't1'
-        ZLIB_SRC = os.path.join(UHOME, 'a01_libs', ZLIB)
+        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
         ZLIB_BUILD = os.path.join(ZLIB_SRC, 'build')
         ZLIB_DIST = os.path.join(ZLIB_SRC, 'dist', opts.pt_zlib)
 
         if not opts.pt_rocks: opts.pt_rocks = 't3'
-        ROCKS_SRC = os.path.join(UHOME, 'a01_libs', ROCKS)
+        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
         ROCKS_BUILD = os.path.join(ROCKS_SRC, 'build')
         ROCKS_DIST = os.path.join(ROCKS_SRC, 'dist', opts.pt_rocks, opts.btype)
 
         # no binaries, so always build Release only
-        RAPID_SRC = os.path.join(UHOME, 'a01_libs', RAPID)
+        RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(RAPID_SRC, 'build')
         RAPID_DIST = os.path.join(RAPID_SRC, 'dist')
 
-        DIRENT_DIST = os.path.join(UHOME, 'a01_libs', DIRENT)
+        DIRENT_DIST = os.path.join(LIB_ROOT, DIRENT)
     elif IS_WSL:
         SMR_SRC = os.path.join(UHOME_WIN, 'a01_code', SMR)
         SMR_BUILD = os.path.join(UHOME, SMR, 'build')
         SMR_DIST = os.path.join(UHOME, SMR, 'dist')
 
-        ZLIB_SRC = os.path.join(UHOME_WIN, 'a01_libs', ZLIB)
+        LIB_ROOT = os.path.join(UHOME_WIN, 'a01_libs')
+        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
         ZLIB_BUILD = os.path.join(UHOME, ZLIB, 'build')
         ZLIB_DIST = os.path.join(UHOME, ZLIB, 'dist')
 
-        ROCKS_SRC = os.path.join(UHOME_WIN, 'a01_libs', ROCKS)
+        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
         ROCKS_BUILD = os.path.join(UHOME, ROCKS, 'build')
         ROCKS_DIST = os.path.join(UHOME, ROCKS, 'dist')
 
-        RAPID_SRC = os.path.join(UHOME_WIN, 'a01_libs', RAPID)
+        RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
         RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
     else:
-        SMR_SRC = '/media/sf_a01_code/sortmerna'
+        SMR_SRC = '/media/a01_code/sortmerna'
+        #SMR_SRC = '/media/sf_a01_code/sortmerna'
         SMR_BUILD = os.path.join(UHOME, SMR, 'build')
         SMR_DIST = os.path.join(UHOME, SMR, 'dist')
 
-        ZLIB_SRC = os.path.join('/media/sf_a01_libs', ZLIB)
+        LIB_ROOT = '/media/a01_libs'
+        #LIB_ROOT = '/media/sf_a01_libs'
+        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
         ZLIB_BUILD = os.path.join(UHOME, ZLIB, 'build')
         ZLIB_DIST = os.path.join(UHOME, ZLIB, 'dist')
 
-        ROCKS_SRC = os.path.join('/media/sf_a01_libs', ROCKS)
+        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
         ROCKS_BUILD = os.path.join(UHOME, ROCKS, 'build')
         ROCKS_DIST = os.path.join(UHOME, ROCKS, 'dist')
 
-        RAPID_SRC = os.path.join('/media/sf_a01_libs', RAPID)
+        RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
         RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
 
     if opts.name:
         if opts.name == SMR: 
             if opts.clone:
-                smr_clone()
+                git_clone(URL_SMR, LIB_ROOT)
             elif opts.clean:
                 clean(SMR_BUILD)
             else:
@@ -433,22 +492,28 @@ if __name__ == "__main__":
                         zlib=ZLIB_DIST, rocks=ROCKS_DIST, rapid=RAPID_DIST, dirent=DIRENT_DIST)
         elif opts.name == ZLIB: 
             if opts.clone:
-                zlib_clone()
+                git_clone(URL_ZLIB, LIB_ROOT)
             else:
                 zlib_build(gen=CMAKE_GEN, src=ZLIB_SRC, build=ZLIB_BUILD, dist=ZLIB_DIST)
         elif opts.name == RAPID: 
             if opts.clone:
-                rapidjson_clone()
+                git_clone(URL_RAPIDJSON, LIB_ROOT)
             else:
                 rapidjson_build(gen=CMAKE_GEN, src=RAPID_SRC, build=RAPID_BUILD, dist=RAPID_DIST)
         elif opts.name == ROCKS: 
             if opts.clone:
-                rocksdb_clone()
+                git_clone(URL_ROCKSDB, LIB_ROOT)
             elif opts.clean:
                 clean(ROCKS_BUILD)
             else:
                 rocksdb_build(gen=CMAKE_GEN, src=ROCKS_SRC, build=ROCKS_BUILD, dist=ROCKS_DIST, zlib=ZLIB_DIST)
         elif opts.name == DIRENT: 
             if opts.clone:
-                dirent_clone()
+                git_clone(URL_DIRENT, LIB_ROOT) 
+        elif opts.name == CMAKE: 
+            if opts.clone:
+                cmake_install(URL_CMAKE) 
+        elif opts.name == CONDA: 
+            if opts.clone:
+                conda_install(URL_CONDA) 
         else: test()

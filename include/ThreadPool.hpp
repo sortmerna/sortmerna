@@ -33,7 +33,7 @@ public:
 		for (int i = 0; i < numThreads; ++i)
 			threads_.emplace_back(std::bind(&ThreadPool::threadEntry, this, i));
 
-		ss << __func__ << ":" << __LINE__ << " initialized Pool with: [" << numThreads << "] threads" << std::endl;
+		ss << STAMP << "initialized Pool with: [" << numThreads << "] threads" << std::endl << std::endl;
 		std::cout << ss.str(); ss.str("");
 	}
 

@@ -40,22 +40,13 @@
 #      - clang-7
 
 #sudo: false # required
+env:
+  global:
+    - OAUTH=""
+    - STATIC_SFX="static"
+    - DO_DEPLOY=0
 
 matrix:
-  # does nothing
-#  exclude:
-#    - os : linux
-#      language: cpp
-#      compiler: clang
-#      osx_image: xcode10.2
-      
-#    - os : osx
-#      language: cpp
-#      compiler: 
-#        - gcc
-#        - clang
-#      osx_image: xcode10.2
-
   include:
     - os: linux
       compiler: gcc
@@ -68,7 +59,21 @@ matrix:
             - gcc-9
             - g++-9
       env:
-        - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-9 && gcc --version"
+        - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-7"
+        - STATIC_LINK=1
+        - TEST=0
+        - OS_SFX="U16"
+      deploy:
+        provider: releases
+        api_key: "${OAUTH}"
+        file: 
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.sh
+          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.deb
+        overwrite: true
+        skip_cleanup: true
+        on:
+          tags: true
+          condition: $DO_DEPLOY = 1 && $STATIC_LINK = 1
       
 #    - os: linux
 #      compiler: clang
@@ -135,6 +140,7 @@ install:
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew upgrade cmake;
+      brew install dos2unix;
     fi
   # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
   #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
@@ -228,8 +234,8 @@ script:
   - popd;
 
   # RocksDB
-  - git clone https://github.com/biocodz/rocksdb;
-  #- git clone https://github.com/facebook/rocksdb.git; # BUG: https://github.com/facebook/rocksdb/pull/5426
+  #- git clone https://github.com/biocodz/rocksdb;
+  - git clone https://github.com/facebook/rocksdb.git; # BUG: https://github.com/facebook/rocksdb/pull/5426
   - pushd rocksdb
   - git show --summary
   #- ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
@@ -261,13 +267,19 @@ script:
   - |
     cmake -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
+    -DPORTABLE=${STATIC_LINK} \
+    -DWITH_RUNTIME_DEBUG=0 \
+    -DWITH_TESTS=1 \
+    -DZLIB_STATIC=1 \
+    -DROCKSDB_STATIC=1 \
     -DZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
     -DZLIB_LIBRARY_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist/lib/libz.a \
     -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
     -DROCKSDB_3RDPARTY_INC=1 \
     -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
-    -DCPACK_BINARY_TGZ=ON ../.. ;
+    -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCPACK_BINARY_TGZ=1 ../.. ;
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
   #  fi
@@ -287,6 +299,17 @@ script:
 
 before_deploy:
   - find ${TRAVIS_BUILD_DIR}/dist -type f
+  - echo "Deploying SMR version [${TRAVIS_TAG:1}]"
+  # add suffixes to installation files to indicate OS and linkage type
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      if [[ ${STATIC_LINK} == 1 ]]; then
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.sh ;
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}-static.deb ;
+      else
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.sh ;
+        mv ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.deb ;
+      fi
+    fi
   #- echo "Get git tag"
   #- |
   #  xtag=$(git describe --exact-match HEAD 2>/dev/null); \

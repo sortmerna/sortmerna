@@ -14,9 +14,11 @@
 // write read alignment results to disk using e.g. RocksDB
 void Writer::write()
 {
-	std::stringstream ss;
-	ss << "Writer " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-	std::cout << ss.str(); ss.str("");
+	{
+		std::stringstream ss;
+		ss << STAMP << "Writer " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+		std::cout << ss.str();
+	}
 
 	auto t = std::chrono::high_resolution_clock::now();
 	int numPopped = 0;
@@ -40,7 +42,11 @@ void Writer::write()
 		}
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-	ss << std::setprecision(2) << std::fixed << id << " thread " << std::this_thread::get_id() 
-		<< " done. Elapsed time: " << elapsed.count() << " s Reads written: " << numPopped << std::endl;
-	std::cout << ss.str(); ss.str("");
+
+	{
+		std::stringstream ss;
+		ss << STAMP << std::setprecision(2) << std::fixed << id << " thread " << std::this_thread::get_id()
+			<< " done. Elapsed time: " << elapsed.count() << " s Reads written: " << numPopped << std::endl;
+		std::cout << ss.str();
+	}
 } // Writer::write

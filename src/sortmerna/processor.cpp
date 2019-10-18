@@ -34,9 +34,12 @@ void Processor::run()
 	int countReads = 0;
 	int countProcessed = 0;
 	bool alreadyProcessed = false;
-	std::stringstream ss;
-	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-	std::cout << ss.str();
+	
+	{
+		std::stringstream ss;
+		ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+		std::cout << ss.str();
+	}
 
 	for (;;)
 	{
@@ -81,22 +84,24 @@ void Processor::run()
 
 		countReads++;
 	}
-	writeQueue.decrPushers(); // signal this processor done adding
-	writeQueue.notify(); // wake up writer waiting on queue.pop()
-
-	ss.str("");
-	ss << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads 
-		<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
-	std::cout << ss.str();
+	{
+		std::stringstream ss;
+		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads
+			<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
+		std::cout << ss.str();
+	}
 } // ~Processor::run
 
 void PostProcessor::run()
 {
 	int countReads = 0;
-	std::stringstream ss;
 
-	ss << STAMP << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-	std::cout << ss.str();
+	{
+		std::stringstream ss;
+
+		ss << STAMP << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+		std::cout << ss.str();
+	}
 
 	for (;;)
 	{
@@ -121,18 +126,22 @@ void PostProcessor::run()
 	writeQueue.decrPushers(); // signal this processor done adding
 	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 
-	ss.str("");
-	ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed [" << countReads << "] reads" << std::endl;
-	std::cout << ss.str();
+	{
+		std::stringstream ss;
+		ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
+		std::cout << ss.str();
+	}
 } // ~PostProcessor::run
 
 void ReportProcessor::run()
 {
 	int countReads = 0;
-	std::stringstream ss;
 
-	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-	std::cout << ss.str();
+	{
+		std::stringstream ss;
+		ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started\n";
+		std::cout << ss.str();
+	}
 
 	int cap = opts.is_paired_in || opts.is_paired_out ? 2 : 1;
 	std::vector<Read> reads;
@@ -165,9 +174,12 @@ void ReportProcessor::run()
 		countReads+=i;
 	}
 
-	ss.str("");
-	ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed [" << countReads << "] reads" << std::endl;
-	std::cout << ss.str();
+	{
+		std::stringstream ss;
+		ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
+		std::cout << ss.str();
+	}
+
 } // ~ReportProcessor::run
 
 // called from main
@@ -176,10 +188,12 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	int N_READ_THREADS = opts.num_read_thread_pp;
 	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
-	std::stringstream ss;
-
-	ss << STAMP << "\n\n==== Starting Post-processing routine (alignment statistics report) ====\n\n";
-	std::cout << ss.str();
+	
+	{
+		std::stringstream ss;
+		ss << STAMP << "\n\n==== Starting Post-processing routine (alignment statistics report) ====\n\n";
+		std::cout << ss.str();
+	}
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
@@ -187,10 +201,9 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss.str("");
+		std::stringstream ss;
 		ss << STAMP << "Restored Readstats from DB:\n    " << readstats.toString() << std::endl;
 		std::cout << ss.str();
-		ss.str("");
 	}
 
 	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
@@ -205,15 +218,23 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		{
 			// iterate parts of reference files
 			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
-			{
-				ss << STAMP << "Loading reference " << index_num 
-					<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
-				std::cout << ss.str(); ss.str("");
+				{
+					std::stringstream ss;
+					ss << std::endl << STAMP << "Loading reference " << index_num
+						<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
+					std::cout << ss.str();
+				}
+
+
 				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
 				refs.load(index_num, idx_part, opts, refstats);
 				std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
-				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
-				std::cout << ss.str(); ss.str("");
+
+				{
+					std::stringstream ss;
+					ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
+					std::cout << ss.str();
+				}
 
 				starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
@@ -239,15 +260,22 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 				writeQueue.reset(N_PROC_THREADS);
 
 				elapsed = std::chrono::high_resolution_clock::now() - starts;
-				ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
-					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
-				std::cout << ss.str(); ss.str("");
+
+				{
+					std::stringstream ss;
+					ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
+						<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
+					std::cout << ss.str();
+				}
 			} // ~for(idx_part)
 		} // ~for(index_num)
 
-		ss.str("");
-		ss << STAMP << "total_reads_denovo_clustering = " << readstats.total_reads_denovo_clustering << std::endl;
-		std::cout << ss.str();
+		{
+			std::stringstream ss;
+			ss << STAMP << "total_reads_denovo_clustering = " << readstats.total_reads_denovo_clustering << std::endl;
+			std::cout << ss.str();
+		}
+
 
 		readstats.set_is_total_reads_mapped_cov();
 		readstats.is_stats_calc = true;
@@ -259,7 +287,9 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	if (opts.is_otu_map)
 		readstats.printOtuMap(output.otumapFile);
 
-	ss.str("");
-	ss << STAMP << "\n\n==== Done Post-processing routine (alignment statistics report) ====\n\n";
-	std::cout << ss.str();
+	{
+		std::stringstream ss;
+		ss << STAMP << "\n\n==== Done Post-processing routine (alignment statistics report) ====\n\n";
+		std::cout << ss.str();
+	}
 } // ~postProcess

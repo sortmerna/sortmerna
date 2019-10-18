@@ -37,7 +37,7 @@ unsigned int check_dir(std::string dpath)
 	unsigned int retval = 0;
 	auto count = list_dir(dpath);
 	if (count > 0) {
-		std::cout << __func__ << ":" << __LINE__ << " Directory " << dpath << " exists and is not empty" << std::endl;
+		std::cout << STAMP << " Directory " << dpath << " exists and is not empty" << std::endl;
 		retval = 1;
 	}
 	return retval;
