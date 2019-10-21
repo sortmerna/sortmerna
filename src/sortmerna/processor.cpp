@@ -218,13 +218,13 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		{
 			// iterate parts of reference files
 			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
+			{
 				{
 					std::stringstream ss;
 					ss << std::endl << STAMP << "Loading reference " << index_num
 						<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 					std::cout << ss.str();
 				}
-
 
 				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
 				refs.load(index_num, idx_part, opts, refstats);
