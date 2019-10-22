@@ -9,6 +9,9 @@ import platform
 from optparse import OptionParser
 import urllib.request
 import tarfile
+import yaml
+import re
+import fileinput
 
 def test():
     '''
@@ -302,6 +305,44 @@ def rapidjson_build(gen='Unix Makefiles', btype='Release', src=None, build=None,
     proc_run(cmd, BUILD_DIR)
 #END rapidjson_build
 
+def rocksdb_fix_3party(ptype='t3'):
+    '''
+    Only used on Windows
+
+    set(ZLIB_HOME $ENV{THIRDPARTY_HOME}/ZLIB.Library)
+    set(ZLIB_INCLUDE ${ZLIB_HOME}/build/native/inc/inc)
+    set(ZLIB_LIB_DEBUG ${ZLIB_HOME}/lib/native/debug/amd64/zlib.lib)
+    set(ZLIB_LIB_RELEASE ${ZLIB_HOME}/lib/native/retail/amd64/zlib.lib)
+    '''
+    STAMP = '[rocksdb_fix_3party]'
+    if not IS_WIN:
+        return
+
+    print('{} Fixing \'thirdparty.inc\' for linkage type [{}] on Windows'.format(STAMP, ptype))
+
+    lib_rel = cfg[ROCKS]['windows']['link_types'][ptype]['ZLIB_LIB_RELEASE']
+    lib_dbg = cfg[ROCKS]['windows']['link_types'][ptype]['ZLIB_LIB_DEBUG']
+
+    file3p = os.path.join(ROCKS_SRC, 'thirdparty.inc')
+
+    for line in fileinput.FileInput(file3p, inplace=True):
+        if line.startswith('set(ZLIB_HOME'):
+            line = re.sub(r'ZLIB_HOME .*\)', r'ZLIB_HOME {})'.format(ZLIB_DIST.replace('\\', '/')), line, flags = re.M)
+        if line.startswith('set(ZLIB_INCLUDE'):
+            line = re.sub(r'ZLIB_INCLUDE .*\)', r'ZLIB_INCLUDE ${ZLIB_HOME}/include)', line, flags = re.M)
+        if line.startswith('set(ZLIB_LIB_DEBUG'):
+            line = re.sub(r'ZLIB_LIB_DEBUG .*\)', r'ZLIB_LIB_DEBUG ${{ZLIB_HOME}}/lib/{})'.format(lib_dbg), line, flags = re.M)
+        if line.startswith('set(ZLIB_LIB_RELEASE'):
+            line = re.sub(r'ZLIB_LIB_RELEASE .*\)', r'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{})'.format(lib_rel), line, flags = re.M)
+        sys.stdout.write(line)
+   
+    #mo = re.search(r'ZLIB_HOME .*\)+?', txt)
+    #txtn = re.sub(r'ZLIB_HOME .*\)+?', r'ZLIB_HOME {})'.format(ZLIB_DIST.replace('\\', '/')), txt, flags = re.M)
+    #txtn = re.sub(r'ZLIB_INCLUDE .*\)+?', r'ZLIB_INCLUDE ${ZLIB_HOME}/include)', txtn, flags = re.M)
+    #txtn = re.sub(r'ZLIB_LIB_DEBUG .*\)', r'ZLIB_LIB_DEBUG ${{ZLIB_HOME}}/lib/{})'.format(lib_dbg), txtn, flags = re.M)
+    #txtn = re.sub(r'ZLIB_LIB_RELEASE .*\)', r'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{})'.format(lib_rel), txtn, flags = re.M)
+#END rocksdb_fix_3party
+    
 def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, build=None, dist=None, zlib=None):
     '''
     @param btype  Build type Release | Debug
@@ -330,7 +371,7 @@ def rocksdb_build(gen='Unix Makefiles', btype='Release', ptype='t3', src=None, b
     pf = platform.platform()    
 
     if 'Windows' in pf:
-        print('{} NOTE: verify \'thirdparty.inc\' when building on Windows'.format(STAMP))
+        rocksdb_fix_3party(ptype)
 
         if ptype == "t3": print("Type 3 linkage: /MD + static ZLib")
 
@@ -368,7 +409,7 @@ if __name__ == "__main__":
     python scripts/build.py --name sortmerna
     python /mnt/c/Users/XX/a01_code/sortmerna/scripts/build.py --name sortmerna --winhome /mnt/c/Users/XX --btype debug
     '''
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     # options
     optpar = OptionParser()
@@ -383,7 +424,17 @@ if __name__ == "__main__":
     optpar.add_option('--trace', action="store_true", help='Run cmake with --trace')
     optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
     optpar.add_option('--vb', action="store_true", help='Export compile commands')
+    optpar.add_option('--config', dest='config', default='build.yaml', help='Build configuration file.')
     (opts, args) = optpar.parse_args()
+
+    cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
+    print('Current dir: {}'.format(cur_dir))
+    cfgfile = os.path.join(cur_dir, opts.config)
+    is_cfg = os.path.exists(cfgfile)
+    print('Config file {} exists: {}'.format(opts.config, is_cfg))
+    with open(cfgfile, 'r') as cfgh:
+        cfg = yaml.load(cfgh)
+        print('Loaded yaml file to type: {}'.format(type(cfg)))
 
     SMR = 'sortmerna'
     ZLIB = 'zlib'
@@ -393,16 +444,16 @@ if __name__ == "__main__":
     CMAKE = 'cmake'
     CONDA = 'conda'
 
-    URL_ZLIB = 'https://github.com/madler/zlib.git'
-    URL_ROCKSDB = 'https://github.com/facebook/rocksdb.git'
-    URL_DIRENT = 'https://github.com/tronkko/dirent'
-    URL_RAPIDJSON = 'https://github.com/Tencent/rapidjson'
-    URL_SMR = 'https://github.com/biocore/sortmerna.git'
+    URL_ZLIB      = cfg[ZLIB]['url']
+    URL_ROCKSDB   = cfg[ROCKS]['url']
+    URL_DIRENT    = cfg[DIRENT]['url']
+    URL_RAPIDJSON = cfg[RAPID]['url']
+    URL_SMR       = cfg[SMR]['url']
 
-    VER_CMAKE = '3.15.3'
-    URL_CMAKE = 'https://github.com/Kitware/CMake/releases/download/v{}/cmake-{}-Linux-x86_64.tar.gz'.format(VER_CMAKE, VER_CMAKE)
+    VER_CMAKE = cfg[CMAKE]['ver']
+    URL_CMAKE = cfg[CMAKE]['url'].format(VER_CMAKE, VER_CMAKE)
 
-    URL_CONDA = 'http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh'
+    URL_CONDA = cfg[CONDA]['url']
 
     DIRENT_DIST = None
 
@@ -413,7 +464,7 @@ if __name__ == "__main__":
 
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
-    CMAKE_GEN = 'Visual Studio 16 2019' if IS_WIN else 'Unix Makefiles'
+    CMAKE_GEN = cfg['com']['windows']['cmake_gen'] if IS_WIN else cfg['com']['linux']['cmake_gen']
 
     UHOME_WIN = opts.winhome if IS_WSL else None
     if IS_WSL and not opts.winhome:
@@ -421,19 +472,19 @@ if __name__ == "__main__":
         sys.exit()
 
     if IS_WIN:
-        SMR_SRC = os.path.join(UHOME, 'a01_code', SMR)
+        SMR_SRC = cfg[SMR]['windows']['src']
         SMR_BUILD = os.path.join(SMR_SRC, 'build')
         SMR_DIST = os.path.join(SMR_SRC, 'dist', opts.pt_smr, opts.btype)
 
         LIB_ROOT = os.path.join(UHOME, 'a01_libs')
         # zlib puts both Debug and Release at the same location => no btype
         if not opts.pt_zlib: opts.pt_zlib = 't1'
-        ZLIB_SRC = os.path.join(LIB_ROOT, ZLIB)
+        ZLIB_SRC = cfg[ZLIB]['windows']['src']
         ZLIB_BUILD = os.path.join(ZLIB_SRC, 'build')
         ZLIB_DIST = os.path.join(ZLIB_SRC, 'dist', opts.pt_zlib)
 
         if not opts.pt_rocks: opts.pt_rocks = 't3'
-        ROCKS_SRC = os.path.join(LIB_ROOT, ROCKS)
+        ROCKS_SRC = cfg[ROCKS]['windows']['src']
         ROCKS_BUILD = os.path.join(ROCKS_SRC, 'build')
         ROCKS_DIST = os.path.join(ROCKS_SRC, 'dist', opts.pt_rocks, opts.btype)
 
@@ -442,7 +493,7 @@ if __name__ == "__main__":
         RAPID_BUILD = os.path.join(RAPID_SRC, 'build')
         RAPID_DIST = os.path.join(RAPID_SRC, 'dist')
 
-        DIRENT_DIST = os.path.join(LIB_ROOT, DIRENT)
+        DIRENT_DIST = cfg[DIRENT]['src']
     elif IS_WSL:
         SMR_SRC = os.path.join(UHOME_WIN, 'a01_code', SMR)
         SMR_BUILD = os.path.join(UHOME, SMR, 'build')
@@ -479,6 +530,9 @@ if __name__ == "__main__":
         RAPID_SRC = os.path.join(LIB_ROOT, RAPID)
         RAPID_BUILD = os.path.join(UHOME, RAPID, 'build')
         RAPID_DIST = os.path.join(UHOME, RAPID, 'dist')
+
+    # TODO: remove after testing
+    rocksdb_fix_3party()
 
     if opts.name:
         if opts.name == SMR: 
