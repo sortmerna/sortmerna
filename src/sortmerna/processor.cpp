@@ -84,6 +84,10 @@ void Processor::run()
 
 		countReads++;
 	}
+
+	writeQueue.decrPushers(); // signal this processor done adding
+	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
+
 	{
 		std::stringstream ss;
 		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads
@@ -191,7 +195,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	
 	{
 		std::stringstream ss;
-		ss << STAMP << "\n\n==== Starting Post-processing routine (alignment statistics report) ====\n\n";
+		ss << "\n" << STAMP << "==== Starting Post-processing (alignment statistics report) ====\n\n";
 		std::cout << ss.str();
 	}
 
@@ -289,7 +293,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 
 	{
 		std::stringstream ss;
-		ss << STAMP << "\n\n==== Done Post-processing routine (alignment statistics report) ====\n\n";
+		ss << "\n" << STAMP << "==== Done Post-processing (alignment statistics report) ====\n\n";
 		std::cout << ss.str();
 	}
 } // ~postProcess
