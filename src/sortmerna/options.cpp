@@ -845,7 +845,7 @@ void Runopts::opt_N(const std::string &val)
 	}
 } // ~Runopts::opt_N
 
-  /* Number Processor threads to use */
+/* Number Processor threads to use */
 void Runopts::opt_a(const std::string &val)
 {
 	if (val.size() == 0)
@@ -857,18 +857,28 @@ void Runopts::opt_a(const std::string &val)
 	num_proc_thread = std::stoi(val);
 } // ~Runopts::opt_a_numProcThreads
 
-  /* Number of threads to use */
+/* Number of threads to use */
 void Runopts::opt_threads(const std::string &val)
 {
-	if (val.size() == 0)
-	{
-		ERR(": --threads [INT:INT:INT] requires 3 integers for number of "
-			<< "Read:Write:Processor threads (ex. --threads 1:1:8)");
-		exit(EXIT_FAILURE);
-	}
-
+	std::string msg = ": --threads [INT:INT:INT] requires 3 integers for number of "
+		"Read:Write:Processor threads (ex. --threads 1:1:8)";
 	std::istringstream strm(val);
 	std::string tok;
+
+	if (val.size() == 0)
+	{
+		ERR(msg);
+		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		auto n = std::count(val.begin(), val.end(), ':');
+		if (n != 2) {
+			ERR(msg);
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	for (int i = 0; std::getline(strm, tok, ':'); ++i)
 	{
 		switch (i)
@@ -1163,6 +1173,8 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		exit(EXIT_FAILURE);
 	}
 
+	std::cout << "\n" << STAMP << "=== Options processing starts ... ===\n\n";
+
 	// store the command line
 	for (int i = 0; i < argc; i++)
 	{
@@ -1263,6 +1275,8 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			opt_default(opt.first);
 		}
 	}
+
+	std::cout << "\n" << STAMP << "=== Options processing done ===\n\n";
 
 	if (!is_help_opt)
 	{
@@ -1382,8 +1396,7 @@ void Runopts::validate()
 	if (is_min_lis && !is_best)
 	{
 		std::stringstream ss;
-		ss << STAMP
-			<< "--min_lis [INT] must be set together with --best [INT].";
+		ss << STAMP	<< "--min_lis [INT] must be set together with --best [INT].";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
