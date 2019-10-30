@@ -70,7 +70,7 @@ public:
 	}
 
 	/** 
-	 * Blocks until queue has capacity for more reads
+	 * Synchronized. Blocks until queue has capacity for more reads
 	 */
 	void push(Read & rec) 
 	{
@@ -90,6 +90,7 @@ public:
 		++numPushed;
 	}
 
+	// synchronized
 	Read pop() 
 	{
 		Read rec;
@@ -166,8 +167,7 @@ public:
 	{
 		std::stringstream ss;
 		--pushers;
-		unsigned int np = pushers.load();
-		ss << STAMP << "id: [" << id << "] thread: [" << std::this_thread::get_id() << "] pushers: [" << np << "]" << std::endl;
+		ss << STAMP << "id: [" << id << "] thread: [" << std::this_thread::get_id() << "] pushers: [" << pushers.load() << "]" << std::endl;
 		std::cout << ss.str();
 	}
 }; // ~class ReadsQueue

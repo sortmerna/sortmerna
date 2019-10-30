@@ -937,7 +937,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 	std::stringstream ss;
 
 	ss.str("");
-	ss << std::endl << STAMP << "Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
+	ss << "\n" << STAMP << "=== Report generation starts. Thread: " << std::this_thread::get_id() << " ===\n\n";
 	std::cout << ss.str();
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -1000,5 +1000,5 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	std::cout << STAMP << "Done Reports generation" << std::endl;
+	std::cout << "\n" << STAMP << "=== Done Reports generation ===\n\n";
 } // ~generateReports

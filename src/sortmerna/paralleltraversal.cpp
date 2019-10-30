@@ -355,7 +355,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 {
 	std::stringstream ss;
 
-	ss << STAMP << "\n\n==== Starting alignment routine ====\n\n";
+	ss << "\n" << STAMP << "==== Starting alignment ====\n\n";
 	std::cout << ss.str();
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
@@ -405,7 +405,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
 			ss.str("");
-			ss << STAMP << "Loading index " << index_num 
+			ss << std::endl << STAMP << "Loading index " << index_num 
 				<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
 			std::cout << ss.str();
 			starts = std::chrono::high_resolution_clock::now();
@@ -428,7 +428,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 
 			ss.str("");
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
+			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec\n";
 			std::cout << ss.str();
 
 			starts = std::chrono::high_resolution_clock::now();
@@ -459,13 +459,13 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 
 			ss.str("");
 			ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1 
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl << std::endl;
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
 			std::cout << ss.str();
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
 	ss.str("");
-	ss << STAMP << "\n\n==== Done alignment routine ====\n\n";
+	ss << "\n" << STAMP << "==== Done alignment ====\n\n";
 	std::cout << ss.str();
 
 	// store readstats calculated in alignment
