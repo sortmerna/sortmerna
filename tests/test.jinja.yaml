@@ -1,0 +1,324 @@
+#
+# FILE: test.jinja.yaml
+# Created: Oct 27, 2019 Sun
+#
+# Tests configuration
+# Rendered using Jinja
+#
+
+#
+# Standard tests included with disto
+#
+t0:
+  name: test_blast_format_0 # descriptive name of this test
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/test_ref.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/test_read.fasta
+    - -sam
+    - -blast
+    - '0'
+    - -v
+  validate: 
+    func: t0 # name of the validation function
+
+t0_other:
+  name: test_blast_format_0_other
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/test_ref.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/test_read.fasta
+    - -sam
+    - -blast
+    - '0 qstrand'
+    - -v
+  validate: 
+    func: t0_other
+
+t1:
+  name: test_blast_format_1
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/test_ref.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/test_read.fasta
+    - -sam
+    - -blast
+    - '1'
+    - -v
+  validate: 
+    func: t1
+
+t2:
+  name: test_cigar_lcs_1
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/test_ref.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/test_read.fasta
+    - -sam
+    - -blast
+    - '1 qstrand cigar'
+    - -v
+  validate: 
+    func: t2
+    # expected alignment
+    expected: [ "AB271211", "Unc49508", "93.5", "1430", "64", "30", "58", "1487", "1", "1446", "0",
+              "2069", "+", "57S57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1260M" ]
+
+t3:
+  name: test_environmental_output
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set2_environmental_study_550_amplicon.fasta
+    - -max_pos
+    - '250'
+    - -id
+    - '0.97'
+    - -coverage
+    - '0.97'
+    - -otu_map
+    - -de_novo_otu
+    - -fastx
+    - -v
+  validate: 
+    func: t3
+    num_hits: 99999
+    num_groups_1: 272
+    num_groups_2: 264
+
+t4:
+  name: test_indexdb_split_databases
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/gg_13_8_ref_set.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/TODO
+    - -m
+    - '0.05'
+    - -v
+  validate: 
+    func: t4
+
+t5:
+  name: test_mate_pairs - part 1
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set4_mate_pairs_metatranscriptomics_1.fastq # 5,000 reads
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set4_mate_pairs_metatranscriptomics_2.fastq # 5,000 reads
+    - -max_pos
+    - '250'
+    - -fastx
+    - -v
+  validate:
+    func: t5
+
+t6:
+  name: test_mate_pairs - part 2 - paired_in
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set4_mate_pairs_metatranscriptomics_1.fastq # 5,000 reads
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set4_mate_pairs_metatranscriptomics_2.fastq # 5,000 reads
+    - -max_pos
+    - '250'
+    - -fastx
+    - -paired_in
+    - -v
+  validate:
+    func: t6
+
+t7:
+  name: test_mate_pairs - part 3 - paired_out
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set4_mate_pairs_metatranscriptomics_1.fastq # 5,000 reads
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set4_mate_pairs_metatranscriptomics_2.fastq # 5,000 reads
+    - -max_pos
+    - '250'
+    - -fastx
+    - -paired_out
+    - -v
+  validate:
+    func: t7
+
+t8:
+  name: test_multiple_databases_search
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set7_arc_bac_16S_database_match.fasta # 6 reads
+    - -fastx
+    - -v
+  validate:
+    func: t8
+
+t9:
+  name: test_output_all_alignments_f_rc
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/ref_GQ099317_forward_and_rc.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/illumina_GQ099317.fasta # 1 read
+    - -num_alignments
+    - '0'
+    - -sam
+    - -v
+  validate:
+    func: t9
+
+t10:
+  name: test_ref_shorter_than_seed
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/ref_short_seqs.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/illumina_GQ099317.fasta # 1 read
+    - -v
+  validate:
+    func: t10
+
+t11:
+  name: test_simulated_amplicon_1_part_map
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set5_simulated_amplicon_silva_bac_16s.fasta
+    - -id
+    - '0.97'
+    - -coverage
+    - '0.97'
+    - -otu_map
+    - -de_novo_otu
+    - -blast
+    - '1 cigar qcov'
+    - -fastx
+    - -v
+  validate:
+    func: t11
+
+t12:
+  name: test_simulated_amplicon_1_part_map
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set5_simulated_amplicon_silva_bac_16s.fasta
+    - -id
+    - '0.97'
+    - -coverage
+    - '0.97'
+    - -otu_map
+    - -de_novo_otu
+    - -blast
+    - '1 cigar qcov'
+    - -best
+    - '5'
+    - -fastx
+    - -v
+  validate:
+    func: t12
+
+t13:
+  name: test_simulated_amplicon_6_part_map
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set5_simulated_amplicon_silva_bac_16s.fasta
+    - -id
+    - '0.97'
+    - -coverage
+    - '0.97'
+    - -otu_map
+    - -de_novo_otu
+    - -blast
+    - '1 cigar qcov'
+    - -fastx
+    # indexing options
+    - -m
+    - '20'
+    - -v
+  validate:
+    func: t13
+
+t14:
+  name: test_simulated_amplicon_12_part_map
+  note: identical to t13 except using 12-part index instead of 6-part
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/set5_simulated_amplicon_silva_bac_16s.fasta
+    - -id
+    - '0.97'
+    - -coverage
+    - '0.97'
+    - -otu_map
+    - -de_novo_otu
+    - -blast
+    - '1 cigar qcov'
+    - -fastx
+    # indexing options
+    - -m
+    - '10'
+    - -v
+  validate:
+    func: t14
+
+t15:
+  name: test_paired_reads_input
+  note: TODO: remove. Duplicates t5, t6, t7
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ SMR_SRC }}/tests/data/SRR7721017_1_15.fastq
+    - -reads
+    - {{ SMR_SRC }}/tests/data/SRR7721017_2_15.fastq
+    - -v
+
+#
+# custom tests
+#
+t16:
+  name: Single reads file, 250 reads
+  cmd:
+  - -ref
+  - {{ SMR_SRC }}/rRNA_databases/silva-euk-28s-id98.fasta
+  - -reads
+  - {{ DATA_DIR }}/sortmerna/data/reads/ecoli100.1.head1000.fq
+  - -num_alignments
+  - '1'
+  - -fastx
+  - -v
+
+t17:
+  name: Paired reads
+  cmd:
+  - -ref
+  - {{ SMR_SRC }}/tests/data/silva-bac-16s-database-id85.fasta # 
+  - -reads
+  # SRR7721017_1.fastq | SRR7721017_1_100.fastq | SRR7721017_1_15.fastq
+  - {{ DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq
+  - -reads
+  # SRR7721017_2.fastq | SRR7721017_2_100.fastq | SRR7721017_2_15.fastq
+  - {{ DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_2.fastq
+  - -v
+  - -paired_in
