@@ -52,9 +52,9 @@ env:
     - RAPIDJSON_URL=https://github.com/Tencent/rapidjson.git
     - ZLIB_URL=https://github.com/madler/zlib.git
     # RocksDB
-    - ROCKSDB_RELEASE=v6.3.6
+    - ROCKSDB_RELEASE=v6.2.4  #6.3.6
     - ROCKSDB_URL=https://github.com/facebook/rocksdb.git
-  #-  ROCKSDB_URL=https://github.com/biocodz/rocksdb;
+    #- ROCKSDB_URL=https://github.com/biocodz/rocksdb;
     #
     - CONDA_LINUX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     - CONDA_OSX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
