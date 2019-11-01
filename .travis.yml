@@ -52,7 +52,7 @@ env:
     - RAPIDJSON_URL=https://github.com/Tencent/rapidjson.git
     - ZLIB_URL=https://github.com/madler/zlib.git
     # RocksDB
-    - ROCKSDB_RELEASE=v6.2.4  #6.3.6
+    - ROCKSDB_RELEASE=  # v6.2.4 v6.3.6 Releases fail on GCC-9, but the master OK
     - ROCKSDB_URL=https://github.com/facebook/rocksdb.git
     #- ROCKSDB_URL=https://github.com/biocodz/rocksdb;
     #
@@ -246,7 +246,7 @@ script:
   - git clone ${ROCKSDB_URL}; # BUG: https://github.com/facebook/rocksdb/pull/5426
   - pushd rocksdb
   - git show --summary
-  - git checkout tags/${ROCKSDB_RELEASE}
+  - if [[ -n $ROCKSDB_RELEASE ]]; then git checkout tags/${ROCKSDB_RELEASE}; fi
   - mkdir -p build/Release;
   - pushd build/Release;
   - |
