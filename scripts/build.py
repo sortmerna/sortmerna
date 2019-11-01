@@ -92,10 +92,10 @@ def gcc_install():
     sudo apt update
     sudo apt install gcc-7 g++-7
     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-											|		 |			|		|_priority
-											|		 |			|_path (target)
-											|		 |_name of the symlink (alias)
-											|_link
+                                           |         |         |        |_priority
+                                           |         |         |_path (target)
+                                           |         |_name of the symlink (alias)
+                                           |_link
     sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60
     '''
     cmd = ['add-apt-repository', 'ppa:ubuntu-toolchain-r/test']
