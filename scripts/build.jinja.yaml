@@ -4,36 +4,56 @@
 #
 # Build configuration used by build.py
 #
-com:
-  windows:
-    cmake_gen: Visual Studio 16 2019
-  linux:
-    cmake_gen: Unix Makefiles
-  osx:
-    cmake_gen: Unix Makefiles
+WIN:
+  cmake_gen: Visual Studio 16 2019
+  lib: {{ WIN['LIB_DIR'] if WIN['LIB_DIR'] }} # optional
+WSL:
+  cmake_gen: Unix Makefiles
+  lib: {{ WSL['LIB_DIR'] if WSL['LIB_DIR'] }} # optional
+LNX:
+  cmake_gen: Unix Makefiles
+  lib: {{ LNX['LIB_DIR'] if LNX['LIB_DIR'] }} # optional
+OSX:
+  cmake_gen: Unix Makefiles
+  lib: {{ OSX['LIB_DIR'] if OSX['LIB_DIR'] }} # optional
 
 sortmerna:
   url: https://github.com/biocore/sortmerna.git
-  build_type: release
-  package_type: t1
-  windows:
-    src:     {{ SMR_SRC }}
-    dirent_src:  {{ DIRENT_SRC }}
-  wsl:
-    cmake_gen: Unix Makefiles
-  linux:
-    cmake_gen: Unix Makefiles
-  osx:
+  WIN:
+    src:   {{ WIN['sortmerna']['src'] }}
+    build: {{ WIN['sortmerna']['build'] if WIN['sortmerna']['build'] }}
+    dist:  {{ WIN['sortmerna']['dist'] if WIN['sortmerna']['dist'] }}
+    build_type: release
+    link: 
+      t1:
+        name: RocksDB/static + Zlib/static + Runtime/dynamic/multithreaded
+        zlib: t1 # zlib library linkage type
+        rocksdb: t3 # rocksdb library linkage type
+  WSL:
+    src:   {{ WSL['sortmerna']['src'] }}
+  LNX:
+    src:   {{ LNX['sortmerna']['src'] }}
+    build: {{ LNX['sortmerna']['build'] if LNX['sortmerna']['build'] }}
+    dist:  {{ LNX['sortmerna']['dist'] if LNX['sortmerna']['dist'] }}
+    build_type: release
+    link: 
+      t1:
+        name: RocksDB/static + Zlib/static + Runtime/static
+        zlib: t1 # zlib library linkage type
+        rocksdb: t3 # rocksdb library linkage type
+  OSX:
     cmake_gen: Unix Makefiles
 
 rocksdb:
   url: https://github.com/facebook/rocksdb.git
-  build_type: release
-  package_type: t1
-  windows:
-    src: {{ ROCKSDB_SRC }}
+  WIN:
+    src:   {{ WIN['rocksdb']['src'] if WIN['rocksdb']['src']  }}
+    build: {{ WIN['rocksdb']['build'] if WIN['rocksdb']['build'] }}
+    dist:  {{ WIN['rocksdb']['dist'] if WIN['rocksdb']['dist'] }}
+    build_type: release
     link_types:
       t1:
+        # cmake flags
         WITH_MD_LIBRARY: 1
         WITH_XPRESS: 1
         WITH_ZLIB: 1
@@ -42,42 +62,76 @@ rocksdb:
         WITH_XPRESS: 1
         WITH_ZLIB: 1
       t3:  # default
+        name: RocksDB/static + ZLib/static + Runtime/dynamic/multithreaded
         WITH_MD_LIBRARY: 1
         WITH_XPRESS: 1
         WITH_ZLIB: 1
-        ZLIB_LIB_DEBUG: zlibstaticd.lib
-        ZLIB_LIB_RELEASE: zlibstatic.lib
+        ZLIB_LIB_DEBUG:   {{ WIN['zlib']['link']['t1']['debug'] }} #zlibstaticd.lib
+        ZLIB_LIB_RELEASE: {{ WIN['zlib']['link']['t1']['release'] }} #zlibstatic.lib
         PORTABLE: 0
         OPTDBG: 0
         WITH_RUNTIME_DEBUG: 0
         WITH_TESTS: 0
         WITH_TOOLS: 0
+  LNX:
+    src:   {{ LNX['rocksdb']['src'] if LNX['rocksdb']['src'] }}
+    build: {{ LNX['rocksdb']['build'] if LNX['rocksdb']['build'] }}
+    dist:  {{ LNX['rocksdb']['dist'] if LNX['rocksdb']['dist'] }}
 
 # only used on Windows
 dirent:
   url: https://github.com/tronkko/dirent
-  src: {{ DIRENT_SRC }}
+  src:   {{ WIN['dirent']['src'] if WIN['dirent']['src'] }}
+  build: {{ WIN['dirent']['build'] if WIN['dirent']['build'] }}
+  dist:  {{ WIN['dirent']['dist'] if WIN['dirent']['dist'] }}
 
 zlib:
   url: https://github.com/madler/zlib.git
-  windows:
-    src:    {{ ZLIB_SRC }}
-    link_types:
+  WIN:
+    src:   {{ WIN['zlib']['src'] if WIN['zlib']['src'] }}
+    build: {{ WIN['zlib']['build'] if WIN['zlib']['build'] }}
+    dist:  {{ WIN['zlib']['dist'] if WIN['zlib']['dist'] }}
+    link:
       t1:
-        type: MD/MDd # multi-threaded DLL runtime lib (default)
-        dir: t1 # added to the distribution location path i.e. $ZLIB_SRC/dist/t1/
+        type: {{ WIN['zlib']['link']['t1']['type'] }} # multi-threaded DLL runtime lib (default)
+        dir:  {{ WIN['zlib']['link']['t1']['dir'] }} # added to the distribution location path i.e. $ZLIB_SRC/dist/t1/
+        release: {{ WIN['zlib']['link']['t1']['release'] }}  # zlibstatic.lib
+        debug:   {{ WIN['zlib']['link']['t1']['debug'] }}
       t2:
-        type: MT/MTd # mutli-threaded Static runtime lib. Needs either CMakeLists modification, or command line options.
-        dir: t2
-  linux:
-    src:  /media/a01_libs/zlib
+        type: {{ WIN['zlib']['link']['t2']['type'] }}  # mutli-threaded Static runtime lib. Needs either CMakeLists modification, or command line options.
+        dir:  {{ WIN['zlib']['link']['t1']['dir'] }} 
+  LNX:
+    src:   {{ LNX['zlib']['src'] if LNX['zlib']['src'] }}
+    build: {{ LNX['zlib']['build'] if LNX['zlib']['build'] }}
+    dist:  {{ LNX['zlib']['dist'] if LNX['zlib']['dist'] }}
 
 rapidjson:
   url: https://github.com/Tencent/rapidjson
+  WIN:
+    src:   {{ WIN['rapidjson']['src'] if WIN['rapidjson']['src'] }}
+    build: {{ WIN['rapidjson']['build'] if WIN['rapidjson']['build'] }}
+    dist:  {{ WIN['rapidjson']['build'] if WIN['rapidjson']['dist'] }}
+  LNX:
+    src:   {{ LNX['rapidjson']['src'] if LNX['rapidjson']['src'] }}
+    build: {{ LNX['rapidjson']['build'] if LNX['rapidjson']['build'] }}
+    dist:  {{ LNX['rapidjson']['dist'] if LNX['rapidjson']['dist'] }}
 
 cmake:
-  url: https://github.com/Kitware/CMake/releases/download/v{}/cmake-{}-Linux-x86_64.tar.gz
-  ver: 3.15.3
+  WIN:
+    url: https://github.com/Kitware/CMake/releases/download/v{{CMAKE_VER}}/cmake-{{CMAKE_VER}}-win64-x64.zip
+    home: {{ WIN['cmake']['root'] }}/cmake-{{CMAKE_VER}}-win64-x64
+  LNX:
+    url: https://github.com/Kitware/CMake/releases/download/v{{CMAKE_VER}}/cmake-{{CMAKE_VER}}-Linux-x86_64.tar.gz
+    home: {{ LNX['cmake']['root'] }}/cmake-{{CMAKE_VER}}-Linux-x86_64
 
 conda:
-  url: 'http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh'
+  url:
+    WIN: 
+    WLX:
+    LNX: 'http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh'
+    OSX:
+
+git:
+  WIN:
+    url: https://github.com/git-for-windows/git/releases/download/v{{ GIT_VER_MAJ }}.windows.2/PortableGit-{{ GIT_VER_MIN }}-64-bit.7z.exe
+    home: {{ WIN['git']['root'] }}/PortableGit-{{ GIT_VER_MIN }}-64

@@ -15,6 +15,36 @@ import shutil
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
+# globals
+IS_WIN = None
+IS_WSL = None
+IS_LNX = None
+
+OS = None
+
+UHOME = None
+
+SMR = 'sortmerna'
+SMR_SRC  = None # source root dir
+SMR_DIST = None # dist root dir
+SMR_EXE  = None # full path to executable
+
+ZLIB_SRC   = None
+ZLIB_DIST  = None
+
+ROCKS_SRC   = None
+ROCKS_DIST  = None
+
+# no binaries, so always build Release only
+RAPID_SRC   = None
+RAPID_DIST  = None
+
+DATA_DIR = None
+RUN_DIR  = None
+OUT_DIR  = None
+TEST_DATA = None
+
+
 def run(cmd, cwd=None, capture=False):
     '''
     '''
@@ -764,97 +794,109 @@ def t15(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t15
 
+def t16(name, datad, outd, ret={}, **kwarg):
+    '''
+    @param name  sortmerna.exe path
+    @param datad   Data directory
+    @param outd    results output directory
+    @param capture Capture output
+    '''
+    STAMP = '[{}]'.format(name)
+    print('{} TODO: implement'.format(STAMP))
+    print("{} Done".format(STAMP))
+#END t16
+
+def t17(name, datad, outd, ret={}, **kwarg):
+    '''
+    @param name  sortmerna.exe path
+    @param datad   Data directory
+    @param outd    results output directory
+    @param capture Capture output
+    '''
+    STAMP = '[{}]'.format(name)
+    print('{} TODO: implement'.format(STAMP))
+    print("{} Done".format(STAMP))
+#END t17
+
 if __name__ == "__main__":
     '''
     python tests/run.py --name t0 [--capture]
     python tests/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
-    SMR = 'sortmerna'
     import pdb; pdb.set_trace()
+
+    # define platform
     pf = platform.platform()
     IS_WIN = 'Windows' in pf
-    # Windows Subsystem for Linux (WSL)
-    IS_WSL = 'Linux' in pf and 'Microsoft' in pf
+    IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
+    IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
+
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
-    if IS_WIN:
-        OS = 'WIN'
-    elif IS_WSL:
-        OS = 'WSL'
+    if   IS_WIN: OS = 'WIN'
+    elif IS_WSL: OS = 'WSL'
+    elif IS_LNX: OS = 'LNX'
     else:
-        OS = 'LINUX_VBOX'
+        print('Unable to define the platform: {}'.format(pf))
+        sys.exit(1)
 
+    # process options
     optpar = OptionParser()
     optpar.add_option('-n', '--name', dest='name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
-    optpar.add_option('--pt_smr', dest='pt_smr', help = 'Sortmerna Linkage type t1 | t2 | t3')
+    optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     optpar.add_option('--capture', action="store_true", help='Capture output. By default prints to stdout')
     optpar.add_option('--ddir', dest='ddir', help = 'Data directory')
-    optpar.add_option('--config', dest='config', default='test.jinja.yaml', help='Tests configuration file.')
-    optpar.add_option('--env', dest='env', help='Environment variables')
+    optpar.add_option('--config', dest='config', help='Tests configuration file.')
+    optpar.add_option('--env', dest='envfile', help='Environment variables')
 
     (opts, args) = optpar.parse_args()
 
-    # Env file exists
-    is_env = os.path.exists(opts.env)
-    if not is_env:
-        print('ERROR: Need file that specifies at least one Variable: SMR_SRC')
-        sys.exit(1)
-
-    # load properties from env.yaml
-    with open(opts.env, 'r') as envh:
-        env = yaml.load(envh)
-
-    SMR_SRC  = env[OS]['SMR_SRC']
-    DATA_DIR = env[OS]['DATA_DIR']
-    TESTS_HOME = os.path.join(SMR_SRC, 'tests')
-
-    # check jinja yaml configuration exists
-    cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this 'run.py' script is located
+    # process configuration
+    cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
     print('Current dir: {}'.format(cur_dir))
-    cfgfile = os.path.join(cur_dir, opts.config)
-    is_cfg = os.path.exists(cfgfile)
-    print('Config file {} exists: {}'.format(opts.config, is_cfg))
 
-    # calculate parameters dependent on ENV properties
-    UHOME_WIN = opts.winhome if IS_WSL else None
-    if IS_WSL and not opts.winhome:
-        print('--winhome is a required options on Windows Subsystem for Linux')
-        sys.exit()
-
-    if IS_WIN:
-        if not opts.pt_smr: opts.pt_smr = 't1'
-        SMR_BUILD = os.path.join(SMR_SRC, 'build')
-        SMR_DIST = os.path.join(SMR_SRC, 'dist', opts.pt_smr, opts.btype)
-        SMR_EXE = os.path.join(SMR_DIST, 'bin', 'sortmerna')
-        RUN_DIR = os.path.join(UHOME, 'sortmerna', 'run')
-    elif IS_WSL:
-        SMR_SRC = os.path.join(UHOME_WIN, 'a01_code', SMR)
-        SMR_BUILD = os.path.join(UHOME, SMR, 'build')
-        SMR_DIST = os.path.join(UHOME, SMR, 'dist')
-        SMR_EXE = os.path.join(SMR_DIST, 'bin', 'sortmerna')
-        RUN_DIR = os.path.join(UHOME, 'sortmerna', 'run')
+    # check env.yaml. If no env file specified, try the current directory
+    env_yaml = os.path.join(cur_dir, 'env.yaml') if not opts.envfile else opts.envfile
+    if not os.path.exists(env_yaml):
+        print('No environment config file found. Please, provide one using \'--env\' option')
+        sys.exit(1)
     else:
-        SMR_SRC = '/media/sf_a01_code/sortmerna'
+        # load properties from env.yaml
+        print('Using Environment configuration file: {}'.format(env_yaml))
+        with open(env_yaml, 'r') as envh:
+            env = yaml.load(envh, Loader=yaml.FullLoader)
 
-    if opts.ddir:
-        DATA_DIR = opts.ddir
+    # check jinja.yaml
+    cfgfile = os.path.join(cur_dir, 'test.jinja.yaml') if not opts.config else opts.config
+    if not os.path.exists(cfgfile):
+        print('No build configuration template found. Please, provide one using \'--config\' option')
+        sys.exit(1)
     else:
-        DATA_DIR = os.path.join(TESTS_HOME, 'data')
+        print('Using Build configuration template: {}'.format(cfgfile))
+
+    # load jinja template
+    jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
+    template = jjenv.get_template(os.path.basename(cfgfile))
+
+    # render jinja template
+    SMR_SRC  = env[OS][SMR]['src']
+    DATA_DIR = env[OS]['DATA_DIR']
+    cfg_str = template.render({'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR})
+    #cfg_str = template.render(env) # env[OS]
+    cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
+    
+    SMR_DIST = env[OS][SMR]['dist'] if env[OS][SMR]['dist'] else '{}/dist'.format(SMR_SRC)
+    SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
+    SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna') 
+    RUN_DIR  = os.path.join(UHOME, 'sortmerna', 'run')
+    TEST_DATA = os.path.join(SMR_SRC, 'data')
 
     if opts.name in ['t{}'.format(x) for x in range(0,16)]:
         OUT_DIR = os.path.join(RUN_DIR, 'out')
-
-    # load jinja template
-    env_jinja = Environment(loader = FileSystemLoader(cur_dir), trim_blocks=True, lstrip_blocks=True)
-    template = env_jinja.get_template(opts.config)
-
-    # render jinja template
-    cfg_str = template.render(env[OS])
-    cfg = yaml.load(cfg_str)
 
     # clean-up the run directory. May Fail if any file in the directory is open. Close the files and re-run.
     if opts.clean and os.path.isdir(RUN_DIR):
@@ -877,7 +919,9 @@ if __name__ == "__main__":
         't11': t11,
         't12': t12,
         't13': t13,
-        't14': t14
+        't14': t14,
+        't16': t16,
+        't17': t17
     }
 
     # id(cfg[opts.name]) # 2409596527368
@@ -894,7 +938,7 @@ if __name__ == "__main__":
         if cfg[opts.name]['validate']:
             nm = cfg[opts.name]['name']
             fn = cfg[opts.name]['validate']['func']
-            funcs[fn](nm, DATA_DIR, OUT_DIR, ret, **cfg[opts.name]['validate'])
+            funcs[fn](nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
     # other funcs
     elif opts.name == 'to_lf':
         to_lf(DATA_DIR)
