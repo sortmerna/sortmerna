@@ -31,6 +31,9 @@ Ready to use GCC-9 distribution is only available on Debian (Ubuntu). It is not 
 
 Clang has no support for the `filesystem` yet. LLVM 9.0 is due to be released later this year. At that time we'll get back to supporting builds with Clang on Linux and OSX.
 
+The build is performed using a Python script provided with the Sortmerna distribution.
+The script uses a configuration file `env.yaml`, which can be Optionally modified to customize the build.
+
 ## Building on Linux
 
 ### Install GCC 9
@@ -40,11 +43,18 @@ This is for Debian distros (Ubuntu)
 ```
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt update
-sudo apt install gcc-9 g++-9
+sudo apt -y install gcc-9 g++-9
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9
 sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60
+
+# select gcc-9
+sudo update-alternatives --config gcc
+# select cpp-9
+sudo update-alternatives --config cpp-bin
+
 gcc --version
-  gcc (Ubuntu 9.1.0-2ubuntu2~18.04) 9.1.0
+  gcc (Ubuntu 9.2.1-17ubuntu1~16.04) 9.2.1 20191102
 ```
 
 ### Install Devtoolset 9
@@ -55,9 +65,21 @@ This section is for RHEL (Centos) distros. Waiting for Devtoolset-9 to become av
 
 ### Install Conda
 
-TODO
+The following will install Conda in the User's Home directory.
+
+```
+pushd $HOME
+wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh -b
+export PATH=$HOME/miniconda3/bin:$PATH
+pip install -U pip
+pip install pyyaml
+pip install jinja2
+```
 
 ### get Sortmerna sources
+
+The sources can be placed in any directory, but here we use the user's Home directory
 ```
 # clone the repository
 git clone https://github.com/biocore/sortmerna.git
@@ -73,6 +95,20 @@ pushd sortmerna
 git checkout v4.0.0
 ```
 
+### install CMake
+
+Use the Python script provided with the Sortmerna distro
+
+```
+# 
+SMR_HOME=$HOME/sortmerna
+python $SMR_HOME/scripts/build.py --name cmake_install
+  [cmake_install] Installed CMake /home/biocodz/cmake-3.15.5-Linux-x86_64/bin/cmake
+
+# add cmake to PATH
+export PATH=$HOME/cmake-3.15.5-Linux-x86_64/bin:$PATH
+```
+
 ### build
 
 Use python script provided with the Sortmerna distro.
@@ -85,13 +121,12 @@ By default the build produces statically linked executable i.e. portable.
 ```
 # navigate to the Sortmerna source directory SMR_HOME
 SMR_HOME=$HOME/sortmerna
-pushd $SMR_HOME
 
 # modify configuration (optional)
-vi scripts/env.yaml
+vi $SMR_HOME/scripts/env.yaml
 
 # run the build
-python scripts/build.py --name all [--env $SMR_HOME/script/my_env.yaml]
+python $SMR_HOME/scripts/build.py --name all [--env $SMR_HOME/script/my_env.yaml]
 ```
 
 ## Building on Windows
@@ -102,9 +137,15 @@ Download and Install VS Community edition from [Visual Studio community website]
 
 ### Install Conda
 
+TODO
+
 ### get Sortmerna sources
 
+TODO
+
 ### build
+
+TODO
 
 ## Building on Mac
 

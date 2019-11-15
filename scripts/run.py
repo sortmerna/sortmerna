@@ -883,7 +883,9 @@ if __name__ == "__main__":
     template = jjenv.get_template(os.path.basename(cfgfile))
 
     # render jinja template
-    SMR_SRC  = env[OS][SMR]['src']
+    SMR_SRC  = env[OS][SMR]['src'] if env[OS][SMR]['src'] else '{}/sortmerna'.format(UHOME)
+    if not os.path.exists(SMR_SRC):
+        print('Sortmerna source directory {} not found. Either specify location in env.yaml or make sure the sources exist at {}'.format(SMR_SRC, SMR_SRC))
     DATA_DIR = env[OS]['DATA_DIR']
     cfg_str = template.render({'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR})
     #cfg_str = template.render(env) # env[OS]

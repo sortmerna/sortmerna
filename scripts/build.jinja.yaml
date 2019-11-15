@@ -19,8 +19,9 @@ OSX:
 
 sortmerna:
   url: https://github.com/biocore/sortmerna.git
+  ver: {{ SORTMERNA_VER if SORTMERNA_VER }}
   WIN:
-    src:   {{ WIN['sortmerna']['src'] }}
+    src:   {{ WIN['sortmerna']['src'] if WIN['sortmerna']['src'] }}
     build: {{ WIN['sortmerna']['build'] if WIN['sortmerna']['build'] }}
     dist:  {{ WIN['sortmerna']['dist'] if WIN['sortmerna']['dist'] }}
     build_type: release
@@ -32,7 +33,7 @@ sortmerna:
   WSL:
     src:   {{ WSL['sortmerna']['src'] }}
   LNX:
-    src:   {{ LNX['sortmerna']['src'] }}
+    src:   {{ LNX['sortmerna']['src'] if LNX['sortmerna']['src'] }}
     build: {{ LNX['sortmerna']['build'] if LNX['sortmerna']['build'] }}
     dist:  {{ LNX['sortmerna']['dist'] if LNX['sortmerna']['dist'] }}
     build_type: release
@@ -46,6 +47,7 @@ sortmerna:
 
 rocksdb:
   url: https://github.com/facebook/rocksdb.git
+  ver: {{ ROCKSDB_VER if ROCKSDB_VER }}
   WIN:
     src:   {{ WIN['rocksdb']['src'] if WIN['rocksdb']['src']  }}
     build: {{ WIN['rocksdb']['build'] if WIN['rocksdb']['build'] }}
@@ -122,13 +124,13 @@ cmake:
     home: {{ WIN['cmake']['root'] }}/cmake-{{CMAKE_VER}}-win64-x64
   LNX:
     url: https://github.com/Kitware/CMake/releases/download/v{{CMAKE_VER}}/cmake-{{CMAKE_VER}}-Linux-x86_64.tar.gz
-    home: {{ LNX['cmake']['root'] }}/cmake-{{CMAKE_VER}}-Linux-x86_64
+    home: {{ LNX['cmake']['root'] if LNX['cmake']['root'] else UHOME }}/cmake-{{CMAKE_VER}}-Linux-x86_64
 
 conda:
   url:
     WIN: 
     WLX:
-    LNX: 'http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh'
+    LNX: {{ LNX['conda']['url'] }}
     OSX:
 
 git:

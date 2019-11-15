@@ -15,6 +15,7 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 import zipfile
+#from distutils.dir_util import copy_tree
 
 # globals
 SMR    = 'sortmerna'
@@ -107,7 +108,7 @@ def conda_install(OS, cfg, dir=None):
     try:
         with urllib.request.urlopen(url_conda) as surl:
             with open(fsh, 'wb') as fp:
-                fp.write(surl.read()) # loads all file into memory first before writing to disk. No good for very big files.
+                fp.write(surl.read()) # loads the file into memory before writing to disk. No good for very big files.
     except urllib.request.HTTPError as ex:
         print(ex.read())
 
@@ -130,9 +131,9 @@ def cmake_install(cfg, dir=None, force=False):
     is_installed = False
     url = cfg['cmake'][OS]['url']
     zipped = url.split('/')[-1] # tar.gz or zip
-    dir = cfg['cmake'][OS]['home'] # home directory
+    cmake_home = cfg['cmake'][OS]['home'] # home directory
     # check already installed
-    cmake_bin = '{}/bin/cmake'.format(dir)
+    cmake_bin = '{}/bin/cmake'.format(cmake_home)
     if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
     if os.path.exists(cmake_bin):
         print('{} Cmake is already installed: {}'.format(STAMP, cmake_bin))
@@ -140,7 +141,7 @@ def cmake_install(cfg, dir=None, force=False):
             is_installed = True
 
     if not is_installed:
-        os.chdir(Path(dir).parent) # navigate to the parent dir e.g. installation root
+        os.chdir(Path(cmake_home).parent) # navigate to the parent dir e.g. installation root
         # load file from URL
         try:
             with urllib.request.urlopen(url) as surl:
@@ -152,7 +153,7 @@ def cmake_install(cfg, dir=None, force=False):
         # extract archive
         ext = os.path.splitext(zipped)[1]
         if '.gz' == ext:
-            tar = tarfile.open(targz)
+            tar = tarfile.open(zipped)
             tar.extractall()
             tar.close()
         elif '.zip' == ext: 
@@ -167,6 +168,10 @@ def cmake_install(cfg, dir=None, force=False):
             print('{} Installed CMake {}'.format(STAMP, cmake_bin))
         else:
             print('{} Failed to install CMake {}'.format(STAMP, cmake_bin))
+
+        # copy binarties to HOME/bin to avoid setting the PATH
+        #if IS_LNX:
+        #    copy_tree('{}/bin'.format(cmake_home), '{}/bin'.format(UHOME))
     #os.environ('PATH') 
 #END cmake_install
 
@@ -316,7 +321,7 @@ def rocksdb_fix_3party(ptype='t3'):
     #txtn = re.sub(r'ZLIB_LIB_RELEASE .*\)', r'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{})'.format(lib_rel), txtn, flags = re.M)
 #END rocksdb_fix_3party
     
-def rocksdb_build(btype='Release', ptype='t3'):
+def rocksdb_build(ver=None, btype='Release', ptype='t3'):
     '''
     @param btype  Build type Release | Debug
     @param ptype  Linkage type on Windows t1 | t2 | t3
@@ -337,6 +342,10 @@ def rocksdb_build(btype='Release', ptype='t3'):
     WITH_GFLAGS = 0
     
     git_clone(URL_ROCKS, LIB_DIR)
+
+    if ver:
+        cmd = ['git', 'checkout', ver]
+        proc_run(cmd, ROCKS_SRC)
 
     if IS_WIN:
         if ptype == "t3": print("Type 3 linkage: /MD + static ZLib")
@@ -375,7 +384,7 @@ def rocksdb_build(btype='Release', ptype='t3'):
     proc_run(cmd, ROCKS_BUILD)
 #END rocksdb_build
 
-def smr_build(btype='Release', ptype='t1', cfg={}):
+def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     '''
     @param btype Build type Release | Debug
     @param ptype Linking type: t1 | t2 | t3
@@ -386,6 +395,10 @@ def smr_build(btype='Release', ptype='t1', cfg={}):
     STAMP = '[smr_build]'
 
     git_clone(URL_SMR, os.path.split(SMR_SRC)[0])
+
+    if ver:
+        cmd = ['git', 'checkout', ver]
+        proc_run(cmd, SMR_SRC)
 
     # CMake flags
     PORTABLE = 0
@@ -544,6 +557,7 @@ if __name__ == "__main__":
     template = jjenv.get_template(os.path.basename(cfgfile))
 
     # render jinja template
+    env['UHOME'] = UHOME
     cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
 
@@ -559,25 +573,27 @@ if __name__ == "__main__":
 
     CMAKE_GEN = cfg[OS]['cmake_gen']
 
-    SMR_SRC   = cfg[SMR][OS]['src']
+    SMR_SRC   = cfg[SMR][OS].get('src') if cfg[SMR][OS].get('src') else '{}/sortmerna'.format(UHOME)
     SMR_BUILD = cfg[SMR][OS]['build'] if cfg[SMR][OS]['build'] else '{}/build'.format(SMR_SRC)
     SMR_DIST  = cfg[SMR][OS]['dist'] if cfg[SMR][OS]['dist'] else '{}/dist'.format(SMR_SRC)
+    SMR_VER   = cfg[SMR].get('ver') if cfg[SMR].get('ver') else None
     
-    LIB_DIR = cfg[OS]['lib']
-    LIB_DIR = '{}/3rdparty'.format(SMR_SRC) if not LIB_DIR else LIB_DIR
+    LIB_DIR = cfg[OS].get('lib') if cfg[OS].get('lib') else UHOME # '{}/3rdparty'.format(SMR_SRC)
 
-    ZLIB_SRC   = '{}/{}'.format(LIB_DIR, ZLIB) if not cfg[ZLIB][OS]['src'] else cfg[ZLIB][OS]['src']
+    ZLIB_SRC   = cfg[ZLIB][OS].get('src') if cfg[ZLIB][OS].get('src') else '{}/{}'.format(LIB_DIR, ZLIB)
     ZLIB_BUILD = cfg[ZLIB][OS]['build'] if cfg[ZLIB][OS]['build'] else '{}/build'.format(ZLIB_SRC)
     ZLIB_DIST  = cfg[ZLIB][OS]['dist'] if cfg[ZLIB][OS]['dist'] else '{}/dist'.format(ZLIB_SRC)
 
-    ROCKS_SRC   = '{}/{}'.format(LIB_DIR, ROCKS) if not cfg[ROCKS][OS]['src'] else cfg[ROCKS][OS]['src']
+    ROCKS_SRC   = cfg[ROCKS][OS].get('src') if cfg[ROCKS][OS].get('src') else '{}/{}'.format(LIB_DIR, ROCKS)
     ROCKS_BUILD = cfg[ROCKS][OS]['build'] if cfg[ROCKS][OS]['build'] else '{}/build'.format(ROCKS_SRC)
     ROCKS_DIST  = cfg[ROCKS][OS]['dist'] if cfg[ROCKS][OS]['dist'] else '{}/dist'.format(ROCKS_SRC)
+    ROCKS_VER   = cfg[ROCKS].get('ver') if cfg[ROCKS].get('ver') else None
 
     # no binaries, so always build Release only
-    RAPID_SRC   = '{}/{}'.format(LIB_DIR, RAPID) if not cfg[RAPID][OS]['src'] else cfg[RAPID][OS]['src']
+    RAPID_SRC   = cfg[RAPID][OS].get('src') if cfg[RAPID][OS].get('src') else '{}/{}'.format(LIB_DIR, RAPID)
     RAPID_BUILD = cfg[RAPID][OS]['build'] if cfg[RAPID][OS]['build'] else '{}/build'.format(RAPID_SRC)
     RAPID_DIST  = cfg[RAPID][OS]['dist'] if cfg[RAPID][OS]['dist'] else '{}/dist'.format(RAPID_SRC)
+
     if IS_WIN:
         SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
 
@@ -596,13 +612,13 @@ if __name__ == "__main__":
         if opts.name == ALL:
             rapidjson_build()
             zlib_build()
-            rocksdb_build()
-            smr_build(btype=opts.btype, ptype=opts.pt_smr, cfg=cfg)
+            rocksdb_build(ROCKS_VER)
+            smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=cfg)
         if opts.name == SMR: 
             if opts.clean:
                 clean(SMR_BUILD)
             else:
-                smr_build(btype=opts.btype, ptype=opts.pt_smr, cfg=cfg)
+                smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=cfg)
         elif opts.name == ZLIB: 
             zlib_build()
         elif opts.name == RAPID: 
@@ -611,7 +627,7 @@ if __name__ == "__main__":
             if opts.clean:
                 clean(ROCKS_BUILD)
             else:
-                rocksdb_build()
+                rocksdb_build(ROCKS_VER)
         elif opts.name == DIRENT: 
             if opts.clone:
                 git_clone(URL_DIRENT, LIB_DIR) 

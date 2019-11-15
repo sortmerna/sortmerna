@@ -303,7 +303,7 @@ t16:
   - -ref
   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
   - -reads
-  - {{ DATA_DIR }}/sortmerna/data/reads/ecoli100.1.head1000.fq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/ecoli100.1.head1000.fq
   - -num_alignments
   - '1'
   - -fastx
@@ -318,9 +318,9 @@ t17:
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
   - -reads
   # SRR7721017_1.fastq | SRR7721017_1_100.fastq | SRR7721017_1_15.fastq
-  - {{ DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq
   - -reads
   # SRR7721017_2.fastq | SRR7721017_2_100.fastq | SRR7721017_2_15.fastq
-  - {{ DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_2.fastq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_2.fastq
   - -v
   - -paired_in
