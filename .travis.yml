@@ -43,21 +43,21 @@
 env:
   global:
     - OAUTH=""
-    - STATIC_SFX="static"
+    #- STATIC_SFX="static"
     - DO_DEPLOY=0
     # CMake
-    - CMAKE_VER=3.15.5
-    - CMAKE_URL=https://github.com/Kitware/CMake/releases/download
+    #- CMAKE_VER=3.15.5
+    #- CMAKE_URL=https://github.com/Kitware/CMake/releases/download
     #
-    - RAPIDJSON_URL=https://github.com/Tencent/rapidjson.git
-    - ZLIB_URL=https://github.com/madler/zlib.git
+    #- RAPIDJSON_URL=https://github.com/Tencent/rapidjson.git
+    #- ZLIB_URL=https://github.com/madler/zlib.git
     # RocksDB
-    - ROCKSDB_RELEASE=  # v6.2.4 v6.3.6 Releases fail on GCC-9, but the master OK
-    - ROCKSDB_URL=https://github.com/facebook/rocksdb.git
+    #- ROCKSDB_RELEASE=  # v6.2.4 v6.3.6 Releases fail on GCC-9, but the master OK
+    #- ROCKSDB_URL=https://github.com/facebook/rocksdb.git
     #- ROCKSDB_URL=https://github.com/biocodz/rocksdb;
     #
-    - CONDA_LINUX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    - CONDA_OSX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    #- CONDA_LINUX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    #- CONDA_OSX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 
 matrix:
   include:
@@ -136,23 +136,47 @@ install:
   - gcc --version
   - echo $CC
   - echo $CXX
+  # Python - Conda. Boot Conda using the existing Python 3
+  - which python3
+  - python3 --version
+  - sudo pip3 install pyyaml
+  - sudo pip3 install jinja2
+  - python3 $TRAVIS_BUILD_DIR/scripts/build.py --name conda
+  - ls -lrt $HOME
+  #- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+  #    wget $CONDA_LINUX_URL -O miniconda.sh;
+  #  fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+  #    wget $CONDA_OSX_URL -O miniconda.sh;
+  #  fi
+  #- chmod +x miniconda.sh
+  #- ./miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda3/bin:$PATH"
+  #- conda update --yes conda
+  - which pip
+  - pip install numpy
+  - pip install scipy
+  - pip install scikit-bio
+
   - which cmake
   - cmake --version
+  #
   # Upgrade CMake
+  #
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
       CMAKE_SH=cmake-${CMAKE_VER}-Linux-x86_64.sh ;
       wget ${CMAKE_URL}/v${CMAKE_VER}/${CMAKE_SH} ;
       sudo apt remove cmake ; 
       sudo apt purge --auto-remove cmake ;
-      chmod +x ${CMAKE_SH} ;
-      ./${CMAKE_SH} --skip-license ;
-      /usr/local/bin/cmake --version ;
-      export PATH=/usr/local/bin:$PATH ;
     fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew upgrade cmake;
-      brew install dos2unix;
-    fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+  #    brew upgrade cmake;
+  #    brew install dos2unix;
+  #  fi
+  - python $TRAVIS_BUILD_DIR/scripts/build.py --name cmake
+  - ls -lrt $HOME
+  # add CMake to PATH
+  - export PATH="$HOME/$(basename -- $(find $HOME -type d -name 'cmake-*x86_64'))/bin:$PATH"
   # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
   #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
@@ -168,26 +192,6 @@ install:
   - which cmake
   - cmake --version
   - popd
-
-  # Miniconda
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget $CONDA_LINUX_URL -O miniconda.sh;
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget $CONDA_OSX_URL -O miniconda.sh;
-    fi
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda update --yes conda
-  - which pip
-  - pip install numpy
-  - pip install scipy
-  - pip install scikit-bio
-  #- conda config --add channels https://conda.anaconda.org/biobuilds
-  #- conda create --yes -n env_name python=3.5 numpy scipy
-  #- source activate env_name
-#  - pip install scikit-bio==0.2.3
 #  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
 #  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
     # C++14
@@ -197,8 +201,8 @@ install:
 #  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
 
 script:
-  - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
-  - pushd "${TRAVIS_BUILD_DIR}"
+#  - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
+#  - pushd "${TRAVIS_BUILD_DIR}"
 
   # check C++17 <filesystem>
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -213,93 +217,94 @@ script:
     fi
 
   # Install 3rd party libraries
-  - pushd ./3rdparty;
+  #- pushd ./3rdparty;
 
   # rapidjson
-  - git clone $RAPIDJSON_URL
-  - mkdir -p rapidjson/build/Release
-  - pushd rapidjson/build/Release
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DRAPIDJSON_BUILD_EXAMPLES=OFF \
-    -DRAPIDJSON_BUILD_DOC=OFF \
-    -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
-  - cmake --build .
-  - cmake --build . --target install
-  - popd
+  #- git clone $RAPIDJSON_URL
+  #- mkdir -p rapidjson/build/Release
+  #- pushd rapidjson/build/Release
+  #- |
+  #  cmake -G "Unix Makefiles" \
+  #  -DCMAKE_BUILD_TYPE=Release \
+  #  -DRAPIDJSON_BUILD_EXAMPLES=OFF \
+  #  -DRAPIDJSON_BUILD_DOC=OFF \
+  #  -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
+  #- cmake --build .
+  #- cmake --build . --target install
+  #- popd
 
   # ZLib
-  - git clone ${ZLIB_URL};
-  - mkdir -p zlib/build/Release;
-  - pushd zlib/build/Release;
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
-  - cmake --build . ;
-  - cmake --build . --target install;
-  - ls -lrt ../../dist/lib/ ; 
-  - popd;
+  #- git clone ${ZLIB_URL};
+  #- mkdir -p zlib/build/Release;
+  #- pushd zlib/build/Release;
+  #- |
+  #  cmake -G "Unix Makefiles" \
+  #  -DCMAKE_BUILD_TYPE=Release \
+  #  -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
+  #- cmake --build . ;
+  #- cmake --build . --target install;
+  #- ls -lrt ../../dist/lib/ ; 
+  #- popd;
 
   # RocksDB
-  - git clone ${ROCKSDB_URL}; # BUG: https://github.com/facebook/rocksdb/pull/5426
-  - pushd rocksdb
-  - git show --summary
-  - if [[ -n $ROCKSDB_RELEASE ]]; then git checkout tags/${ROCKSDB_RELEASE}; fi
-  - mkdir -p build/Release;
-  - pushd build/Release;
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=../../dist \
-    -DWITH_ZLIB=1 \
-    -DZLIB_ROOT_DIR=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
-    -DWITH_GFLAGS=0 \
-    -DPORTABLE=1 \
-    -DWITH_TESTS=0 \
-    -DWITH_TOOLS=0 ../.. ;
+  #- git clone ${ROCKSDB_URL}; # BUG: https://github.com/facebook/rocksdb/pull/5426
+  #- pushd rocksdb
+  #- git show --summary
+  #- if [[ -n $ROCKSDB_RELEASE ]]; then git checkout tags/${ROCKSDB_RELEASE}; fi
+  #- mkdir -p build/Release;
+  #- pushd build/Release;
+  #- |
+  #  cmake -G "Unix Makefiles" \
+  #  -DCMAKE_BUILD_TYPE=Release \
+  #  -DCMAKE_INSTALL_PREFIX=../../dist \
+  #  -DWITH_ZLIB=1 \
+  #  -DZLIB_ROOT_DIR=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
+  #  -DWITH_GFLAGS=0 \
+  #  -DPORTABLE=1 \
+  #  -DWITH_TESTS=0 \
+  #  -DWITH_TOOLS=0 ../.. ;
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
     #Trusty: cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
   #- if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
   #  fi
-  - cmake --build . ;
-  - cmake --build . --target install;
-  - popd; # return to rocksdb
-  - popd; # return to 3rdparty
-  - popd; # return to sortmerna
+  #- cmake --build . ;
+  #- cmake --build . --target install;
+  #- popd; # return to rocksdb
+  #- popd; # return to 3rdparty
+  #- popd; # return to sortmerna
 
   # build SortmeRNA
-  - mkdir -p build/Release; pushd build/Release;
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPORTABLE=${STATIC_LINK} \
-    -DWITH_RUNTIME_DEBUG=0 \
-    -DWITH_TESTS=1 \
-    -DZLIB_STATIC=1 \
-    -DROCKSDB_STATIC=1 \
-    -DZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
-    -DZLIB_LIBRARY_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist/lib/libz.a \
-    -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
-    -DROCKSDB_3RDPARTY_INC=1 \
-    -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
-    -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-    -DCPACK_BINARY_TGZ=1 ../.. ;
+  - python $TRAVIS_BUILD_DIR/scripts/build.py --name all
+  #- mkdir -p build/Release; pushd build/Release;
+  #- |
+  #  cmake -G "Unix Makefiles" \
+  #  -DCMAKE_BUILD_TYPE=Release \
+  #  -DPORTABLE=${STATIC_LINK} \
+  #  -DWITH_RUNTIME_DEBUG=0 \
+  #  -DWITH_TESTS=1 \
+  #  -DZLIB_STATIC=1 \
+  #  -DROCKSDB_STATIC=1 \
+  #  -DZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
+  #  -DZLIB_LIBRARY_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist/lib/libz.a \
+  #  -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
+  #  -DROCKSDB_3RDPARTY_INC=1 \
+  #  -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
+  #  -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
+  #  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  #  -DCPACK_BINARY_TGZ=1 ../.. ;
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
   #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
   #  fi
-  - cmake --build . ;
-  - cmake --build . --target install;
-  - cmake --build . --target package;
-  - popd; # return to sortmerna/
+  #- cmake --build . ;
+  #- cmake --build . --target install;
+  #- cmake --build . --target package;
+  #- popd; # return to sortmerna/
 
   # run tests
-  - export PATH="$PWD/dist/bin:$PATH"
-  - sortmerna --version
-  - sortmerna -h
+  #- export PATH="$PWD/dist/bin:$PATH"
+  #- sortmerna --version
+  #- sortmerna -h
   #- if [[ "$ENV" == "Linux+clang-7_LLVM" ]]; then python ./tests/test_sortmerna.py; fi
   #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 

@@ -15,6 +15,7 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 import zipfile
+import time
 #from distutils.dir_util import copy_tree
 
 # globals
@@ -37,7 +38,7 @@ IS_WIN = None
 IS_WSL = None
 IS_LNX = None
 
-OS = None
+MY_OS = None
 
 UHOME = None
 
@@ -91,9 +92,9 @@ def git_clone(url, pdir, force=False):
         proc_run(cmd, pdir)
 #END git_clone  
 
-def conda_install(OS, cfg, dir=None):
+def conda_install(cfg, dir=None, force=False, clean=False):
     '''
-    @param os WIN | WSL | LNX | OSX
+    @param MY_OS WIN | WSL | LNX | OSX
     @param cfg   Config dictionary
     @dir         installation root dir. Default: User Home
 
@@ -101,22 +102,60 @@ def conda_install(OS, cfg, dir=None):
     pip install -U Jinja2
     '''
     STAMP = '[conda_install]'
-    if not dir: dir = UHOME
+    dir = UHOME if not dir else dir
     fsh = 'miniconda.sh'
-    os.chdir(dir)
-    url_conda = cfg[CONDA]['url'][OS]
-    try:
-        with urllib.request.urlopen(url_conda) as surl:
-            with open(fsh, 'wb') as fp:
-                fp.write(surl.read()) # loads the file into memory before writing to disk. No good for very big files.
-    except urllib.request.HTTPError as ex:
-        print(ex.read())
+    #os.chdir(dir)
+    # check already installed
+    bin_conda = os.path.join(dir, 'miniconda3', 'bin')
+    if os.path.exists(bin_conda):
+        cmd = ['python', '--version']
+        ret = proc_run(cmd, bin_conda, True)
+        if not ret['retcode']:
+            print('{} Conda already installed: {} : {}'.format(STAMP, bin_conda, ret['stdout']))
+            if force:
+                print('{} TODO: Force specified - removing the existing installation: {}'.format(STAMP, bin_conda))
+            return
 
+    # download the installer if not already present
+    if not os.path.exists(os.path.join(dir, fsh)):
+        url_conda = cfg[CONDA]['url'][MY_OS]
+        if sys.version_info[1] < 7:
+            # 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
+            req = urllib.request.Request(url_conda, headers={'User-Agent': 'Mozilla/5.0'})
+        else:
+            # this works with conda but not standard python3
+            req = url_conda
+
+        try:
+            with urllib.request.urlopen(req) as surl:
+                with open(fsh, 'wb') as fp:
+                    fp.write(surl.read()) # loads the file into memory before writing to disk. No good for very big files.
+        except urllib.request.HTTPError as ex:
+            print(ex.read())
+
+    # run the installer
     cmd = ['bash', fsh, '-b']
     #cmd = ['bash', fsh, '-b', '-p', '{}/miniconda'.format(dir)]
     proc_run(cmd, dir)
 
+    # delete the installer
+    if clean:
+        print('{} Deleting the installer {}'.format(STAMP, os.path.join(dir, fsh)))
+        os.remove(os.path.join(dir, fsh))
+
     print('{} Installed conda in {}'.format(STAMP, os.path.join(dir, 'miniconda3')))
+
+    # install packages required to use sortmerna's build.py
+    print('{} Installing PyYaml package'.format(STAMP))
+    bin_pip = os.path.join(bin_conda, 'pip')
+    cmd = [bin_pip, 'install', 'pyyaml']
+    proc_run(cmd, bin_conda)
+
+    print('{} Installing Jinja2 package'.format(STAMP))
+    cmd = [bin_pip, 'install', 'jinja2']
+    proc_run(cmd, bin_conda)
+
+    print('{} Done'.format(STAMP))
 #END conda_install
 
 def cmake_install(cfg, dir=None, force=False):
@@ -129,9 +168,9 @@ def cmake_install(cfg, dir=None, force=False):
     '''
     STAMP = '[cmake_install]'
     is_installed = False
-    url = cfg['cmake'][OS]['url']
+    url = cfg['cmake'][MY_OS]['url']
     zipped = url.split('/')[-1] # tar.gz or zip
-    cmake_home = cfg['cmake'][OS]['home'] # home directory
+    cmake_home = cfg['cmake'][MY_OS]['home'] # home directory
     # check already installed
     cmake_bin = '{}/bin/cmake'.format(cmake_home)
     if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
@@ -142,13 +181,16 @@ def cmake_install(cfg, dir=None, force=False):
 
     if not is_installed:
         os.chdir(Path(cmake_home).parent) # navigate to the parent dir e.g. installation root
-        # load file from URL
-        try:
-            with urllib.request.urlopen(url) as surl:
-                with open(zipped, 'wb') as fp:
-                    fp.write(surl.read()) # loads all file into memory first before writing to disk. No good for very big files.
-        except urllib.request.HTTPError as ex:
-            print(ex.read())
+        # download the installer if not already present
+        if not os.path.exists(zipped):
+            # load file from URL
+            try:
+                with urllib.request.urlopen(url) as surl:
+                    with open(zipped, 'wb') as fp:
+                        fp.write(surl.read()) # loads all file into memory first before writing to disk. No good for very big files.
+            except urllib.request.HTTPError as ex:
+                print(ex.read())
+                sys.exit(1)
 
         # extract archive
         ext = os.path.splitext(zipped)[1]
@@ -209,29 +251,52 @@ def clean(dir):
     proc_run(cmd, dir)
 #END clean
 
-def proc_run(cmd, cwd):
+def proc_run(cmd, cwd=None, capture=False):
     '''
     '''
+    STAMP = '[proc_run]'
+    ret = {'retcode':0, 'stdout':None, 'stderr':None}
     spr = '==========================================================='
-    print('[proc_run] Running command:\n{}\n{} in {}\n{}'.format(spr, ' '.join(cmd), cwd, spr))
+
+    if cwd:
+        print('{} Running command:\n{}\n{} in {}\n{}'.format(STAMP, spr, ' '.join(cmd), cwd, spr))
+    else:
+        print('{} Running command:\n{}\n{}\n{}'.format(STAMP, spr, ' '.join(cmd), spr))
+
+    start = time.time()
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
-    if not os.path.exists(cwd):
-        os.makedirs(cwd)
-    # cmake configure and generate
     try:
-        proc = subprocess.run(cmd, cwd=cwd)
-        #proc = subprocess.run(cmd, cwd=build_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if cwd:
+            if not os.path.exists(cwd):
+                os.makedirs(cwd)
+            if sys.version_info[1] > 6:
+                proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
+            else:
+                proc = subprocess.run(cmd, cwd=cwd)
+        else:
+            if sys.version_info[1] > 6:
+                proc = subprocess.run(cmd, capture_output=capture)
+            else:
+                proc = subprocess.run(cmd)
+
         if proc.returncode:
             for info in sys.exc_info(): print(info)
+        ret['retcode'] = proc.returncode
+        if capture:
+            ret['stdout'] = proc.stdout
+            ret['stderr'] = proc.stderr
     except OSError as err:
         print(err)
-        sys.exit()
+        ret['retcode'] = 1
+        ret['stderr'] = err
     except:
         for info in sys.exc_info(): print(info)
-        sys.exit()
-    #print(proc.stdout)
-    #print(proc.stderr)
+        ret['retcode'] = 1
+        ret['stderr'] = sys.exc_info()
+
+    print("{} Run time: {}".format(STAMP, time.time() - start))
+    return ret
 #END proc_run
 
 def zlib_build(btype='Release'):
@@ -424,9 +489,9 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
             PORTABLE = 1 # sets '-static' flag
     elif IS_WIN:
         # ZLIB
-        zlib_link_type   = cfg[SMR][OS]['link'][ptype][ZLIB] # ZLIB linkage type used for SMR given linkage type
-        zlib_lib_release = cfg[ZLIB][OS]['link'][zlib_link_type]['release']
-        zlib_lib_debug   = cfg[ZLIB][OS]['link'][zlib_link_type]['debug']
+        zlib_link_type   = cfg[SMR][MY_OS]['link'][ptype][ZLIB] # ZLIB linkage type used for SMR given linkage type
+        zlib_lib_release = cfg[ZLIB][MY_OS]['link'][zlib_link_type]['release']
+        zlib_lib_debug   = cfg[ZLIB][MY_OS]['link'][zlib_link_type]['debug']
         ZLIB_LIBRARY_RELEASE = '{}/lib/{}'.format(ZLIB_DIST, zlib_lib_release)
         ZLIB_LIBRARY_DEBUG = '{}/lib/{}'.format(ZLIB_DIST, zlib_lib_debug)
         #ROCKSDB_SRC = os.path.join(LIBDIR, 'rocksdb')
@@ -523,9 +588,9 @@ if __name__ == "__main__":
 
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
-    if   IS_WIN: OS = 'WIN'
-    elif IS_WSL: OS = 'WSL'
-    elif IS_LNX: OS = 'LNX'
+    if   IS_WIN: MY_OS = 'WIN'
+    elif IS_WSL: MY_OS = 'WSL'
+    elif IS_LNX: MY_OS = 'LNX'
     else:
         print('Unable to define the platform: {}'.format(pf))
         sys.exit(1)
@@ -571,28 +636,28 @@ if __name__ == "__main__":
 
     DIRENT_DIST = cfg[DIRENT]['src']
 
-    CMAKE_GEN = cfg[OS]['cmake_gen']
+    CMAKE_GEN = cfg[MY_OS]['cmake_gen']
 
-    SMR_SRC   = cfg[SMR][OS].get('src') if cfg[SMR][OS].get('src') else '{}/sortmerna'.format(UHOME)
-    SMR_BUILD = cfg[SMR][OS]['build'] if cfg[SMR][OS]['build'] else '{}/build'.format(SMR_SRC)
-    SMR_DIST  = cfg[SMR][OS]['dist'] if cfg[SMR][OS]['dist'] else '{}/dist'.format(SMR_SRC)
+    SMR_SRC   = cfg[SMR][MY_OS].get('src') if cfg[SMR][MY_OS].get('src') else '{}/sortmerna'.format(UHOME)
+    SMR_BUILD = cfg[SMR][MY_OS]['build'] if cfg[SMR][MY_OS]['build'] else '{}/build'.format(SMR_SRC)
+    SMR_DIST  = cfg[SMR][MY_OS]['dist'] if cfg[SMR][MY_OS]['dist'] else '{}/dist'.format(SMR_SRC)
     SMR_VER   = cfg[SMR].get('ver') if cfg[SMR].get('ver') else None
     
-    LIB_DIR = cfg[OS].get('lib') if cfg[OS].get('lib') else UHOME # '{}/3rdparty'.format(SMR_SRC)
+    LIB_DIR = cfg[MY_OS].get('lib') if cfg[MY_OS].get('lib') else UHOME # '{}/3rdparty'.format(SMR_SRC)
 
-    ZLIB_SRC   = cfg[ZLIB][OS].get('src') if cfg[ZLIB][OS].get('src') else '{}/{}'.format(LIB_DIR, ZLIB)
-    ZLIB_BUILD = cfg[ZLIB][OS]['build'] if cfg[ZLIB][OS]['build'] else '{}/build'.format(ZLIB_SRC)
-    ZLIB_DIST  = cfg[ZLIB][OS]['dist'] if cfg[ZLIB][OS]['dist'] else '{}/dist'.format(ZLIB_SRC)
+    ZLIB_SRC   = cfg[ZLIB][MY_OS].get('src') if cfg[ZLIB][MY_OS].get('src') else '{}/{}'.format(LIB_DIR, ZLIB)
+    ZLIB_BUILD = cfg[ZLIB][MY_OS]['build'] if cfg[ZLIB][MY_OS]['build'] else '{}/build'.format(ZLIB_SRC)
+    ZLIB_DIST  = cfg[ZLIB][MY_OS]['dist'] if cfg[ZLIB][MY_OS]['dist'] else '{}/dist'.format(ZLIB_SRC)
 
-    ROCKS_SRC   = cfg[ROCKS][OS].get('src') if cfg[ROCKS][OS].get('src') else '{}/{}'.format(LIB_DIR, ROCKS)
-    ROCKS_BUILD = cfg[ROCKS][OS]['build'] if cfg[ROCKS][OS]['build'] else '{}/build'.format(ROCKS_SRC)
-    ROCKS_DIST  = cfg[ROCKS][OS]['dist'] if cfg[ROCKS][OS]['dist'] else '{}/dist'.format(ROCKS_SRC)
+    ROCKS_SRC   = cfg[ROCKS][MY_OS].get('src') if cfg[ROCKS][MY_OS].get('src') else '{}/{}'.format(LIB_DIR, ROCKS)
+    ROCKS_BUILD = cfg[ROCKS][MY_OS]['build'] if cfg[ROCKS][MY_OS]['build'] else '{}/build'.format(ROCKS_SRC)
+    ROCKS_DIST  = cfg[ROCKS][MY_OS]['dist'] if cfg[ROCKS][MY_OS]['dist'] else '{}/dist'.format(ROCKS_SRC)
     ROCKS_VER   = cfg[ROCKS].get('ver') if cfg[ROCKS].get('ver') else None
 
     # no binaries, so always build Release only
-    RAPID_SRC   = cfg[RAPID][OS].get('src') if cfg[RAPID][OS].get('src') else '{}/{}'.format(LIB_DIR, RAPID)
-    RAPID_BUILD = cfg[RAPID][OS]['build'] if cfg[RAPID][OS]['build'] else '{}/build'.format(RAPID_SRC)
-    RAPID_DIST  = cfg[RAPID][OS]['dist'] if cfg[RAPID][OS]['dist'] else '{}/dist'.format(RAPID_SRC)
+    RAPID_SRC   = cfg[RAPID][MY_OS].get('src') if cfg[RAPID][MY_OS].get('src') else '{}/{}'.format(LIB_DIR, RAPID)
+    RAPID_BUILD = cfg[RAPID][MY_OS]['build'] if cfg[RAPID][MY_OS]['build'] else '{}/build'.format(RAPID_SRC)
+    RAPID_DIST  = cfg[RAPID][MY_OS]['dist'] if cfg[RAPID][MY_OS]['dist'] else '{}/dist'.format(RAPID_SRC)
 
     if IS_WIN:
         SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
@@ -636,6 +701,5 @@ if __name__ == "__main__":
                 git_clone(cfg[CMAKE]['url'], LIB_DIR)
             cmake_install(cfg) 
         elif opts.name == CONDA: 
-            if opts.clone:
-                conda_install(os, cfg) 
+            conda_install(cfg) 
         else: test()
