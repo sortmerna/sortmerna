@@ -180,7 +180,7 @@ def cmake_install(cfg, dir=None, force=False):
             is_installed = True
 
     if not is_installed:
-        os.chdir(Path(cmake_home).parent) # navigate to the parent dir e.g. installation root
+        os.chdir(Path(cmake_home).parent.as_posix()) # navigate to the parent dir e.g. installation root (pathlib)
         # download the installer if not already present
         if not os.path.exists(zipped):
             # load file from URL
