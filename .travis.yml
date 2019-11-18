@@ -64,8 +64,6 @@ matrix:
     - os: linux
       compiler: gcc
       dist: xenial
-      python: 3.7.1 # with default 3.5 pip3 doesn't work
-      sudo: true
       addons:
         apt:
           sources:
@@ -139,6 +137,7 @@ install:
   - echo $CC
   - echo $CXX
   # Python - Conda. Boot Conda using the existing Python 3
+  - pyenv install –list
   - which python3
   - python3 --version
   - which pip3
