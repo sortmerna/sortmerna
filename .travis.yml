@@ -64,7 +64,8 @@ matrix:
     - os: linux
       compiler: gcc
       dist: xenial
-      python: 3.7 # with default 3.5 pip3 doesn't work
+      python: 3.7.1 # with default 3.5 pip3 doesn't work
+      sudo: true
       addons:
         apt:
           sources:
