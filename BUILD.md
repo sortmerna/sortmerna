@@ -6,8 +6,9 @@
 * [Building on Linux](#building-on-linux)
 	* [Install GCC 9](#install-gcc-9)
 	* [Install Devtoolset 9](#install-devtoolset-9)
-	* [Install Conda](#install-conda)
 	* [get Sortmerna sources](#get-sortmerna-sources)
+	* [Install Conda](#install-conda)
+	* [Install CMake](#install-cmake)
 	* [build](#build)
 * [Building on Windows](#building-on-windows)
 	* [Install Visual Studio](#install-visual-studio)
@@ -63,20 +64,6 @@ TODO.
 
 This section is for RHEL (Centos) distros. Waiting for Devtoolset-9 to become available.
 
-### Install Conda
-
-The following will install Conda in the User's Home directory.
-
-```
-pushd $HOME
-wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh -b
-export PATH=$HOME/miniconda3/bin:$PATH
-pip install -U pip
-pip install pyyaml
-pip install jinja2
-```
-
 ### get Sortmerna sources
 
 The sources can be placed in any directory, but here we use the user's Home directory
@@ -95,14 +82,29 @@ pushd sortmerna
 git checkout v4.0.0
 ```
 
-### install CMake
+### Install Conda
 
-Use the Python script provided with the Sortmerna distro
+Use the `build.py` python script provided with Sortmerna distro.
+The following installs Conda, and the python packages `pyyaml`, and `jinja2` in the User's Home directory.
 
 ```
-# 
 SMR_HOME=$HOME/sortmerna
-python $SMR_HOME/scripts/build.py --name cmake_install
+python $SMR_HOME/scripts/build.py --name cmake
+
+ls -lrt
+drwxrwxr-x 15 biocodz biocodz     4096 Nov 18 09:43 miniconda3
+
+# add Conda binaries to the PATH
+export PATH=$HOME/miniconda3/bin:$PATH
+```
+
+### Install CMake
+
+The following installs CMake in user's home directory
+
+```
+SMR_HOME=$HOME/sortmerna
+python $SMR_HOME/scripts/build.py --name cmake
   [cmake_install] Installed CMake /home/biocodz/cmake-3.15.5-Linux-x86_64/bin/cmake
 
 # add cmake to PATH
@@ -111,15 +113,12 @@ export PATH=$HOME/cmake-3.15.5-Linux-x86_64/bin:$PATH
 
 ### build
 
-Use python script provided with the Sortmerna distro.
-By default the build is performed in the User directory.
 All required third party libraries will be checked and installed automatically (in User directory by default)
 The default build won't interfere with any existing system installation.
 
 By default the build produces statically linked executable i.e. portable.
 
 ```
-# navigate to the Sortmerna source directory SMR_HOME
 SMR_HOME=$HOME/sortmerna
 
 # modify configuration (optional)
@@ -137,7 +136,7 @@ Download and Install VS Community edition from [Visual Studio community website]
 
 ### Install Conda
 
-TODO
+Installer for Windows can be found [here](https://conda.io/en/latest/miniconda.html)
 
 ### get Sortmerna sources
 

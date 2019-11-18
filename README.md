@@ -27,7 +27,7 @@ BLAST-like alignments.
 
 # Getting Started
 
-SortMeRNA can be run/built on Linux, and Windows (Mac coming soon). 
+SortMeRNA 4 can be run/built on Linux, and Windows (Mac coming soon). 
 
 ## Using GitHub release binaries on Linux
 
@@ -38,8 +38,7 @@ Linux distribution is a Shell script with the embedded installation archive.
 Issue the following bash commands:
 
 ```
-pwd
-  /home/biocodz/
+pushd ~
 
 # get the distro
 wget https://github.com/biocore/sortmerna/releases/download/v4.0.0/sortmerna-4.0.0-linux.sh
@@ -58,7 +57,7 @@ bash sortmerna-4.0.0-linux.sh --help
 bash sortmerna-4.0.0-Linux.sh --skip-license
   sortmerna Installer Version: 4.0.0, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
-  The archive will be extracted to: /home/biocodz/sortmerna
+  The archive will be extracted to: $HOME/sortmerna
   
   Using target directory: /home/biocodz/sortmerna
   Extracting, please wait...
