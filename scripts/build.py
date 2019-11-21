@@ -155,6 +155,10 @@ def conda_install(cfg, dir=None, force=False, clean=False):
     cmd = [bin_pip, 'install', 'jinja2']
     proc_run(cmd, bin_conda)
 
+    print('{} Installing scikit-bio package'.format(STAMP))
+    cmd = [bin_pip, 'install', 'scikit-bio']
+    proc_run(cmd, bin_conda)
+
     print('{} Done'.format(STAMP))
 #END conda_install
 
