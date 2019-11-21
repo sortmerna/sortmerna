@@ -138,7 +138,6 @@ install:
   - echo $CXX
   # Python - Conda. Boot Conda using the existing Python 3
   - which pyenv
-  -- pyenv versions
   - pyenv install –-list
   - which python3
   - python3 --version
@@ -182,17 +181,6 @@ install:
   - ls -lrt $HOME
   # add CMake to PATH
   - export PATH="$HOME/$(basename -- $(find $HOME -type d -name 'cmake-*x86_64'))/bin:$PATH"
-  # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
-  #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
-  #    wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz ;
-  #    tar xzf cmake-3.13.2.tar.gz;
-  #    pushd cmake-3.13.2;
-  #    ./bootstrap;
-  #    make;
-  #    make install;
-  #    ls -l /usr/local/bin/cmake;
-  #  fi
   - echo $PATH
   - which cmake
   - cmake --version
@@ -221,90 +209,8 @@ script:
       find /Applications -type f -name '*fs.a' ;
     fi
 
-  # Install 3rd party libraries
-  #- pushd ./3rdparty;
-
-  # rapidjson
-  #- git clone $RAPIDJSON_URL
-  #- mkdir -p rapidjson/build/Release
-  #- pushd rapidjson/build/Release
-  #- |
-  #  cmake -G "Unix Makefiles" \
-  #  -DCMAKE_BUILD_TYPE=Release \
-  #  -DRAPIDJSON_BUILD_EXAMPLES=OFF \
-  #  -DRAPIDJSON_BUILD_DOC=OFF \
-  #  -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
-  #- cmake --build .
-  #- cmake --build . --target install
-  #- popd
-
-  # ZLib
-  #- git clone ${ZLIB_URL};
-  #- mkdir -p zlib/build/Release;
-  #- pushd zlib/build/Release;
-  #- |
-  #  cmake -G "Unix Makefiles" \
-  #  -DCMAKE_BUILD_TYPE=Release \
-  #  -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
-  #- cmake --build . ;
-  #- cmake --build . --target install;
-  #- ls -lrt ../../dist/lib/ ; 
-  #- popd;
-
-  # RocksDB
-  #- git clone ${ROCKSDB_URL}; # BUG: https://github.com/facebook/rocksdb/pull/5426
-  #- pushd rocksdb
-  #- git show --summary
-  #- if [[ -n $ROCKSDB_RELEASE ]]; then git checkout tags/${ROCKSDB_RELEASE}; fi
-  #- mkdir -p build/Release;
-  #- pushd build/Release;
-  #- |
-  #  cmake -G "Unix Makefiles" \
-  #  -DCMAKE_BUILD_TYPE=Release \
-  #  -DCMAKE_INSTALL_PREFIX=../../dist \
-  #  -DWITH_ZLIB=1 \
-  #  -DZLIB_ROOT_DIR=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
-  #  -DWITH_GFLAGS=0 \
-  #  -DPORTABLE=1 \
-  #  -DWITH_TESTS=0 \
-  #  -DWITH_TOOLS=0 ../.. ;
-    #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
-    #Trusty: cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
-  #- if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then
-  #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
-  #  fi
-  #- cmake --build . ;
-  #- cmake --build . --target install;
-  #- popd; # return to rocksdb
-  #- popd; # return to 3rdparty
-  #- popd; # return to sortmerna
-
   # build SortmeRNA
-  - python $TRAVIS_BUILD_DIR/scripts/build.py --name all
-  #- mkdir -p build/Release; pushd build/Release;
-  #- |
-  #  cmake -G "Unix Makefiles" \
-  #  -DCMAKE_BUILD_TYPE=Release \
-  #  -DPORTABLE=${STATIC_LINK} \
-  #  -DWITH_RUNTIME_DEBUG=0 \
-  #  -DWITH_TESTS=1 \
-  #  -DZLIB_STATIC=1 \
-  #  -DROCKSDB_STATIC=1 \
-  #  -DZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
-  #  -DZLIB_LIBRARY_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist/lib/libz.a \
-  #  -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
-  #  -DROCKSDB_3RDPARTY_INC=1 \
-  #  -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
-  #  -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
-  #  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  #  -DCPACK_BINARY_TGZ=1 ../.. ;
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
-  #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
-  #  fi
-  #- cmake --build . ;
-  #- cmake --build . --target install;
-  #- cmake --build . --target package;
-  #- popd; # return to sortmerna/
+  #- python $TRAVIS_BUILD_DIR/scripts/build.py --name all
 
   # run tests
   #- export PATH="$PWD/dist/bin:$PATH"
