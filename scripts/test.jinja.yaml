@@ -91,13 +91,15 @@ t3:
     num_groups_1: 272
     num_groups_2: 264
 
+# original test only performed indexing i.e. no alignment and not reads
+# TODO: add option '-i' 'index only'?
 t4:
   name: test_indexdb_split_databases
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta
     - -reads
-    - {{ SMR_SRC }}/data/TODO
+    - {{ SMR_SRC }}/data/test_read.fasta
     - -m
     - '0.05'
     - -v

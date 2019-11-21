@@ -134,7 +134,7 @@ def t0(name, datad, outd, ret={}, **kwarg):
     @param datad   Data directory
     @param outd    results output directory
     '''
-    STAMP = '[test_blast_format_0]'
+    STAMP = '[{}]'.format(name)
     print('{} Validating ...'.format(STAMP))   
 
     BLAST_OUT = os.path.join(outd, 'aligned.blast')
@@ -142,8 +142,8 @@ def t0(name, datad, outd, ret={}, **kwarg):
 
     dlist = []
 
-    with open(BLAST_OUT, 'rU') as fout:
-        with open(BLAST_EXPECTED, 'rU') as fexpect:
+    with open(BLAST_OUT, 'r') as fout:
+        with open(BLAST_EXPECTED, 'r') as fexpect:
             diff = difflib.unified_diff(
                 fout.readlines(),
                 fexpect.readlines(),
@@ -164,7 +164,7 @@ def t0_other(name, datad, outd, ret={}, **kwarg):
     @param datad   Data directory
     @param outd    results output directory
     '''
-    STAMP = '[test_blast_format_0_other]'
+    STAMP = '[{}]'.format(name)
     print('{} Validating ...'.format(STAMP))
 
     print("{} Done".format(STAMP))
@@ -175,7 +175,7 @@ def t1(name, datad, outd, ret={}, **kwarg):
     @param datad   Data directory
     @param outd    results output directory
     '''
-    STAMP = '[test_blast_format_1]'
+    STAMP = '[{}]'.format(name)
     print('{} Validating ...'.format(STAMP))
 
     print("{} Done".format(STAMP))
@@ -931,13 +931,18 @@ if __name__ == "__main__":
 
     # tests
     if funcs.get(opts.name):
+        # clean previous alignments (KVDB)
+        kvdbdir = os.path.join(RUN_DIR, 'kvdb')
+        if os.path.exists(kvdbdir):
+            print('Removing KVDB dir: {}'.format(kvdbdir))
+            shutil.rmtree(kvdbdir)
         # run alignment
         print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
         cfg[opts.name]['cmd'].insert(0, SMR_EXE)
         ret = run(cfg[opts.name]['cmd'])
 
         # validate alignment results
-        if cfg[opts.name]['validate']:
+        if cfg[opts.name].get('validate'):
             nm = cfg[opts.name]['name']
             fn = cfg[opts.name]['validate']['func']
             funcs[fn](nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
