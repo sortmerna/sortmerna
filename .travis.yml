@@ -146,8 +146,8 @@ install:
   - python3 --version
   - which pip3
   - pip3 --version
-  - sudo pip3 install pyyaml
-  - sudo pip3 install jinja2
+  - pip3 install pyyaml
+  - pip3 install jinja2
   - python3 $TRAVIS_BUILD_DIR/scripts/build.py --name conda
   - ls -lrt $HOME
   #- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
