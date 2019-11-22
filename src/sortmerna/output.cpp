@@ -151,22 +151,19 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		logstream.close();
 	}
 
-	if (opts.other_out_pfx.size() != 0)
+	if (opts.is_other && opts.is_fastx)
 	{
-		if (opts.is_fastx)
+		std::string sfx;
+		if (opts.is_pid)
 		{
-			std::string sfx;
-			if (opts.is_pid)
-			{
-				sfx += "_" + summary.pid_str;
-			}
-			sfx += "." + readstats.suffix;
-			// WORKDIR/out/other.fasta
-			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx);
-			otherfile = fpath.string();
-			fastaNonAlignOut.open(otherfile);
-			fastaNonAlignOut.close();
+			sfx += "_" + summary.pid_str;
 		}
+		sfx += "." + readstats.suffix;
+		// WORKDIR/out/other.fasta
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx);
+		otherfile = fpath.string();
+		fastaNonAlignOut.open(otherfile);
+		fastaNonAlignOut.close();
 	}
 } // ~Output::init
 
@@ -739,7 +736,7 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fastx && opts.other_out_pfx.size() != 0 && !fastaNonAlignOut.is_open())
+	if (opts.is_fastx && opts.is_other && !fastaNonAlignOut.is_open())
 	{
 		fastaNonAlignOut.open(otherfile, std::ios::app | std::ios::binary);
 		if (!fastaNonAlignOut.good())

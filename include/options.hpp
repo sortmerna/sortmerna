@@ -85,8 +85,8 @@ help_aligned =
 	"Aligned reads file name prefix.                         'aligned'\n"
 	"                                            TODO: Remove",
 help_other = 
-	"Non-aligned reads output file name prefix               'other'\n"
-	"                                            TODO: Remove.",
+	"Create Non-aligned reads output file                    False\n"
+	"                                            Must be used with '" + OPT_FASTX + "'.\n",
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 
@@ -454,7 +454,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 44> options = {
+	const std::array<opt_6_tuple, 45> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
@@ -462,6 +462,7 @@ private:
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),
 		std::make_tuple(OPT_BLAST,          "STRING",      COMMON,      false, help_blast, &Runopts::opt_blast),
+		std::make_tuple(OPT_OTHER,          "BOOL",        COMMON,      false, help_other, &Runopts::opt_other),
 		std::make_tuple(OPT_NUM_ALIGNMENTS, "INT",         COMMON,      false, help_num_alignments, &Runopts::opt_num_alignments),
 		std::make_tuple(OPT_BEST,           "INT",         COMMON,      false, help_best, &Runopts::opt_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),

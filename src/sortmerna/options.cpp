@@ -254,7 +254,7 @@ void Runopts::opt_other(const std::string &file)
 
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << "File name was not provided with option '--other [FILE]'. Using default name: [" << other_out_pfx << "]" << std::endl;
+		std::cout << STAMP << "'--other' option was specified. Using file name: [" << other_out_pfx << "]" << std::endl;
 	}
 	is_other = true;
 } // ~Runopts::opt_other
