@@ -581,7 +581,7 @@ def process_output(outd):
     '''
     LOGF    = os.path.join(outd, 'aligned.log')
     ALIF    = os.path.join(outd, 'aligned.fasta')
-    NONALIF = os.path.join(outd, 'other.fastq')
+    NONALIF = os.path.join(outd, 'other.fasta')
     DENOVOF = os.path.join(outd, 'aligned_denovo.fasta')
     OTUF    = os.path.join(outd, 'aligned_otus.txt')
     BLASTF  = os.path.join(outd, 'aligned.blast')
@@ -936,6 +936,10 @@ if __name__ == "__main__":
         if os.path.exists(kvdbdir):
             print('Removing KVDB dir: {}'.format(kvdbdir))
             shutil.rmtree(kvdbdir)
+        # clean output
+        if OUT_DIR and os.path.exists(OUT_DIR):
+            print('Removing OUT_DIR: {}'.format(OUT_DIR))
+            shutil.rmtree(OUT_DIR)
         # run alignment
         print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
         cfg[opts.name]['cmd'].insert(0, SMR_EXE)

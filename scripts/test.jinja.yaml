@@ -211,6 +211,7 @@ t11:
     - -blast
     - '1 cigar qcov'
     - -fastx
+    - -other
     - -v
   validate:
     func: t11
@@ -233,6 +234,7 @@ t12:
     - -best
     - '5'
     - -fastx
+    - -other
     - -v
   validate:
     func: t12
@@ -253,6 +255,7 @@ t13:
     - -blast
     - '1 cigar qcov'
     - -fastx
+    - -other
     # indexing options
     - -m
     - '20'
@@ -277,6 +280,7 @@ t14:
     - -blast
     - '1 cigar qcov'
     - -fastx
+    - -other
     # indexing options
     - -m
     - '10'
