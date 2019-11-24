@@ -324,9 +324,21 @@ t17:
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
   - -reads
   # SRR7721017_1.fastq | SRR7721017_1_100.fastq | SRR7721017_1_15.fastq
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq #.gz
   - -reads
   # SRR7721017_2.fastq | SRR7721017_2_100.fastq | SRR7721017_2_15.fastq
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_2.fastq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_2.fastq #.gz
+  - -v
+  - -paired_in
+
+t18:
+  name: Paired reads GZ 2 x 2 GB
+  cmd:
+  - -ref
+  - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
+  - -reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_1.fastq #.gz # 2 GB
+  - -reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_2.fastq #.gz # 2 GB
   - -v
   - -paired_in
