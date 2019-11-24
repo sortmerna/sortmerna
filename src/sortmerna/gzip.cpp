@@ -29,7 +29,6 @@ Gzip::Gzip(bool gzipped)
  */
 void Gzip::init()
 {
-	static z_stream strm; // TODO: better way i.e. no 'static' ?
 	pstrm = &strm;
 
 	strm.zalloc = Z_NULL;
