@@ -818,6 +818,18 @@ def t17(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t17
 
+def t18(name, datad, outd, ret={}, **kwarg):
+    '''
+    @param name  sortmerna.exe path
+    @param datad   Data directory
+    @param outd    results output directory
+    @param capture Capture output
+    '''
+    STAMP = '[{}]'.format(name)
+    print('{} TODO: implement'.format(STAMP))
+    print("{} Done".format(STAMP))
+#END t17
+
 if __name__ == "__main__":
     '''
     python tests/run.py --name t0 [--capture]
@@ -897,7 +909,7 @@ if __name__ == "__main__":
     RUN_DIR  = os.path.join(UHOME, 'sortmerna', 'run')
     TEST_DATA = os.path.join(SMR_SRC, 'data')
 
-    if opts.name in ['t{}'.format(x) for x in range(0,16)]:
+    if opts.name in ['t{}'.format(x) for x in range(0,18)]:
         OUT_DIR = os.path.join(RUN_DIR, 'out')
 
     # clean-up the run directory. May Fail if any file in the directory is open. Close the files and re-run.
@@ -923,7 +935,8 @@ if __name__ == "__main__":
         't13': t13,
         't14': t14,
         't16': t16,
-        't17': t17
+        't17': t17,
+        't18': t18
     }
 
     # id(cfg[opts.name]) # 2409596527368
