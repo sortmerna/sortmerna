@@ -43,21 +43,7 @@
 env:
   global:
     - OAUTH=""
-    #- STATIC_SFX="static"
     - DO_DEPLOY=0
-    # CMake
-    #- CMAKE_VER=3.15.5
-    #- CMAKE_URL=https://github.com/Kitware/CMake/releases/download
-    #
-    #- RAPIDJSON_URL=https://github.com/Tencent/rapidjson.git
-    #- ZLIB_URL=https://github.com/madler/zlib.git
-    # RocksDB
-    #- ROCKSDB_RELEASE=  # v6.2.4 v6.3.6 Releases fail on GCC-9, but the master OK
-    #- ROCKSDB_URL=https://github.com/facebook/rocksdb.git
-    #- ROCKSDB_URL=https://github.com/biocodz/rocksdb;
-    #
-    #- CONDA_LINUX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    #- CONDA_OSX_URL=http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 
 matrix:
   include:
@@ -150,16 +136,7 @@ install:
   - pip3 install jinja2
   - python3 $TRAVIS_BUILD_DIR/scripts/build.py --name conda
   - ls -lrt $HOME
-  #- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-  #    wget $CONDA_LINUX_URL -O miniconda.sh;
-  #  fi
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-  #    wget $CONDA_OSX_URL -O miniconda.sh;
-  #  fi
-  #- chmod +x miniconda.sh
-  #- ./miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda3/bin:$PATH"
-  #- conda update --yes conda
   - which pip
   - pip install numpy
   - pip install scipy
@@ -188,18 +165,8 @@ install:
   - which cmake
   - cmake --version
   - popd
-#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
-#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
-    # C++14
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
-  # for building RocksDB
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
 
 script:
-#  - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
-#  - pushd "${TRAVIS_BUILD_DIR}"
-
   # check C++17 <filesystem>
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       find /usr/include -type f -name 'filesystem' ;
