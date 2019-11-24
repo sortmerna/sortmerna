@@ -28,7 +28,8 @@
 #include "gzip.hpp"
 
 // forward
-std::string string_hash(const std::string &val);
+std::string string_hash(const std::string &val); // util.cpp
+std::string to_lower(std::string& val); // util.cpp
 
 Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
 	:
@@ -233,15 +234,21 @@ void Readstats::calculate(Runopts &opts)
 } // ~Readstats::calculate
 
 // determine the suffix (fasta, fastq, ...) of aligned strings
+// use the same suffix as the original reads file without 'gz' if gzipped.
 void Readstats::calcSuffix(Runopts &opts)
 {
-	const std::string suff = opts.readfiles[0].substr(opts.readfiles[0].rfind('.') + 1);
-	if (suff.length() > 0 && !opts.is_gz)
-		suffix.assign(suff);
-	else if (filesig == FASTA_HEADER_START)
-		suffix.assign("fasta");
-	else
-		suffix.assign("fastq");
+	size_t pos = opts.readfiles[0].rfind('.'); // find last '.' position
+	size_t pos2 = 0;
+	std::string sfx = opts.readfiles[0].substr(pos + 1);
+	std::string sfx_lower = to_lower(sfx);
+
+	if (opts.is_gz && "gz" == sfx_lower)
+	{
+		pos2 = opts.readfiles[0].rfind('.', pos - 1);
+		sfx = opts.readfiles[0].substr(pos2 + 1, pos - pos2 - 1);
+	}
+
+	suffix.assign(sfx);
 }
 
 /**

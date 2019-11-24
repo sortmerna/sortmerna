@@ -40,7 +40,6 @@ class KeyValueDatabase;
 struct Readstats 
 {
 	std::string dbkey; // Hashed concatenation of underscore separated basenames of the read files. Used as the key into the Key-value DB. 
-	char filesig = FASTA_HEADER_START;
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
 	std::atomic<uint32_t> min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'

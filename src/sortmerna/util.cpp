@@ -31,6 +31,7 @@ int clear_dir(std::string dpath);
 bool dirExists(std::string dpath);
 std::string get_user_home();
 std::streampos filesize(const std::string &file);
+std::string to_lower(std::string& val);
 
 unsigned int check_dir(std::string dpath)
 {
@@ -187,4 +188,12 @@ std::string string_hash(const std::string &val)
 	std::hash<std::string> hash_fn;
 	ss << hash_fn(val);
 	return ss.str();
+}
+
+std::string to_lower(std::string& val)
+{
+	std::string ret(val);
+	std::transform(ret.begin(), ret.end(), ret.begin(),
+		[](unsigned char ch) { return std::tolower(ch); });
+	return ret;
 }
