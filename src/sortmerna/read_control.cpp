@@ -31,11 +31,18 @@ ReadControl::~ReadControl(){}
 void ReadControl::run()
 {
 	std::stringstream ss;
+
+	size_t read_cnt = 0;
+	bool done_fwd = false;
+	bool done_rev = false;
+	uint8_t IDX_FWD_READS = 0;
+	uint8_t IDX_REV_READS = 1;
+
 	bool is_paired = (opts.readfiles.size() == 2); // reads are paired i.e. 2 read files are supplied
 
-	// setup FWD Reader
+	// init FWD Reader
 	Reader reader_fwd("reader_fwd", opts.is_gz);
-	auto fwd_file = opts.readfiles[0];
+	auto fwd_file = opts.readfiles[IDX_FWD_READS];
 	std::ifstream ifs_fwd(fwd_file, std::ios_base::in | std::ios_base::binary);
 
 	if (!ifs_fwd.is_open()) 
@@ -44,12 +51,12 @@ void ReadControl::run()
 		exit(EXIT_FAILURE);
 	}
 
-	// setup REV Reader
+	// init REV Reader
 	std::ifstream ifs_rev;
 	Reader reader_rev("reader_rev", opts.is_gz);
 	if (is_paired)
 	{
-		auto rev_file = opts.readfiles[1];
+		auto rev_file = opts.readfiles[IDX_REV_READS];
 		ifs_rev.open(rev_file, std::ios_base::in | std::ios_base::binary);
 
 		if (!ifs_rev.is_open()) {
@@ -63,20 +70,13 @@ void ReadControl::run()
 	std::cout << ss.str();
 	auto t = std::chrono::high_resolution_clock::now();
 
-	//Read read;
-	size_t read_cnt = 0;
-	bool done_fwd = false;
-	bool done_rev = false;
-	uint8_t idx_fwd_reads = 0;
-	uint8_t idx_rev_reads = 1;
-
 	// loop calling Readers
 	for (; !reader_fwd.is_done || (is_paired && !reader_rev.is_done);)
 	{
 		// first push FWD read
 		if (!reader_fwd.is_done)
 		{
-			Read read = reader_fwd.nextread(ifs_fwd, opts.readfiles[idx_fwd_reads], opts);
+			Read read = reader_fwd.nextread(ifs_fwd, opts.readfiles[IDX_FWD_READS], opts);
 
 			if (!read.isEmpty)
 			{
@@ -90,7 +90,7 @@ void ReadControl::run()
 		// second push REV read (if paired)
 		if (is_paired && !reader_rev.is_done)
 		{
-			Read read = reader_rev.nextread(ifs_rev, opts.readfiles[idx_rev_reads], opts);
+			Read read = reader_rev.nextread(ifs_rev, opts.readfiles[IDX_REV_READS], opts);
 
 			if (!read.isEmpty)
 			{
