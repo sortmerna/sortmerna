@@ -79,7 +79,7 @@ help_ref =
 	"Reference file (FASTA) absolute or relative path.\n"
 	"                                            Use mutliple times, once per a reference file",
 help_reads = 
-	"Raw reads file (FASTA/FASTQ).\n"
+	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n"
 	"                                            Use twice for files with paired reads",
 help_aligned = 
 	"Aligned reads file name prefix.                         'aligned'\n"
