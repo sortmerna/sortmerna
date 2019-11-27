@@ -29,7 +29,6 @@ private:
 	// zlib related
 	char* line_start; // pointer to the start of a line within the 'z_out' buffer
 	z_stream strm; // stream control structure. Holds stream in/out buffers (byte arrays), sizes, positions etc.
-	z_stream* pstrm;
 	std::vector<unsigned char> z_in; // IN buffer for compressed data
 	std::vector<unsigned char> z_out; // OUT buffer for decompressed data
 
