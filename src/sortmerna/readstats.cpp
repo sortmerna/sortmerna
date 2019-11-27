@@ -228,7 +228,6 @@ void Readstats::calculate(Runopts &opts)
 			std::cout << ss.str();
 
 			ifs.close();
-			gzip.~Gzip();
 		}
 	} // ~for iterating reads files
 } // ~Readstats::calculate
