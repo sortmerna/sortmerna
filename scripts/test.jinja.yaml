@@ -112,9 +112,9 @@ t5:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
-    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq # 5,000 reads
+    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
-    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq # 5,000 reads
+    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
     - -max_pos
     - '250'
     - -fastx
