@@ -20,7 +20,7 @@ class Gzip
 {
 public:
 	Gzip(bool gzipped);
-	~Gzip(){}
+	//~Gzip();
 
 	int getline(std::ifstream & ifs, std::string & line);
 

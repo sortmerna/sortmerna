@@ -23,6 +23,17 @@ Gzip::Gzip(bool gzipped)
 		init(); 
 }
 
+
+//Gzip::~Gzip() {
+//	line_start = 0;
+//	strm.zalloc = Z_NULL;
+//	strm.zfree = Z_NULL;
+//	strm.opaque = Z_NULL;
+//	strm.avail_in = Z_NULL;
+//	strm.next_in = Z_NULL;
+//	strm.avail_out = Z_NULL;
+//}
+
 /*
  * Called from constructor
  */
