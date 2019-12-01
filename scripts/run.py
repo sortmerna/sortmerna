@@ -234,6 +234,10 @@ def t3(name, datad, outd, ret={}, **kwarg):
     OTUF = os.path.join(outd, 'aligned_otus.txt')
     DENOVOF = os.path.join(outd, 'aligned_denovo.fasta')
 
+    num_hits_expect = kwarg.get('num_hits')
+    num_groups_1_expect = kwarg.get('num_groups_1')
+    num_groups_2_expect = kwarg.get('num_groups_2')
+
     num_hits = 0
     num_failures_log = 0
     num_clusters_log = 0
@@ -247,14 +251,14 @@ def t3(name, datad, outd, ret={}, **kwarg):
             elif 'Total OTUs' in line:
                 num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
 
-    assert num_hits == '99999'
+    assert int(num_hits) == num_hits_expect
 
     # sort order (descending/ascending) of candidate references (alignment.cpp)
     is_refs_descending = False
     if is_refs_descending:
-        num_groups = 272 # originally
+        num_groups = num_groups_1_expect # originally
     else:
-        num_groups = 264
+        num_groups = num_groups_2_expect
 
     assert num_clusters_log == str(num_groups)
 
@@ -308,6 +312,12 @@ def t5(name, datad, outd, ret={}, **kwarg):
     ALIF = os.path.join(outd, 'aligned.fastq')
     NONALIF = os.path.join(outd, 'other.fastq')
 
+    num_hits_expect = kwarg.get('num_hits')
+    num_fail_expect = kwarg.get('num_fail')
+
+    tmpl = '{} num_hits_expect= {} num_fail_expect= {}'
+    print(tmpl.format(STAMP, num_hits_expect, num_fail_expect))
+
     num_hits = None
     num_fail = None
 
@@ -323,20 +333,28 @@ def t5(name, datad, outd, ret={}, **kwarg):
             elif 'Total reads failing E-value threshold' in line:
                 num_fail = (re.split('Total reads failing E-value threshold = | \(', line)[1]).strip()
 
-        # Correct number of reads mapped
-        assert "6000" == num_hits
-        # Correct number of clusters recorded
-        assert "4000" == num_fail
+        tmpl = '{} num_hits= {} num_fail= {}'
+        print(tmpl.format(STAMP, num_hits, num_fail))
 
-        # Correct number of aligned reads
-        with open(ALIF) as f_aligned:
-            num_aligned_reads = sum(1 for line in f_aligned)
-        assert 6000 == num_aligned_reads/4
+    # Correct number of aligned reads
+    with open(ALIF) as f_aligned:
+        num_lines_aligned = sum(1 for line in f_aligned)
 
-        # Correct number of non-aligned reads
-        with open(NONALIF) as f_nonaligned:
-            num_nonaligned_reads = sum(1 for line in f_nonaligned)
-        assert 4000 == num_nonaligned_reads/4
+    print('{} num_lines_aligned= {}'.format(STAMP, num_lines_aligned))
+
+    # Correct number of non-aligned reads
+    with open(NONALIF) as f_nonaligned:
+        num_lines_failed = sum(1 for line in f_nonaligned)
+
+    print('{} num_lines_failed= {}'.format(STAMP, num_lines_failed))
+
+    # Correct number of reads mapped
+    assert num_hits_expect == int(num_hits)
+    # Correct number of clusters recorded
+    assert num_fail_expect == int(num_fail)
+    
+    assert num_hits_expect == num_lines_aligned/4
+    assert num_fail_expect == num_lines_failed/4
     
     print("{} Done".format(STAMP))
 #END t5
@@ -358,6 +376,11 @@ def t6(name, datad, outd, ret={}, **kwarg):
     ALIF = os.path.join(outd, 'aligned.fastq')
     NONALIF = os.path.join(outd, 'other.fastq')
 
+    num_hits_expect = kwarg.get('num_hits')
+    num_fail_expect = kwarg.get('num_fail')
+    num_aligned_expect = kwarg.get('num_aligned')
+    num_other_expect = kwarg.get('num_other')
+
     num_hits = None
     num_fail = None
 
@@ -374,21 +397,19 @@ def t6(name, datad, outd, ret={}, **kwarg):
                 num_fail = (re.split('Total reads failing E-value threshold = | \(', line)[1]).strip()
 
         # Correct number of reads mapped
-        assert "6000" == num_hits
+        assert num_hits_expect == int(num_hits)
         # Correct number of clusters recorded
-        assert "4000" == num_fail
+        assert num_fail_expect == int(num_fail)
 
         # Correct number of aligned reads
-        NUM_EXPECTED = 10000
         with open(ALIF) as f_aligned:
             num_aligned_reads = sum(1 for line in f_aligned)
-        assert NUM_EXPECTED == num_aligned_reads/4
+        assert num_aligned_expect == num_aligned_reads/4
 
         # Correct number of non-aligned reads
-        NUM_EXPECTED = 0
         with open(NONALIF) as f_nonaligned:
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
-        assert NUM_EXPECTED == num_nonaligned_reads
+        assert num_other_expect == num_nonaligned_reads
     
     print("{} Done".format(STAMP))
 #END t6
@@ -410,6 +431,11 @@ def t7(name, datad, outd, ret={}, **kwarg):
     ALIF = os.path.join(outd, 'aligned.fastq')
     NONALIF = os.path.join(outd, 'other.fastq')
 
+    num_hits_expect = kwarg.get('num_hits')
+    num_fail_expect = kwarg.get('num_fail')
+    num_aligned_expect = kwarg.get('num_aligned')
+    num_other_expect = kwarg.get('num_other')
+
     num_hits = None
     num_fail = None
 
@@ -426,21 +452,19 @@ def t7(name, datad, outd, ret={}, **kwarg):
                 num_fail = (re.split('Total reads failing E-value threshold = | \(', line)[1]).strip()
 
         # Correct number of reads mapped
-        assert "6000" == num_hits
+        assert num_hits_expect == int(num_hits)
         # Correct number of clusters recorded
-        assert "4000" == num_fail
+        assert num_fail_expect == int(num_fail)
 
         # Correct number of aligned reads
-        NUM_EXPECTED = 2000
         with open(ALIF) as f_aligned:
             num_aligned_reads = sum(1 for line in f_aligned)
-        assert NUM_EXPECTED == num_aligned_reads/4
+        assert num_aligned_expect == num_aligned_reads/4
 
         # Correct number of non-aligned reads
-        NUM_EXPECTED = 8000
         with open(NONALIF) as f_nonaligned:
             num_nonaligned_reads = sum(1 for line in f_nonaligned)
-        assert NUM_EXPECTED == num_nonaligned_reads/4
+        assert num_other_expect == num_nonaligned_reads/4
     
     print("{} Done".format(STAMP))
 #END t7
@@ -459,6 +483,9 @@ def t8(name, datad, outd, ret={}, **kwarg):
     LOGF = os.path.join(outd, 'aligned.log')
     ALIF = os.path.join(outd, 'aligned.fasta')
 
+    num_reads_expect = kwarg.get('num_reads')
+    num_hits_expect = kwarg.get('num_hits')
+
     total_reads_log = None
     num_hits_log = None
 
@@ -475,9 +502,9 @@ def t8(name, datad, outd, ret={}, **kwarg):
                 num_hits_log = (re.split(' = | \(', line)[1]).strip()
 
         # Correct number of reads
-        assert '6' == total_reads_log
+        assert num_reads_expect == int(total_reads_log)
         # Correct number of clusters recorded
-        assert '4' == num_hits_log
+        assert num_hits_expect == int(num_hits_log)
 
         # Correct number of aligned reads
         num_hits_file = 0
@@ -836,7 +863,7 @@ if __name__ == "__main__":
     python tests/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
     # define platform
     pf = platform.platform()
@@ -956,7 +983,8 @@ if __name__ == "__main__":
         # run alignment
         print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
         cfg[opts.name]['cmd'].insert(0, SMR_EXE)
-        ret = run(cfg[opts.name]['cmd'])
+        is_capture = cfg[opts.name].get('capture', False)
+        ret = run(cfg[opts.name]['cmd'], capture=is_capture)
 
         # validate alignment results
         if cfg[opts.name].get('validate'):

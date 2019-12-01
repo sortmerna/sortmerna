@@ -89,7 +89,7 @@ t3:
     func: t3
     num_hits: 99999
     num_groups_1: 272
-    num_groups_2: 264
+    num_groups_2: 265
 
 # original test only performed indexing i.e. no alignment and not reads
 # TODO: add option '-i' 'index only'?
@@ -118,9 +118,12 @@ t5:
     - -max_pos
     - '250'
     - -fastx
+    - -other
     - -v
   validate:
     func: t5
+    num_hits: 6000
+    num_fail: 4000
 
 t6:
   name: test_mate_pairs - part 2 - paired_in
@@ -134,10 +137,15 @@ t6:
     - -max_pos
     - '250'
     - -fastx
+    - -other
     - -paired_in
     - -v
   validate:
     func: t6
+    num_hits: 6000
+    num_fail: 4000
+    num_aligned: 10000
+    num_other: 0
 
 t7:
   name: test_mate_pairs - part 3 - paired_out
@@ -151,10 +159,15 @@ t7:
     - -max_pos
     - '250'
     - -fastx
+    - -other
     - -paired_out
     - -v
   validate:
     func: t7
+    num_hits: 6000
+    num_fail: 4000
+    num_aligned: 2000
+    num_other: 8000
 
 t8:
   name: test_multiple_databases_search
@@ -169,6 +182,8 @@ t8:
     - -v
   validate:
     func: t8
+    num_reads: 6
+    num_hits: 4
 
 t9:
   name: test_output_all_alignments_f_rc
@@ -192,6 +207,8 @@ t10:
     - -reads
     - {{ SMR_SRC }}/data/illumina_GQ099317.fasta # 1 read
     - -v
+  cwd:
+  capture: True
   validate:
     func: t10
 
@@ -322,7 +339,9 @@ t17:
   cmd:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
-  - -reads
+  - -ref
+  - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+  - -reads 
   # SRR7721017_1.fastq | SRR7721017_1_100.fastq | SRR7721017_1_15.fastq
   - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq #.gz
   - -reads
@@ -337,8 +356,10 @@ t18:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_1.fastq #.gz # 2 GB
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_1.fastq.gz # 2 GB
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_2.fastq #.gz # 2 GB
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_2.fastq.gz # 2 GB
   - -v
-  - -paired_in
+  - -blast
+  - '1 cigar qcov'
+  - -sam
