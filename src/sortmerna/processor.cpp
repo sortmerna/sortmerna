@@ -22,22 +22,23 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
-#include "reader.hpp"
+#include "read_control.hpp"
 #include "writer.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
-void writeLog(Runopts & opts, Readstats & readstats, Output & output);
 
+/* Runs in a thread. Pops reads from the Reads Queue */
 void Processor::run()
 {
 	int countReads = 0;
 	int countProcessed = 0;
+	std::size_t num_aligned = 0; // count of reads with read.hit = true
 	bool alreadyProcessed = false;
-
+	
 	{
 		std::stringstream ss;
-		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+		ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 		std::cout << ss.str();
 	}
 
@@ -56,40 +57,45 @@ void Processor::run()
 		}
 
 		// search the forward and/or reverse strands depending on Run options
-		int32_t strandCount = 0;
+		int32_t num_strands = 0;
 		//opts.forward = true; // TODO: this discards the possiblity of forward = false
-		bool singleStrand = opts.forward ^ opts.reverse; // search single strand
-		if (singleStrand)
-			strandCount = 1; // only search the forward xor reverse strand
+		bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
+		if (search_single_strand)
+			num_strands = 1; // only search the forward xor reverse strand
 		else 
-			strandCount = 2; // search both strands. The default when neither -F or -R were specified
+			num_strands = 2; // search both strands. The default when neither -F or -R were specified
 
-		for (int32_t count = 0; count < strandCount; ++count)
+		for (int32_t count = 0; count < num_strands; ++count)
 		{
-			if ((singleStrand && opts.reverse) || count == 1)
+			if ((search_single_strand && opts.is_reverse) || count == 1)
 			{
 				if (!read.reversed)
 					read.revIntStr();
 			}
-			callback(opts, index, refs, output, readstats, refstats, read, singleStrand || count == 1);
+			// call 'paralleltraversal.cpp::alignmentCb'
+			callback(opts, index, refs, output, readstats, refstats, read, search_single_strand || count == 1);
 			//opts.forward = false;
 			read.id_win_hits.clear(); // bug 46
 		}
 
 		if (read.isValid && !read.isEmpty) 
 		{
+			if (read.hit) ++num_aligned;
 			writeQueue.push(read);
 		}
 
 		countReads++;
 	}
+
 	writeQueue.decrPushers(); // signal this processor done adding
-	writeQueue.notify(); // wake up writer waiting on queue.pop()
+	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 
 	{
 		std::stringstream ss;
-		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads
-			<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
+		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() 
+			<< " done. Processed " << countReads
+			<< " reads. Skipped already processed: " << countProcessed << " reads"
+			<< " Aligned reads (passing E-value): " << num_aligned << std::endl;
 		std::cout << ss.str();
 	}
 } // ~Processor::run
@@ -97,6 +103,7 @@ void Processor::run()
 void PostProcessor::run()
 {
 	int countReads = 0;
+	size_t count_reads_aligned = 0;
 
 	{
 		std::stringstream ss;
@@ -119,6 +126,7 @@ void PostProcessor::run()
 
 		callback(read, readstats, refstats, refs, opts);
 		++countReads;
+		if (read.hit) ++count_reads_aligned;
 
 		if (read.isValid && !read.isEmpty && !read.hit_denovo) 
 		{
@@ -130,7 +138,9 @@ void PostProcessor::run()
 
 	{
 		std::stringstream ss;
-		ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
+		ss << STAMP << id << " thread " << std::this_thread::get_id() 
+			<< " done. Processed " << countReads << " reads." 
+			<< " count_reads_aligned: " << count_reads_aligned << std::endl;
 		std::cout << ss.str();
 	}
 } // ~PostProcessor::run
@@ -145,7 +155,7 @@ void ReportProcessor::run()
 		std::cout << ss.str();
 	}
 
-	int cap = opts.pairedin || opts.pairedout ? 2 : 1;
+	int cap = opts.readfiles.size();
 	std::vector<Read> reads;
 	Read read;
 	int i = 0;
@@ -185,31 +195,30 @@ void ReportProcessor::run()
 } // ~ReportProcessor::run
 
 // called from main
-void postProcess(Runopts & opts, Readstats & readstats, Output & output)
+void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_pp;
 	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
-
+	
 	{
 		std::stringstream ss;
-		ss << STAMP << "Log file generation starts" << std::endl;
+		ss << "\n" << STAMP << "==== Starting Post-processing (alignment statistics report) ====\n\n";
 		std::cout << ss.str();
 	}
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
-	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // shared: Processor pushes, Writer pops
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
 		std::stringstream ss;
-		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
+		ss << STAMP << "Restored Readstats from DB:\n    " << readstats.toString() << std::endl;
 		std::cout << ss.str();
 	}
 
-	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent increment of the stored value. Change this if ever using 'stats_calc_done"
+	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
 
 	//if (!readstats.stats_calc_done)
 	//{
@@ -243,7 +252,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 
 				for (int i = 0; i < N_READ_THREADS; ++i)
 				{
-					tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+					tpool.addJob(ReadControl(opts, readQueue, kvdb));
 				}
 
 				for (int i = 0; i < opts.num_write_thread; i++)
@@ -275,63 +284,24 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output)
 
 		{
 			std::stringstream ss;
-			ss << STAMP << "readstats.total_reads_denovo_clustering: " << readstats.total_reads_denovo_clustering << std::endl;
+			ss << STAMP << "total_reads_denovo_clustering = " << readstats.total_reads_denovo_clustering << std::endl;
 			std::cout << ss.str();
 		}
 
-		readstats.stats_calc_done = true;
-		kvdb.put("Readstats", readstats.toString()); // store statistics computed by post-processor
+
+		readstats.set_is_total_reads_mapped_cov();
+		readstats.is_stats_calc = true;
+		readstats.store_to_db(kvdb); // store reads statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
-	writeLog(opts, readstats, output);
+	output.writeLog(opts, refstats, readstats);
 
-	if (opts.otumapout)	readstats.printOtuMap(output.otumapFile);
+	if (opts.is_otu_map)
+		readstats.printOtuMap(output.otumapFile);
 
 	{
 		std::stringstream ss;
-		ss << STAMP << "Done" << std::endl;
+		ss << "\n" << STAMP << "==== Done Post-processing (alignment statistics report) ====\n\n";
 		std::cout << ss.str();
 	}
 } // ~postProcess
-
-void writeLog(Runopts & opts, Readstats & readstats, Output & output)
-{
-	output.openfiles(opts);
-
-	// output total number of reads
-	output.logstream << " Results:\n";
-	output.logstream << "    Total reads = " << readstats.number_total_read << "\n";
-	if (opts.de_novo_otu)
-	{
-		// all reads that have read::hit_denovo == true
-		output.logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << "\n";
-	}
-	// output total non-rrna + rrna reads
-	output.logstream << std::setprecision(2) << std::fixed;
-	output.logstream << "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
-		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read) * 100 << ")\n";
-	output.logstream << "    Total reads failing E-value threshold = "
-		<< readstats.number_total_read - readstats.total_reads_mapped.load()
-		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.number_total_read))) * 100 << ")\n";
-	output.logstream << "    Minimum read length = " << readstats.min_read_len.load() << "\n";
-	output.logstream << "    Maximum read length = " << readstats.max_read_len.load() << "\n";
-	output.logstream << "    Mean read length    = " << readstats.full_read_main / readstats.number_total_read << "\n";
-
-	output.logstream << " By database:\n";
-
-	// output stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
-		output.logstream << "    " << opts.indexfiles[index_num].first << "\t\t"
-			<< (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.number_total_read) * 100 << "\n";
-	}
-
-	if (opts.otumapout)
-	{
-		output.logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << "\n";
-		output.logstream << " Total OTUs = " << readstats.otu_map.size() << "\n";
-	}
-	time_t q = time(0);
-	struct tm * now = localtime(&q);
-	output.logstream << "\n " << asctime(now) << "\n";
-} // ~writeLog

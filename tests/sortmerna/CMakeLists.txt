@@ -6,7 +6,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(tests CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 message("tests PROJECT_NAME = ${PROJECT_NAME}")
 message("tests PROJECT_BINARY_DIR = ${PROJECT_BINARY_DIR}")
@@ -15,7 +15,7 @@ message("tests CMAKE_CFG_INTDIR = ${CMAKE_CFG_INTDIR}")
 
 set(TEST_SRCS
 	kvdb.cpp
-	#main.cpp
+	main.cpp
 )
 
 add_executable(tests ${TEST_SRCS})

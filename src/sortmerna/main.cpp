@@ -31,15 +31,32 @@
  */
 
 #include <iostream>
+#include <filesystem>
 
 #include "options.hpp"
 #include "paralleltraversal.hpp"
 #include "output.hpp"
 #include "readstats.hpp"
 #include "cmd.hpp"
+#include "kvdb.hpp"
+#include "index.hpp"
+#include "indexdb.hpp"
+
+namespace fs = std::filesystem;
 
 // forward
-void postProcess(Runopts & opts, Readstats & readstats, Output & output); // processor.cpp
+void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb); // processor.cpp
+void setup_workspace(Runopts & opts);
+
+/**
+ * Setup the directory structure necessary for the sortmerna process 
+ */
+void setup_workspace(Runopts &opts)
+{
+	fs::create_directories(opts.workdir + "/" + opts.KVDB_DIR);
+	fs::create_directory(opts.workdir + "/" + opts.IDX_DIR);
+	fs::create_directory(opts.workdir + "/" + opts.OUT_DIR);
+}
 
 /*! @fn main()
 	@brief main function, parses command line arguments and launches the processing
@@ -52,36 +69,40 @@ int main(int argc, char** argv)
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
 
-	std::cout << STAMP << "Running task ALIGN_REPORT: " << opts.alirep << std::endl;
+	std::cout << STAMP << "Running command:\n" << opts.cmdline << std::endl;
 
-	if (opts.interactive) {
+	setup_workspace(opts);
+	Index index(opts); // reference index DB
+	KeyValueDatabase kvdb(opts.kvdbPath);
+
+	if (opts.is_cmd) {
 		CmdSession cmd;
 		cmd.run(opts);
 	}
 	else
 	{
-		Readstats readstats(opts);
+		Readstats readstats(opts, kvdb);
 		Output output(opts, readstats);
 
 		switch (opts.alirep)
 		{
 		case Runopts::ALIGN_REPORT::align:
-			align(opts, readstats, output);
+			align(opts, readstats, output, index, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::postproc:
-			postProcess(opts, readstats, output);
+			postProcess(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::report:
-			generateReports(opts, readstats, output);
+			generateReports(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::alipost:
-			align(opts, readstats, output);
-			postProcess(opts, readstats, output);
+			align(opts, readstats, output, index, kvdb);
+			postProcess(opts, readstats, output, kvdb);
 			break;
 		case Runopts::ALIGN_REPORT::all:
-			align(opts, readstats, output);
-			postProcess(opts, readstats, output);
-			generateReports(opts, readstats, output);
+			align(opts, readstats, output, index, kvdb);
+			postProcess(opts, readstats, output, kvdb);
+			generateReports(opts, readstats, output, kvdb);
 			break;
 		}
 	}

@@ -34,6 +34,7 @@
 #include <iomanip>
 #include <fstream>
 #include <cmath> // log, exp
+#include <filesystem>
 
 #include "output.hpp"
 #include "ThreadPool.hpp"
@@ -41,7 +42,7 @@
 #include "readsqueue.hpp"
 #include "index.hpp"
 #include "references.hpp"
-#include "reader.hpp"
+#include "read_control.hpp"
 #include "processor.hpp"
 #include "readstats.hpp"
 #include "read.hpp"
@@ -54,139 +55,121 @@ void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Re
 
 void Output::init(Runopts & opts, Readstats & readstats)
 {
-	// attach pid to output files
-	std::stringstream pidStr;
-	if (opts.pid)
+	summary.pid_str = std::to_string(getpid());
+
+	// init output files
+	if (opts.is_fastx)
 	{
-		pidStr << getpid();
+		// fasta/fastq output  WORKDIR/out/aligned.fastq
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += "." + readstats.suffix;
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		fastaOutFile = fpath.string();
+		fastaout.open(fastaOutFile);
+		fastaout.close();
 	}
 
-	// associate the streams with reference sequence file names
-	if (opts.aligned_pfx.size() != 0)
+	if (opts.is_sam)
 	{
-		if (opts.fastxout)
+		std::string sfx;
+		if (opts.is_pid)
 		{
-			// fasta/fastq output
-			fastaOutFile = opts.aligned_pfx;
-			if (opts.pid)
-			{
-				fastaOutFile.append("_");
-				fastaOutFile.append(pidStr.str());
-			}
-			fastaOutFile.append(".");
-			fastaOutFile.append(readstats.suffix);
-
-			fastaout.open(fastaOutFile);
-			fastaout.close();
+			sfx += "_" + summary.pid_str;
 		}
+		sfx += ".sam";
+		// sam output  WORKDIR/out/aligned.sam
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		samoutFile = fpath.string();
+		samout.open(samoutFile);
+		samout.close();
+	}
 
-		if (opts.samout)
-		{
-			// sam output
-			samoutFile = opts.aligned_pfx;
-			if (opts.pid)
-			{
-				samoutFile.append("_");
-				samoutFile.append(pidStr.str());
-			}
-			samoutFile.append(".sam");
-			samout.open(samoutFile);
-			samout.close();
-		}
-
-		if (opts.blastout)
-		{
-			// blast output
-			blastoutFile = opts.aligned_pfx;
-			if (opts.pid)
-			{
-				blastoutFile.append("_");
-				blastoutFile.append(pidStr.str());
-			}
-			blastoutFile.append(".blast");
-			blastout.open(blastoutFile);
-			blastout.close();
-		}
-
-		if (opts.otumapout)
-		{
-			// OTU map output file
-			std::ofstream otumap;
-			otumapFile = opts.aligned_pfx;
-			if (opts.pid)
-			{
-				otumapFile.append("_");
-				otumapFile.append(pidStr.str());
-			}
-			otumapFile.append("_otus.txt");
-			otumap.open(otumapFile);
-			otumap.close();
-		}
-
-		if (opts.de_novo_otu)
-		{
-			std::ofstream denovo_otu;
-			denovo_otus_file = opts.aligned_pfx;
-			if (opts.pid)
-			{
-				denovo_otus_file.append("_");
-				denovo_otus_file.append(pidStr.str());
-			}
-			denovo_otus_file.append("_denovo.");
-			denovo_otus_file.append(readstats.suffix);
-
-			denovo_otu.open(denovo_otus_file);
-			denovo_otu.close();
-		}
-
-		// don't touch the log if only reports are generated
-		if (opts.doLog && opts.alirep != Runopts::ALIGN_REPORT::report)
-		{
-			// statistics file output
-			logfile = opts.aligned_pfx;
-			if (opts.pid)
-			{
-				logfile.append("_");
-				logfile.append(pidStr.str());
-			}
-			logfile.append(".log");
-
-			logstream.open(logfile);
-
-			// TODO: this is truly an ad hoc place for this code
-			if (opts.exit_early) {
-				logstream << "  The input reads file or reference file is empty, "
-					<< "or the reads file is not in FASTA or FASTQ format, "
-					<< "no analysis could be made." << std::endl;
-				logstream.close();
-				exit(EXIT_SUCCESS);
-			}
-
-			logstream.close();
-		}
-	}//~if ( ptr_filetype_ar != NULL ) 
-
-	if (opts.other_pfx.size() != 0)
+	if (opts.is_blast)
 	{
-		if (opts.fastxout)
+		std::string sfx;
+		if (opts.is_pid)
 		{
-			// output stream for other reads
-			std::ofstream fastaNonAlignOut;
-			// add suffix database name to accepted reads file
-			if (opts.pid)
-			{
-				opts.other_pfx += "_";
-				opts.other_pfx += pidStr.str();
-			}
-			opts.other_pfx += ".";
-			opts.other_pfx += readstats.suffix;
-			// create the other reads file
-			fastaNonAlignOut.open(opts.other_pfx);
-			fastaNonAlignOut.close();
+			sfx += "_" + summary.pid_str;
 		}
+		sfx += ".blast";
+		// blast output  WORKDIR/out/aligned.blast
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		blastoutFile = fpath.string();
+		blastout.open(blastoutFile);
+		blastout.close();
+	}
+
+	if (opts.is_otu_map)
+	{
+		// OTU map output file  WORKDIR/out/aligned_otus.txt
+		std::ofstream otumap;
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += "_otus.txt";
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		otumapFile = fpath.string();
+		otumap.open(fpath);
+		otumap.close();
+	}
+
+	if (opts.is_de_novo_otu)
+	{
+		std::ofstream denovo_otu;
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += "_denovo." + readstats.suffix;
+		//  WORKDIR/out/aligned_denovo.fastq
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		denovo_otus_file = fpath.string();
+		denovo_otu.open(fpath);
+		denovo_otu.close();
+	}
+
+	// don't touch the log if only reports are generated
+	if (opts.is_log && opts.alirep != Runopts::ALIGN_REPORT::report)
+	{
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += ".log";
+		// WORKDIR/out/aligned.log
+		auto logpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
+		logfile = logpath.string();
+		logstream.open(logfile);
+		logstream.close();
+	}
+
+	if (opts.is_other && opts.is_fastx)
+	{
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += "." + readstats.suffix;
+		// WORKDIR/out/other.fasta
+		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx);
+		otherfile = fpath.string();
+		fasta_other.open(otherfile);
+		fasta_other.close();
 	}
 } // ~Output::init
 
+/**
+ * called on each read => keep stream handle between calls 
+ */
 void Output::report_blast
 (
 	Runopts & opts,
@@ -203,7 +186,6 @@ void Output::report_blast
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 	char strandmark = '+';
-	//bool flip03 = false; // flag to flip back to 03 on return
 
 	if (read.is03) read.flip34();
 
@@ -364,7 +346,7 @@ void Output::report_blast
 				blastout << read.getSeqId();
 
 				// print null alignment for non-aligned read
-				if (opts.print_all_reads && (read.hits_align_info.alignv.size() == 0))
+				if (opts.is_print_all_reads && (read.hits_align_info.alignv.size() == 0))
 				{
 					blastout << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
 					for (uint32_t l = 0; l < opts.blastops.size(); l++)
@@ -452,8 +434,6 @@ void Output::report_blast
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
-
-	//if (flip03) read.flip34();
 } // ~ Output::report_blast
 
 
@@ -506,7 +486,7 @@ void Output::report_sam
 	//	return;
 
 	// read did not align, output null string
-	if (opts.print_all_reads && read.hits_align_info.alignv.size() == 0)
+	if (opts.is_print_all_reads && read.hits_align_info.alignv.size() == 0)
 	{
 		// (1) Query
 		samout << read.getSeqId();
@@ -585,83 +565,101 @@ void Output::report_sam
 } // ~Output::report_sam
 
 /* 
- * prototype outputformats.cpp:report_fasta
- *
  * called on each Read or each 2 reads (if paired)
+ * writes both aliged.fasta and other.fasta (if is_other is selected)
  *
- * @param reads: 1 or 2 reads (if paired)
+ * @param reads: 1 or 2 (paired) reads
  */
 void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 {
 	std::stringstream ss;
 
 	// output accepted reads
-	if (opts.fastxout && fastaout.is_open())
+	if (opts.is_fastx && fastaout.is_open())
 	{
-		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
+		bool is_paired = opts.readfiles.size() == 2; // paired reads
+		if (is_paired)
 		{
-			// either both reads are accepted, or one is accepted and pairedin
-			if ((reads[0].hit && reads[1].hit) ||
-				((reads[0].hit || reads[1].hit) && opts.pairedin))
-			{
-				// output aligned read
-				if (opts.fastxout)
-				{
-					for (Read read: reads)
-					{
-						fastaout << read.header << std::endl << read.sequence << std::endl;
-						if (read.format == Format::FASTQ)
-							fastaout << '+' << std::endl << read.quality << std::endl;
-					}
-				}
-			}//~the read was accepted
-		}//~if paired-in or paired-out
-		else // regular or pair-ended reads don't need to go into the same file
-		{
-			// the read was accepted
-			if (reads[0].hit)
-			{
-				// output aligned read
-				if (opts.fastxout)
-				{
-					fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
-					if (reads[0].format == Format::FASTQ)
-						fastaout << '+' << std::endl << reads[0].quality << std::endl;
-				}
-			} //~if read was accepted
-		}//~if not paired-in or paired-out
-	}//~if ( ptr_filetype_ar != NULL )
-
-	// output other reads
-	if (opts.fastxout && fastaNonAlignOut.is_open())
-	{
-		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
-		{
-			// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
-			if ((!reads[0].hit && !reads[1].hit) ||
-				((reads[0].hit ^ reads[1].hit) && opts.pairedout))
-			{
+			if (!opts.is_paired_in && !opts.is_paired_out) {
+				// only aligned reads go to aligned file
 				for (Read read : reads)
 				{
-					fastaNonAlignOut << read.header << std::endl << read.sequence << std::endl;
-					if (read.format == Format::FASTQ)
-						fastaNonAlignOut << '+' << std::endl << read.quality << std::endl;
+					if (read.hit) {
+						write_a_read(fastaout, read);
+						//fastaout << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fastaout << '+' << std::endl << read.quality << std::endl;
+					}
+					else if (opts.is_other) {
+						write_a_read(fasta_other, read);
+						//fasta_other << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fasta_other << '+' << std::endl << read.quality << std::endl;
+					}
 				}
-			}//~the read was accepted
-		}//~if (pairedin_gv || pairedout_gv)
-		else // output reads single
-		{
-			// the read was accepted
-			if (!reads[0].hit)
-			{
-				fastaNonAlignOut << reads[0].header << std::endl << reads[0].sequence << std::endl;
-				if (reads[0].format == Format::FASTQ)
-					fastaNonAlignOut << '+' << std::endl << reads[0].quality << std::endl;
 			}
-		} // ~ if (!(pairedin_gv || pairedout_gv))
-	} //~if ( opts.fastxout )  
+			else if (opts.is_paired_in) {
+				// if Either is aligned -> aligned
+				if (reads[0].hit || reads[1].hit) {
+					for (Read read : reads)
+					{
+						write_a_read(fastaout, read);
+						//fastaout << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fastaout << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+				else if (opts.is_other) {
+					for (Read read : reads)
+					{
+						write_a_read(fasta_other, read);
+						//fasta_other << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fasta_other << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+			}
+			else if (opts.is_paired_out) {
+				// if Both aligned -> aligned
+				if (reads[0].hit && reads[1].hit) {
+					for (Read read : reads)
+					{
+						write_a_read(fastaout, read);
+						//fastaout << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fastaout << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+				// both non-aligned and is_other -> other
+				else if (opts.is_other) {
+					for (Read read : reads)
+					{
+						write_a_read(fasta_other, read);
+						//fasta_other << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fasta_other << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+			}
+		}//~if paired
+		else // non-paired
+		{
+			// the read was accepted - output
+			if (reads[0].hit)
+			{
+				write_a_read(fastaout, reads[0]);
+				//fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				//if (reads[0].format == Format::FASTQ)
+				//	fastaout << '+' << std::endl << reads[0].quality << std::endl;
+			} //~if read was accepted
+			else if (opts.is_other) {
+				write_a_read(fasta_other, reads[0]);
+				//fasta_other << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				//if (reads[0].format == Format::FASTQ)
+				//	fasta_other << '+' << std::endl << reads[0].quality << std::endl;
+			}
+		}//~if not paired-in or paired-out
+	}//~if is_fastx 
 } // ~Output::report_fasta
 
 void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
@@ -672,10 +670,10 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 	if (denovo_otus_file.size() != 0)
 	{
 		// pair-ended reads
-		if (opts.pairedin || opts.pairedout)
+		if (opts.is_paired_in || opts.is_paired_out)
 		{
 			// either both reads are accepted, or one is accepted and pairedin_gv
-			if ( opts.pairedin && reads[0].hit && reads[1].hit && (reads[0].hit_denovo || reads[1].hit_denovo) )
+			if ( opts.is_paired_in && reads[0].hit && reads[1].hit && (reads[0].hit_denovo || reads[1].hit_denovo) )
 			{
 				// output aligned read
 				for (Read read : reads)
@@ -723,43 +721,47 @@ void Output::openfiles(Runopts & opts)
 {
 	std::stringstream ss;
 
-	if (opts.blastout && !blastout.is_open()) {
+	if (opts.is_blast && !blastout.is_open()) {
 		blastout.open(blastoutFile);
 		if (!blastout.good())
 		{
-			ss << "  " << RED << "ERROR" << COLOFF << ": could not open BLAST output file for writing.\n";
-			std::cerr << ss.str(); ss.str("");
+			ss.str("");
+			ss << STAMP << "Could not open BLAST output file: [" << blastoutFile << "] for writing.";
+			ERR(ss.str()); 
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	if (opts.samout && !samout.is_open()) {
+	if (opts.is_sam && !samout.is_open()) {
 		samout.open(samoutFile);
 		if (!samout.good())
 		{
-			ss << "  " << RED  << "ERROR" << COLOFF  << ": could not open SAM output file for writing.\n";
-			std::cerr << ss.str(); ss.str("");
+			ss.str("");
+			ss << STAMP  << "Could not open SAM output file ["<< samoutFile << "] for writing.";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	if (opts.fastxout && !fastaout.is_open()) {
+	if (opts.is_fastx && !fastaout.is_open()) {
 		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
 		if (!fastaout.good())
 		{
-			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q output file for writing.\n";
-			std::cerr << ss.str(); ss.str("");
+			ss.str("");
+			ss << STAMP << "Could not open FASTA/Q output file [" << fastaOutFile << "] for writing.";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	if (opts.fastxout && opts.other_pfx.size() != 0 && !fastaNonAlignOut.is_open())
+	if (opts.is_fastx && opts.is_other && !fasta_other.is_open())
 	{
-		fastaNonAlignOut.open(opts.other_pfx, std::ios::app | std::ios::binary);
-		if (!fastaNonAlignOut.good())
+		fasta_other.open(otherfile, std::ios::app | std::ios::binary);
+		if (!fasta_other.good())
 		{
-			ss << "  " << RED << "ERROR" << COLOFF << ": could not open FASTA/Q Non-aligned output file for writing." << std::endl;
-			std::cerr << ss.str(); ss.str("");
+			ss.str("");
+			ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << otherfile << "] for writing.";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -769,21 +771,9 @@ void Output::openfiles(Runopts & opts)
 		denovoreads.open(denovo_otus_file, std::ios::app | std::ios::binary);
 		if (!denovoreads.good())
 		{
-			ss << "  " << RED << "ERROR" << denovo_otus_file << ": file " << COLOFF 
-				<< " (denovoreads) could not be opened for writing." << std::endl;
-			std::cerr << ss.str(); ss.str("");
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	if (opts.doLog && logfile.size() > 0 && !logstream.is_open())
-	{
-		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
-		if (!logstream.good())
-		{
-			ss << "  " << RED << "ERROR" << logfile << ": file " << COLOFF
-				<< " (logfile) could not be opened." << std::endl;
-			std::cerr << ss.str(); ss.str("");
+			ss.str("");
+			ss << STAMP  << "Could not open denovo otus: [" << denovo_otus_file << "] for writing.";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -794,30 +784,191 @@ void Output::closefiles()
 	if (blastout.is_open()) { blastout.flush(); blastout.close(); }
 	if (samout.is_open()) { samout.flush(); samout.close(); }
 	if (fastaout.is_open()) { fastaout.flush(); fastaout.close(); }
-	if (fastaNonAlignOut.is_open()) { fastaNonAlignOut.flush(); fastaNonAlignOut.close(); }
+	if (fasta_other.is_open()) { fasta_other.flush(); fasta_other.close(); }
 	if (denovoreads.is_open()) { denovoreads.flush(); denovoreads.close(); }
 
-	std::cout << "Output.closefiles called. Flushed and closed" << std::endl;
+	std::cout << STAMP << "Flushed and closed" << std::endl;
 }
 
+/** 
+ * called from postProcess 
+ */
+void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
+{
+	if (!logstream.is_open())
+	{
+		logstream.open(logfile, std::ofstream::binary | std::ofstream::app);
+	}
+
+	std::cout << STAMP << "Using Log file: " << logfile << std::endl;
+
+	summary.cmd = opts.cmdline;
+	summary.total_reads = readstats.all_reads_count;
+	if (opts.is_de_novo_otu) {
+		summary.is_de_novo_otu = opts.is_de_novo_otu;
+		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
+	}
+	summary.total_reads_mapped = readstats.total_reads_aligned.load();
+	summary.min_read_len = readstats.min_read_len.load();
+	summary.max_read_len = readstats.max_read_len.load();
+	summary.all_reads_len = readstats.all_reads_len;
+
+	// stats by database
+	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
+	{
+		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
+		summary.db_matches.emplace_back(std::make_pair(opts.indexfiles[index_num].first, pcn));
+	}
+
+	if (opts.is_otu_map) {
+		summary.is_otumapout = opts.is_otu_map;
+		summary.total_reads_mapped_cov = readstats.total_reads_mapped_cov.load();
+		summary.total_otu = readstats.otu_map.size();
+	}
+
+	std::stringstream ss;
+	time_t q = time(0);
+	struct tm *now = localtime(&q);
+	ss << asctime(now);
+	summary.timestamp = ss.str();
+
+	logstream << summary.to_string(opts, refstats);
+#if 0
+	logstream << " Command: [" << opts.cmdline << "]\n\n";
+
+	// output total number of reads
+	logstream << " Results:\n";
+	logstream << "    Total reads = " << readstats.all_reads_count << std::endl;
+	if (opts.de_novo_otu)
+	{
+		// all reads that have read::hit_denovo == true
+		logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << std::endl;
+	}
+	// output total non-rrna + rrna reads
+	logstream << std::setprecision(2) << std::fixed
+		<< "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
+		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count) * 100 << ")" << std::endl
+		<< "    Total reads failing E-value threshold = "
+		<< readstats.all_reads_count - readstats.total_reads_mapped.load()
+		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count))) * 100 << ")" << std::endl
+		<< "    Minimum read length = " << readstats.min_read_len.load() << std::endl
+		<< "    Maximum read length = " << readstats.max_read_len.load() << std::endl
+		<< "    Mean read length    = " << readstats.all_reads_len / readstats.all_reads_count << std::endl
+		<< " By database:" << std::endl;
+
+	// output stats by database
+	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
+	{
+		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
+		std::make_pair(opts.indexfiles[index_num].first, pcn);
+		logstream << "    " << opts.indexfiles[index_num].first << "\t\t" << pcn << std::endl;
+	}
+
+	if (opts.otumapout)
+	{
+		logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << std::endl;
+		logstream << " Total OTUs = " << readstats.otu_map.size() << std::endl;
+	}
+	logstream << std::endl << " " << asctime(now) << std::endl;
+#endif
+	logstream.close();
+} // ~Output::writeLog
+
+void Output::write_a_read(std::ofstream& strm, Read& read)
+{
+	strm << read.header << std::endl << read.sequence << std::endl;
+	if (read.format == Format::FASTQ)
+		strm << '+' << std::endl << read.quality << std::endl;
+}
+
+std::string Summary::to_string(Runopts &opts, Refstats &refstats)
+{
+	std::stringstream ss;
+
+	ss << " Command:\n    " << cmd << std::endl << std::endl;
+
+	ss << " Process pid = " << pid_str << std::endl << std::endl;
+
+	ss << " Parameters summary: " << std::endl;
+	int idx = 0;
+	for (auto ref : opts.indexfiles) {
+		ss << "    Reference file: " << ref.first << std::endl;
+		ss << "        Seed length = " << opts.seed_win_len << std::endl;
+		ss << "        Pass 1 = " << opts.skiplengths[idx][0] 
+				<< ", Pass 2 = " << opts.skiplengths[idx][1] 
+				<< ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl;
+		ss << "        Gumbel lambda = " << refstats.gumbel[idx].first << std::endl;
+		ss << "        Gumbel K = " << refstats.gumbel[idx].second << std::endl;
+		ss << "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
+		++idx;
+	}
+	ss << "    Number of seeds = " << opts.seed_hits << std::endl;
+	ss << "    Edges = " << opts.edges << std::endl;
+	ss << "    SW match = " << opts.match << std::endl;
+	ss << "    SW mismatch = " << opts.mismatch << std::endl;
+	ss << "    SW gap open penalty = " << opts.gap_open << std::endl;
+	ss << "    SW gap extend penalty = " << opts.gap_extension << std::endl;
+	ss << "    SW ambiguous nucleotide = " << opts.score_N << std::endl;
+	ss << "    SQ tags are " << (opts.is_SQ ? "" : "not ") << "output" << std::endl;
+	ss << "    Number of alignment processing threads = " << opts.num_proc_thread << std::endl;
+	for (auto readf : opts.readfiles) {
+		ss << "    Reads file: " << readf << std::endl;
+	}
+	ss << "    Total reads = " << total_reads << std::endl << std::endl;
+
+	ss << " Results:" << std::endl;
+	if (is_de_novo_otu)
+	{
+		// all reads that have read::hit_denovo == true
+		ss << "    Total reads for de novo clustering = " << total_reads_denovo_clustering << std::endl;
+	}
+	// output total non-rrna + rrna reads
+	ss << std::setprecision(2) << std::fixed
+		<< "    Total reads passing E-value threshold = " << total_reads_mapped
+		<< " (" << ((float)total_reads_mapped / (float)total_reads * 100) << ")" << std::endl
+		<< "    Total reads failing E-value threshold = " << total_reads - total_reads_mapped
+		<< " (" << (1 - ((float)((float)total_reads_mapped / (float)total_reads))) * 100 << ")" << std::endl
+		<< "    Minimum read length = " << min_read_len << std::endl
+		<< "    Maximum read length = " << max_read_len << std::endl
+		<< "    Mean read length    = " << all_reads_len / total_reads << std::endl << std::endl;
+
+	ss << " Coverage by database:" << std::endl;
+
+	// output stats by database
+	for (auto match: db_matches)
+	{
+		ss << "    " << match.first << "\t\t" << match.second << std::endl;
+	}
+
+	if (is_otumapout)
+	{
+		ss << " Total reads passing %%id and %%coverage thresholds = " << total_reads_mapped_cov << std::endl;
+		ss << " Total OTUs = " << total_otu << std::endl;
+	}
+
+	ss << std::endl << " " << timestamp << std::endl;
+
+	return ss.str();
+} // ~Summary::to_string
+
 // called from main. TODO: move into a class?
-void generateReports(Runopts & opts, Readstats & readstats, Output & output)
+void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;
-	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	std::stringstream ss;
 
-	ss << std::endl << STAMP << "Report generation starts. Thread: " << std::this_thread::get_id() << std::endl;
-	std::cout << ss.str(); ss.str("");
+	ss.str("");
+	ss << "\n" << STAMP << "=== Report generation starts. Thread: " << std::this_thread::get_id() << " ===\n\n";
+	std::cout << ss.str();
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
-	KeyValueDatabase kvdb(opts.kvdbPath);
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
+		ss.str("");
 		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str(); 
 	}
 
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
@@ -826,7 +977,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 	References refs;
 
 	output.openfiles(opts);
-	if (opts.samout) output.writeSamHeader(opts);
+	if (opts.is_sam) output.writeSamHeader(opts);
 
 	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
@@ -837,7 +988,9 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 			ss << std::endl << STAMP << "Loading reference " 
 				<< index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
 			std::cout << ss.str(); ss.str("");
+
 			auto starts = std::chrono::high_resolution_clock::now();
+
 			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
@@ -847,7 +1000,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 
 			for (int i = 0; i < N_READ_THREADS; ++i)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+				tpool.addJob(ReadControl(opts, readQueue, kvdb));
 			}
 
 			// add processor jobs
@@ -855,19 +1008,19 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output)
 			{
 				tpool.addJob(ReportProcessor("report_proc_" + std::to_string(i), readQueue, opts, refs, output, refstats, reportsJob));
 			}
-			++loopCount;
 			tpool.waitAll(); // wait till processing is done on one index part
 			refs.clear();
 			writeQueue.reset(N_PROC_THREADS);
 			readQueue.reset(N_READ_THREADS);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
+			ss.str("");
 			ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
 				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
-			std::cout << ss.str(); ss.str("");
-			if (!opts.blastout && !opts.samout)	break;;
+			std::cout << ss.str();
+			if (!opts.is_blast && !opts.is_sam)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	std::cout << STAMP << "Done Reports generation" << std::endl;
+	std::cout << "\n" << STAMP << "=== Done Reports generation ===\n\n";
 } // ~generateReports

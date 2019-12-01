@@ -20,7 +20,7 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	:
 	num_index_parts(opts.indexfiles.size(), 0),
 	full_ref(opts.indexfiles.size(), 0),
-	full_read(opts.indexfiles.size(), readstats.full_read_main),
+	full_read(opts.indexfiles.size(), readstats.all_reads_len),
 	lnwin(opts.indexfiles.size(), 0),
 	partialwin(opts.indexfiles.size(), 0),
 	minimal_score(opts.indexfiles.size(), 0),
@@ -29,8 +29,8 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	numseq(opts.indexfiles.size(), 0)
 {
 	std::stringstream ss;
-	ss << std::endl << STAMP << "Index Statistics calculation Start ...";
-	std::cout << ss.str(); ss.str("");
+	ss << STAMP << "Index Statistics calculation Start ...";
+	std::cout << ss.str();
 
 	auto starts = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
@@ -38,13 +38,18 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	load(opts, readstats);
 
 	elapsed = std::chrono::high_resolution_clock::now() - starts;
-	ss << " Done. Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
-	std::cout << ss.str(); ss.str("");
+	ss.str("");
+	ss << STAMP << "Done. Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
+	std::cout << ss.str();
 }
 
-// prototype: load_index.cpp:load_index_stats
+/**
+ * load reference statistics stored in the '.stats' files 
+ */
 void Refstats::load(Runopts & opts, Readstats & readstats)
 {
+	std::stringstream ss;
+
 	// create and initialize scoring matrix
 	long alphabetSize = 4;
 	long **scoring_matrix = new long *[alphabetSize];
@@ -64,15 +69,13 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 	// loop through the .stats index files for each database
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
 	{
-		std::ifstream stats((char*)(opts.indexfiles[index_num].second + ".stats").c_str(), std::ios::in | std::ios::binary);
+		std::ifstream stats(opts.indexfiles[index_num].second + ".stats", std::ios::in | std::ios::binary);
 		if (!stats.good())
 		{
-			std::cerr << std::endl
-				<< RED << "ERROR" << COLOFF
-				<< ": The index '" << opts.indexfiles[index_num].second + ".stats' does not exist."
-				<< " Make sure you have constructed your index using the command 'indexdb'."
-				<< " See 'indexdb -h' for help" << std::endl << std::endl;
-
+			// should never come here. Index is built and validated prior this call.
+			ss.str("");
+			ss << STAMP << "Cannot open the index file [" << opts.indexfiles[index_num].second << ".stats]";
+			ERR(ss.str());
 			exit(EXIT_FAILURE);
 		}
 
@@ -82,32 +85,19 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 
 		// read the fasta file name used to build the index
 		uint32_t fastafile_len = 0;
-		stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(uint32_t));
+		stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(fastafile_len));
 		char fastafile_name[2000];
 		stats.read(reinterpret_cast<char*>(fastafile_name), sizeof(char)*fastafile_len);
 
 		// compute reference database file size for this index
-		FILE *fastafile = ::fopen(opts.indexfiles[index_num].first.c_str(), "r");
-		if (fastafile == NULL)
-		{
-			std::cerr << RED << "ERROR" << COLOFF << ": could not open FASTA reference file: " << opts.indexfiles[index_num].first << std::endl;
-			exit(EXIT_FAILURE);
-		}
-
-		fseek(fastafile, 0L, SEEK_END);
-		size_t sz = ftell(fastafile);
-		fclose(fastafile);
-
-		if (sz != filesize)
-		{
-			std::cerr << RED << "ERROR" << COLOFF
-				<< ": Based on file size, the FASTA file (" << opts.indexfiles[index_num].first
-				<< ") passed to --ref <FASTA file, index name>" << std::endl
-				<< "    does not appear to be the same FASTA file (" << fastafile_name
-				<< ") used to build the index " << opts.indexfiles[index_num].second
-				<< "    Check your --ref list of files and corresponding indexes" << std::endl << std::endl;
-			exit(EXIT_FAILURE);
-		}
+		//FILE *fastafile = ::fopen(opts.indexfiles[index_num].first.c_str(), "r");
+		//if (fastafile == NULL)
+		//{
+		//	ss.str("");
+		//	ss <<  "could not open FASTA reference file: " << opts.indexfiles[index_num].first;
+		//	ERR(ss.str());
+		//	exit(EXIT_FAILURE);
+		//}
 
 		// A,C,G,T background frequencies to compute the Gumbel parameters lambda and K
 		double background_freq_gv[4] = { 0 };
@@ -215,7 +205,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		if (full_ref[index_num] > (expect_L*numseq[index_num]))
 			full_ref[index_num] -= (expect_L*numseq[index_num]);
 
-		full_read[index_num] -= (expect_L * readstats.number_total_read);
+		full_read[index_num] -= (expect_L * readstats.all_reads_count);
 
 		// minimum score required to reach E-value
 		minimal_score[index_num] = static_cast<uint32_t>(
@@ -225,39 +215,10 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 					* full_read[index_num])))
 			/ -(gumbel[index_num].first));
 
-
-		// TODO: move to Output::writeSamHeader
-		// SAM @SQ data
-		if (opts.samout)
-		{
-#if 0
-			// number of nucleotide sequences in the reference file
-			uint32_t num_sq = 0;
-			stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
-
-			// loop through each @SQ
-			for (uint32_t j = 0; j < num_sq; j++)
-			{
-				// length of the sequence id
-				uint32_t len_id = 0;
-				stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
-				// the sequence id string
-				std::string s(len_id + 1, 0); // AK
-				std::vector<char> vs(s.begin(), s.end());
-				stats.read(reinterpret_cast<char*>(&vs[0]), sizeof(char)*len_id);
-				// the length of the sequence itself
-				uint32_t len_seq = 0;
-				stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
-				@SQ header
-					if (opts.yes_SQ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
-			}
-#endif
-		}
-
 		stats.close();
 	} // ~for loop indices
 
-	  // free memory
+	// free memory
 	for (long i = 0; i < alphabetSize; i++)
 	{
 		delete[] scoring_matrix[i];

@@ -12,29 +12,40 @@
 #include "readsqueue.hpp"
 #include "kvdb.hpp"
 #include "options.hpp"
+#include "gzip.hpp"
 
-class Read; // forward
+ // forward
+class Read;
 
-// reads Reads and Readstats files, generates Read objects and pushes them onto ReadsQueue
+/* 
+ * reads Reads file and, generates Read objects
+ */
 class Reader {
 public:
-	Reader(std::string id, Runopts & opts, ReadsQueue & readQueue, KeyValueDatabase & kvdb, int loopCount)
-		: 
-		id(id),
-		opts(opts),
-		readQueue(readQueue),
-		kvdb(kvdb),
-		loopCount(loopCount)
-	{}
+	Reader(std::string id, bool is_gzipped);
+	~Reader();
 
-	void operator()() { read(); }
-	void read();
+	Read nextread(std::ifstream &ifs, const std::string &readsfile, Runopts & opts);
+	bool nextread(std::ifstream &ifs, const std::string &readsfile, std::string &seq);
+	void reset();
+	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Runopts & opts, Read & read);
 	static bool loadReadById(Runopts & opts, Read & read);
+
+public:
+	bool is_done = false; // flags end of reads stream
+
 private:
 	std::string id;
-	int loopCount; // counter of processing iterations.
-	Runopts & opts;
-	ReadsQueue & readQueue; // shared with Processor
-	KeyValueDatabase & kvdb; // key-value database
+	bool is_gzipped;
+	Gzip gzip;
+	unsigned int read_count; // count of reads
+	unsigned int line_count; // count of non-empty lines in the reads file
+	int last_count;
+	int last_stat;
+	std::string last_header; // header line last read
+	bool isFastq; // flags the file is FASTQ
+	bool isFasta; // flags the file is FASTA
 };
+
+// ~reader.hpp

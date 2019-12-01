@@ -37,6 +37,7 @@
 
 #include <sys/time.h>
 #include "config.h"
+//#include <filesystem> // C++ 17
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
@@ -77,13 +78,14 @@ const char nt_map[5] = { 'A', 'C', 'G', 'T', 'N' };
 const char complement[5] = { 3, 2, 1, 0, 4 }; // A <-> T, C <-> G, N <-> N
 
 extern timeval t;
-extern bool verbose;
 
 /*! @brief Macro for timing */
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
 /*! @brief Print function for verbose mode */
-#define eprintf(format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+#define DBG(verbose, format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << ": " << MSG << std::endl;
+#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << ": " << MSG << std::endl;
 
 /*! @brief start color text red */
 #if defined(_WIN32)
@@ -110,7 +112,7 @@ const char DELIM = ':';
 /*! @brief Maximum length of input reads
 	(not limited to this length algorithmically)
 */
-#define READLEN 30000
+#define MAX_READ_LEN 30000
 
 #define LOCKQEUEU // use Locking queue for storing the Reads
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "

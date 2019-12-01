@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(sortmerna CXX C)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Git)
 
@@ -189,7 +189,7 @@ if(WIN32)
 endif()
 
 ## build indexdb
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
+#add_subdirectory(${CMAKE_SOURCE_DIR}/src/indexdb)
 
 ## build sortmerna
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
@@ -199,7 +199,7 @@ if (WITH_TESTS)
 endif ()
 
 # Installation and packaging
-#set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
+#set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist CACHE PATH "Install path prefix, prepended onto install directories.")
 
 #include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -218,7 +218,7 @@ write_basic_package_version_file(
 	COMPATIBILITY SameMajorVersion
 )  
 
-install(TARGETS sortmerna indexdb
+install(TARGETS sortmerna
 	EXPORT sortmernaTargets
 	RUNTIME 
 	DESTINATION bin

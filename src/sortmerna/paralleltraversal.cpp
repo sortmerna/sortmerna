@@ -54,6 +54,7 @@
 #include "reader.hpp"
 #include "writer.hpp"
 #include "output.hpp"
+#include "read_control.hpp"
 
 
 #if defined(_WIN32)
@@ -68,18 +69,6 @@ int clear_dir(std::string dpath);
  // see "heuristic 1" below
  //#define HEURISTIC1_OFF
 
- /*! @brief Return complement of a nucleotide in
-	 integer format.
-
-	 <table>
-	  <tr><th>i</th> <th>complement[i]</th></tr>
-	  <tr><td>0 (A)</td> <td>3 (T)</td></tr>
-	  <tr><td>1 (C)</td> <td>2 (G)</td></tr>
-	  <tr><td>2 (G)</td> <td>1 (C)</td></tr>
-	  <tr><td>3 (T)</td> <td>0 (A)</td></tr>
-	 </table>
-  */
-//char complement[4] = { 3,2,1,0 };
 
 /* 
  * Callback run in a Processor thread
@@ -119,23 +108,23 @@ void alignmentCb
 
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
+	// Moved to Readstats::calculate
 	// find the minimum sequence length
-	if (read.sequence.size() < readstats.min_read_len.load())
-		readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
+	//if (read.sequence.size() < readstats.min_read_len.load())
+	//	readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// find the maximum sequence length
-	if (read.sequence.size()  > readstats.max_read_len.load())
-		readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
+	//if (read.sequence.size()  > readstats.max_read_len.load())
+	//	readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// the read length is too short
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])
 	{
 		std::stringstream ss;
-		ss << "\n  " << YELLOW << "WARNING " << COLOFF
-			<< STAMP << ": Processor thread: " << std::this_thread::get_id()
+		ss << STAMP << "Processor thread: " << std::this_thread::get_id()
 			<< " The read.id: " << read.id << " read.header: " << read.header << " is shorter than "
-			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched\n";
-		std::cout << ss.str(); ss.str("");
+			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched";
+		WARN(ss.str());
 
 		read.isValid = false;
 		return;
@@ -203,14 +192,14 @@ void alignmentCb
 					bool is03 = read.is03;
 					bool is04 = read.is04;
 					ss << STAMP
-						<< " ERROR: lookup index: " << keyf << " is larger than lookup_tbl.size: " << vsize 
+						<< "lookup index: " << keyf << " is larger than lookup_tbl.size: " << vsize 
 						<< " Index: " << idxn
 						<< " Part: " << idxp
 						<< " Read.id: " << id
 						<< " Read.is03: " << is03
 						<< " Read.is04: " << is04
 						<< " Aborting.." << std::endl;
-					std::cout << ss.str();
+					ERR(ss.str());
 					exit(EXIT_FAILURE);
 				}
 
@@ -266,7 +255,7 @@ void alignmentCb
 						unsigned int id = read.id;
 						bool is03 = read.is03;
 						bool is04 = read.is04;
-						ss << __LINE__ << " Thread: " << std::this_thread::get_id()
+						ss << STAMP << "Thread: " << std::this_thread::get_id()
 							<< " ERROR: lookup index: " << keyr << " is larger than lookup_tbl.size: " << vsize
 							<< " Index: " << idxn
 							<< " Part: " << idxp
@@ -357,14 +346,17 @@ void alignmentCb
 	{
 		// do not output read for de novo OTU clustering
 		// (it did not pass the E-value threshold)
-		if (opts.de_novo_otu) read.hit_denovo = false;
+		if (opts.is_de_novo_otu) read.hit_denovo = false;
 	}//~if read didn't align
 } // ~alignmentCb
 
 // called from main
-void align(Runopts & opts, Readstats & readstats, Output & output)
+void align(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
 {
 	std::stringstream ss;
+
+	ss << "\n" << STAMP << "==== Starting alignment ====\n\n";
+	std::cout << ss.str();
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 
@@ -372,31 +364,32 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 	int numProcThread = 0;
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
+		ss.str("");
 		ss << STAMP << "Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 	else
 	{
 		numProcThread = opts.num_proc_thread; // set using '--thread'
+		ss.str("");
 		ss << STAMP << "Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 
 	int numThreads = opts.num_read_thread + opts.num_write_thread + numProcThread;
 
+	ss.str("");
 	ss << "Number of cores: " << numCores 
 		<< " Read threads:  " << opts.num_read_thread
 		<< " Write threads: " << opts.num_write_thread
 		<< " Processor threads: " << numProcThread
 		<< std::endl;
-	std::cout << ss.str(); ss.str("");
+	std::cout << ss.str();
 
 	ThreadPool tpool(numThreads);
-	KeyValueDatabase kvdb(opts.kvdbPath);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
 	Refstats refstats(opts, readstats);
-	Index index;
 	References refs;
 
 	int loopCount = 0; // counter of total number of processing iterations
@@ -411,32 +404,37 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << STAMP << "Loading index " << index_num 
+			ss.str("");
+			ss << std::endl << STAMP << "Loading index " << index_num 
 				<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 			starts = std::chrono::high_resolution_clock::now();
 
 			index.load(index_num, idx_part, opts, refstats);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+			ss.str("");
 			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 
+			ss.str("");
 			ss << STAMP << "Loading references " << " ... ";
-			std::cout << ss.str(); ss.str("");
+			std::cout << ss.str();
 			starts = std::chrono::high_resolution_clock::now();
 
 			refs.load(index_num, idx_part, opts, refstats);
 
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl << std::endl;
-			std::cout << ss.str(); ss.str("");
+
+			ss.str("");
+			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec\n";
+			std::cout << ss.str();
 
 			starts = std::chrono::high_resolution_clock::now();
 			for (int i = 0; i < opts.num_read_thread; i++)
 			{
-				tpool.addJob(Reader("reader_" + std::to_string(i), opts, readQueue, kvdb, loopCount));
+				tpool.addJob(ReadControl(opts, readQueue, kvdb));
 			}
 
 			for (int i = 0; i < opts.num_write_thread; i++)
@@ -458,12 +456,42 @@ void align(Runopts & opts, Readstats & readstats, Output & output)
 			readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			ss << std::endl << STAMP << "Done index " << index_num << " Part: " << idx_part + 1
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl << std::endl;
-			std::cout << ss.str(); ss.str("");
+
+			ss.str("");
+			ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1 
+				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+			std::cout << ss.str();
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
+	ss.str("");
+	ss << "\n" << STAMP << "==== Done alignment ====\n\n";
+	std::cout << ss.str();
+
 	// store readstats calculated in alignment
-	kvdb.put("Readstats", readstats.toString());
+	readstats.set_is_total_reads_mapped_cov(); // TODO: seems not necessary here. See TODO: alignment.cpp:569
+	readstats.store_to_db(kvdb);
 } // ~align
+
+/**
+ * verify the alignment was already performed by querying the KVDB
+ * Alignment descriptor:
+ *   List all index files: hash, size
+ *   List read files: hash, size
+ *   List reference files: hash, size
+ *   List number of aligned reads
+ *   Store options and compare to the current. Add '==' operator.
+ *   Store the list of DBKeys of all aligned reads (?)
+ *
+ * Alignment IS Done IF
+ *  - reads files are the same
+ *  - references are the same
+ *  - index is present and the names/hashes are the same as stored in DB
+ *  - alignment results are stored
+ *  - read statistics are stored and is_done = True
+ */
+bool is_aligned(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
+{
+	std::cout << STAMP << "TODO" << std::endl;
+	return false;
+}

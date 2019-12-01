@@ -137,3 +137,30 @@ function(rocksdb_edit_3rdparty_inc_2)
     # Write the new file
     file(WRITE ${ROCKSDB_SRC}/thirdparty.inc ${_out})
 endfunction(rocksdb_edit_3rdparty_inc_2)
+
+#
+# added 20190307
+# REF:
+# 1. [ cmake: target_link_libraries use static library not shared ](https://stackoverflow.com/questions/36754160/cmake-target-link-libraries-use-static-library-not-shared)
+# 2. [ CMake: how to produce binaries "as static as possible" ](https://stackoverflow.com/questions/3762057/cmake-how-to-produce-binaries-as-static-as-possible)
+#
+function(find_static_library LIB_NAME OUT)
+    if (WIN32 OR MSVC)
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
+    elseif (UNIX)
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    endif()
+
+    find_library(
+        FOUND_${LIB_NAME}_STATIC
+        ${LIB_NAME}
+    )
+
+    if (FOUND_${LIB_NAME}_STATIC)
+        get_filename_component(ABS_FILE ${FOUND_${LIB_NAME}_STATIC} ABSOLUTE)
+    else()
+        message(SEND_ERROR "Unable to find library ${LIB_NAME}")
+    endif()
+
+    set(${OUT} ${ABS_FILE} PARENT_SCOPE)
+endfunction(find_static_library)

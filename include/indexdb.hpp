@@ -1,3 +1,4 @@
+#pragma once
 /*
  * @file indexdb.hpp
  * @brief Function and variable definitions for indexdb.cpp
@@ -31,13 +32,10 @@
  *
  */
 
- 
-#ifndef INDEXDB_H
-#define INDEXDB_H
-
-#include <sys/types.h>
+ #include <sys/types.h>
 #include "ssw.h"
 #include "common.hpp"
+#include "options.hpp"
 
 
 /*! @brief The size of an entry in a burst trie bucket 
@@ -54,6 +52,8 @@
 
 // maximum number of bytes in a bucket prior to bursting, should be <= L1 cache size and a power of 2 for efficiency
 #define THRESHOLD 128
+
+int build_index(Runopts &opts);
 
 struct NodeElement
 {
@@ -94,13 +94,10 @@ struct kmer
 	uint32_t count; // count of 9-mers
 };
 
-// data structure to store information on index parts built
+// data structure to store information on index parts
+// i.e. index can be partitioned for large reference files
 struct index_parts_stats {
-    unsigned long int start_part; // where the section starts in the file
+    unsigned long int start_part; // start of a part in the reference file
     unsigned long int seq_part_size; // number of bytes of reference sequences to read
     uint32_t numseq_part; // the number of sequences in this part
 };
-
-
-
-#endif

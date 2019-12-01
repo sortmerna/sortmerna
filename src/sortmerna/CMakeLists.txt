@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(sortmerna CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
@@ -102,6 +102,7 @@ set(SMR_SRCS
 	cmd.cpp
 	gzip.cpp
 	index.cpp
+	indexdb.cpp
 	kseq_load.cpp
 	kvdb.cpp
 	options.cpp
@@ -109,6 +110,7 @@ set(SMR_SRCS
 	paralleltraversal.cpp
 	processor.cpp
 	read.cpp
+	read_control.cpp
 	reader.cpp
 	readstats.cpp
 	references.cpp

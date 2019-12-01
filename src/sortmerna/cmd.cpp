@@ -23,13 +23,11 @@
 #include "index.hpp"
 #include "reader.hpp"
 
-const std::string OPT_ID   = "--id";
 const std::string OPT_DB   = "--db";
 const std::string OPT_IDX  = "--idx";
 const std::string OPT_PART = "--part";
 const std::string OPT_READ = "--read";
 const std::string OPT_POS  = "--pos";
-const std::string OPT_REF = "--ref";
 
 void CmdSession::run(Runopts & opts)
 {
@@ -102,7 +100,7 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 		{
 			KeyValueDatabase kvdb(opts.kvdbPath);
 			read.clear();
-			read.init(opts, kvdb, std::stoi(readid));
+			read.init(opts, 0); // TODO: pass the required reads file number i.e. 0 or 1 to generate a correct read.id
 			ss << read.matchesToJson() << std::endl;
 		}
 		else
@@ -143,10 +141,10 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	}
 
 	KeyValueDatabase kvdb(opts.kvdbPath);
-	Readstats readstats(opts);
+	Readstats readstats(opts, kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
-	Index index;
+	Index index(opts);
 	Read read;
 
 	// find half-kmer prefix/suffix matches
@@ -269,7 +267,8 @@ void CmdSession::cmd_max_ref_part(Runopts & opts, std::string & cmd)
 		return;
 	}
 
-	Readstats readstats(opts);
+	KeyValueDatabase kvdb(opts.kvdbPath);
+	Readstats readstats(opts, kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
 

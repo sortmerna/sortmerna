@@ -3,6 +3,7 @@
  * Created: Nov 26, 2017 Sun
  * @copyright 2016-19 Clarity Genomics BVBA
  */
+#include <filesystem>
 
 // 3rd party
 #include "rapidjson/writer.h"
@@ -11,6 +12,9 @@
 // SMR
 #include "read.hpp"
 #include "references.hpp"
+
+alignment_struct2::alignment_struct2() : max_size(0), min_index(0), max_index(0) 
+{}
 
 /**
  * construct from the binary string stored in DB
@@ -66,23 +70,279 @@ std::string alignment_struct2::toString()
 	return buf;
 } // ~toString
 
- // initialize Smith-Waterman scoring matrix for genome sequences
-void Read::initScoringMatrix(Runopts & opts)
+size_t alignment_struct2::getSize() {
+	size_t ret = sizeof(min_index) + sizeof(max_index);
+	for (std::vector<s_align2>::iterator it = alignv.begin(); it != alignv.end(); ++it)
+		ret += it->size();
+	return ret;
+}
+
+void alignment_struct2::clear()
+{
+	max_size = 0;
+	min_index = 0;
+	max_index = 0;
+	alignv.clear();
+}
+
+Read::Read()
+	:
+	id(0),
+	read_num(0),
+	readfile_num(0),
+	isValid(false),
+	isEmpty(true),
+	is03(false),
+	is04(false),
+	isRestored(false),
+	lastIndex(0),
+	lastPart(0),
+	reversed(false),
+	hit(false),
+	hit_denovo(true),
+	null_align_output(false),
+	max_SW_count(0),
+	num_alignments(0),
+	readhit(0),
+	best(0),
+	format(Format::FASTA)
+{}
+
+Read::~Read(){}
+
+Read::Read(int id, std::string header, std::string sequence, std::string quality, Format format)
+	:
+	id(id), header(std::move(header)), sequence(sequence),
+	quality(quality), format(format), isEmpty(false)
+{
+	validate();
+}
+
+// copy constructor
+Read::Read(const Read & that)
+{
+	id = that.id;
+	read_num = that.read_num;
+	readfile_num = that.readfile_num;
+	isValid = that.isValid;
+	isEmpty = that.isEmpty;
+	is03 = that.is03;
+	is04 = that.is04;
+	isRestored = that.isRestored;
+	header = that.header;
+	sequence = that.sequence;
+	quality = that.quality;
+	format = that.format;
+	isequence = that.isequence;
+	reversed = that.reversed;
+	ambiguous_nt = that.ambiguous_nt;
+	lastIndex = that.lastIndex;
+	lastPart = that.lastPart;
+	hit = that.hit;
+	hit_denovo = that.hit_denovo;
+	null_align_output = that.null_align_output;
+	max_SW_count = that.max_SW_count;
+	num_alignments = that.num_alignments;
+	readhit = that.readhit;
+	best = that.best;
+	id_win_hits = that.id_win_hits;
+	hits_align_info = that.hits_align_info;
+	scoring_matrix = that.scoring_matrix;
+}
+
+// copy assignment
+Read & Read::operator=(const Read & that)
+{
+	if (&that == this) return *this; // else *this = that
+
+	//printf("Read copy assignment called\n");
+	id = that.id;
+	read_num = that.read_num;
+	readfile_num = that.readfile_num;
+	isValid = that.isValid;
+	isEmpty = that.isEmpty;
+	is03 = that.is03;
+	is04 = that.is04;
+	isRestored = that.isRestored;
+	header = that.header;
+	sequence = that.sequence;
+	quality = that.quality;
+	format = that.format;
+	isequence = that.isequence;
+	reversed = that.reversed;
+	ambiguous_nt = that.ambiguous_nt;
+	lastIndex = that.lastIndex;
+	lastPart = that.lastPart;
+	hit = that.hit;
+	hit_denovo = that.hit_denovo;
+	null_align_output = that.null_align_output;
+	max_SW_count = that.max_SW_count;
+	num_alignments = that.num_alignments;
+	readhit = that.readhit;
+	best = that.best;
+	id_win_hits = that.id_win_hits;
+	hits_align_info = that.hits_align_info;
+	scoring_matrix = that.scoring_matrix;
+
+	return *this; // by convention always return *this
+} // ~Read::operator=
+
+/** 
+ * Generate ID of the read
+ */
+void Read::generate_id(Runopts &opts)
+{
+	std::stringstream ss;
+	ss << read_num << "_" << std::filesystem::path(opts.readfiles[readfile_num]).filename();
+	std::hash<std::string> hash_fn;
+	id = hash_fn(ss.str());
+} // ~Read::generate_id
+
+/**
+ * 5 options are used here, which would make this method to take 7 args => use Runopts as arg
+ */
+void Read::init(Runopts & opts, uint8_t readfile_num)
+{
+	this->readfile_num = readfile_num;
+	generate_id(opts);
+	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
+	if (opts.min_lis > 0) this->best = opts.min_lis;
+	validate();
+	seqToIntStr();
+	initScoringMatrix(opts.match, opts.mismatch, opts.score_N);
+} // ~Read::init
+
+// initialize Smith-Waterman scoring matrix for genome sequences
+void Read::initScoringMatrix(long match, long mismatch, long score_N)
 {
 	int8_t val = 0;
 	for (int l = 0; l < 4; ++l)
 	{
 		for (int m = 0; m < 4; ++m) {
-			val = l == m ? opts.match : opts.mismatch; // weight_match : weight_mismatch (must be negative)
+			val = l == m ? match : mismatch; // weight_match : weight_mismatch (must be negative)
 			scoring_matrix.push_back(val);
 		}
-		scoring_matrix.push_back(opts.score_N); // ambiguous base
+		scoring_matrix.push_back(score_N); // ambiguous base
 	}
 	for (int m = 0; m < 5; ++m) {
-		scoring_matrix.push_back(opts.score_N); // ambiguous base
+		scoring_matrix.push_back(score_N); // ambiguous base
 	}
 }
 
+void Read::validate() {
+	std::stringstream ss;
+	if (sequence.size() > MAX_READ_LEN)
+	{
+		ss << std::endl << RED << "ERROR" << COLOFF << ": [" << __FILE__ << ":" << __LINE__
+			<< "] Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > " << MAX_READ_LEN << " nt " << std::endl
+			<< "  Please check your reads or contact the authors." << std::endl;
+		std::cerr << ss.str();
+		exit(EXIT_FAILURE);
+	}
+	isValid = true;
+} // ~Read::validate
+
+void Read::clear()
+{
+	id = 0;
+	isValid = false;
+	isEmpty = true;
+	is03 = false;
+	is04 = false;
+	header.clear();
+	sequence.clear();
+	quality.clear();
+	isequence.clear();
+	reversed = false;
+	ambiguous_nt.clear();
+	isRestored = false;
+	lastIndex = 0;
+	lastPart = 0;
+	hit = false;
+	hit_denovo = true;
+	null_align_output = false;
+	max_SW_count = 0;
+	num_alignments = 0;
+	readhit = 0;
+	best = 0;
+	id_win_hits.clear();
+	hits_align_info.clear();
+	scoring_matrix.clear();
+} // ~Read::clear
+
+// convert char "sequence" to 0..3 alphabet "isequence", and populate "ambiguous_nt"
+void Read::seqToIntStr()
+{
+	for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it)
+	{
+		char c = nt_table[(int)*it];
+		if (c == 4) // ambiguous nt. 4 is max value in nt_table
+		{
+			ambiguous_nt.push_back(static_cast<int>(isequence.size())); // i.e. add current position to the vector
+			c = 0;
+		}
+		isequence += c;
+	}
+	is03 = true;
+}
+
+/* reverse complement the integer sequence in 03 encoding */
+void Read::revIntStr() 
+{
+	std::reverse(isequence.begin(), isequence.end());
+	for (int i = 0; i < isequence.length(); i++) {
+		isequence[i] = complement[(int)isequence[i]];
+	}
+	reversed = !reversed;
+}
+
+// convert isequence to alphabetic form i.e. to A,C,G,T,N
+std::string Read::get04alphaSeq() {
+	//bool rev03 = false; // mark whether to revert back to 03
+	std::string seq;
+	if (is03) flip34();
+	// convert to alphabetic
+	for (int i = 0; i < isequence.size(); ++i)
+		seq += nt_map[(int)isequence[i]];
+
+	//if (rev03) flip34();
+	return seq;
+}
+
+std::string Read::getSeqId() {
+	// part of the header from start till first space.
+	std::string id = header.substr(0, header.find(' '));
+	// remove '>' or '@'
+	id.erase(id.begin(), std::find_if(id.begin(), id.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+	return id;
+}
+
+// flip isequence between 03 - 04 alphabets
+void Read::flip34()
+{
+	if (ambiguous_nt.size() > 0)
+	{
+		int val = is03 ? 4 : 0;
+		if (reversed)
+		{
+			for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+			{
+				isequence[(isequence.length() - ambiguous_nt[p]) - 1] = val;
+			}
+		}
+		else
+		{
+			for (uint32_t p = 0; p < ambiguous_nt.size(); p++)
+			{
+				isequence[ambiguous_nt[p]] = val;
+			}
+		}
+		is03 = !is03;
+		is04 = !is04;
+	}
+} // ~flip34
+
+/* convert to Json string to store in DB */
 std::string Read::matchesToJson() {
 	rapidjson::StringBuffer sbuf;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
@@ -110,6 +370,9 @@ std::string Read::matchesToJson() {
 	return sbuf.GetString();
 } // ~Read::matchesToJsonString
 
+/* 
+ * serialize to binary string to store in DB 
+ */
 std::string Read::toString()
 {
 	if (hits_align_info.alignv.size() == 0)
@@ -142,7 +405,8 @@ std::string Read::toString()
 	return buf;
 } // ~Read::toString
 
-bool Read::restoreFromDb(KeyValueDatabase & kvdb)
+/* deserialize matches from string stored in DB */
+bool Read::load_db(KeyValueDatabase & kvdb)
 {
 	int id_win_hits_len = 0;
 	std::string bstr = kvdb.get(std::to_string(id));
@@ -203,8 +467,9 @@ bool Read::restoreFromDb(KeyValueDatabase & kvdb)
 
 	isRestored = true;
 	return isRestored;
-} // ~Read::restoreFromDb
+} // ~Read::load_db
 
+/* deserialize matches from JSON and populate the read */
 void Read::unmarshallJson(KeyValueDatabase & kvdb)
 {
 	printf("Read::unmarshallJson: Not yet Implemented\n");

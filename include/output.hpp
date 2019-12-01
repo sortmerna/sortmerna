@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "common.hpp"
+#include "kvdb.hpp"
 
 // forward
 struct Index;
@@ -45,11 +46,37 @@ class Refstats;
 struct Readstats;
 struct Runopts;
 
+/**
+ * Summary report (log) data structure
+ */
+class Summary {
+public:
+	Summary() {};
+	~Summary() {};
+
+	std::string to_string(Runopts &opts, Refstats &refstats);
+
+	bool is_de_novo_otu = false;
+	bool is_otumapout = false;
+	std::string cmd;
+	std::string timestamp;
+	std::string pid_str;
+	uint64_t total_reads;
+	uint64_t total_reads_denovo_clustering;
+	uint64_t total_reads_mapped;
+	uint64_t total_reads_mapped_cov;
+	uint32_t min_read_len;
+	uint32_t max_read_len;
+	uint64_t all_reads_len;
+	size_t total_otu;
+	std::vector<std::pair<std::string, float>> db_matches;
+};
+
 class Output {
 public:
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
 	std::ofstream fastaout; // fasta/fastq
-	std::ofstream fastaNonAlignOut; // fasta/fastq non-aligned (other)
+	std::ofstream fasta_other; // fasta/fastq non-aligned (other)
 	std::ofstream samout; // SAM
 	std::ofstream blastout; // BLAST
 	std::ofstream logstream;
@@ -57,13 +84,16 @@ public:
 	std::ofstream biomout;
 
 	// file names
-	std::string fastaOutFile; // fasta/fastq
-	std::string samoutFile; //
-	std::string blastoutFile; // BLAST out file
+	std::string fastaOutFile;
+	std::string samoutFile;
+	std::string blastoutFile;
 	std::string logfile;
 	std::string denovo_otus_file;
 	std::string otumapFile;
 	std::string biomfile;
+	std::string otherfile;
+
+	Summary summary;
 
 	Output(Runopts & opts, Readstats & readstats)
 	{
@@ -86,17 +116,19 @@ public:
 
 	void writeSamHeader(Runopts & opts);
 
-	void report_fasta(Runopts & opts, std::vector<Read> & reads);
-	void report_denovo(Runopts & opts, std::vector<Read> & reads);
+	void report_fasta(Runopts & opts, std::vector<Read> &reads);
+	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
+	void writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats);
 
 	void openfiles(Runopts & opts);
 	void closefiles();
 
 private:
 	void init(Runopts & opts, Readstats & readstats);
+	void write_a_read(std::ofstream& strm, Read& read);
 
 }; // ~class Output
 
 
-void generateReports(Runopts & opts, Readstats & readstats, Output & output);
+void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb);

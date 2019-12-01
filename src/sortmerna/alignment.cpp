@@ -288,7 +288,7 @@ void compute_lis_alignment
 						uint32_t align_length = 0;
 						uint32_t reflen = refs.buffer[max_ref].sequence.length();
 						uint32_t edges = 0;
-						if (opts.as_percent)
+						if (opts.is_as_percent)
 							edges = (((double)opts.edges / 100.0)*read.sequence.length());
 						else
 							edges = opts.edges;
@@ -403,12 +403,12 @@ void compute_lis_alignment
 						if (aligned)
 						{
 							// read has not been yet mapped, set bit to true for this read
-							// (this is the Only place where read_hits must be modified)
+							// (this is the Only place where read_hits can be modified)
 							if (!read.hit)
 							{
 								read.hit = true;
-								readstats.total_reads_mapped++;
-								readstats.reads_matched_per_db[index.index_num]++;
+								++readstats.total_reads_aligned;
+								++readstats.reads_matched_per_db[index.index_num];
 							}
 
 							// add the offset calculated by the LCS (from the beginning of the sequence)
@@ -490,10 +490,10 @@ void compute_lis_alignment
 											read.hits_align_info.max_index = smallest_score_index;
 
 										// decrement number of reads mapped to database with lower score
-										readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num]--;
+										--readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num];
 
 										// increment number of reads mapped to database with higher score
-										readstats.reads_matched_per_db[index.index_num]++;
+										++readstats.reads_matched_per_db[index.index_num];
 
 										// replace an old smallest scored alignment with the new one
 										read.hits_align_info.alignv[smallest_score_index] = copyAlignment(result);
@@ -550,7 +550,7 @@ void compute_lis_alignment
 
 								// update number of alignments to output per read
 								if (opts.num_alignments > 0) {
-									read.num_alignments--; // TODO: why decrement?
+									read.num_alignments--; // when 0 reached, alignment output stops
 								}
 
 								// get the edit distance between reference and read (serves for
@@ -565,21 +565,25 @@ void compute_lis_alignment
 								stringstream ss;
 								ss.precision(3);
 								ss << (double)id / total_pos << ' ' << (double)align_len / read.sequence.length();
+
+								// TODO: ---------------------------------------->
+								// the 'if' below seems to be always false 
 								double align_id_round = 0.0;
 								double align_cov_round = 0.0;
 								ss >> align_id_round >> align_cov_round;
 
 								// the alignment passed the %id and %query coverage threshold
-								// output it (SAM, BLAST and FASTA/Q)
 								if ( align_id_round >= opts.align_id && align_cov_round >= opts.align_cov && read_to_count)
 								{
-									++readstats.total_reads_mapped_cov;
+									if (!readstats.is_total_reads_mapped_cov)
+										++readstats.total_reads_mapped_cov; // also calculated in post-processor 'computeStats'
 									read_to_count = false;
 
 									// do not output read for de novo OTU clustering
 									// it passed the %id/coverage thersholds
-									if (opts.de_novo_otu) read.hit_denovo = false;
+									if (opts.is_de_novo_otu) read.hit_denovo = false;
 								}
+								// <----------------------------------------- TODO
 
 								if (result != 0) 
 								{

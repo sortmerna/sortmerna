@@ -2,30 +2,63 @@
 # FILE: .travis.yml
 # Travis CI build configuration
 #==============================================================================
-dist: xenial
-language: cpp
+
+# 20190708
+#   Build matrix is a Total Mess! Exclude seems to have no action at all. All the
+#   logic of 'include' and 'exclude' is unpredictable.
+#
+#   OSX 'xcode10.2' packages Apple Clang 9.0 based on LLVM 7.0 and doesn't support
+#   <filesystem> at ALL (not even experimental)
+#
+#   LLVM Clang 8.0 screws RocksDB on deprecations and doesn't support <filesystem>
+#
+#   Wait until LLVM 9.0 which should be ready by the end of this year with 
+#   <filesystem> support
+#
+#   For now only build on Linux with GCC
+
+#os:
+#  - linux
+#  - osx
+
+#language: cpp
+#compiler:
+#  - clang
+#  - gcc
+
+#dist: xenial
+#osx_image: xcode10.2
+
+#addons:
+#  apt:
+#    sources:
+#      - ubuntu-toolchain-r-test
+#      - llvm-toolchain-xenial-7
+#    packages:
+#      - gcc-9
+#      - g++-9
+#      - clang-7
+
 #sudo: false # required
 env:
   global:
     - OAUTH=""
-    - STATIC_SFX="static"
     - DO_DEPLOY=0
 
 matrix:
   include:
     - os: linux
       compiler: gcc
+      dist: xenial
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-7
-            - g++-7
-            - dos2unix
-          #  - zlib1g-dev # for RocksDB # build from sources
+            - gcc-9
+            - g++-9
       env:
-        - MATRIX_EVAL="ENV=Linux+gcc-7 && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="ENV=Linux_gcc-9 && CC=gcc-9 && CXX=g++-9"
         - STATIC_LINK=1
         - TEST=0
         - OS_SFX="U16"
@@ -41,251 +74,120 @@ matrix:
           tags: true
           condition: $DO_DEPLOY = 1 && $STATIC_LINK = 1
       
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
+#    - os: linux
+#      compiler: clang
+#      addons:
+#        apt:
+#          sources:
+          #  - ubuntu-toolchain-r-test
           # the latest official clang on Xenial is clang-4.0 [https://packages.ubuntu.com/xenial/devel] => use llvm
-            - llvm-toolchain-xenial-7
+#            - llvm-toolchain-xenial-7
           #  - llvm-toolchain-trusty-6.0
-          packages:
-            - clang-7
-            - dos2unix
-          #  - clang-6.0
-          #  - zlib1g-dev # for RocksDB
-      env:
-        - MATRIX_EVAL="ENV=Linux+LLVM_clang-7 && CC=clang-7 && CXX=clang++-7"
-        # BUG: python 'subprocess.run' has problem with statically linked runtime
-        - STATIC_LINK=0
-        - TEST=1
-        - OS_SFX="U16"
-      #  - MATRIX_EVAL="ENV=Linux+LLVM_clang-6.0 && CC=clang-6.0 && CXX=clang++-6.0"
-      deploy:
-        provider: releases
-        api_key: "${OAUTH}"
-        file: 
-          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.sh
-          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux-${OS_SFX}.deb
-        overwrite: true
-        skip_cleanup: true
-        on:
-          tags: true
-          condition: $DO_DEPLOY = 1 && $STATIC_LINK = 0 
+#          packages:
+#            - clang-7
+#      env:
+#        - MATRIX_EVAL="ENV=Linux_clang-7_LLVM && CC=clang-7 && CXX=clang++-7 && clang --version"
       
-    - os: osx
-      osx_image: xcode9.2 # OS X 10.12 Sierra
-      compiler: clang
-      env:
-        - MATRIX_EVAL="ENV=Osx+clang-9.0-APPL"
-        - STATIC_LINK=0
-        - TEST=0
+#    - os: osx
+#      osx_image: xcode10.2 # xcode9.2 (macOS 10.12) xcode10.2 (macOS 10.14)
+#      compiler: clang
+#      env:
+#        - MATRIX_EVAL="ENV=Osx_clang-9.0_APPL && clang --version"
         #- MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0" # this screws the Miniconda installation
-      deploy:
-        provider: releases
-        api_key: "${OAUTH}"
-        file: 
-          - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.sh
-      #    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Darwin.tar.gz
-        overwrite: true
-        skip_cleanup: true
-        on:
-          tags: true
-          condition: $DO_DEPLOY = 1
       
     # this is probably no different from osx+clang. MAC GCC seems to be just an interface to clang.
-    - os: osx
-      osx_image: xcode9.2 # OS X 10.12 Sierra
-      compiler: gcc
-      env:
-        - MATRIX_EVAL="ENV=Osx+gcc-APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
-        - STATIC_LINK=0
-        - TEST=0
+#    - os: osx
+#      osx_image: xcode10.2 #
+#      compiler: gcc
+#      env:
+#        - MATRIX_EVAL="ENV=Osx_gcc_APPL && CC=gcc && CXX=g++ && gcc --version" # default gcc installed with OSX
         #- MATRIX_EVAL="ENV=Osx+gcc-7 && brew install gcc && brew link --overwrite gcc && CC=gcc-7 && CXX=g++-7" # need to fix conflicts with pre-installed gcc
         
-# does nothing
-  exclude:
-    - os : linux
-      compiler: clang
-      
-    - os : osx
-      compiler: gcc
-
-
 before_install:
   - eval "${MATRIX_EVAL}"
+  # Used to work without this 20190708. Now it stubbornly uses pre-installed older GCC.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9 ;
+      sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60 ;
+    fi
   
 install:
   # $HOME  /home/travis (Linux), /Users/travis (MacOS), /c/Users/travis (Windows)
   - pushd $HOME
-
-  # CMake. Travis' default on Xenial is 3.12.4 -> upgrade to 3.13
+  - env
   - echo $PWD
   - echo $PATH
-  - which cmake
-  - cmake --version
-  # Linux+CLang - use binary distro. Problem building CMake from source
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
-      sudo apt remove cmake; 
-      sudo apt purge --auto-remove cmake;
-      wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2-Linux-x86_64.sh;
-      chmod +x cmake-3.13.2-Linux-x86_64.sh;
-      ./cmake-3.13.2-Linux-x86_64.sh --skip-license;
-      /usr/local/bin/cmake --version;
-      export PATH=/usr/local/bin:$PATH;
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew upgrade cmake;
-      brew install dos2unix;
-    fi
-  # OSX - build from source. Not able to use either cmake-3.13.2-Darwin-x86_64.dmg (image not recognized/non-mountable) 
-  #       or cmake-3.13.2-Darwin-x86_64.tar.gz (tar: Unrecognized archive format)
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
-  #    wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz ;
-  #    tar xzf cmake-3.13.2.tar.gz;
-  #    pushd cmake-3.13.2;
-  #    ./bootstrap;
-  #    make;
-  #    make install;
-  #    ls -l /usr/local/bin/cmake;
-  #  fi
-  - echo $PATH
-  - which cmake
-  - cmake --version
-  - popd
-
-  # Miniconda
-  #- wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh;
-  #- wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh -O miniconda.sh;
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
-    fi
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda update --yes conda
+  - which gcc-9
+  - gcc-9 --version
+  - gcc --version
+  - echo $CC
+  - echo $CXX
+  # Python - Conda. Boot Conda using the existing Python 3
+  - which pyenv
+  - pyenv versions
+  - python3 --version
+  - pyenv global 3.7.1
+  #- pyenv install –-list # errors for some reason. Travis bug.
+  - which python3
+  - python3 --version
+  - which pip3
+  - pip3 --version
+  - pip3 install pyyaml
+  - pip3 install jinja2
+  - python3 $TRAVIS_BUILD_DIR/scripts/build.py --name conda
+  - ls -lrt $HOME
+  - export PATH="$HOME/miniconda3/bin:$PATH"
   - which pip
   - pip install numpy
   - pip install scipy
   - pip install scikit-bio
-  #- conda config --add channels https://conda.anaconda.org/biobuilds
-  #- conda create --yes -n env_name python=3.5 numpy scipy
-  #- source activate env_name
-#  - pip install scikit-bio==0.2.3
-#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
-#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib rocksdb rapidjson ; fi  # brew install gcc5  cmake is installed by default
-    # C++14
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo apt-get install gcc-7 g++-7 ; fi # -qq g++-7
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "gcc" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 ; fi # '90' priority
-  # for building RocksDB
-#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zlib1g-dev ; fi # libgflags-dev libsnappy-dev libbz2-dev libzstd-dev  cmake installed by default
 
-script:
-  - echo "TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}" # /home/travis/build/biocore/sortmerna
-  - pushd "${TRAVIS_BUILD_DIR}"
-
-  # Install 3rd party libraries
-  - pushd ./3rdparty;
-
-  # rapidjson
-  - git clone https://github.com/Tencent/rapidjson.git
-  - mkdir -p rapidjson/build/Release
-  - pushd rapidjson/build/Release
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DRAPIDJSON_BUILD_EXAMPLES=OFF \
-    -DRAPIDJSON_BUILD_DOC=OFF \
-    -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
-  - cmake --build .
-  - cmake --build . --target install
+  - which cmake
+  - cmake --version
+  #
+  # Upgrade CMake
+  #
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
+      CMAKE_SH=cmake-${CMAKE_VER}-Linux-x86_64.sh ;
+      wget ${CMAKE_URL}/v${CMAKE_VER}/${CMAKE_SH} ;
+      sudo apt remove cmake ; 
+      sudo apt purge --auto-remove cmake ;
+    fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+  #    brew upgrade cmake;
+  #    brew install dos2unix;
+  #  fi
+  - python $TRAVIS_BUILD_DIR/scripts/build.py --name cmake
+  - ls -lrt $HOME
+  # add CMake to PATH
+  - export PATH="$HOME/$(basename -- $(find $HOME -type d -name 'cmake-*x86_64'))/bin:$PATH"
+  - echo $PATH
+  - which cmake
+  - cmake --version
   - popd
 
-  # ZLib
-  - git clone https://github.com/madler/zlib.git;
-  - mkdir -p zlib/build/Release;
-  - pushd zlib/build/Release;
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=../../dist ../.. ;
-  - cmake --build . ;
-  - cmake --build . --target install;
-  - ls -lrt ../../dist/lib/ ; 
-  - popd;
+script:
+  # check C++17 <filesystem>
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      find /usr/include -type f -name 'filesystem' ;
+      find /usr/lib -type f -name '*fs.a' ;
+    fi
 
-  # RocksDB
-  - git clone https://github.com/facebook/rocksdb.git;
-  - pushd rocksdb
-  - ROCKSDB_RELEASE=v5.17.2; git checkout tags/${ROCKSDB_RELEASE}
-  - mkdir -p build/Release;
-  - pushd build/Release;
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=../../dist \
-    -DWITH_ZLIB=1 \
-    -DZLIB_ROOT_DIR=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
-    -DWITH_GFLAGS=0 \
-    -DPORTABLE=1 \
-    -DWITH_TESTS=0 \
-    -DWITH_TOOLS=0 ../.. ;
-    #Trusty: cmake -E env CXXFLAGS="-Wno-error=maybe-uninitialized" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ;
-    #Trusty: cmake -E env CXXFLAGS="-Wno-error=unused-private-field" cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPORTABLE=1 -DWITH_ZLIB=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
-  #- if [[ "$ENV" == "Linux+LLVM_clang-6.0" ]]; then
-  #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist -DWITH_ZLIB=1 -DWITH_GFLAGS=0 -DPORTABLE=1 -DWITH_TESTS=0 -DWITH_TOOLS=0 ../.. ;
-  #  fi
-  - cmake --build . ;
-  - cmake --build . --target install;
-  - popd; # return to rocksdb
-  - popd; # return to 3rdparty
-  - popd; # return to sortmerna
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      ls -lrt /Applications ;
+      find /Applications -type f -name 'filesystem' ;
+      find /Applications -type f -name '*fs.a' ;
+    fi
 
   # build SortmeRNA
-  - mkdir -p build/Release; pushd build/Release;
-  - |
-    cmake -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPORTABLE=${STATIC_LINK} \
-    -DWITH_RUNTIME_DEBUG=0 \
-    -DWITH_TESTS=1 \
-    -DZLIB_STATIC=1 \
-    -DROCKSDB_STATIC=1 \
-    -DZLIB_ROOT=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist \
-    -DZLIB_LIBRARY_RELEASE=${TRAVIS_BUILD_DIR}/3rdparty/zlib/dist/lib/libz.a \
-    -DROCKSDB_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rocksdb/dist \
-    -DRAPIDJSON_HOME=${TRAVIS_BUILD_DIR}/3rdparty/rapidjson/dist \
-    -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/dist \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-    -DCPACK_BINARY_TGZ=1 ../.. ;
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
-  #    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DEXTRA_CXX_FLAGS_RELEASE="-pthread" ../.. ; 
-  #  fi
-  - cmake --build . ;
-  - cmake --build . --target install;
-  - cmake --build . --target package;
-  - popd; # return to sortmerna/
+  - python $TRAVIS_BUILD_DIR/scripts/build.py --name all
 
   # run tests
-  - export PATH="$PWD/dist/bin:$PATH"
-  - find $PWD/dist -type f | xargs ls -lh
-  - if [[ ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "linux" ]]; then
-      ldd $PWD/dist/bin/sortmerna;
-    fi
-  - if [[ ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "osx" ]]; then
-      otool -L $PWD/dist/bin/sortmerna;
-    fi
-  - sortmerna --version
-  - sortmerna -h
-  - if [[ ${TEST} == 1 ]]; then 
-      find ./tests/data -type f -name '*.fasta' -o -name '*.fastq' | xargs dos2unix ;
-      python ./tests/test_sortmerna.py; 
-    fi
-  #- if [[ ${TEST} == 1 ]]; then python ./tests/test_sortmerna_zlib.py; fi
+  #- export PATH="$PWD/dist/bin:$PATH"
+  #- sortmerna --version
+  #- sortmerna -h
+  #- if [[ "$ENV" == "Linux+clang-7_LLVM" ]]; then python ./tests/test_sortmerna.py; fi
+  #- if [[ "$ENV" == "Linux+gcc-7" ]]; then python ./tests/test_sortmerna_zlib.py; fi
 
 #after_success:
 
@@ -306,20 +208,21 @@ before_deploy:
   #- |
   #  xtag=$(git describe --exact-match HEAD 2>/dev/null); \
   #  if [[ ! -z "$xtag" ]]; then SMR_VER="${xtag:1}"; fi
+  - echo "Deploying SMR version [${TRAVIS_TAG:1}]"
+  - pwd
+  - env
 
 # This fails with "401 - Bad credentials // See: https://developer.github.com/v3 (Octokit::Unauthorized)"
 # useless until the 'org' to 'com' migration is done.
-# NOTE: supposed to be overridden by the matrix:include:deploy. Keeping here just for reference
-deploy:
-  provider: releases
-  api_key: "${OAUTH}"
-  file: 
-    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
-    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.deb
+#deploy:
+#  provider: releases
+#  api_key: "GITHUB OAUTH TOKEN"
+#  file: 
+#    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.sh
 #    - ${TRAVIS_BUILD_DIR}/dist/sortmerna-${TRAVIS_TAG:1}-Linux.tar.gz
-  overwrite: true
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: ${STATIC_LINK} == 0 && "$TRAVIS_OS_NAME" == "linux"
+#  overwrite: true
+#  skip_cleanup: true
+#  on:
+#    tags: true
+#    condition: $ENV = "Linux+LLVM_clang-7"
 ## END .travis.yml

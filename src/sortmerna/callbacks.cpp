@@ -28,24 +28,24 @@ void reportsJob(
 )
 {
 	// only needs one loop through all read, no reference file dependency
-	if (opts.fastxout && refs.num == 0 && refs.part == 0) 
+	if (opts.is_fastx && refs.num == 0 && refs.part == 0)
 	{
 		output.report_fasta(opts, reads);
 	}
 
 	// only needs one loop through all read, no reference file dependency
-	if (opts.de_novo_otu && refs.num == 0 && refs.part == 0) {
+	if (opts.is_de_novo_otu && refs.num == 0 && refs.part == 0) {
 		output.report_denovo(opts, reads);
 	}
 
 	for (Read read : reads)
 	{
-		if (opts.blastout)
+		if (opts.is_blast)
 		{
 			output.report_blast(opts, refstats, refs, read);
 		}
 
-		if (opts.samout)
+		if (opts.is_sam)
 		{
 			output.report_sam(opts, refs, read);
 		}
@@ -94,17 +94,17 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 				// alignment with the highest SW score passed %id and %coverage thresholds
 				if (align_id_round >= opts.align_id && align_cov_round >= opts.align_cov)
 				{
-					// increment number of reads passing identity and coverage threshold
-					++readstats.total_reads_mapped_cov;
+					if (!readstats.is_total_reads_mapped_cov)
+						++readstats.total_reads_mapped_cov; // if not already calculated.
 
 					// TODO: this check is already performed during alignment (alignmentCb and compute_lis_alignment) 
 					//       for (opts.num_alignments > -1)
 					//  here for (opts.num_alignments == -1)
 					// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
-					if (opts.de_novo_otu) read.hit_denovo = false;
+					if (opts.is_de_novo_otu) read.hit_denovo = false;
 
 					// fill OTU map with highest-scoring alignment for the read
-					if (opts.otumapout)
+					if (opts.is_otu_map)
 					{
 						// reference sequence identifier for mapped read
 						std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
@@ -129,9 +129,13 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 	}//~for all alignments
 
 	// only call once per read, on the last index/part
-	if ( opts.de_novo_otu && 
-		refs.num == opts.indexfiles.size() - 1 && refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 &&
-		read.hit && read.hit_denovo )
+	if ( opts.is_de_novo_otu
+		&& refs.num == opts.indexfiles.size() - 1 
+		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 
+		&& read.hit 
+		&& read.hit_denovo )
+	{
 		++readstats.total_reads_denovo_clustering;
+	}
 
 } // ~computeStats

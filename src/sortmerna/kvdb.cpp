@@ -4,9 +4,22 @@
  * @copyright 2016-19 Clarity Genomics BVBA
  */
 #include "kvdb.hpp"
+#include "common.hpp"
 
-KeyValueDatabase::KeyValueDatabase(const std::string& kvdbPath) : kvdb(0)
+#include <iostream>
+#include <filesystem>
+
+KeyValueDatabase::KeyValueDatabase(std::string const &kvdbPath) 
 {
+	auto exists = std::filesystem::exists(kvdbPath);
+	auto is_empty = std::filesystem::is_empty(kvdbPath);
+	if (exists && !is_empty)
+	{
+		std::cout << STAMP << "Path '" << kvdbPath << "' exists with the following content:" << std::endl;
+
+		for (auto& subpath : std::filesystem::directory_iterator(kvdbPath))
+			std::cout << subpath.path().filename() << std::endl;
+	}
 	// init and open key-value database for read matches
 	options.IncreaseParallelism();
 #if defined(_WIN32)
@@ -19,6 +32,14 @@ KeyValueDatabase::KeyValueDatabase(const std::string& kvdbPath) : kvdb(0)
 	assert(s.ok());
 }
 
+/* 
+ * Remove database files from the given location
+ */
+int KeyValueDatabase::clear(std::string dbpath)
+{
+	return 0;
+} // ~KeyValueDatabase::clear
+
 void KeyValueDatabase::put(std::string key, std::string val)
 {
 	rocksdb::Status s = kvdb->Put(rocksdb::WriteOptions(), key, val);
@@ -30,11 +51,3 @@ std::string KeyValueDatabase::get(std::string key)
 	rocksdb::Status s = kvdb->Get(rocksdb::ReadOptions(), key, &val);
 	return val;
 }
-
-/* 
- * Remove database files from the given location
- */
-int KeyValueDatabase::clear(std::string dbpath)
-{
-	return 0;
-} // ~KeyValueDatabase::clear
