@@ -13,6 +13,9 @@
 #include "read.hpp"
 #include "references.hpp"
 
+alignment_struct2::alignment_struct2() : max_size(0), min_index(0), max_index(0) 
+{}
+
 /**
  * construct from the binary string stored in DB
  */
@@ -67,6 +70,21 @@ std::string alignment_struct2::toString()
 	return buf;
 } // ~toString
 
+size_t alignment_struct2::getSize() {
+	size_t ret = sizeof(min_index) + sizeof(max_index);
+	for (std::vector<s_align2>::iterator it = alignv.begin(); it != alignv.end(); ++it)
+		ret += it->size();
+	return ret;
+}
+
+void alignment_struct2::clear()
+{
+	max_size = 0;
+	min_index = 0;
+	max_index = 0;
+	alignv.clear();
+}
+
 Read::Read()
 	:
 	id(0),
@@ -78,7 +96,16 @@ Read::Read()
 	is04(false),
 	isRestored(false),
 	lastIndex(0),
-	lastPart(0)
+	lastPart(0),
+	reversed(false),
+	hit(false),
+	hit_denovo(true),
+	null_align_output(false),
+	max_SW_count(0),
+	num_alignments(0),
+	readhit(0),
+	best(0),
+	format(Format::FASTA)
 {}
 
 Read::~Read(){}
@@ -174,8 +201,9 @@ void Read::generate_id(Runopts &opts)
 /**
  * 5 options are used here, which would make this method to take 7 args => use Runopts as arg
  */
-void Read::init(Runopts & opts)
+void Read::init(Runopts & opts, uint8_t readfile_num)
 {
+	this->readfile_num = readfile_num;
 	generate_id(opts);
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
@@ -342,7 +370,9 @@ std::string Read::matchesToJson() {
 	return sbuf.GetString();
 } // ~Read::matchesToJsonString
 
-/* serialize the data to binary string to store in DB */
+/* 
+ * serialize to binary string to store in DB 
+ */
 std::string Read::toString()
 {
 	if (hits_align_info.alignv.size() == 0)
