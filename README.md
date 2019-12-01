@@ -87,6 +87,7 @@ sortmerna -h
 * The only required options are `--ref` and `--reads`
 * Options (any) can be specified usig a single dash e.g. `-ref` and `-reads`
 * Both unarchived `fasta/fastq` and archived `fasta.gz/fastq.gz` files are accepted
+* Relative paths are accepted
 
 for example
 
