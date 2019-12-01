@@ -162,8 +162,8 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		// WORKDIR/out/other.fasta
 		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx);
 		otherfile = fpath.string();
-		fastaNonAlignOut.open(otherfile);
-		fastaNonAlignOut.close();
+		fasta_other.open(otherfile);
+		fasta_other.close();
 	}
 } // ~Output::init
 
@@ -565,11 +565,10 @@ void Output::report_sam
 } // ~Output::report_sam
 
 /* 
- * prototype outputformats.cpp:report_fasta
- *
  * called on each Read or each 2 reads (if paired)
+ * writes both aliged.fasta and other.fasta (if is_other is selected)
  *
- * @param reads: 1 or 2 reads (if paired)
+ * @param reads: 1 or 2 (paired) reads
  */
 void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 {
@@ -578,70 +577,89 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	// output accepted reads
 	if (opts.is_fastx && fastaout.is_open())
 	{
-		// pair-ended reads
-		if (opts.is_paired_in || opts.is_paired_out)
+		bool is_paired = opts.readfiles.size() == 2; // paired reads
+		if (is_paired)
 		{
-			// either both reads are accepted, or one is accepted and pairedin
-			if ((reads[0].hit && reads[1].hit) ||
-				((reads[0].hit || reads[1].hit) && opts.is_paired_in))
-			{
-				// output aligned read
-				if (opts.is_fastx)
-				{
-					for (Read read: reads)
-					{
-						fastaout << read.header << std::endl << read.sequence << std::endl;
-						if (read.format == Format::FASTQ)
-							fastaout << '+' << std::endl << read.quality << std::endl;
-					}
-				}
-			}//~the read was accepted
-		}//~if paired-in or paired-out
-		else // regular or pair-ended reads don't need to go into the same file
-		{
-			// the read was accepted
-			if (reads[0].hit)
-			{
-				// output aligned read
-				if (opts.is_fastx)
-				{
-					fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
-					if (reads[0].format == Format::FASTQ)
-						fastaout << '+' << std::endl << reads[0].quality << std::endl;
-				}
-			} //~if read was accepted
-		}//~if not paired-in or paired-out
-	}//~if ( ptr_filetype_ar != NULL )
-
-	// output other reads
-	if (opts.is_fastx && fastaNonAlignOut.is_open())
-	{
-		// pair-ended reads
-		if (opts.is_paired_in || opts.is_paired_out)
-		{
-			// neither of the reads were accepted, or exactly one was accepted and pairedout_gv
-			if ((!reads[0].hit && !reads[1].hit) ||
-				((reads[0].hit ^ reads[1].hit) && opts.is_paired_out))
-			{
+			if (!opts.is_paired_in && !opts.is_paired_out) {
+				// only aligned reads go to aligned file
 				for (Read read : reads)
 				{
-					fastaNonAlignOut << read.header << std::endl << read.sequence << std::endl;
-					if (read.format == Format::FASTQ)
-						fastaNonAlignOut << '+' << std::endl << read.quality << std::endl;
+					if (read.hit) {
+						write_a_read(fastaout, read);
+						//fastaout << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fastaout << '+' << std::endl << read.quality << std::endl;
+					}
+					else if (opts.is_other) {
+						write_a_read(fasta_other, read);
+						//fasta_other << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fasta_other << '+' << std::endl << read.quality << std::endl;
+					}
 				}
-			}//~the read was accepted
-		}//~if (pairedin_gv || pairedout_gv)
-		else // output reads single
-		{
-			// the read was accepted
-			if (!reads[0].hit)
-			{
-				fastaNonAlignOut << reads[0].header << std::endl << reads[0].sequence << std::endl;
-				if (reads[0].format == Format::FASTQ)
-					fastaNonAlignOut << '+' << std::endl << reads[0].quality << std::endl;
 			}
-		} // ~ if (!(pairedin_gv || pairedout_gv))
-	} //~if ( opts.fastxout )  
+			else if (opts.is_paired_in) {
+				// if Either is aligned -> aligned
+				if (reads[0].hit || reads[1].hit) {
+					for (Read read : reads)
+					{
+						write_a_read(fastaout, read);
+						//fastaout << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fastaout << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+				else if (opts.is_other) {
+					for (Read read : reads)
+					{
+						write_a_read(fasta_other, read);
+						//fasta_other << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fasta_other << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+			}
+			else if (opts.is_paired_out) {
+				// if Both aligned -> aligned
+				if (reads[0].hit && reads[1].hit) {
+					for (Read read : reads)
+					{
+						write_a_read(fastaout, read);
+						//fastaout << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fastaout << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+				// both non-aligned and is_other -> other
+				else if (opts.is_other) {
+					for (Read read : reads)
+					{
+						write_a_read(fasta_other, read);
+						//fasta_other << read.header << std::endl << read.sequence << std::endl;
+						//if (read.format == Format::FASTQ)
+						//	fasta_other << '+' << std::endl << read.quality << std::endl;
+					}
+				}
+			}
+		}//~if paired
+		else // non-paired
+		{
+			// the read was accepted - output
+			if (reads[0].hit)
+			{
+				write_a_read(fastaout, reads[0]);
+				//fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				//if (reads[0].format == Format::FASTQ)
+				//	fastaout << '+' << std::endl << reads[0].quality << std::endl;
+			} //~if read was accepted
+			else if (opts.is_other) {
+				write_a_read(fasta_other, reads[0]);
+				//fasta_other << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				//if (reads[0].format == Format::FASTQ)
+				//	fasta_other << '+' << std::endl << reads[0].quality << std::endl;
+			}
+		}//~if not paired-in or paired-out
+	}//~if is_fastx 
 } // ~Output::report_fasta
 
 void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
@@ -736,10 +754,10 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fastx && opts.is_other && !fastaNonAlignOut.is_open())
+	if (opts.is_fastx && opts.is_other && !fasta_other.is_open())
 	{
-		fastaNonAlignOut.open(otherfile, std::ios::app | std::ios::binary);
-		if (!fastaNonAlignOut.good())
+		fasta_other.open(otherfile, std::ios::app | std::ios::binary);
+		if (!fasta_other.good())
 		{
 			ss.str("");
 			ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << otherfile << "] for writing.";
@@ -766,7 +784,7 @@ void Output::closefiles()
 	if (blastout.is_open()) { blastout.flush(); blastout.close(); }
 	if (samout.is_open()) { samout.flush(); samout.close(); }
 	if (fastaout.is_open()) { fastaout.flush(); fastaout.close(); }
-	if (fastaNonAlignOut.is_open()) { fastaNonAlignOut.flush(); fastaNonAlignOut.close(); }
+	if (fasta_other.is_open()) { fasta_other.flush(); fasta_other.close(); }
 	if (denovoreads.is_open()) { denovoreads.flush(); denovoreads.close(); }
 
 	std::cout << STAMP << "Flushed and closed" << std::endl;
@@ -790,7 +808,7 @@ void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
 		summary.is_de_novo_otu = opts.is_de_novo_otu;
 		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
 	}
-	summary.total_reads_mapped = readstats.total_reads_mapped.load();
+	summary.total_reads_mapped = readstats.total_reads_aligned.load();
 	summary.min_read_len = readstats.min_read_len.load();
 	summary.max_read_len = readstats.max_read_len.load();
 	summary.all_reads_len = readstats.all_reads_len;
@@ -855,6 +873,13 @@ void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
 #endif
 	logstream.close();
 } // ~Output::writeLog
+
+void Output::write_a_read(std::ofstream& strm, Read& read)
+{
+	strm << read.header << std::endl << read.sequence << std::endl;
+	if (read.format == Format::FASTQ)
+		strm << '+' << std::endl << read.quality << std::endl;
+}
 
 std::string Summary::to_string(Runopts &opts, Refstats &refstats)
 {
