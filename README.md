@@ -84,9 +84,14 @@ sortmerna -h
 
 ## Running
 
-The only required options are `--ref` and `--reads` e.g.
+* The only required options are `--ref` and `--reads`
+* Options (any) can be specified usig a single dash e.g. `-ref` and `-reads`
+* Both unarchived `fasta/fastq` and archived `fasta.gz/fastq.gz` files are accepted
+
+for example
 
 ```
+# single reference and single reads file
 sortmerna --ref REF_PATH --reads READS_PATH
 
 # for multiple references use multiple '--ref'
