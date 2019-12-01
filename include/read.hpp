@@ -24,25 +24,14 @@ struct alignment_struct2
 	uint32_t max_index; // index into alignv for the reference with highest SW alignment score (see 'compute_lis_alignment')
 	std::vector<s_align2> alignv;
 
-	alignment_struct2() : max_size(0), min_index(0), max_index(0) {}
-
+	// constructors
+	alignment_struct2();
 	alignment_struct2(std::string); // create from binary string
 
+	// member functions
 	std::string toString(); // convert to binary string
-	size_t getSize() { 
-		size_t ret = sizeof(min_index) + sizeof(max_index);
-		for (std::vector<s_align2>::iterator it = alignv.begin(); it != alignv.end(); ++it)
-			ret += it->size();
-		return ret;
-	}
-
-	void clear()
-	{
-		max_size = 0;
-		min_index = 0;
-		max_index = 0;
-		alignv.clear();
-	}
+	size_t getSize();
+	void clear();
 };
 
 /* 
@@ -60,7 +49,7 @@ class Read
 {
 public:
 	std::size_t id; // Read ID: hash combinations of read_num and readsfile
-	std::size_t read_num; // Read number in the reads file. Use as key into Key-value Database.
+	std::size_t read_num; // Read number in the reads file
 	uint8_t readfile_num; // index into Runopts::readfiles
 	bool isValid; // flags the record valid/non-valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
@@ -75,27 +64,27 @@ public:
 
 	// calculated
 	std::string isequence; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
-	bool reversed = false; // indicates the read is reverse-complement i.e. 'revIntStr' was applied
+	bool reversed; // indicates the read is reverse-complement i.e. 'revIntStr' was applied
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
 	// store in database ------------>
 	unsigned int lastIndex; // last index number this read was aligned against. Set in Processor::callback
 	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
-	bool hit = false; // indicates a match for this Read has been found
-	bool hit_denovo = true; // hit & !(%Cov & %ID) TODO: change this to 'hit_cov_id' because it's set to true if !(%Cov & %ID) regardless of 'hit'
-	bool null_align_output = false; // flags NULL alignment was output to file (needs to be done once only)
-	uint16_t max_SW_count = 0; // count of matches that have Max Smith-Waterman score for this read
-	int32_t num_alignments = 0; // number of alignments to output per read
-	uint32_t readhit = 0; // number of seeds matches between read and database. (? readhit == id_win_hits.size)
-	int32_t best = 0; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
+	bool hit; // indicates a match for this Read has been found
+	bool hit_denovo; // hit & !(%Cov & %ID) TODO: change this to 'hit_cov_id' because it's set to true if !(%Cov & %ID) regardless of 'hit'
+	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
+	uint16_t max_SW_count; // count of matches that have Max Smith-Waterman score for this read
+	int32_t num_alignments; // number of alignments to output per read
+	uint32_t readhit; // number of seeds matches between read and database. (? readhit == id_win_hits.size)
+	int32_t best; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
 
 	std::vector<id_win> id_win_hits; // [1] positions of hits on the reference sequence in given index/part
 
 	alignment_struct2 hits_align_info; // stored in DB
 
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
-	// <------------------------------ END store in database
+	// <---- END store in database
 
 public:
 	Read();
@@ -109,7 +98,7 @@ public:
 	void initScoringMatrix(long match, long mismatch, long score_N);
 	void validate();
 	void clear();
-	void init(Runopts & opts);
+	void init(Runopts & opts, uint8_t readfile_num);
 	std::string matchesToJson();
 	void unmarshallJson(KeyValueDatabase & kvdb);
 	std::string toString();

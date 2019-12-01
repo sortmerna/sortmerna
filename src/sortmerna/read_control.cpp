@@ -33,6 +33,7 @@ void ReadControl::run()
 	std::stringstream ss;
 
 	size_t read_cnt = 0;
+	std::size_t num_aligned = 0; // count of aligned reads (passing E-value)
 	bool done_fwd = false;
 	bool done_rev = false;
 	uint8_t IDX_FWD_READS = 0;
@@ -80,10 +81,11 @@ void ReadControl::run()
 
 			if (!read.isEmpty)
 			{
-				read.init(opts);
+				read.init(opts, IDX_FWD_READS);
 				read.load_db(kvdb); // get matches from Key-value database
 				//unmarshallJson(kvdb); // get matches from Key-value database
 				++read_cnt; // save because push(read) uses move(read)
+				if (read.hit) ++num_aligned;
 				readQueue.push(read);
 			}
 		}
@@ -94,9 +96,10 @@ void ReadControl::run()
 
 			if (!read.isEmpty)
 			{
-				read.init(opts);
+				read.init(opts, IDX_REV_READS);
 				read.load_db(kvdb); // get matches from Key-value database
 				++read_cnt;
+				if (read.hit) ++num_aligned;
 				readQueue.push(read);
 			}
 		}
@@ -109,6 +112,7 @@ void ReadControl::run()
 	ss.str("");
 	ss << STAMP << "thread: " << std::this_thread::get_id() << " done. Elapsed time: "
 		<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_cnt
+		<< " Num aligned reads (passing E-value): " << num_aligned
 		<< " readQueue.size: " << readQueue.size() << std::endl;
 	std::cout << ss.str();
 

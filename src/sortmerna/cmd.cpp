@@ -100,7 +100,7 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 		{
 			KeyValueDatabase kvdb(opts.kvdbPath);
 			read.clear();
-			read.init(opts);
+			read.init(opts, 0); // TODO: pass the required reads file number i.e. 0 or 1 to generate a correct read.id
 			ss << read.matchesToJson() << std::endl;
 		}
 		else

@@ -403,11 +403,11 @@ void compute_lis_alignment
 						if (aligned)
 						{
 							// read has not been yet mapped, set bit to true for this read
-							// (this is the Only place where read_hits must be modified)
+							// (this is the Only place where read_hits can be modified)
 							if (!read.hit)
 							{
 								read.hit = true;
-								++readstats.total_reads_mapped;
+								++readstats.total_reads_aligned;
 								++readstats.reads_matched_per_db[index.index_num];
 							}
 

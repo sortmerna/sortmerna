@@ -35,7 +35,7 @@ Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
 	:
 	min_read_len(MAX_READ_LEN),
 	max_read_len(0),
-	total_reads_mapped(0),
+	total_reads_aligned(0),
 	total_reads_mapped_cov(0),
 	all_reads_count(0),
 	all_reads_len(0),
@@ -261,7 +261,7 @@ std::string Readstats::toBstring()
 	// max_read_len
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_read_len)), sizeof(max_read_len), std::back_inserter(buf));
 	// total_reads_mapped (atomic int)
-	auto val = total_reads_mapped.load();
+	auto val = total_reads_aligned.load();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// total_reads_mapped_cov (atomic int)
 	val = total_reads_mapped_cov.load();
@@ -296,7 +296,7 @@ std::string Readstats::toString()
 		<< " max_read_len= " << max_read_len
 		<< " all_reads_count= " << all_reads_count
 		<< " all_reads_len= " << all_reads_len
-		<< " total_reads_mapped= " << total_reads_mapped
+		<< " total_reads_mapped= " << total_reads_aligned
 		<< " total_reads_mapped_cov= " << total_reads_mapped_cov
 		<< " reads_matched_per_db= " << "TODO"
 		<< " is_total_reads_mapped_cov= " << is_total_reads_mapped_cov
@@ -331,7 +331,7 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		// total_reads_mapped
 		uint64_t val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		total_reads_mapped = val;
+		total_reads_aligned = val;
 		offset += sizeof(val);
 		// total_reads_mapped_cov
 		val = 0;

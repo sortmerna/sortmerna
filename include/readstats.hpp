@@ -44,7 +44,7 @@ struct Readstats
 
 	std::atomic<uint32_t> min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
 	std::atomic<uint32_t> max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
-	std::atomic<uint64_t> total_reads_mapped; // total number of reads mapped passing E-value threshold. Set in 'compute_lis_alignment'
+	std::atomic<uint64_t> total_reads_aligned; // total number of reads passing E-value threshold. Set in 'compute_lis_alignment'
 	std::atomic<uint64_t> total_reads_mapped_cov; // [2] total number of reads mapped passing E-value, %id, %query coverage thresholds
 
 	uint64_t all_reads_count; // [1] total number of reads in file. Non-sync. 'Readstats::calculate'
@@ -55,7 +55,7 @@ struct Readstats
 	std::map<std::string, std::vector<std::string>> otu_map; // [5] Populated in 'computeStats' post-processor callback
 
 	bool is_stats_calc; // flags 'computeStats' was called. Set in 'postProcess'
-	bool is_total_reads_mapped_cov; // flag 'total_reads_mapped_cov' was calculated
+	bool is_total_reads_mapped_cov; // flag 'total_reads_mapped_cov' was calculated (so no need to calculate no more)
 
 	Readstats(Runopts & opts, KeyValueDatabase &kvdb);
 	~Readstats() {}

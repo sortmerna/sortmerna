@@ -33,6 +33,7 @@ void Processor::run()
 {
 	int countReads = 0;
 	int countProcessed = 0;
+	std::size_t num_aligned = 0; // count of reads with read.hit = true
 	bool alreadyProcessed = false;
 	
 	{
@@ -79,6 +80,7 @@ void Processor::run()
 
 		if (read.isValid && !read.isEmpty) 
 		{
+			if (read.hit) ++num_aligned;
 			writeQueue.push(read);
 		}
 
@@ -90,8 +92,10 @@ void Processor::run()
 
 	{
 		std::stringstream ss;
-		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads
-			<< " reads. Skipped already processed: " << countProcessed << " reads" << std::endl;
+		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() 
+			<< " done. Processed " << countReads
+			<< " reads. Skipped already processed: " << countProcessed << " reads"
+			<< " Aligned reads (passing E-value): " << num_aligned << std::endl;
 		std::cout << ss.str();
 	}
 } // ~Processor::run
@@ -99,6 +103,7 @@ void Processor::run()
 void PostProcessor::run()
 {
 	int countReads = 0;
+	size_t count_reads_aligned = 0;
 
 	{
 		std::stringstream ss;
@@ -121,6 +126,7 @@ void PostProcessor::run()
 
 		callback(read, readstats, refstats, refs, opts);
 		++countReads;
+		if (read.hit) ++count_reads_aligned;
 
 		if (read.isValid && !read.isEmpty && !read.hit_denovo) 
 		{
@@ -132,7 +138,9 @@ void PostProcessor::run()
 
 	{
 		std::stringstream ss;
-		ss << STAMP << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads" << std::endl;
+		ss << STAMP << id << " thread " << std::this_thread::get_id() 
+			<< " done. Processed " << countReads << " reads." 
+			<< " count_reads_aligned: " << count_reads_aligned << std::endl;
 		std::cout << ss.str();
 	}
 } // ~PostProcessor::run
@@ -147,7 +155,7 @@ void ReportProcessor::run()
 		std::cout << ss.str();
 	}
 
-	int cap = opts.is_paired_in || opts.is_paired_out ? 2 : 1;
+	int cap = opts.readfiles.size();
 	std::vector<Read> reads;
 	Read read;
 	int i = 0;
