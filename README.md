@@ -8,8 +8,7 @@ The core algorithm is based on approximate seeds and allows for sensitive analys
 The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
 SortMeRNA takes as input files of reads (fasta, fastq, fasta.gz, fastq.gz) and one or multiple
 rRNA database file(s), and sorts apart aligned and rejected reads into two files.
-Additional applications include clustering and taxonomy assignation available through QIIME v1.9.1
-(http://qiime.org). SortMeRNA works with Illumina, Ion Torrent and PacBio data, and can produce SAM and
+Additional applications include clustering and taxonomy assignation available through [QIIME v1.9.1](http://qiime.org). SortMeRNA works with Illumina, Ion Torrent and PacBio data, and can produce SAM and
 BLAST-like alignments.
 
 # Table of Contents
@@ -86,7 +85,7 @@ sortmerna -h
 
 * The only required options are `--ref` and `--reads`
 * Options (any) can be specified usig a single dash e.g. `-ref` and `-reads`
-* Both unarchived `fasta/fastq` and archived `fasta.gz/fastq.gz` files are accepted
+* Both plain `fasta/fastq` and archived `fasta.gz/fastq.gz` files are accepted
 * Relative paths are accepted
 
 for example
