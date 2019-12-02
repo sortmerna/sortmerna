@@ -112,7 +112,7 @@ void traversetrie_align(
 	UCHAR *win_k1_full /**< pointer to start of structure storing all bitvectors */,
 	bool &accept_zero_kmer /**< if true, if a match is found during forward subsearch, then skip reverse subsearch */,
 	std::vector< id_win > &id_hits /**< vector storing IDs of all candidate L-mers (matching in mini burst trie) */,
-	int64_t readn /**< read number */,
+	//int64_t readn /**< read number */,
 	uint32_t win_num /**< sliding window (seed) number on read */,
 	uint32_t partialwin, /**< */
 	Runopts & opts

@@ -101,7 +101,7 @@ void traversetrie_align(
 	UCHAR *win_k1_full,
 	bool &accept_zero_kmer,
 	std::vector<id_win> &id_hits,
-	int64_t readn, // TODO: never used - remove?
+	//int64_t readn, // TODO: never used - remove?
 	uint32_t win_num,
 	uint32_t partialwin,
 	Runopts & opts
@@ -155,7 +155,7 @@ void traversetrie_align(
 						win_k1_full,
 						accept_zero_kmer,
 						id_hits,
-						readn,
+						//readn,
 						win_num,
 						partialwin,
 						opts

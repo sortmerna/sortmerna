@@ -188,7 +188,7 @@ void alignmentCb
 					size_t vsize = index.lookup_tbl.size();
 					uint16_t idxn = index.index_num;
 					uint16_t idxp = index.part;
-					unsigned int id = read.id;
+					std::string id = read.id;
 					bool is03 = read.is03;
 					bool is04 = read.is04;
 					ss << STAMP
@@ -224,7 +224,7 @@ void alignmentCb
 						&bitvec[offset],
 						accept_zero_kmer,
 						id_hits,
-						read.id,
+						//read.id,
 						win_pos,
 						refstats.partialwin[index.index_num],
 						opts
@@ -252,7 +252,7 @@ void alignmentCb
 						size_t vsize = index.lookup_tbl.size();
 						uint16_t idxn = index.index_num;
 						uint16_t idxp = index.part;
-						unsigned int id = read.id;
+						std::string id = read.id;
 						bool is03 = read.is03;
 						bool is04 = read.is04;
 						ss << STAMP << "Thread: " << std::this_thread::get_id()
@@ -288,7 +288,7 @@ void alignmentCb
 							&bitvec[offset],
 							accept_zero_kmer,
 							id_hits,
-							read.id,
+							//read.id,
 							win_pos,
 							refstats.partialwin[index.index_num], 
 							opts);
