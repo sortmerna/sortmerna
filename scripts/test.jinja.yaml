@@ -367,15 +367,15 @@ t18:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_1.fastq.gz # 2 GB
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_2.fastq.gz # 2 GB
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
   - -v
   - -blast
   - '1 cigar qcov'
   - -sam
   validate:
     func: t18
-    num_reads:
-    num_hits:
-    num_fail:
+    num_reads: 49309188
+    num_hits: 687225
+    num_fail: 48621963
