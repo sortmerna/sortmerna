@@ -38,16 +38,16 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 	std::stringstream ss;
 	bool isok = false;
 
-	std::ifstream ifs(opts.readfiles[read.readfile_num], std::ios_base::in | std::ios_base::binary);
+	std::ifstream ifs(opts.readfiles[read.readfile_idx], std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) 
 	{
-		std::cerr << STAMP << "failed to open " << opts.readfiles[read.readfile_num] << std::endl;
+		std::cerr << STAMP << "failed to open " << opts.readfiles[read.readfile_idx] << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		std::string line;
-		unsigned int read_id = 0; // read ID
+		std::size_t read_num = 0;
 		bool isFastq = true;
 		Gzip gzip(opts.is_gz);
 
@@ -77,7 +77,7 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 				}
 
 				// add header -->
-				if (read_id == read.id)
+				if (read_num == read.read_num)
 				{
 					isFastq = (line[0] == FASTQ_HEADER_START);
 					read.format = isFastq ? Format::FASTQ : Format::FASTA;
@@ -85,7 +85,7 @@ bool Reader::loadReadByIdx(Runopts & opts, Read & read)
 					read.isEmpty = false;
 				}
 				else {
-					++read_id;
+					++read_num;
 					count = 0; // for fastq
 				}
 			} // ~if header line
@@ -128,7 +128,7 @@ bool Reader::loadReadById(Runopts & opts, Read & read)
 /** 
  * return next read from the reads file on each call 
  */
-Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts & opts)
+Read Reader::nextread(std::ifstream &ifs, const uint8_t readsfile_idx, Runopts & opts)
 {
 	std::string line;
 	Read read; // an empty read
@@ -154,7 +154,8 @@ Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts 
 			if (!read.isEmpty)
 			{
 				read.read_num = read_count;
-				read.generate_id(opts);
+				read.readfile_idx = readsfile_idx;
+				read.generate_id();
 				++read_count;
 				is_done = true;
 			}
@@ -163,7 +164,7 @@ Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts 
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from file: [" << readsfile << "]. Exiting..." << std::endl;
+			std::cerr << STAMP << "ERROR reading from file: [" << opts.readfiles[readsfile_idx] << "]. Exiting..." << std::endl;
 			exit(1);
 		}
 
@@ -199,6 +200,8 @@ Read Reader::nextread(std::ifstream &ifs, const std::string &readsfile, Runopts 
 			if (!read.isEmpty)
 			{
 				read.read_num = read_count;
+				read.readfile_idx = readsfile_idx;
+				read.generate_id();
 				++read_count;
 				last_header = line;
 				last_count = 1;

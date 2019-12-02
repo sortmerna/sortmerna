@@ -115,11 +115,7 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 								[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 
 						// read identifier
-						std::string read_seq_str = read.header.substr(0, read.header.find(' '));
-						// left trim '>' or '@'
-						read_seq_str.erase(read_seq_str.begin(),
-							std::find_if(read_seq_str.begin(), read_seq_str.end(),
-								[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+						std::string read_seq_str = read.getSeqId();
 						readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
 					}
 				} // ~if ID and Cov

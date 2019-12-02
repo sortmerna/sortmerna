@@ -100,12 +100,12 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 		{
 			KeyValueDatabase kvdb(opts.kvdbPath);
 			read.clear();
-			read.init(opts, 0); // TODO: pass the required reads file number i.e. 0 or 1 to generate a correct read.id
+			read.init(opts); // TODO: pass the required reads file number i.e. 0 or 1 to generate a correct read.id
 			ss << read.matchesToJson() << std::endl;
 		}
 		else
 		{
-			read.id = std::stoi(readid);
+			read.id = readid;
 			bool isok = Reader::loadReadByIdx(opts, read);
 			ss << "Read load OK " << isok << std::endl;
 		}
@@ -149,7 +149,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 
 	// find half-kmer prefix/suffix matches
 	//
-	read.id = std::stoi(readid);
+	read.id = readid;
 	isok = Reader::loadReadByIdx(opts, read);
 	if (read.sequence.size() > 0 && read.isequence.size() == 0)
 		read.seqToIntStr();
@@ -189,7 +189,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 		&bitvec[offset],
 		accept_zero_kmer,
 		id_hits,
-		read.id,
+		//read.id,
 		std::stoi(posval),
 		refstats.partialwin[index.index_num],
 		opts

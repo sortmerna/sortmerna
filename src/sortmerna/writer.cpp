@@ -40,7 +40,7 @@ void Writer::write()
 		if (!opts.is_dbg_put_kvdb && readstr.size() > 0)
 		{
 			if (read.hit) ++num_aligned;
-			kvdb.put(std::to_string(read.id), readstr);
+			kvdb.put(read.id, readstr);
 		}
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;

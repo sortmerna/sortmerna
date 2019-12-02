@@ -87,9 +87,9 @@ void alignment_struct2::clear()
 
 Read::Read()
 	:
-	id(0),
+	//id(0),
 	read_num(0),
-	readfile_num(0),
+	readfile_idx(0),
 	isValid(false),
 	isEmpty(true),
 	is03(false),
@@ -110,7 +110,7 @@ Read::Read()
 
 Read::~Read(){}
 
-Read::Read(int id, std::string header, std::string sequence, std::string quality, Format format)
+Read::Read(std::string id, std::string header, std::string sequence, std::string quality, Format format)
 	:
 	id(id), header(std::move(header)), sequence(sequence),
 	quality(quality), format(format), isEmpty(false)
@@ -123,7 +123,7 @@ Read::Read(const Read & that)
 {
 	id = that.id;
 	read_num = that.read_num;
-	readfile_num = that.readfile_num;
+	readfile_idx = that.readfile_idx;
 	isValid = that.isValid;
 	isEmpty = that.isEmpty;
 	is03 = that.is03;
@@ -158,7 +158,7 @@ Read & Read::operator=(const Read & that)
 	//printf("Read copy assignment called\n");
 	id = that.id;
 	read_num = that.read_num;
-	readfile_num = that.readfile_num;
+	readfile_idx = that.readfile_idx;
 	isValid = that.isValid;
 	isEmpty = that.isEmpty;
 	is03 = that.is03;
@@ -190,21 +190,26 @@ Read & Read::operator=(const Read & that)
 /** 
  * Generate ID of the read
  */
-void Read::generate_id(Runopts &opts)
+void Read::generate_id()
 {
 	std::stringstream ss;
-	ss << read_num << "_" << std::filesystem::path(opts.readfiles[readfile_num]).filename();
-	std::hash<std::string> hash_fn;
-	id = hash_fn(ss.str());
+	id.clear();
+	ss << readfile_idx << "_" << read_num; // << std::filesystem::path(opts.readfiles[readfile_num]).filename();
+	char buf[4096];
+	while (ss.read(buf, sizeof(buf)))
+		id.append(buf, sizeof(buf));
+	id.append(buf, ss.gcount());
+	//std::hash<std::string> hash_fn;
+	//id = hash_fn(ss.str());
 } // ~Read::generate_id
 
 /**
  * 5 options are used here, which would make this method to take 7 args => use Runopts as arg
  */
-void Read::init(Runopts & opts, uint8_t readfile_num)
+void Read::init(Runopts & opts)
 {
-	this->readfile_num = readfile_num;
-	generate_id(opts);
+	//this->readfile_num = readfile_num;
+	//generate_id();
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
 	validate();
@@ -244,7 +249,7 @@ void Read::validate() {
 
 void Read::clear()
 {
-	id = 0;
+	id.clear();
 	isValid = false;
 	isEmpty = true;
 	is03 = false;
@@ -409,7 +414,7 @@ std::string Read::toString()
 bool Read::load_db(KeyValueDatabase & kvdb)
 {
 	int id_win_hits_len = 0;
-	std::string bstr = kvdb.get(std::to_string(id));
+	std::string bstr = kvdb.get(id);
 	if (bstr.size() == 0) { isRestored = false; return isRestored; }
 	size_t offset = 0;
 

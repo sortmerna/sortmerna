@@ -48,9 +48,9 @@ struct alignment_struct2
 class Read 
 {
 public:
-	std::size_t id; // Read ID: hash combinations of read_num and readsfile
-	std::size_t read_num; // Read number in the reads file
-	uint8_t readfile_num; // index into Runopts::readfiles
+	std::string id; // Read ID: combination of readsfile index and the read index into the readsfile e.g. 0_0, 1_103, etc. Generated upon reading from file.
+	std::size_t read_num; // Read number in the reads file starting from 0
+	uint8_t readfile_idx; // index into Runopts::readfiles
 	bool isValid; // flags the record valid/non-valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
 	bool is03; // indicates Read::isequence is in 0..3 alphabet
@@ -88,17 +88,17 @@ public:
 
 public:
 	Read();
-	Read(int id, std::string header, std::string sequence, std::string quality, Format format);
+	Read(std::string id, std::string header, std::string sequence, std::string quality, Format format);
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment
 	~Read();
 
 public:
-	void generate_id(Runopts &opts);
+	void generate_id();
 	void initScoringMatrix(long match, long mismatch, long score_N);
 	void validate();
 	void clear();
-	void init(Runopts & opts, uint8_t readfile_num);
+	void init(Runopts & opts);
 	std::string matchesToJson();
 	void unmarshallJson(KeyValueDatabase & kvdb);
 	std::string toString();

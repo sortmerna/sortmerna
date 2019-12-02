@@ -25,7 +25,7 @@ public:
 	Reader(std::string id, bool is_gzipped);
 	~Reader();
 
-	Read nextread(std::ifstream &ifs, const std::string &readsfile, Runopts & opts);
+	Read nextread(std::ifstream &ifs, const uint8_t readsfile_idx, Runopts & opts);
 	bool nextread(std::ifstream &ifs, const std::string &readsfile, std::string &seq);
 	void reset();
 	static bool hasnext(std::ifstream& ifs);

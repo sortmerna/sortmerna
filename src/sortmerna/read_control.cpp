@@ -77,11 +77,11 @@ void ReadControl::run()
 		// first push FWD read
 		if (!reader_fwd.is_done)
 		{
-			Read read = reader_fwd.nextread(ifs_fwd, opts.readfiles[IDX_FWD_READS], opts);
+			Read read = reader_fwd.nextread(ifs_fwd, IDX_FWD_READS, opts);
 
 			if (!read.isEmpty)
 			{
-				read.init(opts, IDX_FWD_READS);
+				read.init(opts);
 				read.load_db(kvdb); // get matches from Key-value database
 				//unmarshallJson(kvdb); // get matches from Key-value database
 				++read_cnt; // save because push(read) uses move(read)
@@ -92,11 +92,11 @@ void ReadControl::run()
 		// second push REV read (if paired)
 		if (is_paired && !reader_rev.is_done)
 		{
-			Read read = reader_rev.nextread(ifs_rev, opts.readfiles[IDX_REV_READS], opts);
+			Read read = reader_rev.nextread(ifs_rev, IDX_REV_READS, opts);
 
 			if (!read.isEmpty)
 			{
-				read.init(opts, IDX_REV_READS);
+				read.init(opts);
 				read.load_db(kvdb); // get matches from Key-value database
 				++read_cnt;
 				if (read.hit) ++num_aligned;
