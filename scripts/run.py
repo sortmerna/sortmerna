@@ -863,7 +863,7 @@ if __name__ == "__main__":
     python tests/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     # define platform
     pf = platform.platform()
