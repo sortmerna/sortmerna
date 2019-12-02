@@ -586,15 +586,9 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				{
 					if (read.hit) {
 						write_a_read(fastaout, read);
-						//fastaout << read.header << std::endl << read.sequence << std::endl;
-						//if (read.format == Format::FASTQ)
-						//	fastaout << '+' << std::endl << read.quality << std::endl;
 					}
 					else if (opts.is_other) {
 						write_a_read(fasta_other, read);
-						//fasta_other << read.header << std::endl << read.sequence << std::endl;
-						//if (read.format == Format::FASTQ)
-						//	fasta_other << '+' << std::endl << read.quality << std::endl;
 					}
 				}
 			}
@@ -604,18 +598,12 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 					for (Read read : reads)
 					{
 						write_a_read(fastaout, read);
-						//fastaout << read.header << std::endl << read.sequence << std::endl;
-						//if (read.format == Format::FASTQ)
-						//	fastaout << '+' << std::endl << read.quality << std::endl;
 					}
 				}
 				else if (opts.is_other) {
 					for (Read read : reads)
 					{
 						write_a_read(fasta_other, read);
-						//fasta_other << read.header << std::endl << read.sequence << std::endl;
-						//if (read.format == Format::FASTQ)
-						//	fasta_other << '+' << std::endl << read.quality << std::endl;
 					}
 				}
 			}
@@ -625,9 +613,6 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 					for (Read read : reads)
 					{
 						write_a_read(fastaout, read);
-						//fastaout << read.header << std::endl << read.sequence << std::endl;
-						//if (read.format == Format::FASTQ)
-						//	fastaout << '+' << std::endl << read.quality << std::endl;
 					}
 				}
 				// both non-aligned and is_other -> other
@@ -635,9 +620,6 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 					for (Read read : reads)
 					{
 						write_a_read(fasta_other, read);
-						//fasta_other << read.header << std::endl << read.sequence << std::endl;
-						//if (read.format == Format::FASTQ)
-						//	fasta_other << '+' << std::endl << read.quality << std::endl;
 					}
 				}
 			}
@@ -648,15 +630,9 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			if (reads[0].hit)
 			{
 				write_a_read(fastaout, reads[0]);
-				//fastaout << reads[0].header << std::endl << reads[0].sequence << std::endl;
-				//if (reads[0].format == Format::FASTQ)
-				//	fastaout << '+' << std::endl << reads[0].quality << std::endl;
 			} //~if read was accepted
 			else if (opts.is_other) {
 				write_a_read(fasta_other, reads[0]);
-				//fasta_other << reads[0].header << std::endl << reads[0].sequence << std::endl;
-				//if (reads[0].format == Format::FASTQ)
-				//	fasta_other << '+' << std::endl << reads[0].quality << std::endl;
 			}
 		}//~if not paired-in or paired-out
 	}//~if is_fastx 
