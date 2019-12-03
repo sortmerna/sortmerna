@@ -944,53 +944,64 @@ if __name__ == "__main__":
         print('Deleting: [{}]'.format(RUN_DIR))
         shutil.rmtree(RUN_DIR)
 
-    funcs =  {
-        't0': t0,
-        't0_other' : t0_other,
-        't1': t1,
-        't2': t2,
-        't3': t3,
-        't4': t4,
-        't5': t5,
-        't6': t6,
-        't7': t7,
-        't8': t8,
-        't9': t9,
-        't10': t10,
-        't11': t11,
-        't12': t12,
-        't13': t13,
-        't14': t14,
-        't16': t16,
-        't17': t17,
-        't18': t18
-    }
+    #funcs =  {
+    #    't0': t0,
+    #    't0_other' : t0_other,
+    #    't1': t1,
+    #    't2': t2,
+    #    't3': t3,
+    #    't4': t4,
+    #    't5': t5,
+    #    't6': t6,
+    #    't7': t7,
+    #    't8': t8,
+    #    't9': t9,
+    #    't10': t10,
+    #    't11': t11,
+    #    't12': t12,
+    #    't13': t13,
+    #    't14': t14,
+    #    't16': t16,
+    #    't17': t17,
+    #    't18': t18
+    #}
 
     # id(cfg[opts.name]) # 2409596527368
     # id(cfg[opts.name].insert(0, SMR_EXE)) # 140725283474656
 
-    # tests
-    if funcs.get(opts.name):
-        # clean previous alignments (KVDB)
-        kvdbdir = os.path.join(RUN_DIR, 'kvdb')
-        if os.path.exists(kvdbdir):
-            print('Removing KVDB dir: {}'.format(kvdbdir))
-            shutil.rmtree(kvdbdir)
-        # clean output
-        if OUT_DIR and os.path.exists(OUT_DIR):
-            print('Removing OUT_DIR: {}'.format(OUT_DIR))
-            shutil.rmtree(OUT_DIR)
-        # run alignment
-        print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
-        cfg[opts.name]['cmd'].insert(0, SMR_EXE)
-        is_capture = cfg[opts.name].get('capture', False)
-        ret = run(cfg[opts.name]['cmd'], capture=is_capture)
+    # clean previous alignments (KVDB)
+    kvdbdir = os.path.join(RUN_DIR, 'kvdb')
+    if os.path.exists(kvdbdir):
+        print('Removing KVDB dir: {}'.format(kvdbdir))
+        shutil.rmtree(kvdbdir)
+    # clean output
+    if OUT_DIR and os.path.exists(OUT_DIR):
+        print('Removing OUT_DIR: {}'.format(OUT_DIR))
+        shutil.rmtree(OUT_DIR)
+    # run alignment
+    print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
+    cfg[opts.name]['cmd'].insert(0, SMR_EXE)
+    is_capture = cfg[opts.name].get('capture', False)
+    ret = run(cfg[opts.name]['cmd'], capture=is_capture)
 
-        # validate alignment results
-        if cfg[opts.name].get('validate'):
+    # validate alignment results
+    fn = cfg[opts.name].get('validate', {}).get('func')
+    if fn:
+        gdict = globals().copy()
+        gdict.update(locals())
+        func = gdict.get(fn)
+
+        if func:
             nm = cfg[opts.name]['name']
-            fn = cfg[opts.name]['validate']['func']
-            funcs[fn](nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
+            func(nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
+
+    # tests
+    #if funcs.get(opts.name):
+        # validate alignment results
+    #    if cfg[opts.name].get('validate'):
+    #        nm = cfg[opts.name]['name']
+    #        fn = cfg[opts.name]['validate']['func']
+    #        funcs[fn](nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
     # other funcs
-    elif opts.name == 'to_lf':
-        to_lf(DATA_DIR)
+    #elif opts.name == 'to_lf':
+    #    to_lf(DATA_DIR)

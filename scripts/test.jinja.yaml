@@ -308,15 +308,21 @@ t14:
     func: t14
 
 t15:
-  name: test_paired_reads_input
-  note: 'TODO: remove. Duplicates t5, t6, t7'
+  name: test_threads
+  note:
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
-    - {{ SMR_SRC }}/data/SRR7721017_1_15.fastq
+    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
-    - {{ SMR_SRC }}/data/SRR7721017_2_15.fastq
+    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -num_alignments
+    - '1'
+    - -threads
+    - '6:2:2' # can be any 6 | 6:2 | 6:2:2
+    - '-a' # deprecated. Redirects to 'threads'
+    - '5'
     - -v
 
 #
