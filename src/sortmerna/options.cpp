@@ -848,20 +848,26 @@ void Runopts::opt_N(const std::string &val)
 /* Number Processor threads to use */
 void Runopts::opt_a(const std::string &val)
 {
-	if (val.size() == 0)
-	{
-		ERR(": -a [INT] requires an integer for number of Processor threads (ex. -a 8)");
-		exit(EXIT_FAILURE);
-	}
-
-	num_proc_thread = std::stoi(val);
+	WARN("Option '-a' was Deprecated in favour of '-threads'. Redirecting to 'threads' ...");
+	//if (val.size() == 0)
+	//{
+	//	ERR(": -a [INT] requires an integer for number of Processor threads (ex. -a 8)");
+	//	exit(EXIT_FAILURE);
+	//}
+	opt_threads(val);
+	//num_proc_thread = std::stoi(val);
 } // ~Runopts::opt_a_numProcThreads
 
-/* Number of threads to use */
+/* Number of threads to use 
+ * @param val INT[:INT[:INT]] e.g. 8 | 8:1 | 8:1:1 i.e. takes at least one integer value
+ *                                 |     |       |_ write threads (future)
+ *                                 |     |_ read threads (future)
+ *                                 |_ processor threads
+ */
 void Runopts::opt_threads(const std::string &val)
 {
-	std::string msg = ": --threads [INT:INT:INT] requires 3 integers for number of "
-		"Read:Write:Processor threads (ex. --threads 1:1:8)";
+	std::string msg = "'-threads INT' requires an integer for number of "
+		"Processing threads e.g. '-threads 8'. Default value equals the Number of CPUs or CPU cores";
 	std::istringstream strm(val);
 	std::string tok;
 
@@ -870,22 +876,28 @@ void Runopts::opt_threads(const std::string &val)
 		ERR(msg);
 		exit(EXIT_FAILURE);
 	}
-	else
-	{
-		auto n = std::count(val.begin(), val.end(), ':');
-		if (n != 2) {
-			ERR(msg);
-			exit(EXIT_FAILURE);
-		}
-	}
+	//else
+	//{
+	//	auto n = std::count(val.begin(), val.end(), ':');
+	//	if (n != 2) {
+	//		ERR(msg);
+	//		exit(EXIT_FAILURE);
+	//	}
+	//}
 
 	for (int i = 0; std::getline(strm, tok, ':'); ++i)
 	{
 		switch (i)
 		{
-		case 0: num_read_thread = std::stoi(tok); break;
-		case 1: num_write_thread = std::stoi(tok); break;
-		case 2: num_proc_thread = std::stoi(tok); break;
+		case 0: num_proc_thread = std::stoi(tok); break;
+		case 1: 
+			WARN("Using more than a single Read thread is reserved for future implementation. Now using 1 thread");
+			//num_read_thread = std::stoi(tok); 
+			break;
+		case 2:
+			WARN("Using more than a single Write thread is reserved for future implementation. Now using 1 thread");
+			//num_write_thread = std::stoi(tok); 
+			break;
 		}
 	}
 } // ~Runopts::opt_threads

@@ -202,9 +202,11 @@ help_task =
 help_d 
 	= "key-value datastore FULL folder path.              WORKDIR/kvdb/",
 help_a = 
-	"Number of threads to use                                numCores",
+	"DEPRECATED in favour of '-threads'. Number of           numCores\n"
+	"                                            processing threads to use."
+	"                                            Automatically redirects to '-threads'",
 help_threads = 
-	"Number of Read:Write:Process threads to use             1:1:numCores",
+	"Number of Processing threads to use                     numCores",
 help_thpp = 
 	"Number of Post-Processing Read:Process threads to use   1:1",
 help_threp = 
@@ -214,7 +216,7 @@ help_tmpdir =
 	"                                            building the reference index",
 help_interval = 
 	"Indexing: Positive integer: index every Nth L-mer in    1\n"
-	"                                            the reference database e.g. '--interval 2'.",
+	"                                            the reference database e.g. '-interval 2'.",
 help_m = 
 	"Indexing: the amount of memory (in Mbytes) for building 3072\n"
 	"                                            the index.",
@@ -454,7 +456,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 45> options = {
+	const std::array<opt_6_tuple, 43> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
@@ -473,7 +475,6 @@ private:
 		std::make_tuple(OPT_MISMATCH,       "INT",         COMMON,      false, help_mismatch, &Runopts::opt_mismatch),
 		std::make_tuple(OPT_GAP_OPEN,       "INT",         COMMON,      false, help_gap_open, &Runopts::opt_gap_open),
 		std::make_tuple(OPT_GAP_EXT,        "INT",         COMMON,      false, help_gap_ext, &Runopts::opt_gap_ext),
-		std::make_tuple(OPT_A,              "INT",         COMMON,      false, help_a, &Runopts::opt_a),
 		std::make_tuple(OPT_E,              "DOUBLE",      COMMON,      false, help_e, &Runopts::opt_e),
 		std::make_tuple(OPT_F,              "BOOL",        COMMON,      false, help_F, &Runopts::opt_F),
 		std::make_tuple(OPT_N,              "BOOL",        COMMON,      false, help_N, &Runopts::opt_N),
@@ -487,6 +488,8 @@ private:
 		std::make_tuple(OPT_NUM_SEEDS,      "BOOL",        ADVANCED,    false, help_num_seeds, &Runopts::opt_num_seeds),
 		std::make_tuple(OPT_FULL_SEARCH,    "INT",         ADVANCED,    false, help_full_search, &Runopts::opt_full_search),
 		std::make_tuple(OPT_PID,            "BOOL",        ADVANCED,    false, help_pid, &Runopts::opt_pid),
+		std::make_tuple(OPT_A,              "INT",         ADVANCED,    false, help_a, &Runopts::opt_a),
+		std::make_tuple(OPT_THREADS,        "INT",         ADVANCED,    false, help_threads, &Runopts::opt_threads),
 		std::make_tuple(OPT_L,              "DOUBLE",      INDEXING,    false, help_L, &Runopts::opt_L),
 		std::make_tuple(OPT_M,              "DOUBLE",      INDEXING,    false, help_m, &Runopts::opt_m),
 		std::make_tuple(OPT_V,              "BOOL",        INDEXING,    false, help_v, &Runopts::opt_v),
@@ -496,10 +499,9 @@ private:
 		std::make_tuple(OPT_VERSION,        "BOOL",        HELP,        false, help_version, &Runopts::opt_version),
 		std::make_tuple(OPT_DBG_PUT_DB,     "BOOL",        DEVELOPER,   false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
 		std::make_tuple(OPT_CMD,            "BOOL",        DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
-		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task),
-		std::make_tuple(OPT_THREADS,        "INT:INT:INT", DEVELOPER,   false, help_threads, &Runopts::opt_threads),
-		std::make_tuple(OPT_THPP,           "INT:INT",     DEVELOPER,   false, help_thpp, &Runopts::opt_thpp),
-		std::make_tuple(OPT_THREP,          "INT:INT",     DEVELOPER,   false, help_threp, &Runopts::opt_threp)
+		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task)
+		//std::make_tuple(OPT_THPP,           "INT:INT",     DEVELOPER,   false, help_thpp, &Runopts::opt_thpp),
+		//std::make_tuple(OPT_THREP,          "INT:INT",     DEVELOPER,   false, help_threp, &Runopts::opt_threp)
 	};
 	// ~map options
 }; // ~struct Runopts
