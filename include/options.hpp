@@ -203,7 +203,7 @@ help_d
 	= "key-value datastore FULL folder path.              WORKDIR/kvdb/",
 help_a = 
 	"DEPRECATED in favour of '-threads'. Number of           numCores\n"
-	"                                            processing threads to use."
+	"                                            processing threads to use.\n"
 	"                                            Automatically redirects to '-threads'",
 help_threads = 
 	"Number of Processing threads to use                     numCores",
