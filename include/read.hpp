@@ -95,7 +95,7 @@ public:
 
 public:
 	void generate_id();
-	void initScoringMatrix(long match, long mismatch, long score_N);
+	void initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N);
 	void validate();
 	void clear();
 	void init(Runopts & opts);

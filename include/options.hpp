@@ -341,11 +341,11 @@ public:
 
 	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'
 
-	long match = 2; // '--match' SW score (positive integer) for a match               TODO: change to int8_t
-	long mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch   TODO: change to int8_t
+	int8_t match = 2; // '--match' SW score (positive integer) for a match
+	int8_t mismatch = -3; // '--mismatch' SW penalty (negative integer) for a mismatch
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
-	long score_N = 0; // '-N' SW penalty for ambiguous letters (N's)                   TODO: change to int8_t
+	int8_t score_N = 0; // '-N' SW penalty for ambiguous letters (N's)
 
 	double evalue = -1.0; // '-e' E-value threshold
 	double align_id = -1.0; // OTU-picking option: minimum %%id to keep alignment

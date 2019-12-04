@@ -408,7 +408,7 @@ void Output::report_blast
 							else blastout << "D";
 						}
 
-						uint32_t end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
+						auto end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
 						// output the masked region at end of alignment
 						if (end_mask > 0) blastout << end_mask << "S";
 					}
@@ -527,7 +527,7 @@ void Output::report_sam
 				else samout << "D";
 			}
 
-			uint32_t end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1;
+			auto end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1;
 			// output the masked region at end of alignment
 			if (end_mask > 0) samout << end_mask << "S";
 			// (7) RNEXT, (8) PNEXT, (9) TLEN

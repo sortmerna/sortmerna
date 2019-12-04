@@ -147,7 +147,7 @@ void PostProcessor::run()
 
 void ReportProcessor::run()
 {
-	int countReads = 0;
+	std::size_t countReads = 0;
 
 	{
 		std::stringstream ss;
@@ -155,10 +155,10 @@ void ReportProcessor::run()
 		std::cout << ss.str();
 	}
 
-	int cap = opts.readfiles.size();
+	auto cap = opts.readfiles.size();
 	std::vector<Read> reads;
 	Read read;
-	int i = 0;
+	std::size_t i = 0;
 	bool isDone = false;
 
 	for (;!isDone;)

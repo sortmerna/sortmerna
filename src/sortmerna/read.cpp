@@ -218,7 +218,7 @@ void Read::init(Runopts & opts)
 } // ~Read::init
 
 // initialize Smith-Waterman scoring matrix for genome sequences
-void Read::initScoringMatrix(long match, long mismatch, long score_N)
+void Read::initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N)
 {
 	int8_t val = 0;
 	for (int l = 0; l < 4; ++l)

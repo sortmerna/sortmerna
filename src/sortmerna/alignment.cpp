@@ -54,19 +54,19 @@ uint32_t findMinIndex(Read & read);
 void find_lis( deque<pair<uint32_t, uint32_t>> &a, vector<uint32_t> &b )
 {
 	vector<uint32_t> p(a.size());
-	int u, v;
+	std::size_t u, v;
 
 	if (a.empty()) return;
 
 	b.push_back(0);
 
-	for (uint32_t i = 1; i < a.size(); i++)
+	for (std::size_t i = 1; i < a.size(); i++)
 	{
 		// If next element a[i] is greater than last element of current longest subsequence a[b.back()], just push it at back of "b" and continue
 		if (a[b.back()].second < a[i].second)
 		{
 			p[i] = b.back();
-			b.push_back(i);
+			b.push_back(static_cast<uint32_t>(i));
 			continue;
 		}
 
@@ -74,7 +74,7 @@ void find_lis( deque<pair<uint32_t, uint32_t>> &a, vector<uint32_t> &b )
 		// Note : Binary search is performed on b (and not a). Size of b is always <=k and hence contributes O(log k) to complexity.
 		for (u = 0, v = b.size() - 1; u < v;)
 		{
-			int c = (u + v) / 2;
+			auto c = (u + v) / 2;
 			if (a[b[c]].second < a[i].second)
 				u = c + 1;
 			else
@@ -85,11 +85,12 @@ void find_lis( deque<pair<uint32_t, uint32_t>> &a, vector<uint32_t> &b )
 		if (a[i].second < a[b[u]].second)
 		{
 			if (u > 0) p[i] = b[u - 1];
-			b[u] = i;
+			b[u] = static_cast<uint32_t>(i);
 		}
 	}
 
-	for (u = b.size(), v = b.back(); u--; v = p[v]) b[u] = v;
+	for (u = b.size(), v = b.back(); u--; v = p[v]) 
+		b[u] = static_cast<uint32_t>(v);
 } // ~find_lis
 
 /* 
@@ -239,7 +240,7 @@ void compute_lis_alignment
 		while (hits_per_ref_iter != hits_per_ref.end())
 		{
 			// TODO: should it be
-			uint32_t stop_ref = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num] + 1; // position on reference
+			auto stop_ref = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num] + 1; // position on reference
 			//uint32_t stop_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // wrong?
 			bool push = false;
 			while ( hits_per_ref_iter != hits_per_ref.end() && hits_per_ref_iter->first <= stop_ref )
@@ -281,12 +282,12 @@ void compute_lis_alignment
 						lcs_que_start = match_chain[lis_arr[0]].second;
 #endif                                    
 						// reference string
-						uint32_t head = 0;
-						uint32_t tail = 0;
-						uint32_t align_ref_start = 0;
-						uint32_t align_que_start = 0;
-						uint32_t align_length = 0;
-						uint32_t reflen = refs.buffer[max_ref].sequence.length();
+						std::size_t head = 0;
+						std::size_t tail = 0;
+						std::size_t align_ref_start = 0;
+						std::size_t align_que_start = 0;
+						std::size_t align_length = 0;
+						auto reflen = refs.buffer[max_ref].sequence.length();
 						uint32_t edges = 0;
 						if (opts.is_as_percent)
 							edges = (((double)opts.edges / 100.0)*read.sequence.length());
