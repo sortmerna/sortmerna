@@ -41,8 +41,8 @@
 void about();
 //void help();
 std::string get_user_home(); // util.cpp
-unsigned int list_dir(std::string dpath);
-bool dirExists(std::string dpath);
+//unsigned int list_dir(std::string dpath); // replaced with filesystem
+//bool dirExists(std::string dpath); // replaced with filesystem
 std::string trim_leading_dashes(std::string const& name); // util.cpp
 std::string get_basename(const std::string &file); // util.cpp
 std::streampos filesize(const std::string &file); // util.cpp
@@ -1006,8 +1006,10 @@ void Runopts::opt_workdir(const std::string &path)
 		std::cout << STAMP << "'" << OPT_WORKDIR 
 			<< "' option was not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
 	}
-	else
+	else {
 		workdir = path;
+		std::cout << STAMP << "Using WORKDIR [" << std::filesystem::absolute(workdir) << " as specified" << std::endl;
+	}
 }
 
 // indexing options
@@ -1124,35 +1126,44 @@ void Runopts::test_kvdb_path()
 		kvdbPath = workdir + "/" + KVDB_DIR;
 	}
 
-	std::cout << STAMP << "Key-value DB location (" << kvdbPath << ")" << std::endl;
+	std::cout << STAMP << "Key-value DB location (" << std::filesystem::absolute(kvdbPath) << ")" << std::endl;
 
-	if (dirExists(kvdbPath))
+	if (std::filesystem::exists(kvdbPath))
 	{
-		// dir exists and not empty
-		auto count = list_dir(kvdbPath);
-		if (count > 0) 
+		// dir exists and is empty
+		//auto count = list_dir(kvdbPath);
+		if (std::filesystem::is_empty(kvdbPath))
+		{
+			// dir exists and empty -> use
+			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
+			{
+				std::cout << STAMP << "KVDB (" << std::filesystem::absolute(kvdbPath) << " is empty. Will run alignment" << std::endl;
+			}
+		}
+		else // not empty
 		{
 			// TODO: Store some metadata in DB to verify the alignment.
 			// kvdb.verify()
 			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alipost == alirep)
 			{
 				// if (kvdb.verify()) // TODO
-				std::cout << STAMP << "Database (" << kvdbPath << ") exists. Alignment information OK" << std::endl;
+				// output the listing
+				std::stringstream ss;
+				ss << STAMP << "Path '" << std::filesystem::absolute(kvdbPath) << "' exists with the following content:" << std::endl;
+
+				for (auto& subpath : std::filesystem::directory_iterator(kvdbPath))
+					ss << subpath.path().filename() << std::endl;
+
+				ss << "\tPlease, ensure the directory [" << std::filesystem::absolute(kvdbPath) << "] is Empty prior running 'sortmerna'" << std::endl;
+				WARN(ss.str());
+				exit(EXIT_FAILURE);
 			}
-		}
-		else
-		{
-			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
-			{
-				std::cout << STAMP << "KVDB (" << kvdbPath << " is empty. Will run alignment" << std::endl;
-			}
-			// dir exists and empty -> use
 		}
 	}
 	else
 	{
 		// dir does not exist -> try creating
-		std::cout << STAMP << "Database (" << kvdbPath << ") will be created" << std::endl;
+		std::cout << STAMP << "Database (" << std::filesystem::absolute(kvdbPath) << ") will be created" << std::endl;
 	}
 } // ~test_kvdb_path
 
