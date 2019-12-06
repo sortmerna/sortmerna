@@ -325,10 +325,29 @@ t15:
     - '5'
     - -v
 
+t16:
+  name: test_relative_path
+  note:
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -num_alignments
+    - '1'
+    - -v
+    - -workdir
+    - run
+  cwd: {{ SMR_SRC }}
+
 #
 # custom tests
 #
-t16:
+tc16:
   name: Single reads file, 250 reads
   cmd:
   - -ref
@@ -342,7 +361,7 @@ t16:
   validate:
     func: t16
 
-t17:
+tc17:
   name: Paired reads
   cmd:
   - -ref
@@ -367,7 +386,7 @@ t17:
     num_hits: 66387
     num_fail: 1212093
 
-t18:
+tc18:
   name: Paired reads GZ 2 x 2 GB
   cmd:
   - -ref

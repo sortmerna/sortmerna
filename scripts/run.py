@@ -982,7 +982,7 @@ if __name__ == "__main__":
     print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
     cfg[opts.name]['cmd'].insert(0, SMR_EXE)
     is_capture = cfg[opts.name].get('capture', False)
-    ret = run(cfg[opts.name]['cmd'], capture=is_capture)
+    ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)
 
     # validate alignment results
     fn = cfg[opts.name].get('validate', {}).get('func')
