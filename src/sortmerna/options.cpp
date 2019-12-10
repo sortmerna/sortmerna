@@ -205,11 +205,27 @@ void Runopts::opt_ref(const std::string &file)
 	}
 	else
 	{
-		ss << STAMP <<
-			"The file [" << file << "] is not an existing/valid absolute or relative path\n" << help_ref;
+		ss << STAMP
+			<< "The file [" << file << "] is not an existing/valid absolute or relative path\n"
+			<< help_ref;
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
+
+	// check files are readable
+	std::ifstream ifstr(fpath_a);
+	if (!ifstr.is_open() || !ifstr.good()) {
+		ss << STAMP << "Cannot read file [" << file << "]";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+	else {
+		ss << STAMP << "File [" << std::filesystem::absolute(file) << "] exists and is readable\n";
+		std::cout << ss.str();
+	}
+
+	if (ifstr.is_open())
+		ifstr.close();
 
 	// check index file names are distinct
 	for (int i = 0; i < (int)indexfiles.size(); i++)

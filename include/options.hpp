@@ -370,7 +370,7 @@ public:
 	const std::string OUT_DIR  = "out";
 
 	enum ALIGN_REPORT { align, postproc, report, alipost, all };
-	ALIGN_REPORT alirep = all;
+	ALIGN_REPORT alirep = ALIGN_REPORT::all;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 
 private:
