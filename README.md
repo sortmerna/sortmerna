@@ -40,10 +40,10 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/biocore/sortmerna/releases/download/v4.0.0/sortmerna-4.0.0-linux.sh
+wget https://github.com/biocore/sortmerna/releases/download/v4.0.0/sortmerna-4.0.0-Linux.sh
 
 # view the installer usage
-bash sortmerna-4.0.0-linux.sh --help
+bash sortmerna-4.0.0-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
