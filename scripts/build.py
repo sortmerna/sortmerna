@@ -16,6 +16,7 @@ from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 import zipfile
 import time
+from shutil import which as shu_which
 #from distutils.dir_util import copy_tree
 
 # globals
@@ -270,36 +271,44 @@ def proc_run(cmd, cwd=None, capture=False):
     start = time.time()
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
-    try:
-        if cwd:
-            if not os.path.exists(cwd):
-                os.makedirs(cwd)
-            if sys.version_info[1] > 6:
-                proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
+    # check executable
+    res = shu_which(cmd[0])
+    if res :
+        try:
+            if cwd:
+                if not os.path.exists(cwd):
+                    os.makedirs(cwd)
+                if sys.version_info[1] > 6:
+                    proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
+                else:
+                    proc = subprocess.run(cmd, cwd=cwd)
             else:
-                proc = subprocess.run(cmd, cwd=cwd)
-        else:
-            if sys.version_info[1] > 6:
-                proc = subprocess.run(cmd, capture_output=capture)
-            else:
-                proc = subprocess.run(cmd)
+                if sys.version_info[1] > 6:
+                    proc = subprocess.run(cmd, capture_output=capture)
+                else:
+                    proc = subprocess.run(cmd)
 
-        if proc.returncode:
+            if proc.returncode:
+                for info in sys.exc_info(): print(info)
+            ret['retcode'] = proc.returncode
+            if capture:
+                ret['stdout'] = proc.stdout
+                ret['stderr'] = proc.stderr
+        except OSError as err:
+            print(err)
+            ret['retcode'] = 1
+            ret['stderr'] = err
+        except:
             for info in sys.exc_info(): print(info)
-        ret['retcode'] = proc.returncode
-        if capture:
-            ret['stdout'] = proc.stdout
-            ret['stderr'] = proc.stderr
-    except OSError as err:
-        print(err)
-        ret['retcode'] = 1
-        ret['stderr'] = err
-    except:
-        for info in sys.exc_info(): print(info)
-        ret['retcode'] = 1
-        ret['stderr'] = sys.exc_info()
+            ret['retcode'] = 1
+            ret['stderr'] = sys.exc_info()
 
-    print("{} Run time: {}".format(STAMP, time.time() - start))
+        print("{} Run time: {}".format(STAMP, time.time() - start))
+    else:
+        msg = '{} Executable {} not found'.format(STAMP, cmd[0])
+        ret['retcode'] = 1
+        ret['stderr'] = msg
+        print(msg)
     return ret
 #END proc_run
 
