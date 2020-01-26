@@ -440,3 +440,33 @@ tc18:
     num_reads: 49309188
     num_hits: 687225
     num_fail: 48621963
+
+tc19:
+  name: issue 207
+  note: |
+    sortmerna -m 4096 -a 4 -L 8 --fastx --blast 1 --workdir test 
+      --num_alignments 0 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
+    sortmerna -m 4096 -a 4 -L 8 --fastx --blast 1 --workdir test 
+      --best 0 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
+    sortmerna -m 4096 -a 4 -L 10 --fastx --blast 1 --workdir test 
+      --best 0 -min_lis 1 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
+    result:
+      Total reads passing E-value threshold = 300025 (2.00)
+      Total reads failing E-value threshold = 14699975 (98.00)
+  cmd:
+  - -ref
+  - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta # 
+  - -reads
+  - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/smr_iss_207_20200123_test.fq.gz #
+  #- -num_alignments
+  #- '0'
+  - -e
+  - '0.8'
+  - -fastx
+  - -blast
+  - '1'
+  validate:
+    func:
+    num_reads: 49309188
+    num_hits: 687225
+    num_fail: 48621963
