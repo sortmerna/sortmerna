@@ -311,6 +311,15 @@ void Runopts::opt_paired_out(const std::string &val)
 	is_paired_out = true;
 } // ~Runopts::optPairedOut
 
+/**
+ * two 'reads' options has to be provided
+ *
+ */
+void Runopts::opt_out2(const std::string& val)
+{
+	is_out2 = true;
+} // ~Runopts::opt_out2
+
 void Runopts::opt_match(const std::string &val)
 {
 	std::stringstream ss;

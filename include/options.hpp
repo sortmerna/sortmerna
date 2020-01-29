@@ -34,6 +34,7 @@ OPT_MIN_LIS = "min_lis",
 OPT_PRINT_ALL_READS = "print_all_reads",
 OPT_PAIRED_IN = "paired_in",
 OPT_PAIRED_OUT = "paired_out",
+OPT_OUT2 = "out2",
 OPT_MATCH = "match",
 OPT_MISMATCH = "mismatch",
 OPT_GAP_OPEN = "gap_open",
@@ -138,6 +139,8 @@ help_paired_out =
 	"                                            put both reads into Non-Aligned FASTA/Q file\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
 	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.",
+help_out2 =
+	"Output paired reads into separate files,                False",
 help_match = 
 	"SW score (positive integer) for a match.                2",
 help_mismatch = 
@@ -294,6 +297,7 @@ public:
 	//    output control
 	bool is_paired_in = false; // OPT_PAIRED_IN was selected i.e. both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
+	bool is_out2 = false; // 20200127 output paired reads into separate files. Issue 202
 	bool is_de_novo_otu = false; // OPT_DE_NOVO_OTU: FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
 	bool is_log = true; // OPT_LOG was selected i.e. output overall statistics. TODO: remove this option, always generate.
 	bool is_print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
@@ -315,7 +319,6 @@ public:
 	bool exit_early = false; // TODO: has no action? Flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
 	bool is_index_built = false; // flags the index is built and ready for use. TODO: this is no Option flag is any respect. Move to a more appropriate place.
 	bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
-
 
 	std::string workdir; // Directory for index, KVDB, Output
 	std::string cmdline;
@@ -391,6 +394,7 @@ private:
 	void opt_pid(const std::string &val);
 	void opt_paired_in(const std::string &val);
 	void opt_paired_out(const std::string &val);
+	void opt_out2(const std::string& val);
 	void opt_match(const std::string &val);
 	void opt_mismatch(const std::string &val);
 	void opt_gap_open(const std::string &val);
@@ -471,6 +475,7 @@ private:
 		std::make_tuple(OPT_PRINT_ALL_READS,"BOOL",        COMMON,      false, help_print_all_reads, &Runopts::opt_print_all_reads),
 		std::make_tuple(OPT_PAIRED_IN,      "BOOL",        COMMON,      false, help_paired_in, &Runopts::opt_paired_in),
 		std::make_tuple(OPT_PAIRED_OUT,     "BOOL",        COMMON,      false, help_paired_out, &Runopts::opt_paired_out),
+		std::make_tuple(OPT_OUT2,           "BOOL",        COMMON,      false, help_out2, &Runopts::opt_out2),
 		std::make_tuple(OPT_MATCH,          "INT",         COMMON,      false, help_match, &Runopts::opt_match),
 		std::make_tuple(OPT_MISMATCH,       "INT",         COMMON,      false, help_mismatch, &Runopts::opt_mismatch),
 		std::make_tuple(OPT_GAP_OPEN,       "INT",         COMMON,      false, help_gap_open, &Runopts::opt_gap_open),
