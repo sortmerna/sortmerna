@@ -461,12 +461,12 @@ tc19:
   #- -num_alignments
   #- '0'
   - -e
-  - '0.8'
+  - '100'
   - -fastx
   - -blast
   - '1'
   validate:
     func:
-    num_reads: 49309188
-    num_hits: 687225
-    num_fail: 48621963
+    num_reads: 15000000
+    num_hits: 798426 # 532
+    num_fail: 14201574 # 94.68
