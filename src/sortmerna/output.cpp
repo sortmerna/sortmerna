@@ -1,4 +1,4 @@
-/**
+ï»¿/**
 * @FILE: output.cpp
 * @Created: Nov 26, 2017 Sun
 * @brief Object for outputting results in various formats
@@ -23,11 +23,11 @@
 * @endparblock
 *
 * @contributors Jenya Kopylova, jenya.kopylov@gmail.com
-*               Laurent Noé, laurent.noe@lifl.fr
+*               Laurent NoÃ©, laurent.noe@lifl.fr
 *               Pierre Pericard, pierre.pericard@lifl.fr
 *               Daniel McDonald, wasade@gmail.com
-*               Mikaël Salson, mikael.salson@lifl.fr
-*               Hélène Touzet, helene.touzet@lifl.fr
+*               MikaÃ«l Salson, mikael.salson@lifl.fr
+*               HÃ©lÃ¨ne Touzet, helene.touzet@lifl.fr
 *               Rob Knight, robknight@ucsd.edu
 */
 #include "unistd.h"
@@ -53,6 +53,25 @@
 // forward
 void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output); // callback
 
+Summary::Summary():
+	is_de_novo_otu(false), 
+	is_otumapout(false), 
+	total_reads(0), 
+	total_reads_denovo_clustering(0),
+	total_reads_mapped(0),
+	total_reads_mapped_cov(0),
+	min_read_len(0),
+	max_read_len(0),
+	all_reads_len(0),
+	total_otu(0)
+{}
+
+Output::Output(Runopts& opts, Readstats& readstats)
+{
+	init(opts, readstats);
+}
+Output::~Output() { closefiles(); }
+
 void Output::init(Runopts & opts, Readstats & readstats)
 {
 	summary.pid_str = std::to_string(getpid());
@@ -67,10 +86,16 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			sfx += "_" + summary.pid_str;
 		}
 		sfx += "." + readstats.suffix;
-		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx);
-		fastaOutFile = fpath.string();
-		fastaout.open(fastaOutFile);
-		fastaout.close();
+		for (size_t i = 0; i < fastx_aligned.size(); ++i) {
+			std::string sfx2 = "";
+			if (fastx_aligned.size() == 2) {
+				auto sfx2 = i == 0 ? "_fwd" : "_rev";
+			}
+			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx2 + sfx);
+			alignedfile[i] = fpath.string();
+			fastx_aligned[i].open(alignedfile[i]);
+			fastx_aligned[i].close();
+		}
 	}
 
 	if (opts.is_sam)
@@ -159,11 +184,17 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			sfx += "_" + summary.pid_str;
 		}
 		sfx += "." + readstats.suffix;
-		// WORKDIR/out/other.fasta
-		auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx);
-		otherfile = fpath.string();
-		fasta_other.open(otherfile);
-		fasta_other.close();
+		for (size_t i = 0; i < fastx_other.size(); ++i) {
+			std::string sfx2 = "";
+			if (fastx_other.size() == 2) {
+				auto sfx2 = i == 0 ? "_fwd" : "_rev";
+			}
+			// WORKDIR/out/other.fasta | other_fwd.fasta | other_rev.fasta
+			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx2 + sfx);
+			otherfile[i] = fpath.string();
+			fastx_other[i].open(otherfile[i]);
+			fastx_other[i].close();
+		}
 	}
 } // ~Output::init
 
@@ -198,9 +229,11 @@ void Output::report_blast
 		if (read.hits_align_info.alignv[i].index_num == refs.num 
 			&& read.hits_align_info.alignv[i].part == refs.part)
 		{
+			// (Î»*S - ln(K))/ln(2)
 			uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
 				* (read.hits_align_info.alignv[i].score1) - std::log(refstats.gumbel[refs.num].second)) / (float)std::log(2));
 
+			// E = Kmn*exp(-Î»S)
 			double evalue_score = (double)refstats.gumbel[refs.num].second
 				* refstats.full_ref[refs.num]
 				* refstats.full_read[refs.num]
@@ -575,51 +608,71 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	std::stringstream ss;
 
 	// output accepted reads
-	if (opts.is_fastx && fastaout.is_open())
+	if (opts.is_fastx)
 	{
 		bool is_paired = opts.readfiles.size() == 2; // paired reads
 		if (is_paired)
 		{
-			if (!opts.is_paired_in && !opts.is_paired_out) {
-				// only aligned reads go to aligned file
-				for (Read read : reads)
-				{
-					if (read.hit) {
-						write_a_read(fastaout, read);
-					}
-					else if (opts.is_other) {
-						write_a_read(fasta_other, read);
-					}
-				}
-			}
-			else if (opts.is_paired_in) {
+			if (opts.is_paired_in) {
 				// if Either is aligned -> aligned
 				if (reads[0].hit || reads[1].hit) {
-					for (Read read : reads)
+					for (size_t i = 0; i < reads.size(); ++i)
 					{
-						write_a_read(fastaout, read);
+						if (opts.is_out2) {
+							write_a_read(fastx_aligned[i], reads[i]); // fwd and rev go into different files
+						}
+						else {
+							write_a_read(fastx_aligned[0], reads[i]); // fwd and rev go into the same file
+						}
 					}
 				}
 				else if (opts.is_other) {
-					for (Read read : reads)
+					for (size_t i = 0; i < reads.size(); ++i)
 					{
-						write_a_read(fasta_other, read);
+						if (opts.is_out2) {
+							write_a_read(fastx_other[i], reads[i]); // fwd and rev go into different files
+						}
+						else {
+							write_a_read(fastx_other[0], reads[i]); // fwd and rev go into the same file
+						}
 					}
 				}
 			}
 			else if (opts.is_paired_out) {
 				// if Both aligned -> aligned
 				if (reads[0].hit && reads[1].hit) {
-					for (Read read : reads)
+					for (size_t i = 0; i < reads.size(); ++i)
 					{
-						write_a_read(fastaout, read);
+						if (opts.is_out2) {
+							write_a_read(fastx_aligned[i], reads[i]); // fwd and rev go into different files
+						}
+						else {
+							write_a_read(fastx_aligned[0], reads[i]); // fwd and rev go into the same file
+						}
 					}
 				}
 				// both non-aligned and is_other -> other
 				else if (opts.is_other) {
-					for (Read read : reads)
+					for (size_t i = 0; i < reads.size(); ++i)
 					{
-						write_a_read(fasta_other, read);
+						if (opts.is_out2) {
+							write_a_read(fastx_other[i], reads[i]); // fwd and rev go into different files
+						}
+						else {
+							write_a_read(fastx_other[0], reads[i]); // fwd and rev go into the same file
+						}
+					}
+				}
+			}
+			else {
+				// Neither 'paired_in' nor 'paired_out' specified -> only aligned reads go to aligned file
+				for (Read read : reads)
+				{
+					if (read.hit) {
+						write_a_read(fastx_aligned[0], read);
+					}
+					else if (opts.is_other) {
+						write_a_read(fastx_other[0], read);
 					}
 				}
 			}
@@ -629,10 +682,10 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			// the read was accepted - output
 			if (reads[0].hit)
 			{
-				write_a_read(fastaout, reads[0]);
+				write_a_read(fastx_aligned[0], reads[0]);
 			} //~if read was accepted
 			else if (opts.is_other) {
-				write_a_read(fasta_other, reads[0]);
+				write_a_read(fastx_other[0], reads[0]);
 			}
 		}//~if not paired-in or paired-out
 	}//~if is_fastx 
@@ -719,26 +772,34 @@ void Output::openfiles(Runopts & opts)
 		}
 	}
 
-	if (opts.is_fastx && !fastaout.is_open()) {
-		fastaout.open(fastaOutFile, std::ios::app | std::ios::binary);
-		if (!fastaout.good())
-		{
-			ss.str("");
-			ss << STAMP << "Could not open FASTA/Q output file [" << fastaOutFile << "] for writing.";
-			ERR(ss.str());
-			exit(EXIT_FAILURE);
+	if (opts.is_fastx) {
+		for (size_t i = 0; i < fastx_aligned.size(); ++i) {
+			if (!fastx_aligned[i].is_open()) {
+				fastx_aligned[i].open(alignedfile[i], std::ios::app | std::ios::binary);
+			}
+			if (!fastx_aligned[i].good())
+			{
+				ss.str("");
+				ss << STAMP << "Could not open FASTA/Q output file [" << alignedfile[i] << "] for writing.";
+				ERR(ss.str());
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
-	if (opts.is_fastx && opts.is_other && !fasta_other.is_open())
+	if (opts.is_fastx && opts.is_other)
 	{
-		fasta_other.open(otherfile, std::ios::app | std::ios::binary);
-		if (!fasta_other.good())
-		{
-			ss.str("");
-			ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << otherfile << "] for writing.";
-			ERR(ss.str());
-			exit(EXIT_FAILURE);
+		for (size_t i = 0; i < fastx_other.size(); ++i) {
+			if (!fastx_other[i].is_open()) {
+				fastx_other[i].open(otherfile[i], std::ios::app | std::ios::binary);
+			}
+			if (!fastx_other[i].good())
+			{
+				ss.str("");
+				ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << otherfile[i] << "] for writing.";
+				ERR(ss.str());
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
@@ -759,8 +820,12 @@ void Output::closefiles()
 {
 	if (blastout.is_open()) { blastout.flush(); blastout.close(); }
 	if (samout.is_open()) { samout.flush(); samout.close(); }
-	if (fastaout.is_open()) { fastaout.flush(); fastaout.close(); }
-	if (fasta_other.is_open()) { fasta_other.flush(); fasta_other.close(); }
+	for (size_t i = 0; i < fastx_aligned.size(); ++i) {
+		if (fastx_aligned[i].is_open()) { fastx_aligned[i].flush(); fastx_aligned[i].close(); }
+	}
+	for (size_t i = 0; i < fastx_other.size(); ++i) {
+		if (fastx_other[i].is_open()) { fastx_other[i].flush(); fastx_other[i].close(); }
+	}
 	if (denovoreads.is_open()) { denovoreads.flush(); denovoreads.close(); }
 
 	std::cout << STAMP << "Flushed and closed" << std::endl;

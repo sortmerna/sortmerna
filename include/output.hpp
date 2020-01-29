@@ -51,13 +51,13 @@ struct Runopts;
  */
 class Summary {
 public:
-	Summary() {};
-	~Summary() {};
+	Summary();
+	//~Summary() {};
 
 	std::string to_string(Runopts &opts, Refstats &refstats);
 
-	bool is_de_novo_otu = false;
-	bool is_otumapout = false;
+	bool is_de_novo_otu;
+	bool is_otumapout;
 	std::string cmd;
 	std::string timestamp;
 	std::string pid_str;
@@ -75,8 +75,8 @@ public:
 class Output {
 public:
 	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
-	std::ofstream fastaout; // fasta/fastq
-	std::ofstream fasta_other; // fasta/fastq non-aligned (other)
+	std::vector<std::ofstream> fastx_aligned; // fasta/q    20200127 2 files if 'out2', 1 file otherwise
+	std::vector<std::ofstream> fastx_other; // fasta/q non-aligned   20200127 2 files if 'out2', 1 file otherwise
 	std::ofstream samout; // SAM
 	std::ofstream blastout; // BLAST
 	std::ofstream logstream;
@@ -84,22 +84,19 @@ public:
 	std::ofstream biomout;
 
 	// file names
-	std::string fastaOutFile;
+	std::vector<std::string> alignedfile; // 20200127 2 files if 'out2'
+	std::vector<std::string> otherfile; // 20200127 2 files if 'out2'
 	std::string samoutFile;
 	std::string blastoutFile;
 	std::string logfile;
 	std::string denovo_otus_file;
 	std::string otumapFile;
 	std::string biomfile;
-	std::string otherfile;
 
 	Summary summary;
 
-	Output(Runopts & opts, Readstats & readstats)
-	{
-		init(opts, readstats);
-	}
-	~Output() {	closefiles(); }
+	Output(Runopts& opts, Readstats& readstats);
+	~Output();
 
 	void report_blast(
 		Runopts & opts,
