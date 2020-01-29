@@ -1,4 +1,4 @@
-/*
+﻿/*
  * FILE: refstats.cpp
  * Created: Dec 23, 2017 Sat
  * @copyright 2016-19 Clarity Genomics BVBA
@@ -143,7 +143,7 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		long gapEpen1 = opts.gap_extension;
 		long gapEpen2 = opts.gap_extension;
 		bool insertions_after_deletions = false;
-		double max_time = -1; // required if radomization parameters are set
+		double max_time = -1; // required if randomization parameters are set
 		double max_mem = 500;
 		double eps_lambda = 0.001;
 		double eps_K = 0.005;
@@ -207,7 +207,8 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 
 		full_read[index_num] -= (expect_L * readstats.all_reads_count);
 
-		// minimum score required to reach E-value
+		// minimum score required to reach E-value 
+		// S = ln(E/Kmn)/-λ   <--   E = K*m*n*exp(-λS)
 		minimal_score[index_num] = static_cast<uint32_t>(
 			(log(opts.evalue
 				/ ((double)(gumbel[index_num].second)
