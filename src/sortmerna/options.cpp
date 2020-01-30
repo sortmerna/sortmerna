@@ -1358,6 +1358,20 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
+	if (is_out2) {
+		if (readfiles.size() != 2) {
+			ss << STAMP << "Option '" << OPT_OUT2 << "' is Ignored because it can only be used with paired reads.";
+			WARN(ss.str());
+			is_out2 = false;
+		}
+		else if (!is_paired_in || !is_paired_out) {
+			ss << STAMP << "Option '" << OPT_OUT2 << "' is Ignored because it requires one of the '"
+				<< OPT_PAIRED_IN << "' or '" << OPT_PAIRED_OUT << "' to be specified";
+			WARN(ss.str());
+			is_out2 = false;
+		}
+	}
+
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!is_fastx && (is_paired_in || is_paired_out))
 	{
