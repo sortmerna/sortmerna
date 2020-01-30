@@ -570,8 +570,9 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
 
 if __name__ == "__main__":
     '''
-    python scripts/build.py --name sortmerna
-    python /mnt/c/Users/biocodz/a01_code/sortmerna/scripts/build.py --name sortmerna --winhome /mnt/c/Users/biocodz --btype debug
+    python scripts/build.py --name sortmerna [--env scripts/env_non_git.yaml]
+    python /mnt/c/Users/biocodz/a01_code/sortmerna/scripts/build.py --name sortmerna
+        --winhome /mnt/c/Users/biocodz --btype debug
     '''
     #import pdb; pdb.set_trace()
 
