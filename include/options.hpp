@@ -140,7 +140,8 @@ help_paired_out =
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
 	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.",
 help_out2 =
-	"Output paired reads into separate files,                False",
+	"Output paired reads into separate files.                False\n"
+	"                                            Has to be used with either '" + OPT_PAIRED_IN + "' or '" + OPT_PAIRED_OUT + "'",
 help_match = 
 	"SW score (positive integer) for a match.                2",
 help_mismatch = 
@@ -157,7 +158,11 @@ help_F =
 help_R = 
 	"Search only the reverse-complementary strand.           False",
 help_e = 
-	"E-value threshold.                                      1",
+	"E-value threshold.                                      1\n"
+	"                                            Defines the 'statistical significance' of a local alignment.\n"
+	"                                            Exponentially correllates with the Minimal Alignment Score.\n"
+	"                                            Higher E-values (100, 1000, ...) cause More reads\n"
+	"                                            to Pass the alignment threshold",
 help_v = 
 	"Produce verbose output when building the index          True",
 help_id = 
@@ -460,7 +465,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 43> options = {
+	const std::array<opt_6_tuple, 44> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
