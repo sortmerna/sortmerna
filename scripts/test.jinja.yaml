@@ -395,11 +395,11 @@ t18:
     Test the new option '-out2' (issue 202)
     ...                               paired_in
     -e      min_sw  hits  2*hits   aligned   other
-     1          46  4712
-     0.001      58  4362
-     1e-7       73  3787    7574      6886    3114
-     1e-12      93  2736    5472
-     1e-15     105  2178    4356      4134    5866
+     1          48  9188
+     0.001      60  8956
+     1e-7       75  7919    
+     1e-12      95  6501    
+     1e-15     106  5307    
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
