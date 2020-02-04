@@ -1364,7 +1364,7 @@ void Runopts::validate()
 			WARN(ss.str());
 			is_out2 = false;
 		}
-		else if (!is_paired_in || !is_paired_out) {
+		else if (!(is_paired_in || is_paired_out)) {
 			ss << STAMP << "Option '" << OPT_OUT2 << "' is Ignored because it requires one of the '"
 				<< OPT_PAIRED_IN << "' or '" << OPT_PAIRED_OUT << "' to be specified";
 			WARN(ss.str());
