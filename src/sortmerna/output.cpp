@@ -79,17 +79,20 @@ void Output::init(Runopts & opts, Readstats & readstats)
 	// init output files
 	if (opts.is_fastx)
 	{
-		// fasta/fastq output  WORKDIR/out/aligned.fastq
+		// fasta/q output  WORKDIR/out/aligned.fastq
 		std::string sfx;
 		if (opts.is_pid)
 		{
 			sfx += "_" + summary.pid_str;
 		}
 		sfx += "." + readstats.suffix;
+		size_t nfiles = opts.is_out2 ? 2 : 1;
+		fastx_aligned.resize(nfiles);
+		alignedfile.resize(nfiles);
 		for (size_t i = 0; i < fastx_aligned.size(); ++i) {
 			std::string sfx2 = "";
-			if (fastx_aligned.size() == 2) {
-				auto sfx2 = i == 0 ? "_fwd" : "_rev";
+			if (opts.is_out2) {
+				sfx2 = i == 0 ? "_fwd" : "_rev";
 			}
 			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx2 + sfx);
 			alignedfile[i] = fpath.string();
@@ -184,13 +187,16 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			sfx += "_" + summary.pid_str;
 		}
 		sfx += "." + readstats.suffix;
+		size_t nfiles = opts.is_out2 ? 2 : 1;
+		fastx_other.resize(nfiles);
+		otherfile.resize(nfiles);
 		for (size_t i = 0; i < fastx_other.size(); ++i) {
 			std::string sfx2 = "";
-			if (fastx_other.size() == 2) {
-				auto sfx2 = i == 0 ? "_fwd" : "_rev";
+			if (opts.is_out2) {
+				sfx2 = i == 0 ? "_fwd" : "_rev";
 			}
 			// WORKDIR/out/other.fasta | other_fwd.fasta | other_rev.fasta
-			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.aligned_out_pfx + sfx2 + sfx);
+			auto fpath = std::filesystem::path(opts.workdir) / opts.OUT_DIR / (opts.other_out_pfx + sfx2 + sfx);
 			otherfile[i] = fpath.string();
 			fastx_other[i].open(otherfile[i]);
 			fastx_other[i].close();
@@ -616,6 +622,17 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			if (opts.is_paired_in) {
 				// if Either is aligned -> aligned
 				if (reads[0].hit || reads[1].hit) {
+					// validate the reads are paired
+					if (reads[0].read_num != reads[1].read_num || reads[0].readfile_idx == reads[1].readfile_idx) {
+						ss << STAMP << "Paired validation failed: reads[0].read_num = " << reads[0].read_num
+							<< " reads[1].read_num = " << reads[0].read_num
+							<< " reads[0].readfile_idx = " << reads[0].readfile_idx
+							<< " reads[1].readfile_idx = " << reads[1].readfile_idx;
+						ERR(ss.str());
+						exit(EXIT_FAILURE);
+					}
+					
+					// reads[0]
 					for (size_t i = 0; i < reads.size(); ++i)
 					{
 						if (opts.is_out2) {
