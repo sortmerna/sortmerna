@@ -1481,23 +1481,30 @@ void Runopts::validate()
 		is_forward = true;
 		is_reverse = true;
 	}
-	// default number of threads is 1
-	//if (numcpu_gv < 0) numcpu_gv = 1;
+
 	// default E-value 
 	if (evalue < 0.0) evalue = 1;
 
 	// SW alignment parameters
-	if (!match_set) 
+	if (!match_set) {
 		match = 2;
+		match_set = true;
+	}
 
-	if (!mismatch_set) 
+	if (!mismatch_set) {
 		mismatch = -3;
+		mismatch_set = true;
+	}
 
-	if (!gap_open_set) 
+	if (!gap_open_set) {
 		gap_open = 5;
+		gap_open_set = true;
+	}
 
-	if (!gap_ext_set) 
+	if (!gap_ext_set) {
 		gap_extension = 2;
+		gap_ext_set = true;
+	}
 
 	if (!match_ambiguous_N) 
 		score_N = mismatch;
