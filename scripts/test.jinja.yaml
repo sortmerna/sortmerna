@@ -127,6 +127,13 @@ t5:
 
 t6:
   name: test_mate_pairs - part 2 - paired_in
+  note: |
+    -e      min_sw  hits
+     1          49  6000
+     0.001      59  6000
+     1e-7       74  6000
+     1e-12      93  6000
+     1e-15     105  6000
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
@@ -142,6 +149,8 @@ t6:
     - -blast
     - '1 cigar qcov'
     - -v
+    - -e
+    - '0.01'
   validate:
     func: t6
     num_hits: 6000
@@ -379,6 +388,42 @@ t17:
     num_reads: 10000
     num_hits: 5944
     num_fail: 4056
+
+t18:
+  name: paired output to separate files
+  note: |
+    Test the new option '-out2' (issue 202)
+    ...                               paired_in
+    -e      min_sw  hits  2*hits   aligned   other
+     1          46  4712
+     0.001      58  4362
+     1e-7       73  3787    7574      6886    3114
+     1e-12      93  2736    5472
+     1e-15     105  2178    4356      4134    5866
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -paired_in
+    - -blast
+    - '1'
+    - -v
+    - -e
+    - '1e-15'
+    - -out2
+  validate:
+    func:
+    num_hits:
+    num_fail:
+    num_aligned:
+    num_other:
+
+
 
 #
 # custom tests
