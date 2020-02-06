@@ -324,6 +324,7 @@ public:
 	bool exit_early = false; // TODO: has no action? Flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
 	bool is_index_built = false; // flags the index is built and ready for use. TODO: this is no Option flag is any respect. Move to a more appropriate place.
 	bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
+	bool is_paired = false; // flags the reads are paired
 
 	std::string workdir; // Directory for index, KVDB, Output
 	std::string cmdline;

@@ -39,7 +39,7 @@ void ReadControl::run()
 	uint8_t IDX_FWD_READS = 0;
 	uint8_t IDX_REV_READS = 1;
 
-	bool is_paired = (opts.readfiles.size() == 2); // reads are paired i.e. 2 read files are supplied
+	bool is_two_reads = opts.readfiles.size() == 2; // i.e. 2 read files are supplied
 
 	// init FWD Reader
 	Reader reader_fwd("reader_fwd", opts.is_gz);
@@ -55,7 +55,7 @@ void ReadControl::run()
 	// init REV Reader
 	std::ifstream ifs_rev;
 	Reader reader_rev("reader_rev", opts.is_gz);
-	if (is_paired)
+	if (is_two_reads)
 	{
 		auto rev_file = opts.readfiles[IDX_REV_READS];
 		ifs_rev.open(rev_file, std::ios_base::in | std::ios_base::binary);
@@ -72,7 +72,7 @@ void ReadControl::run()
 	auto t = std::chrono::high_resolution_clock::now();
 
 	// loop calling Readers
-	for (; !reader_fwd.is_done || (is_paired && !reader_rev.is_done);)
+	for (; !reader_fwd.is_done || (is_two_reads && !reader_rev.is_done);)
 	{
 		// first push FWD read
 		if (!reader_fwd.is_done)
@@ -90,7 +90,7 @@ void ReadControl::run()
 			}
 		}
 		// second push REV read (if paired)
-		if (is_paired && !reader_rev.is_done)
+		if (is_two_reads && !reader_rev.is_done)
 		{
 			Read read = reader_rev.nextread(ifs_rev, IDX_REV_READS, opts);
 

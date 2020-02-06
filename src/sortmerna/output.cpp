@@ -616,14 +616,17 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 	// output accepted reads
 	if (opts.is_fastx)
 	{
-		bool is_paired = opts.readfiles.size() == 2; // paired reads
-		if (is_paired)
+		//bool is_paired = opts.readfiles.size() == 2; // paired reads
+		if (opts.is_paired)
 		{
 			if (opts.is_paired_in) {
 				// if Either is aligned -> aligned
 				if (reads[0].hit || reads[1].hit) {
-					// validate the reads are paired
-					if (reads[0].read_num != reads[1].read_num || reads[0].readfile_idx == reads[1].readfile_idx) {
+					// validate the reads are paired in case of two reads files
+					if (opts.readfiles.size() == 2 
+						&& (reads[0].read_num != reads[1].read_num 
+							|| reads[0].readfile_idx == reads[1].readfile_idx)) 
+					{
 						ss << STAMP << "Paired validation failed: reads[0].read_num = " << reads[0].read_num
 							<< " reads[1].read_num = " << reads[0].read_num
 							<< " reads[0].readfile_idx = " << reads[0].readfile_idx
@@ -682,7 +685,8 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				}
 			}
 			else {
-				// Neither 'paired_in' nor 'paired_out' specified -> only aligned reads go to aligned file
+				// Neither 'paired_in' nor 'paired_out' specified -> only aligned
+				// reads go to aligned file, and only non-aligned to other file
 				for (Read read : reads)
 				{
 					if (read.hit) {

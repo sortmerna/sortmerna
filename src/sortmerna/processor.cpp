@@ -155,8 +155,8 @@ void ReportProcessor::run()
 		std::cout << ss.str();
 	}
 
-	auto cap = opts.readfiles.size();
-	std::vector<Read> reads;
+	std::size_t num_reads = opts.is_paired ? 2 : 1;
+	std::vector<Read> reads; // two reads if paired, a single read otherwise
 	Read read;
 	std::size_t i = 0;
 	bool isDone = false;
@@ -164,7 +164,7 @@ void ReportProcessor::run()
 	for (;!isDone;)
 	{
 		reads.clear();
-		for (i = 0; i < cap; ++i)
+		for (i = 0; i < num_reads; ++i)
 		{
 			read = readQueue.pop();  // returns an empty read if queue is empty
 			reads.push_back(read);
