@@ -390,7 +390,7 @@ t17:
     num_fail: 4056
 
 t18:
-  name: paired output to separate files
+  name: 2 reads files + paired_in + joint FWD/REV output
   note: |
     Test the new option '-out2' (issue 202)
     ...                               paired_in
@@ -409,21 +409,149 @@ t18:
     - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
-    - -paired_in
     - -blast
     - '1'
+    - -paired_in
     - -v
-    - -e
-    - '1e-15'
+    #- -e
+    #- '1e-15'
+    #- -out2
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9852
+    num_other:    148
+
+t19:
+  name: 2 reads files + paired_in + separate FWD/REV output
+  note: |
+    Test the new option '-out2' (issue 202)
+    ...                               paired_in
+    -e      min_sw  hits  2*hits   aligned   other
+     1          48  9188
+     0.001      60  8956
+     1e-7       75  7919    
+     1e-12      95  6501    
+     1e-15     106  5307    
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
     - -out2
   validate:
     func:
-    num_hits:
-    num_fail:
-    num_aligned:
-    num_other:
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926
+    num_aligned_rev: 4926
+    num_other_fwd:     74
+    num_other_rev:     74
 
+t20:
+  name: 1 reads file + paired_in + joint FWD/REV output
+  note: |
+    Test the new option '-out2' (issue 202)
+    ...                               paired_in 
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -out2
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9852
+    num_other:    148
 
+t21:
+  name: 1 reads file + paired_in + separate FWD/REV output
+  note: |
+    Same as test 20 + 'out2' option
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    - -out2
+  validate:
+    func:
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926
+    num_aligned_rev: 4926
+    num_other_fwd:     74
+    num_other_rev:     74
+
+t22:
+  name: 1 paired reads file + joint FWD/REV output
+  note: |
+    Test the new option '-out2' (issue 202)
+    ...                               paired_in 
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -v
+    #- -out2
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9188
+    num_other:    812
+
+t23:
+  name: 1 paired reads file + separate FWD/REV output
+  note: |
+    Same as 22 but FWD and REV output to different files
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -v
+    - -out2
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9188
+    num_other:    812
 
 #
 # custom tests

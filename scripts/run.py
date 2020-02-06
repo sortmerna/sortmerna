@@ -859,7 +859,7 @@ def t18(name, datad, outd, ret={}, **kwarg):
 
 if __name__ == "__main__":
     '''
-    python scripts/run.py --name t0 [--capture] [--env sortmerna/scripts/env_non_git.yaml]
+    python scripts/run.py --name t0 [--capture] [--env scripts/env_non_git.yaml]
     python scripts/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
