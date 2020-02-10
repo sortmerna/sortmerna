@@ -301,6 +301,20 @@ void Runopts::opt_pid(const std::string &val)
 	is_pid = true;
 } // ~Runopts::optPid
 
+void Runopts::opt_paired(const std::string& val)
+{
+	std::stringstream ss;
+	auto numread = mopt.count(OPT_READS);
+	if (numread > 1) {
+		ss << STAMP << "'" << OPT_PAIRED << "' " 
+			"can only be used with a single reads file to indicate it holds paired reads.\n"
+			"However option '" << OPT_READS << "' was specified [" << numread << "] times";
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+	is_paired = true;
+} // ~Runopts::optPaired
+
 void Runopts::opt_paired_in(const std::string &val)
 {
 	is_paired_in = true;
@@ -1358,7 +1372,9 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
-	is_paired = readfiles.size() == 2 || is_paired_in || is_paired_out;
+	if (!is_paired) {
+		is_paired = readfiles.size() == 2 || is_paired_in || is_paired_out;
+	}
 
 	if (is_out2 && !is_paired) {
 		ss << STAMP << "Option '" << OPT_OUT2 << "' is Ignored because it can only be used with paired reads."

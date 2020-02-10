@@ -687,13 +687,23 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			else {
 				// Neither 'paired_in' nor 'paired_out' specified -> only aligned
 				// reads go to aligned file, and only non-aligned to other file
-				for (Read read : reads)
+				for (size_t i = 0; i < reads.size(); ++i)
 				{
-					if (read.hit) {
-						write_a_read(fastx_aligned[0], read);
+					if (reads[i].hit) {
+						if (opts.is_out2) {
+							write_a_read(fastx_aligned[i], reads[i]); // fwd and rev go into different files
+						}
+						else {
+							write_a_read(fastx_aligned[0], reads[i]); // fwd and rev go into the same file
+						}
 					}
 					else if (opts.is_other) {
-						write_a_read(fastx_other[0], read);
+						if (opts.is_out2) {
+							write_a_read(fastx_other[i], reads[i]);
+						}
+						else {
+							write_a_read(fastx_other[0], reads[i]); // fwd and rev go into the same file
+						}
 					}
 				}
 			}

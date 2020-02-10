@@ -32,6 +32,7 @@ OPT_NUM_ALIGNMENTS = "num_alignments",
 OPT_BEST = "best",
 OPT_MIN_LIS = "min_lis",
 OPT_PRINT_ALL_READS = "print_all_reads",
+OPT_PAIRED = "paired",
 OPT_PAIRED_IN = "paired_in",
 OPT_PAIRED_OUT = "paired_out",
 OPT_OUT2 = "out2",
@@ -129,6 +130,12 @@ help_min_lis =
 help_print_all_reads = 
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files",
+help_paired =
+	"Indicates a Single reads file with paired reads         False\n"
+	"                                            If a single reads file with paired reads is used,\n"
+	"                                            and neither '" + OPT_PAIRED_IN + "' nor '" + OPT_PAIRED_OUT + "' are specified,\n"
+	"                                            use this option together with '" + OPT_OUT2 + "' to output\n"
+	"                                            FWD and REV reads into separate files",
 help_paired_in = 
 	"If one of the paired-end reads is Aligned,              False\n"
 	"                                            put both reads into Aligned FASTA/Q file\n"
@@ -141,7 +148,9 @@ help_paired_out =
 	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.",
 help_out2 =
 	"Output paired reads into separate files.                False\n"
-	"                                            Has to be used with either '" + OPT_PAIRED_IN + "' or '" + OPT_PAIRED_OUT + "'",
+	"                                            Must be used with '" + OPT_FASTX + "'.\n"
+	"                                            Ignored without either of '" + OPT_PAIRED_IN + "' |\n"
+	"                                            '" + OPT_PAIRED_OUT + "' | '" + OPT_PAIRED + "' | two '" + OPT_READS + "'",
 help_match = 
 	"SW score (positive integer) for a match.                2",
 help_mismatch = 
@@ -398,6 +407,7 @@ private:
 	void opt_otu_map(const std::string &val);
 	void opt_print_all_reads(const std::string &val);
 	void opt_pid(const std::string &val);
+	void opt_paired(const std::string& val);
 	void opt_paired_in(const std::string &val);
 	void opt_paired_out(const std::string &val);
 	void opt_out2(const std::string& val);
@@ -466,7 +476,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 44> options = {
+	const std::array<opt_6_tuple, 45> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
@@ -479,6 +489,7 @@ private:
 		std::make_tuple(OPT_BEST,           "INT",         COMMON,      false, help_best, &Runopts::opt_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),
 		std::make_tuple(OPT_PRINT_ALL_READS,"BOOL",        COMMON,      false, help_print_all_reads, &Runopts::opt_print_all_reads),
+		std::make_tuple(OPT_PAIRED,         "BOOL",        COMMON,      false, help_paired, &Runopts::opt_paired),
 		std::make_tuple(OPT_PAIRED_IN,      "BOOL",        COMMON,      false, help_paired_in, &Runopts::opt_paired_in),
 		std::make_tuple(OPT_PAIRED_OUT,     "BOOL",        COMMON,      false, help_paired_out, &Runopts::opt_paired_out),
 		std::make_tuple(OPT_OUT2,           "BOOL",        COMMON,      false, help_out2, &Runopts::opt_out2),
