@@ -545,7 +545,32 @@ t23:
     - -blast
     - '1'
     - -v
+    - -paired
     - -out2
+  validate:
+    func:
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4281
+    num_aligned_rev: 4907
+    num_other_fwd:    719
+    num_other_ref:     93
+
+t24:
+  name: 1 paired reads file + joint FWD/REV output
+  note: |
+    Same as 22 but 'paired' is used without 'out2' => FWD and REV output to the same files
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -v
+    - -paired
   validate:
     func:
     num_hits:    9188
