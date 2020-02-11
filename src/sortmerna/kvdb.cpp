@@ -1,7 +1,7 @@
 /* 
  * FILE: kvdb.cpp
  * Created: Jun 05, 2018
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 #include "kvdb.hpp"
 #include "common.hpp"

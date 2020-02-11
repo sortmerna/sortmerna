@@ -1,7 +1,7 @@
 /* 
  * FILE: cmd.cpp
  * Created: Jan 17, 2018 Wed
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 
 #include <iostream>

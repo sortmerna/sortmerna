@@ -1,7 +1,7 @@
 /* 
  * FILE: util.cpp
  * Created: Jun 10, 2018 Sun
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 #include "common.hpp"
 

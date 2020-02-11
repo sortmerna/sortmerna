@@ -1,7 +1,7 @@
 ﻿/* 
  * FILE: options.cpp
  * Created: Jun 07, 2018 Thu
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 
  // TODO: BUG: if SMR headers moved down after 3rd party, 'timeval' struct gets 'redefined' - compiler error. That's a header mess bug.
@@ -1706,7 +1706,7 @@ void about()
 
 	ss << std::endl
 		<< "  Program:      SortMeRNA version " << SORTMERNA_MAJOR << "." << SORTMERNA_MINOR << "." << SORTMERNA_PATCH << std::endl
-		<< "  Copyright:    2016-2019 Clarity Genomics BVBA:" << std::endl
+		<< "  Copyright:    2016-2020 Clarity Genomics BVBA:" << std::endl
 		<< "                Turnhoutseweg 30, 2340 Beerse, Belgium" << std::endl
 		<< "                2014-2016 Knight Lab:" << std::endl
 		<< "                Department of Pediatrics, UCSD, La Jolla" << std::endl
@@ -1716,12 +1716,12 @@ void about()
 		<< "                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl
 		<< "                See the GNU Lesser General Public License for more details." << std::endl
 		<< "  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com" << std::endl
-		<< "                Laurent Noé      laurent.noe@lifl.fr"      << std::endl
-		<< "                Pierre Pericard  pierre.pericard@lifl.fr"  << std::endl
-		<< "                Daniel McDonald  wasade@gmail.com"         << std::endl
-		<< "                Mikaël Salson    mikael.salson@lifl.fr"    << std::endl
-		<< "                Hélène Touzet    helene.touzet@lifl.fr"    << std::endl
-		<< "                Rob Knight       robknight@ucsd.edu\n"     << std::endl;
+		<< "                Laurent Noé      laurent.noe@lifl.fr"     << std::endl
+		<< "                Pierre Pericard  pierre.pericard@lifl.fr" << std::endl
+		<< "                Daniel McDonald  wasade@gmail.com"        << std::endl
+		<< "                Mikaël Salson    mikael.salson@lifl.fr"   << std::endl
+		<< "                Hélène Touzet    helene.touzet@lifl.fr"   << std::endl
+		<< "                Rob Knight       robknight@ucsd.edu\n"    << std::endl;
 
 	std::cout << ss.str();
 }

@@ -1,7 +1,7 @@
 /*
  * FILE: references.cpp
  * Created: Dec 23, 2017 Sat
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 #include <fstream>
 #include <sstream>

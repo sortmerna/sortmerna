@@ -1,7 +1,7 @@
 /**
  * FILE: read.cpp
  * Created: Nov 26, 2017 Sun
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 #include <filesystem>
 

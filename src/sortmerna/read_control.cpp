@@ -2,7 +2,7 @@
  * FILE: read_control.cpp 
  * Created: Mar 12, 2019 Tue
  *
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 #include <string>
 #include <iostream> // std::cout,cerr

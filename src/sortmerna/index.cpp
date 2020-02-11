@@ -3,6 +3,7 @@
  * @brief Representation of indexed reference information.
  * @parblock
  * SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
+ * @copyright 2016-20 Clarity Genomics BVBA
  * @copyright 2012-16 Bonsai Bioinformatics Research Group
  * @copyright 2014-16 Knight Lab, Department of Pediatrics, UCSD, La Jolla
  * @copyright 2016-19 Clarity Genomics BVBA

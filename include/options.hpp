@@ -6,6 +6,8 @@
  * skiplength
  *    skip lengths for pass 1, pass 2 and pass 3 in first step of sortmerna
  *    pipeline for each reference database searched
+ *
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 #include <string>
 #include <vector>

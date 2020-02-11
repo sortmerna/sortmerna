@@ -4,7 +4,7 @@
  *
  * Callable objects designed to be run in threads
  *
- * @copyright 2016-19 Clarity Genomics BVBA
+ * @copyright 2016-20 Clarity Genomics BVBA
  */
 
 #include <iostream>

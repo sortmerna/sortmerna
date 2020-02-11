@@ -1,7 +1,7 @@
 /**
 * FILE: readstats.hpp
 * Created: Nov 17, 2017 Fri
-* @copyright 2016-19 Clarity Genomics BVBA
+* @copyright 2016-20 Clarity Genomics BVBA
 *
 * Read file statistics
 */
