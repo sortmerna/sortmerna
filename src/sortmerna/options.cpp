@@ -749,10 +749,10 @@ void Runopts::opt_passes(const std::string &val)
 void Runopts::opt_id(const std::string &val)
 {
 	// % id
-	if (align_id < 0)
+	if (min_id < 0)
 	{
-		if ((sscanf(val.data(), "%lf", &align_id) != 1) ||
-			(align_id < 0) || (align_id > 1))
+		if ((sscanf(val.data(), "%lf", &min_id) != 1) ||
+			(min_id < 0) || (min_id > 1))
 		{
 			ERR(" : --id [DOUBLE] must be a positive float with value 0<=id<=1.");
 			exit(EXIT_FAILURE);
@@ -768,10 +768,10 @@ void Runopts::opt_id(const std::string &val)
 void Runopts::opt_coverage(const std::string &val)
 {
 	// % query coverage
-	if (align_cov < 0)
+	if (min_cov < 0)
 	{
-		if ((sscanf(val.data(), "%lf", &align_cov) != 1) ||
-			(align_cov < 0) || (align_cov > 1))
+		if ((sscanf(val.data(), "%lf", &min_cov) != 1) ||
+			(min_cov < 0) || (min_cov > 1))
 		{
 			ERR(" : --coverage [DOUBLE] must be a positive float with value 0<=id<=1.");
 			exit(EXIT_FAILURE);
@@ -1476,7 +1476,7 @@ void Runopts::validate()
 	}
 
 	// %id and %coverage can only be used with --otu_map
-	if ((align_id > 0 || align_cov > 0) && !is_otu_map)
+	if ((min_id > 0 || min_cov > 0) && !is_otu_map)
 	{
 		std::stringstream ss;
 		ss << STAMP
@@ -1556,19 +1556,19 @@ void Runopts::validate()
 		is_full_search = false;
 
 	// default %id to keep alignment
-	if (align_id < 0)
+	if (min_id < 0)
 	{
 		// if OTU-map is chosen, set default similarity to 0.97
-		if (is_otu_map) align_id = 0.97;
-		else align_id = 0;
+		if (is_otu_map) min_id = 0.97;
+		else min_id = 0;
 	}
 
 	// default %query coverage to keep alignment
-	if (align_cov < 0)
+	if (min_cov < 0)
 	{
 		// if OTU-map is chosen, set default coverage to 0.97
-		if (is_otu_map) align_cov = 0.97;
-		else align_cov = 0;
+		if (is_otu_map) min_cov = 0.97;
+		else min_cov = 0;
 	}
 } // ~Runopts::validate
 

@@ -243,6 +243,12 @@ t11:
     - -v
   validate:
     func: t11
+    num_reads: 30000
+    num_hits: 19995
+    num_fail: 10005
+    num_denovo: 9831
+    num_pass_id_cov: 10164 #   10164 + 9831 = 19995
+    num_cluster: 4000
 
 t12:
   name: test_simulated_amplicon_1_part_map

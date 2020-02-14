@@ -622,7 +622,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 		{
 			if (opts.is_paired_in) {
 				// if Either is aligned -> aligned
-				if (reads[0].hit || reads[1].hit) {
+				if (reads[0].is_hit || reads[1].is_hit) {
 					// validate the reads are paired in case of two reads files
 					if (opts.readfiles.size() == 2 
 						&& (reads[0].read_num != reads[1].read_num 
@@ -661,7 +661,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 			}
 			else if (opts.is_paired_out) {
 				// if Both aligned -> aligned
-				if (reads[0].hit && reads[1].hit) {
+				if (reads[0].is_hit && reads[1].is_hit) {
 					for (size_t i = 0; i < reads.size(); ++i)
 					{
 						if (opts.is_out2) {
@@ -690,7 +690,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				// reads go to aligned file, and only non-aligned to other file
 				for (size_t i = 0; i < reads.size(); ++i)
 				{
-					if (reads[i].hit) {
+					if (reads[i].is_hit) {
 						if (opts.is_out2) {
 							write_a_read(fastx_aligned[i], reads[i]); // fwd and rev go into different files
 						}
@@ -712,7 +712,7 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 		else // non-paired
 		{
 			// the read was accepted - output
-			if (reads[0].hit)
+			if (reads[0].is_hit)
 			{
 				write_a_read(fastx_aligned[0], reads[0]);
 			} //~if read was accepted
@@ -734,7 +734,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 		if (opts.is_paired_in || opts.is_paired_out)
 		{
 			// either both reads are accepted, or one is accepted and pairedin_gv
-			if ( opts.is_paired_in && reads[0].hit && reads[1].hit && (reads[0].hit_denovo || reads[1].hit_denovo) )
+			if ( opts.is_paired_in && reads[0].is_hit && reads[1].is_hit && (reads[0].is_denovo || reads[1].is_denovo) )
 			{
 				// output aligned read
 				for (Read read : reads)
@@ -744,7 +744,7 @@ void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
 		else // regular or pair-ended reads don't need to go into the same file
 		{
 			// the read was accepted
-			if (reads[0].hit && reads[0].hit_denovo)
+			if (reads[0].is_hit && reads[0].is_denovo)
 			{
 				// output aligned read
 				denovoreads << reads[0].header << std::endl << reads[0].sequence << std::endl;

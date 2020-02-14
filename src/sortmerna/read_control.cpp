@@ -85,7 +85,7 @@ void ReadControl::run()
 				read.load_db(kvdb); // get matches from Key-value database
 				//unmarshallJson(kvdb); // get matches from Key-value database
 				++read_cnt; // save because push(read) uses move(read)
-				if (read.hit) ++num_aligned;
+				if (read.is_hit) ++num_aligned;
 				readQueue.push(read);
 			}
 		}
@@ -99,7 +99,7 @@ void ReadControl::run()
 				read.init(opts);
 				read.load_db(kvdb); // get matches from Key-value database
 				++read_cnt;
-				if (read.hit) ++num_aligned;
+				if (read.is_hit) ++num_aligned;
 				readQueue.push(read);
 			}
 		}

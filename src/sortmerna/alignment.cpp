@@ -406,9 +406,9 @@ void compute_lis_alignment
 						{
 							// read has not been yet mapped, set bit to true for this read
 							// (this is the Only place where read_hits can be modified)
-							if (!read.hit)
+							if (!read.is_hit)
 							{
-								read.hit = true;
+								read.is_hit = true;
 								++readstats.total_reads_aligned;
 								++readstats.reads_matched_per_db[index.index_num];
 							}
@@ -575,7 +575,7 @@ void compute_lis_alignment
 								ss >> align_id_round >> align_cov_round;
 
 								// the alignment passed the %id and %query coverage threshold
-								if ( align_id_round >= opts.align_id && align_cov_round >= opts.align_cov && read_to_count)
+								if ( align_id_round >= opts.min_id && align_cov_round >= opts.min_cov && read_to_count)
 								{
 									if (!readstats.is_total_reads_mapped_cov)
 										++readstats.total_reads_mapped_cov; // also calculated in post-processor 'computeStats'
@@ -583,7 +583,7 @@ void compute_lis_alignment
 
 									// do not output read for de novo OTU clustering
 									// it passed the %id/coverage thersholds
-									if (opts.is_de_novo_otu) read.hit_denovo = false;
+									if (opts.is_de_novo_otu) read.is_denovo = false;
 								}
 								// <----------------------------------------- TODO
 

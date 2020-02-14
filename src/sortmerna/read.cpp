@@ -98,8 +98,8 @@ Read::Read()
 	lastIndex(0),
 	lastPart(0),
 	reversed(false),
-	hit(false),
-	hit_denovo(true),
+	is_hit(false),
+	is_denovo(true),
 	null_align_output(false),
 	max_SW_count(0),
 	num_alignments(0),
@@ -138,8 +138,8 @@ Read::Read(const Read & that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
-	hit = that.hit;
-	hit_denovo = that.hit_denovo;
+	is_hit = that.is_hit;
+	is_denovo = that.is_denovo;
 	null_align_output = that.null_align_output;
 	max_SW_count = that.max_SW_count;
 	num_alignments = that.num_alignments;
@@ -173,8 +173,8 @@ Read & Read::operator=(const Read & that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
-	hit = that.hit;
-	hit_denovo = that.hit_denovo;
+	is_hit = that.is_hit;
+	is_denovo = that.is_denovo;
 	null_align_output = that.null_align_output;
 	max_SW_count = that.max_SW_count;
 	num_alignments = that.num_alignments;
@@ -263,8 +263,8 @@ void Read::clear()
 	isRestored = false;
 	lastIndex = 0;
 	lastPart = 0;
-	hit = false;
-	hit_denovo = true;
+	is_hit = false;
+	is_denovo = true;
 	null_align_output = false;
 	max_SW_count = 0;
 	num_alignments = 0;
@@ -354,9 +354,9 @@ std::string Read::matchesToJson() {
 
 	writer.StartObject();
 	writer.Key("hit");
-	writer.Bool(hit);
-	writer.Key("hit_denovo");
-	writer.Bool(hit_denovo);
+	writer.Bool(is_hit);
+	writer.Key("is_denovo");
+	writer.Bool(is_denovo);
 	writer.Key("null_align_output");
 	writer.Bool(null_align_output);
 	writer.Key("max_SW_count");
@@ -387,8 +387,8 @@ std::string Read::toString()
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&hit)), sizeof(hit), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&hit_denovo)), sizeof(hit_denovo), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_hit)), sizeof(is_hit), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_denovo)), sizeof(is_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_SW_count)), sizeof(max_SW_count), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_alignments)), sizeof(num_alignments), std::back_inserter(buf));
@@ -424,11 +424,11 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&lastPart), bstr.data() + offset, sizeof(lastPart));
 	offset += sizeof(lastPart);
 
-	std::memcpy(static_cast<void*>(&hit), bstr.data() + offset, sizeof(hit));
-	offset += sizeof(hit);
+	std::memcpy(static_cast<void*>(&is_hit), bstr.data() + offset, sizeof(is_hit));
+	offset += sizeof(is_hit);
 
-	std::memcpy(static_cast<void*>(&hit_denovo), bstr.data() + offset, sizeof(hit_denovo));
-	offset += sizeof(hit_denovo);
+	std::memcpy(static_cast<void*>(&is_denovo), bstr.data() + offset, sizeof(is_denovo));
+	offset += sizeof(is_denovo);
 
 	std::memcpy(static_cast<void*>(&null_align_output), bstr.data() + offset, sizeof(null_align_output));
 	offset += sizeof(null_align_output);

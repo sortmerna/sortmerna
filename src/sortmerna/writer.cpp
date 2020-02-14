@@ -39,7 +39,7 @@ void Writer::write()
 		std::string readstr = read.toString();
 		if (!opts.is_dbg_put_kvdb && readstr.size() > 0)
 		{
-			if (read.hit) ++num_aligned;
+			if (read.is_hit) ++num_aligned;
 			kvdb.put(read.id, readstr);
 		}
 	}

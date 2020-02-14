@@ -343,11 +343,11 @@ void alignmentCb
 
 	// the read didn't align (for --num_alignments [INT] option),
 	// output null alignment string
-	if (isLastStrand && !read.hit && opts.num_alignments > -1) // !opts.forward
+	if (isLastStrand && !read.is_hit && opts.num_alignments > -1) // !opts.forward
 	{
 		// do not output read for de novo OTU clustering
-		// (it did not pass the E-value threshold)
-		if (opts.is_de_novo_otu) read.hit_denovo = false;
+		// - it did not pass the E-value threshold
+		if (opts.is_de_novo_otu) read.is_denovo = false;
 	}//~if read didn't align
 } // ~alignmentCb
 

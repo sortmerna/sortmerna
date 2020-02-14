@@ -80,7 +80,7 @@ void Processor::run()
 
 		if (read.isValid && !read.isEmpty) 
 		{
-			if (read.hit) ++num_aligned;
+			if (read.is_hit) ++num_aligned;
 			writeQueue.push(read);
 		}
 
@@ -126,9 +126,9 @@ void PostProcessor::run()
 
 		callback(read, readstats, refstats, refs, opts);
 		++countReads;
-		if (read.hit) ++count_reads_aligned;
+		if (read.is_hit) ++count_reads_aligned;
 
-		if (read.isValid && !read.isEmpty && !read.hit_denovo) 
+		if (read.isValid && !read.isEmpty && !read.is_denovo)
 		{
 			writeQueue.push(read);
 		}

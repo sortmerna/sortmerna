@@ -368,8 +368,8 @@ public:
 	int score_N = 0; // '-N' SW penalty for ambiguous letters (N's)
 
 	double evalue = -1.0; // '-e' E-value threshold
-	double align_id = -1.0; // OTU-picking option: minimum %%id to keep alignment
-	double align_cov = -1.0; // [4] '--coverage': OTU-picking option: minimum %%coverage to keep alignment.
+	double min_id = -1.0; // OTU-picking option: Identity threshold (%ID)
+	double min_cov = -1.0; // [4] OTU-picking option: minimum Coverage (%COV)
 
 	// indexing options
 	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.

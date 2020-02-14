@@ -92,7 +92,7 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 				ss >> align_id_round >> align_cov_round;
 
 				// alignment with the highest SW score passed %id and %coverage thresholds
-				if (align_id_round >= opts.align_id && align_cov_round >= opts.align_cov)
+				if (align_id_round >= opts.min_id && align_cov_round >= opts.min_cov)
 				{
 					if (!readstats.is_total_reads_mapped_cov)
 						++readstats.total_reads_mapped_cov; // if not already calculated.
@@ -101,7 +101,7 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 					//       for (opts.num_alignments > -1)
 					//  here for (opts.num_alignments == -1)
 					// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
-					if (opts.is_de_novo_otu) read.hit_denovo = false;
+					if (opts.is_de_novo_otu) read.is_denovo = false;
 
 					// fill OTU map with highest-scoring alignment for the read
 					if (opts.is_otu_map)
@@ -128,8 +128,8 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 	if ( opts.is_de_novo_otu
 		&& refs.num == opts.indexfiles.size() - 1 
 		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 
-		&& read.hit 
-		&& read.hit_denovo )
+		&& read.is_hit
+		&& read.is_denovo)
 	{
 		++readstats.total_reads_denovo_clustering;
 	}

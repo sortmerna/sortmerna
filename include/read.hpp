@@ -71,8 +71,8 @@ public:
 	unsigned int lastIndex; // last index number this read was aligned against. Set in Processor::callback
 	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
-	bool hit; // indicates a match for this Read has been found
-	bool hit_denovo; // hit & !(%Cov & %ID) TODO: change this to 'hit_cov_id' because it's set to true if !(%Cov & %ID) regardless of 'hit'
+	bool is_hit; // read's SW_score > min_SW_score i.e a match for this Read has been found
+	bool is_denovo; // pass SW & fail (%Cov & %ID)
 	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
 	uint16_t max_SW_count; // count of matches that have Max Smith-Waterman score for this read
 	int32_t num_alignments; // number of alignments to output per read
