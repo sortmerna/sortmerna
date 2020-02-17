@@ -88,8 +88,8 @@ t3:
   validate: 
     func: t3
     num_hits: 99999
-    num_groups_1: 272
-    num_groups_2: 265
+    num_fail:     1
+    num_groups: [264, 265] # 264 lnx, 265 win (idx line endings bug)
 
 # original test only performed indexing i.e. no alignment and not reads
 # TODO: add option '-i' 'index only'?
@@ -209,6 +209,38 @@ t9:
     - -v
   validate:
     func: t9
+    sam_alignments_expected: [
+      [
+          'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+          '0',
+          'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+          '1',
+          '255',
+          '101M',
+          '*',
+          '0',
+          '0',
+          'GCTGGCACGGAGTTAGCCGGGGCTTATAAATGGTACCGTCATTGATTCTTCCCATTCTTTCGAAGTTTACATCCCGAGGGACTTCATCCTTCACGCGGCGT',
+          '*',
+          'AS:i:202',
+          'NM:i:0'
+      ],
+      [
+          'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+          '16',
+          'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
+          '102',
+          '255',
+          '101M',
+          '*',
+          '0',
+          '0',
+          'ACGCCGCGTGAAGGATGAAGTCCCTCGGGATGTAAACTTCGAAAGAATGGGAAGAATCAATGACGGTACCATTTATAAGCCCCGGCTAACTCCGTGCCAGC',
+          '*',
+          'AS:i:202',
+          'NM:i:0'
+      ]
+    ]
 
 t10:
   name: test_ref_shorter_than_seed
@@ -244,14 +276,20 @@ t11:
   validate:
     func: t11
     num_reads: 30000
-    num_hits: 19995
-    num_fail: 10005
+    num_hits:  19995
+    num_fail:  10005
     num_denovo: 9831
-    num_pass_id_cov: 10164 #   10164 + 9831 = 19995
-    num_cluster: 4000
+    num_pass_id_cov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
+    num_cluster: [4400, 4401]
+    blast:
+      num_recs:       19995
+      num_pass_id:    10175 
+      num_pass_cov:   15054 
+      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
 
 t12:
   name: test_simulated_amplicon_1_part_map
+  note: same as t11 + 'best 5'
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
@@ -272,6 +310,17 @@ t12:
     - -v
   validate:
     func: t12
+    num_reads: 30000
+    num_hits: 19995
+    num_fail: 10005
+    num_denovo: 9831
+    num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
+    num_cluster: [4400, 4401]
+    blast:
+      num_recs:       19995
+      num_pass_id:    10467 
+      num_pass_cov:   16536 
+      num_pass_id_cov: 9849 # pass_SW + pass_ID + pass_Cov
 
 t13:
   name: test_simulated_amplicon_6_part_map
@@ -296,6 +345,17 @@ t13:
     - -v
   validate:
     func: t13
+    num_reads: 30000
+    num_hits: 19995
+    num_fail: 10005
+    num_denovo: 9831
+    num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
+    num_cluster: [4400, 4401]
+    blast:
+      num_recs:       19995
+      num_pass_id:    10175 
+      num_pass_cov:   15054 
+      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
 
 t14:
   name: test_simulated_amplicon_12_part_map
@@ -321,6 +381,17 @@ t14:
     - -v
   validate:
     func: t14
+    num_reads: 30000
+    num_hits: 19995
+    num_fail: 10005
+    num_denovo: 9831
+    num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_ID + pass_Cov, not necessarily pass_SW
+    num_cluster: [4400, 4401] # 4400 before bug 52
+    blast:
+      num_recs:       19995
+      num_pass_id:    10175 
+      num_pass_cov:   15054 
+      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
 
 t15:
   name: test_threads
@@ -361,7 +432,7 @@ t16:
 
 t17:
   name: test_indexing
-  note:
+  note: test indexing, workdir
   cmd:
     - -ref
     -  data/rRNA_databases/silva-euk-28s-id98.fasta
@@ -390,10 +461,10 @@ t17:
     - run
   cwd: {{ SMR_SRC }}
   validate:
-    func:
+    func: t17
     num_reads: 10000
-    num_hits: 5944
-    num_fail: 4056
+    num_hits:   5944
+    num_fail:   4056
 
 t18:
   name: 2 reads files + paired_in + joint FWD/REV output
@@ -424,10 +495,16 @@ t18:
     #- -out2
   validate:
     func:
+    num_reads:  10000
     num_hits:    9188
     num_fail:     812
     num_aligned: 9852
     num_other:    148
+    blast:
+      num_recs:       19995
+      num_pass_id:    10175 
+      num_pass_cov:   15054 
+      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
 
 t19:
   name: 2 reads files + paired_in + separate FWD/REV output

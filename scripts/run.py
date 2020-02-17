@@ -44,6 +44,14 @@ RUN_DIR  = None
 OUT_DIR  = None
 TEST_DATA = None
 
+# base names of the report files
+LOG_BASE     = 'aligned.log'
+ALI_BASE     = 'aligned.fasta'
+NON_ALI_BASE = 'other.fasta'
+DENOVO_BASE  = 'aligned_denovo.fasta'
+OTU_BASE     = 'aligned_otus.txt'
+BLAST_BASE   = 'aligned.blast'
+
 
 def run(cmd, cwd=None, capture=False):
     '''
@@ -129,15 +137,165 @@ def to_lf(ddir):
     print('to_lf Done')
 #END to_lf
 
-def t0(name, datad, outd, ret={}, **kwarg):
+def parse_log(fpath):
+    '''
+    parse 'aligned.log' to dictionary
+
+    @param fpath  'aligned.log' file
+    '''
+    logd = {
+        'cmd': ['Command', None],
+        'pid': ['Porcess pid', None],
+        'params': {'refs': []},
+        'num_reads': ['Total reads =', 0],
+        'results': {
+            'num_hits': ['Total reads passing E-value threshold', 0],
+            'num_fail': ['Total reads failing E-value threshold', 0],
+            'num_denovo': ['Total reads for de novo clustering', 0],
+            'min_len': ['Minimum read length', 0],
+            'max_len': ['Maximum read length', 0],
+            'mean_len': ['Mean read length', 0]
+        },
+        'coverage': [],
+        'num_id_cov': ['Total reads passing %%id and %%coverage thresholds', 0],
+        'num_otus': ['Total OTUs', 0],
+        'date': None
+    }
+
+    with open(fpath) as f_log:    
+        for line in f_log:
+            if logd['num_reads'][0] in line:
+                logd['num_reads'][1] = int((re.split(' = ', line)[1]).strip())
+            elif logd['results']['num_denovo'][0] in line:
+                logd['results']['num_denovo'][1] = int((re.split(' = ', line)[1]).strip())
+            elif logd['results']['num_hits'][0] in line:
+                logd['results']['num_hits'][1] = int((re.split(' = | \(', line)[1]).strip())
+            elif logd['results']['num_fail'][0] in line:
+                logd['results']['num_fail'][1] = int((re.split(' = | \(', line)[1]).strip())
+            elif logd['num_id_cov'][0] in line:
+                logd['num_id_cov'][1] = int((re.split(' = ', line)[1]).strip())
+            elif logd['num_otus'][0] in line:
+                logd['num_otus'][1] = int((re.split(' = ', line)[1]).strip())
+
+    return logd
+#END parse_log
+
+def process_output(outd, **kwarg):
+    '''
+    Used by:
+        test_simulated_amplicon_1_part_map
+        test_simulated_amplicon_generic_buffer
+        test_simulated_amplicon_12_part_index
+    '''
+    STAMP = '[{}]'.format(process_output)
+    LOGF    = os.path.join(outd, LOG_BASE)
+    ALIF    = os.path.join(outd, ALI_BASE)
+    NONALIF = os.path.join(outd, NON_ALI_BASE)
+    DENOVOF = os.path.join(outd, DENOVO_BASE)
+    OTUF    = os.path.join(outd, OTU_BASE)
+    BLASTF  = os.path.join(outd, BLAST_BASE)
+
+    logd = parse_log(LOGF)
+    vald = kwarg.get('validate')
+    cmdd = kwarg.get('cmd')
+    
+    # Correct number of reads
+    if not vald:
+        print('{} Validation info not provided'.format(STAMP))
+        return
+
+    if vald.get('num_reads'):
+        assert vald['num_reads'] == logd['num_reads'][1]
+    
+    # Correct number of de novo reads
+    if vald.get('num_denovo'):
+        assert vald['num_denovo'] == logd['results']['num_denovo'][1], \
+            '{} not equals {}'.format(vald.get('num_denovo'), logd['results']['num_denovo'][1])
+
+        num_denovo_file = 0
+        for seq in skbio.io.read(DENOVOF, format='fasta'):
+            num_denovo_file += 1
+
+        assert logd['results']['num_denovo'][1] == num_denovo_file
+    
+    # Correct number of reads mapped
+    if vald.get('num_hits'):
+        assert vald['num_hits'] == logd['results']['num_hits'][1]
+        num_hits_file = 0
+        if os.path.exists(ALIF):
+            for seq in skbio.io.read(ALIF, format='fasta'):
+                num_hits_file += 1
+            assert logd['results']['num_hits'][1] == num_hits_file
+    
+    # Correct number of reads not mapped
+    if vald.get('num_fail'):
+        assert vald['num_fail']  == logd['results']['num_fail'][1]
+        num_fails_file = 0
+        if os.path.exists(NONALIF):
+            for seq in skbio.io.read(NONALIF, format='fasta'):
+                num_fails_file += 1
+            assert logd['results']['num_fail'][1] == num_fails_file
+    
+    # Check count of reads passing %id and %coverage threshold
+    # as given in alinged.log
+    if vald.get('num_pass_id_cov'):
+        assert vald['num_pass_id_cov'] == logd['num_id_cov'][1]
+
+    # Check count of reads passing %id and %coverage threshold
+    # as given in aligned.blast
+    if vald.get('blast'):
+        num_pass_id = 0
+        num_pass_cov = 0
+        num_pass_id_cov_file = 0
+        is_has_cov = False
+        if os.path.exists(BLASTF):
+            with open(BLASTF) as f_blast:
+                for line in f_blast:
+                    llist = line.strip().split('\t')
+                    f_id = float(llist[2])
+                    is_pass_id = f_id >= 97.0
+                    if is_pass_id: 
+                        num_pass_id += 1
+                    is_has_cov = len(llist) > 12
+                    if is_has_cov:
+                        f_cov = float(line.strip().split('\t')[13])
+                        is_pass_cov = f_cov >= 97.0
+                        if is_pass_cov: 
+                            num_pass_cov += 1
+                        if is_pass_id and is_pass_cov:
+                            num_pass_id_cov_file += 1
+        
+        tmpl = '{} from {}: num_pass_id= {} num_pass_cov= {} num_pass_id_cov= {}'
+        print(tmpl.format(STAMP, BLAST_BASE, num_pass_id, num_pass_cov, num_pass_id_cov_file))
+
+        if is_has_cov:
+            assert vald['blast']['num_pass_id_cov'] == num_pass_id_cov_file, \
+                '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], num_pass_id_cov_file)
+    
+    # Correct number of clusters recorded
+    #self.assertEqual("4401", num_clusters_log) # 4400 before bug 52
+    if logd.get('num_otus') and vald.get('num_cluster'):
+        assert logd['num_otus'][1] in vald['num_cluster']  # 4400 for amplicon_12_part
+        num_clusters_file = 0
+        num_reads_in_clusters_file = 0
+        if os.path.exists(OTUF):
+            with open(OTUF) as f_otus:
+                for line in f_otus:
+                    num_clusters_file += 1
+                    num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
+            assert logd['num_otus'][1] == num_clusters_file
+            assert logd['num_id_cov'][1] == num_reads_in_clusters_file
+#END process_output
+
+def t0(datad, outd, ret={}, **kwarg):
     '''
     @param datad   Data directory
     @param outd    results output directory
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t0:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))   
 
-    BLAST_OUT = os.path.join(outd, 'aligned.blast')
+    BLAST_OUT = os.path.join(outd, BLAST_BASE)
     BLAST_EXPECTED = os.path.join(datad, 't0_expected_alignment.blast')
 
     dlist = []
@@ -159,29 +317,29 @@ def t0(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t0
 
-def t0_other(name, datad, outd, ret={}, **kwarg):
+def t0_other(datad, outd, ret={}, **kwarg):
     '''
     @param datad   Data directory
     @param outd    results output directory
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t0_other:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
     print("{} Done".format(STAMP))
 #END t0_other
 
-def t1(name, datad, outd, ret={}, **kwarg):
+def t1(datad, outd, ret={}, **kwarg):
     '''
     @param datad   Data directory
     @param outd    results output directory
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t1:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
     print("{} Done".format(STAMP))
 #END t1
 
-def t2(name, datad, outd, ret={}, **kwarg):
+def t2(datad, outd, ret={}, **kwarg):
     '''
     @param datad   Data directory
     @param outd    results output directory
@@ -196,10 +354,10 @@ def t2(name, datad, outd, ret={}, **kwarg):
                   ^
                   align_que_start
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t2:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    OUTF = os.path.join(outd, 'aligned.blast')
+    OUTF = os.path.join(outd, BLAST_BASE)
 
     actual_alignment = []
     with open(OUTF) as afile:
@@ -212,7 +370,7 @@ def t2(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t2
 
-def t3(name, datad, outd, ret={}, **kwarg):
+def t3(datad, outd, ret={}, **kwarg):
     '''
     @param name  name of this test
     @param datad   Data directory
@@ -227,16 +385,15 @@ def t3(name, datad, outd, ret={}, **kwarg):
     Conditions: input FASTA file is processed in
                 one mapped section.
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t3:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, 'aligned.log')
-    OTUF = os.path.join(outd, 'aligned_otus.txt')
-    DENOVOF = os.path.join(outd, 'aligned_denovo.fasta')
+    LOGF = os.path.join(outd, LOG_BASE)
+    OTUF = os.path.join(outd, OTU_BASE)
+    DENOVOF = os.path.join(outd, DENOVO_BASE)
 
-    num_hits_expect = kwarg.get('num_hits')
-    num_groups_1_expect = kwarg.get('num_groups_1')
-    num_groups_2_expect = kwarg.get('num_groups_2')
+    hits_expect = kwarg.get('num_hits')
+    groups_expect = kwarg.get('num_groups')
 
     num_hits = 0
     num_failures_log = 0
@@ -251,14 +408,14 @@ def t3(name, datad, outd, ret={}, **kwarg):
             elif 'Total OTUs' in line:
                 num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
 
-    assert int(num_hits) == num_hits_expect
+    assert int(num_hits) == hits_expect
 
     # sort order (descending/ascending) of candidate references (alignment.cpp)
     is_refs_descending = False
     if is_refs_descending:
-        num_groups = num_groups_1_expect # originally
+        num_groups = groups_expect[0] # originally
     else:
-        num_groups = num_groups_2_expect
+        num_groups = groups_expect[1]
 
     assert num_clusters_log == str(num_groups)
 
@@ -275,7 +432,7 @@ def t3(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t3
 
-def t4(name, datad, outd, ret={}, **kwarg):
+def t4(datad, outd, ret={}, **kwarg):
     '''
     @param name
     @param datad   Data directory
@@ -286,17 +443,17 @@ def t4(name, datad, outd, ret={}, **kwarg):
 
     test_indexdb_split_databases
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t4:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, 'aligned.log')
-    OTUF = os.path.join(outd, 'aligned_otus.txt')
-    DENOVOF = os.path.join(outd, 'aligned_denovo.fasta')
+    LOGF = os.path.join(outd, LOG_BASE)
+    OTUF = os.path.join(outd, OTU_BASE)
+    DENOVOF = os.path.join(outd, DENOVO_BASE)
     print('TODO: not yet implemented')
     print("{} Done".format(STAMP))
 #END t4
 
-def t5(name, datad, outd, ret={}, **kwarg):
+def t5(datad, outd, ret={}, **kwarg):
     '''
     @param name
     @param datad   Data directory
@@ -305,10 +462,10 @@ def t5(name, datad, outd, ret={}, **kwarg):
 
     test_mate_pairs, part 1
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t5:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, 'aligned.log')
+    LOGF = os.path.join(outd, LOG_BASE)
     ALIF = os.path.join(outd, 'aligned.fastq')
     NONALIF = os.path.join(outd, 'other.fastq')
 
@@ -359,7 +516,7 @@ def t5(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t5
 
-def t6(name, datad, outd, ret={}, **kwarg):
+def t6(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -369,10 +526,10 @@ def t6(name, datad, outd, ret={}, **kwarg):
 
     test_mate_pairs, part 2, paired_in
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t6:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, 'aligned.log')
+    LOGF = os.path.join(outd, LOG_BASE)
     ALIF = os.path.join(outd, 'aligned.fastq')
     NONALIF = os.path.join(outd, 'other.fastq')
 
@@ -414,7 +571,7 @@ def t6(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t6
 
-def t7(name, datad, outd, ret={}, **kwarg):
+def t7(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -424,10 +581,10 @@ def t7(name, datad, outd, ret={}, **kwarg):
 
     test_mate_pairs, part 3, paired_out
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t7:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, 'aligned.log')
+    LOGF = os.path.join(outd, LOG_BASE)
     ALIF = os.path.join(outd, 'aligned.fastq')
     NONALIF = os.path.join(outd, 'other.fastq')
 
@@ -469,7 +626,7 @@ def t7(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t7
 
-def t8(name, datad, outd, ret={}, **kwarg):
+def t8(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -477,11 +634,11 @@ def t8(name, datad, outd, ret={}, **kwarg):
 
     test_multiple_databases_search
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t8:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, 'aligned.log')
-    ALIF = os.path.join(outd, 'aligned.fasta')
+    LOGF = os.path.join(outd, LOG_BASE)
+    ALIF = os.path.join(outd, ALI_BASE)
 
     num_reads_expect = kwarg.get('num_reads')
     num_hits_expect = kwarg.get('num_hits')
@@ -516,7 +673,7 @@ def t8(name, datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t8
 
-def t9(name, datad, outd, ret={}, **kwarg):
+def t9(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -524,43 +681,10 @@ def t9(name, datad, outd, ret={}, **kwarg):
 
     test_output_all_alignments_f_rc
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t9:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
     ALISAM = os.path.join(outd, 'aligned.sam')
-        
-    sam_alignments_expected = [
-        [
-            'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-            '0',
-            'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-            '1',
-            '255',
-            '101M',
-            '*',
-            '0',
-            '0',
-            'GCTGGCACGGAGTTAGCCGGGGCTTATAAATGGTACCGTCATTGATTCTTCCCATTCTTTCGAAGTTTACATCCCGAGGGACTTCATCCTTCACGCGGCGT',
-            '*',
-            'AS:i:202',
-            'NM:i:0'
-        ],
-        [
-            'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-            '16',
-            'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
-            '102',
-            '255',
-            '101M',
-            '*',
-            '0',
-            '0',
-            'ACGCCGCGTGAAGGATGAAGTCCCTCGGGATGTAAACTTCGAAAGAATGGGAAGAATCAATGACGGTACCATTTATAAGCCCCGGCTAACTCCGTGCCAGC',
-            '*',
-            'AS:i:202',
-            'NM:i:0'
-        ]
-    ]
 
     sam_alignments = []
     with open(ALISAM) as aligned_f:
@@ -570,15 +694,15 @@ def t9(name, datad, outd, ret={}, **kwarg):
             alignment = line.strip().split("\t")
             sam_alignments.append(alignment)
 
-    assert len(sam_alignments_expected) == len(sam_alignments)
+    assert len(kwarg['sam_alignments_expected']) == len(sam_alignments)
 
-    for alignment in sam_alignments_expected:
+    for alignment in kwarg['sam_alignments_expected']:
         assert alignment in sam_alignments
     
     print("{} Done".format(STAMP))
 #END t9
 
-def t10(name, datad, outd, ret={}, **kwarg):
+def t10(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -587,106 +711,20 @@ def t10(name, datad, outd, ret={}, **kwarg):
 
     test_ref_shorter_than_seed
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t10:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
     MSG = 'one of your sequences is shorter than the seed length 19'
 
-    assert ret['retcode'] == 1
-    #print('type(stderr): {}'.format(type(ret['stderr']))) # bytes
-    assert MSG in ret['stderr'].decode("utf-8")
+    if ret and ret.get('retcode'):
+        assert ret['retcode'] == 1
+        #print('type(stderr): {}'.format(type(ret['stderr']))) # bytes
+        assert MSG in ret['stderr'].decode("utf-8")
    
     print("{} Done".format(STAMP))
 #END t10
 
-def process_output(outd):
-    '''
-    Used by:
-        test_simulated_amplicon_1_part_map
-        test_simulated_amplicon_generic_buffer
-        test_simulated_amplicon_12_part_index
-    '''
-    LOGF    = os.path.join(outd, 'aligned.log')
-    ALIF    = os.path.join(outd, 'aligned.fasta')
-    NONALIF = os.path.join(outd, 'other.fasta')
-    DENOVOF = os.path.join(outd, 'aligned_denovo.fasta')
-    OTUF    = os.path.join(outd, 'aligned_otus.txt')
-    BLASTF  = os.path.join(outd, 'aligned.blast')
-
-    with open(LOGF) as f_log:
-        f_log_str = f_log.read()
-        assert "Total reads passing E-value threshold" in f_log_str
-        assert "Total reads for de novo clustering" in f_log_str
-        assert "Total OTUs" in f_log_str
-    
-        num_pass_id_cov_log = ''
-        
-        f_log.seek(0)
-        for line in f_log:
-            if 'Total reads =' in line:
-                total_reads_log = (re.split(' = ', line)[1]).strip()
-            elif 'Total reads for de novo clustering' in line:
-                num_denovo_log = (re.split(' = ', line)[1]).strip()
-            elif 'Total reads passing E-value threshold' in line:
-                num_hits_log = (re.split(' = | \(', line)[1]).strip()
-            elif 'Total reads failing E-value threshold' in line:
-                num_fails_log = (re.split(' = | \(', line)[1]).strip()
-            elif 'Total reads passing' in line and 'id' in line and 'coverage thresholds' in line:
-                num_pass_id_cov_log = (re.split(' = ', line)[1]).strip()
-            elif 'Total OTUs' in line:
-                num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
-    
-    # Correct number of reads
-    assert "30000" == total_reads_log
-    
-    # Correct number of de novo reads
-    assert "9831" == num_denovo_log, '9831 not equals {}'.format(num_denovo_log)
-
-    num_denovo_file = 0
-    for seq in skbio.io.read(DENOVOF, format='fasta'):
-        num_denovo_file += 1
-
-    assert num_denovo_log == str(num_denovo_file)
-    
-    # Correct number of reads mapped
-    assert "19995" == num_hits_log
-    num_hits_file = 0
-    for seq in skbio.io.read(ALIF, format='fasta'):
-        num_hits_file += 1
-    assert num_hits_log == str(num_hits_file)
-    
-    # Correct number of reads not mapped
-    assert "10005" == num_fails_log
-    num_fails_file = 0
-    for seq in skbio.io.read(NONALIF, format='fasta'):
-        num_fails_file += 1
-    assert num_fails_log == str(num_fails_file)
-    
-    # Correct number of reads passing %id and %coverage threshold
-    assert "10164" == num_pass_id_cov_log
-    num_pass_id_cov_file = 0
-    with open(BLASTF) as f_blast:
-        for line in f_blast:
-            f_id = float(line.strip().split('\t')[2])
-            f_cov = float(line.strip().split('\t')[13])
-            if (f_id >= 97.0 and f_cov >= 97.0):
-                num_pass_id_cov_file += 1
-    assert num_pass_id_cov_log == str(num_pass_id_cov_log)
-    
-    # Correct number of clusters recorded
-    #self.assertEqual("4401", num_clusters_log) # 4400 before bug 52
-    assert num_clusters_log in ['4400','4401'] # 4400 for amplicon_12_part
-    num_clusters_file = 0
-    num_reads_in_clusters_file = 0
-    with open(OTUF) as f_otus:
-        for line in f_otus:
-            num_clusters_file += 1
-            num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
-    assert num_clusters_log == str(num_clusters_file)
-    assert num_pass_id_cov_log == str(num_reads_in_clusters_file)
-#END process_output
-
-def t11(name, datad, outd, ret={}, **kwarg):
+def t11(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -701,21 +739,21 @@ def t11(name, datad, outd, ret={}, **kwarg):
         query FASTA file both processed as one
         section.
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t11:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    if ret['retcode']:
+    if ret and ret.get('retcode'):
         print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
         print(ret['stdout'])
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd)
+        process_output(outd, **kwarg)
    
     print("{} Done".format(STAMP))
 #END t11
 
-def t12(name, datad, outd, ret={}, **kwarg):
+def t12(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -730,21 +768,21 @@ def t12(name, datad, outd, ret={}, **kwarg):
         query FASTA file both processed as one
         section.
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t12:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    if ret['retcode']:
+    if ret and ret.get('retcode'):
         print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
         print(ret['stdout'])
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd)
+        process_output(outd, **kwarg)
    
     print("{} Done".format(STAMP))
 #END t12
 
-def t13(name, datad, outd, ret={}, **kwarg):
+def t13(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -760,21 +798,21 @@ def t13(name, datad, outd, ret={}, **kwarg):
         as one unit and input query FASTA file
         in 6 sections.
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t13:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    if ret['retcode']:
+    if ret and ret.get('retcode'):
         print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
         print(ret['stdout'])
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd)
+        process_output(outd, **kwarg)
    
     print("{} Done".format(STAMP))
 #END t13
 
-def t14(name, datad, outd, ret={}, **kwarg):
+def t14(datad, outd, ret={}, **kwarg):
     '''
     @param name
     @param datad   Data directory
@@ -792,16 +830,16 @@ def t14(name, datad, outd, ret={}, **kwarg):
         as 12 parts and input query FASTA file
         in 1 section.
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t14:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    if ret['retcode']:
+    if ret and ret.get('retcode'):
         print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
         print(ret['stdout'])
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd)
+        process_output(outd, **kwarg)
    
     print("{} Done".format(STAMP))
 #END t14
@@ -809,57 +847,58 @@ def t14(name, datad, outd, ret={}, **kwarg):
 # 'test_simulated_amplicon_generic_buffer'
 # TODO: looks exactly the same as t11 + t12. Remove.
 
-def t15(name, datad, outd, ret={}, **kwarg):
+def t15(datad, outd, ret={}, **kwarg):
     '''
     @param name  sortmerna.exe path
     @param datad   Data directory
     @param outd    results output directory
     @param capture Capture output
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t15:{}]'.format(kwarg.get('name'))
     print('{} Deleted test'.format(STAMP))
     print("{} Done".format(STAMP))
 #END t15
 
-def t16(name, datad, outd, ret={}, **kwarg):
+def t16(datad, outd, ret={}, **kwarg):
     '''
     @param name  sortmerna.exe path
     @param datad   Data directory
     @param outd    results output directory
     @param capture Capture output
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t16:{}]'.format(kwarg.get('name'))
     print('{} TODO: implement'.format(STAMP))
     print("{} Done".format(STAMP))
 #END t16
 
-def t17(name, datad, outd, ret={}, **kwarg):
+def t17(datad, outd, ret={}, **kwarg):
     '''
     @param name  sortmerna.exe path
     @param datad   Data directory
     @param outd    results output directory
     @param capture Capture output
     '''
-    STAMP = '[{}]'.format(name)
+    STAMP = '[t17:{}]'.format(kwarg.get('name'))
     print('{} TODO: implement'.format(STAMP))
+    logd = parse_log(os.path.join(outd, LOG_BASE))
     print("{} Done".format(STAMP))
 #END t17
 
-def t18(name, datad, outd, ret={}, **kwarg):
+def t18(datad, outd, ret={}, **kwarg):
     '''
     @param name  sortmerna.exe path
     @param datad   Data directory
     @param outd    results output directory
     @param capture Capture output
     '''
-    STAMP = '[{}]'.format(name)
-    print('{} TODO: implement'.format(STAMP))
+    STAMP = '[t18:{}]'.format(kwarg.get('name'))
+    process_output(outd, **kwarg)
     print("{} Done".format(STAMP))
 #END t17
 
 if __name__ == "__main__":
     '''
-    python scripts/run.py --name t0 [--capture] [--env scripts/env_non_git.yaml]
+    python scripts/run.py --name t0 [--capture] [--env scripts/env_non_git.yaml] [--validate-only]
     python scripts/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
@@ -888,6 +927,7 @@ if __name__ == "__main__":
     optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     optpar.add_option('--capture', action="store_true", help='Capture output. By default prints to stdout')
+    optpar.add_option('--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
     optpar.add_option('--ddir', dest='ddir', help = 'Data directory')
     optpar.add_option('--config', dest='config', help='Tests configuration file.')
     optpar.add_option('--env', dest='envfile', help='Environment variables')
@@ -933,56 +973,37 @@ if __name__ == "__main__":
     SMR_DIST = env[OS][SMR]['dist'] if env[OS][SMR]['dist'] else '{}/dist'.format(SMR_SRC)
     SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
     SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna') 
+    if 'workdir' in cfg[opts.name].get('cmd'):
+        workdir = '' # TODO
     RUN_DIR  = os.path.join(UHOME, 'sortmerna', 'run')
     TEST_DATA = os.path.join(SMR_SRC, 'data')
 
-    if opts.name in ['t{}'.format(x) for x in range(0,18)]:
-        OUT_DIR = os.path.join(RUN_DIR, 'out')
+    #if opts.name in ['t{}'.format(x) for x in range(0,18)]:
+    OUT_DIR = os.path.join(RUN_DIR, 'out')
 
     # clean-up the run directory. May Fail if any file in the directory is open. Close the files and re-run.
     if opts.clean and os.path.isdir(RUN_DIR):
         print('Deleting: [{}]'.format(RUN_DIR))
         shutil.rmtree(RUN_DIR)
 
-    #funcs =  {
-    #    't0': t0,
-    #    't0_other' : t0_other,
-    #    't1': t1,
-    #    't2': t2,
-    #    't3': t3,
-    #    't4': t4,
-    #    't5': t5,
-    #    't6': t6,
-    #    't7': t7,
-    #    't8': t8,
-    #    't9': t9,
-    #    't10': t10,
-    #    't11': t11,
-    #    't12': t12,
-    #    't13': t13,
-    #    't14': t14,
-    #    't16': t16,
-    #    't17': t17,
-    #    't18': t18
-    #}
-
-    # id(cfg[opts.name]) # 2409596527368
-    # id(cfg[opts.name].insert(0, SMR_EXE)) # 140725283474656
-
     # clean previous alignments (KVDB)
     kvdbdir = os.path.join(RUN_DIR, 'kvdb')
     if os.path.exists(kvdbdir):
         print('Removing KVDB dir: {}'.format(kvdbdir))
         shutil.rmtree(kvdbdir)
+
     # clean output
-    if OUT_DIR and os.path.exists(OUT_DIR):
+    if OUT_DIR and os.path.exists(OUT_DIR) and not opts.validate_only:
         print('Removing OUT_DIR: {}'.format(OUT_DIR))
         shutil.rmtree(OUT_DIR)
+
     # run alignment
-    print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
-    cfg[opts.name]['cmd'].insert(0, SMR_EXE)
-    is_capture = cfg[opts.name].get('capture', False)
-    ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)
+    ret = {}
+    if not opts.validate_only:
+        print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
+        cfg[opts.name]['cmd'].insert(0, SMR_EXE)
+        is_capture = cfg[opts.name].get('capture', False)
+        ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)
 
     # validate alignment results
     fn = cfg[opts.name].get('validate', {}).get('func')
@@ -992,8 +1013,9 @@ if __name__ == "__main__":
         func = gdict.get(fn)
 
         if func:
-            nm = cfg[opts.name]['name']
-            func(nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
+            func(TEST_DATA, OUT_DIR, ret, **cfg[opts.name])
+    else:
+        process_output(OUT_DIR, **cfg[opts.name])
 
     # tests
     #if funcs.get(opts.name):
