@@ -470,6 +470,7 @@ t18:
   name: 2 reads files + paired_in + joint FWD/REV output
   note: |
     Test the new option '-out2' (issue 202)
+    Test different E-values
     ...                               paired_in
     -e      min_sw  hits  2*hits   aligned   other
      1          48  9188
@@ -501,10 +502,9 @@ t18:
     num_aligned: 9852
     num_other:    148
     blast:
-      num_recs:       19995
-      num_pass_id:    10175 
-      num_pass_cov:   15054 
-      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t19:
   name: 2 reads files + paired_in + separate FWD/REV output
@@ -535,12 +535,18 @@ t19:
     - -out2
   validate:
     func:
+    num_reads:      10000
     num_hits:        9188
     num_fail:         812
-    num_aligned_fwd: 4926
-    num_aligned_rev: 4926
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
     num_other_fwd:     74
     num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t20:
   name: 1 reads file + paired_in + joint FWD/REV output
@@ -565,6 +571,11 @@ t20:
     num_fail:     812
     num_aligned: 9852
     num_other:    148
+    variant:     sanger # fastq quality variant
+    blast:
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t21:
   name: 1 reads file + paired_in + separate FWD/REV output
@@ -590,6 +601,10 @@ t21:
     num_aligned_rev: 4926
     num_other_fwd:     74
     num_other_rev:     74
+    blast:
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t22:
   name: 1 paired reads file + joint FWD/REV output
@@ -613,6 +628,10 @@ t22:
     num_fail:     812
     num_aligned: 9188
     num_other:    812
+    blast:
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t23:
   name: 1 paired reads file + separate FWD/REV output
@@ -638,6 +657,10 @@ t23:
     num_aligned_rev: 4907
     num_other_fwd:    719
     num_other_ref:     93
+    blast:
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t24:
   name: 1 paired reads file + joint FWD/REV output
@@ -660,6 +683,10 @@ t24:
     num_fail:     812
     num_aligned: 9188
     num_other:    812
+    blast:
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 #
 # custom tests

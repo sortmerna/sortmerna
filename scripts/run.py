@@ -45,12 +45,21 @@ OUT_DIR  = None
 TEST_DATA = None
 
 # base names of the report files
-LOG_BASE     = 'aligned.log'
-ALI_BASE     = 'aligned.fasta'
-NON_ALI_BASE = 'other.fasta'
-DENOVO_BASE  = 'aligned_denovo.fasta'
-OTU_BASE     = 'aligned_otus.txt'
-BLAST_BASE   = 'aligned.blast'
+LOG_BASE         = 'aligned.log'
+ALI_BASE         = 'aligned'
+ALI_FWD_BASE     = 'aligned_fwd'
+ALI_REV_BASE     = 'aligned_rev'
+NON_ALI_BASE     = 'other'
+NON_ALI_FWD_BASE = 'other_fwd'
+NON_ALI_REV_BASE = 'other_ref'
+DENOVO_BASE      = 'aligned_denovo.fasta'
+OTU_BASE         = 'aligned_otus.txt'
+BLAST_BASE       = 'aligned.blast'
+READS_EXT        = None
+IS_FASTQ         = False
+IS_PAIRED_IN     = False
+IS_PAIRED_OUT    = False
+
 
 
 def run(cmd, cwd=None, capture=False):
@@ -188,25 +197,98 @@ def process_output(outd, **kwarg):
         test_simulated_amplicon_12_part_index
     '''
     STAMP = '[{}]'.format(process_output)
-    LOGF    = os.path.join(outd, LOG_BASE)
-    ALIF    = os.path.join(outd, ALI_BASE)
-    NONALIF = os.path.join(outd, NON_ALI_BASE)
-    DENOVOF = os.path.join(outd, DENOVO_BASE)
-    OTUF    = os.path.join(outd, OTU_BASE)
-    BLASTF  = os.path.join(outd, BLAST_BASE)
+    global READS_EXT
+    global IS_FASTQ
+    global IS_PAIRED_IN
+    global IS_PAIRED_OUT
+
+    LOGF       = os.path.join(outd, LOG_BASE)
+    ALIF       = os.path.join(outd, '{}{}'.format(ALI_BASE, READS_EXT))
+    ALI_FWD    = os.path.join(outd, '{}{}'.format(ALI_FWD_BASE, READS_EXT))
+    ALI_REV    = os.path.join(outd, '{}{}'.format(ALI_REV_BASE, READS_EXT))
+    NONALIF    = os.path.join(outd, '{}{}'.format(NON_ALI_BASE, READS_EXT))
+    NONALI_FWD = os.path.join(outd, '{}{}'.format(NON_ALI_FWD_BASE, READS_EXT))
+    NONALI_REV = os.path.join(outd, '{}{}'.format(NON_ALI_REV_BASE, READS_EXT))
+    ALI_REF    = os.path.join(outd, '{}{}'.format(ALI_REV_BASE, READS_EXT))
+    DENOVOF    = os.path.join(outd, DENOVO_BASE)
+    OTUF       = os.path.join(outd, OTU_BASE)
+    BLASTF     = os.path.join(outd, BLAST_BASE)
 
     logd = parse_log(LOGF)
     vald = kwarg.get('validate')
     cmdd = kwarg.get('cmd')
     
-    # Correct number of reads
     if not vald:
         print('{} Validation info not provided'.format(STAMP))
         return
 
+    # Check number of reads
     if vald.get('num_reads'):
+        tmpl = '{} Testing num_reads: {}: {} Expected: {}'
+        print(tmpl.format(STAMP, LOG_BASE, logd['num_reads'][1], vald['num_reads']))
         assert vald['num_reads'] == logd['num_reads'][1]
-    
+
+    # Check reads count in aligned_fwd
+    if vald.get('num_aligned_fwd'):
+        num_fwd = 0
+        if os.path.exists(ALI_FWD):
+            if IS_FASTQ:
+                for seq in skbio.io.read(ALI_FWD, format=READS_EXT[1:], variant=vald.get('variant')):
+                    num_fwd += 1
+            else:
+                for seq in skbio.io.read(ALI_FWD, format=READS_EXT[1:]):
+                    num_fwd += 1
+            tmpl = '{} Testing count of FWD aligned reads: {}: {} Expected: {}'
+            print(tmpl.format(STAMP, '{}{}'.format(ALI_FWD_BASE, READS_EXT), num_fwd, vald['num_aligned_fwd']))
+            assert num_fwd == vald['num_aligned_fwd'], \
+                '{} not equals {}'.format(num_fwd, vald['num_aligned_fwd'])
+
+    # Check reads count in aligned_rev
+    if vald.get('num_aligned_rev'):
+        num_rev = 0
+        if os.path.exists(ALI_REV):
+            if IS_FASTQ:
+                for seq in skbio.io.read(ALI_REV, format=READS_EXT[1:], variant=vald.get('variant')):
+                    num_rev += 1
+            else:
+                for seq in skbio.io.read(ALI_REV, format=READS_EXT[1:]):
+                    num_rev += 1
+            tmpl = '{} Testing count of REV aligned reads: {}: {} Expected: {}'
+            print(tmpl.format(STAMP, '{}{}'.format(ALI_REV_BASE, READS_EXT), num_rev, vald['num_aligned_rev']))
+            assert num_rev == vald['num_aligned_rev'], \
+                '{} not equals {}'.format(num_rev, vald['num_aligned_rev'])
+
+    # Check reads count in other_fwd
+    if vald.get('num_other_fwd'):
+        num_fwd = 0
+        if os.path.exists(NONALI_FWD):
+            if IS_FASTQ:
+                for seq in skbio.io.read(NONALI_FWD, format=READS_EXT[1:], variant=vald.get('variant')):
+                    num_fwd += 1
+            else:
+                for seq in skbio.io.read(NONALI_FWD, format=READS_EXT[1:]):
+                    num_fwd += 1
+            tmpl = '{} Testing count of FWD non-aligned reads: {}: {} Expected: {}'
+            print(tmpl.format(STAMP, '{}{}'.format(NON_ALI_FWD_BASE, READS_EXT), num_fwd, vald['num_other_fwd']))
+            assert num_fwd == vald['num_other_fwd'], \
+                '{} not equals {}'.format(num_fwd, vald['num_other_fwd'])
+
+
+    # Check reads count in other_rev
+    if vald.get('num_other_rev'):
+        num_rev = 0
+        if os.path.exists(NONALI_REV):
+            if IS_FASTQ:
+                for seq in skbio.io.read(NONALI_REV, format=READS_EXT[1:], variant=vald.get('variant')):
+                    num_rev += 1
+            else:
+                for seq in skbio.io.read(NONALI_REV, format=READS_EXT[1:]):
+                    num_rev += 1
+            tmpl = '{} Testing count REV non-aligned reads: {}: {} Expected: {}'
+            print(tmpl.format(STAMP, '{}{}'.format(NON_ALI_REV_BASE, READS_EXT), num_rev, vald['num_other_rev']))
+            assert num_rev == vald['num_other_rev'], \
+                '{} not equals {}'.format(num_rev, vald['num_other_rev'])
+
     # Correct number of de novo reads
     if vald.get('num_denovo'):
         assert vald['num_denovo'] == logd['results']['num_denovo'][1], \
@@ -218,32 +300,62 @@ def process_output(outd, **kwarg):
 
         assert logd['results']['num_denovo'][1] == num_denovo_file
     
-    # Correct number of reads mapped
+    # Check number of reads mapped
     if vald.get('num_hits'):
+        tmpl = '{} Testing num_hits: {}: {} Expected: {}'
+        print(tmpl.format(STAMP, LOG_BASE, logd['results']['num_hits'][1], vald['num_hits']))
         assert vald['num_hits'] == logd['results']['num_hits'][1]
         num_hits_file = 0
         if os.path.exists(ALIF):
-            for seq in skbio.io.read(ALIF, format='fasta'):
-                num_hits_file += 1
-            assert logd['results']['num_hits'][1] == num_hits_file
-    
-    # Correct number of reads not mapped
+            if IS_FASTQ:
+                for seq in skbio.io.read(ALIF, format=READS_EXT[1:], variant=vald.get('variant')):
+                    num_hits_file += 1
+            else:
+                for seq in skbio.io.read(ALIF, format=READS_EXT[1:]):
+                    num_hits_file += 1
+            if not IS_PAIRED_IN and not IS_PAIRED_OUT:
+                tmpl = '{} Testing num_hits: {}{}: {} Expected: {}'
+                print(tmpl.format(STAMP, ALI_BASE, READS_EXT, num_hits_file, vald['num_hits']))
+                assert logd['results']['num_hits'][1] == num_hits_file
+            else:
+                tmpl = '{} Testing count of aligned reads: {}{}: {} Expected: {}'
+                print(tmpl.format(STAMP, ALI_BASE, READS_EXT, num_hits_file, vald['num_aligned']))
+                assert num_hits_file == vald['num_aligned']
+
+    # Check number of reads not mapped
     if vald.get('num_fail'):
+        tmpl = '{} Testing num_fail: {}: {} Expected: {}'
+        print(tmpl.format(STAMP, LOG_BASE, logd['results']['num_fail'][1], vald['num_fail']))
         assert vald['num_fail']  == logd['results']['num_fail'][1]
         num_fails_file = 0
         if os.path.exists(NONALIF):
-            for seq in skbio.io.read(NONALIF, format='fasta'):
-                num_fails_file += 1
-            assert logd['results']['num_fail'][1] == num_fails_file
+            if IS_FASTQ:
+                for seq in skbio.io.read(NONALIF, format=READS_EXT[1:], variant=vald.get('variant')):
+                    num_fails_file += 1
+            else:
+                for seq in skbio.io.read(NONALIF, format=READS_EXT[1:]):
+                    num_fails_file += 1
+            if not IS_PAIRED_IN and not IS_PAIRED_OUT:
+                tmpl = '{} Testing num_hits: {}{}: {} Expected: {}'
+                print(tmpl.format(STAMP, NON_ALI_BASE, READS_EXT, num_fails_file, vald['num_fail']))
+                assert logd['results']['num_fail'][1] == num_fails_file
+            else:
+                tmpl = '{} Testing count of non-aligned reads: {}{}: {} Expected: {}'
+                print(tmpl.format(STAMP, NON_ALI_BASE, READS_EXT, num_fails_file, vald['num_other']))
+                assert num_fails_file == vald['num_other']
+
     
     # Check count of reads passing %id and %coverage threshold
     # as given in alinged.log
     if vald.get('num_pass_id_cov'):
+        tmpl = '{} Testing reads passing ID_COV: {}: {} Expected: {}'
+        print(tmpl.format(STAMP, LOG_BASE, logd['num_id_cov'][1], vald['num_pass_id_cov']))
         assert vald['num_pass_id_cov'] == logd['num_id_cov'][1]
 
     # Check count of reads passing %id and %coverage threshold
     # as given in aligned.blast
     if vald.get('blast'):
+        num_hits_file = 0
         num_pass_id = 0
         num_pass_cov = 0
         num_pass_id_cov_file = 0
@@ -251,6 +363,7 @@ def process_output(outd, **kwarg):
         if os.path.exists(BLASTF):
             with open(BLASTF) as f_blast:
                 for line in f_blast:
+                    num_hits_file += 1
                     llist = line.strip().split('\t')
                     f_id = float(llist[2])
                     is_pass_id = f_id >= 97.0
@@ -267,6 +380,16 @@ def process_output(outd, **kwarg):
         
         tmpl = '{} from {}: num_pass_id= {} num_pass_cov= {} num_pass_id_cov= {}'
         print(tmpl.format(STAMP, BLAST_BASE, num_pass_id, num_pass_cov, num_pass_id_cov_file))
+        
+        if vald['blast'].get('num_pass_id'):
+            tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
+            print(tmpl.format(STAMP, BLAST_BASE, num_pass_id, vald['blast']['num_pass_id']))
+            assert num_pass_id == vald['blast']['num_pass_id'], \
+                '{} not equals {}'.format(vald['blast']['num_pass_id'], num_pass_id)
+        
+        tmpl = '{} Testing num_hits: {}: {} Expected: {}'
+        print(tmpl.format(STAMP, BLAST_BASE, num_hits_file, vald['num_hits']))
+        assert num_hits_file == vald['num_hits']
 
         if is_has_cov:
             assert vald['blast']['num_pass_id_cov'] == num_pass_id_cov_file, \
@@ -980,6 +1103,13 @@ if __name__ == "__main__":
 
     #if opts.name in ['t{}'.format(x) for x in range(0,18)]:
     OUT_DIR = os.path.join(RUN_DIR, 'out')
+
+    idx = cfg[opts.name].get('cmd').index('-reads')
+    READS_EXT = os.path.splitext(cfg[opts.name].get('cmd')[idx+1])[1]
+    IS_FASTQ = 'fastq' == READS_EXT[1:]
+
+    IS_PAIRED_IN = '-paired_in' in cfg[opts.name].get('cmd')
+    IS_PAIRED_OUT = '-paired_out' in cfg[opts.name].get('cmd')
 
     # clean-up the run directory. May Fail if any file in the directory is open. Close the files and re-run.
     if opts.clean and os.path.isdir(RUN_DIR):
