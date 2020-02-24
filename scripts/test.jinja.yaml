@@ -32,10 +32,13 @@ t0_other:
     - {{ SMR_SRC }}/data/test_read.fasta
     - -sam
     - -blast
-    - '0 qstrand'
+    - '1 qstrand'
     - -v
   validate: 
-    func: t0_other
+    func:
+    num_reads: 1
+    num_hits: 1
+    num_fail: 0
 
 t1:
   name: test_blast_format_1
@@ -49,7 +52,10 @@ t1:
     - '1'
     - -v
   validate: 
-    func: t1
+    func:
+    num_reads: 1
+    num_hits: 1
+    num_fail: 0
 
 t2:
   name: test_cigar_lcs_1
@@ -87,8 +93,11 @@ t3:
     - -v
   validate: 
     func: t3
-    num_hits: 99999
-    num_fail:     1
+    num_reads:      100000
+    num_hits:        99999
+    num_fail:            1
+    num_denovo:      52018 # pass SW & fail (%Cov & %ID)
+    num_pass_id_cov: 47981 # pass SW and pass (%Cov & %ID)
     num_groups: [264, 265] # 264 lnx, 265 win (idx line endings bug)
 
 # original test only performed indexing i.e. no alignment and not reads
@@ -97,7 +106,7 @@ t4:
   name: test_indexdb_split_databases
   cmd:
     - -ref
-    - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta
+    - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta # 27,424 bytes (27KB) file
     - -reads
     - {{ SMR_SRC }}/data/test_read.fasta
     - -m
@@ -105,6 +114,7 @@ t4:
     - -v
   validate: 
     func: t4
+    num_idx: 7 # 7 index files of each kind is generated
 
 t5:
   name: test_mate_pairs - part 1
@@ -121,9 +131,10 @@ t5:
     - -other
     - -v
   validate:
-    func: t5
-    num_hits: 6000
-    num_fail: 4000
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
 
 t6:
   name: test_mate_pairs - part 2 - paired_in
@@ -152,11 +163,13 @@ t6:
     - -e
     - '0.01'
   validate:
-    func: t6
-    num_hits: 6000
-    num_fail: 4000
-    num_aligned: 10000
-    num_other: 0
+    func:
+    num_reads:   10000
+    num_hits:     6000
+    num_fail:     4000
+    num_aligned: 10000 # number of reads in aligned.fastx
+    num_other:       0 # number of reads in other.fastx. Empty file: WARN: skbio\io\registry.py:548: does not look like a fastq file
+    variant:    sanger # fastq quality variant
 
 t7:
   name: test_mate_pairs - part 3 - paired_out
@@ -174,11 +187,13 @@ t7:
     - -paired_out
     - -v
   validate:
-    func: t7
-    num_hits: 6000
-    num_fail: 4000
-    num_aligned: 2000
-    num_other: 8000
+    func:
+    num_reads:   10000
+    num_hits:    6000
+    num_fail:    4000
+    num_aligned: 2000 # number of paired reads in aligned.fastx
+    num_other:   8000 # number paired reads in other.fastx
+    variant:    sanger # fastq quality variant
 
 t8:
   name: test_multiple_databases_search
@@ -192,9 +207,10 @@ t8:
     - -fastx
     - -v
   validate:
-    func: t8
+    func:
     num_reads: 6
     num_hits: 4
+    num_fail: 2
 
 t9:
   name: test_output_all_alignments_f_rc
@@ -209,6 +225,9 @@ t9:
     - -v
   validate:
     func: t9
+    num_reads: 1
+    num_hits:  1
+    num_fail:  0
     sam_alignments_expected: [
       [
           'GQ099317.1.1325_157_453_0:0:0_0:0:0_99/1',
@@ -244,6 +263,9 @@ t9:
 
 t10:
   name: test_ref_shorter_than_seed
+  note: |
+    This captures the output of the command and verifies the error message.
+    No output files are produced
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/ref_short_seqs.fasta
@@ -254,6 +276,7 @@ t10:
   capture: True
   validate:
     func: t10
+    err_msg: 'one of your sequences is shorter than the seed length 19'
 
 t11:
   name: test_simulated_amplicon_1_part_map
@@ -311,13 +334,14 @@ t12:
   validate:
     func: t12
     num_reads: 30000
+    min_sw:       49
     num_hits: 19995
     num_fail: 10005
     num_denovo: 9831
     num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
     num_cluster: [4400, 4401]
     blast:
-      num_recs:       19995
+      num_recs:       28545
       num_pass_id:    10467 
       num_pass_cov:   16536 
       num_pass_id_cov: 9849 # pass_SW + pass_ID + pass_Cov
@@ -429,6 +453,11 @@ t16:
     - -workdir
     - run
   cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
 
 t17:
   name: test_indexing
@@ -467,7 +496,7 @@ t17:
     num_fail:   4056
 
 t18:
-  name: 2 reads files + paired_in + joint FWD/REV output
+  name: 2 paired reads files + paired_in + joint FWD/REV output
   note: |
     Test the new option '-out2' (issue 202)
     Test different E-values
@@ -501,13 +530,15 @@ t18:
     num_fail:     812
     num_aligned: 9852
     num_other:    148
+    variant:    sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t19:
-  name: 2 reads files + paired_in + separate FWD/REV output
+  name: 2 paired reads files + paired_in + separate FWD/REV output
   note: |
     Test the new option '-out2' (issue 202)
     ...                               paired_in
@@ -544,12 +575,13 @@ t19:
     num_other_rev:     74
     variant:         sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t20:
-  name: 1 reads file + paired_in + joint FWD/REV output
+  name: single paired reads file + paired_in + joint FWD/REV output
   note: |
     Test the new option '-out2' (issue 202)
     ...                               paired_in 
@@ -573,12 +605,13 @@ t20:
     num_other:    148
     variant:     sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t21:
-  name: 1 reads file + paired_in + separate FWD/REV output
+  name: single paired reads file + paired_in + separate FWD/REV output
   note: |
     Same as test 20 + 'out2' option
   cmd:
@@ -601,13 +634,15 @@ t21:
     num_aligned_rev: 4926
     num_other_fwd:     74
     num_other_rev:     74
+    variant:     sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t22:
-  name: 1 paired reads file + joint FWD/REV output
+  name: single paired reads file + joint FWD/REV output
   note: |
     Test the new option '-out2' (issue 202)
     ...                               paired_in 
@@ -628,13 +663,15 @@ t22:
     num_fail:     812
     num_aligned: 9188
     num_other:    812
+    variant:     sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t23:
-  name: 1 paired reads file + separate FWD/REV output
+  name: single paired reads file + separate FWD/REV output
   note: |
     Same as 22 but FWD and REV output to different files
   cmd:
@@ -657,7 +694,9 @@ t23:
     num_aligned_rev: 4907
     num_other_fwd:    719
     num_other_ref:     93
+    variant:     sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
@@ -683,7 +722,9 @@ t24:
     num_fail:     812
     num_aligned: 9188
     num_other:    812
+    variant:     sanger # fastq quality variant
     blast:
+      num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
@@ -727,27 +768,29 @@ tc17:
   validate:
     func: t17
     num_reads: 1278480
-    num_hits: 66387
-    num_fail: 1212093
+    num_hits:    66387
+    num_fail:  1212093
 
 tc18:
   name: Paired reads GZ 2 x 2 GB
   cmd:
   - -ref
-  - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
+  - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 12,734,464 ~12MB
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
   - -v
   - -blast
   - '1 cigar qcov'
   - -sam
   validate:
-    func: t18
+    func:
     num_reads: 49309188
-    num_hits: 687225
-    num_fail: 48621963
+    num_hits:    687225
+    num_fail:  48621963
+    time:          1841.62 # 1015.39 + 404.34 + 421.89 = 1841.62 / 60 = 30.69
+    cpus:             8
 
 tc19:
   name: issue 207
@@ -776,5 +819,7 @@ tc19:
   validate:
     func:
     num_reads: 15000000
-    num_hits: 798426 # 532
-    num_fail: 14201574 # 94.68
+    num_hits:    798426 #  5.32
+    num_fail:  14201574 # 94.68
+    time:           860.05 # 678.62 + 87.14 + 94.29 = 860.05 / 60 = 14.33 min
+    cpus:             8

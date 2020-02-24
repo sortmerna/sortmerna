@@ -55,6 +55,7 @@ NON_ALI_REV_BASE = 'other_ref'
 DENOVO_BASE      = 'aligned_denovo.fasta'
 OTU_BASE         = 'aligned_otus.txt'
 BLAST_BASE       = 'aligned.blast'
+SAM_BASE         = 'aligned.sam'
 READS_EXT        = None
 IS_FASTQ         = False
 IS_PAIRED_IN     = False
@@ -336,7 +337,7 @@ def process_output(outd, **kwarg):
                 for seq in skbio.io.read(NONALIF, format=READS_EXT[1:]):
                     num_fails_file += 1
             if not IS_PAIRED_IN and not IS_PAIRED_OUT:
-                tmpl = '{} Testing num_hits: {}{}: {} Expected: {}'
+                tmpl = '{} Testing num_fail: {}{}: {} Expected: {}'
                 print(tmpl.format(STAMP, NON_ALI_BASE, READS_EXT, num_fails_file, vald['num_fail']))
                 assert logd['results']['num_fail'][1] == num_fails_file
             else:
@@ -388,8 +389,9 @@ def process_output(outd, **kwarg):
                 '{} not equals {}'.format(vald['blast']['num_pass_id'], num_pass_id)
         
         tmpl = '{} Testing num_hits: {}: {} Expected: {}'
-        print(tmpl.format(STAMP, BLAST_BASE, num_hits_file, vald['num_hits']))
-        assert num_hits_file == vald['num_hits']
+        print(tmpl.format(STAMP, BLAST_BASE, num_hits_file, vald['blast']['num_recs']))
+        assert num_hits_file == vald['blast']['num_recs'], \
+            '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
 
         if is_has_cov:
             assert vald['blast']['num_pass_id_cov'] == num_pass_id_cov_file, \
@@ -440,28 +442,6 @@ def t0(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t0
 
-def t0_other(datad, outd, ret={}, **kwarg):
-    '''
-    @param datad   Data directory
-    @param outd    results output directory
-    '''
-    STAMP = '[t0_other:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    print("{} Done".format(STAMP))
-#END t0_other
-
-def t1(datad, outd, ret={}, **kwarg):
-    '''
-    @param datad   Data directory
-    @param outd    results output directory
-    '''
-    STAMP = '[t1:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    print("{} Done".format(STAMP))
-#END t1
-
 def t2(datad, outd, ret={}, **kwarg):
     '''
     @param datad   Data directory
@@ -482,13 +462,15 @@ def t2(datad, outd, ret={}, **kwarg):
 
     OUTF = os.path.join(outd, BLAST_BASE)
 
+    vald = kwarg['validate']
+
     actual_alignment = []
     with open(OUTF) as afile:
         for line in afile:
             actual_alignment = line.strip().split('\t')
         
-    assert len(kwarg['expected']) == len(actual_alignment)
-    assert sorted(kwarg['expected']) == sorted(actual_alignment)
+    assert len(vald['expected']) == len(actual_alignment)
+    assert sorted(vald['expected']) == sorted(actual_alignment)
     #a = set(expected_alignment) & set(actual_alignment)
     print("{} Done".format(STAMP))
 #END t2
@@ -515,42 +497,30 @@ def t3(datad, outd, ret={}, **kwarg):
     OTUF = os.path.join(outd, OTU_BASE)
     DENOVOF = os.path.join(outd, DENOVO_BASE)
 
-    hits_expect = kwarg.get('num_hits')
-    groups_expect = kwarg.get('num_groups')
+    logd = parse_log(os.path.join(outd, LOG_BASE))
+    vald = kwarg.get('validate')
+    cmdd = kwarg.get('cmd')
 
-    num_hits = 0
-    num_failures_log = 0
-    num_clusters_log = 0
-
-    with open(LOGF) as afile:
-        for line in afile:
-            if 'Total reads passing E-value threshold' in line:
-                num_hits = (re.split('Total reads passing E-value threshold = | \(', line)[1]).strip()
-            elif 'Total reads for de novo clustering' in line:
-                num_failures_log = (re.split('Total reads for de novo clustering = ', line)[1]).strip()
-            elif 'Total OTUs' in line:
-                num_clusters_log = (re.split('Total OTUs = ', line)[1]).strip()
-
-    assert int(num_hits) == hits_expect
+    assert logd['results']['num_hits'][1] == vald['num_hits']
 
     # sort order (descending/ascending) of candidate references (alignment.cpp)
     is_refs_descending = False
     if is_refs_descending:
-        num_groups = groups_expect[0] # originally
+        assert logd['num_otus'][1] == vald['num_groups'][0] # originally
     else:
-        num_groups = groups_expect[1]
-
-    assert num_clusters_log == str(num_groups)
+        assert logd['num_otus'][1] == vald['num_groups'][1]
 
     with open(OTUF) as f_otumap:
         num_clusters_file = sum(1 for line in f_otumap)
-    assert num_groups == num_clusters_file
+    assert logd['num_otus'][1] == num_clusters_file
 
-    num_failures_file = 0
+    num_denovo_file = 0
     for seq in skbio.io.read(DENOVOF, format='fasta'):
-        num_failures_file += 1
+        num_denovo_file += 1
 
-    assert num_failures_log == str(num_failures_file)
+    assert logd['results']['num_denovo'][1] == num_denovo_file, \
+            '{}:num_denovo = {} != {}:num_denovo = {}'.format(LOG_BASE, \
+                logd['results']['num_denovo'][1], DENOVO_BASE, num_denovo_file)
     
     print("{} Done".format(STAMP))
 #END t3
@@ -576,226 +546,6 @@ def t4(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t4
 
-def t5(datad, outd, ret={}, **kwarg):
-    '''
-    @param name
-    @param datad   Data directory
-    @param outd    results output directory
-    @param kwargs  validation args
-
-    test_mate_pairs, part 1
-    '''
-    STAMP = '[t5:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    LOGF = os.path.join(outd, LOG_BASE)
-    ALIF = os.path.join(outd, 'aligned.fastq')
-    NONALIF = os.path.join(outd, 'other.fastq')
-
-    num_hits_expect = kwarg.get('num_hits')
-    num_fail_expect = kwarg.get('num_fail')
-
-    tmpl = '{} num_hits_expect= {} num_fail_expect= {}'
-    print(tmpl.format(STAMP, num_hits_expect, num_fail_expect))
-
-    num_hits = None
-    num_fail = None
-
-    with open(LOGF) as afile:
-        f_log_str = afile.read()
-        assert "Total reads passing E-value threshold" in f_log_str
-        assert "Total reads failing E-value threshold" in f_log_str
-
-        afile.seek(0)
-        for line in afile:
-            if 'Total reads passing E-value threshold' in line:
-                num_hits = (re.split('Total reads passing E-value threshold = | \(', line)[1]).strip()
-            elif 'Total reads failing E-value threshold' in line:
-                num_fail = (re.split('Total reads failing E-value threshold = | \(', line)[1]).strip()
-
-        tmpl = '{} num_hits= {} num_fail= {}'
-        print(tmpl.format(STAMP, num_hits, num_fail))
-
-    # Correct number of aligned reads
-    with open(ALIF) as f_aligned:
-        num_lines_aligned = sum(1 for line in f_aligned)
-
-    print('{} num_lines_aligned= {}'.format(STAMP, num_lines_aligned))
-
-    # Correct number of non-aligned reads
-    with open(NONALIF) as f_nonaligned:
-        num_lines_failed = sum(1 for line in f_nonaligned)
-
-    print('{} num_lines_failed= {}'.format(STAMP, num_lines_failed))
-
-    # Correct number of reads mapped
-    assert num_hits_expect == int(num_hits)
-    # Correct number of clusters recorded
-    assert num_fail_expect == int(num_fail)
-    
-    assert num_hits_expect == num_lines_aligned/4
-    assert num_fail_expect == num_lines_failed/4
-    
-    print("{} Done".format(STAMP))
-#END t5
-
-def t6(datad, outd, ret={}, **kwarg):
-    '''
-    @param smrexe  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-
-    TODO: monitor bug 54
-
-    test_mate_pairs, part 2, paired_in
-    '''
-    STAMP = '[t6:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    LOGF = os.path.join(outd, LOG_BASE)
-    ALIF = os.path.join(outd, 'aligned.fastq')
-    NONALIF = os.path.join(outd, 'other.fastq')
-
-    num_hits_expect = kwarg.get('num_hits')
-    num_fail_expect = kwarg.get('num_fail')
-    num_aligned_expect = kwarg.get('num_aligned')
-    num_other_expect = kwarg.get('num_other')
-
-    num_hits = None
-    num_fail = None
-
-    with open(LOGF) as afile:
-        f_log_str = afile.read()
-        assert "Total reads passing E-value threshold" in f_log_str
-        assert "Total reads failing E-value threshold" in f_log_str
-
-        afile.seek(0)
-        for line in afile:
-            if 'Total reads passing E-value threshold' in line:
-                num_hits = (re.split('Total reads passing E-value threshold = | \(', line)[1]).strip()
-            elif 'Total reads failing E-value threshold' in line:
-                num_fail = (re.split('Total reads failing E-value threshold = | \(', line)[1]).strip()
-
-        # Correct number of reads mapped
-        assert num_hits_expect == int(num_hits)
-        # Correct number of clusters recorded
-        assert num_fail_expect == int(num_fail)
-
-        # Correct number of aligned reads
-        with open(ALIF) as f_aligned:
-            num_aligned_reads = sum(1 for line in f_aligned)
-        assert num_aligned_expect == num_aligned_reads/4
-
-        # Correct number of non-aligned reads
-        with open(NONALIF) as f_nonaligned:
-            num_nonaligned_reads = sum(1 for line in f_nonaligned)
-        assert num_other_expect == num_nonaligned_reads
-    
-    print("{} Done".format(STAMP))
-#END t6
-
-def t7(datad, outd, ret={}, **kwarg):
-    '''
-    @param smrexe  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-
-    TODO: monitor bug 54
-
-    test_mate_pairs, part 3, paired_out
-    '''
-    STAMP = '[t7:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    LOGF = os.path.join(outd, LOG_BASE)
-    ALIF = os.path.join(outd, 'aligned.fastq')
-    NONALIF = os.path.join(outd, 'other.fastq')
-
-    num_hits_expect = kwarg.get('num_hits')
-    num_fail_expect = kwarg.get('num_fail')
-    num_aligned_expect = kwarg.get('num_aligned')
-    num_other_expect = kwarg.get('num_other')
-
-    num_hits = None
-    num_fail = None
-
-    with open(LOGF) as afile:
-        f_log_str = afile.read()
-        assert "Total reads passing E-value threshold" in f_log_str
-        assert "Total reads failing E-value threshold" in f_log_str
-
-        afile.seek(0)
-        for line in afile:
-            if 'Total reads passing E-value threshold' in line:
-                num_hits = (re.split('Total reads passing E-value threshold = | \(', line)[1]).strip()
-            elif 'Total reads failing E-value threshold' in line:
-                num_fail = (re.split('Total reads failing E-value threshold = | \(', line)[1]).strip()
-
-        # Correct number of reads mapped
-        assert num_hits_expect == int(num_hits)
-        # Correct number of clusters recorded
-        assert num_fail_expect == int(num_fail)
-
-        # Correct number of aligned reads
-        with open(ALIF) as f_aligned:
-            num_aligned_reads = sum(1 for line in f_aligned)
-        assert num_aligned_expect == num_aligned_reads/4
-
-        # Correct number of non-aligned reads
-        with open(NONALIF) as f_nonaligned:
-            num_nonaligned_reads = sum(1 for line in f_nonaligned)
-        assert num_other_expect == num_nonaligned_reads/4
-    
-    print("{} Done".format(STAMP))
-#END t7
-
-def t8(datad, outd, ret={}, **kwarg):
-    '''
-    @param smrexe  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-
-    test_multiple_databases_search
-    '''
-    STAMP = '[t8:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    LOGF = os.path.join(outd, LOG_BASE)
-    ALIF = os.path.join(outd, ALI_BASE)
-
-    num_reads_expect = kwarg.get('num_reads')
-    num_hits_expect = kwarg.get('num_hits')
-
-    total_reads_log = None
-    num_hits_log = None
-
-    with open(LOGF) as afile:
-        f_log_str = afile.read()
-        assert "Total reads passing E-value threshold" in f_log_str
-        assert "Total reads failing E-value threshold" in f_log_str
-
-        afile.seek(0)
-        for line in afile:
-            if 'Total reads =' in line:
-                total_reads_log = (re.split(' = ', line)[1]).strip()
-            elif 'Total reads passing E-value threshold' in line:
-                num_hits_log = (re.split(' = | \(', line)[1]).strip()
-
-        # Correct number of reads
-        assert num_reads_expect == int(total_reads_log)
-        # Correct number of clusters recorded
-        assert num_hits_expect == int(num_hits_log)
-
-        # Correct number of aligned reads
-        num_hits_file = 0
-        for seq in skbio.io.read(ALIF, format='fasta'):
-            num_hits_file += 1
-        assert num_hits_file == int(num_hits_log), \
-            'num_hits_file = {} Not equals num_hits_log = {}'.format(num_hits_file, num_hits_log)
-    
-    print("{} Done".format(STAMP))
-#END t8
-
 def t9(datad, outd, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
@@ -808,6 +558,7 @@ def t9(datad, outd, ret={}, **kwarg):
     print('{} Validating ...'.format(STAMP))
 
     ALISAM = os.path.join(outd, 'aligned.sam')
+    vald = kwarg.get('validate')
 
     sam_alignments = []
     with open(ALISAM) as aligned_f:
@@ -817,9 +568,9 @@ def t9(datad, outd, ret={}, **kwarg):
             alignment = line.strip().split("\t")
             sam_alignments.append(alignment)
 
-    assert len(kwarg['sam_alignments_expected']) == len(sam_alignments)
+    assert len(vald['sam_alignments_expected']) == len(sam_alignments)
 
-    for alignment in kwarg['sam_alignments_expected']:
+    for alignment in vald['sam_alignments_expected']:
         assert alignment in sam_alignments
     
     print("{} Done".format(STAMP))
@@ -837,12 +588,11 @@ def t10(datad, outd, ret={}, **kwarg):
     STAMP = '[t10:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    MSG = 'one of your sequences is shorter than the seed length 19'
+    vald = kwarg.get('validate')
 
     if ret and ret.get('retcode'):
         assert ret['retcode'] == 1
-        #print('type(stderr): {}'.format(type(ret['stderr']))) # bytes
-        assert MSG in ret['stderr'].decode("utf-8")
+        assert vald['err_msg'] in ret['stderr'].decode("utf-8")
    
     print("{} Done".format(STAMP))
 #END t10
@@ -967,33 +717,6 @@ def t14(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t14
 
-# 'test_simulated_amplicon_generic_buffer'
-# TODO: looks exactly the same as t11 + t12. Remove.
-
-def t15(datad, outd, ret={}, **kwarg):
-    '''
-    @param name  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-    @param capture Capture output
-    '''
-    STAMP = '[t15:{}]'.format(kwarg.get('name'))
-    print('{} Deleted test'.format(STAMP))
-    print("{} Done".format(STAMP))
-#END t15
-
-def t16(datad, outd, ret={}, **kwarg):
-    '''
-    @param name  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-    @param capture Capture output
-    '''
-    STAMP = '[t16:{}]'.format(kwarg.get('name'))
-    print('{} TODO: implement'.format(STAMP))
-    print("{} Done".format(STAMP))
-#END t16
-
 def t17(datad, outd, ret={}, **kwarg):
     '''
     @param name  sortmerna.exe path
@@ -1004,18 +727,6 @@ def t17(datad, outd, ret={}, **kwarg):
     STAMP = '[t17:{}]'.format(kwarg.get('name'))
     print('{} TODO: implement'.format(STAMP))
     logd = parse_log(os.path.join(outd, LOG_BASE))
-    print("{} Done".format(STAMP))
-#END t17
-
-def t18(datad, outd, ret={}, **kwarg):
-    '''
-    @param name  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-    @param capture Capture output
-    '''
-    STAMP = '[t18:{}]'.format(kwarg.get('name'))
-    process_output(outd, **kwarg)
     print("{} Done".format(STAMP))
 #END t17
 
@@ -1096,9 +807,13 @@ if __name__ == "__main__":
     SMR_DIST = env[OS][SMR]['dist'] if env[OS][SMR]['dist'] else '{}/dist'.format(SMR_SRC)
     SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
     SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna') 
-    if 'workdir' in cfg[opts.name].get('cmd'):
-        workdir = '' # TODO
-    RUN_DIR  = os.path.join(UHOME, 'sortmerna', 'run')
+    if '-workdir' in cfg[opts.name].get('cmd'):
+        idx = cfg[opts.name].get('cmd').index('-workdir')
+        RUN_DIR = cfg[opts.name].get('cmd')[idx+1]
+        print('\'-workdir\' option was provided. Using workdir: [{}]'.format(os.path.realpath(RUN_DIR)))
+    else:
+        RUN_DIR  = os.path.join(UHOME, 'sortmerna', 'run')
+        print('\'-workdir\' option was Not provided. Using workdir: [{}]'.format(os.path.realpath(RUN_DIR)))
     TEST_DATA = os.path.join(SMR_SRC, 'data')
 
     #if opts.name in ['t{}'.format(x) for x in range(0,18)]:
