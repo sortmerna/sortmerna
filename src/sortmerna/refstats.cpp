@@ -150,8 +150,8 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		long randomSeed = 182345345;
 		double *letterFreqs1 = new double[alphabetSize];
 		double *letterFreqs2 = new double[alphabetSize];
-		long number_of_samples = 14112;
-		long number_of_samples_for_preliminary_stages = 39;
+		long number_of_samples = 14112; // TODO: where this number comes from?
+		long number_of_samples_for_preliminary_stages = 39; // TODO: where this number comes from?
 
 		for (long i = 0; i < alphabetSize; i++)
 		{
