@@ -81,13 +81,13 @@ help_header =
 "  -------------------------------------------------------------------------------------------------------------\n",
 help_ref = 
 	"Reference file (FASTA) absolute or relative path.\n"
-	"                                            Use mutliple times, once per a reference file",
+	"                                            Use mutliple times, once per a reference file\n",
 help_reads = 
 	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n"
-	"                                            Use twice for files with paired reads",
+	"                                            Use twice for files with paired reads\n",
 help_aligned = 
 	"Aligned reads file name prefix.                         'aligned'\n"
-	"                                            TODO: Remove",
+	"                                            TODO: Remove\n",
 help_other = 
 	"Create Non-aligned reads output file                    False\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n",
@@ -97,9 +97,9 @@ help_workdir =
 	"Working directory path for storing Reference   USRDIR/sortmerna/run/\n"
 	"                                            index, Key-value database and the output.\n",
 help_sam = 
-	"Output SAM alignment for aligned reads.",
+	"Output SAM alignment for aligned reads.\n",
 help_SQ = 
-	"Add SQ tags to the SAM file",
+	"Add SQ tags to the SAM file\n",
 help_blast = 
 	"output alignments in various Blast-like formats\n"
 	"                                            '0'                    - pairwise\n"
@@ -108,142 +108,151 @@ help_blast =
 	"                                            '1 cigar qcov'         - tabular + columns for CIGAR\n"
 	"                                                                     and query coverage\n"
 	"                                            '1 cigar qcov qstrand' - tabular + columns for CIGAR,\n"
-	"                                                                     query coverage and strand",
+	"                                                                     query coverage and strand\n",
 help_dbg_put_db = 
 	"",
 help_log = 
 	"Output overall statistics.                              True\n"
-	"                                            TODO: remove",
+	"                                            TODO: remove\n",
 help_num_alignments = 
 	"Positive integer (INT >=0).\n"
 	"                                            Report first INT alignments per read reaching E-value\n"
-	"                                            If INT = 0, all alignments will be output",
+	"                                            If INT = 0, all alignments will be output\n",
 help_best = 
 	"Report INT best alignments per read reaching E-value    1\n"
 	"                                            by searching --min_lis INT candidate alignments\n"
-	"                                            (if 0 - all candidate alignments will be searched)",
+	"                                            If INT == 0: search All candidate alignments\n"
+	"                                            If INT > 0: search INT best alignments.\n"
+	"                                            The larger is the INT, the longer is the search time.\n"
+	"                                            Explanation:\n"
+	"                                            A read can potentially be aligned (reaching E-value threshold)\n"
+	"                                            to multiple reference sequences.\n"
+	"                                            The 'best' alignment is an alignment that is better\n"
+	"                                            than the previously found alignments.\n"
+	"                                            The very first found alignment is automatically the best alignment\n"
+	"                                            until a better one is found.\n",
 help_min_lis = 
 	"Search all alignments having the first INT longest LIS\n"
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
 	"                                            it is computed using seeds' positions to expand hits into\n"
 	"                                            longer matches prior to Smith - Waterman alignment.\n"
 	"                                            Requires option 'best'.\n"
-	"                                            Mutually exclusive with option 'num_alignments'",
+	"                                            Mutually exclusive with option 'num_alignments'\n",
 help_print_all_reads = 
 	"Output null alignment strings for non-aligned reads     False\n"
-	"                                            to SAM and/or BLAST tabular files",
+	"                                            to SAM and/or BLAST tabular files\n",
 help_paired =
 	"Indicates a Single reads file with paired reads         False\n"
 	"                                            If a single reads file with paired reads is used,\n"
 	"                                            and neither '" + OPT_PAIRED_IN + "' nor '" + OPT_PAIRED_OUT + "' are specified,\n"
 	"                                            use this option together with '" + OPT_OUT2 + "' to output\n"
-	"                                            FWD and REV reads into separate files",
+	"                                            FWD and REV reads into separate files\n",
 help_paired_in = 
 	"If one of the paired-end reads is Aligned,              False\n"
 	"                                            put both reads into Aligned FASTA/Q file\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Mutually exclusive with '" + OPT_PAIRED_OUT + "'.",
+	"                                            Mutually exclusive with '" + OPT_PAIRED_OUT + "'.\n",
 help_paired_out = 
 	"If one of the paired-end reads is Non-aligned,          False\n"
 	"                                            put both reads into Non-Aligned FASTA/Q file\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.",
+	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.\n",
 help_out2 =
 	"Output paired reads into separate files.                False\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
 	"                                            Ignored without either of '" + OPT_PAIRED_IN + "' |\n"
-	"                                            '" + OPT_PAIRED_OUT + "' | '" + OPT_PAIRED + "' | two '" + OPT_READS + "'",
+	"                                            '" + OPT_PAIRED_OUT + "' | '" + OPT_PAIRED + "' | two '" + OPT_READS + "'\n",
 help_match = 
-	"SW score (positive integer) for a match.                2",
+	"SW score (positive integer) for a match.                2\n",
 help_mismatch = 
-	"SW penalty (negative integer) for a mismatch.          -3",
+	"SW penalty (negative integer) for a mismatch.          -3\n",
 help_gap_open = 
-	"SW penalty (positive integer) for introducing a gap.    5",
+	"SW penalty (positive integer) for introducing a gap.    5\n",
 help_gap_ext = 
-	"SW penalty (positive integer) for extending a gap.      2",
+	"SW penalty (positive integer) for extending a gap.      2\n",
 help_N = 
 	"SW penalty for ambiguous letters (N's) scored\n"
-	"                                            as --mismatch",
+	"                                            as --mismatch\n",
 help_F = 
-	"Search only the forward strand.                         False",
+	"Search only the forward strand.                         False\n",
 help_R = 
-	"Search only the reverse-complementary strand.           False",
+	"Search only the reverse-complementary strand.           False\n",
 help_e = 
 	"E-value threshold.                                      1\n"
 	"                                            Defines the 'statistical significance' of a local alignment.\n"
 	"                                            Exponentially correllates with the Minimal Alignment Score.\n"
 	"                                            Higher E-values (100, 1000, ...) cause More reads\n"
-	"                                            to Pass the alignment threshold",
+	"                                            to Pass the alignment threshold\n",
 help_v = 
-	"Produce verbose output when building the index          True",
+	"Produce verbose output when building the index          True\n",
 help_id = 
 	"%%id similarity threshold (the alignment                0.97\n"
-	"                                            must still pass the E-value threshold).",
+	"                                            must still pass the E-value threshold).\n",
 help_coverage = 
 	"%%query coverage threshold (the alignment must          0.97\n"
-	"                                            still pass the E-value threshold)",
+	"                                            still pass the E-value threshold)\n",
 help_de_novo_otu = 
 	"FASTA/FASTQ file for reads matching database < %%id     False\n"
 	"                                            (set using --id) and < %%cov (set using --coverage)\n"
-	"                                            (alignment must still pass the E-value threshold).",
+	"                                            (alignment must still pass the E-value threshold).\n",
 help_otu_map = 
-	"Output OTU map (input to QIIME's make_otu_table.py).    False",
+	"Output OTU map (input to QIIME's make_otu_table.py).    False\n",
 help_passes = 
 	"Three intervals at which to place the seed on the read  L,L/2,3\n"
-	"                                            (L is the seed length)",
+	"                                            (L is the seed length)\n",
 help_edges = 
 	"Number (or percent if INT followed by %% sign) of       4\n"
 	"                                            nucleotides to add to each edge of the read\n"
-	"                                            prior to SW local alignment",
+	"                                            prior to SW local alignment\n",
 help_num_seeds = 
 	"Number of seeds matched before searching                2\n"
-	"                                            for candidate LIS",
+	"                                            for candidate LIS\n",
 help_pid = 
-	"Add pid to output file names.                           False",
+	"Add pid to output file names.                           False\n",
 help_full_search = 
 	"Search for all 0-error and 1-error seed                 False\n"
 	"                                            matches in the index rather than stopping\n"
 	"                                            after finding a 0-error match (<1%% gain in\n"
-	"                                            sensitivity with up four-fold decrease in speed)",
+	"                                            sensitivity with up four-fold decrease in speed)\n",
 help_h = 
-	"Print help information",
+	"Print help information\n",
 help_version = 
-	"Print SortMeRNA version number",
+	"Print SortMeRNA version number\n",
 help_cmd = 
-	"Launch an interactive session (command prompt)          False",
+	"Launch an interactive session (command prompt)          False\n",
 help_task = 
 	"Processing Task:                                        4\n"
 	"                                            0 - align. Only perform alignment\n"
 	"                                            1 - post-processing (log writing)\n"
 	"                                            2 - generate reports\n"
 	"                                            3 - align and post-process\n"
-	"                                            4 - all",
+	"                                            4 - all\n",
 help_d 
-	= "key-value datastore FULL folder path.              WORKDIR/kvdb/",
+	= "key-value datastore FULL folder path.              WORKDIR/kvdb/\n",
 help_a = 
 	"DEPRECATED in favour of '-threads'. Number of           numCores\n"
 	"                                            processing threads to use.\n"
-	"                                            Automatically redirects to '-threads'",
+	"                                            Automatically redirects to '-threads'\n",
 help_threads = 
-	"Number of Processing threads to use                     numCores",
+	"Number of Processing threads to use                     numCores\n",
 help_thpp = 
-	"Number of Post-Processing Read:Process threads to use   1:1",
+	"Number of Post-Processing Read:Process threads to use   1:1\n",
 help_threp = 
-	"Number of Report Read:Process threads to use            1:1",
+	"Number of Report Read:Process threads to use            1:1\n",
 help_tmpdir = 
 	"Indexing: directory for writing temporary files when\n"
-	"                                            building the reference index",
+	"                                            building the reference index\n",
 help_interval = 
 	"Indexing: Positive integer: index every Nth L-mer in    1\n"
-	"                                            the reference database e.g. '-interval 2'.",
+	"                                            the reference database e.g. '-interval 2'.\n",
 help_m = 
 	"Indexing: the amount of memory (in Mbytes) for building 3072\n"
-	"                                            the index.",
+	"                                            the index.\n",
 help_L = 
-	"Indexing: seed length.                                  18",
+	"Indexing: seed length.                                  18\n",
 help_max_pos = 
 	"Indexing: maximum (integer) number of positions to store  1000\n"
-	"                                            for each unique L-mer. If 0 all positions are stored."
+	"                                            for each unique L-mer. If 0 all positions are stored.\n"
 ;
 
 const std::string WORKDIR_DEF_SFX = "sortmerna/run";
