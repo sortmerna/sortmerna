@@ -54,9 +54,9 @@ void setup_workspace(Runopts & opts);
  */
 void setup_workspace(Runopts &opts)
 {
-	fs::create_directories(opts.workdir + "/" + opts.KVDB_DIR);
-	fs::create_directory(opts.workdir + "/" + opts.IDX_DIR);
-	fs::create_directory(opts.workdir + "/" + opts.OUT_DIR);
+	fs::create_directories(opts.workdir / opts.KVDB_DIR);
+	fs::create_directory(opts.workdir /opts.IDX_DIR);
+	fs::create_directory(opts.workdir / opts.OUT_DIR);
 }
 
 /*! @fn main()
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 
 	setup_workspace(opts);
 	Index index(opts); // reference index DB
-	KeyValueDatabase kvdb(opts.kvdbPath);
+	KeyValueDatabase kvdb(opts.kvdbdir.string());
 
 	if (opts.is_cmd) {
 		CmdSession cmd;

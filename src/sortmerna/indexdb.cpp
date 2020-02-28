@@ -980,10 +980,8 @@ namespace {
 void get_keys_file(std::string &keys_file, Runopts &opts)
 {
 	std::stringstream ss;
-
-	int32_t pid = getpid();
-	ss << pid;
-	keys_file = opts.workdir + "/sortmerna_keys_" + ss.str() + ".txt";
+	ss << "sortmerna_keys_" << getpid() << ".txt";
+	keys_file = opts.workdir.string() + ss.str();
 
 	std::fstream ifs(keys_file, std::ios_base::out | std::ios_base::binary);
 	if (ifs.is_open())

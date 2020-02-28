@@ -297,7 +297,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 	output.writeLog(opts, refstats, readstats);
 
 	if (opts.is_otu_map)
-		readstats.printOtuMap(output.otumapFile);
+		readstats.printOtuMap(output.otumap_f);
 
 	{
 		std::stringstream ss;

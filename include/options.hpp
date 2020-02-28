@@ -14,6 +14,7 @@
 #include <map>
 #include <tuple>
 #include <array>
+#include <filesystem>
 
 #include "common.hpp"
 #include "kvdb.hpp"
@@ -25,6 +26,8 @@ OPT_READS = "reads",
 OPT_ALIGNED = "aligned",
 OPT_OTHER = "other",
 OPT_WORKDIR = "workdir",
+OPT_KVDB = "kvdb",
+OPT_IDX = "idx",
 OPT_FASTX = "fastx",
 OPT_SAM = "sam",
 OPT_SQ = "SQ",
@@ -86,16 +89,50 @@ help_reads =
 	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n"
 	"                                            Use twice for files with paired reads\n",
 help_aligned = 
-	"Aligned reads file name prefix.                         'aligned'\n"
-	"                                            TODO: Remove\n",
+	"Aligned reads file prefix [[dir/][pfx]]                 WORKDIR/out/aligned\n"
+	"                                            Directory and file prefix to use for aligned output i.e.\n"
+	"                                            each output file will go into the specified directory with the given prefix.\n"
+	"                                            The appropriate extension will be automatically added.\n"
+	"                                            Both 'dir' and 'pfx' are optional.\n"
+	"                                            The 'dir' can be a relative or an absolute path.\n"
+	"                                            If 'dir' is not specified, the output will be created in the WORKDIR/out/\n"
+	"                                            If 'pfx' is not specified, the prefix 'aligned' will be used\n"
+	"                                            Examples:\n"
+	"                                             -aligned $MYDIR/dir_1/dir_2/1  -> $MYDIR/dir_1/dir_2/1.fasta|fastq|blast|sam\n"
+	"                                             -aligned dir_1/apfx            -> $PWD/dir_1/apfx.fasta|sam|blast\n"
+	"                                             -aligned apfx                  -> WORKDIR/out/apfx.fasta|fastq|sam|blast\n"
+	"                                             -aligned  (no argument)        -> WORKDIR/out/aligned.fasta|fastq|sam|blast\n",
 help_other = 
-	"Create Non-aligned reads output file                    False\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.\n",
+	"Non-aligned reads file prefix [[dir/][pfx]]             WORKDIR/out/other\n"
+	"                                            Must be used with '" + OPT_FASTX + "'.\n"
+	"                                            Directory and file prefix to use for non-aligned output i.e.\n"
+	"                                            each output file will go into the specified directory with the given prefix.\n"
+	"                                            The appropriate extension will be automatically added.\n"
+	"                                            Both 'dir' and 'pfx' are optional.\n"
+	"                                            The 'dir' can be a relative or an absolute path.\n"
+	"                                            If 'dir' is not specified, the output will be created in the WORKDIR/out/\n"
+	"                                            If 'pfx' is not specified, the prefix 'other' will be used\n"
+	"                                            Examples:\n"
+	"                                             -other $MYDIR/dir_1/dir_2/1  -> $MYDIR/dir_1/dir_2/1.fasta|fastq|blast|sam\n"
+	"                                             -other dir_1/apfx            -> $PWD/dir_1/apfx.fasta|fastq|sam|blast\n"
+	"                                             -other apfx                  -> WORKDIR/out/apfx.fasta|fastq|sam|blast\n"
+	"                                             -other  (no argument)        -> WORKDIR/out/other.fasta|fastq|sam|blast\n",
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 
-	"Working directory path for storing Reference   USRDIR/sortmerna/run/\n"
-	"                                            index, Key-value database and the output.\n",
+	"Directory for storing Reference index,      USRDIR/sortmerna/run/\n"
+	"                                            Key-value database, and the output.\n"
+	"                                            Default structure:\n"
+	"                                              WORKDIR/\n"
+	"                                                 idx/\n"
+	"                                                 kvdb/\n"
+	"                                                 out/\n",
+help_kvdb =
+	"Directory for storing Key-value database    WORKDIR/kvdb\n"
+	"                                            KVDB is used for storing alignement results.\n",
+help_idx =
+	"Directory for storing Reference index.      WORKDIR/idx\n"
+	"                                            \n",
 help_sam = 
 	"Output SAM alignment for aligned reads.\n",
 help_SQ = 
@@ -346,11 +383,13 @@ public:
 	bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
 	bool is_paired = false; // flags the reads are paired
 
-	std::string workdir; // Directory for index, KVDB, Output
+	std::filesystem::path workdir; // Directory for index, KVDB, Output
+	std::filesystem::path idxdir;
+	std::filesystem::path kvdbdir;
+	std::filesystem::path outdir;
+	std::filesystem::path aligned_out_pfx = OPT_ALIGNED; // aligned reads output file prefix [dir/][pfx]
+	std::filesystem::path other_out_pfx = OPT_OTHER; // non-aligned reads output file prefix [dir/][pfx]
 	std::string cmdline;
-	std::string kvdbPath; // help_d TODO: remove
-	std::string aligned_out_pfx = OPT_ALIGNED; // aligned reads output file prefix
-	std::string other_out_pfx = OPT_OTHER; // rejected reads output file prefix
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
 	int num_write_thread = 1; // number of threads writing to Key-value database
@@ -406,13 +445,14 @@ private:
 	// methods
 	void process(int argc, char**argv, bool dryrun);
 	void validate();
+	void validate_output();
 	void opt_sort();
 
 	void opt_reads(const std::string &val);
 	void opt_reads_gz(char **argv, int &narg);
 	void opt_ref(const std::string &val);
-	void opt_aligned(const std::string &val); // TODO: make optional. Aligned will be named automatically and put into WORKDIR
-	void opt_other(const std::string &val); // TODO: make optional. Similar to Aligned.
+	void opt_aligned(const std::string &val);
+	void opt_other(const std::string &val);
 	void opt_log(const std::string &val);
 	void opt_de_novo_otu(const std::string &val);
 	void opt_otu_map(const std::string &val);
@@ -454,6 +494,8 @@ private:
 	void opt_N(const std::string &val); // opt_N_MatchAmbiguous
 	void opt_d(const std::string &val); // opt_d_KeyValDatabase Key-Value Database directory path (kvdbPath)
 	void opt_workdir(const std::string &path);
+	void opt_kvdb(const std::string& path);
+	void opt_idx(const std::string& path);
 
 	// ref tmpdir interval m L max_pos v h  // indexing options
 	void opt_tmpdir(const std::string &val);
@@ -487,15 +529,18 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 45> options = {
+	const std::array<opt_6_tuple, 48> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
+		std::make_tuple(OPT_KVDB,           "PATH",        COMMON,      false, help_kvdb, &Runopts::opt_kvdb),
+		std::make_tuple(OPT_IDX,            "PATH",        COMMON,      false, help_idx, &Runopts::opt_idx),
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),
 		std::make_tuple(OPT_BLAST,          "STRING",      COMMON,      false, help_blast, &Runopts::opt_blast),
-		std::make_tuple(OPT_OTHER,          "BOOL",        COMMON,      false, help_other, &Runopts::opt_other),
+		std::make_tuple(OPT_ALIGNED,        "STRING/BOOL", COMMON,      false, help_aligned, &Runopts::opt_aligned),
+		std::make_tuple(OPT_OTHER,          "STRING/BOOL", COMMON,      false, help_other, &Runopts::opt_other),
 		std::make_tuple(OPT_NUM_ALIGNMENTS, "INT",         COMMON,      false, help_num_alignments, &Runopts::opt_num_alignments),
 		std::make_tuple(OPT_BEST,           "INT",         COMMON,      false, help_best, &Runopts::opt_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),

@@ -24,7 +24,7 @@
 #include "reader.hpp"
 
 const std::string OPT_DB   = "--db";
-const std::string OPT_IDX  = "--idx";
+//const std::string OPT_IDX  = "--idx";
 const std::string OPT_PART = "--part";
 const std::string OPT_READ = "--read";
 const std::string OPT_POS  = "--pos";
@@ -98,7 +98,7 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 	{
 		if (isdb)
 		{
-			KeyValueDatabase kvdb(opts.kvdbPath);
+			KeyValueDatabase kvdb(opts.kvdbdir.string());
 			read.clear();
 			read.init(opts); // TODO: pass the required reads file number i.e. 0 or 1 to generate a correct read.id
 			ss << read.matchesToJson() << std::endl;
@@ -140,7 +140,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 		return;
 	}
 
-	KeyValueDatabase kvdb(opts.kvdbPath);
+	KeyValueDatabase kvdb(opts.kvdbdir.string());
 	Readstats readstats(opts, kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;
@@ -267,7 +267,7 @@ void CmdSession::cmd_max_ref_part(Runopts & opts, std::string & cmd)
 		return;
 	}
 
-	KeyValueDatabase kvdb(opts.kvdbPath);
+	KeyValueDatabase kvdb(opts.kvdbdir.string());
 	Readstats readstats(opts, kvdb);
 	Refstats refstats(opts, readstats);
 	References refs;

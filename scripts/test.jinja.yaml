@@ -132,6 +132,7 @@ t5:
     - -fastx
     - -other
     - -v
+    #- -pid
   validate:
     func:
     num_reads: 10000

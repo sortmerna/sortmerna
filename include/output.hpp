@@ -75,24 +75,24 @@ public:
 
 class Output {
 public:
-	// output streams for aligned reads (FASTA/FASTQ, SAM and BLAST-like)
-	std::vector<std::ofstream> fastx_aligned; // fasta/q    20200127 2 files if 'out2', 1 file otherwise
-	std::vector<std::ofstream> fastx_other; // fasta/q non-aligned   20200127 2 files if 'out2', 1 file otherwise
-	std::ofstream samout; // SAM
-	std::ofstream blastout; // BLAST
-	std::ofstream logstream;
-	std::ofstream denovoreads;
-	std::ofstream biomout;
+	// output streams
+	std::vector<std::ofstream> aligned_os; // fasta/q    20200127 2 files if 'out2', 1 file otherwise
+	std::vector<std::ofstream> other_os; // fasta/q non-aligned   20200127 2 files if 'out2', 1 file otherwise
+	std::ofstream sam_os; // SAM
+	std::ofstream blast_os; // BLAST
+	std::ofstream log_os;
+	std::ofstream denovo_os;
+	std::ofstream biom_os;
 
-	// file names
-	std::vector<std::string> alignedfile; // 20200127 2 files if 'out2'
-	std::vector<std::string> otherfile; // 20200127 2 files if 'out2'
-	std::string samoutFile;
-	std::string blastoutFile;
-	std::string logfile;
-	std::string denovo_otus_file;
-	std::string otumapFile;
-	std::string biomfile;
+	// output file names
+	std::vector<std::string> aligned_f; // 20200127 2 files if 'out2'
+	std::vector<std::string> other_f; // 20200127 2 files if 'out2'
+	std::string sam_f;
+	std::string blast_f;
+	std::string log_f;
+	std::string denovo_otus_f;
+	std::string otumap_f;
+	std::string biom_f;
 
 	Summary summary;
 
