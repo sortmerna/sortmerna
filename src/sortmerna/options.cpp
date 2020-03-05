@@ -46,7 +46,6 @@ std::string get_user_home(); // util.cpp
 std::string trim_leading_dashes(std::string const& name); // util.cpp
 std::string get_basename(const std::string &file); // util.cpp
 std::streampos filesize(const std::string &file); // util.cpp
-std::string string_hash(const std::string &val); // util.cpp
 
 Runopts::Runopts(int argc, char**argv, bool dryrun)
 {
@@ -157,7 +156,7 @@ void Runopts::opt_reads(const std::string &file)
 		ifs.close();
 } // ~Runopts::opt_reads
 
-void Runopts::opt_ref(const std::string &file)
+void Runopts::opt_ref(const std::string &refpath)
 {
 	std::stringstream ss;
 
@@ -166,14 +165,14 @@ void Runopts::opt_ref(const std::string &file)
 
 	std::cout << STAMP << "Processing reference [" << refcnt + 1 << "] out of total [" << numref << "] references" << std::endl;
 
-	if (file.size() == 0)
+	if (refpath.size() == 0)
 	{
 		ERR(help_ref);
 		exit(EXIT_FAILURE);
 	}
 
 	// check file exists and can be read
-	auto fpath = std::filesystem::path(file);
+	auto fpath = std::filesystem::path(refpath);
 	auto fpath_a = std::filesystem::path(); // absolute path
 
 	if (std::filesystem::exists(fpath))
@@ -182,19 +181,19 @@ void Runopts::opt_ref(const std::string &file)
 	}
 	else if (fpath.is_relative())
 	{
-		std::cout << "File  [" << file << "] appears to be a relative path. Trying to locate in current directory and in the working directory ...";
-		fpath_a = std::filesystem::current_path() / file; // std::filesystem::path(file) makes no difference
+		std::cout << "File  [" << refpath << "] appears to be a relative path. Trying to locate in current directory and in the working directory ...";
+		fpath_a = std::filesystem::current_path() / refpath; // std::filesystem::path(file) makes no difference
 		if (std::filesystem::exists(fpath_a))
 		{
 			std::cout << "File [" << fpath_a << "] exists" << std::endl;
 		}
 		else
 		{
-			std::cout << "File  [" << file << "] has not been found in the current directory. Trying the working directory ...";
-			if (!std::filesystem::exists(workdir / file))
+			std::cout << "File  [" << refpath << "] has not been found in the current directory. Trying the working directory ...";
+			if (!std::filesystem::exists(workdir / refpath))
 			{
 				std::cout << STAMP 
-					<< "Could not locate File [" << file << "] neither at current path [" << std::filesystem::current_path() 
+					<< "Could not locate File [" << refpath << "] neither at current path [" << std::filesystem::current_path() 
 					<< "] nor in Workdir [" << workdir << "]" << std::endl;
 				ERR(help_ref);
 				exit(EXIT_FAILURE);
@@ -204,7 +203,7 @@ void Runopts::opt_ref(const std::string &file)
 	else
 	{
 		ss << STAMP
-			<< "The file [" << file << "] is not an existing/valid absolute or relative path\n"
+			<< "The file [" << refpath << "] is not an existing/valid absolute or relative path\n"
 			<< help_ref;
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
@@ -213,12 +212,12 @@ void Runopts::opt_ref(const std::string &file)
 	// check files are readable
 	std::ifstream ifstr(fpath_a);
 	if (!ifstr.is_open() || !ifstr.good()) {
-		ss << STAMP << "Cannot read file [" << file << "]";
+		ss << STAMP << "Cannot read file [" << refpath << "]";
 		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	else {
-		ss << STAMP << "File [" << std::filesystem::absolute(file) << "] exists and is readable\n";
+		ss << STAMP << "File [" << std::filesystem::absolute(refpath) << "] exists and is readable\n";
 		std::cout << ss.str();
 	}
 
@@ -228,22 +227,15 @@ void Runopts::opt_ref(const std::string &file)
 	// check index file names are distinct
 	for (int i = 0; i < (int)indexfiles.size(); i++)
 	{
-		if ((indexfiles[i].first).compare(file) == 0)
+		if ((indexfiles[i].first).compare(refpath) == 0)
 		{
 			ss.str("");
-			ss << STAMP << "Reference file (" << file << ") has been entered more than once. Ignoring redundant enties";
+			ss << STAMP << "Reference file (" << refpath << ") has been entered more than once. Ignoring redundant enties";
 			WARN(ss.str());
 		}
 	}
-
-	// derive index file prefix from the reference file name
-	// if we are here the Workdir is OK
-	//std::string basename = get_basename(file);
-	//std::string idx_file_pfx = workdir + "/" + IDX_DIR + "/" + string_hash(basename);
-	auto fpath_base = std::filesystem::path(file).filename();
-	auto idx_file_pfx = workdir / IDX_DIR / string_hash(fpath_base.generic_string());
-
-	indexfiles.push_back(std::pair<std::string, std::string>(fpath_a.generic_string(), idx_file_pfx.generic_string()));
+	// add reference file absolute path. The index file will be set during index initialization.
+	indexfiles.push_back(std::pair<std::string, std::string>(fpath_a.generic_string(), ""));
 } // ~Runopts::opt_ref
 
 /* 
@@ -259,19 +251,14 @@ void Runopts::opt_aligned(const std::string &file)
 	// -aligned specified without argument
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << "Directory and Prefix for the aligned output was not provided. Using default dir/pfx: 'WORKDIR/aligned'" << std::endl;
+		std::cout << STAMP << "Directory and Prefix for the aligned output was not provided. Using default dir/pfx: 'WORKDIR/out/aligned'" << std::endl;
 	}
 	else {
 		std::filesystem::path fpath = file;
 		if (!fpath.empty()) {
-			aligned_out_pfx = fpath.filename(); // prefix is non-empty - use it, otherwise - default
-		}
-
-		if (!fpath.parent_path().empty()) {
-			// no dir => use default WORKDIR/out/
+			aligned_pfx = fpath; // prefix is non-empty - use it
 		}
 	}
-	// path not exists, and has no trailing path separator => 
 } // ~Runopts::opt_aligned
 
 /**
@@ -280,15 +267,21 @@ void Runopts::opt_aligned(const std::string &file)
 void Runopts::opt_other(const std::string &file)
 {
 	auto cnt = mopt.count(OPT_FASTX);
-	if (cnt < 0)
+	if (cnt < 1)
 	{
-		ERR("Option '--other' can only be used together with '--fastx' option.");
+		ERR("Option '" + OPT_OTHER + "' can only be used together with '"+ OPT_FASTX + "' option.");
 		exit(EXIT_FAILURE);
 	}
 
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << "'--other' option was specified. Using file name: [" << other_out_pfx << "]" << std::endl;
+		std::cout << STAMP << "Directory and Prefix for the non-aligned output was not provided. Using default dir/pfx: 'WORKDIR/out/other'" << std::endl;
+	}
+	else {
+		std::filesystem::path fpath = file;
+		if (!fpath.empty()) {
+			other_pfx = fpath; // prefix is non-empty - use it
+		}
 	}
 	is_other = true;
 } // ~Runopts::opt_other
@@ -1003,14 +996,6 @@ void Runopts::opt_threp(const std::string &val)
 	}
 } // ~Runopts::opt_threads
 
-// KeyValDatabase
-void Runopts::opt_d(const std::string &val)
-{
-	if (val.size() != 0)
-		kvdbdir = val;
-} // ~Runopts::opt_d
-
-
 void Runopts::opt_dbg_put_db(const std::string &val)
 {
 	is_dbg_put_kvdb = true;
@@ -1066,16 +1051,38 @@ void Runopts::opt_workdir(const std::string &path)
 	}
 	else {
 		workdir = path;
-		std::cout << STAMP << "Using WORKDIR [" << std::filesystem::absolute(workdir) << " as specified" << std::endl;
+		std::cout << STAMP << "Using WORKDIR: [" << std::filesystem::absolute(workdir) << "] as specified" << std::endl;
 	}
 }
 
 void Runopts::opt_kvdb(const std::string& path) {
-
+	std::stringstream ss;
+	if (path.size() == 0)
+	{
+		ss << STAMP << "'" << OPT_KVDB
+			<< "' option takes an argument - a directory path. None was provided.\n" << help_kvdb;
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+	else {
+		kvdbdir = path;
+		std::cout << STAMP << "Using KVDB dir: [" << std::filesystem::absolute(kvdbdir) << " as specified" << std::endl;
+	}
 }
 
 void Runopts::opt_idx(const std::string& path) {
-
+	std::stringstream ss;
+	if (path.size() == 0)
+	{
+		ss << STAMP << "'" << OPT_IDX
+			<< "' option takes an argument - a directory path. None was provided.\n" << help_kvdb;
+		ERR(ss.str());
+		exit(EXIT_FAILURE);
+	}
+	else {
+		idxdir = path;
+		std::cout << STAMP << "Using IDX dir: [" << std::filesystem::absolute(idxdir) << " as specified" << std::endl;
+	}
 }
 
 // indexing options
@@ -1185,25 +1192,62 @@ void Runopts::opt_max_pos(const std::string &val)
 	}
 }
 
-void Runopts::test_kvdb_path()
+/* 
+ * called from validate
+ */
+void Runopts::validate_idxdir() {
+	if (idxdir.empty()) {
+		if (workdir.empty()) {
+			std::cout << STAMP << "'" << OPT_WORKDIR
+				<< "' option was not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
+			workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
+		}
+		idxdir = workdir / IDX_DIR; // default
+	}
+	if (!std::filesystem::exists(idxdir)) {
+		bool is_dir_ok = std::filesystem::create_directory(idxdir);
+		if (!is_dir_ok) {
+			std::stringstream ss;
+			ss << STAMP << "Failed creating IDX directory: [" << std::filesystem::absolute(idxdir) << "]" << std::endl;
+			ERR(ss.str());
+			exit(EXIT_FAILURE);
+		}
+	}
+	else {
+		if (std::filesystem::is_empty(idxdir)) {
+			std::cout << STAMP << "IDX directory: " << std::filesystem::absolute(idxdir) << " exists and is empty" << std::endl;
+		}
+		else {
+			std::cout << STAMP << "IDX directory: " << std::filesystem::absolute(idxdir) << " exists and is not empty" << std::endl;
+		}
+	}
+}
+
+/* 
+ * called from validate
+ */
+void Runopts::validate_kvdbdir()
 {
-	if (kvdbdir.empty())
-	{
-		kvdbdir = workdir / KVDB_DIR;
+	if (kvdbdir.empty()) {
+		if (workdir.empty()) {
+			std::cout << STAMP << "'" << OPT_WORKDIR
+				<< "' option was not provided. Using USERDIR to set the working directory: " << workdir << std::endl;
+			workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
+		}
+		kvdbdir = workdir / KVDB_DIR; // default
 	}
 
-	std::cout << STAMP << "Key-value DB location (" << std::filesystem::absolute(kvdbdir) << ")" << std::endl;
+	std::cout << STAMP << "Key-value DB location " << std::filesystem::absolute(kvdbdir) << std::endl;
 
 	if (std::filesystem::exists(kvdbdir))
 	{
 		// dir exists and is empty
-		//auto count = list_dir(kvdbPath);
 		if (std::filesystem::is_empty(kvdbdir))
 		{
 			// dir exists and empty -> use
 			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
 			{
-				std::cout << STAMP << "KVDB (" << std::filesystem::absolute(kvdbdir) << " is empty. Will run alignment" << std::endl;
+				std::cout << STAMP << "KVDB directory: " << std::filesystem::absolute(kvdbdir) << " is empty. OK to use." << std::endl;
 			}
 		}
 		else // not empty
@@ -1215,12 +1259,12 @@ void Runopts::test_kvdb_path()
 				// if (kvdb.verify()) // TODO
 				// output the listing
 				std::stringstream ss;
-				ss << STAMP << "Path '" << std::filesystem::absolute(kvdbdir) << "' exists with the following content:" << std::endl;
+				ss << STAMP << "Path: " << std::filesystem::absolute(kvdbdir) << " exists with the following content:" << std::endl;
 
 				for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
 					ss << subpath.path().filename() << std::endl;
 
-				ss << "\tPlease, ensure the directory [" << std::filesystem::absolute(kvdbdir) << "] is Empty prior running 'sortmerna'" << std::endl;
+				ss << "\tPlease, ensure the directory " << std::filesystem::absolute(kvdbdir) << " is Empty prior running 'sortmerna'" << std::endl;
 				WARN(ss.str());
 				exit(EXIT_FAILURE);
 			}
@@ -1229,9 +1273,52 @@ void Runopts::test_kvdb_path()
 	else
 	{
 		// dir does not exist -> try creating
-		std::cout << STAMP << "Database (" << std::filesystem::absolute(kvdbdir) << ") will be created" << std::endl;
+		std::cout << STAMP << "Creating KVDB directory: " << std::filesystem::absolute(kvdbdir) << std::endl;
+		bool is_dir_ok = std::filesystem::create_directories(kvdbdir);
+		if (!is_dir_ok) {
+			std::stringstream ss;
+			ss << STAMP << "Failed creating KVDB directory: " << std::filesystem::absolute(kvdbdir) << std::endl;
+			ERR(ss.str());
+			exit(EXIT_FAILURE);
+		}
 	}
-} // ~test_kvdb_path
+} // ~validate_kvdbdir
+
+void Runopts::validate_aligned_pfx() {
+	if (aligned_pfx.empty()) {
+		aligned_pfx = workdir / OUT_DIR / OPT_ALIGNED; // default output file
+	}
+
+	if (aligned_pfx.has_parent_path()) {
+		// create directory if not exists
+		if (!std::filesystem::exists(aligned_pfx.parent_path())) {
+			std::cout << STAMP << "Checking output directory: " << std::filesystem::absolute(aligned_pfx.parent_path()) << std::endl;
+			bool is_dir_ok = std::filesystem::create_directories(aligned_pfx.parent_path());
+			if (!is_dir_ok) {
+				ERR("Failed creating output directory: " + aligned_pfx.parent_path().string());
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+}
+
+void Runopts::validate_other_pfx() {
+	if (other_pfx.empty()) {
+		other_pfx = workdir / OUT_DIR / OPT_OTHER; // default output file
+	}
+
+	if (other_pfx.has_parent_path()) {
+		// create directory if not exists
+		if (!std::filesystem::exists(other_pfx.parent_path())) {
+			std::cout << STAMP << "Checking output directory: " << std::filesystem::absolute(other_pfx.parent_path()) << std::endl;
+			bool is_dir_ok = std::filesystem::create_directories(other_pfx.parent_path());
+			if (!is_dir_ok) {
+				ERR("Failed creating output directory: " + other_pfx.parent_path().string());
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+}
 
 /** 
  * main method of this class. 
@@ -1369,19 +1456,10 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 
 	if (!is_help_opt)
 	{
-		// validate the options. TODO: should be part of options validation?
-		test_kvdb_path();
 		validate();
 		about(); // if we are here, args are OK, welcome the user
 	}
 } // ~Runopts::process
-
-void Runopts::validate_output() {
-	// workdir
-	workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
-	std::cout << STAMP << "'" << OPT_WORKDIR
-		<< "' option was not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
-}
 
 /**
  * Validate the options and setup defaults
@@ -1390,12 +1468,19 @@ void Runopts::validate()
 {
 	std::stringstream ss;
 
+	validate_kvdbdir();
+	validate_idxdir();
+	validate_aligned_pfx(); // there is always some output like log => validate
+	if (is_other) {
+		validate_other_pfx();
+	}
+
 	// No output format has been chosen
 	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_de_novo_otu))
 	{
 		is_blast = true;
 		std::cout << STAMP 
-			<< "No output format has been chosen (fastx/sam/blast/otu_map). Using default '" 
+			<< "No output format has been chosen (fastx|sam|blast|otu_map). Using default '" 
 			<< OPT_BLAST << "'" << std::endl;
 	}
 

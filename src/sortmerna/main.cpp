@@ -49,16 +49,6 @@ namespace fs = std::filesystem;
 void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb); // processor.cpp
 void setup_workspace(Runopts & opts);
 
-/**
- * Setup the directory structure necessary for the sortmerna process 
- */
-void setup_workspace(Runopts &opts)
-{
-	fs::create_directories(opts.workdir / opts.KVDB_DIR);
-	fs::create_directory(opts.workdir /opts.IDX_DIR);
-	fs::create_directory(opts.workdir / opts.OUT_DIR);
-}
-
 /*! @fn main()
 	@brief main function, parses command line arguments and launches the processing
 	@param int argc
@@ -72,7 +62,6 @@ int main(int argc, char** argv)
 
 	std::cout << STAMP << "Running command:\n" << opts.cmdline << std::endl;
 
-	setup_workspace(opts);
 	Index index(opts); // reference index DB
 	KeyValueDatabase kvdb(opts.kvdbdir.string());
 
