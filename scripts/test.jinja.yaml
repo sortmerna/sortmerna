@@ -732,6 +732,71 @@ t24:
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
+t25:
+  name: test_aligned_opt
+  note:
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -workdir
+    - run
+    - -fastx
+    - -aligned
+    - out1/out2/set4
+    - -other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+
+t26:
+  name: test_output_opt
+  note: |
+    Options and their combinations to test:
+    -workdir
+    -kvdb
+    -idx
+    -aligned
+    -other
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -workdir
+    - run
+    - -kvdb
+    - run/kvdb_1
+    - -idx
+    - run/idx_1
+    - -fastx
+    - -aligned
+    - run/out_1/set4_aligned
+    - -other
+    - run/out_1/set4_other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+
+
+
 #
 # custom tests
 #
