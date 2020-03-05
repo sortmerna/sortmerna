@@ -1178,12 +1178,20 @@ int build_index(Runopts &opts)
 		size_t filesize = ftell(fp);
 		fseek(fp, 0L, SEEK_SET);
 
-		ss.str("");
-		ss << std::endl << STAMP
-			<< "Begin indexing file " << BLUE << idxpair.first << COLOFF 
-			<< " of size: " << filesize
-			<< " under index name " << BLUE << idxpair.second << COLOFF << std::endl;
-		DBG(opts.is_verbose, ss.str().data());
+		if (idxpair.second.size() == 0) {
+			ss.str("");
+			ss << STAMP << "Index file prefix for reference " << idxpair.first << " is empty. Cannot proceed." << std::endl;
+			ERR(ss.str());
+			exit(EXIT_FAILURE);
+		}
+		else {
+			ss.str("");
+			ss << std::endl << STAMP
+				<< "Begin indexing file " << BLUE << idxpair.first << COLOFF
+				<< " of size: " << filesize
+				<< " under index name " << BLUE << idxpair.second << COLOFF << std::endl;
+			DBG(opts.is_verbose, ss.str().data());
+		}
 
 		// STEP 1 ************************************************************
 		//   For file part_0 compute

@@ -77,7 +77,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 {
 	summary.pid_str = std::to_string(getpid());
 
-	// init output files
+	// init aligned output files
 	if (opts.is_fastx)
 	{
 		// fasta/q output  WORKDIR/out/aligned.fastq
@@ -95,89 +95,19 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.is_out2) {
 				sfx2 = i == 0 ? "_fwd" : "_rev";
 			}
-			auto fpath = opts.workdir / opts.OUT_DIR / opts.aligned_out_pfx / (sfx2 + sfx);
-			aligned_f[i] = fpath.string();
+
+			// test the file
+			aligned_f[i] = opts.aligned_pfx.string() + sfx2 + sfx;
+			std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(aligned_f[i])) << std::endl;
 			aligned_os[i].open(aligned_f[i]);
 			aligned_os[i].close();
+			if (!aligned_os[i]) {
+				std::stringstream ss;
+				ss << STAMP << "Failed operating stream on file " << aligned_f[i];
+				ERR(ss.str());
+				exit(EXIT_FAILURE);
+			}
 		}
-	}
-
-	if (opts.is_sam)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += ".sam";
-		// sam output  WORKDIR/out/aligned.sam
-		auto fpath = opts.workdir / opts.OUT_DIR / opts.aligned_out_pfx / sfx;
-		sam_f = fpath.string();
-		sam_os.open(sam_f);
-		sam_os.close();
-	}
-
-	if (opts.is_blast)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += ".blast";
-		// blast output  WORKDIR/out/aligned.blast
-		auto fpath = opts.workdir / opts.OUT_DIR / opts.aligned_out_pfx / sfx;
-		blast_f = fpath.string();
-		blast_os.open(fpath);
-		blast_os.close();
-	}
-
-	if (opts.is_otu_map)
-	{
-		// OTU map output file  WORKDIR/out/aligned_otus.txt
-		std::ofstream otumap;
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += "_otus.txt";
-		auto fpath = opts.workdir / opts.OUT_DIR / opts.aligned_out_pfx / sfx;
-		otumap_f = fpath.string();
-		otumap.open(fpath);
-		otumap.close();
-	}
-
-	if (opts.is_de_novo_otu)
-	{
-		std::ofstream denovo_otu;
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += "_denovo." + readstats.suffix;
-		//  WORKDIR/out/aligned_denovo.fastq
-		auto fpath = opts.workdir / opts.OUT_DIR / opts.aligned_out_pfx / sfx;
-		denovo_otus_f = fpath.string();
-		denovo_otu.open(fpath);
-		denovo_otu.close();
-	}
-
-	// don't touch the log if only reports are generated
-	if (opts.is_log && opts.alirep != Runopts::ALIGN_REPORT::report)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += ".log";
-		// WORKDIR/out/aligned.log
-		auto logpath = opts.workdir / opts.OUT_DIR / opts.aligned_out_pfx / sfx;
-		log_f = logpath.string();
-		log_os.open(log_f);
-		log_os.close();
 	}
 
 	if (opts.is_other && opts.is_fastx)
@@ -196,11 +126,103 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			if (opts.is_out2) {
 				sfx2 = i == 0 ? "_fwd" : "_rev";
 			}
-			// WORKDIR/out/other.fasta | other_fwd.fasta | other_rev.fasta
-			auto fpath = opts.workdir / opts.OUT_DIR / opts.other_out_pfx / (sfx2 + sfx);
-			other_f[i] = fpath.string();
+			// test the file
+			other_f[i] = opts.other_pfx.string() + sfx2 + sfx;
+			std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(other_f[i])) << std::endl;
 			other_os[i].open(other_f[i]);
 			other_os[i].close();
+			if (!other_os[i]) {
+				std::stringstream ss;
+				ss << STAMP << "Failed operating stream on file " << other_f[i];
+				ERR(ss.str());
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+
+	if (opts.is_sam)
+	{
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += ".sam";
+		sam_f = opts.aligned_pfx.string() + sfx;
+		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(sam_f)) << std::endl;
+		sam_os.open(sam_f);
+		sam_os.close();
+	}
+
+	if (opts.is_blast)
+	{
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += ".blast";
+		blast_f = opts.aligned_pfx.string() + sfx;
+		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(blast_f)) << std::endl;
+		blast_os.open(blast_f);
+		blast_os.close();
+		if (!blast_os) {
+			std::stringstream ss;
+			ss << STAMP << "Failed operating stream on file " << blast_f;
+			ERR(ss.str());
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (opts.is_otu_map)
+	{
+		// OTU map output file  WORKDIR/out/aligned_otus.txt
+		std::ofstream otumap;
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += "_otus.txt";
+		otumap_f = opts.aligned_pfx.string() + sfx;
+		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(otumap_f)) << std::endl;
+		otumap.open(otumap_f);
+		otumap.close();
+	}
+
+	if (opts.is_de_novo_otu)
+	{
+		std::ofstream denovo_otu;
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += "_denovo." + readstats.suffix;
+		denovo_otus_f = opts.aligned_pfx.string() + sfx;
+		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(denovo_otus_f)) << std::endl;
+		denovo_otu.open(denovo_otus_f);
+		denovo_otu.close();
+	}
+
+	// don't touch the log if only reports are generated
+	if (opts.is_log && opts.alirep != Runopts::ALIGN_REPORT::report)
+	{
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + summary.pid_str;
+		}
+		sfx += ".log";
+		log_f = opts.aligned_pfx.string() + sfx;
+		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(log_f)) << std::endl;
+		log_os.open(log_f);
+		log_os.close();
+		if (!log_os) {
+			std::stringstream ss;
+			ss << STAMP << "Failed operating stream on file " << log_f;
+			ERR(ss.str());
+			exit(EXIT_FAILURE);
 		}
 	}
 } // ~Output::init
@@ -873,7 +895,7 @@ void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
 		log_os.open(log_f, std::ofstream::binary | std::ofstream::app);
 	}
 
-	std::cout << STAMP << "Using Log file: " << log_f << std::endl;
+	std::cout << STAMP << "Using Log file: " << std::filesystem::absolute(log_f) << std::endl;
 
 	summary.cmd = opts.cmdline;
 	summary.total_reads = readstats.all_reads_count;

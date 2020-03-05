@@ -52,6 +52,9 @@
 #include "references.hpp"
 #include "refstats.hpp"
 
+// forward
+std::string string_hash(const std::string& val); // util.cpp
+
  /**
   * Initilize the index.
   * If index files do not exist or are empty build the index.
@@ -66,11 +69,19 @@ Index::Index(Runopts & opts)
 	if (!opts.is_index_built)
 	{
 		// init index files
-		for (auto file_pfx : opts.indexfiles)
+		for (std::size_t idx = 0; idx < opts.indexfiles.size(); ++idx)
 		{
+			// prepare index file prefix - derive from the reference file name
+			if (opts.indexfiles[idx].second.size() == 0) {
+				auto refpath_base = std::filesystem::path(opts.indexfiles[idx].first).filename();
+				auto idx_file_pfx = opts.idxdir / string_hash(refpath_base.generic_string()); // idxdir is set in Runopts::validate_idxdir
+				opts.indexfiles[idx].second = idx_file_pfx.generic_string();
+			}
+
+			// test index files
 			for (auto sfx : sfxarr)
 			{
-				auto idxfile = file_pfx.second + sfx;
+				auto idxfile = opts.indexfiles[idx].second + sfx;
 				// verify file exists
 				bool exists = std::filesystem::exists(idxfile);
 				bool is_empty = true;
@@ -81,7 +92,7 @@ Index::Index(Runopts & opts)
 
 				if (exists && !is_empty)
 				{
-					std::cout << STAMP << "Index file [" << idxfile << "] already exists and is not empty." << std::endl;
+					std::cout << STAMP << "Index file [" << std::filesystem::absolute(idxfile) << "] already exists and is not empty." << std::endl;
 					++count_indexed;
 				}
 				else
