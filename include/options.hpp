@@ -89,7 +89,7 @@ help_reads =
 	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n"
 	"                                            Use twice for files with paired reads\n",
 help_aligned = 
-	"Aligned reads file prefix [[dir/][pfx]]                 WORKDIR/out/aligned\n"
+	"Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned\n"
 	"                                            Directory and file prefix to use for aligned output i.e.\n"
 	"                                            each output file will go into the specified directory with the given prefix.\n"
 	"                                            The appropriate extension will be automatically added.\n"
@@ -99,11 +99,11 @@ help_aligned =
 	"                                            If 'pfx' is not specified, the prefix 'aligned' will be used\n"
 	"                                            Examples:\n"
 	"                                             -aligned $MYDIR/dir_1/dir_2/1  -> $MYDIR/dir_1/dir_2/1.fasta|fastq|blast|sam\n"
-	"                                             -aligned dir_1/apfx            -> $PWD/dir_1/apfx.fasta|sam|blast\n"
-	"                                             -aligned apfx                  -> WORKDIR/out/apfx.fasta|fastq|sam|blast\n"
+	"                                             -aligned dir_1/apfx            -> $PWD/dir_1/apfx.fasta|fastq|sam|blast\n"
+	"                                             -aligned apfx                  -> $PWD/apfx.fasta|fastq|sam|blast\n"
 	"                                             -aligned  (no argument)        -> WORKDIR/out/aligned.fasta|fastq|sam|blast\n",
 help_other = 
-	"Non-aligned reads file prefix [[dir/][pfx]]             WORKDIR/out/other\n"
+	"Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
 	"                                            Directory and file prefix to use for non-aligned output i.e.\n"
 	"                                            each output file will go into the specified directory with the given prefix.\n"
@@ -115,7 +115,7 @@ help_other =
 	"                                            Examples:\n"
 	"                                             -other $MYDIR/dir_1/dir_2/1  -> $MYDIR/dir_1/dir_2/1.fasta|fastq|blast|sam\n"
 	"                                             -other dir_1/apfx            -> $PWD/dir_1/apfx.fasta|fastq|sam|blast\n"
-	"                                             -other apfx                  -> WORKDIR/out/apfx.fasta|fastq|sam|blast\n"
+	"                                             -other apfx                  -> $PWD/apfx.fasta|fastq|sam|blast\n"
 	"                                             -other  (no argument)        -> WORKDIR/out/other.fasta|fastq|sam|blast\n",
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
@@ -264,8 +264,6 @@ help_task =
 	"                                            2 - generate reports\n"
 	"                                            3 - align and post-process\n"
 	"                                            4 - all\n",
-help_d 
-	= "key-value datastore FULL folder path.              WORKDIR/kvdb/\n",
 help_a = 
 	"DEPRECATED in favour of '-threads'. Number of           numCores\n"
 	"                                            processing threads to use.\n"
@@ -387,8 +385,8 @@ public:
 	std::filesystem::path idxdir;
 	std::filesystem::path kvdbdir;
 	std::filesystem::path outdir;
-	std::filesystem::path aligned_out_pfx = OPT_ALIGNED; // aligned reads output file prefix [dir/][pfx]
-	std::filesystem::path other_out_pfx = OPT_OTHER; // non-aligned reads output file prefix [dir/][pfx]
+	std::filesystem::path aligned_pfx; // aligned reads output file prefix [dir/][pfx]
+	std::filesystem::path other_pfx; // non-aligned reads output file prefix [dir/][pfx]
 	std::string cmdline;
 
 	int num_read_thread = 1; // number of threads reading the Reads file.
@@ -428,7 +426,7 @@ public:
 
 	std::vector<std::string> blastops; // [1]
 	std::vector<std::string> readfiles; // '--reads'
-	std::vector<std::pair<std::string, std::string>> indexfiles; // "--refs" Pairs (Reference file, Index name)
+	std::vector<std::pair<std::string, std::string>> indexfiles; // '-ref' pairs 'Ref_file:Idx_file_pfx'
 	std::vector<std::vector<uint32_t>> skiplengths; // [2] OPT_PASSES K-mer window shift sizes. Refstats::load
 
 public:
@@ -445,7 +443,10 @@ private:
 	// methods
 	void process(int argc, char**argv, bool dryrun);
 	void validate();
-	void validate_output();
+	void validate_idxdir(); // called from validate
+	void validate_kvdbdir(); // called from validate
+	void validate_aligned_pfx();
+	void validate_other_pfx();
 	void opt_sort();
 
 	void opt_reads(const std::string &val);
@@ -492,7 +493,6 @@ private:
 	void opt_h(const std::string &val);
 	void opt_v(const std::string &val); // opt_v_Verbose
 	void opt_N(const std::string &val); // opt_N_MatchAmbiguous
-	void opt_d(const std::string &val); // opt_d_KeyValDatabase Key-Value Database directory path (kvdbPath)
 	void opt_workdir(const std::string &path);
 	void opt_kvdb(const std::string& path);
 	void opt_idx(const std::string& path);
@@ -508,7 +508,6 @@ private:
 	void opt_dbg_put_db(const std::string &opt);
 	void opt_unknown(char **argv, int &narg, char * opt);
 
-	void test_kvdb_path();
 	std::string to_string();
 	std::string to_bin_string();
 	void store_to_db(KeyValueDatabase &kvdb);
