@@ -240,11 +240,13 @@ void Runopts::opt_ref(const std::string &refpath)
 
 /* 
  * possible values:
- *   /dir1/dir2/pfx  dir and pfx
- *   dir1/pfx        dir and pfx
- *   /dir1/dir2/     no prefix
- *   pfx             no dir
- *   no arg          no dir, no pfx => WORKDIR/out/aligned
+ *   no arg          WORKDIR/out/aligned
+ *   .               PWD/aligned
+ *   pfx             PWD/out/pfx
+ *   dir1/pfx        PWD/dir1/pfx   use WORKDIR instead of PWD? - this would be a non-standard behaviour - confusing.
+ *   ./dir1/pfx      PWD/dir1/pfx
+ *   /dir1/dir2/pfx  /dir1/dir2/pfx
+ *   /dir1/dir2/     /dir1/dir2/aligned
  */
 void Runopts::opt_aligned(const std::string &file)
 {
@@ -256,7 +258,12 @@ void Runopts::opt_aligned(const std::string &file)
 	else {
 		std::filesystem::path fpath = file;
 		if (!fpath.empty()) {
-			aligned_pfx = fpath; // prefix is non-empty - use it
+			if (fpath.has_filename()) {
+				aligned_pfx = fpath; // prefix is non-empty - use it
+			}
+			else {
+				aligned_pfx = fpath / OPT_ALIGNED; // prefix doesn't specify the file name e.g. 'dir_1/' not 'dir_1/pfx_1'
+			}
 		}
 	}
 } // ~Runopts::opt_aligned
@@ -267,7 +274,7 @@ void Runopts::opt_aligned(const std::string &file)
 void Runopts::opt_other(const std::string &file)
 {
 	auto cnt = mopt.count(OPT_FASTX);
-	if (cnt < 1)
+	if (cnt == 0)
 	{
 		ERR("Option '" + OPT_OTHER + "' can only be used together with '"+ OPT_FASTX + "' option.");
 		exit(EXIT_FAILURE);
@@ -275,12 +282,17 @@ void Runopts::opt_other(const std::string &file)
 
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << "Directory and Prefix for the non-aligned output was not provided. Using default dir/pfx: 'WORKDIR/out/other'" << std::endl;
+		std::cout << STAMP << OPT_OTHER << " was specified without argument. Will use default Directory and Prefix for the non-aligned output." << std::endl;
 	}
 	else {
 		std::filesystem::path fpath = file;
 		if (!fpath.empty()) {
-			other_pfx = fpath; // prefix is non-empty - use it
+			if (fpath.has_filename()) {
+				other_pfx = fpath; // prefix is non-empty - use it
+			}
+			else {
+				other_pfx = fpath / OPT_OTHER;
+			}
 		}
 	}
 	is_other = true;
@@ -1199,7 +1211,7 @@ void Runopts::validate_idxdir() {
 	if (idxdir.empty()) {
 		if (workdir.empty()) {
 			std::cout << STAMP << "'" << OPT_WORKDIR
-				<< "' option was not provided. Using USERDIR to set the working directory: [" << workdir << "]" << std::endl;
+				<< "' option was not provided. Using USERDIR as the location for the Index" << std::endl;
 			workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
 		}
 		idxdir = workdir / IDX_DIR; // default
@@ -1304,7 +1316,12 @@ void Runopts::validate_aligned_pfx() {
 
 void Runopts::validate_other_pfx() {
 	if (other_pfx.empty()) {
-		other_pfx = workdir / OUT_DIR / OPT_OTHER; // default output file
+		if (aligned_pfx.empty()) {
+			other_pfx = workdir / OUT_DIR / OPT_OTHER; // default output file
+		}
+		else {
+			other_pfx = aligned_pfx.parent_path() / OPT_OTHER;
+		}
 	}
 
 	if (other_pfx.has_parent_path()) {
@@ -1418,15 +1435,16 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			}
 		}
 
-		// process WORKDIR first as other options depend on it
-		auto wd_it = mopt.find(OPT_WORKDIR);
-		std::string wdir = "";
-		if (wd_it != mopt.end())
-		{
-			wdir = wd_it->second;
-			mopt.erase(wd_it); // remove to prevent repeated processing below
+		// process WORKDIR first (if it was specified) as other options depend on it
+		if (mopt.count(OPT_WORKDIR) > 0) {
+			auto wd_it = mopt.find(OPT_WORKDIR);
+			if (wd_it != mopt.end())
+			{
+				std::string wdir = wd_it->second; // get the value
+				mopt.erase(wd_it); // remove to prevent repeated processing further
+				opt_workdir(wdir);
+			}
 		}
-		opt_workdir(wdir);
 	}
 
 	// loop through the rest of options

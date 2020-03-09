@@ -90,33 +90,37 @@ help_reads =
 	"                                            Use twice for files with paired reads\n",
 help_aligned = 
 	"Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned\n"
-	"                                            Directory and file prefix to use for aligned output i.e.\n"
+	"                                            Directory and file prefix for aligned output i.e.\n"
 	"                                            each output file will go into the specified directory with the given prefix.\n"
-	"                                            The appropriate extension will be automatically added.\n"
+	"                                            The appropriate extension (fasta|fastq|blast|sam|etc) will be automatically added.\n"
 	"                                            Both 'dir' and 'pfx' are optional.\n"
 	"                                            The 'dir' can be a relative or an absolute path.\n"
 	"                                            If 'dir' is not specified, the output will be created in the WORKDIR/out/\n"
 	"                                            If 'pfx' is not specified, the prefix 'aligned' will be used\n"
 	"                                            Examples:\n"
-	"                                             -aligned $MYDIR/dir_1/dir_2/1  -> $MYDIR/dir_1/dir_2/1.fasta|fastq|blast|sam\n"
-	"                                             -aligned dir_1/apfx            -> $PWD/dir_1/apfx.fasta|fastq|sam|blast\n"
-	"                                             -aligned apfx                  -> $PWD/apfx.fasta|fastq|sam|blast\n"
-	"                                             -aligned  (no argument)        -> WORKDIR/out/aligned.fasta|fastq|sam|blast\n",
+	"                                             -aligned $MYDIR/dir_1/dir_2/1 -> $MYDIR/dir_1/dir_2/1.fasta\n"
+	"                                             -aligned dir_1/apfx           -> $PWD/dir_1/apfx.fasta\n"
+	"                                             -aligned dir_1/               -> $PWD/aligned.fasta\n"
+	"                                             -aligned apfx                 -> $PWD/apfx.fasta\n"
+	"                                             -aligned  (no argument)       -> WORKDIR/out/aligned.fasta\n",
 help_other = 
 	"Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other\n"
 	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Directory and file prefix to use for non-aligned output i.e.\n"
+	"                                            Directory and file prefix for non-aligned output i.e.\n"
 	"                                            each output file will go into the specified directory with the given prefix.\n"
-	"                                            The appropriate extension will be automatically added.\n"
+	"                                            The appropriate extension (fasta|fastq|blast|sam|etc) will be automatically added.\n"
 	"                                            Both 'dir' and 'pfx' are optional.\n"
 	"                                            The 'dir' can be a relative or an absolute path.\n"
 	"                                            If 'dir' is not specified, the output will be created in the WORKDIR/out/\n"
 	"                                            If 'pfx' is not specified, the prefix 'other' will be used\n"
 	"                                            Examples:\n"
-	"                                             -other $MYDIR/dir_1/dir_2/1  -> $MYDIR/dir_1/dir_2/1.fasta|fastq|blast|sam\n"
-	"                                             -other dir_1/apfx            -> $PWD/dir_1/apfx.fasta|fastq|sam|blast\n"
-	"                                             -other apfx                  -> $PWD/apfx.fasta|fastq|sam|blast\n"
-	"                                             -other  (no argument)        -> WORKDIR/out/other.fasta|fastq|sam|blast\n",
+	"                                             -other $MYDIR/dir_1/dir_2/1 -> $MYDIR/dir_1/dir_2/1.fasta\n"
+	"                                             -other dir_1/apfx           -> $PWD/dir_1/apfx.fasta\n"
+	"                                             -other dir_1/               -> $PWD/dir_1/other.fasta\n"
+	"                                             -other apfx                 -> $PWD/apfx.fasta\n"
+	"                                             -other  (no argument)       -> aligned_out/other.fasta\n"
+	"                                                                            i.e. the same output directory as used\n"
+	"                                                                            for aligned output\n",
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 

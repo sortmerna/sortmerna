@@ -35,18 +35,23 @@ URL_DIRENT = None
 URL_RAPID  = None
 URL_SMR    = None
 
-IS_WIN = None
-IS_WSL = None
-IS_LNX = None
-
 MY_OS = None
 
-UHOME = None
+# define platform
+pf = platform.platform()
+IS_WIN = 'Windows' in pf
+IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
+IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
+if   IS_WIN: MY_OS = 'WIN'
+elif IS_WSL: MY_OS = 'WSL'
+elif IS_LNX: MY_OS = 'LNX'
+else:
+    print('Unable to define the platform: {}'.format(pf))
+    sys.exit(1)
 
-CMAKE_GEN = None
-
-LIB_DIR = None
-
+UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
+CMAKE_GEN   = None
+LIB_DIR     = None
 DIRENT_DIST = None
 
 SMR_SRC   = None # source root dir
@@ -552,7 +557,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     # Run the build command
     proc_run(cmd, SMR_BUILD)
 
-    # build adn install
+    # build and install
     cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'install' ]
     proc_run(cmd, SMR_BUILD)
     # generate installation package
@@ -560,11 +565,12 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     proc_run(cmd, SMR_BUILD)
 
     # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
-    cmd = [ os.path.join(SMR_DIST, 'bin', 'sortmerna'), '--version' ]
+    SMR_EXE = 'sortmerna.exe' if IS_WIN else 'sortmerna'
+    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '--version' ]
     proc_run(cmd, SMR_BUILD)
 
     # CMAKE_INSTALL_PREFIX\bin\sortmerna -h
-    cmd = [ os.path.join(SMR_DIST, 'bin', 'sortmerna'), '-h' ]
+    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '-h' ]
     proc_run(cmd, SMR_BUILD)
 #END smr_build
 
@@ -594,20 +600,7 @@ if __name__ == "__main__":
     optpar.add_option('--config', dest='config', help='Build configuration file.')
     (opts, args) = optpar.parse_args()
 
-    # define platform
-    pf = platform.platform()
-    IS_WIN = 'Windows' in pf
-    IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
-    IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
-
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-
-    if   IS_WIN: MY_OS = 'WIN'
-    elif IS_WSL: MY_OS = 'WSL'
-    elif IS_LNX: MY_OS = 'LNX'
-    else:
-        print('Unable to define the platform: {}'.format(pf))
-        sys.exit(1)
 
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
     print('Current dir: {}'.format(cur_dir))
@@ -645,8 +638,6 @@ if __name__ == "__main__":
     URL_DIRENT = cfg[DIRENT]['url']
     URL_RAPID  = cfg[RAPID]['url']
     URL_SMR    = cfg[SMR]['url']
-
-    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
     DIRENT_DIST = cfg[DIRENT]['src']
 

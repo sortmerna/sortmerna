@@ -16,13 +16,21 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 
 # globals
-IS_WIN = None
-IS_WSL = None
-IS_LNX = None
-
 OS = None
 
-UHOME = None
+# define platform
+pf = platform.platform()
+IS_WIN = 'Windows' in pf
+IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
+IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
+if   IS_WIN: OS = 'WIN'
+elif IS_WSL: OS = 'WSL'
+elif IS_LNX: OS = 'LNX'
+else:
+    print('Unable to define the platform: {}'.format(pf))
+    sys.exit(1)
+
+UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
 SMR = 'sortmerna'
 SMR_SRC  = None # source root dir
@@ -45,22 +53,38 @@ OUT_DIR  = None
 TEST_DATA = None
 
 # base names of the report files
-LOG_BASE         = 'aligned.log'
-ALI_BASE         = 'aligned'
-ALI_FWD_BASE     = 'aligned_fwd'
-ALI_REV_BASE     = 'aligned_rev'
-NON_ALI_BASE     = 'other'
-NON_ALI_FWD_BASE = 'other_fwd'
-NON_ALI_REV_BASE = 'other_ref'
-DENOVO_BASE      = 'aligned_denovo.fasta'
-OTU_BASE         = 'aligned_otus.txt'
-BLAST_BASE       = 'aligned.blast'
-SAM_BASE         = 'aligned.sam'
-READS_EXT        = None
-IS_FASTQ         = False
-IS_PAIRED_IN     = False
-IS_PAIRED_OUT    = False
+ALI_BASE      = 'aligned'
+OTH_BASE      = 'other'
+ALI_FWD_BASE  = None # '{}_fwd'.format(ALI_BASE)
+ALI_REV_BASE  = None # '{}_rev'.format(ALI_BASE)
+OTH_FWD_BASE  = None # '{}_fwd'.format(OTH_BASE)
+OTH_REV_BASE  = None # '{}_rev'.format(OTH_BASE)
+LOG_BASE      = None # '{}.log'.format(ALI_BASE)
+DENOVO_BASE   = None # '{}_denovo.fasta'.format(ALI_BASE)
+OTU_BASE      = None # '{}_otus.txt'.format(ALI_BASE)
+BLAST_BASE    = None # '{}.blast'.format(ALI_BASE)
+SAM_BASE      = None # '{}.sam'.format(ALI_BASE)
+READS_EXT     = None
+IS_FASTQ      = False
+IS_PAIRED_IN  = False
+IS_PAIRED_OUT = False
 
+# output files
+LOGF    = None
+ALIF    = None
+ALI_FWD = None
+ALI_REV = None
+OTHF    = None
+OTH_FWD = None
+OTH_REV = None
+ALI_REF = None
+DENOVOF = None
+OTUF    = None
+BLASTF  = None
+SAMF    = None
+
+KVDB_DIR = None
+IDX_DIR  = None
 
 
 def run(cmd, cwd=None, capture=False):
@@ -190,7 +214,105 @@ def parse_log(fpath):
     return logd
 #END parse_log
 
-def process_output(outd, **kwarg):
+def process_smr_opts(args):
+    '''
+    args  list of parameters passed to sortmerna
+    '''
+    WDIR = '-workdir'
+    KVD = '-kvdb'
+    IDX = '-idx'
+    ALN = '-aligned'
+    OTH = '-other'
+    OUT2 = '-out2'
+
+    global KVDB_DIR
+    global IDX_DIR
+    global ALI_BASE
+    global OTH_BASE
+
+    global LOGF
+    global ALIF
+    global ALI_FWD
+    global ALI_REV
+    global OTHF
+    global OTH_FWD
+    global OTH_REV
+    global ALI_REF
+    global DENOVOF
+    global OTUF
+    global BLASTF
+    global SAMF
+    global READS_EXT
+    global IS_FASTQ
+    global IS_PAIRED_IN 
+    global IS_PAIRED_OUT
+
+    READS_EXT = os.path.splitext(args[args.index('-reads')+1])[1]
+    if READS_EXT in ['.gz']:
+        READS_EXT = os.extsep + args[args.index('-reads')+1].split(os.extsep)[1]
+    IS_FASTQ = 'fastq' == READS_EXT[1:]
+    IS_PAIRED_IN = '-paired_in' in args
+    IS_PAIRED_OUT = '-paired_out' in args
+
+    if ALN in args:
+        aln_pfx = args[args.index(ALN) + 1]
+        if not os.path.basename(aln_pfx):
+            ALIF = os.path.join(aln_pfx, ALI_BASE + READS_EXT) # use default 'aligned'
+        else:
+            ALI_BASE = os.path.basename(aln_pfx)
+            ALIF = os.path.abspath(aln_pfx + READS_EXT)
+    elif WDIR in args:
+        wdir = args[args.index(WDIR) + 1]
+        print('\'-workdir\' option was provided. Using workdir: [{}]'.format(os.path.realpath(wdir)))
+        ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
+    else:
+        ALIF = os.path.join(UHOME, 'sortmerna', 'run', 'out', ALI_BASE + READS_EXT)
+
+    if OUT2 in args:
+        ALI_FWD = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_fwd' + READS_EXT)
+        ALI_REV = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_rev' + READS_EXT)
+
+    if OTH in args:
+        idx = args.index(OTH)
+        # check idx + 1 no exceeds args length and other options has arg
+        if idx + 1 < len(args) -1 and args[idx+1][:1] != '-':
+            oth_pfx = args[idx + 1]
+            if not os.path.basename(oth_pfx):
+                OTHF = os.path.join(oth_pfx, OTH_BASE + READS_EXT)
+            else:
+                OTH_BASE = os.path.basename(oth_pfx)
+                OTHF = os.path.abspath(oth_pfx + READS_EXT)
+        elif ALN in args:
+            OTHF = os.path.join(os.path.dirname(ALIF), OTH_BASE + READS_EXT) # use the same out dir as ALN
+        else:
+            OTHF = os.path.join(UHOME, 'sortmerna', 'run', 'out', OTH_BASE + READS_EXT)
+
+        if OUT2 in args:
+            OTH_FWD = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_fwd' + READS_EXT)
+            OTH_REV = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_rev' + READS_EXT)
+
+    if KVD in args:
+        KVDB_DIR = args[args.index(KVD) + 1]
+    elif WDIR in args:
+        KVDB_DIR = os.path.join(args[args.index(WDIR) + 1], 'kvdb')
+    else:
+        KVDB_DIR = os.path.join(UHOME, 'sortmerna', 'run', 'kvdb')
+
+    if IDX in args:
+        IDX_DIR = args[args.index(IDX) + 1]
+    elif WDIR in args:
+        IDX_DIR = os.path.join(args[args.index(WDIR) + 1], 'idx')
+    else:
+        IDX_DIR = os.path.join(UHOME, 'sortmerna', 'run', 'idx')
+
+    LOGF    = os.path.join(os.path.dirname(ALIF), '{}.log'.format(ALI_BASE))
+    BLASTF  = os.path.join(os.path.dirname(ALIF), '{}.blast'.format(ALI_BASE))
+    OTUF    = os.path.join(os.path.dirname(ALIF), '{}_otus.txt'.format(ALI_BASE))
+    DENOVOF = os.path.join(os.path.dirname(ALIF), '{}_denovo.fasta'.format(ALI_BASE))
+    SAMF    = os.path.join(os.path.dirname(ALIF), '{}.sam'.format(ALI_BASE))
+#END process_smr_opts
+
+def process_output(**kwarg):
     '''
     Used by:
         test_simulated_amplicon_1_part_map
@@ -198,22 +320,6 @@ def process_output(outd, **kwarg):
         test_simulated_amplicon_12_part_index
     '''
     STAMP = '[{}]'.format(process_output)
-    global READS_EXT
-    global IS_FASTQ
-    global IS_PAIRED_IN
-    global IS_PAIRED_OUT
-
-    LOGF       = os.path.join(outd, LOG_BASE)
-    ALIF       = os.path.join(outd, '{}{}'.format(ALI_BASE, READS_EXT))
-    ALI_FWD    = os.path.join(outd, '{}{}'.format(ALI_FWD_BASE, READS_EXT))
-    ALI_REV    = os.path.join(outd, '{}{}'.format(ALI_REV_BASE, READS_EXT))
-    NONALIF    = os.path.join(outd, '{}{}'.format(NON_ALI_BASE, READS_EXT))
-    NONALI_FWD = os.path.join(outd, '{}{}'.format(NON_ALI_FWD_BASE, READS_EXT))
-    NONALI_REV = os.path.join(outd, '{}{}'.format(NON_ALI_REV_BASE, READS_EXT))
-    ALI_REF    = os.path.join(outd, '{}{}'.format(ALI_REV_BASE, READS_EXT))
-    DENOVOF    = os.path.join(outd, DENOVO_BASE)
-    OTUF       = os.path.join(outd, OTU_BASE)
-    BLASTF     = os.path.join(outd, BLAST_BASE)
 
     logd = parse_log(LOGF)
     vald = kwarg.get('validate')
@@ -262,15 +368,15 @@ def process_output(outd, **kwarg):
     # Check reads count in other_fwd
     if vald.get('num_other_fwd'):
         num_fwd = 0
-        if os.path.exists(NONALI_FWD):
+        if os.path.exists(OTH_FWD):
             if IS_FASTQ:
-                for seq in skbio.io.read(NONALI_FWD, format=READS_EXT[1:], variant=vald.get('variant')):
+                for seq in skbio.io.read(OTH_FWD, format=READS_EXT[1:], variant=vald.get('variant')):
                     num_fwd += 1
             else:
-                for seq in skbio.io.read(NONALI_FWD, format=READS_EXT[1:]):
+                for seq in skbio.io.read(OTH_FWD, format=READS_EXT[1:]):
                     num_fwd += 1
             tmpl = '{} Testing count of FWD non-aligned reads: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, '{}{}'.format(NON_ALI_FWD_BASE, READS_EXT), num_fwd, vald['num_other_fwd']))
+            print(tmpl.format(STAMP, '{}{}'.format(OTH_FWD_BASE, READS_EXT), num_fwd, vald['num_other_fwd']))
             assert num_fwd == vald['num_other_fwd'], \
                 '{} not equals {}'.format(num_fwd, vald['num_other_fwd'])
 
@@ -278,15 +384,15 @@ def process_output(outd, **kwarg):
     # Check reads count in other_rev
     if vald.get('num_other_rev'):
         num_rev = 0
-        if os.path.exists(NONALI_REV):
+        if os.path.exists(OTH_REV):
             if IS_FASTQ:
-                for seq in skbio.io.read(NONALI_REV, format=READS_EXT[1:], variant=vald.get('variant')):
+                for seq in skbio.io.read(OTH_REV, format=READS_EXT[1:], variant=vald.get('variant')):
                     num_rev += 1
             else:
-                for seq in skbio.io.read(NONALI_REV, format=READS_EXT[1:]):
+                for seq in skbio.io.read(OTH_REV, format=READS_EXT[1:]):
                     num_rev += 1
             tmpl = '{} Testing count REV non-aligned reads: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, '{}{}'.format(NON_ALI_REV_BASE, READS_EXT), num_rev, vald['num_other_rev']))
+            print(tmpl.format(STAMP, '{}{}'.format(OTH_REV_BASE, READS_EXT), num_rev, vald['num_other_rev']))
             assert num_rev == vald['num_other_rev'], \
                 '{} not equals {}'.format(num_rev, vald['num_other_rev'])
 
@@ -314,6 +420,7 @@ def process_output(outd, **kwarg):
             else:
                 for seq in skbio.io.read(ALIF, format=READS_EXT[1:]):
                     num_hits_file += 1
+
             if not IS_PAIRED_IN and not IS_PAIRED_OUT:
                 tmpl = '{} Testing num_hits: {}{}: {} Expected: {}'
                 print(tmpl.format(STAMP, ALI_BASE, READS_EXT, num_hits_file, vald['num_hits']))
@@ -329,20 +436,22 @@ def process_output(outd, **kwarg):
         print(tmpl.format(STAMP, LOG_BASE, logd['results']['num_fail'][1], vald['num_fail']))
         assert vald['num_fail']  == logd['results']['num_fail'][1]
         num_fails_file = 0
-        if os.path.exists(NONALIF):
-            if IS_FASTQ:
-                for seq in skbio.io.read(NONALIF, format=READS_EXT[1:], variant=vald.get('variant')):
-                    num_fails_file += 1
-            else:
-                for seq in skbio.io.read(NONALIF, format=READS_EXT[1:]):
-                    num_fails_file += 1
+        if OTHF and os.path.exists(OTHF):
+            if os.stat(OTHF).st_size > 0:
+                if IS_FASTQ:
+                    for seq in skbio.io.read(OTHF, format=READS_EXT[1:], variant=vald.get('variant')):
+                        num_fails_file += 1
+                else:
+                    for seq in skbio.io.read(OTHF, format=READS_EXT[1:]):
+                        num_fails_file += 1
+
             if not IS_PAIRED_IN and not IS_PAIRED_OUT:
                 tmpl = '{} Testing num_fail: {}{}: {} Expected: {}'
-                print(tmpl.format(STAMP, NON_ALI_BASE, READS_EXT, num_fails_file, vald['num_fail']))
+                print(tmpl.format(STAMP, OTH_BASE, READS_EXT, num_fails_file, vald['num_fail']))
                 assert logd['results']['num_fail'][1] == num_fails_file
             else:
                 tmpl = '{} Testing count of non-aligned reads: {}{}: {} Expected: {}'
-                print(tmpl.format(STAMP, NON_ALI_BASE, READS_EXT, num_fails_file, vald['num_other']))
+                print(tmpl.format(STAMP, OTH_BASE, READS_EXT, num_fails_file, vald['num_other']))
                 assert num_fails_file == vald['num_other']
 
     
@@ -412,7 +521,7 @@ def process_output(outd, **kwarg):
             assert logd['num_id_cov'][1] == num_reads_in_clusters_file
 #END process_output
 
-def t0(datad, outd, ret={}, **kwarg):
+def t0(datad, ret={}, **kwarg):
     '''
     @param datad   Data directory
     @param outd    results output directory
@@ -420,12 +529,11 @@ def t0(datad, outd, ret={}, **kwarg):
     STAMP = '[t0:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))   
 
-    BLAST_OUT = os.path.join(outd, BLAST_BASE)
     BLAST_EXPECTED = os.path.join(datad, 't0_expected_alignment.blast')
 
     dlist = []
 
-    with open(BLAST_OUT, 'r') as fout:
+    with open(BLASTF, 'r') as fout:
         with open(BLAST_EXPECTED, 'r') as fexpect:
             diff = difflib.unified_diff(
                 fout.readlines(),
@@ -442,7 +550,7 @@ def t0(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t0
 
-def t2(datad, outd, ret={}, **kwarg):
+def t2(datad, ret={}, **kwarg):
     '''
     @param datad   Data directory
     @param outd    results output directory
@@ -460,12 +568,10 @@ def t2(datad, outd, ret={}, **kwarg):
     STAMP = '[t2:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    OUTF = os.path.join(outd, BLAST_BASE)
-
     vald = kwarg['validate']
 
     actual_alignment = []
-    with open(OUTF) as afile:
+    with open(BLASTF) as afile:
         for line in afile:
             actual_alignment = line.strip().split('\t')
         
@@ -475,7 +581,7 @@ def t2(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t2
 
-def t3(datad, outd, ret={}, **kwarg):
+def t3(datad, ret={}, **kwarg):
     '''
     @param name  name of this test
     @param datad   Data directory
@@ -493,11 +599,7 @@ def t3(datad, outd, ret={}, **kwarg):
     STAMP = '[t3:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
 
-    LOGF = os.path.join(outd, LOG_BASE)
-    OTUF = os.path.join(outd, OTU_BASE)
-    DENOVOF = os.path.join(outd, DENOVO_BASE)
-
-    logd = parse_log(os.path.join(outd, LOG_BASE))
+    logd = parse_log(LOGF)
     vald = kwarg.get('validate')
     cmdd = kwarg.get('cmd')
 
@@ -525,28 +627,23 @@ def t3(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t3
 
-def t4(datad, outd, ret={}, **kwarg):
+def t4(datad, ret={}, **kwarg ):
     '''
-    @param name
-    @param datad   Data directory
-    @param outd    results output directory
-    @param kwargs  validation args
-
-    TODO: this was only an indexing test. Modify to perform alignment on multipart index.
-
-    test_indexdb_split_databases
+    count idx files
     '''
     STAMP = '[t4:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    vald = kwarg.get('validate')
+    sfx = vald.get('idx_sfx')
+    idx_count = 0
+    idx_count_expect = vald.get('num_idx') * 3 + 1
+    if os.path.exists(IDX_DIR):
+        idx_count = len([fn for fn in os.listdir(IDX_DIR) if str(sfx) in fn])
 
-    LOGF = os.path.join(outd, LOG_BASE)
-    OTUF = os.path.join(outd, OTU_BASE)
-    DENOVOF = os.path.join(outd, DENOVO_BASE)
-    print('TODO: not yet implemented')
-    print("{} Done".format(STAMP))
+    print('{} Expected number of index files: {} Actual number: {}'.format(STAMP, idx_count_expect, idx_count))
+    assert idx_count_expect == idx_count
 #END t4
 
-def t9(datad, outd, ret={}, **kwarg):
+def t9(datad, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -556,12 +653,10 @@ def t9(datad, outd, ret={}, **kwarg):
     '''
     STAMP = '[t9:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))
-
-    ALISAM = os.path.join(outd, 'aligned.sam')
     vald = kwarg.get('validate')
 
     sam_alignments = []
-    with open(ALISAM) as aligned_f:
+    with open(SAMF) as aligned_f:
         for line in aligned_f:
             if line.startswith('@'):
                 continue
@@ -576,7 +671,7 @@ def t9(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t9
 
-def t10(datad, outd, ret={}, **kwarg):
+def t10(datad, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -597,7 +692,7 @@ def t10(datad, outd, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t10
 
-def t11(datad, outd, ret={}, **kwarg):
+def t11(datad, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -621,12 +716,12 @@ def t11(datad, outd, ret={}, **kwarg):
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd, **kwarg)
+        process_output(**kwarg)
    
     print("{} Done".format(STAMP))
 #END t11
 
-def t12(datad, outd, ret={}, **kwarg):
+def t12(datad, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -650,12 +745,12 @@ def t12(datad, outd, ret={}, **kwarg):
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd, **kwarg)
+        process_output(**kwarg)
    
     print("{} Done".format(STAMP))
 #END t12
 
-def t13(datad, outd, ret={}, **kwarg):
+def t13(datad, ret={}, **kwarg):
     '''
     @param smrexe  sortmerna.exe path
     @param datad   Data directory
@@ -680,12 +775,12 @@ def t13(datad, outd, ret={}, **kwarg):
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd, **kwarg)
+        process_output(**kwarg)
    
     print("{} Done".format(STAMP))
 #END t13
 
-def t14(datad, outd, ret={}, **kwarg):
+def t14(datad, ret={}, **kwarg):
     '''
     @param name
     @param datad   Data directory
@@ -712,12 +807,12 @@ def t14(datad, outd, ret={}, **kwarg):
         print(ret['stderr'])
         sys.exit(1)
     else:
-        process_output(outd, **kwarg)
+        process_output(**kwarg)
    
     print("{} Done".format(STAMP))
 #END t14
 
-def t17(datad, outd, ret={}, **kwarg):
+def t17(datad, ret={}, **kwarg):
     '''
     @param name  sortmerna.exe path
     @param datad   Data directory
@@ -726,7 +821,7 @@ def t17(datad, outd, ret={}, **kwarg):
     '''
     STAMP = '[t17:{}]'.format(kwarg.get('name'))
     print('{} TODO: implement'.format(STAMP))
-    logd = parse_log(os.path.join(outd, LOG_BASE))
+    logd = parse_log(LOGF)
     print("{} Done".format(STAMP))
 #END t17
 
@@ -737,21 +832,6 @@ if __name__ == "__main__":
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
     import pdb; pdb.set_trace()
-
-    # define platform
-    pf = platform.platform()
-    IS_WIN = 'Windows' in pf
-    IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
-    IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
-
-    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-
-    if   IS_WIN: OS = 'WIN'
-    elif IS_WSL: OS = 'WSL'
-    elif IS_LNX: OS = 'LNX'
-    else:
-        print('Unable to define the platform: {}'.format(pf))
-        sys.exit(1)
 
     # process options
     optpar = OptionParser()
@@ -806,41 +886,37 @@ if __name__ == "__main__":
     
     SMR_DIST = env[OS][SMR]['dist'] if env[OS][SMR]['dist'] else '{}/dist'.format(SMR_SRC)
     SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
-    SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna') 
-    if '-workdir' in cfg[opts.name].get('cmd'):
-        idx = cfg[opts.name].get('cmd').index('-workdir')
-        RUN_DIR = cfg[opts.name].get('cmd')[idx+1]
-        print('\'-workdir\' option was provided. Using workdir: [{}]'.format(os.path.realpath(RUN_DIR)))
-    else:
-        RUN_DIR  = os.path.join(UHOME, 'sortmerna', 'run')
-        print('\'-workdir\' option was Not provided. Using workdir: [{}]'.format(os.path.realpath(RUN_DIR)))
+    SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna')
     TEST_DATA = os.path.join(SMR_SRC, 'data')
 
-    #if opts.name in ['t{}'.format(x) for x in range(0,18)]:
-    OUT_DIR = os.path.join(RUN_DIR, 'out')
+    process_smr_opts(cfg[opts.name]['cmd'])
 
-    idx = cfg[opts.name].get('cmd').index('-reads')
-    READS_EXT = os.path.splitext(cfg[opts.name].get('cmd')[idx+1])[1]
-    IS_FASTQ = 'fastq' == READS_EXT[1:]
-
-    IS_PAIRED_IN = '-paired_in' in cfg[opts.name].get('cmd')
-    IS_PAIRED_OUT = '-paired_out' in cfg[opts.name].get('cmd')
-
-    # clean-up the run directory. May Fail if any file in the directory is open. Close the files and re-run.
-    if opts.clean and os.path.isdir(RUN_DIR):
-        print('Deleting: [{}]'.format(RUN_DIR))
-        shutil.rmtree(RUN_DIR)
+    # clean-up the KVDB, IDX directories, and the output. 
+    # May Fail if any file in the directory is open. Close the files and re-run.
+    if opts.clean:
+        if os.path.exists(KVDB_DIR):
+            print('Removing KVDB dir: {}'.format(KVDB_DIR))
+            shutil.rmtree(KVDB_DIR)
+        if os.path.exists(IDX_DIR):
+            print('Removing KVDB dir: {}'.format(IDX_DIR))
+            shutil.rmtree(IDX_DIR)
 
     # clean previous alignments (KVDB)
-    kvdbdir = os.path.join(RUN_DIR, 'kvdb')
-    if os.path.exists(kvdbdir):
-        print('Removing KVDB dir: {}'.format(kvdbdir))
-        shutil.rmtree(kvdbdir)
+    if os.path.exists(KVDB_DIR):
+        print('Removing KVDB dir: {}'.format(KVDB_DIR))
+        shutil.rmtree(KVDB_DIR)
 
     # clean output
-    if OUT_DIR and os.path.exists(OUT_DIR) and not opts.validate_only:
-        print('Removing OUT_DIR: {}'.format(OUT_DIR))
-        shutil.rmtree(OUT_DIR)
+    ali_dir = os.path.dirname(ALIF)
+    if ali_dir and os.path.exists(ali_dir) and not opts.validate_only:
+        print('Removing Aligned Output: {}'.format(ali_dir))
+        shutil.rmtree(ali_dir)
+
+    if OTHF:
+        oth_dir = os.path.dirname(OTHF)
+        if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not opts.validate_only:
+            print('Removing Non-Aligned Output: {}'.format(oth_dir))
+            shutil.rmtree(oth_dir)
 
     # run alignment
     ret = {}
@@ -858,9 +934,9 @@ if __name__ == "__main__":
         func = gdict.get(fn)
 
         if func:
-            func(TEST_DATA, OUT_DIR, ret, **cfg[opts.name])
+            func(TEST_DATA, ret, **cfg[opts.name])
     else:
-        process_output(OUT_DIR, **cfg[opts.name])
+        process_output(**cfg[opts.name])
 
     # tests
     #if funcs.get(opts.name):

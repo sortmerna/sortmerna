@@ -7,7 +7,7 @@
 #
 
 #
-# Standard tests included with disto
+# Standard tests included with distro
 #
 t0:
   name: test_blast_format_0 # descriptive name of this test
@@ -116,6 +116,7 @@ t4:
     - -v
   validate: 
     func: t4
+    idx_sfx: 7828442710921335713
     num_idx: 7 # 7 index files of each kind is generated
 
 t5:
@@ -138,6 +139,7 @@ t5:
     num_reads: 10000
     num_hits:   6000
     num_fail:   4000
+    variant:    sanger # fastq quality variant
 
 t6:
   name: test_mate_pairs - part 2 - paired_in
@@ -757,6 +759,7 @@ t25:
     num_reads: 10000
     num_hits:   6000
     num_fail:   4000
+    variant:   sanger # fastq quality variant
 
 t26:
   name: test_output_opt
@@ -794,8 +797,182 @@ t26:
     num_reads: 10000
     num_hits:   6000
     num_fail:   4000
+    variant:   sanger # fastq quality variant
 
+t27:
+  name: test_output_opt_other_bool
+  note: |
+    Options and their combinations to test:
+    -workdir
+    -kvdb
+    -idx
+    -aligned
+    -other
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -workdir
+    - run
+    - -kvdb
+    - run/kvdb_1
+    - -idx
+    - run/idx_1
+    - -fastx
+    - -aligned
+    - run/out_1/set4_aligned
+    - -other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+    variant:   sanger # fastq quality variant
 
+t28:
+  name: test_output_opt_aligned_bool_other_bool
+  note: |
+    Options and their combinations to test:
+    -workdir
+    -kvdb
+    -idx
+    -aligned
+    -other
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -workdir
+    - run
+    - -kvdb
+    - run/kvdb_1
+    - -idx
+    - run/idx_1
+    - -fastx
+    - -aligned
+    - run/out_1/
+    - -other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+    variant:   sanger # fastq quality variant
+
+t29:
+  name: test_output_opt_no_workdir
+  note: |
+    Options and their combinations to test:
+    -kvdb
+    -idx
+    -aligned 'no file name' -> use default 'aligned'
+    -other   'boolean' -> to be placed in the same location as aligned output
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -kvdb
+    - run/kvdb_1
+    - -idx
+    - run/idx_1
+    - -fastx
+    - -aligned
+    - run/out_1/
+    - -other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+    variant:   sanger # fastq quality variant
+
+t30:
+  name: test_output_opt_no_workdir_no_idx
+  note: |
+    Options and their combinations to test:
+     no workdir
+     no idx
+    -kvdb
+    -aligned 'no file name' -> use default 'aligned'
+    -other   'boolean' -> to be placed in the same location as aligned output
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -kvdb
+    - run/kvdb_1
+    - -fastx
+    - -blast
+    - -aligned
+    - run/out/
+    - -other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+    variant:   sanger # fastq quality variant
+
+t31:
+  name: test_output_opt_no_workdir_no_idx
+  note: |
+    Options and their combinations to test:
+     no workdir
+     no idx
+    -kvdb
+    -aligned 'no file name' -> use default 'aligned'
+    -other   'boolean' -> to be placed in the same location as aligned output
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -v
+    - -kvdb
+    - run/kvdb_1
+    - -fastx
+    - -aligned
+    - run/out/
+    - -other
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10000
+    num_hits:   6000
+    num_fail:   4000
+    variant:   sanger # fastq quality variant
 
 #
 # custom tests
