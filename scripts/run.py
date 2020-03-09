@@ -633,7 +633,10 @@ def t4(datad, ret={}, **kwarg ):
     '''
     STAMP = '[t4:{}]'.format(kwarg.get('name'))
     vald = kwarg.get('validate')
-    sfx = vald.get('idx_sfx')
+    if IS_WIN:
+        sfx = vald.get('idx_sfx_win')
+    else:
+        sfx = vald.get('idx_sfx_lin')
     idx_count = 0
     idx_count_expect = vald.get('num_idx') * 3 + 1
     if os.path.exists(IDX_DIR):

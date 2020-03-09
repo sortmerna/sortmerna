@@ -116,7 +116,8 @@ t4:
     - -v
   validate: 
     func: t4
-    idx_sfx: 7828442710921335713
+    idx_sfx_win: 7828442710921335713
+    idx_sfx_lin: 12011197668640222139
     num_idx: 7 # 7 index files of each kind is generated
 
 t5:
