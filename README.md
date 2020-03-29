@@ -14,6 +14,7 @@ BLAST-like alignments.
 # Table of Contents
 
 * [Getting Started](#getting-started)
+	* [Using Conda package on Linux](#using-conda-package)
 	* [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
 	* [Running](#running)
 * [Building from sources](#building-from-sources)
