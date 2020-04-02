@@ -17,6 +17,7 @@ BLAST-like alignments.
 	* [Using Conda package on Linux](#using-conda-package)
 	* [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
 	* [Running](#running)
+      * [Execution trace](#execution-trace)
 * [Building from sources](#building-from-sources)
 * [User Manual](#user-manual)
 * [Taxonomies](#taxonomies)
@@ -135,6 +136,18 @@ sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_
 More examples can be found in [test.jinja.yaml](https://github.com/biocore/sortmerna/blob/master/scripts/test.jinja.yaml) and [run.py](https://github.com/biocore/sortmerna/blob/master/scripts/run.py)
 
 Refer to the [Manual](https://github.com/biocore/sortmerna/wiki/2.-User-manual-(todo)) for usage details
+
+### Execution trace
+
+Here is a [sample execution trace](https://github.com/biocore/sortmerna/wiki/Sample-execution-trace).  
+
+Progressing execution trace showing the number of reads processed so far indicates a normally running program.  
+
+The execution trace is important when filing issues. 
+
+`IMPORTANT`: Non-progressing trace means a problem - kill the process (please, no waiting for two days) and file an issue [here](https://github.com/biocore/sortmerna/issues)  
+
+[Sample execution statistics](https://github.com/biocore/sortmerna/wiki/sample-execution-statistics) are provided to give an idea on what the execution time might be.
 
 # Building from sources
 
