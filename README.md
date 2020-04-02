@@ -143,7 +143,7 @@ Here is a [sample execution trace](https://github.com/biocore/sortmerna/wiki/Sam
 
 `IMPORTANT`
 - Progressing execution trace showing the number of reads processed so far indicates a normally running program. 
-- Non-progressing trace means a problem - kill the process (please, no waiting for two days) and file an issue [here](https://github.com/biocore/sortmerna/issues)  
+- Non-progressing trace means a problem. Please, kill the process (no waiting for two days), and file an issue [here](https://github.com/biocore/sortmerna/issues)  
 - please, provide the execution trace when filing issues.
 
 [Sample execution statistics](https://github.com/biocore/sortmerna/wiki/sample-execution-statistics) are provided to give an idea on what the execution time might be.
