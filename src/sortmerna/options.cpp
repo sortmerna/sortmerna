@@ -1216,6 +1216,7 @@ void Runopts::validate_idxdir() {
 		}
 		idxdir = workdir / IDX_DIR; // default
 	}
+	std::cout << STAMP << "Using index directory: " << std::filesystem::absolute(idxdir) << std::endl;
 	if (!std::filesystem::exists(idxdir)) {
 		bool is_dir_ok = std::filesystem::create_directory(idxdir);
 		if (!is_dir_ok) {
@@ -1223,6 +1224,9 @@ void Runopts::validate_idxdir() {
 			ss << STAMP << "Failed creating IDX directory: [" << std::filesystem::absolute(idxdir) << "]" << std::endl;
 			ERR(ss.str());
 			exit(EXIT_FAILURE);
+		}
+		else {
+			std::cout << STAMP << "Created index directory - OK" << std::endl;
 		}
 	}
 	else {
