@@ -173,7 +173,7 @@ help_best =
 	"                                            The very first found alignment is automatically the best alignment\n"
 	"                                            until a better one is found.\n",
 help_min_lis = 
-	"Search all alignments having the first INT longest LIS\n"
+	"Search all alignments having the first INT longest LIS  2\n"
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
 	"                                            it is computed using seeds' positions to expand hits into\n"
 	"                                            longer matches prior to Smith - Waterman alignment.\n"
