@@ -183,9 +183,9 @@ help_print_all_reads =
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files\n",
 help_paired =
-	"Indicates a Single reads file with paired reads         False\n"
-	"                                            If a single reads file with paired reads is used,\n"
-	"                                            and neither '" + OPT_PAIRED_IN + "' nor '" + OPT_PAIRED_OUT + "' are specified,\n"
+	"Input is a single file with interleaved paired reads    False\n"
+	"                                            If such a file is used, and\n"
+	"                                            neither '" + OPT_PAIRED_IN + "' nor '" + OPT_PAIRED_OUT + "' are specified,\n"
 	"                                            use this option together with '" + OPT_OUT2 + "' to output\n"
 	"                                            FWD and REV reads into separate files\n",
 help_paired_in = 
