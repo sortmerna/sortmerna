@@ -33,7 +33,9 @@ SortMeRNA 4 can be run/built on Linux, and Windows (Mac coming soon).
 ## Using Conda package
 
 ```
+conda config --add channels defaults
 conda config --add channels bioconda
+conda config --add channels conda-forge
 
 conda search sortmerna
   Loading channels: done
