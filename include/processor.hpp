@@ -9,6 +9,10 @@
 #include <vector>
 #include <functional>
 
+//#include "concurrentqueue.h"
+
+#include "kvdb.hpp"
+
 // forward
 class Read;
 class ReadsQueue;
@@ -26,26 +30,24 @@ class Processor {
 public:
 	Processor(
 		std::string id,
-		ReadsQueue & readQueue,
-		ReadsQueue & writeQueue,
-		Runopts & opts, 
-		Index & index, 
-		References & refs, 
-		Output & output, 
-		Readstats & readstats, 
-		Refstats & refstats,
+		ReadsQueue& readQueue,
+		Runopts& opts, 
+		Index& index, 
+		References& refs, 
+		Readstats& readstats, 
+		Refstats& refstats,
+		KeyValueDatabase& kvdb,
 		//std::function<void(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)> callback
-		void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read, bool isLastStrand)
+		void(*callback)(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand)
 	) :
 		id(id),
 		readQueue(readQueue),
-		writeQueue(writeQueue),
 		opts(opts),
 		index(index),
 		refs(refs),
-		output(output),
 		readstats(readstats),
 		refstats(refstats),
+		kvdb(kvdb),
 		callback(callback) 
 	{}
 
@@ -54,18 +56,18 @@ public:
 protected:
 	void run();
 	//std::function<void(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read)> callback;
-	void(*callback)(Runopts & opts, Index & index, References & refs, Output & output, Readstats & readstats, Refstats & refstats, Read & read, bool isLastStrand);
+	void(*callback)(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
 
 protected:
 	std::string id;
-	ReadsQueue & readQueue;
-	ReadsQueue & writeQueue;
+	ReadsQueue& readQueue;
 	Runopts & opts; 
 	Index & index; 
 	References & refs; 
-	Output & output; 
+	//Output & output; 
 	Readstats & readstats; 
 	Refstats & refstats;
+	KeyValueDatabase& kvdb;
 }; // ~class Processor
 
 /* performs post-alignment tasks like calculating statistics */

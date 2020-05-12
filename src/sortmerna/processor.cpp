@@ -22,8 +22,8 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
-#include "read_control.hpp"
-#include "writer.hpp"
+//#include "read_control.hpp"
+//#include "writer.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
@@ -35,6 +35,7 @@ void Processor::run()
 	int countProcessed = 0;
 	std::size_t num_aligned = 0; // count of reads with read.hit = true
 	bool alreadyProcessed = false;
+	std::string readstr;
 	
 	{
 		std::stringstream ss;
@@ -44,51 +45,55 @@ void Processor::run()
 
 	for (;;)
 	{
-		Read read = readQueue.pop(); // returns an empty read if queue is empty
-		if (read.isEmpty && readQueue.getPushers() == 0)
+		bool is_ok = readQueue.pop(readstr);
+		if (!is_ok)
 		{
 			break;
 		}
-		alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
+		else {
+			Read read(readstr);
+			read.init(opts);
+			read.load_db(kvdb);
+			alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
-		if (read.isEmpty || !read.isValid || alreadyProcessed) {
-			if (alreadyProcessed) ++countProcessed;
-			continue;
-		}
-
-		// search the forward and/or reverse strands depending on Run options
-		int32_t num_strands = 0;
-		//opts.forward = true; // TODO: this discards the possiblity of forward = false
-		bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
-		if (search_single_strand)
-			num_strands = 1; // only search the forward xor reverse strand
-		else 
-			num_strands = 2; // search both strands. The default when neither -F or -R were specified
-
-		for (int32_t count = 0; count < num_strands; ++count)
-		{
-			if ((search_single_strand && opts.is_reverse) || count == 1)
-			{
-				if (!read.reversed)
-					read.revIntStr();
+			if (read.isEmpty || !read.isValid || alreadyProcessed) {
+				if (alreadyProcessed) ++countProcessed;
+				continue;
 			}
-			// call 'paralleltraversal.cpp::alignmentCb'
-			callback(opts, index, refs, output, readstats, refstats, read, search_single_strand || count == 1);
-			//opts.forward = false;
-			read.id_win_hits.clear(); // bug 46
-		}
 
-		if (read.isValid && !read.isEmpty) 
-		{
-			if (read.is_hit) ++num_aligned;
-			writeQueue.push(read);
-		}
+			// search the forward and/or reverse strands depending on Run options
+			int32_t num_strands = 0;
+			//opts.forward = true; // TODO: this discards the possiblity of forward = false
+			bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
+			if (search_single_strand)
+				num_strands = 1; // only search the forward xor reverse strand
+			else
+				num_strands = 2; // search both strands. The default when neither -F or -R were specified
 
-		countReads++;
-	}
+			for (int32_t count = 0; count < num_strands; ++count)
+			{
+				if ((search_single_strand && opts.is_reverse) || count == 1)
+				{
+					if (!read.reversed)
+						read.revIntStr();
+				}
+				// call 'paralleltraversal.cpp::alignmentCb'
+				callback(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1);
+				//opts.forward = false;
+				read.id_win_hits.clear(); // bug 46
+			}
 
-	writeQueue.decrPushers(); // signal this processor done adding
-	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
+			// write to DB - thread safe
+			if (read.isValid && !read.isEmpty)
+			{
+				if (read.is_hit) ++num_aligned;
+				kvdb.put(read.id, read.toBinString());
+			}
+
+			readstr.resize(0);
+			countReads++;
+		} // read destroyed
+	} // ~for
 
 	{
 		std::stringstream ss;
@@ -111,7 +116,7 @@ void PostProcessor::run()
 		ss << STAMP << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 		std::cout << ss.str();
 	}
-
+#if 0
 	for (;;)
 	{
 		Read read = readQueue.pop(); // returns an empty read if queue is empty
@@ -130,7 +135,7 @@ void PostProcessor::run()
 
 		if (read.isValid && !read.isEmpty && !read.is_denovo)
 		{
-			writeQueue.push(read);
+			//writeQueue.push(read);
 		}
 	}
 	writeQueue.decrPushers(); // signal this processor done adding
@@ -143,6 +148,7 @@ void PostProcessor::run()
 			<< " count_reads_aligned: " << count_reads_aligned << std::endl;
 		std::cout << ss.str();
 	}
+#endif
 } // ~PostProcessor::run
 
 void ReportProcessor::run()
@@ -160,7 +166,7 @@ void ReportProcessor::run()
 	Read read;
 	std::size_t i = 0;
 	bool isDone = false;
-
+#if 0
 	for (;!isDone;)
 	{
 		reads.clear();
@@ -191,7 +197,7 @@ void ReportProcessor::run()
 		ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
 		std::cout << ss.str();
 	}
-
+#endif
 } // ~ReportProcessor::run
 
 // called from main
@@ -206,7 +212,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 		ss << "\n" << STAMP << "==== Starting Post-processing (alignment statistics report) ====\n\n";
 		std::cout << ss.str();
 	}
-
+#if 0
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // shared: Processor pushes, Writer pops
@@ -298,7 +304,7 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 
 	if (opts.is_otu_map)
 		readstats.printOtuMap(output.otumap_f);
-
+#endif
 	{
 		std::stringstream ss;
 		ss << "\n" << STAMP << "==== Done Post-processing (alignment statistics report) ====\n\n";

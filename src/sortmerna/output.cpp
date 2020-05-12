@@ -40,15 +40,15 @@
 #include "output.hpp"
 #include "ThreadPool.hpp"
 #include "kvdb.hpp"
-#include "readsqueue.hpp"
+#include "read.hpp"
 #include "index.hpp"
 #include "references.hpp"
-#include "read_control.hpp"
-#include "processor.hpp"
 #include "readstats.hpp"
-#include "read.hpp"
+#include "processor.hpp"
 #include "options.hpp"
 #include "refstats.hpp"
+//#include "readsqueue.hpp"
+//#include "read_control.hpp"
 
 
 // forward
@@ -1065,7 +1065,7 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
 		std::cout << ss.str(); 
 	}
-
+#if 0
 	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
 	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // Not used for Reports
 	Refstats refstats(opts, readstats);
@@ -1116,6 +1116,6 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 			if (!opts.is_blast && !opts.is_sam)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
-
+#endif
 	std::cout << "\n" << STAMP << "=== Done Reports generation ===\n\n";
 } // ~generateReports

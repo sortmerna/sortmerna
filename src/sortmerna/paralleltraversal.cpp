@@ -49,13 +49,14 @@
 #include "refstats.hpp"
 #include "index.hpp"
 #include "references.hpp"
-#include "readsqueue.hpp"
 #include "kvdb.hpp"
 #include "processor.hpp"
 #include "reader.hpp"
-#include "writer.hpp"
 #include "output.hpp"
-#include "read_control.hpp"
+//#include "concurrentqueue.h"
+#include "readsqueue.hpp"
+//#include "writer.hpp"
+//#include "read_control.hpp"
 
 
 #if defined(_WIN32)
@@ -82,7 +83,6 @@ void alignmentCb
 		Runopts & opts, 
 		Index & index, 
 		References & refs, 
-		Output & output, 
 		Readstats & readstats, 
 		Refstats & refstats, 
 		Read & read,
@@ -377,19 +377,20 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 		std::cout << ss.str();
 	}
 
-	int numThreads = opts.num_read_thread + opts.num_write_thread + numProcThread;
+	int numThreads = opts.num_read_thread + numProcThread; //  + opts.num_write_thread
 
 	ss.str("");
 	ss << "Number of cores: " << numCores 
 		<< " Read threads:  " << opts.num_read_thread
-		<< " Write threads: " << opts.num_write_thread
+		//<< " Write threads: " << opts.num_write_thread
 		<< " Processor threads: " << numProcThread
 		<< std::endl;
 	std::cout << ss.str();
 
 	ThreadPool tpool(numThreads);
-	ReadsQueue readQueue("read_queue", opts.queue_size_max, opts.num_read_thread); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
+	ReadsQueue read_queue("queue_1", opts.queue_size_max);
+	//ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
+	//moodycamel::ConcurrentQueue<std::string> read_queue(100);
 	Refstats refstats(opts, readstats);
 	References refs;
 
@@ -400,7 +401,7 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 	std::chrono::duration<double> elapsed;
 
 	// loop through every index passed to option '--ref'
-	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
+	for (size_t index_num = 0; index_num < opts.indexfiles.size(); ++index_num)
 	{
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
@@ -433,28 +434,28 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 			std::cout << ss.str();
 
 			starts = std::chrono::high_resolution_clock::now();
-			for (int i = 0; i < opts.num_read_thread; i++)
-			{
-				tpool.addJob(ReadControl(opts, readQueue, kvdb));
-			}
+			//for (int i = 0; i < opts.num_read_thread; i++)
+			//{
+			tpool.addJob(Reader(read_queue, opts.readfiles, opts.is_gz));
+			//}
 
-			for (int i = 0; i < opts.num_write_thread; i++)
-			{
-				tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb, opts));
-			}
+			//for (int i = 0; i < opts.num_write_thread; i++)
+			//{
+			//	tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb, opts));
+			//}
 
 			// add processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.addJob(Processor("proc_" + std::to_string(i), readQueue, writeQueue, opts, index, refs, output, readstats, refstats, alignmentCb));
+				tpool.addJob(Processor("proc_" + std::to_string(i), read_queue, opts, index, refs, readstats, refstats, kvdb, alignmentCb));
 			}
 			++loopCount;
 
 			tpool.waitAll(); // wait till all reads are processed against the current part
 			index.clear();
 			refs.clear();
-			writeQueue.reset(numProcThread);
-			readQueue.reset(opts.num_read_thread);
+			//writeQueue.reset(numProcThread);
+			//readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
 

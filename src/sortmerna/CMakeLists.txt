@@ -110,7 +110,7 @@ set(SMR_SRCS
 	paralleltraversal.cpp
 	processor.cpp
 	read.cpp
-	read_control.cpp
+	#read_control.cpp
 	reader.cpp
 	readstats.cpp
 	references.cpp
@@ -118,7 +118,7 @@ set(SMR_SRCS
 	ssw.c
 	traverse_bursttrie.cpp
 	util.cpp
-	writer.cpp
+	#writer.cpp
 )
 
 # SMR Objects - build a separate library to use with Tests
@@ -137,14 +137,14 @@ if(WIN32)
 			$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
 			$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
 			${DIRENTWIN_HOME}/include
-			${EXTERNAL_DEPS}/concurrentqueue
+			${CONCURRENTQUEUE_HOME}
 	)
 else()
 	target_include_directories(smr_objs 
 		PUBLIC
 			${CMAKE_SOURCE_DIR}/include
 			$<TARGET_PROPERTY:cmph,INCLUDE_DIRECTORIES>
-			${EXTERNAL_DEPS}/concurrentqueue
+			${CONCURRENTQUEUE_HOME}
 	)
 endif()
 
@@ -162,7 +162,7 @@ if(WIN32)
 		PRIVATE
 			${CMAKE_SOURCE_DIR}/include
 			${DIRENTWIN_HOME}/include
-			${EXTERNAL_DEPS}/concurrentqueue
+			${CONCURRENTQUEUE_HOME}
 	)
 	target_link_libraries(sortmerna
 		build_version
@@ -179,7 +179,7 @@ if(WIN32)
 else()
 	target_include_directories(sortmerna 
 		PRIVATE
-			${EXTERNAL_DEPS}/concurrentqueue
+			${CONCURRENTQUEUE_HOME}
 			${CMAKE_SOURCE_DIR}/include
 	)
 	#get_property(rocksdb_trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)

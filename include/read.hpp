@@ -48,9 +48,9 @@ struct alignment_struct2
 class Read 
 {
 public:
-	std::string id; // Read ID: combination of readsfile index and the read index into the readsfile e.g. 0_0, 1_103, etc. Generated upon reading from file.
+	std::string id; // Read ID: combination 'readsfile-number_read-number' e.g. 0_0, 1_103, etc.
 	std::size_t read_num; // Read number in the reads file starting from 0
-	uint8_t readfile_idx; // index into Runopts::readfiles
+	std::size_t readfile_idx; // index into Runopts::readfiles
 	bool isValid; // flags the record valid/non-valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
 	bool is03; // indicates Read::isequence is in 0..3 alphabet
@@ -88,6 +88,8 @@ public:
 
 public:
 	Read();
+	Read(std::string& readstr);
+	Read(std::string id, std::string& read);
 	Read(std::string id, std::string header, std::string sequence, std::string quality, Format format);
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment
@@ -101,7 +103,7 @@ public:
 	void init(Runopts & opts);
 	std::string matchesToJson();
 	void unmarshallJson(KeyValueDatabase & kvdb);
-	std::string toString();
+	std::string toBinString();
 	bool load_db(KeyValueDatabase & kvdb);
 	void seqToIntStr();
 	void revIntStr();
@@ -110,4 +112,5 @@ public:
 	void calcMismatchGapId(References &refs, int alignIdx, uint32_t &mismatches, uint32_t &gaps, uint32_t &id);
 	std::string getSeqId();
 	uint32_t hashKmer(uint32_t pos, uint32_t len);
+	bool from_string(std::string& readstr);
 }; // ~class Read

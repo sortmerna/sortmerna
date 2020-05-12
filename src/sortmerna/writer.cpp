@@ -36,7 +36,7 @@ void Writer::write()
 		}
 		++numPopped;
 		//std::string matchResultsStr = read.matchesToJson();
-		std::string readstr = read.toString();
+		std::string readstr = read.toBinString();
 		if (!opts.is_dbg_put_kvdb && readstr.size() > 0)
 		{
 			if (read.is_hit) ++num_aligned;

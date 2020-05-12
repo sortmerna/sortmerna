@@ -34,14 +34,14 @@ public:
 			threads_.emplace_back(std::bind(&ThreadPool::threadEntry, this, i));
 
 		ss << STAMP << "initialized Pool with: [" << numThreads << "] threads" << std::endl << std::endl;
-		std::cout << ss.str(); ss.str("");
+		std::cout << ss.str();
 	}
 
 	~ThreadPool()
 	{
 		{
 			// Unblock any threads and tell them to stop
-			std::lock_guard <std::mutex> lmjq(job_queue_lock);
+			std::lock_guard <std::mutex> lk(job_queue_mx);
 			shutdown_ = true;
 			cv_jobs.notify_all();
 		}
@@ -49,11 +49,11 @@ public:
 	}
 
 	/** 
-	 * Place a job on the queue and unblock a thread
+	 * lock the jobs queue and add a job
 	 */
 	void addJob(std::function <void(void)> func)
 	{
-		std::lock_guard <std::mutex> lmjQ(job_queue_lock);
+		std::lock_guard <std::mutex> lk(job_queue_mx);
 		jobs_.emplace(std::move(func));
 		cv_jobs.notify_one();
 	}
@@ -61,8 +61,8 @@ public:
 	// wait till no jobs running
 	void waitAll()
 	{
-		std::unique_lock<std::mutex> lock_mutex_jobs_done(job_done_lock);
-		cv_done.wait(lock_mutex_jobs_done, [this] { return running_threads.load() == 0 && jobs_.empty(); });
+		std::unique_lock<std::mutex> lk(job_done_mx);
+		cv_done.wait(lk, [this] { return running_threads.load() == 0 && jobs_.empty(); });
 	}
 
 	// Wait for all threads to stop
@@ -82,11 +82,11 @@ protected:
 		for (;;)
 		{
 			{
-				std::unique_lock <std::mutex> lockmJobQueue(job_queue_lock);
+				std::unique_lock <std::mutex> lk(job_queue_mx);
 
 				// while no jobs and no shutdown - just keep waiting.
 				while (!shutdown_.load() && jobs_.empty())
-					cv_jobs.wait(lockmJobQueue); // works
+					cv_jobs.wait(lk); // works
 				//cv_jobs.wait(jqLock, [this] { return !shutdown_.load() && jobs_.empty(); });
 
 				if (jobs_.empty()) // only get here on shutdown = true
@@ -101,7 +101,7 @@ protected:
 				jobs_.pop();
 				++running_threads;
 			}
-			// mutex 'job_queue_lock' released here
+			// mutex 'job_queue_mx' released here
 
 			job(); // Do the job without holding any locks
 			--running_threads;
@@ -111,8 +111,8 @@ protected:
 		} // ~for
 	} // ~threadEntry
 
-	std::mutex job_queue_lock; // lock for pop/push on jobs_
-	std::mutex job_done_lock; // lock for checking jobs_.empty and shutdown
+	std::mutex job_queue_mx; // lock for pop/push on jobs_
+	std::mutex job_done_mx; // lock for checking jobs_.empty and shutdown
 	std::condition_variable cv_jobs;
 	std::condition_variable cv_done;
 	std::atomic_bool shutdown_;

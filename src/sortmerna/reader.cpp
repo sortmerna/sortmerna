@@ -7,6 +7,7 @@
  */
 
 #include <vector>
+#include <iostream>
 #include <sstream> // std::stringstream
 #include <ios> // std::ios_base
 #include <algorithm> // find, find_if
@@ -17,154 +18,148 @@
 #include "reader.hpp"
 #include "gzip.hpp"
 
-Reader::Reader(std::string id, bool is_gzipped)
+Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz)
 	:
-	id(id),
-	is_gzipped(is_gzipped),
-	gzip(is_gzipped),
 	is_done(false),
-	read_count(0),
-	line_count(0),
-	last_count(0),
-	last_stat(0),
-	isFastq(false),
-	isFasta(false)
-{} // ~Reader::Reader
+	count(0),
+	is_gzipped(is_gz),
+	is_two_files(readfiles.size() > 0),
+	is_next_fwd(false),
+	readfiles(readfiles),
+	readQueue(readQueue)
+{
+	for (auto i = 0; i < readfiles.size(); ++i) {
+		states.emplace_back(Readstate(is_gz));
+	}
+} // ~Reader::Reader
 
-Reader::~Reader() {}
+//Reader::~Reader() {}
 
-bool Reader::loadReadByIdx(Runopts & opts, Read & read)
+bool Reader::loadReadByIdx(Read & read)
 {
 	std::stringstream ss;
 	bool isok = false;
+#if 0
 
-	std::ifstream ifs(opts.readfiles[read.readfile_idx], std::ios_base::in | std::ios_base::binary);
-	if (!ifs.is_open()) 
-	{
-		std::cerr << STAMP << "failed to open " << opts.readfiles[read.readfile_idx] << std::endl;
+	pstate->fs.open(Reader::*pstate->readsfile, std::ios_base::in | std::ios_base::binary);
+	if (!rstate->fs.is_open()) {
+		std::cerr << STAMP << "failed to open " << rstate->readsfile << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	else
+
+	std::string line;
+	std::size_t read_num = 0;
+	//bool isFastq = true;
+	//Gzip gzip(opts.is_gz);
+
+	auto t = std::chrono::high_resolution_clock::now();
+
+	// read lines from the reads file
+	for (int count = 0, stat = 0; ; ) // count lines in a single read
 	{
-		std::string line;
-		std::size_t read_num = 0;
-		bool isFastq = true;
-		Gzip gzip(opts.is_gz);
+		stat = rstate->gzip.getline(rstate->fs, line);
+		if (stat == RL_END) break;
 
-		auto t = std::chrono::high_resolution_clock::now();
-
-		// read lines from the reads file
-		for (int count = 0, stat = 0; ; ) // count lines in a single read
+		if (stat == RL_ERR)
 		{
-			stat = gzip.getline(ifs, line);
-			if (stat == RL_END) break;
+			std::cerr << STAMP << "ERROR reading from Reads file. Exiting..." << std::endl;
+			exit(1);
+		}
 
-			if (stat == RL_ERR)
-			{
-				std::cerr << STAMP << "ERROR reading from Reads file. Exiting..." << std::endl;
-				exit(1);
+		if (line.empty()) continue;
+
+		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+
+		if ( line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START )
+		{
+			if (!read.isEmpty) {
+				isok = true;
+				break; // read is ready
 			}
 
-			if (line.empty()) continue;
-
-			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-
-			if ( line[0] == FASTA_HEADER_START || line[0] == FASTQ_HEADER_START )
+			// add header -->
+			if (read_num == read.read_num)
 			{
-				if (!read.isEmpty) {
-					isok = true;
-					break; // read is ready
-				}
-
-				// add header -->
-				if (read_num == read.read_num)
-				{
-					isFastq = (line[0] == FASTQ_HEADER_START);
-					read.format = isFastq ? Format::FASTQ : Format::FASTA;
-					read.header = line;
-					read.isEmpty = false;
-				}
-				else {
-					++read_num;
-					count = 0; // for fastq
-				}
-			} // ~if header line
-			else if ( !read.isEmpty )
-			{
-				// add sequence -->
-				if ( isFastq )
-				{
-					++count;
-					if ( line[0] == '+' ) continue;
-					if ( count == 3 )
-					{
-						read.quality = line; // last line in Fastq read
-						continue;
-					}
-				}
-				read.sequence += line;
+				rstate->isFastq = (line[0] == FASTQ_HEADER_START);
+				read.format = rstate->isFastq ? Format::FASTQ : Format::FASTA;
+				read.header = line;
+				read.isEmpty = false;
 			}
-		} // ~for getline
+			else {
+				++read_num;
+				count = 0; // for fastq
+			}
+		} // ~if header line
+		else if ( !read.isEmpty )
+		{
+			// add sequence -->
+			if (rstate->isFastq )
+			{
+				++count;
+				if ( line[0] == '+' ) continue;
+				if ( count == 3 )
+				{
+					read.quality = line; // last line in Fastq read
+					continue;
+				}
+			}
+			read.sequence += line;
+		}
+	} // ~for getline
 
-		std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
 
-		//ss << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: "
-		//	<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id << std::endl;
-		//std::cout << ss.str(); ss.str("");
-	}
+	//ss << id << " thread: " << std::this_thread::get_id() << " done. Elapsed time: "
+	//	<< std::setprecision(2) << std::fixed << elapsed.count() << " sec Reads added: " << read_id << std::endl;
+	//std::cout << ss.str(); ss.str("");
 
-	ifs.close();
-
+	rstate->fs.close();
+#endif
 	return isok;
 
 } // ~Reader::loadRead
 
-bool Reader::loadReadById(Runopts & opts, Read & read)
+bool Reader::loadReadById(Read & read)
 {
 	return true;
 } // ~Reader::loadReadById
 
-
-/** 
- * return next read from the reads file on each call 
+/* 
+ * @return string having format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
  */
-Read Reader::nextread(std::ifstream &ifs, const uint8_t readsfile_idx, Runopts & opts)
-{
-	std::string line;
-	Read read; // an empty read
+std::string Reader::nextread(std::vector<std::ifstream>& fsl) {
 
-	// read lines from the reads file and create Read object
-	for (int count = last_count, stat = last_stat; !is_done; ++count) // count lines in a single record/read
+	std::string line;
+	std::stringstream read; // an empty read
+	size_t idx = is_next_fwd ? 1 : 0;
+	auto stat = states[idx].last_stat;
+
+	// read lines from the reads file and extract a single read
+	for (auto count = states[idx].last_count; !states[idx].is_done; ++count) // count lines in a single record/read
 	{
-		if (last_header.size() > 0)
+		if (states[idx].last_header.size() > 0)
 		{
-			// start new record
-			read.clear();
-			read.format = isFastq ? Format::FASTQ : Format::FASTA;
-			read.header = last_header;
-			read.isEmpty = false;
-			last_header.clear();
+			read << idx << '_' << states[idx].read_count << '\n';
+			read << states[idx].last_header << '\n';
+			states[idx].last_header = "";
 		}
 
-		stat = gzip.getline(ifs, line);
+		// read a line
+		if (!states[idx].is_done)
+			stat = states[idx].gzip.getline(fsl[idx], line);
 
+
+		// EOF reached - return last read
 		if (stat == RL_END)
 		{
-			// push the last Read to the queue
-			if (!read.isEmpty)
-			{
-				read.read_num = read_count;
-				read.readfile_idx = readsfile_idx;
-				read.generate_id();
-				++read_count;
-				is_done = true;
-			}
+			states[idx].is_done = true;
+			is_done = is_two_files ? states[0].is_done & states[1].is_done : states[0].is_done;
 			break;
 		}
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from file: [" << opts.readfiles[readsfile_idx] << "]. Exiting..." << std::endl;
+			std::cerr << STAMP << "ERROR reading from file: [" << readfiles[idx] << "]. Exiting..." << std::endl;
 			exit(1);
 		}
 
@@ -174,77 +169,81 @@ Read Reader::nextread(std::ifstream &ifs, const uint8_t readsfile_idx, Runopts &
 			continue;
 		}
 
-		++line_count;
+		++states[idx].line_count;
 
-		// left trim space and '>' or '@'
-		//line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 		// right-trim whitespace in place (removes '\r' too)
 		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-		// removes all space
-		//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
-		if (line_count == 1)
+
+		// the first line in file
+		if (states[idx].line_count == 1)
 		{
-			isFastq = (line[0] == FASTQ_HEADER_START);
-			isFasta = (line[0] == FASTA_HEADER_START);
+			states[idx].isFastq = (line[0] == FASTQ_HEADER_START);
+			states[idx].isFasta = (line[0] == FASTA_HEADER_START);
 		}
 
-		if (count == 4 && isFastq)
+		if (count == 4 && states[idx].isFastq)
 		{
 			count = 0;
 		}
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0)) // header line reached
+		if ((states[idx].isFasta && line[0] == FASTA_HEADER_START) || (states[idx].isFastq && count == 0)) // header line reached
 		{
-			if (!read.isEmpty)
+			if (states[idx].line_count == 1)
 			{
-				read.read_num = read_count;
-				read.readfile_idx = readsfile_idx;
-				read.generate_id();
-				++read_count;
-				last_header = line;
-				last_count = 1;
-				last_stat = stat;
-				break; // return the read here
+				read << idx << '_' << states[idx].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << line << '\n'; // the very first header
+				count = 0;
 			}
-
-			// start new record
-			read.clear();
-			read.format = isFastq ? Format::FASTQ : Format::FASTA;
-			read.header = line;
-			read.isEmpty = false;
-
-			count = 0; // FASTA record start
+			else 
+			{
+				// read is ready - return
+				states[idx].last_header = line;
+				states[idx].last_count = 1;
+				states[idx].last_stat = stat;
+				break;
+			}
 		} // ~if header line
 		else
 		{ // add sequence -->
-			if (isFastq)
+			if (states[idx].isFastq)
 			{
 				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
 					continue;
 				if (count == 3)
 				{
-					read.quality = line;
+					read << line;
 					continue;
 				}
+				read << line << '\n'; // FQ sequence
 			}
-			read.sequence += line; // FASTA multi-line sequence or FASTQ sequence
+			else {
+				read << line; // FASTA sequence possibly multiline
+			}
 		}
 	} // ~for getline
-	return read;
+
+	// toggle next file
+	if (is_two_files) {
+		is_next_fwd = !is_next_fwd;
+	}
+
+	++states[idx].read_count;
+	return read.str();
 } // ~Reader::nextread
+
 
 /**
  * get a next read sequence from the reads file
  * @return true if record exists, else false
  */
-bool Reader::nextread(std::ifstream& ifs, const std::string &readsfile, std::string &seq)
+bool Reader::nextread(std::string readsfile, std::string &seq)
 {
 	bool has_seq = false;
 	seq = ""; // ensure empty
 	std::string line;
-
+#if 0
 	// read lines from the reads file and create Read object
 	for (int count = last_count, stat = last_stat; !is_done; ++count) // count lines in a single record/read
 	{
@@ -317,6 +316,7 @@ bool Reader::nextread(std::ifstream& ifs, const std::string &readsfile, std::str
 	} // ~for getline
 
 	has_seq = seq.size() > 0 ? true : false;
+#endif
 	return has_seq;
 } // ~Reader::nextread
 
@@ -331,11 +331,42 @@ bool Reader::hasnext(std::ifstream& ifs)
 
 void Reader::reset()
 {
-	read_count = 0;
-	line_count = 0;
-	last_count = 0;
-	last_stat = 0;
-	bool isFastq = false;
-	bool isFasta = false;
 	is_done = false;
+	is_next_fwd = false;
 }
+
+void Reader::run()
+{
+	{
+		std::stringstream ss;
+		ss << "Reader::run " << " thread " << std::this_thread::get_id() << " started" << std::endl;
+		std::cout << ss.str();
+	}
+
+	// open file streams
+	std::vector<std::ifstream> fsl(readfiles.size());
+	for (auto i = 0; i < readfiles.size(); ++i) {
+		fsl[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+		if (!fsl[i].is_open()) {
+			std::cerr << STAMP << "Failed to open file " << readfiles[i] << std::endl;
+			exit(1);
+		}
+	}
+
+	// loop until EOF - get reads - push on queue
+	for (bool is_ok = false; !is_done;)
+	{
+		if (is_done) {
+			readQueue.is_done_push.store(true);
+			break;
+		}
+		readQueue.push(nextread(fsl));
+		if (is_ok) ++count;
+	}
+
+	{
+		std::stringstream ss;
+		ss << "Reader::run " << " thread " << std::this_thread::get_id() << " done. Reads count: " << count << std::endl;
+		std::cout << ss.str();
+	}
+} // ~Reader::run

@@ -10,6 +10,7 @@
 #include <fstream> // std::ifstream
 
 #include "readsqueue.hpp"
+//#include "concurrentqueue.h"
 #include "kvdb.hpp"
 #include "options.hpp"
 #include "gzip.hpp"
@@ -17,35 +18,49 @@
  // forward
 class Read;
 
+struct Readstate {
+	Readstate(bool is_gz)
+		: is_done(false), isFastq(false), isFasta(false), read_count(0), line_count(0), 
+		last_count(0), last_stat(0), gzip(is_gz) {}
+	bool is_done;
+	bool isFastq; // file is FASTQ
+	bool isFasta; // file is FASTA
+	unsigned read_count; // count of reads in the file
+	unsigned line_count; // count of non-empty lines in the reads file
+	unsigned last_count; // count of lines in a single read
+	int last_stat;
+	std::string last_header; // header line last read
+	Gzip gzip;
+};
+
 /* 
  * reads Reads file and, generates Read objects
  */
 class Reader {
 public:
-	Reader(std::string id, bool is_gzipped);
-	~Reader();
+	Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz);
 
-	Read nextread(std::ifstream &ifs, const uint8_t readsfile_idx, Runopts & opts);
-	bool nextread(std::ifstream &ifs, const std::string &readsfile, std::string &seq);
+	void operator()() { run(); }
+	void run();
+
+	std::string nextread(std::vector<std::ifstream>& fsl); // new line separated read data. FA - 2 lines, FQ - 4 lines
+	bool nextread(const std::string readsfile, std::string &seq);
 	void reset();
 	static bool hasnext(std::ifstream& ifs);
-	static bool loadReadByIdx(Runopts & opts, Read & read);
-	static bool loadReadById(Runopts & opts, Read & read);
+	static bool loadReadByIdx(Read& read);
+	static bool loadReadById(Read& read);
 
 public:
-	bool is_done = false; // flags end of reads stream
+	bool is_done; // flags end of all read streams
+	unsigned count; // read count
 
 private:
-	std::string id;
 	bool is_gzipped;
-	Gzip gzip;
-	unsigned int read_count; // count of reads
-	unsigned int line_count; // count of non-empty lines in the reads file
-	int last_count;
-	int last_stat;
-	std::string last_header; // header line last read
-	bool isFastq; // flags the file is FASTQ
-	bool isFasta; // flags the file is FASTA
+	bool is_two_files; // two read files being processed
+	bool is_next_fwd; // indicates the fwd file is to be read next
+	std::vector<Readstate> states; // 1st file - FWD, 2dn - REV
+	std::vector<std::string>& readfiles;
+	ReadsQueue& readQueue;
 };
 
 // ~reader.hpp

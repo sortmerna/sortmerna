@@ -23,7 +23,7 @@ void kvdb_clear();
 void reader_nextread(std::vector<std::string> &filev)
 {
 	std::chrono::duration<double> elapsed;
-
+#if 0
 	for (auto rfile : filev)
 	{
 		auto starts = std::chrono::high_resolution_clock::now();
@@ -47,6 +47,7 @@ void reader_nextread(std::vector<std::string> &filev)
 		elapsed = std::chrono::high_resolution_clock::now() - starts;
 		std::cout << "Time elapsed: [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl <<std::endl;
 	}
+#endif
 } // ~reader_nextread
 
 int main(int argc, char** argv)

@@ -32,8 +32,7 @@
 
  /** @file common.hpp */
 
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 #include <sys/time.h>
 #include "config.h"
@@ -89,23 +88,23 @@ extern timeval t;
 
 /*! @brief start color text red */
 #if defined(_WIN32)
-#define RED    ""
-#define GREEN  ""
-#define YELLOW ""
-#define BLUE   ""
-#define BOLD   ""
-#define UNDL   ""
-#define COLOFF ""
-const char DELIM = ';';
+#  define RED    ""
+#  define GREEN  ""
+#  define YELLOW ""
+#  define BLUE   ""
+#  define BOLD   ""
+#  define UNDL   ""
+#  define COLOFF ""
+  const char DELIM = ';';
 #else
-#define RED    "\033[0;31m"
-#define GREEN  "\033[0;32m"
-#define YELLOW "\033[0;33m"
-#define BLUE   "\033[0;34m"
-#define BOLD   "\033[1m"
-#define UNDL   "\033[4m" // underline
-#define COLOFF "\033[0m" // color off
-const char DELIM = ':';
+#  define RED    "\033[0;31m"
+#  define GREEN  "\033[0;32m"
+#  define YELLOW "\033[0;33m"
+#  define BLUE   "\033[0;34m"
+#  define BOLD   "\033[1m"
+#  define UNDL   "\033[4m" // underline
+#  define COLOFF "\033[0m" // color off
+  const char DELIM = ':';
 #endif
 
 
@@ -114,9 +113,8 @@ const char DELIM = ':';
 */
 #define MAX_READ_LEN 30000
 
-#define LOCKQEUEU // use Locking queue for storing the Reads
+//#define LOCKQUEUE // Lock queue with mutexes
+#define CONCURRENTQUEUE // lockless queue
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
-
-#endif
 

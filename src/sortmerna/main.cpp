@@ -47,7 +47,7 @@ namespace fs = std::filesystem;
 
 // forward
 void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb); // processor.cpp
-void setup_workspace(Runopts & opts);
+//void setup_workspace(Runopts & opts);
 
 /*! @fn main()
 	@brief main function, parses command line arguments and launches the processing

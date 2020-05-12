@@ -87,7 +87,7 @@ void alignment_struct2::clear()
 
 Read::Read()
 	:
-	//id(0),
+	id(""),
 	read_num(0),
 	readfile_idx(0),
 	isValid(false),
@@ -108,7 +108,17 @@ Read::Read()
 	format(Format::FASTA)
 {}
 
-Read::~Read(){}
+Read::Read(std::string& readstr)
+	:
+	Read()
+{
+	isEmpty = !from_string(readstr);
+}
+
+Read::Read(std::string id, std::string& read)
+	:
+	Read()
+	{ id = id; }
 
 Read::Read(std::string id, std::string header, std::string sequence, std::string quality, Format format)
 	:
@@ -117,6 +127,8 @@ Read::Read(std::string id, std::string header, std::string sequence, std::string
 {
 	validate();
 }
+
+Read::~Read() {}
 
 // copy constructor
 Read::Read(const Read & that)
@@ -208,8 +220,6 @@ void Read::generate_id()
  */
 void Read::init(Runopts & opts)
 {
-	//this->readfile_num = readfile_num;
-	//generate_id();
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
 	validate();
@@ -238,10 +248,9 @@ void Read::validate() {
 	std::stringstream ss;
 	if (sequence.size() > MAX_READ_LEN)
 	{
-		ss << std::endl << RED << "ERROR" << COLOFF << ": [" << __FILE__ << ":" << __LINE__
-			<< "] Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > " << MAX_READ_LEN << " nt " << std::endl
+		ss << "Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > " << MAX_READ_LEN << " nt " << std::endl
 			<< "  Please check your reads or contact the authors." << std::endl;
-		std::cerr << ss.str();
+		ERR(ss.str());
 		exit(EXIT_FAILURE);
 	}
 	isValid = true;
@@ -378,7 +387,7 @@ std::string Read::matchesToJson() {
 /* 
  * serialize to binary string to store in DB 
  */
-std::string Read::toString()
+std::string Read::toBinString()
 {
 	if (hits_align_info.alignv.size() == 0)
 		return "";
@@ -408,9 +417,11 @@ std::string Read::toString()
 	buf += hits_align_info_str; //  add string
 
 	return buf;
-} // ~Read::toString
+} // ~Read::toBinString
 
-/* deserialize matches from string stored in DB */
+/* 
+ * load read alignment data from DB 
+ */
 bool Read::load_db(KeyValueDatabase & kvdb)
 {
 	int id_win_hits_len = 0;
@@ -554,3 +565,39 @@ uint32_t Read::hashKmer(uint32_t pos, uint32_t len)
 	}
 	return hash;
 }
+
+/* 
+ * @param readstr 'read_id \n header \n sequence [\n quality]'
+ */
+bool Read::from_string(std::string& readstr)
+{
+	bool is_ok = true;;
+	std::stringstream ss(readstr);
+	std::string line;
+	for (int i = 0; std::getline(ss, line, '\n'); ++i) {
+		if (i == 0) {
+			id = line;
+		}
+		else if (i == 1) {
+			format = line.front() == FASTA_HEADER_START ? Format::FASTA : Format::FASTQ;
+			header = line;
+		}
+		else if (i == 2) {
+			sequence = line;
+		}
+		else if (i == 3) {
+			if (format == Format::FASTQ) {
+				quality = line;
+			}
+			else {
+				std::cerr << STAMP << "unexpected number of lines in fasta read: " << readstr << std::endl;
+				is_ok = false;
+			}
+		}
+		else {
+			std::cerr << STAMP << "unexpected number of lines in read: " << readstr << std::endl;
+			is_ok = false;
+		}
+	}
+	return is_ok;
+} // ~Read::from_string
