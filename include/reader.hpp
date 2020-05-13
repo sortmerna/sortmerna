@@ -52,12 +52,11 @@ public:
 
 public:
 	bool is_done; // flags end of all read streams
-	unsigned count; // read count
+	unsigned count_all; // count of reads in all streams
 
 private:
 	bool is_gzipped;
-	bool is_two_files; // two read files being processed
-	bool is_next_fwd; // indicates the fwd file is to be read next
+	std::size_t next_idx; // index of the reads file to be read next
 	std::vector<Readstate> states; // 1st file - FWD, 2dn - REV
 	std::vector<std::string>& readfiles;
 	ReadsQueue& readQueue;

@@ -22,8 +22,6 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
-//#include "read_control.hpp"
-//#include "writer.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
@@ -39,7 +37,7 @@ void Processor::run()
 	
 	{
 		std::stringstream ss;
-		ss << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
+		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
 		std::cout << ss.str();
 	}
 
@@ -79,7 +77,6 @@ void Processor::run()
 				}
 				// call 'paralleltraversal.cpp::alignmentCb'
 				callback(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1);
-				//opts.forward = false;
 				read.id_win_hits.clear(); // bug 46
 			}
 

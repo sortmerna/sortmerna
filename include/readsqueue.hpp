@@ -13,10 +13,10 @@
 #include "common.hpp"
 #include "read.hpp"
 
-#ifdef LOCKQUEUE
-#  include <queue>
-#elif defined(CONCURRENTQUEUE)
+#if defined(CONCURRENTQUEUE)
 #  include "concurrentqueue.h"
+#elif defined(LOCKQUEUE)
+#  include <queue>
 #endif
 
 
@@ -33,13 +33,12 @@ public:
 	std::atomic_uint num_in; // shared
 	std::atomic_uint num_out; // shared
 	//std::atomic_uint pushers; // counter of threads that push reads on this queue. When zero - the pushing is over.
-#ifdef LOCKQUEUE
+#if defined(CONCURRENTQUEUE)
+	moodycamel::ConcurrentQueue<std::string> queue; // lockless queue
+#elif defined(LOCKQUEUE)
 	std::queue<Read> recs; // shared: Reader & Processors, Writer & Processors
-
 	std::mutex qlock; // lock for push/pop on queue
 	std::condition_variable cvQueue;
-#elif defined(CONCURRENTQUEUE)
-	moodycamel::ConcurrentQueue<std::string> queue; // lockless queue
 #endif
 
 public:
@@ -91,7 +90,7 @@ public:
 		bool res = false;
 #if defined(CONCURRENTQUEUE)
 		res = queue.try_dequeue(rec);
-		if (res) ++num_out;
+		if (res) num_out.fetch_add(1, std::memory_order_acq_rel); // ++num_out
 #elif defined(LOCKQUEUE)
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] { return (pushers.load() == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.

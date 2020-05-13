@@ -21,19 +21,63 @@
 Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz)
 	:
 	is_done(false),
-	count(0),
+	count_all(0),
 	is_gzipped(is_gz),
-	is_two_files(readfiles.size() > 0),
-	is_next_fwd(false),
+	next_idx(0),
 	readfiles(readfiles),
 	readQueue(readQueue)
 {
 	for (auto i = 0; i < readfiles.size(); ++i) {
+		states.reserve(readfiles.size());
 		states.emplace_back(Readstate(is_gz));
 	}
 } // ~Reader::Reader
 
 //Reader::~Reader() {}
+
+/* 
+ * thread runnable 
+ */
+void Reader::run()
+{
+	{
+		std::stringstream ss;
+		ss << STAMP << "Reader::run " << "thread " << std::this_thread::get_id() << " started" << std::endl;
+		std::cout << ss.str();
+	}
+
+	// open file streams
+	std::vector<std::ifstream> fsl(readfiles.size());
+	for (auto i = 0; i < readfiles.size(); ++i) {
+		fsl[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+		if (!fsl[i].is_open()) {
+			std::cerr << STAMP << "Failed to open file " << readfiles[i] << std::endl;
+			exit(1);
+		}
+	}
+
+	// loop until EOF - get reads - push on queue
+	for (bool is_ok = false; !is_done;)
+	{
+		if (is_done) {
+			readQueue.is_done_push = true;
+			{
+				std::stringstream ss;
+				ss << STAMP << "Reader::run " << " Done Reading from all streams" << std::endl;
+				std::cout << ss.str();
+			}
+			break;
+		}
+		is_ok = readQueue.push(nextread(fsl));
+		if (is_ok) ++count_all;
+	}
+
+	{
+		std::stringstream ss;
+		ss << "Reader::run " << " thread " << std::this_thread::get_id() << " done. Reads count: " << count_all << std::endl;
+		std::cout << ss.str();
+	}
+} // ~Reader::run
 
 bool Reader::loadReadByIdx(Read & read)
 {
@@ -125,41 +169,46 @@ bool Reader::loadReadById(Read & read)
 } // ~Reader::loadReadById
 
 /* 
- * @return string having format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
+ * @param array of read files - one or two (if paired) files
+ * @return string with format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
  */
 std::string Reader::nextread(std::vector<std::ifstream>& fsl) {
 
 	std::string line;
 	std::stringstream read; // an empty read
-	size_t idx = is_next_fwd ? 1 : 0;
-	auto stat = states[idx].last_stat;
+	auto stat = states[next_idx].last_stat;
 
 	// read lines from the reads file and extract a single read
-	for (auto count = states[idx].last_count; !states[idx].is_done; ++count) // count lines in a single record/read
+	for (auto count = states[next_idx].last_count; !states[next_idx].is_done; ++count) // count lines in a single record/read
 	{
-		if (states[idx].last_header.size() > 0)
+		if (states[next_idx].last_header.size() > 0)
 		{
-			read << idx << '_' << states[idx].read_count << '\n';
-			read << states[idx].last_header << '\n';
-			states[idx].last_header = "";
+			read << next_idx << '_' << states[next_idx].read_count << '\n';
+			read << states[next_idx].last_header << '\n';
+			states[next_idx].last_header = "";
 		}
 
 		// read a line
-		if (!states[idx].is_done)
-			stat = states[idx].gzip.getline(fsl[idx], line);
+		if (!states[next_idx].is_done)
+			stat = states[next_idx].gzip.getline(fsl[next_idx], line);
 
 
 		// EOF reached - return last read
 		if (stat == RL_END)
 		{
-			states[idx].is_done = true;
-			is_done = is_two_files ? states[0].is_done & states[1].is_done : states[0].is_done;
+			states[next_idx].is_done = true;
+			is_done = readfiles.size() == 2 ? states[0].is_done & states[1].is_done : states[0].is_done;
+			{
+				std::stringstream ss;
+				ss << STAMP << "EOF reached. File index: " << next_idx << " Total reads: " << ++states[next_idx].read_count << std::endl;
+				std::cout << ss.str();
+			}
 			break;
 		}
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from file: [" << readfiles[idx] << "]. Exiting..." << std::endl;
+			std::cerr << STAMP << "ERROR reading from file: [" << readfiles[next_idx] << "]. Exiting..." << std::endl;
 			exit(1);
 		}
 
@@ -169,45 +218,45 @@ std::string Reader::nextread(std::vector<std::ifstream>& fsl) {
 			continue;
 		}
 
-		++states[idx].line_count;
+		++states[next_idx].line_count;
 
 		// right-trim whitespace in place (removes '\r' too)
 		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 
 		// the first line in file
-		if (states[idx].line_count == 1)
+		if (states[next_idx].line_count == 1)
 		{
-			states[idx].isFastq = (line[0] == FASTQ_HEADER_START);
-			states[idx].isFasta = (line[0] == FASTA_HEADER_START);
+			states[next_idx].isFastq = (line[0] == FASTQ_HEADER_START);
+			states[next_idx].isFasta = (line[0] == FASTA_HEADER_START);
 		}
 
-		if (count == 4 && states[idx].isFastq)
+		if (count == 4 && states[next_idx].isFastq)
 		{
 			count = 0;
 		}
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((states[idx].isFasta && line[0] == FASTA_HEADER_START) || (states[idx].isFastq && count == 0)) // header line reached
+		if ((states[next_idx].isFasta && line[0] == FASTA_HEADER_START) || (states[next_idx].isFastq && count == 0)) // header line reached
 		{
-			if (states[idx].line_count == 1)
+			if (states[next_idx].line_count == 1)
 			{
-				read << idx << '_' << states[idx].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << next_idx << '_' << states[next_idx].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
 				read << line << '\n'; // the very first header
 				count = 0;
 			}
 			else 
 			{
 				// read is ready - return
-				states[idx].last_header = line;
-				states[idx].last_count = 1;
-				states[idx].last_stat = stat;
+				states[next_idx].last_header = line;
+				states[next_idx].last_count = 1;
+				states[next_idx].last_stat = stat;
 				break;
 			}
 		} // ~if header line
 		else
 		{ // add sequence -->
-			if (states[idx].isFastq)
+			if (states[next_idx].isFastq)
 			{
 				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
 					continue;
@@ -224,12 +273,13 @@ std::string Reader::nextread(std::vector<std::ifstream>& fsl) {
 		}
 	} // ~for getline
 
+	++states[next_idx].read_count;
+
 	// toggle next file
-	if (is_two_files) {
-		is_next_fwd = !is_next_fwd;
+	if (readfiles.size() == 2) {
+		next_idx = next_idx == 0 ? 1 : 0;
 	}
 
-	++states[idx].read_count;
 	return read.str();
 } // ~Reader::nextread
 
@@ -332,41 +382,5 @@ bool Reader::hasnext(std::ifstream& ifs)
 void Reader::reset()
 {
 	is_done = false;
-	is_next_fwd = false;
+	next_idx = 0;
 }
-
-void Reader::run()
-{
-	{
-		std::stringstream ss;
-		ss << "Reader::run " << " thread " << std::this_thread::get_id() << " started" << std::endl;
-		std::cout << ss.str();
-	}
-
-	// open file streams
-	std::vector<std::ifstream> fsl(readfiles.size());
-	for (auto i = 0; i < readfiles.size(); ++i) {
-		fsl[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
-		if (!fsl[i].is_open()) {
-			std::cerr << STAMP << "Failed to open file " << readfiles[i] << std::endl;
-			exit(1);
-		}
-	}
-
-	// loop until EOF - get reads - push on queue
-	for (bool is_ok = false; !is_done;)
-	{
-		if (is_done) {
-			readQueue.is_done_push.store(true);
-			break;
-		}
-		readQueue.push(nextread(fsl));
-		if (is_ok) ++count;
-	}
-
-	{
-		std::stringstream ss;
-		ss << "Reader::run " << " thread " << std::this_thread::get_id() << " done. Reads count: " << count << std::endl;
-		std::cout << ss.str();
-	}
-} // ~Reader::run

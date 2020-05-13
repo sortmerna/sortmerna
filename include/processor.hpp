@@ -64,7 +64,6 @@ protected:
 	Runopts & opts; 
 	Index & index; 
 	References & refs; 
-	//Output & output; 
 	Readstats & readstats; 
 	Refstats & refstats;
 	KeyValueDatabase& kvdb;
@@ -132,8 +131,7 @@ public:
 	{}
 
 	void operator()() { run(); }
-	//using Processor::operator(); // otherwise explicitely generated () operator overrides superclass () operator
-	//using Processor::process;
+
 protected:
 	void run();
 	void(*callback)(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output);

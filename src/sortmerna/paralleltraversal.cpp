@@ -352,7 +352,7 @@ void alignmentCb
 } // ~alignmentCb
 
 // called from main
-void align(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
+void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
 {
 	std::stringstream ss;
 
@@ -434,17 +434,11 @@ void align(Runopts & opts, Readstats & readstats, Output & output, Index &index,
 			std::cout << ss.str();
 
 			starts = std::chrono::high_resolution_clock::now();
-			//for (int i = 0; i < opts.num_read_thread; i++)
-			//{
+
+			// add Reader job
 			tpool.addJob(Reader(read_queue, opts.readfiles, opts.is_gz));
-			//}
 
-			//for (int i = 0; i < opts.num_write_thread; i++)
-			//{
-			//	tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb, opts));
-			//}
-
-			// add processor jobs
+			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
 				tpool.addJob(Processor("proc_" + std::to_string(i), read_queue, opts, index, refs, readstats, refstats, kvdb, alignmentCb));
