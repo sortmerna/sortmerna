@@ -401,7 +401,7 @@ public:
 	int num_read_thread_rep = 1; // number of report reader threads
 	int num_proc_thread_rep = 1; // number of report processor threads
 
-	int queue_size_max = 100; // max number of Reads in the Read and Write queues. 10 works OK.
+	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
 
 	int32_t num_alignments = -1; // [3] help_num_alignments
 	int32_t min_lis = -1; // OPT_MIN_LIS search all alignments having the first N longest LIS

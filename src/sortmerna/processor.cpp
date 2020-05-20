@@ -41,14 +41,9 @@ void Processor::run()
 		std::cout << ss.str();
 	}
 
-	for (;;)
+	while (readQueue.pop(readstr))
 	{
-		bool is_ok = readQueue.pop(readstr);
-		if (!is_ok)
 		{
-			break;
-		}
-		else {
 			Read read(readstr);
 			read.init(opts);
 			read.load_db(kvdb);
@@ -89,8 +84,8 @@ void Processor::run()
 
 			readstr.resize(0);
 			countReads++;
-		} // read destroyed
-	} // ~for
+		} // ~if & read destroyed
+	} // ~while there are reads
 
 	{
 		std::stringstream ss;

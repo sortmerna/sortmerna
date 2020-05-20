@@ -446,17 +446,19 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			++loopCount;
 
 			tpool.waitAll(); // wait till all reads are processed against the current part
-			index.clear();
-			refs.clear();
-			//writeQueue.reset(numProcThread);
-			//readQueue.reset(opts.num_read_thread);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
+			{
+				ss.str("");
+				ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1
+					<< " Queue size: " << read_queue.queue.size_approx()
+					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+				std::cout << ss.str();
+			}
 
-			ss.str("");
-			ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1 
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
-			std::cout << ss.str();
+			index.clear();
+			refs.clear();
+			read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(index_num)
 

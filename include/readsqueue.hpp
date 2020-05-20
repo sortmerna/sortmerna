@@ -30,8 +30,8 @@ public:
 	size_t capacity; // max size of the queue
 	std::atomic_bool is_done_push; // indicates pushers done adding items to the queue
 	std::atomic_uint num_reads_tot; // total number of reads expected to be put/consumed
-	std::atomic_uint num_in; // shared
-	std::atomic_uint num_out; // shared
+	std::atomic_uint num_pushed; // shared
+	std::atomic_uint num_popped; // shared
 	//std::atomic_uint pushers; // counter of threads that push reads on this queue. When zero - the pushing is over.
 #if defined(CONCURRENTQUEUE)
 	moodycamel::ConcurrentQueue<std::string> queue; // lockless queue
@@ -47,8 +47,8 @@ public:
 		id(id),
 		capacity(capacity),
 		is_done_push(false),
-		num_in(0),
-		num_out(0),
+		num_pushed(0),
+		num_popped(0),
 		num_reads_tot(num_reads_tot)
 #ifdef CONCURRENTQUEUE
 		,
@@ -62,35 +62,44 @@ public:
 
 	~ReadsQueue() {
 		std::stringstream ss;
-		ss << STAMP << "Destructor called on Reads queue. Reads added: " << num_in << " Reads consumed: " << num_out << std::endl;
+		ss << STAMP << "Destructor called on Reads queue. Reads added: " << num_pushed << " Reads consumed: " << num_popped << std::endl;
 		std::cout << ss.str();
 	}
 
 	/** 
 	 * Synchronized. Blocks until queue has capacity for more reads
+	 * pushing stops automatically upon EOF which sets is_done_push = true
 	 */
 	bool push(std::string& rec) 
 	{
-		bool res = false;
 #if defined(CONCURRENTQUEUE)
-		res = queue.try_enqueue(rec);
-		num_in.fetch_add(1, std::memory_order_release);
+		while (!queue.try_enqueue(rec)) {
+			std::this_thread::sleep_for(std::chrono::nanoseconds(5));
+		}
+		num_pushed.fetch_add(1, std::memory_order_release);
 #elif defined(LOCKQUEUE)
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] { return recs.size() < capacity; });
 		recs.push(std::move(rec));
 		cvQueue.notify_one();
 #endif
-		return res;
+		return true;
 	}
 
 	// synchronized
+	// return false when is_done_push == true && num_pushed == num_popped
 	bool pop(std::string& rec)
 	{
-		bool res = false;
+		bool ret = false;
 #if defined(CONCURRENTQUEUE)
-		res = queue.try_dequeue(rec);
-		if (res) num_out.fetch_add(1, std::memory_order_acq_rel); // ++num_out
+		while (!(ret = queue.try_dequeue(rec))) {
+			std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+			if (is_done_push.load(std::memory_order_acquire) && num_pushed.load(std::memory_order_acquire) == num_popped.load(std::memory_order_acquire)) {
+				break;
+			}
+		}
+		if (ret)
+			num_popped.fetch_add(1, std::memory_order_release); // ++num_out  store
 #elif defined(LOCKQUEUE)
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] { return (pushers.load() == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.
@@ -108,6 +117,13 @@ public:
 		}
 		cvQueue.notify_one();
 #endif
-		return res;
+		return ret;
 	}
+
+	void reset() {
+		is_done_push = false;
+		num_pushed = 0;
+		num_popped = 0;
+	}
+
 }; // ~class ReadsQueue
