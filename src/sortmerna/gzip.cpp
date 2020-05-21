@@ -55,7 +55,7 @@ void Gzip::init()
 	z_in.resize(IN_SIZE);
 	z_out.resize(OUT_SIZE);
 	std::fill(z_in.begin(), z_in.end(), 0); // fill IN buffer with 0s
-	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer wiht 0s
+	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer with 0s
 } // ~Gzip::init
 
 /* 
@@ -65,7 +65,7 @@ void Gzip::init()
  *       std::getline doesn't return error if the stream is not 
  *       readable/closed. It returns the same input it was passed.
  */
-int Gzip::getline(std::ifstream & ifs, std::string & line)
+int Gzip::getline(std::ifstream& ifs, std::string& line)
 {
 	char* line_end = 0;
 	int ret = RL_OK;

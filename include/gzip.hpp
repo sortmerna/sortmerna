@@ -11,10 +11,10 @@
 #include "options.hpp"
 
 #define OUT_SIZE 32768U /* out buffer size */
-#define IN_SIZE 16384      /* file input buffer size */
-#define RL_OK 0
-#define RL_END 1
-#define RL_ERR -1
+#define  IN_SIZE 16384  /* file input buffer size */
+#define    RL_OK 0
+#define   RL_END 1
+#define   RL_ERR -1
 
 class Gzip
 {

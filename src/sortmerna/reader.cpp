@@ -57,10 +57,13 @@ void Reader::run()
 		}
 	}
 
+	// init gzip interface
+	std::vector<Gzip> gzips(readfiles.size(), Gzip(is_gzipped));
+
 	// loop until EOF - get reads - push on queue
 	for (;;)
 	{
-		if (readQueue.push(nextread(fsl))) ++count_all;
+		if (readQueue.push(nextread(fsl, gzips))) ++count_all;
 		if (is_done) {
 			readQueue.is_done_push.store(true, std::memory_order_release);
 			{
@@ -174,7 +177,7 @@ bool Reader::loadReadById(Read & read)
  * @param array of read files - one or two (if paired) files
  * @return string with format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
  */
-std::string Reader::nextread(std::vector<std::ifstream>& fsl) {
+std::string Reader::nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>& gzips) {
 
 	std::string line;
 	std::stringstream read; // an empty read
@@ -192,7 +195,7 @@ std::string Reader::nextread(std::vector<std::ifstream>& fsl) {
 
 		// read a line
 		if (!states[next_idx].is_done)
-			stat = states[next_idx].gzip.getline(fsl[next_idx], line);
+			stat = gzips[next_idx].getline(fsl[next_idx], line);
 
 		// EOF reached - return last read
 		if (stat == RL_END)

@@ -21,7 +21,7 @@ class Read;
 struct Readstate {
 	Readstate(bool is_gz)
 		: is_done(false), isFastq(false), isFasta(false), read_count(0), line_count(0), 
-		last_count(0), last_stat(0), gzip(is_gz) {}
+		last_count(0), last_stat(0) {}
 	bool is_done;
 	bool isFastq; // file is FASTQ
 	bool isFasta; // file is FASTA
@@ -30,7 +30,6 @@ struct Readstate {
 	unsigned last_count; // count of lines in a single read
 	int last_stat;
 	std::string last_header; // header line last read
-	Gzip gzip;
 };
 
 /* 
@@ -43,7 +42,7 @@ public:
 	void operator()() { run(); }
 	void run();
 
-	std::string nextread(std::vector<std::ifstream>& fsl); // new line separated read data. FA - 2 lines, FQ - 4 lines
+	std::string nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>& gzips); // new line separated read data. FA - 2 lines, FQ - 4 lines
 	bool nextread(const std::string readsfile, std::string &seq);
 	void reset();
 	static bool hasnext(std::ifstream& ifs);
