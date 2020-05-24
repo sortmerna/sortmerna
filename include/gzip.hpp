@@ -22,6 +22,7 @@ public:
 	Gzip(bool gzipped);
 	//~Gzip();
 
+	void init();
 	int getline(std::ifstream & ifs, std::string & line);
 
 private:
@@ -33,6 +34,5 @@ private:
 	std::vector<unsigned char> z_out; // OUT buffer for decompressed data
 
 private:
-	void init();
 	int inflatez(std::ifstream & ifs); // 'z' in the name to distinguish from zlib.inflate
 };

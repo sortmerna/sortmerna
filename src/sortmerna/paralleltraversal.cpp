@@ -388,7 +388,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 	std::cout << ss.str();
 
 	ThreadPool tpool(numThreads);
-	ReadsQueue read_queue("queue_1", opts.queue_size_max);
+	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	//ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
 	//moodycamel::ConcurrentQueue<std::string> read_queue(100);
 	Refstats refstats(opts, readstats);

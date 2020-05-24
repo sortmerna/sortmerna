@@ -23,15 +23,13 @@ Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool 
 	is_done(false),
 	count_all(0),
 	is_gzipped(is_gz),
-	next_idx(0),
+	is_two_files(readfiles.size() > 1),
+	is_next_fwd(true),
 	readfiles(readfiles),
-	readQueue(readQueue)
-{
-	for (auto i = 0; i < readfiles.size(); ++i) {
-		states.reserve(readfiles.size());
-		states.emplace_back(Readstate(is_gz));
-	}
-} // ~Reader::Reader
+	readQueue(readQueue),
+	gzip_fwd(is_gz),
+	gzip_rev(is_gz)
+{} // ~Reader::Reader
 
 //Reader::~Reader() {}
 
@@ -41,29 +39,50 @@ Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool 
 void Reader::run()
 {
 	auto starts = std::chrono::high_resolution_clock::now();
+
 	{
 		std::stringstream ss;
 		ss << STAMP << "Reader::run " << "thread " << std::this_thread::get_id() << " started" << std::endl;
 		std::cout << ss.str();
 	}
 
-	// open file streams
-	std::vector<std::ifstream> fsl(readfiles.size());
-	for (auto i = 0; i < readfiles.size(); ++i) {
-		fsl[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
-		if (!fsl[i].is_open()) {
-			std::cerr << STAMP << "Failed to open file " << readfiles[i] << std::endl;
+	std::ifstream fs_fwd;
+	std::ifstream fs_rev;
+	fs_fwd.open(readfiles[0], std::ios_base::in | std::ios_base::binary);
+	if (!fs_fwd.is_open()) {
+		std::cerr << STAMP << "Failed to open file " << readfiles[0] << std::endl;
+		exit(1);
+	}
+	if (is_two_files) {
+		fs_rev.open(readfiles[1], std::ios_base::in | std::ios_base::binary);
+		if (!fs_rev.is_open()) {
+			std::cerr << STAMP << "Failed to open file " << readfiles[1] << std::endl;
 			exit(1);
 		}
 	}
 
-	// init gzip interface
-	std::vector<Gzip> gzips(readfiles.size(), Gzip(is_gzipped));
+	// without this getting Z_STREAM_ERROR even though init is called at construction time
+	gzip_fwd.init();
+	gzip_rev.init();
 
 	// loop until EOF - get reads - push on queue
 	for (;;)
 	{
-		if (readQueue.push(nextread(fsl, gzips))) ++count_all;
+		if (is_next_fwd) {
+			if (readQueue.push(nextfwd(fs_fwd))) {
+				++count_all;
+				if (is_two_files)
+					is_next_fwd = false;
+			}
+		}
+		else {
+			if (readQueue.push(nextrev(fs_rev))) {
+				++count_all;
+				is_next_fwd = true;
+			}
+		}
+		
+		is_done = is_two_files ? state_fwd.is_done && state_rev.is_done : state_fwd.is_done;
 		if (is_done) {
 			readQueue.is_done_push.store(true, std::memory_order_release);
 			{
@@ -173,38 +192,42 @@ bool Reader::loadReadById(Read & read)
 	return true;
 } // ~Reader::loadReadById
 
+std::string Reader::nextread(std::ifstream& ifs) {
+	std::string line;
+	return line;
+}
+
 /* 
  * @param array of read files - one or two (if paired) files
  * @return string with format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
  */
-std::string Reader::nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>& gzips) {
+std::string Reader::nextfwd(std::ifstream& ifs) {
 
 	std::string line;
 	std::stringstream read; // an empty read
-	auto stat = states[next_idx].last_stat;
+	auto stat = state_fwd.last_stat;
 
 	// read lines from the reads file and extract a single read
-	for (auto count = states[next_idx].last_count; !states[next_idx].is_done; ++count) // count lines in a single record/read
+	for (auto count = state_fwd.last_count; !state_fwd.is_done; ++count) // count lines in a single record/read
 	{
-		if (states[next_idx].last_header.size() > 0)
+		if (state_fwd.last_header.size() > 0)
 		{
-			read << next_idx << '_' << states[next_idx].read_count << '\n';
-			read << states[next_idx].last_header << '\n';
-			states[next_idx].last_header = "";
+			read << 0 << '_' << state_fwd.read_count << '\n';
+			read << state_fwd.last_header << '\n';
+			state_fwd.last_header = "";
 		}
 
 		// read a line
-		if (!states[next_idx].is_done)
-			stat = gzips[next_idx].getline(fsl[next_idx], line);
+		if (!state_fwd.is_done)
+			stat = gzip_fwd.getline(ifs, line);
 
 		// EOF reached - return last read
 		if (stat == RL_END)
 		{
-			states[next_idx].is_done = true;
-			is_done = readfiles.size() == 2 ? states[0].is_done & states[1].is_done : states[0].is_done;
+			state_fwd.is_done = true;
 			{
 				std::stringstream ss;
-				ss << STAMP << "EOF reached. File index: " << next_idx << " Total reads: " << ++states[next_idx].read_count << std::endl;
+				ss << STAMP << "EOF FWD reached. Total reads: " << ++state_fwd.read_count << std::endl;
 				std::cout << ss.str();
 			}
 			break;
@@ -212,7 +235,7 @@ std::string Reader::nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>&
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from file: [" << readfiles[next_idx] << "]. Exiting..." << std::endl;
+			std::cerr << STAMP << "ERROR reading from FWD file. Exiting..." << std::endl;
 			exit(1);
 		}
 
@@ -222,45 +245,45 @@ std::string Reader::nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>&
 			continue;
 		}
 
-		++states[next_idx].line_count;
+		++state_fwd.line_count;
 
 		// right-trim whitespace in place (removes '\r' too)
 		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 
 		// the first line in file
-		if (states[next_idx].line_count == 1)
+		if (state_fwd.line_count == 1)
 		{
-			states[next_idx].isFastq = (line[0] == FASTQ_HEADER_START);
-			states[next_idx].isFasta = (line[0] == FASTA_HEADER_START);
+			state_fwd.isFastq = (line[0] == FASTQ_HEADER_START);
+			state_fwd.isFasta = (line[0] == FASTA_HEADER_START);
 		}
 
-		if (count == 4 && states[next_idx].isFastq)
+		if (count == 4 && state_fwd.isFastq)
 		{
 			count = 0;
 		}
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((states[next_idx].isFasta && line[0] == FASTA_HEADER_START) || (states[next_idx].isFastq && count == 0)) // header line reached
+		if ((state_fwd.isFasta && line[0] == FASTA_HEADER_START) || (state_fwd.isFastq && count == 0)) // header line reached
 		{
-			if (states[next_idx].line_count == 1)
+			if (state_fwd.line_count == 1)
 			{
-				read << next_idx << '_' << states[next_idx].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << 0 << '_' << state_fwd.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
 				read << line << '\n'; // the very first header
 				count = 0;
 			}
 			else 
 			{
 				// read is ready - return
-				states[next_idx].last_header = line;
-				states[next_idx].last_count = 1;
-				states[next_idx].last_stat = stat;
+				state_fwd.last_header = line;
+				state_fwd.last_count = 1;
+				state_fwd.last_stat = stat;
 				break;
 			}
 		} // ~if header line
 		else
 		{ // add sequence -->
-			if (states[next_idx].isFastq)
+			if (state_fwd.isFastq)
 			{
 				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
 					continue;
@@ -277,15 +300,119 @@ std::string Reader::nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>&
 		}
 	} // ~for getline
 
-	++states[next_idx].read_count;
-
-	// toggle next file
-	if (readfiles.size() == 2) {
-		next_idx = next_idx == 0 ? 1 : 0;
-	}
+	++state_fwd.read_count;
 
 	return read.str();
-} // ~Reader::nextread
+} // ~Reader::nextfwd
+
+/* 
+ * TODO: identical to nextfwd.
+ * dereferencing Gzip always causes errors. 
+ * Cannot store Gzip in an array and cannot pass it by reference.
+ */
+std::string Reader::nextrev(std::ifstream& ifs) {
+
+	std::string line;
+	std::stringstream read; // an empty read
+	auto stat = state_rev.last_stat;
+
+	// read lines from the reads file and extract a single read
+	for (auto count = state_rev.last_count; !state_rev.is_done; ++count) // count lines in a single record/read
+	{
+		if (state_rev.last_header.size() > 0)
+		{
+			read << 0 << '_' << state_rev.read_count << '\n';
+			read << state_rev.last_header << '\n';
+			state_rev.last_header = "";
+		}
+
+		// read a line
+		if (!state_rev.is_done)
+			stat = gzip_rev.getline(ifs, line);
+
+		// EOF reached - return last read
+		if (stat == RL_END)
+		{
+			state_rev.is_done = true;
+			{
+				std::stringstream ss;
+				ss << STAMP << "EOF REV reached." << " Total reads: " << ++state_rev.read_count << std::endl;
+				std::cout << ss.str();
+			}
+			break;
+		}
+
+		if (stat == RL_ERR)
+		{
+			std::cerr << STAMP << "ERROR reading from REV file. Exiting..." << std::endl;
+			exit(1);
+		}
+
+		if (line.empty())
+		{
+			--count;
+			continue;
+		}
+
+		++state_rev.line_count;
+
+		// right-trim whitespace in place (removes '\r' too)
+		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+
+		// the first line in file
+		if (state_rev.line_count == 1)
+		{
+			state_rev.isFastq = (line[0] == FASTQ_HEADER_START);
+			state_rev.isFasta = (line[0] == FASTA_HEADER_START);
+		}
+
+		if (count == 4 && state_rev.isFastq)
+		{
+			count = 0;
+		}
+
+		// fastq: 0(header), 1(seq), 2(+), 3(quality)
+		// fasta: 0(header), 1(seq)
+		if ((state_rev.isFasta && line[0] == FASTA_HEADER_START) || (state_rev.isFastq && count == 0)) // header line reached
+		{
+			if (state_rev.line_count == 1)
+			{
+				read << 0 << '_' << state_rev.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << line << '\n'; // the very first header
+				count = 0;
+			}
+			else
+			{
+				// read is ready - return
+				state_rev.last_header = line;
+				state_rev.last_count = 1;
+				state_rev.last_stat = stat;
+				break;
+			}
+		} // ~if header line
+		else
+		{ // add sequence -->
+			if (state_rev.isFastq)
+			{
+				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
+					continue;
+				if (count == 3)
+				{
+					read << line;
+					continue;
+				}
+				read << line << '\n'; // FQ sequence
+			}
+			else {
+				read << line; // FASTA sequence possibly multiline
+			}
+		}
+	} // ~for getline
+
+	++state_rev.read_count;
+
+	return read.str();
+} // ~Reader::nextrev
 
 
 /**
@@ -386,5 +513,6 @@ bool Reader::hasnext(std::ifstream& ifs)
 void Reader::reset()
 {
 	is_done = false;
-	next_idx = 0;
+	count_all = 0;
+	is_next_fwd = true;
 }

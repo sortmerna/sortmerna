@@ -10,7 +10,6 @@
 #include <fstream> // std::ifstream
 
 #include "readsqueue.hpp"
-//#include "concurrentqueue.h"
 #include "kvdb.hpp"
 #include "options.hpp"
 #include "gzip.hpp"
@@ -19,9 +18,8 @@
 class Read;
 
 struct Readstate {
-	Readstate(bool is_gz)
-		: is_done(false), isFastq(false), isFasta(false), read_count(0), line_count(0), 
-		last_count(0), last_stat(0) {}
+	Readstate()	: is_done(false), isFastq(false), isFasta(false), 
+		read_count(0), line_count(0), last_count(0), last_stat(0) {}
 	bool is_done;
 	bool isFastq; // file is FASTQ
 	bool isFasta; // file is FASTA
@@ -42,7 +40,9 @@ public:
 	void operator()() { run(); }
 	void run();
 
-	std::string nextread(std::vector<std::ifstream>& fsl, std::vector<Gzip>& gzips); // new line separated read data. FA - 2 lines, FQ - 4 lines
+	std::string nextread(std::ifstream& ifs); // new line separated read data. FA - 2 lines, FQ - 4 lines
+	std::string nextfwd(std::ifstream& ifs);
+	std::string nextrev(std::ifstream& ifs);
 	bool nextread(const std::string readsfile, std::string &seq);
 	void reset();
 	static bool hasnext(std::ifstream& ifs);
@@ -55,10 +55,14 @@ public:
 
 private:
 	bool is_gzipped;
-	std::size_t next_idx; // index of the reads file to be read next
-	std::vector<Readstate> states; // 1st file - FWD, 2dn - REV
+	bool is_two_files; // flags two read files are processed (otherwise single file)
+	bool is_next_fwd; // flags the next file to be read is FWD (otherwise REV)
 	std::vector<std::string>& readfiles;
 	ReadsQueue& readQueue;
+	Readstate state_fwd;
+	Readstate state_rev;
+	Gzip gzip_fwd;
+	Gzip gzip_rev;
 };
 
 // ~reader.hpp

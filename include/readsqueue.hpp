@@ -29,10 +29,9 @@ public:
 	std::string id;
 	size_t capacity; // max size of the queue
 	std::atomic_bool is_done_push; // indicates pushers done adding items to the queue
-	std::atomic_uint num_reads_tot; // total number of reads expected to be put/consumed
+	unsigned num_reads_tot; // total number of reads expected to be put/consumed
 	std::atomic_uint num_pushed; // shared
 	std::atomic_uint num_popped; // shared
-	//std::atomic_uint pushers; // counter of threads that push reads on this queue. When zero - the pushing is over.
 #if defined(CONCURRENTQUEUE)
 	moodycamel::ConcurrentQueue<std::string> queue; // lockless queue
 #elif defined(LOCKQUEUE)
