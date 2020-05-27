@@ -324,7 +324,7 @@ struct Runopts
 {
 public:
 	Runopts(int argc, char**argv, bool dryrun);
-	~Runopts() {}
+	//~Runopts() {}
 
 	enum OPT_CATEGORY { COMMON, OTU_PICKING, ADVANCED, DEVELOPER, HELP, INDEXING };
 

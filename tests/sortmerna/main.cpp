@@ -2,11 +2,13 @@
  * FILE: main.cpp
  * Created: Apr 29, 2019 Mon
  */
-#include "reader.hpp"
-
 #include <string>
 #include <vector>
 #include <iomanip> // setprecision
+
+#include "reader.hpp"
+#include "ThreadPool.hpp"
+#include "common.hpp"
 
 // forward
 void kvdb_clear();
@@ -22,8 +24,8 @@ void kvdb_clear();
  */
 void reader_nextread(std::vector<std::string> &filev)
 {
-	std::chrono::duration<double> elapsed;
 #if 0
+	std::chrono::duration<double> elapsed;
 	for (auto rfile : filev)
 	{
 		auto starts = std::chrono::high_resolution_clock::now();
@@ -50,6 +52,60 @@ void reader_nextread(std::vector<std::string> &filev)
 #endif
 } // ~reader_nextread
 
+/* 
+ * Memory leak test - push/pop reads on queue and measure the memory use
+ * ----------------------------------------------------------------------
+ * Reads              with     Memory          Time, sec
+ * number of          Read   Start  End    total        per million reads
+ * ----------------------------------------------------------------------
+ *  2.5M              0      1924   2320     9.4851     3.8     SRR1635864_1_5M.fastq.gz + SRR1635864_2_5M.fastq.gz
+ *  2.5M              1		 1892   2284    10.636      4.25
+ * 10M                0      1884   2224    38.3424     3.8     SRR1635864_1_20M.fastq.gz + SRR1635864_2_20M.fastq.gz
+ * 10M                1      1892   2276    43.1497     4.31
+ * 49.3M (49309188)   0      1896   2216   191.04       3.87    SRR1635864_1.fastq.gz + SRR1635864_2.fastq.gz
+ * 49.3M (49309188)   1      1888   2112   233.262      4.73
+ */
+void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_read=false)
+{
+	size_t queue_size_max = 1000;
+	ThreadPool tpool(2);
+	ReadsQueue read_queue("queue_1", queue_size_max, num_reads);
+
+	{
+		std::stringstream ss;
+		ss << STAMP << "Running simple memory leak test. 1 Push thread, 1 Pop thread. Memory KB: " << (get_memory() >> 10) << std::endl;
+		std::cout << ss.str();
+	}
+
+	auto start = std::chrono::high_resolution_clock::now();
+
+	// add Reader job
+	tpool.addJob(Reader(read_queue, readfiles, true));
+	tpool.addJob([&]() {
+		std::string readstr;
+		unsigned count = 0;
+		for (;read_queue.pop(readstr); ++count) {
+			if (with_read)
+				Read read(readstr);
+		}
+
+		{
+			std::stringstream ss;
+			ss << "[test_2:Pop thread] Thread ID: " << std::this_thread::get_id() << " popped " << count << " reads" << std::endl;
+			std::cout << ss.str();
+		}
+	});
+	tpool.waitAll();
+
+	std::chrono::duration<double> diff = std::chrono::high_resolution_clock::now() - start;
+
+	{
+		std::stringstream ss;
+		ss << STAMP << "Time elapsed: " << diff.count() << " sec. Memory KB: " << (get_memory() >> 10) << std::endl;
+		std::cout << ss.str();
+	}
+} // ~test_2
+
 int main(int argc, char** argv)
 {
 	std::cout << STAMP << "Running with " << argc << " options" << std::endl;
@@ -73,6 +129,25 @@ int main(int argc, char** argv)
 				for (int i = 2; i < argc; ++i)
 					filev.push_back(std::string(argv[i]));
 				reader_nextread(filev);
+			}
+			break;
+		case 2:
+			if (argc < 4)
+				std::cerr << "Case 2 takes at least 4 args: Test case (1), one or two full file paths, "
+				"total number of reads, do(1)/don't(0) create Read objects" << std::endl;
+			else {
+				std::vector<std::string> readfiles;
+				size_t num_reads = 0;
+				bool with_read = false;
+				for (auto i = 2; i < argc; ++i) {
+					if (i == 4)
+						num_reads = std::stoi(argv[i]);
+					else if (i == 5)
+						with_read = std::stoi(argv[i]) > 0 ? true : false;
+					else
+						readfiles.push_back(std::string(argv[i]));
+				}
+				test_2(readfiles, num_reads, with_read);
 			}
 			break;
 		default:

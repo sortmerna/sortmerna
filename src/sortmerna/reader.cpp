@@ -38,7 +38,7 @@ Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool 
  */
 void Reader::run()
 {
-	auto starts = std::chrono::high_resolution_clock::now();
+	//auto starts = std::chrono::high_resolution_clock::now();
 
 	{
 		std::stringstream ss;
@@ -84,7 +84,6 @@ void Reader::run()
 		
 		is_done = is_two_files ? state_fwd.is_done && state_rev.is_done : state_fwd.is_done;
 		if (is_done) {
-			readQueue.is_done_push.store(true, std::memory_order_release);
 			{
 				std::stringstream ss;
 				ss << STAMP << "Reader::run " << " Done Reading from all streams" << std::endl;
@@ -94,11 +93,11 @@ void Reader::run()
 		}
 	} // ~for
 
-	auto elapsed = std::chrono::high_resolution_clock::now() - starts;
+	//auto elapsed = std::chrono::high_resolution_clock::now() - starts;
 	{
 		std::stringstream ss;
-		ss << STAMP << "Reader::run " << " thread " << std::this_thread::get_id() << " done. Reads count: " << count_all 
-			<< " Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
+		ss << STAMP << "Reader::run " << " thread " << std::this_thread::get_id() << " done. Reads count: " << count_all << std::endl;
+		//	<< " Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec"
 		std::cout << ss.str();
 	}
 } // ~Reader::run

@@ -78,14 +78,14 @@ int clear_dir(std::string dpath);
  *
  * @param isLastStrand Boolean flags when the last strand is passed for matching
  */
-void alignmentCb
+void align_cb
 	(
-		Runopts & opts, 
-		Index & index, 
-		References & refs, 
-		Readstats & readstats, 
-		Refstats & refstats, 
-		Read & read,
+		Runopts& opts, 
+		Index& index, 
+		References& refs, 
+		Readstats& readstats, 
+		Refstats& refstats, 
+		Read& read,
 		bool isLastStrand
 	)
 {
@@ -108,15 +108,6 @@ void alignmentCb
 	}
 
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
-
-	// Moved to Readstats::calculate
-	// find the minimum sequence length
-	//if (read.sequence.size() < readstats.min_read_len.load())
-	//	readstats.min_read_len = static_cast<uint32_t>(read.sequence.size());
-
-	// find the maximum sequence length
-	//if (read.sequence.size()  > readstats.max_read_len.load())
-	//	readstats.max_read_len = static_cast<uint32_t>(read.sequence.size());
 
 	// the read length is too short
 	if (read.sequence.size()  < refstats.lnwin[index.index_num])
@@ -349,7 +340,7 @@ void alignmentCb
 		// - it did not pass the E-value threshold
 		if (opts.is_de_novo_otu) read.is_denovo = false;
 	}//~if read didn't align
-} // ~alignmentCb
+} // ~align_cb
 
 // called from main
 void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
@@ -379,13 +370,14 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 
 	int numThreads = opts.num_read_thread + numProcThread; //  + opts.num_write_thread
 
-	ss.str("");
-	ss << "Number of cores: " << numCores 
-		<< " Read threads:  " << opts.num_read_thread
-		//<< " Write threads: " << opts.num_write_thread
-		<< " Processor threads: " << numProcThread
-		<< std::endl;
-	std::cout << ss.str();
+	{
+		ss.str("");
+		ss << "Number of cores: " << numCores
+			<< " Read threads:  " << opts.num_read_thread
+			<< " Processor threads: " << numProcThread
+			<< std::endl;
+		std::cout << ss.str();
+	}
 
 	ThreadPool tpool(numThreads);
 	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
@@ -406,22 +398,29 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss.str("");
-			ss << std::endl << STAMP << "Loading index " << index_num 
-				<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " ... ";
-			std::cout << ss.str();
+			{
+				ss.str("");
+				ss << std::endl << STAMP << "Loading index " << index_num
+					<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " Memory KB: " << (get_memory()>>10) << " ... ";
+				std::cout << ss.str();
+			}
+
 			starts = std::chrono::high_resolution_clock::now();
 
-			index.load(index_num, idx_part, opts, refstats);
+			index.load(index_num, idx_part, opts.indexfiles, refstats);
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			ss.str("");
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << std::endl;
-			std::cout << ss.str();
 
-			ss.str("");
-			ss << STAMP << "Loading references " << " ... ";
-			std::cout << ss.str();
+			{
+				ss.str("");
+				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << " Memory KB: " << (get_memory()>>10) << std::endl;
+				std::cout << ss.str();
+
+				ss.str("");
+				ss << STAMP << "Loading references " << " ... ";
+				std::cout << ss.str();
+			}
+
 			starts = std::chrono::high_resolution_clock::now();
 
 			refs.load(index_num, idx_part, opts, refstats);
@@ -429,9 +428,11 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 //			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 
-			ss.str("");
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec\n";
-			std::cout << ss.str();
+			{
+				ss.str("");
+				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec. Memory KB: " << (get_memory()>>10) << std::endl;
+				std::cout << ss.str();
+			}
 
 			starts = std::chrono::high_resolution_clock::now();
 
@@ -441,23 +442,32 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.addJob(Processor("proc_" + std::to_string(i), read_queue, opts, index, refs, readstats, refstats, kvdb, alignmentCb));
+				tpool.addJob(Processor("proc_" + std::to_string(i), read_queue, opts, index, refs, readstats, refstats, kvdb, align_cb));
 			}
 			++loopCount;
 
 			tpool.waitAll(); // wait till all reads are processed against the current part
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
+
 			{
 				ss.str("");
 				ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1
 					<< " Queue size: " << read_queue.queue.size_approx()
-					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec\n";
+					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() 
+					<< " sec. Memory KB: " << (get_memory()>>10) << std::endl;
 				std::cout << ss.str();
 			}
 
 			index.clear();
 			refs.clear();
+
+			{
+				ss.str("");
+				ss << STAMP << "Index and References unloaded. Memory KB: " << (get_memory() >> 10) << std::endl;
+				std::cout << ss.str();
+			}
+
 			read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(index_num)

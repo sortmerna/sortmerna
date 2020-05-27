@@ -36,7 +36,10 @@
 
 #include <sys/time.h>
 #include "config.h"
-//#include <filesystem> // C++ 17
+#if defined(_WIN32)
+#  include "windows.h"
+#  include "psapi.h"
+#endif
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
@@ -117,4 +120,17 @@ extern timeval t;
 #define CONCURRENTQUEUE // lockless queue
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
+
+// https://stackoverflow.com/questions/63166/how-to-determine-cpu-and-memory-consumption-from-inside-a-process
+#if defined(_WIN32)
+    static inline size_t get_memory() {
+        PROCESS_MEMORY_COUNTERS_EX pmc;
+        GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+        return pmc.PrivateUsage; // process Commit memory (== Resource Monitor:Commit)
+    }
+#else
+  static inline size_t get_memory() {
+      return 0;
+  }
+#endif
 

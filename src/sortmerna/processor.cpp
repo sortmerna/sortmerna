@@ -29,10 +29,10 @@ void computeStats(Read & read, Readstats & readstats, Refstats & refstats, Refer
 /* Runs in a thread. Pops reads from the Reads Queue */
 void Processor::run()
 {
-	int countReads = 0;
-	int countProcessed = 0;
-	std::size_t num_aligned = 0; // count of reads with read.hit = true
-	bool alreadyProcessed = false;
+	unsigned num_all = 0; // all reads this processor sees
+	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
+	unsigned num_aligned = 0; // count of reads with read.hit = true
+	bool is_processed = false; // read was already processed
 	std::string readstr;
 	
 	{
@@ -47,10 +47,10 @@ void Processor::run()
 			Read read(readstr);
 			read.init(opts);
 			read.load_db(kvdb);
-			alreadyProcessed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
+			is_processed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
-			if (read.isEmpty || !read.isValid || alreadyProcessed) {
-				if (alreadyProcessed) ++countProcessed;
+			if (read.isEmpty || !read.isValid || is_processed) {
+				if (is_processed) ++num_skipped;
 				continue;
 			}
 
@@ -70,7 +70,7 @@ void Processor::run()
 					if (!read.reversed)
 						read.revIntStr();
 				}
-				// call 'paralleltraversal.cpp::alignmentCb'
+				// 'paralleltraversal.cpp::align_cb'
 				callback(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1);
 				read.id_win_hits.clear(); // bug 46
 			}
@@ -83,15 +83,15 @@ void Processor::run()
 			}
 
 			readstr.resize(0);
-			countReads++;
+			++num_all;
 		} // ~if & read destroyed
 	} // ~while there are reads
 
 	{
 		std::stringstream ss;
 		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() 
-			<< " done. Processed " << countReads
-			<< " reads. Skipped already processed: " << countProcessed << " reads"
+			<< " done. Processed " << num_all
+			<< " reads. Skipped already processed: " << num_skipped << " reads"
 			<< " Aligned reads (passing E-value): " << num_aligned << std::endl;
 		std::cout << ss.str();
 	}

@@ -30,7 +30,7 @@ public:
 
 public:
 	Refstats(Runopts & opts, Readstats & readstats);
-	~Refstats() {}
+	//~Refstats() {}
 
 private:
 	void load(Runopts & opts, Readstats & readstats); // called at constructions

@@ -123,10 +123,10 @@ Index::Index(Runopts & opts)
 	}
 } // ~Index::Index
 
-void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
+void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std::string, std::string>>& indexfiles, Refstats & refstats)
 {
 	// STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
-	std::string idxfile = opts.indexfiles[idx_num].second + ".kmer_" + std::to_string(idx_part) + ".dat";
+	std::string idxfile = indexfiles[idx_num].second + ".kmer_" + std::to_string(idx_part) + ".dat";
 	std::ifstream inkmer(idxfile, std::ios::in | std::ios::binary);
 
 	if (!inkmer.good())
@@ -147,7 +147,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 	inkmer.close();
 
 	// STEP 2: load the burst tries ( bursttrief.dat, bursttrier.dat )
-	std::string btriefile = opts.indexfiles[idx_num].second + ".bursttrie_" + std::to_string(idx_part) + ".dat";
+	std::string btriefile = indexfiles[idx_num].second + ".bursttrie_" + std::to_string(idx_part) + ".dat";
 	std::ifstream btrie(btriefile, std::ios::in | std::ios::binary);
 	if (!btrie.good())
 	{
@@ -301,7 +301,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats &
 	btrie.close();
 
 	// STEP 3: load the position reference tables (pos.dat)
-	std::string posfile = opts.indexfiles[idx_num].second + ".pos_" + std::to_string(idx_part) + ".dat";
+	std::string posfile = indexfiles[idx_num].second + ".pos_" + std::to_string(idx_part) + ".dat";
 	std::ifstream inreff(posfile, std::ios::in | std::ios::binary);
 
 	if (!inreff.good())

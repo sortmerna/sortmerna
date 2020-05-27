@@ -17,6 +17,8 @@
 #include <chrono>
 #include <atomic>
 
+#include "common.hpp"
+
 /**
 *  all the pool threads are initially in a waiting state until jobs are available for execution.
 */
@@ -51,17 +53,18 @@ public:
 	~ThreadPool()
 	{
 		{
-			std::stringstream ss;
-			ss << STAMP << "destructor called" << std::endl;
-			std::cout << ss.str();
-		}
-		{
 			// Unblock any threads and tell them to stop
 			std::lock_guard <std::mutex> lk(job_queue_mx);
 			shutdown_ = true;
 			cv_jobs.notify_all();
 		}
 		joinAll();
+
+		{
+			std::stringstream ss;
+			ss << STAMP << "destructor done. Memory KB: " << (get_memory() >> 10) << std::endl;
+			std::cout << ss.str();
+		}
 	}
 
 protected:

@@ -45,7 +45,7 @@ public:
 	std::vector<BaseRecord> buffer; // Container for references TODO: change name?
 
 	References(): num(0), part(0) {}
-	~References() {}
+	//~References() {}
 
 	void load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats); // load references into the buffer given index number and index part
 	void convert_fix(std::string & seq); // convert sequence to numberical form and fix ambiguous chars
@@ -57,6 +57,6 @@ public:
 	uint16_t num; // number of the reference file currently loaded
 	uint16_t part; // part of the reference file currently loaded
 
-private:
-	bool load_for_search;
+//private:
+//	bool load_for_search;
 }; // ~class References

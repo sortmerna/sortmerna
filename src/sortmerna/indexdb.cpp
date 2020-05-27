@@ -1118,7 +1118,7 @@ void get_keys_str(std::string &keys_str)
  * @return void
  *
  */
-int build_index(Runopts &opts)
+int build_index(Runopts& opts)
 {
 	std::stringstream ss;
 	timeval t;

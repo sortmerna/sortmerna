@@ -153,7 +153,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	isok = Reader::loadReadByIdx(read);
 	if (read.sequence.size() > 0 && read.isequence.size() == 0)
 		read.seqToIntStr();
-	index.load(std::stoi(idxval), std::stoi(partval), opts, refstats);
+	index.load(std::stoi(idxval), std::stoi(partval), opts.indexfiles, refstats);
 	refs.load(std::stoi(idxval), std::stoi(partval), opts, refstats);
 	// find kmer prefix hash
 	uint32_t kmerhash = read.hashKmer(std::stoi(posval), 9);

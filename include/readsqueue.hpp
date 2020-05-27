@@ -28,10 +28,11 @@ class ReadsQueue
 public:
 	std::string id;
 	size_t capacity; // max size of the queue
-	std::atomic_bool is_done_push; // indicates pushers done adding items to the queue
-	unsigned num_reads_tot; // total number of reads expected to be put/consumed
-	std::atomic_uint num_pushed; // shared
-	std::atomic_uint num_popped; // shared
+	unsigned reads_tot; // total number of reads expected to be pushed/popped
+	unsigned num_pushed;
+	unsigned count_to_print;
+	unsigned max_print_count;
+	std::atomic_uint num_popped;
 #if defined(CONCURRENTQUEUE)
 	moodycamel::ConcurrentQueue<std::string> queue; // lockless queue
 #elif defined(LOCKQUEUE)
@@ -45,25 +46,26 @@ public:
 		:
 		id(id),
 		capacity(capacity),
-		is_done_push(false),
+		reads_tot(num_reads_tot),
 		num_pushed(0),
-		num_popped(0),
-		num_reads_tot(num_reads_tot)
+		count_to_print(0),
+		max_print_count(reads_tot/20),
+		num_popped(0)
 #ifdef CONCURRENTQUEUE
 		,
 		queue(capacity) // set initial capacity
 #endif
 	{
 		std::stringstream ss;
-		ss << STAMP << "created Reads queue with capacity [" << capacity << "]" << std::endl;
+		ss << STAMP << "created Reads queue with capacity [" << capacity << "] Total reads to process: " << num_reads_tot << std::endl;
 		std::cout << ss.str();
 	}
 
-	~ReadsQueue() {
-		std::stringstream ss;
-		ss << STAMP << "Destructor called on Reads queue. Reads added: " << num_pushed << " Reads consumed: " << num_popped << std::endl;
-		std::cout << ss.str();
-	}
+	//~ReadsQueue() {
+	//	std::stringstream ss;
+	//	ss << STAMP << "Destructor called on Reads queue. Reads added: " << num_pushed << " Reads consumed: " << num_popped << std::endl;
+	//	std::cout << ss.str();
+	//}
 
 	/** 
 	 * Synchronized. Blocks until queue has capacity for more reads
@@ -71,18 +73,40 @@ public:
 	 */
 	bool push(std::string& rec) 
 	{
+		bool ret = false;
 #if defined(CONCURRENTQUEUE)
-		while (!queue.try_enqueue(rec)) {
+		while (!(ret = queue.try_enqueue(rec))) {
 			std::this_thread::sleep_for(std::chrono::nanoseconds(5));
 		}
-		num_pushed.fetch_add(1, std::memory_order_release);
+		if (ret) {
+			++num_pushed;
+			++count_to_print;
+		}
+		if (reads_tot == num_pushed)
+		{
+			std::stringstream ss;
+			ss << STAMP << "Thread [" << std::this_thread::get_id() 
+				<< "] done Push reads total: " << reads_tot 
+				<<". Queue size: " << queue.size_approx() << std::endl;
+			std::cout << ss.str();
+		}
+		if (count_to_print == max_print_count) 
+		{
+			std::stringstream ss;
+			ss << STAMP << "Thread [" << std::this_thread::get_id() 
+				<< "] Pushed another: " << max_print_count 
+				<< ". Queue size: " << queue.size_approx() << std::endl;
+			std::cout << ss.str();
+			count_to_print = 0;
+
+		}
 #elif defined(LOCKQUEUE)
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] { return recs.size() < capacity; });
 		recs.push(std::move(rec));
 		cvQueue.notify_one();
 #endif
-		return true;
+		return ret;
 	}
 
 	// synchronized
@@ -93,12 +117,18 @@ public:
 #if defined(CONCURRENTQUEUE)
 		while (!(ret = queue.try_dequeue(rec))) {
 			std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-			if (is_done_push.load(std::memory_order_acquire) && num_pushed.load(std::memory_order_acquire) == num_popped.load(std::memory_order_acquire)) {
+			// acquire
+			if (num_popped.load(std::memory_order_relaxed) == reads_tot) {
+				//{
+				//	std::stringstream ss;
+				//	ss << STAMP << "Thread [" << std::this_thread::get_id() << "] done. Queue size: " << queue.size_approx() << std::endl;
+				//	std::cout << ss.str();
+				//}
 				break;
 			}
 		}
 		if (ret)
-			num_popped.fetch_add(1, std::memory_order_release); // ++num_out  store
+			num_popped.fetch_add(1, std::memory_order_relaxed); // ++num_out  store  release
 #elif defined(LOCKQUEUE)
 		std::unique_lock<std::mutex> lmq(qlock);
 		cvQueue.wait(lmq, [this] { return (pushers.load() == 0 && recs.empty()) || !recs.empty(); }); // if False - keep waiting, else - proceed.
@@ -120,7 +150,6 @@ public:
 	}
 
 	void reset() {
-		is_done_push = false;
 		num_pushed = 0;
 		num_popped = 0;
 	}
