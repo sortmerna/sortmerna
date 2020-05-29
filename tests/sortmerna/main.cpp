@@ -9,6 +9,10 @@
 #include "reader.hpp"
 #include "ThreadPool.hpp"
 #include "common.hpp"
+#include "index.hpp"
+#include "readstats.hpp"
+#include "refstats.hpp"
+#include "references.hpp"
 
 // forward
 void kvdb_clear();
@@ -52,6 +56,17 @@ void reader_nextread(std::vector<std::string> &filev)
 #endif
 } // ~reader_nextread
 
+size_t align(Read& read)
+{
+	size_t count = 0;
+	for (auto i = 0; i < 100; ++i) {
+		if (read.isEmpty) ++count;
+	}
+
+	count = count > 0 ? 1 : 0;
+	return count;
+}
+
 /* 
  * Memory leak test - push/pop reads on queue and measure the memory use
  * ----------------------------------------------------------------------
@@ -70,6 +85,7 @@ void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_rea
 	size_t queue_size_max = 1000;
 	ThreadPool tpool(2);
 	ReadsQueue read_queue("queue_1", queue_size_max, num_reads);
+	size_t test_cnt = 0;
 
 	{
 		std::stringstream ss;
@@ -79,19 +95,22 @@ void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_rea
 
 	auto start = std::chrono::high_resolution_clock::now();
 
-	// add Reader job
+	// Push thread - Reader
 	tpool.addJob(Reader(read_queue, readfiles, true));
+	// Pop thread
 	tpool.addJob([&]() {
 		std::string readstr;
 		unsigned count = 0;
 		for (;read_queue.pop(readstr); ++count) {
-			if (with_read)
+			if (with_read) {
 				Read read(readstr);
+				test_cnt += align(read);
+			}
 		}
 
 		{
 			std::stringstream ss;
-			ss << "[test_2:Pop thread] Thread ID: " << std::this_thread::get_id() << " popped " << count << " reads" << std::endl;
+			ss << "[test_2:Pop thread] Thread ID: " << std::this_thread::get_id() << " popped " << count << " reads. test_cnt: " << test_cnt << std::endl;
 			std::cout << ss.str();
 		}
 	});
@@ -105,6 +124,68 @@ void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_rea
 		std::cout << ss.str();
 	}
 } // ~test_2
+
+/*
+ * https://stackoverflow.com/questions/7048888/stdvectorstdstring-to-char-array/
+ */
+void test_3(int argc, char** argv)
+{
+	auto start = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> diff(0);
+
+	PRN_MEM("Running memory leak test 3.");
+	Runopts opts(argc, argv);
+	PRN_MEM("Options created.");
+
+	{
+		KeyValueDatabase kvdb(opts.kvdbdir.string());
+		PRN_MEM("DB created.");
+		Readstats readstats(opts, kvdb);
+		PRN_MEM("Readstats created.");
+		Index index(opts);
+		PRN_MEM("Index created.");
+		References refs;
+		PRN_MEM("References created.");
+		Refstats refstats(opts, readstats); // depends on Index
+		PRN_MEM("Refstats created.");
+
+		// loop through every index passed to option '--ref'
+		for (size_t index_num = 0; index_num < opts.indexfiles.size(); ++index_num)
+		{
+			// loop index parts
+			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
+			{
+				PRN_MEM("Before Index and References.");
+				// load index
+				PRN_MEM("Index created.");
+				start = std::chrono::high_resolution_clock::now();
+				index.load(index_num, idx_part, opts.indexfiles, refstats);
+				diff = std::chrono::high_resolution_clock::now() - start;
+				PRN_MEM_TIME("Index loaded.", diff.count());
+
+				// unload index
+				index.unload();
+				PRN_MEM("Index unloaded.");
+
+				// load references
+				PRN_MEM("References created.");
+				start = std::chrono::high_resolution_clock::now();
+				refs.load(index_num, idx_part, opts, refstats);
+				diff = std::chrono::high_resolution_clock::now() - start;
+				PRN_MEM_TIME("References loaded.", diff.count());
+
+				// unload references
+				refs.unload();
+				PRN_MEM("References unloaded.");
+			}
+		}
+	}
+	PRN_MEM("End test_3.");
+	//std::vector<std::string> args(argv, argv + argc);
+	// std::vector<std::string> args(argv + 1, argv + argc);
+	//char* cstr = args.data(); // &argv[0];
+	//char** ptrToCstr = &cstr;
+}
 
 int main(int argc, char** argv)
 {
@@ -149,6 +230,9 @@ int main(int argc, char** argv)
 				}
 				test_2(readfiles, num_reads, with_read);
 			}
+			break;
+		case 3:
+			test_3(argc, argv);
 			break;
 		default:
 			std::cout << "Unknown arg: " << scase << std::endl;
