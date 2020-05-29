@@ -34,6 +34,8 @@
 
 #pragma once
 
+#include <string>
+
 #include <sys/time.h>
 #include "config.h"
 #if defined(_WIN32)
@@ -121,6 +123,14 @@ extern timeval t;
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
 
+
+template<typename ...Args>
+static inline std::string fold_to_string(Args&&... args) {
+    std::stringstream ss;
+    (ss << ... << args);
+    return ss.str();
+}
+
 // https://stackoverflow.com/questions/63166/how-to-determine-cpu-and-memory-consumption-from-inside-a-process
 #if defined(_WIN32)
     static inline size_t get_memory() {
@@ -134,3 +144,30 @@ extern timeval t;
   }
 #endif
 
+#define INFO(...) \
+	{\
+		std::stringstream ss; \
+		ss << STAMP << fold_to_string(__VA_ARGS__) << std::endl; \
+		std::cout << ss.str(); \
+	}
+
+#define INFO_MEM(...) \
+	{\
+		std::stringstream ss; \
+		ss << STAMP << fold_to_string(__VA_ARGS__) << " Memory KB: " << (get_memory() >> 10) << std::endl; \
+		std::cout << ss.str();\
+	}
+
+#define PRN_MEM(msg) \
+	{\
+		std::stringstream ss; \
+		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << std::endl; \
+		std::cout << ss.str();\
+	}
+
+#define PRN_MEM_TIME(msg, time) \
+    {\
+		std::stringstream ss; \
+		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << " Elapsed sec: " << time << std::endl; \
+		std::cout << ss.str();\
+    }
