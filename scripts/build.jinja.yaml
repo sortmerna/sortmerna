@@ -137,3 +137,8 @@ git:
   WIN:
     url: https://github.com/git-for-windows/git/releases/download/v{{ GIT_VER_MAJ }}.windows.2/PortableGit-{{ GIT_VER_MIN }}-64-bit.7z.exe
     home: {{ WIN['git']['root'] }}/PortableGit-{{ GIT_VER_MIN }}-64
+
+concurrentqueue:
+  url: https://github.com/cameron314/concurrentqueue
+  WIN:
+  LNX:

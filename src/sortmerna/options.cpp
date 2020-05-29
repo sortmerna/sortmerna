@@ -47,7 +47,7 @@ std::string trim_leading_dashes(std::string const& name); // util.cpp
 std::string get_basename(const std::string &file); // util.cpp
 std::streampos filesize(const std::string &file); // util.cpp
 
-Runopts::Runopts(int argc, char**argv, bool dryrun)
+Runopts::Runopts(int argc, char** argv, bool dryrun)
 {
 	process(argc, argv, dryrun);
 	if (skiplengths.empty())
@@ -1833,7 +1833,7 @@ void Runopts::print_help()
 	std::cout << ss.str();
 }
 
-void Runopts::store_to_db(KeyValueDatabase &kvdb)
+void Runopts::store_to_db(KeyValueDatabase& kvdb)
 {}
 
   /*! @fn welcome()

@@ -20,20 +20,22 @@ from shutil import which as shu_which
 #from distutils.dir_util import copy_tree
 
 # globals
-SMR    = 'sortmerna'
-ZLIB   = 'zlib'
-ROCKS  = 'rocksdb'
-RAPID  = 'rapidjson'
-DIRENT = 'dirent'
-CMAKE  = 'cmake'
-CONDA  = 'conda'
-ALL    = 'all'
+SMR     = 'sortmerna'
+ZLIB    = 'zlib'
+ROCKS   = 'rocksdb'
+RAPID   = 'rapidjson'
+DIRENT  = 'dirent'
+CMAKE   = 'cmake'
+CONDA   = 'conda'
+ALL     = 'all'
+CCQUEUE = 'concurrentqueue'
 
 URL_ZLIB   = None
 URL_ROCKS  = None
 URL_DIRENT = None
 URL_RAPID  = None
 URL_SMR    = None
+URL_CONCURRENTQUEUE = None
 
 MY_OS = None
 
@@ -574,6 +576,13 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     proc_run(cmd, SMR_BUILD)
 #END smr_build
 
+def concurrentqueue_build():
+    '''
+    a single header file - just clone and use
+    '''
+    git_clone(URL_CONCURRENTQUEUE, LIB_DIR)
+#END concurrentqueue_build
+
 if __name__ == "__main__":
     '''
     python scripts/build.py --name sortmerna [--env scripts/env_non_git.yaml]
@@ -638,6 +647,7 @@ if __name__ == "__main__":
     URL_DIRENT = cfg[DIRENT]['url']
     URL_RAPID  = cfg[RAPID]['url']
     URL_SMR    = cfg[SMR]['url']
+    URL_CONCURRENTQUEUE = cfg[CCQUEUE]['url']
 
     DIRENT_DIST = cfg[DIRENT]['src']
 

@@ -174,7 +174,7 @@ int References::findref(std::string id)
 	return retpos;
 }
 
-void References::clear()
+void References::unload()
 {
 	buffer.clear(); // TODO: is this enough?
 } // ~References::clear

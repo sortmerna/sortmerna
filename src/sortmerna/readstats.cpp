@@ -31,7 +31,7 @@
 std::string string_hash(const std::string &val); // util.cpp
 std::string to_lower(std::string& val); // util.cpp
 
-Readstats::Readstats(Runopts &opts, KeyValueDatabase &kvdb)
+Readstats::Readstats(Runopts& opts, KeyValueDatabase& kvdb)
 	:
 	min_read_len(MAX_READ_LEN),
 	max_read_len(0),

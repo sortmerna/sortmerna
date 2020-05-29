@@ -323,7 +323,7 @@ const std::string WORKDIR_DEF_SFX = "sortmerna/run";
 struct Runopts 
 {
 public:
-	Runopts(int argc, char**argv, bool dryrun);
+	Runopts(int argc, char** argv, bool dryrun=false);
 	//~Runopts() {}
 
 	enum OPT_CATEGORY { COMMON, OTU_PICKING, ADVANCED, DEVELOPER, HELP, INDEXING };
@@ -348,8 +348,8 @@ public:
 
 	void print_help();
 
+	// variables
 public:
-
 	// Option selection Flags
 	//    alignment control
 	bool is_best = false; // OPT_BEST was specified
@@ -381,7 +381,7 @@ public:
 
 	// Other flags
 	bool exit_early = false; // TODO: has no action? Flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
-	bool is_index_built = false; // flags the index is built and ready for use. TODO: this is no Option flag is any respect. Move to a more appropriate place.
+	bool is_index_built = false; // flags the index is built and ready for use. TODO: this is no Option flag. Move to a more appropriate place.
 	bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
 	bool is_paired = false; // flags the reads are paired
 
@@ -433,8 +433,7 @@ public:
 	std::vector<std::pair<std::string, std::string>> indexfiles; // '-ref' pairs 'Ref_file:Idx_file_pfx'
 	std::vector<std::vector<uint32_t>> skiplengths; // [2] OPT_PASSES K-mer window shift sizes. Refstats::load
 
-public:
-	std::string dbkey = "run_options";
+	const std::string dbkey = "run_options";
 	const std::string IDX_DIR  = "idx";
 	const std::string KVDB_DIR = "kvdb";
 	const std::string OUT_DIR  = "out";
@@ -443,16 +442,16 @@ public:
 	ALIGN_REPORT alirep = ALIGN_REPORT::all;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 
-private:
 	// methods
+private:
 	void process(int argc, char**argv, bool dryrun);
 	void validate();
 	void validate_idxdir(); // called from validate
 	void validate_kvdbdir(); // called from validate
 	void validate_aligned_pfx();
 	void validate_other_pfx();
-	void opt_sort();
 
+	void opt_sort();
 	void opt_reads(const std::string &val);
 	void opt_reads_gz(char **argv, int &narg);
 	void opt_ref(const std::string &val);
@@ -473,31 +472,31 @@ private:
 	void opt_gap_ext(const std::string &val);
 	void opt_num_seeds(const std::string &val);
 	void opt_fastx(const std::string &val);
-	void opt_sam(const std::string &val);
-	void opt_blast(const std::string &val);
-	void opt_min_lis(const std::string &val);
-	void opt_best(const std::string &val);
-	void opt_num_alignments(const std::string &val);
-	void opt_edges(const std::string &val);
-	void opt_full_search(const std::string &val);
-	void opt_SQ(const std::string &val);
-	void opt_passes(const std::string &val);
-	void opt_id(const std::string &val);
-	void opt_coverage(const std::string &val);
-	void opt_version(const std::string &val);
-	void opt_task(const std::string &val);
-	void opt_cmd(const std::string &val);
-	void opt_threads(const std::string &val);
-	void opt_thpp(const std::string &val); // post-proc threads --thpp 1:1
-	void opt_threp(const std::string &val); // report threads --threp 1:1 
-	void opt_a(const std::string &val);
-	void opt_e(const std::string &val); // opt_e_Evalue
-	void opt_F(const std::string &val); // opt_F_ForwardOnly
-	void opt_R(const std::string &val); // opt_R_ReverseOnly
-	void opt_h(const std::string &val);
-	void opt_v(const std::string &val); // opt_v_Verbose
-	void opt_N(const std::string &val); // opt_N_MatchAmbiguous
-	void opt_workdir(const std::string &path);
+	void opt_sam(const std::string& val);
+	void opt_blast(const std::string& val);
+	void opt_min_lis(const std::string& val);
+	void opt_best(const std::string& val);
+	void opt_num_alignments(const std::string& val);
+	void opt_edges(const std::string& val);
+	void opt_full_search(const std::string& val);
+	void opt_SQ(const std::string& val);
+	void opt_passes(const std::string& val);
+	void opt_id(const std::string& val);
+	void opt_coverage(const std::string& val);
+	void opt_version(const std::string& val);
+	void opt_task(const std::string& val);
+	void opt_cmd(const std::string& val);
+	void opt_threads(const std::string& val);
+	void opt_thpp(const std::string& val); // post-proc threads --thpp 1:1
+	void opt_threp(const std::string& val); // report threads --threp 1:1 
+	void opt_a(const std::string& val);
+	void opt_e(const std::string& val); // opt_e_Evalue
+	void opt_F(const std::string& val); // opt_F_ForwardOnly
+	void opt_R(const std::string& val); // opt_R_ReverseOnly
+	void opt_h(const std::string& val);
+	void opt_v(const std::string& val); // opt_v_Verbose
+	void opt_N(const std::string& val); // opt_N_MatchAmbiguous
+	void opt_workdir(const std::string& path);
 	void opt_kvdb(const std::string& path);
 	void opt_idx(const std::string& path);
 
@@ -514,8 +513,9 @@ private:
 
 	std::string to_string();
 	std::string to_bin_string();
-	void store_to_db(KeyValueDatabase &kvdb);
+	void store_to_db(KeyValueDatabase& kvdb);
 
+	// variables
 private:
 	// SW alignment parameters
 	bool match_set = false;

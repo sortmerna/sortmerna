@@ -381,8 +381,6 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 
 	ThreadPool tpool(numThreads);
 	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
-	//ReadsQueue writeQueue("write_queue", opts.queue_size_max, numProcThread); // shared: Processor pushes, Writer pops
-	//moodycamel::ConcurrentQueue<std::string> read_queue(100);
 	Refstats refstats(opts, readstats);
 	References refs;
 
@@ -398,41 +396,17 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			{
-				ss.str("");
-				ss << std::endl << STAMP << "Loading index " << index_num
-					<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << " Memory KB: " << (get_memory()>>10) << " ... ";
-				std::cout << ss.str();
-			}
-
+			INFO("Loading index: ", index_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[index_num], " Memory KB: ", (get_memory() >> 10), " ... ");
 			starts = std::chrono::high_resolution_clock::now();
-
 			index.load(index_num, idx_part, opts.indexfiles, refstats);
-
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+			INFO_MEM("done [", elapsed.count(), "] sec");
 
-			{
-				ss.str("");
-				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec" << " Memory KB: " << (get_memory()>>10) << std::endl;
-				std::cout << ss.str();
-
-				ss.str("");
-				ss << STAMP << "Loading references " << " ... ";
-				std::cout << ss.str();
-			}
-
+			INFO("Loading references ...");
 			starts = std::chrono::high_resolution_clock::now();
-
 			refs.load(index_num, idx_part, opts, refstats);
-
-//			std::chrono::duration<double> elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t);
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-
-			{
-				ss.str("");
-				ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << "] sec. Memory KB: " << (get_memory()>>10) << std::endl;
-				std::cout << ss.str();
-			}
+			INFO_MEM("done [", elapsed.count(), "] sec.");
 
 			starts = std::chrono::high_resolution_clock::now();
 
@@ -449,24 +423,11 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			tpool.waitAll(); // wait till all reads are processed against the current part
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
+			INFO_MEM("Done index ", index_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
 
-			{
-				ss.str("");
-				ss << STAMP << "Done index " << index_num << " Part: " << idx_part + 1
-					<< " Queue size: " << read_queue.queue.size_approx()
-					<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() 
-					<< " sec. Memory KB: " << (get_memory()>>10) << std::endl;
-				std::cout << ss.str();
-			}
-
-			index.clear();
-			refs.clear();
-
-			{
-				ss.str("");
-				ss << STAMP << "Index and References unloaded. Memory KB: " << (get_memory() >> 10) << std::endl;
-				std::cout << ss.str();
-			}
+			index.unload();
+			refs.unload();
+			INFO_MEM("Index and References unloaded.")
 
 			read_queue.reset();
 		} // ~for(idx_part)

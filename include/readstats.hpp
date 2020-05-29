@@ -57,11 +57,11 @@ struct Readstats
 	bool is_stats_calc; // flags 'computeStats' was called. Set in 'postProcess'
 	bool is_total_reads_mapped_cov; // flag 'total_reads_mapped_cov' was calculated (so no need to calculate no more)
 
-	Readstats(Runopts & opts, KeyValueDatabase &kvdb);
+	Readstats(Runopts& opts, KeyValueDatabase& kvdb);
 	~Readstats() {}
 
-	void calculate(Runopts &opts); // calculate statistics from readsfile
-	void calcSuffix(Runopts &opts);
+	void calculate(Runopts& opts); // calculate statistics from readsfile
+	void calcSuffix(Runopts& opts);
 	std::string toBstring();
 	std::string toString();
 	bool restoreFromDb(KeyValueDatabase & kvdb);

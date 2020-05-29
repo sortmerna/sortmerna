@@ -51,7 +51,7 @@ public:
 	void convert_fix(std::string & seq); // convert sequence to numberical form and fix ambiguous chars
 	std::string convertChar(int idx); // convert numerical form to char string
 	int findref(std::string id);
-	void clear();
+	void unload();
 
 public:
 	uint16_t num; // number of the reference file currently loaded

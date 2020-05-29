@@ -59,12 +59,7 @@ public:
 			cv_jobs.notify_all();
 		}
 		joinAll();
-
-		{
-			std::stringstream ss;
-			ss << STAMP << "destructor done. Memory KB: " << (get_memory() >> 10) << std::endl;
-			std::cout << ss.str();
-		}
+		PRN_MEM("ThreadPool destructor done.");
 	}
 
 protected:

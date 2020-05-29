@@ -29,9 +29,9 @@ public:
 	std::vector<uint64_t> numseq;  /* total number of reference sequences in one complete reference database */
 
 public:
-	Refstats(Runopts & opts, Readstats & readstats);
+	Refstats(Runopts& opts, Readstats& readstats);
 	//~Refstats() {}
 
 private:
-	void load(Runopts & opts, Readstats & readstats); // called at constructions
+	void load(Runopts& opts, Readstats& readstats); // called at constructions
 };

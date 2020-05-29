@@ -341,7 +341,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 	part = idx_part;
 } // ~Index::load
 
-void Index::clear()
+void Index::unload()
 {
 	// lookup_tbl
 	for (int i = 0; i < lookup_tbl.size(); i++)

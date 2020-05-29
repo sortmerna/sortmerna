@@ -32,7 +32,8 @@
  *
  */
 
- #include <sys/types.h>
+#include <sys/types.h>
+
 #include "ssw.h"
 #include "common.hpp"
 #include "options.hpp"

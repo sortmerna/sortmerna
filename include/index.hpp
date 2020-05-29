@@ -35,5 +35,5 @@ struct Index {
 	//~Index() {}
 
 	void load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std::string, std::string>>& indexfiles, Refstats & refstats);
-	void clear();
+	void unload();
 }; // ~struct Index

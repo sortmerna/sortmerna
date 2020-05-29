@@ -46,7 +46,7 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 /**
  * load reference statistics stored in the '.stats' files 
  */
-void Refstats::load(Runopts & opts, Readstats & readstats)
+void Refstats::load(Runopts& opts, Readstats& readstats)
 {
 	std::stringstream ss;
 
@@ -88,16 +88,6 @@ void Refstats::load(Runopts & opts, Readstats & readstats)
 		stats.read(reinterpret_cast<char*>(&fastafile_len), sizeof(fastafile_len));
 		char fastafile_name[2000];
 		stats.read(reinterpret_cast<char*>(fastafile_name), sizeof(char)*fastafile_len);
-
-		// compute reference database file size for this index
-		//FILE *fastafile = ::fopen(opts.indexfiles[index_num].first.c_str(), "r");
-		//if (fastafile == NULL)
-		//{
-		//	ss.str("");
-		//	ss <<  "could not open FASTA reference file: " << opts.indexfiles[index_num].first;
-		//	ERR(ss.str());
-		//	exit(EXIT_FAILURE);
-		//}
 
 		// A,C,G,T background frequencies to compute the Gumbel parameters lambda and K
 		double background_freq_gv[4] = { 0 };
