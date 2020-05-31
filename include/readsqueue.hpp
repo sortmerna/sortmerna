@@ -84,19 +84,11 @@ public:
 		}
 		if (reads_tot == num_pushed)
 		{
-			std::stringstream ss;
-			ss << STAMP << "Thread [" << std::this_thread::get_id() 
-				<< "] done Push reads total: " << reads_tot 
-				<<". Queue size: " << queue.size_approx() << std::endl;
-			std::cout << ss.str();
+			INFO("Thread [" , std::this_thread::get_id(), "] done Push reads total: ", reads_tot, ". Queue size: ", queue.size_approx());
 		}
 		if (count_to_print == max_print_count) 
 		{
-			std::stringstream ss;
-			ss << STAMP << "Thread [" << std::this_thread::get_id() 
-				<< "] Pushed another: " << max_print_count 
-				<< ". Queue size: " << queue.size_approx() << std::endl;
-			std::cout << ss.str();
+			INFO_MEM("Thread [", std::this_thread::get_id(), "] Pushed another: ", max_print_count, ". Queue size: ", queue.size_approx());
 			count_to_print = 0;
 
 		}
