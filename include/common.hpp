@@ -88,8 +88,6 @@ extern timeval t;
 
 /*! @brief Print function for verbose mode */
 #define DBG(verbose, format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
-#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << ": " << MSG << std::endl;
-#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << ": " << MSG << std::endl;
 
 /*! @brief start color text red */
 #if defined(_WIN32)
@@ -156,6 +154,22 @@ static inline std::string fold_to_string(Args&&... args) {
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__) << " Memory KB: " << (get_memory() >> 10) << std::endl; \
 		std::cout << ss.str();\
+	}
+
+//#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << ": " << MSG << std::endl;
+#define WARN(...) \
+	{\
+		std::stringstream ss; \
+		ss << '\n' << STAMP << YELLOW << "WARNING" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
+		std::cout << ss.str();\
+	}
+
+//#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << ": " << MSG << std::endl;
+#define ERR(...) \
+	{\
+		std::stringstream ss; \
+		ss << '\n' << STAMP << RED << "ERROR" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
+		std::cerr << ss.str();\
 	}
 
 #define PRN_MEM(msg) \

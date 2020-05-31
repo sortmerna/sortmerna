@@ -68,8 +68,8 @@ Readstats::Readstats(Runopts& opts, KeyValueDatabase& kvdb)
 		}
 		else
 		{
-			std::cout << STAMP << "Found reads statistics in the KVDB: all_reads_count= " << all_reads_count 
-				<< " all_reads_len= " << all_reads_len << " Skipping calculation..." << std::endl;
+			INFO("Found reads statistics in the KVDB: all_reads_count= ", all_reads_count, 
+				" all_reads_len= ", all_reads_len, " Skipping calculation...");
 		}
 	}
 } // ~Readstats::Readstats
@@ -390,12 +390,10 @@ void Readstats::pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str
 
 void Readstats::printOtuMap(std::string otumapfile)
 {
-	std::stringstream ss;
 	std::ofstream omstrm;
 	omstrm.open(otumapfile);
 
-	ss << STAMP << "Printing OTU Map.." << std::endl;
-	std::cout << ss.str(); ss.str("");
+	INFO("Printing OTU Map ...");
 
 	for (std::map<std::string, std::vector<std::string>>::iterator it = otu_map.begin(); it != otu_map.end(); ++it)
 	{
@@ -417,6 +415,5 @@ void Readstats::printOtuMap(std::string otumapfile)
 void Readstats::store_to_db(KeyValueDatabase & kvdb)
 {
 	kvdb.put(dbkey, toBstring());
-
-	std::cout << STAMP << "Stored Reads statistics to DB:\n    " << toString() << std::endl;
+	INFO("Stored Reads statistics to DB:\n    ", toString());
 }

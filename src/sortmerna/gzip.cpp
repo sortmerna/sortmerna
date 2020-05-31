@@ -46,7 +46,7 @@ void Gzip::init()
 	strm.next_in = Z_NULL;
 	int ret = inflateInit2(&strm, 47);
 	if (ret != Z_OK) {
-		std::cerr << "Reader::initZstream failed. Error: " << ret << std::endl;
+		ERR("Reader::initZstream failed. Error: " , ret);
 		exit(EXIT_FAILURE);;
 	}
 
@@ -166,7 +166,7 @@ int Gzip::inflatez(std::ifstream & ifs)
 
 			if (ret != Z_STREAM_END)
 			{
-				std::cout << STAMP << "xINFO: inflateEnd status is " << ret << std::endl;
+				INFO("xINFO: inflateEnd status is " , ret);
 			}
 
 			return Z_STREAM_END;

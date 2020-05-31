@@ -35,11 +35,7 @@ void Processor::run()
 	bool is_processed = false; // read was already processed
 	std::string readstr;
 	
-	{
-		std::stringstream ss;
-		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-		std::cout << ss.str();
-	}
+	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
 
 	while (readQueue.pop(readstr))
 	{
@@ -50,7 +46,10 @@ void Processor::run()
 			is_processed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
 			if (read.isEmpty || !read.isValid || is_processed) {
-				if (is_processed) ++num_skipped;
+				if (is_processed) {
+					//INFO("Skpping read ID: ", read.id);
+					++num_skipped;
+				}
 				continue;
 			}
 
@@ -87,14 +86,8 @@ void Processor::run()
 		} // ~if & read destroyed
 	} // ~while there are reads
 
-	{
-		std::stringstream ss;
-		ss << STAMP << "Processor " << id << " thread " << std::this_thread::get_id() 
-			<< " done. Processed " << num_all
-			<< " reads. Skipped already processed: " << num_skipped << " reads"
-			<< " Aligned reads (passing E-value): " << num_aligned << std::endl;
-		std::cout << ss.str();
-	}
+	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " done. Processed ", num_all, 
+		" reads. Skipped already processed: ", num_skipped, " reads", " Aligned reads (passing E-value): ", num_aligned);
 } // ~Processor::run
 
 void PostProcessor::run()

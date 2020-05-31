@@ -38,13 +38,8 @@ Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool 
  */
 void Reader::run()
 {
-	//auto starts = std::chrono::high_resolution_clock::now();
-
-	{
-		std::stringstream ss;
-		ss << STAMP << "Reader::run " << "thread " << std::this_thread::get_id() << " started" << std::endl;
-		std::cout << ss.str();
-	}
+	auto starts = std::chrono::high_resolution_clock::now();
+	INFO("Reader::run thread ", std::this_thread::get_id(), " started");
 
 	std::ifstream fs_fwd;
 	std::ifstream fs_rev;
@@ -84,22 +79,13 @@ void Reader::run()
 		
 		is_done = is_two_files ? state_fwd.is_done && state_rev.is_done : state_fwd.is_done;
 		if (is_done) {
-			{
-				std::stringstream ss;
-				ss << STAMP << "Reader::run " << " Done Reading from all streams" << std::endl;
-				std::cout << ss.str();
-			}
+			INFO("Reader::run thread ", std::this_thread::get_id(), " Done Reading from all streams");
 			break;
 		}
 	} // ~for
 
-	//auto elapsed = std::chrono::high_resolution_clock::now() - starts;
-	{
-		std::stringstream ss;
-		ss << STAMP << "Reader::run " << " thread " << std::this_thread::get_id() << " done. Reads count: " << count_all << std::endl;
-		//	<< " Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec"
-		std::cout << ss.str();
-	}
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	INFO("Reader::run thread ", std::this_thread::get_id(), " done. Reads count: ", count_all, " Runtime sec: ", elapsed.count());
 } // ~Reader::run
 
 bool Reader::loadReadByIdx(Read & read)
@@ -186,7 +172,7 @@ bool Reader::loadReadByIdx(Read & read)
 
 } // ~Reader::loadRead
 
-bool Reader::loadReadById(Read & read)
+bool Reader::loadReadById(Read& read)
 {
 	return true;
 } // ~Reader::loadReadById
@@ -205,13 +191,14 @@ std::string Reader::nextfwd(std::ifstream& ifs) {
 	std::string line;
 	std::stringstream read; // an empty read
 	auto stat = state_fwd.last_stat;
+	auto file_num = 0; // FWD file
 
 	// read lines from the reads file and extract a single read
 	for (auto count = state_fwd.last_count; !state_fwd.is_done; ++count) // count lines in a single record/read
 	{
 		if (state_fwd.last_header.size() > 0)
 		{
-			read << 0 << '_' << state_fwd.read_count << '\n';
+			read << file_num << '_' << state_fwd.read_count << '\n';
 			read << state_fwd.last_header << '\n';
 			state_fwd.last_header = "";
 		}
@@ -224,17 +211,13 @@ std::string Reader::nextfwd(std::ifstream& ifs) {
 		if (stat == RL_END)
 		{
 			state_fwd.is_done = true;
-			{
-				std::stringstream ss;
-				ss << STAMP << "EOF FWD reached. Total reads: " << ++state_fwd.read_count << std::endl;
-				std::cout << ss.str();
-			}
+			INFO("EOF FWD reached. Total reads: ", ++state_fwd.read_count);
 			break;
 		}
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from FWD file. Exiting..." << std::endl;
+			ERR("reading from FWD file. Exiting...");
 			exit(1);
 		}
 
@@ -307,20 +290,21 @@ std::string Reader::nextfwd(std::ifstream& ifs) {
 /* 
  * TODO: identical to nextfwd.
  * dereferencing Gzip always causes errors. 
- * Cannot store Gzip in an array and cannot pass it by reference.
+ * Cannot store Gzip in an array and cannot pass it by reference (may be can).
  */
 std::string Reader::nextrev(std::ifstream& ifs) {
 
 	std::string line;
 	std::stringstream read; // an empty read
 	auto stat = state_rev.last_stat;
+	auto file_num = 1; // REV file
 
 	// read lines from the reads file and extract a single read
 	for (auto count = state_rev.last_count; !state_rev.is_done; ++count) // count lines in a single record/read
 	{
 		if (state_rev.last_header.size() > 0)
 		{
-			read << 0 << '_' << state_rev.read_count << '\n';
+			read << file_num << '_' << state_rev.read_count << '\n';
 			read << state_rev.last_header << '\n';
 			state_rev.last_header = "";
 		}
@@ -333,17 +317,13 @@ std::string Reader::nextrev(std::ifstream& ifs) {
 		if (stat == RL_END)
 		{
 			state_rev.is_done = true;
-			{
-				std::stringstream ss;
-				ss << STAMP << "EOF REV reached." << " Total reads: " << ++state_rev.read_count << std::endl;
-				std::cout << ss.str();
-			}
+			INFO("EOF REV reached. Total reads: " , ++state_rev.read_count);
 			break;
 		}
 
 		if (stat == RL_ERR)
 		{
-			std::cerr << STAMP << "ERROR reading from REV file. Exiting..." << std::endl;
+			ERR("reading from REV file. Exiting...");
 			exit(1);
 		}
 

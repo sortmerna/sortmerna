@@ -347,8 +347,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 {
 	std::stringstream ss;
 
-	ss << "\n" << STAMP << "==== Starting alignment ====\n\n";
-	std::cout << ss.str();
+	INFO("==== Starting alignment ====");
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 
@@ -356,28 +355,17 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 	int numProcThread = 0;
 	if (opts.num_proc_thread == 0) {
 		numProcThread = numCores; // default
-		ss.str("");
-		ss << STAMP << "Using default number of Processor threads equals num CPU cores: " << numCores << std::endl; // 8
-		std::cout << ss.str();
+		INFO("Using default number of Processor threads equals num CPU cores: ", numCores);
 	}
 	else
 	{
 		numProcThread = opts.num_proc_thread; // set using '--thread'
-		ss.str("");
-		ss << STAMP << "Using number of Processor threads set in run options: " << numProcThread << std::endl; // 8
-		std::cout << ss.str();
+		INFO("Using number of Processor threads set in run options: ", numProcThread);
 	}
 
 	int numThreads = opts.num_read_thread + numProcThread; //  + opts.num_write_thread
 
-	{
-		ss.str("");
-		ss << "Number of cores: " << numCores
-			<< " Read threads:  " << opts.num_read_thread
-			<< " Processor threads: " << numProcThread
-			<< std::endl;
-		std::cout << ss.str();
-	}
+	INFO("Number of cores: ", numCores, " Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
 
 	ThreadPool tpool(numThreads);
 	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
@@ -433,9 +421,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	ss.str("");
-	ss << "\n" << STAMP << "==== Done alignment ====\n\n";
-	std::cout << ss.str();
+	INFO("==== Done alignment ====\n");
 
 	// store readstats calculated in alignment
 	readstats.set_is_total_reads_mapped_cov(); // TODO: seems not necessary here. See TODO: alignment.cpp:569

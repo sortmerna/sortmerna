@@ -41,8 +41,6 @@
 void about();
 //void help();
 std::string get_user_home(); // util.cpp
-//unsigned int list_dir(std::string dpath); // replaced with filesystem
-//bool dirExists(std::string dpath); // replaced with filesystem
 std::string trim_leading_dashes(std::string const& name); // util.cpp
 std::string get_basename(const std::string &file); // util.cpp
 std::streampos filesize(const std::string &file); // util.cpp
@@ -70,7 +68,7 @@ void Runopts::opt_reads(const std::string &file)
 	auto numread = mopt.count(OPT_READS);
 	auto readcnt = readfiles.size();
 
-	std::cout << STAMP << "Processing reads file [" << readcnt + 1 << "] out of total [" << numread << "] files" << std::endl;
+	INFO("Processing reads file [", readcnt + 1, "] out of total [", numread, "] files");
 
 	if (file.size() == 0)
 	{
@@ -88,7 +86,7 @@ void Runopts::opt_reads(const std::string &file)
 	}
 	else if (fpath.is_relative())
 	{
-		std::cout << "File  [" << file << "] appears to be a relative path. Trying to locate in current directory and in the working directory ...";
+		INFO("File  [", file, "] appears to be a relative path. Trying to locate in current directory and in the working directory ...");
 		fpath_a = std::filesystem::current_path() / file; // std::filesystem::path(file) makes no difference
 		if (std::filesystem::exists(fpath_a))
 		{
@@ -96,12 +94,10 @@ void Runopts::opt_reads(const std::string &file)
 		}
 		else
 		{
-			std::cout << "File  [" << file << "] has not been found in the current directory. Trying the working directory ...";
+			INFO("File  [", file, "] has not been found in the current directory. Trying the working directory ...");
 			if (!std::filesystem::exists(workdir / file))
 			{
-				std::cout << STAMP
-					<< "Could not locate File [" << file << "] neither at current path [" << std::filesystem::current_path()
-					<< "] nor in Workdir [" << workdir << "]" << std::endl;
+				INFO("Could not locate File [", file, "] neither at current path [", std::filesystem::current_path(), "] nor in Workdir [", workdir, "]");
 				ERR(help_reads);
 				exit(EXIT_FAILURE);
 			}
@@ -109,35 +105,47 @@ void Runopts::opt_reads(const std::string &file)
 	}
 	else
 	{
-		ss << STAMP <<
-			"The file [" << file << "] is not an existing/valid absolute or relative path\n" << help_reads;
-		ERR(ss.str());
+		ERR("The file [", file, "] is not an existing/valid absolute or relative path\n", help_reads);
 		exit(EXIT_FAILURE);
 	}
 
 	std::ifstream ifs(fpath_a, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open())
 	{
-		ss << STAMP << "Failed to open file [" << fpath_a << "]";
-		ERR(ss.str());
+		ERR("Failed to open file [" , fpath_a , "]");
 		exit(EXIT_FAILURE);
 	}
 
-	bool gzipped = "gz" == file.substr(file.rfind('.') + 1); // file ends with 'gz'
+	bool has_gz_ext = "gz" == file.substr(file.rfind('.') + 1); // file ends with 'gz'
 	std::string line;
-	Gzip gzip(gzipped);
-	int stat = gzip.getline(ifs, line);
-	if (RL_OK == stat)
-	{
-		is_gz = gzipped;
-	}
-	else if (!gzipped)
-	{
-		// try reading as gzipped even though file has no 'gz' extension
-		gzip.~Gzip(); // destroy
+	int stat = -1;
+
+	if (has_gz_ext) {
 		Gzip gzip(true);
 		stat = gzip.getline(ifs, line);
-		if (RL_OK == stat) is_gz = true;
+		if (RL_OK == stat)
+		{
+			is_gz = true;
+		}
+	} // ~Gzip
+	else
+	{
+		Gzip gzip(false);
+		stat = gzip.getline(ifs, line);
+		if (RL_OK == stat) {
+			is_gz = false;
+		}
+	}
+
+	// failed to read so far and has no 'gz' extension - try gzipped
+	if (RL_OK != stat && !has_gz_ext)
+	{
+		INFO("Trying to read ", file, " as gzipped even though it has no '.gz' extension.");
+		Gzip gzip(true);
+		stat = gzip.getline(ifs, line);
+		if (RL_OK == stat) {
+			is_gz = true;
+		}
 	}
 
 	if (RL_OK == stat && line.size() > 0)
@@ -147,8 +155,7 @@ void Runopts::opt_reads(const std::string &file)
 	}
 	else
 	{
-		ss << "Could not read from file " << file << " [" << strerror(errno) << "]";
-		ERR(ss.str());
+		ERR("Could not read from file " , file , " [" , strerror(errno) , "]");
 		exit(EXIT_FAILURE);
 	}
 
@@ -158,12 +165,10 @@ void Runopts::opt_reads(const std::string &file)
 
 void Runopts::opt_ref(const std::string &refpath)
 {
-	std::stringstream ss;
-
 	auto numref = mopt.count(OPT_REF);
 	auto refcnt = indexfiles.size();
 
-	std::cout << STAMP << "Processing reference [" << refcnt + 1 << "] out of total [" << numref << "] references" << std::endl;
+	INFO("Processing reference [", refcnt + 1, "] out of total [", numref, "] references");
 
 	if (refpath.size() == 0)
 	{
@@ -181,44 +186,37 @@ void Runopts::opt_ref(const std::string &refpath)
 	}
 	else if (fpath.is_relative())
 	{
-		std::cout << "File  [" << refpath << "] appears to be a relative path. Trying to locate in current directory and in the working directory ...";
+		INFO("File  [" , refpath , "] appears to be a relative path. Trying to locate in current directory and in the working directory ...");
 		fpath_a = std::filesystem::current_path() / refpath; // std::filesystem::path(file) makes no difference
 		if (std::filesystem::exists(fpath_a))
 		{
-			std::cout << "File [" << fpath_a << "] exists" << std::endl;
+			INFO("File [" , fpath_a , "] exists");
 		}
 		else
 		{
-			std::cout << "File  [" << refpath << "] has not been found in the current directory. Trying the working directory ...";
+			INFO("File  [" , refpath , "] has not been found in the current directory. Trying the working directory ...");
 			if (!std::filesystem::exists(workdir / refpath))
 			{
-				std::cout << STAMP 
-					<< "Could not locate File [" << refpath << "] neither at current path [" << std::filesystem::current_path() 
-					<< "] nor in Workdir [" << workdir << "]" << std::endl;
-				ERR(help_ref);
+				ERR("Could not locate File [" , refpath , "] neither at current path [" ,
+					std::filesystem::current_path()	, "] nor in Workdir [" , workdir , "]\n", help_ref);
 				exit(EXIT_FAILURE);
 			}
 		}
 	}
 	else
 	{
-		ss << STAMP
-			<< "The file [" << refpath << "] is not an existing/valid absolute or relative path\n"
-			<< help_ref;
-		ERR(ss.str());
+		ERR("The file " , refpath , " is not an existing/valid absolute or relative path\n", help_ref);
 		exit(EXIT_FAILURE);
 	}
 
 	// check files are readable
 	std::ifstream ifstr(fpath_a);
 	if (!ifstr.is_open() || !ifstr.good()) {
-		ss << STAMP << "Cannot read file [" << refpath << "]";
-		ERR(ss.str());
+		ERR("Cannot read file [" , refpath , "]");
 		exit(EXIT_FAILURE);
 	}
 	else {
-		ss << STAMP << "File [" << std::filesystem::absolute(refpath) << "] exists and is readable\n";
-		std::cout << ss.str();
+		INFO("File " , std::filesystem::absolute(refpath) , " exists and is readable");
 	}
 
 	if (ifstr.is_open())
@@ -229,9 +227,7 @@ void Runopts::opt_ref(const std::string &refpath)
 	{
 		if ((indexfiles[i].first).compare(refpath) == 0)
 		{
-			ss.str("");
-			ss << STAMP << "Reference file (" << refpath << ") has been entered more than once. Ignoring redundant enties";
-			WARN(ss.str());
+			WARN("Reference file (" , refpath , ") has been entered more than once. Ignoring redundant enties");
 		}
 	}
 	// add reference file absolute path. The index file will be set during index initialization.
@@ -253,7 +249,7 @@ void Runopts::opt_aligned(const std::string &file)
 	// -aligned specified without argument
 	if (file.size() == 0)
 	{
-		std::cout << STAMP << "Directory and Prefix for the aligned output was not provided. Using default dir/pfx: 'WORKDIR/out/aligned'" << std::endl;
+		INFO("Directory and Prefix for the aligned output was not provided. Using default dir/pfx: 'WORKDIR/out/aligned'");
 	}
 	else {
 		std::filesystem::path fpath = file;
@@ -301,7 +297,7 @@ void Runopts::opt_other(const std::string &file)
 void Runopts::opt_log(const std::string &val)
 {
 	if (is_log)
-		WARN("'--" << OPT_LOG << "' is deprecated. True by default.");
+		WARN("'--", OPT_LOG, "' is deprecated. True by default.");
 } // ~Runopts::optLog
 
 void Runopts::opt_de_novo_otu(const std::string &val)
@@ -597,27 +593,21 @@ void Runopts::opt_min_lis(const std::string &val)
 	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ss << STAMP << "'" << OPT_MIN_LIS
-			<< "' [INT] requires a positive integer as input e.g. 2. (if 0 - all high scoring reference sequences are searched)";
-		ERR(ss.str());
+		ERR("'", OPT_MIN_LIS, "' [INT] requires a positive integer as input e.g. 2. (if 0 - all high scoring reference sequences are searched)");
 		exit(EXIT_FAILURE);
 	}
 
 	// min_lis_gv has already been set
 	if (is_min_lis)
 	{
-		ss.str("");
-		ss << STAMP << "'" << OPT_MIN_LIS << "' [INT] has been set twice, please verify your choice.";
-		ERR(ss.str());
+		ERR("'" , OPT_MIN_LIS , "' [INT] has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		if ((sscanf(val.data(), "%d", &min_lis) != 1) || (min_lis < 0))
+		if ((sscanf(val.data(), "%d", &min_lis) != 1) || min_lis < 0)
 		{
-			ss.str("");
-			ss << STAMP << "'" << OPT_MIN_LIS
-				<< "' [INT] requires a positive integer as input e.g. 2. If 0, all high scoring reference sequences are searched)";
+			ERR("'", OPT_MIN_LIS, "' [INT] requires a positive integer as input e.g. 2. If 0, all high scoring reference sequences are searched)");
 			exit(EXIT_FAILURE);
 		}
 		is_min_lis = true;
@@ -629,25 +619,20 @@ void Runopts::opt_best(const std::string &val)
 	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ss << STAMP << "'" << OPT_BEST << "'" << " [INT] requires a positive integer e.g. 2).";
-		ERR(ss.str());
+		ERR("'" , OPT_BEST , "'" , " [INT] requires a positive integer e.g. 2).");
 		exit(EXIT_FAILURE);
 	}
 
 	if (is_best)
 	{
-		ss.str("");
-		ss << STAMP << "'" << OPT_BEST << "'" << " [INT] has been set twice, please verify your choice.";
-		ERR(ss.str());
+		ERR("'" , OPT_BEST , "'" , " [INT] has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		if ((sscanf(val.data(), "%d", &num_best_hits) != 1))
 		{
-			ss.str("");
-			ss << STAMP << "Could not read '" << OPT_BEST << "' [INT] as integer";
-			ERR(ss.str());
+			ERR("Could not read '" , OPT_BEST , "' [INT] as integer");
 			exit(EXIT_FAILURE);
 		}
 		is_best = true;
@@ -969,8 +954,7 @@ void Runopts::opt_thpp(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": --thpp [INT:INT] requires 2 integers for number of "
-			<< "Read:Processor threads (ex. --thpp 1:1)");
+		ERR(": --thpp [INT:INT] requires 2 integers for number of Read:Processor threads (ex. --thpp 1:1)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -991,8 +975,7 @@ void Runopts::opt_threp(const std::string &val)
 {
 	if (val.size() == 0)
 	{
-		ERR(": --threp [INT:INT] requires 2 integers for number of "
-			<< "Read:Processor threads (ex. --threp 1:1)");
+		ERR(": --threp [INT:INT] requires 2 integers for number of Read:Processor threads (ex. --threp 1:1)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1015,9 +998,7 @@ void Runopts::opt_dbg_put_db(const std::string &val)
 
 void Runopts::opt_default(const std::string &opt)
 {
-	std::stringstream ss;
-	ss << STAMP << "Option: '" << opt << "' is not recognized";
-	ERR(ss.str());
+	ERR("Option: '", opt, "' is not recognized");
 	print_help();
 	exit(EXIT_FAILURE);
 } // ~Runopts::opt_default
@@ -1029,9 +1010,7 @@ void Runopts::opt_task(const std::string &val)
 
 	if (task_num > 4)
 	{
-		std::stringstream ss;
-		ss << "Option '" << OPT_TASK << "' can only take values in range [0..4] Provided value is [" << task_num << "'";
-		ERR(ss.str());
+		ERR("Option '", OPT_TASK, "' can only take values in range [0..4] Provided value is [", task_num , "'");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1056,66 +1035,56 @@ void Runopts::opt_workdir(const std::string &path)
 	std::stringstream ss;
 	if (path.size() == 0)
 	{
-		ss << STAMP << "'" << OPT_WORKDIR 
-			<< "' option takes an argument - a directory path. None was provided.\n" << help_workdir;
-		ERR(ss.str());
+		ERR("'" , OPT_WORKDIR, "' option takes an argument - a directory path. None was provided.\n", help_workdir);
 		exit(EXIT_FAILURE);
 	}
 	else {
 		workdir = path;
-		std::cout << STAMP << "Using WORKDIR: [" << std::filesystem::absolute(workdir) << "] as specified" << std::endl;
+		INFO("Using WORKDIR: [", std::filesystem::absolute(workdir), "] as specified");
 	}
 }
 
 void Runopts::opt_kvdb(const std::string& path) {
-	std::stringstream ss;
 	if (path.size() == 0)
 	{
-		ss << STAMP << "'" << OPT_KVDB
-			<< "' option takes an argument - a directory path. None was provided.\n" << help_kvdb;
-		ERR(ss.str());
+		ERR("'" , OPT_KVDB, "' option takes an argument - a directory path. None was provided.\n" , help_kvdb);
 		exit(EXIT_FAILURE);
 	}
 	else {
 		kvdbdir = path;
-		std::cout << STAMP << "Using KVDB dir: [" << std::filesystem::absolute(kvdbdir) << " as specified" << std::endl;
+		INFO("Using KVDB dir: [" , std::filesystem::absolute(kvdbdir) , " as specified");
 	}
 }
 
 void Runopts::opt_idx(const std::string& path) {
-	std::stringstream ss;
 	if (path.size() == 0)
 	{
-		ss << STAMP << "'" << OPT_IDX
-			<< "' option takes an argument - a directory path. None was provided.\n" << help_kvdb;
-		ERR(ss.str());
+		ERR("'" , OPT_IDX, "' option takes an argument - a directory path. None was provided.\n" , help_kvdb);
 		exit(EXIT_FAILURE);
 	}
 	else {
 		idxdir = path;
-		std::cout << STAMP << "Using IDX dir: [" << std::filesystem::absolute(idxdir) << " as specified" << std::endl;
+		INFO("Using IDX dir: [" , std::filesystem::absolute(idxdir) , " as specified");
 	}
 }
 
 // indexing options
 void Runopts::opt_tmpdir(const std::string &val)
 {
-	std::cout << STAMP << "TODO: deprecated indexing option: " << help_tmpdir << " To be removed." << std::endl;
+	INFO("TODO: deprecated indexing option: " , help_tmpdir , " To be removed.");
 }
 
 void Runopts::opt_interval(const std::string &val)
 {
-	std::stringstream ss;
 	auto count = mopt.count(OPT_INTERVAL);
 	if (count > 1)
 	{
-		ss << " Option 'interval' entered [" << count << "] times. Only the last value will be used. " << help_interval;
-		WARN(ss.str());
+		WARN("Option 'interval' entered [" , count , "] times. Only the last value will be used. " , help_interval);
 	}
 
 	if (val.size() == 0)
 	{
-		WARN("Option 'interval' given without value. Using default: " + interval);
+		WARN("Option 'interval' given without value. Using default: ", interval);
 	}
 	else
 	{
@@ -1128,12 +1097,10 @@ void Runopts::opt_interval(const std::string &val)
  */
 void Runopts::opt_m(const std::string &val)
 {
-	std::stringstream ss;
 	auto count = mopt.count(OPT_M);
 	if (count > 1)
 	{
-		ss << " Option 'm' entered [" << count << "] times. Only the last value will be used. " << help_m;
-		WARN(ss.str());
+		WARN(" Option 'm' entered [" , count , "] times. Only the last value will be used. " , help_m);
 	}
 
 	if (val.size() == 0)
@@ -1148,19 +1115,15 @@ void Runopts::opt_m(const std::string &val)
 
 void Runopts::opt_L(const std::string &val)
 {
-	std::stringstream ss;
 	auto count = mopt.count(OPT_L);
 	if (count > 1)
 	{
-		ss << " Option '" << OPT_L << "' entered [" << count << "] times. Only the last value will be used." << std::endl << "\tHelp: " << help_L;
-		WARN(ss.str());
+		WARN(" Option '" , OPT_L , "' entered [" , count , "] times. Only the last value will be used.\n" , "\tHelp: " , help_L);
 	}
 
 	if (val.size() == 0)
 	{
-		ss.str("");
-		ss << "Option 'L' given without value. Using default: " << seed_win_len;
-		WARN(ss.str());
+		WARN("Option 'L' given without value. Using default: " , seed_win_len);
 	}
 	else
 	{
@@ -1168,11 +1131,9 @@ void Runopts::opt_L(const std::string &val)
 
 		if (lnwin_t <= 0 || lnwin_t % 2 == 1 || lnwin_t < 8 || lnwin_t > 26)
 		{
-			ss.str("");
-			ss << STAMP 
-				<< "Option '" << OPT_L <<"' takes a Positive Even integer between 8 and 26 inclusive e.g. 10, 12, 14, .. , 20. Provided value: " 
-				<< lnwin_t << " Default will be used: " << seed_win_len;
-			WARN(ss.str());
+			WARN("Option '" , OPT_L , 
+				"' takes a Positive Even integer between 8 and 26 inclusive e.g. 10, 12, 14, .. , 20. Provided value: "
+				, lnwin_t , " Default will be used: " , seed_win_len);
 		}
 		else
 		{
@@ -1183,20 +1144,16 @@ void Runopts::opt_L(const std::string &val)
 
 void Runopts::opt_max_pos(const std::string &val)
 {
-	std::stringstream ss;
 	auto count = mopt.count(OPT_MAX_POS);
 	if (count > 1)
 	{
-		ss << " Option '" << OPT_MAX_POS << "' entered [" << count << "] times. Only the last value will be used" << std::endl 
-			<< "\tHelp: " << help_max_pos;
-		WARN(ss.str());
+		WARN("Option '" , OPT_MAX_POS , "' entered [" , count , "] times. Only the last value will be used\n"
+			, "\tHelp: " , help_max_pos);
 	}
 
 	if (val.size() == 0)
 	{
-		ss.str("");
-		ss << "Options 'max_pos' takes a positive integer e.g. 250. Using default: " << max_pos;
-		WARN(ss.str());
+		WARN("Options 'max_pos' takes a positive integer e.g. 250. Using default: " , max_pos);
 	}
 	else
 	{
@@ -1210,31 +1167,28 @@ void Runopts::opt_max_pos(const std::string &val)
 void Runopts::validate_idxdir() {
 	if (idxdir.empty()) {
 		if (workdir.empty()) {
-			std::cout << STAMP << "'" << OPT_WORKDIR
-				<< "' option was not provided. Using USERDIR as the location for the Index" << std::endl;
+			INFO("'" , OPT_WORKDIR	, "' option was not provided. Using USERDIR as the location for the Index");
 			workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
 		}
 		idxdir = workdir / IDX_DIR; // default
 	}
-	std::cout << STAMP << "Using index directory: " << std::filesystem::absolute(idxdir) << std::endl;
+	INFO("Using index directory: " , std::filesystem::absolute(idxdir));
 	if (!std::filesystem::exists(idxdir)) {
 		bool is_dir_ok = std::filesystem::create_directory(idxdir);
 		if (!is_dir_ok) {
-			std::stringstream ss;
-			ss << STAMP << "Failed creating IDX directory: [" << std::filesystem::absolute(idxdir) << "]" << std::endl;
-			ERR(ss.str());
+			ERR("Failed creating IDX directory: [" , std::filesystem::absolute(idxdir) , "]");
 			exit(EXIT_FAILURE);
 		}
 		else {
-			std::cout << STAMP << "Created index directory - OK" << std::endl;
+			INFO("Created index directory - OK");
 		}
 	}
 	else {
 		if (std::filesystem::is_empty(idxdir)) {
-			std::cout << STAMP << "IDX directory: " << std::filesystem::absolute(idxdir) << " exists and is empty" << std::endl;
+			INFO("IDX directory: " , std::filesystem::absolute(idxdir) , " exists and is empty");
 		}
 		else {
-			std::cout << STAMP << "IDX directory: " << std::filesystem::absolute(idxdir) << " exists and is not empty" << std::endl;
+			INFO("IDX directory: " , std::filesystem::absolute(idxdir) , " exists and is not empty");
 		}
 	}
 }
@@ -1246,14 +1200,13 @@ void Runopts::validate_kvdbdir()
 {
 	if (kvdbdir.empty()) {
 		if (workdir.empty()) {
-			std::cout << STAMP << "'" << OPT_WORKDIR
-				<< "' option was not provided. Using USERDIR to set the working directory: " << workdir << std::endl;
+			INFO("'", OPT_WORKDIR, "' option was not provided. Using USERDIR to set the working directory: ", workdir);
 			workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
 		}
 		kvdbdir = workdir / KVDB_DIR; // default
 	}
 
-	std::cout << STAMP << "Key-value DB location " << std::filesystem::absolute(kvdbdir) << std::endl;
+	INFO("Key-value DB location " , std::filesystem::absolute(kvdbdir));
 
 	if (std::filesystem::exists(kvdbdir))
 	{
@@ -1263,7 +1216,7 @@ void Runopts::validate_kvdbdir()
 			// dir exists and empty -> use
 			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
 			{
-				std::cout << STAMP << "KVDB directory: " << std::filesystem::absolute(kvdbdir) << " is empty. OK to use." << std::endl;
+				INFO("KVDB directory: " , std::filesystem::absolute(kvdbdir) , " is empty. OK to use.");
 			}
 		}
 		else // not empty
@@ -1275,13 +1228,12 @@ void Runopts::validate_kvdbdir()
 				// if (kvdb.verify()) // TODO
 				// output the listing
 				std::stringstream ss;
-				ss << STAMP << "Path: " << std::filesystem::absolute(kvdbdir) << " exists with the following content:" << std::endl;
-
 				for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
-					ss << subpath.path().filename() << std::endl;
+					ss << subpath.path().filename() << '\n';
 
-				ss << "\tPlease, ensure the directory " << std::filesystem::absolute(kvdbdir) << " is Empty prior running 'sortmerna'" << std::endl;
-				WARN(ss.str());
+				WARN("Path: ", std::filesystem::absolute(kvdbdir), " exists with the following content:\n", 
+					ss.str(), 
+					"\tPlease, ensure the directory ", std::filesystem::absolute(kvdbdir), " is Empty prior running 'sortmerna'");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -1289,12 +1241,10 @@ void Runopts::validate_kvdbdir()
 	else
 	{
 		// dir does not exist -> try creating
-		std::cout << STAMP << "Creating KVDB directory: " << std::filesystem::absolute(kvdbdir) << std::endl;
+		INFO("Creating KVDB directory: " , std::filesystem::absolute(kvdbdir));
 		bool is_dir_ok = std::filesystem::create_directories(kvdbdir);
 		if (!is_dir_ok) {
-			std::stringstream ss;
-			ss << STAMP << "Failed creating KVDB directory: " << std::filesystem::absolute(kvdbdir) << std::endl;
-			ERR(ss.str());
+			ERR("Failed creating KVDB directory: " , std::filesystem::absolute(kvdbdir));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -1308,10 +1258,10 @@ void Runopts::validate_aligned_pfx() {
 	if (aligned_pfx.has_parent_path()) {
 		// create directory if not exists
 		if (!std::filesystem::exists(aligned_pfx.parent_path())) {
-			std::cout << STAMP << "Checking output directory: " << std::filesystem::absolute(aligned_pfx.parent_path()) << std::endl;
+			INFO("Checking output directory: " , std::filesystem::absolute(aligned_pfx.parent_path()));
 			bool is_dir_ok = std::filesystem::create_directories(aligned_pfx.parent_path());
 			if (!is_dir_ok) {
-				ERR("Failed creating output directory: " + aligned_pfx.parent_path().string());
+				ERR("Failed creating output directory: ", aligned_pfx.parent_path().string());
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -1331,10 +1281,10 @@ void Runopts::validate_other_pfx() {
 	if (other_pfx.has_parent_path()) {
 		// create directory if not exists
 		if (!std::filesystem::exists(other_pfx.parent_path())) {
-			std::cout << STAMP << "Checking output directory: " << std::filesystem::absolute(other_pfx.parent_path()) << std::endl;
+			INFO("Checking output directory: " , std::filesystem::absolute(other_pfx.parent_path()));
 			bool is_dir_ok = std::filesystem::create_directories(other_pfx.parent_path());
 			if (!is_dir_ok) {
-				ERR("Failed creating output directory: " + other_pfx.parent_path().string());
+				ERR("Failed creating output directory: " , other_pfx.parent_path().string());
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -1454,7 +1404,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// loop through the rest of options
 	for (auto opt : mopt)
 	{
-		std::cout << STAMP << "Processing option: " << opt.first << " with value: " << opt.second << std::endl;
+		INFO("Processing option: " , opt.first , " with value: " , opt.second);
 
 		bool has_opt = false;
 		for (auto optx : options)
@@ -1501,15 +1451,12 @@ void Runopts::validate()
 	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_de_novo_otu))
 	{
 		is_blast = true;
-		std::cout << STAMP 
-			<< "No output format has been chosen (fastx|sam|blast|otu_map). Using default '" 
-			<< OPT_BLAST << "'" << std::endl;
+		INFO("No output format has been chosen (fastx|sam|blast|otu_map). Using default '" , OPT_BLAST , "'");
 	}
 
 	if (is_paired_in && is_paired_out)
 	{
-		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT << "' are mutually exclusive. Please choose one or the other";
-		ERR(ss.str());
+		ERR("Options '" , OPT_PAIRED_IN , "' and '" , OPT_PAIRED_OUT , "' are mutually exclusive. Please choose one or the other");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1518,19 +1465,18 @@ void Runopts::validate()
 	}
 
 	if (is_out2 && !is_paired) {
-		ss << STAMP << "Option '" << OPT_OUT2 << "' is Ignored because it can only be used with paired reads."
-			" The reads are considered paired if either 2 reads files are supplied, or '"
-			<< OPT_PAIRED_IN << "', or '" << OPT_PAIRED_OUT << "' is specified";
-		WARN(ss.str());
+		WARN("Option '" , OPT_OUT2 , 
+			"' is Ignored because it can only be used with paired reads."
+			" The reads are considered paired if either 2 reads files are supplied, or '", 
+			OPT_PAIRED_IN , "', or '" , OPT_PAIRED_OUT , "' is specified");
 		is_out2 = false;
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output
 	if (!is_fastx && (is_paired_in || is_paired_out))
 	{
-		ss.str("");
-		ss << STAMP << "Options '" << OPT_PAIRED_IN << "' and '" << OPT_PAIRED_OUT
-			<< "' must be accompanied by option '" << OPT_FASTX << "'. Setting to true.";
+		INFO("Options '" , OPT_PAIRED_IN , "' and '" , OPT_PAIRED_OUT, 
+			"' must be accompanied by option '" , OPT_FASTX , "'. Setting to true.");
 		is_fastx = true;
 	}
 
@@ -1546,30 +1492,24 @@ void Runopts::validate()
 
 	if (is_num_alignments && !(is_blast || is_sam || is_fastx))
 	{
-		ss.str("");
-		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
-			<< "' [INT] has been set but no output format has been chosen (--blast | --sam | --fastx). Using default '" 
-			<< OPT_BLAST << "'";
-		WARN(ss.str());
+		WARN("'" , OPT_NUM_ALIGNMENTS, 
+			"' [INT] has been set but no output format has been chosen (--blast | --sam | --fastx). Using default '", 
+			OPT_BLAST , "'");
 		exit(EXIT_FAILURE);
 	}
 
 	// If --best output was chosen, check an alignment format has also been chosen
 	if (is_best && !(is_blast || is_sam || is_otu_map))
 	{
-		ss.str("");
-		ss << STAMP << "'" << OPT_BEST 
-			<< "' [INT] has been set but no output format has been chosen (--blast | --sam | --otu_map). Using default '" 
-			<< OPT_BLAST << "'";
-		WARN(ss.str());
+		WARN("'" , OPT_BEST	, 
+			"' [INT] has been set but no output format has been chosen (--blast | --sam | --otu_map). Using default '", 
+			OPT_BLAST , "'");
 	}
 
 	// Check gap extend score < gap open score
 	if (gap_extension > gap_open)
 	{
-		std::stringstream ss;
-		ss << STAMP << "--gap_ext [INT] must be less than --gap_open [INT].";
-		ERR(ss.str());
+		ERR("--gap_ext [INT] must be less than --gap_open [INT].");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1577,9 +1517,7 @@ void Runopts::validate()
 	// and SAM formats (not pairwise)
 	if (is_print_all_reads && is_blast && blastFormat != BlastFormat::TABULAR)
 	{
-		std::stringstream ss;
-		ss << STAMP << "--print_all_reads [BOOL] can only be used with BLAST-like";
-		ERR(ss.str());
+		ERR("--print_all_reads [BOOL] can only be used with BLAST-like");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1587,44 +1525,33 @@ void Runopts::validate()
 	// --num_alignments outputs > 1 alignments)
 	if (is_best && is_num_alignments)
 	{
-		std::stringstream ss;
-		ss << STAMP 
-			<< "'"<< OPT_BEST << "' [INT] and '" 
-			<< OPT_NUM_ALIGNMENTS << "' [INT] cannot be set together.\n'" 
-			<< OPT_BEST <<"' searches [INT] highest scoring reference sequences\n"
-				"and outputs a single best alignment, whereas '" 
-			<< OPT_NUM_ALIGNMENTS << "'\n" << "outputs the first [INT] alignments.";
-		ERR(ss.str());
+		ERR("'" , OPT_BEST , "' [INT] and '", OPT_NUM_ALIGNMENTS , "' [INT] cannot be set together.\n'"
+			, OPT_BEST , "' searches [INT] highest scoring reference sequences\n"
+			"and outputs a single best alignment, whereas '"
+			, OPT_NUM_ALIGNMENTS , "'\noutputs the first [INT] alignments.");
 		exit(EXIT_FAILURE);
 	}
 
 	// Option --min_lis [INT] can only accompany --best [INT]
 	if (is_min_lis && is_num_alignments)
 	{
-		std::stringstream ss;
-		ss << STAMP << "'" << OPT_MIN_LIS << "' [INT] and '" << OPT_NUM_ALIGNMENTS << "' [INT] cannot be set together.\n";
-		ERR(ss.str());
+		ERR("'" , OPT_MIN_LIS , "' [INT] and '" , OPT_NUM_ALIGNMENTS , "' [INT] cannot be set together.\n");
 		exit(EXIT_FAILURE);
 	}
 
 	// Option --mis_lis INT accompanies --best INT, cannot be set alone
 	if (is_min_lis && !is_best)
 	{
-		std::stringstream ss;
-		ss << STAMP	<< "--min_lis [INT] must be set together with --best [INT].";
-		ERR(ss.str());
+		ERR("--min_lis [INT] must be set together with --best [INT].");
 		exit(EXIT_FAILURE);
 	}
 
 	// %id and %coverage can only be used with --otu_map
 	if ((min_id > 0 || min_cov > 0) && !is_otu_map)
 	{
-		std::stringstream ss;
-		ss << STAMP
-			<< "--id [INT] and --coverage [INT] can only be used together with --otu_map.\n"
+		ERR("--id [INT] and --coverage [INT] can only be used together with --otu_map.\n"
 			"\tThese two options are used for constructing the OTU map\n"
-			"\tby filtering alignments passing the E-value threshold.";
-		ERR(ss.str());
+			"\tby filtering alignments passing the E-value threshold.");
 		exit(EXIT_FAILURE);
 	}
 
