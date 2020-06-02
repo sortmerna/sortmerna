@@ -73,6 +73,9 @@ RAPID_SRC   = None
 RAPID_BUILD = None
 RAPID_DIST  = None
 
+# Concurrentqueue
+CCQUEUE_SRC = None
+
 def test():
     '''
     '''
@@ -533,6 +536,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
         #'-DROCKSDB_SRC={}'.format(ROCKSDB_SRC),
         '-DROCKSDB_HOME={}'.format(ROCKS_DIST),
         '-DRAPIDJSON_HOME={}'.format(RAPID_DIST),
+        '-DCONCURRENTQUEUE_HOME={}'.format(CCQUEUE_SRC),
         '-DCMAKE_INSTALL_PREFIX={}'.format(SMR_DIST)
     ]
 
@@ -576,7 +580,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     proc_run(cmd, SMR_BUILD)
 #END smr_build
 
-def concurrentqueue_build():
+def concurrentqueue_build(cfg={}):
     '''
     a single header file - just clone and use
     '''
@@ -589,7 +593,7 @@ if __name__ == "__main__":
     python /mnt/c/Users/biocodz/a01_code/sortmerna/scripts/build.py --name sortmerna
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
     # options
     optpar = OptionParser()
@@ -641,6 +645,9 @@ if __name__ == "__main__":
     env['UHOME'] = UHOME
     cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
+    
+    val = cfg.get(MY_OS, {}).get('lib')
+    LIB_DIR =  val if val else UHOME # '{}/3rdparty'.format(SMR_SRC)
 
     URL_ZLIB   = cfg[ZLIB]['url']
     URL_ROCKS  = cfg[ROCKS]['url']
@@ -653,26 +660,49 @@ if __name__ == "__main__":
 
     CMAKE_GEN = cfg[MY_OS]['cmake_gen']
 
-    SMR_SRC   = cfg[SMR][MY_OS].get('src') if cfg[SMR][MY_OS].get('src') else '{}/sortmerna'.format(UHOME)
-    SMR_BUILD = cfg[SMR][MY_OS]['build'] if cfg[SMR][MY_OS]['build'] else '{}/build'.format(SMR_SRC)
-    SMR_DIST  = cfg[SMR][MY_OS]['dist'] if cfg[SMR][MY_OS]['dist'] else '{}/dist'.format(SMR_SRC)
-    SMR_VER   = cfg[SMR].get('ver') if cfg[SMR].get('ver') else None
-    
-    LIB_DIR = cfg[MY_OS].get('lib') if cfg[MY_OS].get('lib') else UHOME # '{}/3rdparty'.format(SMR_SRC)
+    # SMR
+    map = cfg.get(SMR, {}).get(MY_OS, {})
+    val = map.get('src') if map else None
+    SMR_SRC   = val if val else '{}/sortmerna'.format(UHOME)
+    val = map.get('build') if map else None
+    SMR_BUILD = val if val else '{}/build'.format(SMR_SRC)
+    val = map.get('dist') if map else None
+    SMR_DIST  = val if val else '{}/dist'.format(SMR_SRC)
+    SMR_VER   = map.get('ver')
 
-    ZLIB_SRC   = cfg[ZLIB][MY_OS].get('src') if cfg[ZLIB][MY_OS].get('src') else '{}/{}'.format(LIB_DIR, ZLIB)
-    ZLIB_BUILD = cfg[ZLIB][MY_OS]['build'] if cfg[ZLIB][MY_OS]['build'] else '{}/build'.format(ZLIB_SRC)
-    ZLIB_DIST  = cfg[ZLIB][MY_OS]['dist'] if cfg[ZLIB][MY_OS]['dist'] else '{}/dist'.format(ZLIB_SRC)
+    # ZLIB
+    map = cfg.get(ZLIB, {}).get(MY_OS, {})
+    val = map.get('src')
+    ZLIB_SRC   = val if val else '{}/{}'.format(LIB_DIR, ZLIB)
+    val = map.get('build')
+    ZLIB_BUILD = val if val else '{}/build'.format(ZLIB_SRC)
+    val = map.get('dist')
+    ZLIB_DIST  = val if val else '{}/dist'.format(ZLIB_SRC)
 
-    ROCKS_SRC   = cfg[ROCKS][MY_OS].get('src') if cfg[ROCKS][MY_OS].get('src') else '{}/{}'.format(LIB_DIR, ROCKS)
-    ROCKS_BUILD = cfg[ROCKS][MY_OS]['build'] if cfg[ROCKS][MY_OS]['build'] else '{}/build'.format(ROCKS_SRC)
-    ROCKS_DIST  = cfg[ROCKS][MY_OS]['dist'] if cfg[ROCKS][MY_OS]['dist'] else '{}/dist'.format(ROCKS_SRC)
-    ROCKS_VER   = cfg[ROCKS].get('ver') if cfg[ROCKS].get('ver') else None
+    # ROCKSDB
+    map = cfg.get(ROCKS, {}).get(MY_OS, {})
+    val = map.get('src') if map else None
+    ROCKS_SRC   = val if val else '{}/{}'.format(LIB_DIR, ROCKS)
+    val = map.get('build') if map else None
+    ROCKS_BUILD = val if val else '{}/build'.format(ROCKS_SRC)
+    val = map.get('dist') if map else None
+    ROCKS_DIST  = val if val else '{}/dist'.format(ROCKS_SRC)
+    ROCKS_VER   = map.get('ver')
 
+    # RAPIDJSON
     # no binaries, so always build Release only
-    RAPID_SRC   = cfg[RAPID][MY_OS].get('src') if cfg[RAPID][MY_OS].get('src') else '{}/{}'.format(LIB_DIR, RAPID)
-    RAPID_BUILD = cfg[RAPID][MY_OS]['build'] if cfg[RAPID][MY_OS]['build'] else '{}/build'.format(RAPID_SRC)
-    RAPID_DIST  = cfg[RAPID][MY_OS]['dist'] if cfg[RAPID][MY_OS]['dist'] else '{}/dist'.format(RAPID_SRC)
+    map = cfg.get(RAPID, {}).get(MY_OS, {})
+    val = map.get('src') if map else None
+    RAPID_SRC   = val if val else '{}/{}'.format(LIB_DIR, RAPID)
+    val = map.get('build') if map else None
+    RAPID_BUILD = val if val else '{}/build'.format(RAPID_SRC)
+    val = map.get('dist') if map else None
+    RAPID_DIST  = val if val else '{}/dist'.format(RAPID_SRC)
+
+    # CONCURRENTQUEUE
+    map = cfg.get(CCQUEUE, {}).get(MY_OS, {})
+    val = map.get('src') if map else None
+    CCQUEUE_SRC = val if val else '{}/{}'.format(LIB_DIR, CCQUEUE)
 
     if IS_WIN:
         SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
@@ -690,6 +720,7 @@ if __name__ == "__main__":
     # call functions
     if opts.name:
         if opts.name == ALL:
+            concurrentqueue_build(cfg) 
             rapidjson_build()
             zlib_build()
             rocksdb_build(ROCKS_VER)
@@ -717,4 +748,6 @@ if __name__ == "__main__":
             cmake_install(cfg) 
         elif opts.name == CONDA: 
             conda_install(cfg) 
+        elif opts.name == CCQUEUE: 
+            concurrentqueue_build(cfg) 
         else: test()

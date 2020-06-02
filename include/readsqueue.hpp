@@ -61,17 +61,13 @@ public:
 		std::cout << ss.str();
 	}
 
-	//~ReadsQueue() {
-	//	std::stringstream ss;
-	//	ss << STAMP << "Destructor called on Reads queue. Reads added: " << num_pushed << " Reads consumed: " << num_popped << std::endl;
-	//	std::cout << ss.str();
-	//}
+	//~ReadsQueue()
 
 	/** 
 	 * Synchronized. Blocks until queue has capacity for more reads
 	 * pushing stops automatically upon EOF which sets is_done_push = true
 	 */
-	bool push(std::string& rec) 
+	bool push(const std::string& rec) 
 	{
 		bool ret = false;
 #if defined(CONCURRENTQUEUE)

@@ -35,12 +35,15 @@
 #pragma once
 
 #include <string>
+#include <sstream>
 
 #include <sys/time.h>
 #include "config.h"
 #if defined(_WIN32)
 #  include "windows.h"
 #  include "psapi.h"
+#else
+#  include <fstream>
 #endif
 
 const char FASTA_HEADER_START = '>';
@@ -71,10 +74,10 @@ const char rc_table[128] = {
 	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
 	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
 	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 3, 4, 2,  4, 4, 4, 1,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  0, 0, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 3, 4, 2,  4, 4, 4, 1,  4, 4, 4, 4,  4, 4, 4, 4,
-	4, 4, 4, 4,  0, 0, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
+4, 3, 4, 2, 4, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4, 4,
+4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+4, 3, 4, 2, 4, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4, 4,
+4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
 };
 
 const char nt_map[5] = { 'A', 'C', 'G', 'T', 'N' };
@@ -98,7 +101,7 @@ extern timeval t;
 #  define BOLD   ""
 #  define UNDL   ""
 #  define COLOFF ""
-  const char DELIM = ';';
+const char DELIM = ';';
 #else
 #  define RED    "\033[0;31m"
 #  define GREEN  "\033[0;32m"
@@ -107,12 +110,12 @@ extern timeval t;
 #  define BOLD   "\033[1m"
 #  define UNDL   "\033[4m" // underline
 #  define COLOFF "\033[0m" // color off
-  const char DELIM = ':';
+const char DELIM = ':';
 #endif
 
 
 /*! @brief Maximum length of input reads
-	(not limited to this length algorithmically)
+    (not limited to this length algorithmically)
 */
 #define MAX_READ_LEN 30000
 
@@ -131,15 +134,46 @@ static inline std::string fold_to_string(Args&&... args) {
 
 // https://stackoverflow.com/questions/63166/how-to-determine-cpu-and-memory-consumption-from-inside-a-process
 #if defined(_WIN32)
-    static inline size_t get_memory() {
-        PROCESS_MEMORY_COUNTERS_EX pmc;
-        GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-        return pmc.PrivateUsage; // process Commit memory (== Resource Monitor:Commit)
-    }
+static inline size_t get_memory() {
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+    return pmc.PrivateUsage; // process Commit memory (== Resource Monitor:Commit)
+}
 #else
-  static inline size_t get_memory() {
-      return 0;
-  }
+/*
+ * amount of memory that have been mapped into the process' address space
+ * cat /proc/self/status | grep 'VmRSS:'
+ *   'VmRSS:       336 kB'
+ */
+static inline size_t get_memory() {
+    std::ifstream ifs("/proc/self/status", std::ios::binary);
+    size_t mem = 0;
+    if (ifs.is_open()) {
+        for (std::string line; std::getline(ifs, line); ) {
+            unsigned pos_start = 0;
+            unsigned pos_end = 0;
+            if (line.find("VmRSS:") != std::string::npos) {
+                for (unsigned i = 0; i < line.length(); ++i) {
+                    if (pos_start == 0) {
+                        if (std::isdigit(line[i]))
+                            pos_start = i;
+                    }
+                    else {
+                        if (pos_end == 0 && !std::isdigit(line[i])) {
+                            pos_end = i;
+                            break;
+                        }
+                    }
+                }
+                if (pos_end > pos_start) {
+                    std::string mstr = line.substr(pos_start, pos_end + 1 - pos_start);
+                    mem = std::atoi(mstr.data());
+                }
+            }
+        }
+    }
+    return mem;
+}
 #endif
 
 #define INFO(...) \
@@ -185,3 +219,4 @@ static inline std::string fold_to_string(Args&&... args) {
 		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << " Elapsed sec: " << time << std::endl; \
 		std::cout << ss.str();\
     }
+//~EOF

@@ -1229,10 +1229,11 @@ void Runopts::validate_kvdbdir()
 				// output the listing
 				std::stringstream ss;
 				for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
-					ss << subpath.path().filename() << '\n';
+					ss << '\t' << subpath.path().filename() << '\n';
+				std::string flist = ss.str();
 
 				WARN("Path: ", std::filesystem::absolute(kvdbdir), " exists with the following content:\n", 
-					ss.str(), 
+					flist,
 					"\tPlease, ensure the directory ", std::filesystem::absolute(kvdbdir), " is Empty prior running 'sortmerna'");
 				exit(EXIT_FAILURE);
 			}
