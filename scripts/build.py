@@ -593,7 +593,7 @@ if __name__ == "__main__":
     python /mnt/c/Users/biocodz/a01_code/sortmerna/scripts/build.py --name sortmerna
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     # options
     optpar = OptionParser()
