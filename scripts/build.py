@@ -590,7 +590,8 @@ def concurrentqueue_build(cfg={}):
 if __name__ == "__main__":
     '''
     python scripts/build.py --name sortmerna [--env scripts/env_non_git.yaml]
-    python /mnt/c/Users/biocodz/a01_code/sortmerna/scripts/build.py --name sortmerna
+    python scripts/build.py --name sortmerna
+    python scripts/build.py --name cmake [--env scripts/env_non_git.yaml]
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
     #import pdb; pdb.set_trace()
@@ -687,7 +688,7 @@ if __name__ == "__main__":
     ROCKS_BUILD = val if val else '{}/build'.format(ROCKS_SRC)
     val = map.get('dist') if map else None
     ROCKS_DIST  = val if val else '{}/dist'.format(ROCKS_SRC)
-    ROCKS_VER   = map.get('ver')
+    ROCKS_VER   = cfg.get(ROCKS, {}).get('ver')
 
     # RAPIDJSON
     # no binaries, so always build Release only
