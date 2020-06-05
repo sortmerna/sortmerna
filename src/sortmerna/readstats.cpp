@@ -37,6 +37,7 @@ Readstats::Readstats(Runopts& opts, KeyValueDatabase& kvdb)
 	max_read_len(0),
 	total_reads_aligned(0),
 	total_reads_mapped_cov(0),
+	short_reads_num(0),
 	all_reads_count(0),
 	all_reads_len(0),
 	reads_matched_per_db(opts.indexfiles.size(), 0),
@@ -89,8 +90,7 @@ void Readstats::calculate(Runopts &opts)
 	{
 		std::ifstream ifs(readfile, std::ios_base::in | std::ios_base::binary);
 		if (!ifs.is_open()) {
-			ss << STAMP << "Failed to open Reads file: " << readfile;
-			ERR(ss.str());
+			ERR("Failed to open Reads file: " , readfile);
 			exit(EXIT_FAILURE);
 		}
 		else
@@ -104,7 +104,7 @@ void Readstats::calculate(Runopts &opts)
 
 			auto t = std::chrono::high_resolution_clock::now();
 
-			std::cout << STAMP << "Starting statistics calculation on file: '" << readfile << "'  ...   ";
+			INFO("Starting statistics calculation on file: '" , readfile , "'  ...   ");
 
 			for (int count = 0, stat = 0; ; ++count) // count of lines in a Single record
 			{
@@ -132,9 +132,7 @@ void Readstats::calculate(Runopts &opts)
 
 				if (stat == RL_ERR)
 				{
-					ss.str("");
-					ss << STAMP << "Failed reading from file '" << readfile << "' Exiting...";
-					ERR(ss.str());
+					ERR("Failed reading from file ", readfile, " Exiting...");
 					exit(EXIT_FAILURE);
 				}
 
@@ -156,9 +154,7 @@ void Readstats::calculate(Runopts &opts)
 
 					if (!(isFasta || isFastq))
 					{
-						ss.str("");
-						ss << STAMP << " the line [" << line << "] is not FASTA/Q header";
-						ERR(ss.str());
+						ERR("the line [" , line , "] is not FASTA/Q header");
 						exit(EXIT_FAILURE);
 					}
 				}
@@ -168,10 +164,7 @@ void Readstats::calculate(Runopts &opts)
 					count = 0;
 					if (line[0] != FASTQ_HEADER_START)
 					{
-						ss.str("");
-						ss << STAMP << "the line [" << line << "] is not FASTQ header. all_reads_count = "
-							<< all_reads_count << " tcount= " << tcount;
-						ERR(ss.str());
+						ERR("the line [", line, "] is not FASTQ header. all_reads_count = ", all_reads_count, " tcount= ",  tcount);
 						exit(EXIT_FAILURE);
 					}
 				}
@@ -180,8 +173,9 @@ void Readstats::calculate(Runopts &opts)
 				// fasta: 0(header), 1(seq)
 				if ((isFasta && line[0] == FASTA_HEADER_START) || (count == 0 && isFastq))
 				{
+					// process previous sequence
 					if (!sequence.empty())
-					{ // process previous sequence
+					{
 						++all_reads_count;
 						all_reads_len += sequence.length();
 
@@ -203,13 +197,9 @@ void Readstats::calculate(Runopts &opts)
 					{
 						if (count > 3)
 						{
-							ss.str("");
-							ss << STAMP << " Unexpected number of lines : " << count
-								<< " in a single FASTQ Read. Total reads processed: " << all_reads_count
-								<< " Last sequence: " << sequence
-								<< " Last line read: " << line
-								<< " Exiting...";
-							ERR(ss.str());
+							ERR(" Unexpected number of lines : ", count, 
+								" in a single FASTQ Read. Total reads processed: ", all_reads_count,
+								" Last sequence: ", sequence, " Last line read: ", line, " Exiting...");
 							exit(EXIT_FAILURE);
 						}
 						if (count == 3 || line[0] == '+')
@@ -221,12 +211,7 @@ void Readstats::calculate(Runopts &opts)
 			} // ~for getline
 
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-			ss.str("");
-			ss << std::setprecision(2) << std::fixed << STAMP
-				<< "Done statistics on file. Elapsed time: " << elapsed.count()
-				<< " sec. all_reads_count= " << all_reads_count << std::endl;
-			std::cout << ss.str();
-
+			INFO("Done statistics on file. Elapsed time: ", elapsed.count(), " sec. all_reads_count= ", all_reads_count);
 			ifs.close();
 		}
 	} // ~for iterating reads files
@@ -266,6 +251,8 @@ std::string Readstats::toBstring()
 	// total_reads_mapped_cov (atomic int)
 	val = total_reads_mapped_cov.load();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
+	// short_reads_num
+	std::copy_n(static_cast<char*>(static_cast<void*>(&short_reads_num)), sizeof(short_reads_num), std::back_inserter(buf));
 	// all_reads_count (int)
 	std::copy_n(static_cast<char*>(static_cast<void*>(&all_reads_count)), sizeof(all_reads_count), std::back_inserter(buf));
 	// all_reads_len (int)
@@ -298,6 +285,7 @@ std::string Readstats::toString()
 		<< " all_reads_len= " << all_reads_len
 		<< " total_reads_mapped= " << total_reads_aligned
 		<< " total_reads_mapped_cov= " << total_reads_mapped_cov
+		<< " short_reads_num= " << short_reads_num
 		<< " reads_matched_per_db= " << "TODO"
 		<< " is_total_reads_mapped_cov= " << is_total_reads_mapped_cov
 		<< " is_stats_calc= " << is_stats_calc << std::endl;
@@ -338,6 +326,9 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
 		total_reads_mapped_cov = val;
 		offset += sizeof(val);
+		// short_reads_num
+		std::memcpy(static_cast<void*>(&short_reads_num), bstr.data() + offset, sizeof(short_reads_num));
+		offset += sizeof(short_reads_num);
 		// all_reads_count
 		std::memcpy(static_cast<void*>(&all_reads_count), bstr.data() + offset, sizeof(all_reads_count));
 		offset += sizeof(all_reads_count);
@@ -362,10 +353,8 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		}
 		else
 		{
-			ss.str("");
-			ss << STAMP << "reads_matched_per_db.size stored in DB: " << reads_matched_per_db_size
-				<< " doesn't match the number of reference files: " << reads_matched_per_db.size() << std::endl;
-			std::cout << ss.str();
+			WARN("reads_matched_per_db.size stored in DB: ", reads_matched_per_db_size, 
+				" doesn't match the number of reference files: ", reads_matched_per_db.size());
 			ret = false;
 		}
 

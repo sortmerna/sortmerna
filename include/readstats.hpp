@@ -46,6 +46,7 @@ struct Readstats
 	std::atomic<uint32_t> max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
 	std::atomic<uint64_t> total_reads_aligned; // total number of reads passing E-value threshold. Set in 'compute_lis_alignment'
 	std::atomic<uint64_t> total_reads_mapped_cov; // [2] total number of reads mapped passing E-value, %id, %query coverage thresholds
+	std::atomic<uint64_t> short_reads_num; // reads shorter than a threshold of N nucleotides. Reset for each index.
 
 	uint64_t all_reads_count; // [1] total number of reads in file. Non-sync. 'Readstats::calculate'
 	uint64_t all_reads_len; // total number of nucleotides in all reads i.e. sum of length of All read sequences 'Readstats::calculate'
@@ -58,7 +59,7 @@ struct Readstats
 	bool is_total_reads_mapped_cov; // flag 'total_reads_mapped_cov' was calculated (so no need to calculate no more)
 
 	Readstats(Runopts& opts, KeyValueDatabase& kvdb);
-	~Readstats() {}
+	//~Readstats() {}
 
 	void calculate(Runopts& opts); // calculate statistics from readsfile
 	void calcSuffix(Runopts& opts);

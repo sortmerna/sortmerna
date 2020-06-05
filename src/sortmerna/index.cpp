@@ -123,7 +123,7 @@ Index::Index(Runopts & opts)
 	}
 } // ~Index::Index
 
-void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std::string, std::string>>& indexfiles, Refstats & refstats)
+void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std::string, std::string>>& indexfiles, Refstats& refstats)
 {
 	// STEP 1: load the kmer 'count' variables (dbname.kmer.dat)
 	std::string idxfile = indexfiles[idx_num].second + ".kmer_" + std::to_string(idx_part) + ".dat";
@@ -131,9 +131,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 
 	if (!inkmer.good())
 	{
-		std::stringstream ss;
-		ss << STAMP << "The index " << idxfile << " does not exist.";
-		ERR(ss.str())
+		ERR("The index " , idxfile , " does not exist.");
 		exit(EXIT_FAILURE);
 	}
 

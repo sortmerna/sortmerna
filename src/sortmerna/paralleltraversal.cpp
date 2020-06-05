@@ -53,10 +53,7 @@
 #include "processor.hpp"
 #include "reader.hpp"
 #include "output.hpp"
-//#include "concurrentqueue.h"
 #include "readsqueue.hpp"
-//#include "writer.hpp"
-//#include "read_control.hpp"
 
 
 #if defined(_WIN32)
@@ -110,14 +107,12 @@ void align_cb
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
 	// the read length is too short
-	if (read.sequence.size()  < refstats.lnwin[index.index_num])
+	if (read.sequence.size() < refstats.lnwin[index.index_num])
 	{
-		std::stringstream ss;
-		ss << STAMP << "Processor thread: " << std::this_thread::get_id()
-			<< " The read.id: " << read.id << " read.header: " << read.header << " is shorter than "
-			<< refstats.lnwin[index.index_num] << " nucleotides, by default it will not be searched";
-		WARN(ss.str());
-
+		//WARN("Processor thread: " , std::this_thread::get_id() , " The read.id: " , read.id , 
+		//	" read.header: " , read.header , " is shorter than "
+		//	, refstats.lnwin[index.index_num] , " nucleotides, by default it will not be searched");
+		readstats.short_reads_num.fetch_add(1, std::memory_order_relaxed);
 		read.isValid = false;
 		return;
 	}
@@ -143,9 +138,9 @@ void align_cb
 	{
 		// number of k-mer windows fit along the read given 
 		// the window size and a search step (windowshift)
-		uint32_t numwin = ( read.sequence.size()
-				- refstats.lnwin[index.index_num]
-				+ windowshift ) / windowshift;
+		uint32_t numwin = ( 
+			read.sequence.size() - refstats.lnwin[index.index_num] + windowshift 
+			) / windowshift;
 
 		uint32_t win_pos = 0; // position (index) of the window's first char on the read i.e. [0..read.sequence.length-1]
 		// iterate the windows
@@ -387,6 +382,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			INFO("Loading index: ", index_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[index_num], " Memory KB: ", (get_memory() >> 10), " ... ");
 			starts = std::chrono::high_resolution_clock::now();
 			index.load(index_num, idx_part, opts.indexfiles, refstats);
+			readstats.short_reads_num.store(0, std::memory_order_relaxed); // reset the short reads counter
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 			INFO_MEM("done [", elapsed.count(), "] sec");
 
