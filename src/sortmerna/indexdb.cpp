@@ -46,11 +46,12 @@
 #include <iostream>
 #include <filesystem>
 
+#include <sys/stat.h> //for creating tmp dir
+
 #include "version.h"
 #include "build_version.h"
 #include "indexdb.hpp"
 #include "cmph.h"
-#include <sys/stat.h> //for creating tmp dir
 #include "options.hpp"
 
 #if defined(_WIN32)
@@ -1167,9 +1168,7 @@ int build_index(Runopts& opts)
 		FILE *fp = fopen(idxpair.first.data(), "r");
 		if (fp == NULL)
 		{
-			ss.str("");
-			ss << "Could not open file: " << idxpair.first;
-			ERR(ss.str());
+			ERR("Could not open file: " , idxpair.first);
 			exit(EXIT_FAILURE);
 		}
 
@@ -1179,9 +1178,7 @@ int build_index(Runopts& opts)
 		fseek(fp, 0L, SEEK_SET);
 
 		if (idxpair.second.size() == 0) {
-			ss.str("");
-			ss << STAMP << "Index file prefix for reference " << idxpair.first << " is empty. Cannot proceed." << std::endl;
-			ERR(ss.str());
+			ERR("Index file prefix for reference " , idxpair.first , " is empty. Cannot proceed.");
 			exit(EXIT_FAILURE);
 		}
 		else {
@@ -1267,11 +1264,8 @@ int build_index(Runopts& opts)
 			full_len += len;
 			if (len < pread_gv)
 			{
-				ss.str("");
-				ss << "At least one of your sequences is shorter than the seed length " << pread_gv 
-					<< ", please filter out all sequences shorter than " << pread_gv 
-					<< " to continue index construction.";
-				ERR(ss.str());
+				ERR("At least one of your sequences is shorter than the seed length " , pread_gv, 
+					", please filter out all sequences shorter than " , pread_gv, " to continue index construction.");
 				exit(EXIT_FAILURE);
 			}
 			// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
@@ -1317,9 +1311,7 @@ int build_index(Runopts& opts)
 			FILE *keys = fopen(keys_file.c_str(), "w+");
 			if (keys == NULL)
 			{
-				ss.str("");
-				ss << "Could not open [" << keys_file << "] file for writing";
-				ERR(ss.str());
+				ERR("Could not open [" , keys_file , "] file for writing");
 				exit(EXIT_FAILURE);
 			}
 
@@ -1331,9 +1323,7 @@ int build_index(Runopts& opts)
 			kmer *lookup_table = (kmer*)malloc((1 << opts.seed_win_len) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
-				ss.str("");
-				ss << STAMP << "Could not allocate memory for 9-mer look-up table";
-				ERR(ss.str());
+				ERR("Could not allocate memory for 9-mer look-up table");
 				exit(EXIT_FAILURE);
 			}
 

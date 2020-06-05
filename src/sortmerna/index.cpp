@@ -92,7 +92,7 @@ Index::Index(Runopts & opts)
 
 				if (exists && !is_empty)
 				{
-					std::cout << STAMP << "Index file [" << std::filesystem::absolute(idxfile) << "] already exists and is not empty." << std::endl;
+					INFO("Index file [" , std::filesystem::absolute(idxfile) , "] already exists and is not empty.");
 					++count_indexed;
 				}
 				else
@@ -100,9 +100,7 @@ Index::Index(Runopts & opts)
 					std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
 					if (!fstrm.good())
 					{
-						ss.str("");
-						ss << STAMP << "Failed to open file [" << idxfile << "] for writing: " << strerror(errno);
-						ERR(ss.str());
+						ERR("Failed to open file [" , idxfile , "] for writing: " , strerror(errno));
 						exit(EXIT_FAILURE);
 					}
 					if (fstrm.is_open())
@@ -110,14 +108,17 @@ Index::Index(Runopts & opts)
 				}
 			}
 		}
-		if (count_indexed > 0)
+		if (count_indexed == opts.indexfiles.size())
 		{
 			opts.is_index_built = true;
-			std::cout << STAMP << "Found " << count_indexed << " non-empty index files. Skipping indexing." << std::endl;
-			std::cout << STAMP << "TODO: a better validation using an index descriptor to decide on indexing" << std::endl;
+			INFO("Found " , count_indexed , " non-empty index files. Skipping indexing.");
+			INFO("TODO: a better validation using an index descriptor to decide on indexing");
 		}
 		else
 		{
+			if (count_indexed > 0) {
+				INFO("Found ", count_indexed, " non-empty index files. Going to re-build. TODO: don't rebuild what's already indexed.");
+			}
 			build_index(opts);
 		}
 	}
