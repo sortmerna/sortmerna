@@ -443,6 +443,6 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
  */
 bool is_aligned(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
 {
-	std::cout << STAMP << "TODO" << std::endl;
+	INFO("TODO");
 	return false;
 }

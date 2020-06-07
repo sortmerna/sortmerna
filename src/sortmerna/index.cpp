@@ -108,7 +108,7 @@ Index::Index(Runopts & opts)
 				}
 			}
 		}
-		if (count_indexed == opts.indexfiles.size())
+		if (count_indexed == opts.indexfiles.size() * sfxarr.size())
 		{
 			opts.is_index_built = true;
 			INFO("Found " , count_indexed , " non-empty index files. Skipping indexing.");
@@ -117,7 +117,7 @@ Index::Index(Runopts & opts)
 		else
 		{
 			if (count_indexed > 0) {
-				INFO("Found ", count_indexed, " non-empty index files. Going to re-build. TODO: don't rebuild what's already indexed.");
+				INFO("Found ", count_indexed, " non-empty index files. Going to re-build. TODO: don't build what's already indexed.");
 			}
 			build_index(opts);
 		}

@@ -22,6 +22,7 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
+#include "reader.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
@@ -92,122 +93,90 @@ void Processor::run()
 
 void PostProcessor::run()
 {
-	int countReads = 0;
-	size_t count_reads_aligned = 0;
+	unsigned countReads = 0;
+	unsigned count_reads_aligned = 0;
+	std::string readstr;
 
+	INFO("PostProcessor: ", id, " thread: ", std::this_thread::get_id(), " started");
+
+	for (;readQueue.pop(readstr);)
 	{
-		std::stringstream ss;
-
-		ss << STAMP << "PostProcessor " << id << " thread " << std::this_thread::get_id() << " started" << std::endl;
-		std::cout << ss.str();
-	}
-#if 0
-	for (;;)
-	{
-		Read read = readQueue.pop(); // returns an empty read if queue is empty
-		if (read.isEmpty)
-		{ 
-			if (readQueue.getPushers() == 0) 
-				break; // queue is empty and no more pushers => end processing
-			
-			if (!read.isValid) 
-				continue;
-		}
-
-		callback(read, readstats, refstats, refs, opts);
-		++countReads;
-		if (read.is_hit) ++count_reads_aligned;
-
-		if (read.isValid && !read.isEmpty && !read.is_denovo)
 		{
-			//writeQueue.push(read);
+			Read read(readstr);
+			read.init(opts);
+			read.load_db(kvdb);
+
+			if (!read.isValid)
+				continue;
+
+			callback(read, readstats, refstats, refs, opts); // callbacks.cpp::computeStats
+			readstr.resize(0);
+			++countReads;
+			if (read.is_hit) ++count_reads_aligned;
 		}
 	}
-	writeQueue.decrPushers(); // signal this processor done adding
-	writeQueue.notify(); // notify in case no Reads were ever pushed to the Write queue
 
-	{
-		std::stringstream ss;
-		ss << STAMP << id << " thread " << std::this_thread::get_id() 
-			<< " done. Processed " << countReads << " reads." 
-			<< " count_reads_aligned: " << count_reads_aligned << std::endl;
-		std::cout << ss.str();
-	}
-#endif
+	INFO("PostProcessor: ", id, " thread: ", std::this_thread::get_id(), 
+		" done. Processed reads: ",	countReads, ". count_reads_aligned: ", count_reads_aligned);
+
 } // ~PostProcessor::run
 
 void ReportProcessor::run()
 {
-	std::size_t countReads = 0;
-
-	{
-		std::stringstream ss;
-		ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " started\n";
-		std::cout << ss.str();
-	}
-
+	unsigned countReads = 0;
+	unsigned num_invalid = 0; // empty or invalid reads count
 	std::size_t num_reads = opts.is_paired ? 2 : 1;
+	std::string readstr;
 	std::vector<Read> reads; // two reads if paired, a single read otherwise
-	Read read;
-	std::size_t i = 0;
-	bool isDone = false;
-#if 0
-	for (;!isDone;)
+
+	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " started.");
+
+	for (bool isDone = false; !isDone;)
 	{
 		reads.clear();
-		for (i = 0; i < num_reads; ++i)
+		for (std::size_t i = 0; i < num_reads; ++i)
 		{
-			read = readQueue.pop();  // returns an empty read if queue is empty
-			reads.push_back(read);
-			if (read.isEmpty)
+			if (readQueue.pop(readstr))
 			{
-				if (readQueue.getPushers() == 0)
-				{
-					isDone = true;
-					break;
-				}
-				if (!read.isValid)
-					break;
+				Read read(readstr);
+				read.init(opts);
+				read.load_db(kvdb);
+				reads.push_back(read);
+				readstr.resize(0);
+				++countReads;
+			}
+			else {
+				isDone = true;
 			}
 		}
 
-		if (reads.back().isEmpty || !reads.back().isValid) continue;
+		if (!isDone) {
+			if (reads.back().isEmpty || !reads.back().isValid) {
+				++num_invalid;
+			}
+			else {
+				callback(reads, opts, refs, refstats, output);
+			}
+		}
+	} // ~for
 
-		callback(reads, opts, refs, refstats, output);
-		countReads+=i;
-	}
-
-	{
-		std::stringstream ss;
-		ss << STAMP << "Report Processor " << id << " thread " << std::this_thread::get_id() << " done. Processed " << countReads << " reads\n";
-		std::cout << ss.str();
-	}
-#endif
+	INFO("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
 } // ~ReportProcessor::run
 
 // called from main
-void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
+void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_pp;
 	int N_PROC_THREADS = opts.num_proc_thread_pp; // opts.num_proc_threads
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	
-	{
-		std::stringstream ss;
-		ss << "\n" << STAMP << "==== Starting Post-processing (alignment statistics report) ====\n\n";
-		std::cout << ss.str();
-	}
-#if 0
+	INFO("==== Starting Post-processing (alignment statistics report) ====\n\n");
+
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
-	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // shared: Processor pushes, Writer pops
+	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	bool indb = readstats.restoreFromDb(kvdb);
 
-	if (indb) {
-		std::stringstream ss;
-		ss << STAMP << "Restored Readstats from DB:\n    " << readstats.toString() << std::endl;
-		std::cout << ss.str();
-	}
+	if (indb) {	INFO("Restored Readstats from DB:\n    ", readstats.toString()); }
 
 	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
 
@@ -222,63 +191,34 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 			// iterate parts of reference files
 			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 			{
-				{
-					std::stringstream ss;
-					ss << std::endl << STAMP << "Loading reference " << index_num
-						<< " part " << idx_part + 1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
-					std::cout << ss.str();
-				}
+				INFO("Loading reference ", index_num, " part ", idx_part + 1, "/", refstats.num_index_parts[index_num], "  ... ");
 
 				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
 				refs.load(index_num, idx_part, opts, refstats);
 				std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 
-				{
-					std::stringstream ss;
-					ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
-					std::cout << ss.str();
-				}
+				INFO("done. Elapsed sec: [", elapsed.count(), "]");
 
 				starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
-				for (int i = 0; i < N_READ_THREADS; ++i)
-				{
-					tpool.addJob(ReadControl(opts, readQueue, kvdb));
-				}
+				// start Reader
+				tpool.addJob(Reader(read_queue, opts.readfiles, opts.is_gz));
 
-				for (int i = 0; i < opts.num_write_thread; i++)
-				{
-					tpool.addJob(Writer("writer_" + std::to_string(i), writeQueue, kvdb, opts));
-				}
+				// start Processor
+				tpool.addJob(PostProcessor("postproc_1", read_queue, opts, refs, readstats, refstats, kvdb, computeStats));
 
-				// add processor jobs
-				for (int i = 0; i < N_PROC_THREADS; ++i)
-				{
-					tpool.addJob(PostProcessor("postproc_" + std::to_string(i), readQueue, writeQueue, opts, refs, readstats, refstats, computeStats));
-				}
-				++loopCount;
 				tpool.waitAll(); // wait till processing is done on one index part
-				refs.clear();
-				readQueue.reset(N_READ_THREADS);
-				writeQueue.reset(N_PROC_THREADS);
+
+				refs.unload();
+				read_queue.reset();
+				++loopCount;
 
 				elapsed = std::chrono::high_resolution_clock::now() - starts;
-
-				{
-					std::stringstream ss;
-					ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
-						<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
-					std::cout << ss.str();
-				}
+				INFO("Done reference ", index_num, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
 			} // ~for(idx_part)
 		} // ~for(index_num)
 
-		{
-			std::stringstream ss;
-			ss << STAMP << "total_reads_denovo_clustering = " << readstats.total_reads_denovo_clustering << std::endl;
-			std::cout << ss.str();
-		}
-
+		INFO("total_reads_denovo_clustering = " , readstats.total_reads_denovo_clustering);
 
 		readstats.set_is_total_reads_mapped_cov();
 		readstats.is_stats_calc = true;
@@ -289,10 +229,6 @@ void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValu
 
 	if (opts.is_otu_map)
 		readstats.printOtuMap(output.otumap_f);
-#endif
-	{
-		std::stringstream ss;
-		ss << "\n" << STAMP << "==== Done Post-processing (alignment statistics report) ====\n\n";
-		std::cout << ss.str();
-	}
+
+	INFO("==== Done Post-processing (alignment statistics report) ====\n\n");
 } // ~postProcess

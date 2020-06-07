@@ -47,8 +47,8 @@
 #include "processor.hpp"
 #include "options.hpp"
 #include "refstats.hpp"
-//#include "readsqueue.hpp"
-//#include "read_control.hpp"
+#include "readsqueue.hpp"
+#include "reader.hpp"
 
 
 // forward
@@ -98,13 +98,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 
 			// test the file
 			aligned_f[i] = opts.aligned_pfx.string() + sfx2 + sfx;
-			std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(aligned_f[i])) << std::endl;
+			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(aligned_f[i])));
 			aligned_os[i].open(aligned_f[i]);
 			aligned_os[i].close();
 			if (!aligned_os[i]) {
-				std::stringstream ss;
-				ss << STAMP << "Failed operating stream on file " << aligned_f[i];
-				ERR(ss.str());
+				ERR("Failed operating stream on file ", aligned_f[i]);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -128,13 +126,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 			}
 			// test the file
 			other_f[i] = opts.other_pfx.string() + sfx2 + sfx;
-			std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(other_f[i])) << std::endl;
+			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(other_f[i])));
 			other_os[i].open(other_f[i]);
 			other_os[i].close();
 			if (!other_os[i]) {
-				std::stringstream ss;
-				ss << STAMP << "Failed operating stream on file " << other_f[i];
-				ERR(ss.str());
+				ERR("Failed operating stream on file ", other_f[i]);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -149,7 +145,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 		sfx += ".sam";
 		sam_f = opts.aligned_pfx.string() + sfx;
-		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(sam_f)) << std::endl;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(sam_f)));
 		sam_os.open(sam_f);
 		sam_os.close();
 	}
@@ -163,13 +159,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 		sfx += ".blast";
 		blast_f = opts.aligned_pfx.string() + sfx;
-		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(blast_f)) << std::endl;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(blast_f)));
 		blast_os.open(blast_f);
 		blast_os.close();
 		if (!blast_os) {
-			std::stringstream ss;
-			ss << STAMP << "Failed operating stream on file " << blast_f;
-			ERR(ss.str());
+			ERR("Failed operating stream on file ", blast_f);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -185,7 +179,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 		sfx += "_otus.txt";
 		otumap_f = opts.aligned_pfx.string() + sfx;
-		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(otumap_f)) << std::endl;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(otumap_f)));
 		otumap.open(otumap_f);
 		otumap.close();
 	}
@@ -200,7 +194,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 		sfx += "_denovo." + readstats.suffix;
 		denovo_otus_f = opts.aligned_pfx.string() + sfx;
-		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(denovo_otus_f)) << std::endl;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(denovo_otus_f)));
 		denovo_otu.open(denovo_otus_f);
 		denovo_otu.close();
 	}
@@ -215,13 +209,11 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		}
 		sfx += ".log";
 		log_f = opts.aligned_pfx.string() + sfx;
-		std::cout << STAMP << "Testing file: " << std::filesystem::absolute(std::filesystem::path(log_f)) << std::endl;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(log_f)));
 		log_os.open(log_f);
 		log_os.close();
 		if (!log_os) {
-			std::stringstream ss;
-			ss << STAMP << "Failed operating stream on file " << log_f;
-			ERR(ss.str());
+			ERR("Failed operating stream on file ", log_f);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -650,11 +642,10 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 						&& (reads[0].read_num != reads[1].read_num 
 							|| reads[0].readfile_idx == reads[1].readfile_idx)) 
 					{
-						ss << STAMP << "Paired validation failed: reads[0].read_num = " << reads[0].read_num
-							<< " reads[1].read_num = " << reads[0].read_num
-							<< " reads[0].readfile_idx = " << reads[0].readfile_idx
-							<< " reads[1].readfile_idx = " << reads[1].readfile_idx;
-						ERR(ss.str());
+						ERR("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ", 
+							reads[0].read_num, " reads[0].readfile_idx= ", reads[0].readfile_idx,
+							" reads[1].id=", reads[1].id, " reads[1].read_num = ", reads[1].read_num, 
+							" reads[1].readfile_idx = ", reads[1].readfile_idx);
 						exit(EXIT_FAILURE);
 					}
 					
@@ -808,20 +799,15 @@ void Output::openfiles(Runopts & opts)
 		blast_os.open(blast_f);
 		if (!blast_os.good())
 		{
-			ss.str("");
-			ss << STAMP << "Could not open BLAST output file: [" << blast_f << "] for writing.";
-			ERR(ss.str()); 
+			ERR("Could not open BLAST output file: [", blast_f, "] for writing.");
 			exit(EXIT_FAILURE);
 		}
 	}
 
 	if (opts.is_sam && !sam_os.is_open()) {
 		sam_os.open(sam_f);
-		if (!sam_os.good())
-		{
-			ss.str("");
-			ss << STAMP  << "Could not open SAM output file ["<< sam_f << "] for writing.";
-			ERR(ss.str());
+		if (!sam_os.good()) {
+			ERR("Could not open SAM output file [", sam_f, "] for writing.");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -831,11 +817,8 @@ void Output::openfiles(Runopts & opts)
 			if (!aligned_os[i].is_open()) {
 				aligned_os[i].open(aligned_f[i], std::ios::app | std::ios::binary);
 			}
-			if (!aligned_os[i].good())
-			{
-				ss.str("");
-				ss << STAMP << "Could not open FASTA/Q output file [" << aligned_f[i] << "] for writing.";
-				ERR(ss.str());
+			if (!aligned_os[i].good()) {
+				ERR("Could not open FASTA/Q output file [" , aligned_f[i] , "] for writing.");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -849,9 +832,7 @@ void Output::openfiles(Runopts & opts)
 			}
 			if (!other_os[i].good())
 			{
-				ss.str("");
-				ss << STAMP << "Could not open FASTA/Q Non-aligned output file [" << other_f[i] << "] for writing.";
-				ERR(ss.str());
+				ERR("Could not open FASTA/Q Non-aligned output file [", other_f[i], "] for writing.");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -860,11 +841,8 @@ void Output::openfiles(Runopts & opts)
 	if (denovo_otus_f.size() != 0 && !denovo_os.is_open())
 	{
 		denovo_os.open(denovo_otus_f, std::ios::app | std::ios::binary);
-		if (!denovo_os.good())
-		{
-			ss.str("");
-			ss << STAMP  << "Could not open denovo otus: [" << denovo_otus_f << "] for writing.";
-			ERR(ss.str());
+		if (!denovo_os.good()) {
+			ERR("Could not open denovo otus: [", denovo_otus_f, "] for writing.");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -882,7 +860,7 @@ void Output::closefiles()
 	}
 	if (denovo_os.is_open()) { denovo_os.flush(); denovo_os.close(); }
 
-	std::cout << STAMP << "Flushed and closed" << std::endl;
+	INFO("Flushed and closed");
 }
 
 /** 
@@ -895,7 +873,7 @@ void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
 		log_os.open(log_f, std::ofstream::binary | std::ofstream::app);
 	}
 
-	std::cout << STAMP << "Using Log file: " << std::filesystem::absolute(log_f) << std::endl;
+	INFO("Using Log file: ", std::filesystem::absolute(log_f));
 
 	summary.cmd = opts.cmdline;
 	summary.total_reads = readstats.all_reads_count;
@@ -1047,27 +1025,20 @@ std::string Summary::to_string(Runopts &opts, Refstats &refstats)
 } // ~Summary::to_string
 
 // called from main. TODO: move into a class?
-void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb)
+void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase &kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;
-	std::stringstream ss;
 
-	ss.str("");
-	ss << "\n" << STAMP << "=== Report generation starts. Thread: " << std::this_thread::get_id() << " ===\n\n";
-	std::cout << ss.str();
+	INFO("=== Report generation starts. Thread: ", std::this_thread::get_id() , " ===\n");
 
 	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {
-		ss.str("");
-		ss << STAMP << "Restored Readstats from DB: " << indb << std::endl;
-		std::cout << ss.str(); 
+		INFO("Restored Readstats from DB: ", indb); 
 	}
-#if 0
-	ReadsQueue readQueue("read_queue", opts.queue_size_max, N_READ_THREADS); // shared: Processor pops, Reader pushes
-	ReadsQueue writeQueue("write_queue", opts.queue_size_max, N_PROC_THREADS); // Not used for Reports
+	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	Refstats refstats(opts, readstats);
 	References refs;
 
@@ -1080,42 +1051,32 @@ void generateReports(Runopts & opts, Readstats & readstats, Output & output, Key
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
 		{
-			ss << std::endl << STAMP << "Loading reference " 
-				<< index_num << " part " << idx_part+1 << "/" << refstats.num_index_parts[index_num] << "  ... ";
-			std::cout << ss.str(); ss.str("");
+			INFO("Loading reference ", index_num, " part ", idx_part+1, "/", refstats.num_index_parts[index_num], "  ... ");
 
 			auto starts = std::chrono::high_resolution_clock::now();
 
 			refs.load(index_num, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			ss << "done [" << std::setprecision(2) << std::fixed << elapsed.count() << " sec]" << std::endl;
-			std::cout << ss.str(); ss.str("");
+			INFO("done. Elapsed sec [" , elapsed.count());
 
 			starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
-			for (int i = 0; i < N_READ_THREADS; ++i)
-			{
-				tpool.addJob(ReadControl(opts, readQueue, kvdb));
-			}
+			// start Reader
+			tpool.addJob(Reader(read_queue, opts.readfiles, opts.is_gz));
 
-			// add processor jobs
-			for (int i = 0; i < N_PROC_THREADS; ++i)
-			{
-				tpool.addJob(ReportProcessor("report_proc_" + std::to_string(i), readQueue, opts, refs, output, refstats, reportsJob));
-			}
+			// start processor
+			tpool.addJob(ReportProcessor("report_proc_1", read_queue, opts, refs, output, refstats, kvdb, reportsJob));
+
 			tpool.waitAll(); // wait till processing is done on one index part
-			refs.clear();
-			writeQueue.reset(N_PROC_THREADS);
-			readQueue.reset(N_READ_THREADS);
+			refs.unload();
+			read_queue.reset();
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
-			ss.str("");
-			ss << STAMP << "Done reference " << index_num << " Part: " << idx_part + 1
-				<< " Time: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
-			std::cout << ss.str();
+			INFO("Done reference ", index_num, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
+
 			if (!opts.is_blast && !opts.is_sam)	break;;
 		} // ~for(idx_part)
 	} // ~for(index_num)
-#endif
-	std::cout << "\n" << STAMP << "=== Done Reports generation ===\n\n";
+
+	INFO("=== Done Reports generation ===\n");
 } // ~generateReports

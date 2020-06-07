@@ -20,11 +20,11 @@
 
  // called on each read
 void reportsJob(
-	std::vector<Read> & reads, /* one or two (if paired) reads */
-	Runopts & opts,
-	References & refs,
-	Refstats & refstats,
-	Output & output
+	std::vector<Read>& reads, /* one or two (if paired) reads */
+	Runopts& opts,
+	References& refs,
+	Refstats& refstats,
+	Output& output
 )
 {
 	// only needs one loop through all read, no reference file dependency
@@ -60,7 +60,7 @@ void reportsJob(
  *     readstats.otu_map
  *     //read.hit_denovo see TODO in the function body
  */
-void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts)
+void computeStats(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
 {
 	// OTU-map: index of alignment holding maximum SW score
 	uint32_t index_max_score = read.hits_align_info.max_index;

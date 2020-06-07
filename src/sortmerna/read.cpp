@@ -577,6 +577,9 @@ bool Read::from_string(std::string& readstr)
 	for (int i = 0; std::getline(ss, line, '\n'); ++i) {
 		if (i == 0) {
 			id = line;
+			auto pos = line.find_first_of('_');
+			readfile_idx = std::atoi(line.substr(0, pos+1).data());
+			read_num = std::atoi(line.substr(pos+1, line.size() - pos -1).data());
 		}
 		else if (i == 1) {
 			format = line.front() == FASTA_HEADER_START ? Format::FASTA : Format::FASTQ;

@@ -74,21 +74,21 @@ class PostProcessor {
 public:
 	PostProcessor(
 		std::string id,
-		ReadsQueue & readQueue,
-		ReadsQueue & writeQueue,
-		Runopts & opts,
-		References & refs,
-		Readstats & readstats,
-		Refstats & refstats,
-		void(*callback)(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts)
+		ReadsQueue& readQueue,
+		Runopts& opts,
+		References& refs,
+		Readstats& readstats,
+		Refstats& refstats,
+		KeyValueDatabase& kvdb,
+		void(*callback)(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
 	) :
 		id(id),
 		readQueue(readQueue),
-		writeQueue(writeQueue),
 		opts(opts),
 		refs(refs),
 		readstats(readstats),
 		refstats(refstats),
+		kvdb(kvdb),
 		callback(callback)
 	{}
 
@@ -96,17 +96,17 @@ public:
 
 protected:
 	void run();
-	void(*callback)(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
+	void(*callback)(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
 
 protected:
 	std::string id;
 	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
-	ReadsQueue & readQueue;
-	ReadsQueue & writeQueue;
-	Runopts & opts;
-	References & refs;
-	Readstats & readstats;
-	Refstats & refstats;
+	ReadsQueue& readQueue;
+	Runopts& opts;
+	References& refs;
+	Readstats& readstats;
+	Refstats& refstats;
+	KeyValueDatabase& kvdb;
 }; // ~class PostProcessor
 
 /* generates output after alignment and post-processing are done */
@@ -114,12 +114,13 @@ class ReportProcessor {
 public:
 	ReportProcessor(
 		std::string id,
-		ReadsQueue & readQueue,
-		Runopts & opts,
-		References & refs, 
-		Output & output, 
-		Refstats & refstats,
-		void(*callback)(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output)
+		ReadsQueue& readQueue,
+		Runopts& opts,
+		References& refs, 
+		Output& output, 
+		Refstats& refstats,
+		KeyValueDatabase& kvdb,
+		void(*callback)(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output)
 	) :
 		id(id),
 		readQueue(readQueue),
@@ -127,6 +128,7 @@ public:
 		refs(refs),
 		output(output),
 		refstats(refstats),
+		kvdb(kvdb),
 		callback(callback)
 	{}
 
@@ -138,10 +140,11 @@ protected:
 
 protected:
 	std::string id;
-	ReadsQueue & readQueue;
+	ReadsQueue& readQueue;
 	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
-	Runopts & opts; 
-	References & refs;
-	Refstats & refstats;
-	Output & output;
+	Runopts& opts; 
+	References& refs;
+	Refstats& refstats;
+	Output& output;
+	KeyValueDatabase& kvdb;
 }; // ~class ReportProcessor
