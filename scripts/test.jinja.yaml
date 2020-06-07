@@ -470,25 +470,25 @@ t17:
   note: test indexing, workdir
   cmd:
     - -ref
-    -  data/rRNA_databases/silva-euk-28s-id98.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
     - -ref
-    -  data/rRNA_databases/silva-euk-18s-id95.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
     - -ref
-    -  data/rRNA_databases/silva-bac-23s-id98.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
     - -ref
-    -  data/rRNA_databases/silva-bac-16s-id90.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
     - -ref
-    -  data/rRNA_databases/silva-arc-23s-id98.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
     - -ref
-    -  data/rRNA_databases/silva-arc-16s-id95.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
     - -ref
-    -  data/rRNA_databases/rfam-5s-database-id98.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
     - -ref
-    -  data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
     - -num_alignments
     - '1'
     - -v
