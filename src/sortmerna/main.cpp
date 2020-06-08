@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 	bool dryrun = false;
 	Runopts opts(argc, argv, dryrun);
 
-	std::cout << STAMP << "Running command:\n" << opts.cmdline << std::endl;
+	INFO("Running command:\n", opts.cmdline);
 
 	Index index(opts); // reference index DB
 	KeyValueDatabase kvdb(opts.kvdbdir.string());
@@ -96,6 +96,5 @@ int main(int argc, char** argv)
 			break;
 		}
 	}
-
 	return 0;
 }//~main()
