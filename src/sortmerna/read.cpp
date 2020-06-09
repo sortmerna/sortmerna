@@ -248,9 +248,8 @@ void Read::validate() {
 	std::stringstream ss;
 	if (sequence.size() > MAX_READ_LEN)
 	{
-		ss << "Read ID: " << id << " Header: " << header << " Sequence length: " << sequence.size() << " > " << MAX_READ_LEN << " nt " << std::endl
-			<< "  Please check your reads or contact the authors." << std::endl;
-		ERR(ss.str());
+		ERR("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
+			MAX_READ_LEN, " nt \n", "  Please check your reads or contact the authors.");
 		exit(EXIT_FAILURE);
 	}
 	isValid = true;
@@ -488,7 +487,7 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 /* deserialize matches from JSON and populate the read */
 void Read::unmarshallJson(KeyValueDatabase & kvdb)
 {
-	printf("Read::unmarshallJson: Not yet Implemented\n");
+	INFO("Read::unmarshallJson: Not yet Implemented");
 }
 
 
@@ -593,12 +592,12 @@ bool Read::from_string(std::string& readstr)
 				quality = line;
 			}
 			else {
-				std::cerr << STAMP << "unexpected number of lines in fasta read: " << readstr << std::endl;
+				ERR("unexpected number of lines in fasta read: ", readstr);
 				is_ok = false;
 			}
 		}
 		else {
-			std::cerr << STAMP << "unexpected number of lines in read: " << readstr << std::endl;
+			ERR("unexpected number of lines in read: ", readstr);
 			is_ok = false;
 		}
 	}

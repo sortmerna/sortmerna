@@ -160,7 +160,7 @@ void ReportProcessor::run()
 		}
 	} // ~for
 
-	INFO("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
+	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
 } // ~ReportProcessor::run
 
 // called from main
@@ -214,7 +214,7 @@ void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDa
 				++loopCount;
 
 				elapsed = std::chrono::high_resolution_clock::now() - starts;
-				INFO("Done reference ", index_num, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
+				INFO_MEM("Done reference ", index_num, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
 			} // ~for(idx_part)
 		} // ~for(index_num)
 

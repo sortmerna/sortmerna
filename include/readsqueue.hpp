@@ -56,9 +56,7 @@ public:
 		queue(capacity) // set initial capacity
 #endif
 	{
-		std::stringstream ss;
-		ss << STAMP << "created Reads queue with capacity [" << capacity << "] Total reads to process: " << num_reads_tot << std::endl;
-		std::cout << ss.str();
+		INFO("created Reads queue with capacity [", capacity, "] Total reads to process: ", num_reads_tot);
 	}
 
 	//~ReadsQueue()
