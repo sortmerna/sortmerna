@@ -1069,3 +1069,193 @@ tc19:
     num_fail:  14201574 # 94.68
     time:           860.05 # 678.62 + 87.14 + 94.29 = 860.05 / 60 = 14.33 min
     cpus:             8
+
+tc20:
+  name: issue 231 8x2500
+  note: 8 reference databases + 2500 reads
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1_5K.fastq.gz # 1,250 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2_5K.fastq.gz # 1,250 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 2500
+    num_hits:   127
+    num_fail:  2373
+    time:
+      align:   [0.362669, 0.39506,  0.407958, 0.387674, 0.51132,  0.476758, 0.334519, 0.439789] # sec
+      stats:   [0.311779, 0.32385,  0.290391, 0.26897,  0.292911, 0.29353,  0.29669,  0.275751]
+      reports: [0.297409, 0.332624, 0.360632, 0.323509, 0.338248, 0.279327, 0.341752, 0.317718]
+      total:   []
+      index_stats_calc: 4.01 # sec
+      idx_load: 2.118 # sec
+      ref_load: 0.161 # sec
+    memory:
+      prior_idx_load:     [5036, ] # MB
+      idx_load:         378584 # MB
+      ref_load:         395820 # MB
+      align_done:       [404848, 379752, 370604, 500176, 155276, 214912, 271628, 258980] # MB
+      idx_ref_unloaded:  98144 # MB
+
+tc21:
+  name: issue 231 8x1M
+  note: 8 reference databases + 1M reads
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1_2M.fastq.gz # 500,000 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2_2M.fastq.gz # 500,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 1000000
+    num_hits:    49909
+    num_fail:   950091
+  time:
+    align:   [14.6285, 15.4647, 18.4473, 21.348, 10.3554, 12.1012, 12.9385, 10.3874]
+    stats:   []
+    reports: []
+    total:
+    index_stats_calc:
+    idx_load: [1.53757, ]
+    ref_load: [0.112886. ]
+  memory:
+    prior_idx_load: [  5100, ]
+    idx_load:       [378400, ]
+    ref_load:       [395924.]
+    align_done:     [441044, 384996, 437648, 556836, 249236, 286252, 322048, 267984]
+    idx_ref_unloaded:
+
+tc22:
+  name: issue 231 8x2.5M
+  note: 8 reference databases + 2.5M reads
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1_5M.fastq.gz # 1.25M reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2_5M.fastq.gz # 1.25M reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 2500000
+    num_hits:   5944
+    num_fail:   4056
+
+tc23:
+  name: issue 231 8x50M
+  note: 8 reference databases + 50M reads
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 49309188
+    num_hits:   0
+    num_fail:   0
+    time:
+      align:   [1085.8, 1168.05, 1130.03, ?, 607.784, 792.255, ?, ?]
+      stats:   []
+      reports: []
+      total:
+      index_stats_calc:
+      idx_load: [1.53757, ]
+      ref_load: [0.112886. ]
+    memory:
+      prior_idx_load: [  5100, ]
+      idx_load:       [378400, ]
+      ref_load:       [395924.]
+      align_done:     [608508, 568984, 1185272, 1897344, 1702888, 1793292, ?, ?]
+      idx_ref_unloaded:
