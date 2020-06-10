@@ -73,7 +73,7 @@ int clear_dir(std::string dpath);
  * Callback run in a Processor thread
  * Called on each index * index_part * read.num_strands
  *
- * @param isLastStrand Boolean flags when the last strand is passed for matching
+ * @param isLastStrand flags when the last strand (out of max 2 strands) is passed for matching
  */
 void align_cb
 	(
@@ -178,15 +178,8 @@ void align_cb
 					std::string id = read.id;
 					bool is03 = read.is03;
 					bool is04 = read.is04;
-					ss << STAMP
-						<< "lookup index: " << keyf << " is larger than lookup_tbl.size: " << vsize 
-						<< " Index: " << idxn
-						<< " Part: " << idxp
-						<< " Read.id: " << id
-						<< " Read.is03: " << is03
-						<< " Read.is04: " << is04
-						<< " Aborting.." << std::endl;
-					ERR(ss.str());
+					ERR("lookup index: ", keyf, " is larger than lookup_tbl.size: ", vsize, 
+						" Index: ", idxn, " Part: ", idxp, " Read.id: ", id, " Read.is03: ", is03, " Read.is04: ", is04, " Aborting..");
 					exit(EXIT_FAILURE);
 				}
 
@@ -242,15 +235,9 @@ void align_cb
 						std::string id = read.id;
 						bool is03 = read.is03;
 						bool is04 = read.is04;
-						ss << STAMP << "Thread: " << std::this_thread::get_id()
-							<< " ERROR: lookup index: " << keyr << " is larger than lookup_tbl.size: " << vsize
-							<< " Index: " << idxn
-							<< " Part: " << idxp
-							<< " Read.id: " << id
-							<< " Read.is03: " << is03
-							<< " Read.is04: " << is04
-							<< " Aborting.." << std::endl;
-						std::cout << ss.str();
+						ERR("Thread: ", std::this_thread::get_id(), " lookup index: ", keyr, 
+							" is larger than lookup_tbl.size: ", vsize, " Index: ", idxn, " Part: ", idxp, 
+							" Read.id: ", id, " Read.is03: ", is03, " Read.is04: ", is04, " Aborting..");
 						exit(EXIT_FAILURE);
 					}
 
@@ -327,14 +314,11 @@ void align_cb
 			//~while all three window skip lengths have not been tested, or a match has not been found
 	}// ~while (search);
 
-	// the read didn't align (for --num_alignments [INT] option),
-	// output null alignment string
-	if (isLastStrand && !read.is_hit && opts.num_alignments > -1) // !opts.forward
+	// the read didn't align => NOT is_denovo
+	if (isLastStrand && !read.is_hit && opts.num_alignments > -1 && opts.is_denovo_otu && read.is_denovo)
 	{
-		// do not output read for de novo OTU clustering
-		// - it did not pass the E-value threshold
-		if (opts.is_de_novo_otu) read.is_denovo = false;
-	}//~if read didn't align
+		read.is_denovo = false;
+	}
 } // ~align_cb
 
 // called from main

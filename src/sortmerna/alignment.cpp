@@ -99,13 +99,13 @@ void find_lis( deque<pair<uint32_t, uint32_t>> &a, vector<uint32_t> &b )
  */
 void compute_lis_alignment
 	(
-		Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats,
-		bool & search,
+		Read& read, Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats,
+		bool& search,
 		uint32_t max_SW_score,
 		bool& read_to_count
 	)
 {
-	// boolean set to true if SW alignment succeeded between
+	// true if SW alignment succeeded between
 	// the read and a candidate reference sequence
 	bool aligned = false;
 
@@ -114,10 +114,11 @@ void compute_lis_alignment
 	if (read.readhit < (uint32_t)opts.seed_hits)
 		return;
 
-	// map <reference number : number of the k-mer occurrences>
 	map<uint32_t, uint32_t> kmer_count_map;
-	// vector to hold 'kmer_count_map' content for Sorting (as map cannot be sorted)
-	vector<uint32pair> kmer_count_vec;
+	//    |         |_number of the k-mer occurrences
+	//    |_reference file number
+
+	vector<uint32pair> kmer_count_vec; // use to sort the 'kmer_count_map' (map cannot be sorted)
 	map<uint32_t, uint32_t>::iterator map_it;
 	uint32_t max_ref = 0; // reference with max kmer occurrences
 	uint32_t max_occur = 0; // number of kmer occurrences on the 'max_ref'
@@ -574,16 +575,14 @@ void compute_lis_alignment
 								double align_cov_round = 0.0;
 								ss >> align_id_round >> align_cov_round;
 
-								// the alignment passed the %id and %query coverage threshold
+								// the alignment passed the Identity and Coverage threshold => NOT is_denovo
 								if ( align_id_round >= opts.min_id && align_cov_round >= opts.min_cov && read_to_count)
 								{
 									if (!readstats.is_total_reads_mapped_cov)
 										++readstats.total_reads_mapped_cov; // also calculated in post-processor 'computeStats'
 									read_to_count = false;
 
-									// do not output read for de novo OTU clustering
-									// it passed the %id/coverage thersholds
-									if (opts.is_de_novo_otu) read.is_denovo = false;
+									if (opts.is_denovo_otu) read.is_denovo = false; // saved in DB
 								}
 								// <----------------------------------------- TODO
 
@@ -604,7 +603,7 @@ void compute_lis_alignment
 								break;
 							}
 
-							// stop search after the first num_alignments_gv alignments
+							// stop search after the first num_alignments alignments
 							// for this read
 							if (opts.num_alignments > 0)
 							{

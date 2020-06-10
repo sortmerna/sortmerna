@@ -20,6 +20,8 @@ t0:
     - -blast
     - '0'
     - -v
+    - -workdir
+    - run
   validate: 
     func: t0 # name of the validation function
 
@@ -68,6 +70,8 @@ t2:
     - -blast
     - '1 qstrand cigar'
     - -v
+    #- -workdir
+    #- {{ SMR_SRC }}/run
   validate: 
     func: t2
     # expected alignment
@@ -229,6 +233,8 @@ t9:
     - '0'
     - -sam
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func: t9
     num_reads: 1
@@ -278,6 +284,8 @@ t10:
     - -reads
     - {{ SMR_SRC }}/data/illumina_GQ099317.fasta # 1 read
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
   cwd:
   capture: True
   validate:
@@ -302,6 +310,8 @@ t11:
     - -fastx
     - -other
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func: t11
     num_reads: 30000
@@ -337,6 +347,8 @@ t12:
     - -fastx
     - -other
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func: t12
     num_reads: 30000
@@ -373,6 +385,8 @@ t13:
     - -m
     - '20'
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func: t13
     num_reads: 30000
@@ -409,6 +423,8 @@ t14:
     - -m
     - '10'
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func: t14
     num_reads: 30000
@@ -440,6 +456,8 @@ t15:
     - '-a' # deprecated. Redirects to 'threads'
     - '5'
     - -v
+    - -workdir
+    - {{ SMR_SRC }}/run
 
 t16:
   name: test_relative_path
@@ -458,6 +476,8 @@ t16:
     - -v
     - -workdir
     - run
+    - -workdir
+    - {{ SMR_SRC }}/run
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -493,7 +513,7 @@ t17:
     - '1'
     - -v
     - -workdir
-    - run
+    - {{ SMR_SRC }}/run
   cwd: {{ SMR_SRC }}
   validate:
     func: t17
@@ -529,6 +549,8 @@ t18:
     #- -e
     #- '1e-15'
     #- -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func:
     num_reads:  10000
@@ -570,6 +592,8 @@ t19:
     #- -e
     #- '1e-15'
     - -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func:
     num_reads:      10000
@@ -603,6 +627,8 @@ t20:
     - -paired_in
     - -v
     #- -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
   validate:
     func:
     num_hits:    9188

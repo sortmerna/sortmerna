@@ -300,9 +300,9 @@ void Runopts::opt_log(const std::string &val)
 		WARN("'--", OPT_LOG, "' is deprecated. True by default.");
 } // ~Runopts::optLog
 
-void Runopts::opt_de_novo_otu(const std::string &val)
+void Runopts::opt_denovo_otu(const std::string &val)
 {
-	is_de_novo_otu = true;
+	is_denovo_otu = true;
 } // ~Runopts::opt_de_novo_otu
 
 void Runopts::opt_otu_map(const std::string &val)
@@ -644,29 +644,21 @@ void Runopts::opt_num_alignments(const std::string &val)
 	std::stringstream ss;
 	if (val.size() == 0)
 	{
-		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
-			<< "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.";
-		ERR(ss.str());
+		ERR("'", OPT_NUM_ALIGNMENTS, "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.");
 		exit(EXIT_FAILURE);
 	}
 
 	if (is_num_alignments)
 	{
-		ss.str("");
-		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS 
-			<< "' [INT] has been set twice, please verify your parameters.";
-		ERR(ss.str());
+		ERR("'", OPT_NUM_ALIGNMENTS, "' [INT] has been set twice, please verify your parameters.");
 		exit(EXIT_FAILURE);
 	}
 
 	// set number of alignments to output reaching the E-value
-	num_alignments = atoi(val.data());
+	num_alignments = std::stoi(val);
 	if (num_alignments < 0)
 	{
-		ss.str("");
-		ss << STAMP << "'" << OPT_NUM_ALIGNMENTS
-			<< "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.";
-		ERR(ss.str());
+		ERR("'", OPT_NUM_ALIGNMENTS, "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.");
 		exit(EXIT_FAILURE);
 	}
 	is_num_alignments = true;
@@ -687,7 +679,7 @@ void Runopts::opt_edges(const std::string &val)
 		is_as_percent = true;
 
 	// convert to integer
-	edges = std::stoi(val); //edges = (int)strtol(val.data(), &end, 10);
+	edges = std::stoi(val);
 
 	if (edges < 1 || edges > 10)
 	{
@@ -719,11 +711,9 @@ void Runopts::opt_SQ(const std::string &val)
 
 void Runopts::opt_passes(const std::string &val)
 {
-	std::stringstream ss;
 	if (passes_set)
 	{
-		ss << STAMP << "'" << OPT_PASSES << "' [INT,INT,INT] has been set twice, please verify your choice.";
-		ERR(ss.str());
+		ERR("'", OPT_PASSES, "' [INT,INT,INT] has been set twice, please verify your choice.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -734,9 +724,7 @@ void Runopts::opt_passes(const std::string &val)
 		pos_from += pos +1;
 		if (++count > 3) 
 		{
-			ss.str("");
-			ss << STAMP << "Exactly 3 integers has to be provided with '" << OPT_PASSES << "' [INT,INT,INT]";
-			ERR(ss.str());
+			ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
 			exit(EXIT_FAILURE);
 		}
 		auto skiplen = std::stoi(tok);
@@ -744,10 +732,7 @@ void Runopts::opt_passes(const std::string &val)
 			skiplengths.emplace_back(skiplen);
 		else
 		{
-			ss.str("");
-			ss << STAMP << "All three integers in '" << OPT_PASSES
-				<< "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).";
-			ERR(ss.str());
+			ERR("All three integers in '", OPT_PASSES, "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -804,9 +789,7 @@ void Runopts::opt_version(const std::string &val)
 
 void Runopts::opt_unknown(char **argv, int &narg, char * opt)
 {
-	std::stringstream ss;
-	ss << " : option --" << opt << " not recognized";
-	ERR(ss.str());
+	ERR(" : option --" , opt , " not recognized");
 	print_help();
 	exit(EXIT_FAILURE);
 } // ~Runopts::opt_unknown
@@ -1449,7 +1432,7 @@ void Runopts::validate()
 	}
 
 	// No output format has been chosen
-	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_de_novo_otu))
+	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_denovo_otu))
 	{
 		is_blast = true;
 		INFO("No output format has been chosen (fastx|sam|blast|otu_map). Using default '" , OPT_BLAST , "'");
@@ -1595,7 +1578,7 @@ void Runopts::validate()
 	{
 		// TODO: looks arbitrary. Why the alignment contolling options would depend on the output?
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		if (is_fastx && !(is_blast || is_sam || is_otu_map || is_log || is_de_novo_otu))
+		if (is_fastx && !(is_blast || is_sam || is_otu_map || is_log || is_denovo_otu))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
 		else

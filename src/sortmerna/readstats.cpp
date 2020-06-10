@@ -371,7 +371,7 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 } // ~Readstats::restoreFromDb
 
 /* push entry to Readstats::otu_map*/
-void Readstats::pushOtuMap(std::string & ref_seq_str, std::string & read_seq_str)
+void Readstats::pushOtuMap(std::string& ref_seq_str, std::string& read_seq_str)
 {
 	//std::lock_guard<std::mutex> omlg(otu_map_lock);
 	otu_map[ref_seq_str].push_back(read_seq_str);

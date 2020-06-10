@@ -184,7 +184,7 @@ void Output::init(Runopts & opts, Readstats & readstats)
 		otumap.close();
 	}
 
-	if (opts.is_de_novo_otu)
+	if (opts.is_denovo_otu)
 	{
 		std::ofstream denovo_otu;
 		std::string sfx;
@@ -722,48 +722,48 @@ void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
 				}
 			}
 		}//~if paired
-		else // non-paired
+		// non-paired
+		else
 		{
 			// the read was accepted - output
 			if (reads[0].is_hit)
 			{
 				write_a_read(aligned_os[0], reads[0]);
-			} //~if read was accepted
+			}
 			else if (opts.is_other) {
 				write_a_read(other_os[0], reads[0]);
 			}
-		}//~if not paired-in or paired-out
+		}
 	}//~if is_fastx 
 } // ~Output::report_fasta
 
-void Output::report_denovo(Runopts & opts, std::vector<Read> & reads)
+/* 
+ * output reads for de novo clustering i.e. reads that pass SW & fail (%Cov & %ID)
+ * called on each read or a pair
+ */
+void Output::report_denovo(Runopts& opts, std::vector<Read>& reads)
 {
-	std::stringstream ss;
-
-	// output reads with < id% alignment (passing E-value) for de novo clustering
 	if (denovo_otus_f.size() != 0)
 	{
-		// pair-ended reads
+		// paired reads
 		if (opts.is_paired_in || opts.is_paired_out)
 		{
-			// either both reads are accepted, or one is accepted and pairedin_gv
+			// either both reads are accepted, or one is accepted and paired_in
 			if ( opts.is_paired_in && reads[0].is_hit && reads[1].is_hit && (reads[0].is_denovo || reads[1].is_denovo) )
 			{
-				// output aligned read
 				for (Read read : reads)
 					denovo_os << read.header << std::endl << read.sequence << std::endl;
-			}//~the read was accepted
-		}//~if paired-in or paired-out
-		else // regular or pair-ended reads don't need to go into the same file
+			}
+		}
+		// non-paired
+		else
 		{
-			// the read was accepted
 			if (reads[0].is_hit && reads[0].is_denovo)
 			{
-				// output aligned read
 				denovo_os << reads[0].header << std::endl << reads[0].sequence << std::endl;
-			} //~if read was accepted
-		}//~if not paired-in or paired-out
-	}//~if ( denovo_otus_file set )
+			}
+		}
+	}
 } // ~Output::report_denovo
 
 void Output::report_biom(){
@@ -866,7 +866,7 @@ void Output::closefiles()
 /** 
  * called from postProcess 
  */
-void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
+void Output::writeLog(Runopts& opts, Refstats& refstats, Readstats& readstats)
 {
 	if (!log_os.is_open())
 	{
@@ -877,8 +877,8 @@ void Output::writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats)
 
 	summary.cmd = opts.cmdline;
 	summary.total_reads = readstats.all_reads_count;
-	if (opts.is_de_novo_otu) {
-		summary.is_de_novo_otu = opts.is_de_novo_otu;
+	if (opts.is_denovo_otu) {
+		summary.is_de_novo_otu = opts.is_denovo_otu;
 		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
 	}
 	summary.total_reads_mapped = readstats.total_reads_aligned.load();
@@ -954,36 +954,37 @@ void Output::write_a_read(std::ofstream& strm, Read& read)
 		strm << '+' << std::endl << read.quality << std::endl;
 }
 
-std::string Summary::to_string(Runopts &opts, Refstats &refstats)
+std::string Summary::to_string(Runopts& opts, Refstats& refstats)
 {
 	std::stringstream ss;
+	size_t idx = 0;
 
-	ss << " Command:\n    " << cmd << std::endl << std::endl;
+	ss << " Command:\n    " << cmd << std::endl << std::endl
 
-	ss << " Process pid = " << pid_str << std::endl << std::endl;
+	   << " Process pid = " << pid_str << std::endl << std::endl
 
-	ss << " Parameters summary: " << std::endl;
-	int idx = 0;
+	   << " Parameters summary: " << std::endl;
+
 	for (auto ref : opts.indexfiles) {
-		ss << "    Reference file: " << ref.first << std::endl;
-		ss << "        Seed length = " << opts.seed_win_len << std::endl;
-		ss << "        Pass 1 = " << opts.skiplengths[idx][0] 
-				<< ", Pass 2 = " << opts.skiplengths[idx][1] 
-				<< ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl;
-		ss << "        Gumbel lambda = " << refstats.gumbel[idx].first << std::endl;
-		ss << "        Gumbel K = " << refstats.gumbel[idx].second << std::endl;
-		ss << "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
+		ss << "    Reference file: " << ref.first << std::endl
+		   << "        Seed length = " << opts.seed_win_len << std::endl
+		   << "        Pass 1 = " << opts.skiplengths[idx][0] 
+				 << ", Pass 2 = " << opts.skiplengths[idx][1] 
+				 << ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl
+		   << "        Gumbel lambda = " << refstats.gumbel[idx].first << std::endl
+		   << "        Gumbel K = " << refstats.gumbel[idx].second << std::endl
+		   << "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
 		++idx;
 	}
-	ss << "    Number of seeds = " << opts.seed_hits << std::endl;
-	ss << "    Edges = " << opts.edges << std::endl;
-	ss << "    SW match = " << opts.match << std::endl;
-	ss << "    SW mismatch = " << opts.mismatch << std::endl;
-	ss << "    SW gap open penalty = " << opts.gap_open << std::endl;
-	ss << "    SW gap extend penalty = " << opts.gap_extension << std::endl;
-	ss << "    SW ambiguous nucleotide = " << opts.score_N << std::endl;
-	ss << "    SQ tags are " << (opts.is_SQ ? "" : "not ") << "output" << std::endl;
-	ss << "    Number of alignment processing threads = " << opts.num_proc_thread << std::endl;
+	ss << "    Number of seeds = " << opts.seed_hits << std::endl
+	   << "    Edges = " << opts.edges << std::endl
+	   << "    SW match = " << opts.match << std::endl
+	   << "    SW mismatch = " << opts.mismatch << std::endl
+	   << "    SW gap open penalty = " << opts.gap_open << std::endl
+	   << "    SW gap extend penalty = " << opts.gap_extension << std::endl
+	   << "    SW ambiguous nucleotide = " << opts.score_N << std::endl
+	   << "    SQ tags are " << (opts.is_SQ ? "" : "not ") << "output" << std::endl
+	   << "    Number of alignment processing threads = " << opts.num_proc_thread << std::endl;
 	for (auto readf : opts.readfiles) {
 		ss << "    Reads file: " << readf << std::endl;
 	}
@@ -1015,8 +1016,8 @@ std::string Summary::to_string(Runopts &opts, Refstats &refstats)
 
 	if (is_otumapout)
 	{
-		ss << " Total reads passing %%id and %%coverage thresholds = " << total_reads_mapped_cov << std::endl;
-		ss << " Total OTUs = " << total_otu << std::endl;
+		ss << " Total reads passing %%id and %%coverage thresholds = " << total_reads_mapped_cov << std::endl
+		   << " Total OTUs = " << total_otu << std::endl;
 	}
 
 	ss << std::endl << " " << timestamp << std::endl;
@@ -1025,7 +1026,7 @@ std::string Summary::to_string(Runopts &opts, Refstats &refstats)
 } // ~Summary::to_string
 
 // called from main. TODO: move into a class?
-void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase &kvdb)
+void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;

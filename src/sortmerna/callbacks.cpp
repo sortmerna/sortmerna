@@ -18,14 +18,8 @@
 #include "output.hpp"
 
 
- // called on each read
-void reportsJob(
-	std::vector<Read>& reads, /* one or two (if paired) reads */
-	Runopts& opts,
-	References& refs,
-	Refstats& refstats,
-	Output& output
-)
+ // called on each read or a pair of reads (if paired)
+void reportsJob(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output)
 {
 	// only needs one loop through all read, no reference file dependency
 	if (opts.is_fastx && refs.num == 0 && refs.part == 0)
@@ -34,7 +28,7 @@ void reportsJob(
 	}
 
 	// only needs one loop through all read, no reference file dependency
-	if (opts.is_de_novo_otu && refs.num == 0 && refs.part == 0) {
+	if (opts.is_denovo_otu && refs.num == 0 && refs.part == 0) {
 		output.report_denovo(opts, reads);
 	}
 
@@ -71,8 +65,8 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 	{
 		if (p == index_max_score)
 		{
-			// continue loop if the reference sequence in this alignment
-			// belongs to the database section currently loaded into RAM
+			// proceed if the reference sequence in this alignment
+			// belongs to the currently loaded database section
 			if ((read.hits_align_info.alignv[p].index_num == refs.num) && (read.hits_align_info.alignv[p].part == refs.part))
 			{
 				// get the edit distance between reference and read
@@ -91,17 +85,18 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 				double align_cov_round = 0.0;
 				ss >> align_id_round >> align_cov_round;
 
-				// alignment with the highest SW score passed %id and %coverage thresholds
+				// alignment with the highest SW score passed Identity and Coverage thresholds => NOT is_denovo
 				if (align_id_round >= opts.min_id && align_cov_round >= opts.min_cov)
 				{
 					if (!readstats.is_total_reads_mapped_cov)
 						++readstats.total_reads_mapped_cov; // if not already calculated.
 
-					// TODO: this check is already performed during alignment (alignmentCb and compute_lis_alignment) 
+					// TODO: this check was already performed during alignment (align_cb and compute_lis_alignment) 
 					//       for (opts.num_alignments > -1)
 					//  here for (opts.num_alignments == -1)
-					// do not output read for de novo OTU construction (it passed the %id/coverage thresholds)
-					if (opts.is_de_novo_otu) read.is_denovo = false;
+					if (opts.is_denovo_otu && read.is_denovo) {
+						read.is_denovo = false;
+					}
 
 					// fill OTU map with highest-scoring alignment for the read
 					if (opts.is_otu_map)
@@ -125,7 +120,7 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 	}//~for all alignments
 
 	// only call once per read, on the last index/part
-	if ( opts.is_de_novo_otu
+	if ( opts.is_denovo_otu
 		&& refs.num == opts.indexfiles.size() - 1 
 		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] -1 
 		&& read.is_hit

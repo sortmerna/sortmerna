@@ -57,7 +57,7 @@ OPT_R = "R",
 OPT_V = "v",
 OPT_ID = "id",
 OPT_COVERAGE = "coverage",
-OPT_DE_NOVO_OTU = "de_novo_otu",
+OPT_DENOVO_OTU = "denovo_otu",
 OPT_OTU_MAP = "otu_map",
 OPT_PASSES = "passes",
 OPT_EDGES = "edges",
@@ -232,7 +232,7 @@ help_id =
 help_coverage = 
 	"%%query coverage threshold (the alignment must          0.97\n"
 	"                                            still pass the E-value threshold)\n",
-help_de_novo_otu = 
+help_denovo_otu = 
 	"FASTA/FASTQ file for reads matching database < %%id     False\n"
 	"                                            (set using --id) and < %%cov (set using --coverage)\n"
 	"                                            (alignment must still pass the E-value threshold).\n",
@@ -362,7 +362,7 @@ public:
 	bool is_paired_in = false; // OPT_PAIRED_IN was selected i.e. both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_out2 = false; // 20200127 output paired reads into separate files. Issue 202
-	bool is_de_novo_otu = false; // OPT_DE_NOVO_OTU: FASTA/FASTQ file for reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
+	bool is_denovo_otu = false; // output file with reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
 	bool is_log = true; // OPT_LOG was selected i.e. output overall statistics. TODO: remove this option, always generate.
 	bool is_print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
 	bool is_sam = false; // OPT_SAM was specified. output SAM alignment (for aligned reads only)
@@ -372,9 +372,9 @@ public:
 	bool is_other = false; // OPT_OTHER was selected i.e. flags to produce 'other' file
 	bool is_otu_map = false; // OPT_OTU_MAP was selected i.e. output OTU map (input to QIIME's make_otu_table.py)
 	bool is_verbose; // OPT_V was selected (indexing)
-	bool is_pid = false; // --pid add pid to output file names
-	bool is_cmd = false; // OPT_CMD was selected i.e. start interactive session
-	bool is_dbg_put_kvdb = false; // OPT_DBG_PUT_DB: DEBUG. if True - do Not put records into Key-value DB. Debugging Memory Consumption.
+	bool is_pid = false; // add pid to output file names
+	bool is_cmd = false; // start interactive session
+	bool is_dbg_put_kvdb = false; // if True - do Not put records into Key-value DB. Debugging Memory Consumption.
 
 	// Option derived Flags
 	bool is_as_percent = false; // derived from OPT_EDGES
@@ -458,7 +458,7 @@ private:
 	void opt_aligned(const std::string &val);
 	void opt_other(const std::string &val);
 	void opt_log(const std::string &val);
-	void opt_de_novo_otu(const std::string &val);
+	void opt_denovo_otu(const std::string &val);
 	void opt_otu_map(const std::string &val);
 	void opt_print_all_reads(const std::string &val);
 	void opt_pid(const std::string &val);
@@ -562,7 +562,7 @@ private:
 		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
 		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
 		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),
-		std::make_tuple(OPT_DE_NOVO_OTU,    "BOOL",        OTU_PICKING, false, help_de_novo_otu, &Runopts::opt_de_novo_otu),
+		std::make_tuple(OPT_DENOVO_OTU,     "BOOL",        OTU_PICKING, false, help_denovo_otu, &Runopts::opt_denovo_otu),
 		std::make_tuple(OPT_OTU_MAP,        "BOOL",        OTU_PICKING, false, help_otu_map, &Runopts::opt_otu_map),
 		std::make_tuple(OPT_PASSES,         "INT,INT,INT", ADVANCED,    false, help_passes, &Runopts::opt_passes),
 		std::make_tuple(OPT_EDGES,          "INT",         ADVANCED,    false, help_edges, &Runopts::opt_edges),

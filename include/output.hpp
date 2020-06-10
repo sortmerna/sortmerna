@@ -52,11 +52,7 @@ struct Runopts;
  */
 class Summary {
 public:
-	Summary();
-	//~Summary() {};
-
-	std::string to_string(Runopts &opts, Refstats &refstats);
-
+	// vars
 	bool is_de_novo_otu;
 	bool is_otumapout;
 	std::string cmd;
@@ -71,6 +67,10 @@ public:
 	uint64_t all_reads_len;
 	size_t total_otu;
 	std::vector<std::pair<std::string, float>> db_matches;
+
+	// methods
+	Summary();
+	std::string to_string(Runopts& opts, Refstats& refstats);
 };
 
 class Output {
