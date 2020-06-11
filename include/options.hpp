@@ -158,7 +158,8 @@ help_log =
 help_num_alignments = 
 	"Positive integer (INT >=0).\n"
 	"                                            Report first INT alignments per read reaching E-value\n"
-	"                                            If INT = 0, all alignments will be output\n",
+	"                                            If INT = 0, all alignments will be output\n"
+	"                                            Mutually exclusive with option '"+ OPT_BEST +"'\n",
 help_best = 
 	"Report INT best alignments per read reaching E-value    1\n"
 	"                                            by searching --min_lis INT candidate alignments\n"
@@ -177,8 +178,8 @@ help_min_lis =
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
 	"                                            it is computed using seeds' positions to expand hits into\n"
 	"                                            longer matches prior to Smith - Waterman alignment.\n"
-	"                                            Requires option 'best'.\n"
-	"                                            Mutually exclusive with option 'num_alignments'\n",
+	"                                            Requires option '"+ OPT_BEST +"'.\n"
+	"                                            Mutually exclusive with option '"+ OPT_NUM_ALIGNMENTS +"'\n",
 help_print_all_reads = 
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files\n",
@@ -354,7 +355,7 @@ public:
 	//    alignment control
 	bool is_best = false; // OPT_BEST was specified
 	bool is_min_lis = false;
-	bool is_num_alignments = false;
+	bool is_num_alignments = false; // OPT_NUM_ALIGNEMENTS was specified
 	bool is_full_search = false; // OPT_FULL_SEARCH was selected
 	bool is_forward = false; // OPT_F was selected i.e. search only the forward strand
 	bool is_reverse = false; // OPT_R was selected i.e. search only the reverse-complementary strand

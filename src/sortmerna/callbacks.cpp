@@ -57,17 +57,17 @@ void reportsJob(std::vector<Read>& reads, Runopts& opts, References& refs, Refst
 void computeStats(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
 {
 	// OTU-map: index of alignment holding maximum SW score
-	uint32_t index_max_score = read.hits_align_info.max_index;
+	uint32_t index_max_score = read.alignment.max_index;
 	if (read.is03) read.flip34();
 
 	// loop all the alignments of this read
-	for (uint32_t p = 0; p < read.hits_align_info.alignv.size(); ++p)
+	for (uint32_t p = 0; p < read.alignment.alignv.size(); ++p)
 	{
 		if (p == index_max_score)
 		{
 			// proceed if the reference sequence in this alignment
 			// belongs to the currently loaded database section
-			if ((read.hits_align_info.alignv[p].index_num == refs.num) && (read.hits_align_info.alignv[p].part == refs.part))
+			if ((read.alignment.alignv[p].index_num == refs.num) && (read.alignment.alignv[p].part == refs.part))
 			{
 				// get the edit distance between reference and read
 				uint32_t id = 0;
@@ -76,11 +76,11 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 
 				read.calcMismatchGapId(refs, p, mismatches, gaps, id);
 
-				int32_t align_len = abs(read.hits_align_info.alignv[p].read_end1 + 1 - read.hits_align_info.alignv[p].read_begin1);
+				int32_t align_len = abs(read.alignment.alignv[p].read_end1 + 1 - read.alignment.alignv[p].read_begin1);
 				int32_t total_pos = mismatches + gaps + id;
 				std::stringstream ss;
 				ss.precision(3);
-				ss << (double)id / total_pos << ' ' << (double)align_len / read.hits_align_info.alignv[p].readlen;
+				ss << (double)id / total_pos << ' ' << (double)align_len / read.alignment.alignv[p].readlen;
 				double align_id_round = 0.0;
 				double align_cov_round = 0.0;
 				ss >> align_id_round >> align_cov_round;
@@ -102,7 +102,7 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 					if (opts.is_otu_map)
 					{
 						// reference sequence identifier for mapped read
-						std::string refhead = refs.buffer[read.hits_align_info.alignv[p].ref_seq].header;
+						std::string refhead = refs.buffer[read.alignment.alignv[p].ref_seq].header;
 						std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
 						// left trim '>' or '@'
 						ref_seq_str.erase(ref_seq_str.begin(),

@@ -641,7 +641,6 @@ void Runopts::opt_best(const std::string &val)
 
 void Runopts::opt_num_alignments(const std::string &val)
 {
-	std::stringstream ss;
 	if (val.size() == 0)
 	{
 		ERR("'", OPT_NUM_ALIGNMENTS, "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.");
@@ -658,7 +657,7 @@ void Runopts::opt_num_alignments(const std::string &val)
 	num_alignments = std::stoi(val);
 	if (num_alignments < 0)
 	{
-		ERR("'", OPT_NUM_ALIGNMENTS, "' [INT] requires a posistive integer as input e.g. 2. If 0, all alignments are output.");
+		ERR("'", OPT_NUM_ALIGNMENTS, "' requires a posistive integer as input e.g. 2. If 0, all alignments are output.");
 		exit(EXIT_FAILURE);
 	}
 	is_num_alignments = true;

@@ -245,30 +245,30 @@ void Output::report_blast
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
 	//       only that range.
 	// iterate all alignments of the read
-	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
+	for (int i = 0; i < read.alignment.alignv.size(); ++i)
 	{
-		if (read.hits_align_info.alignv[i].index_num == refs.num 
-			&& read.hits_align_info.alignv[i].part == refs.part)
+		if (read.alignment.alignv[i].index_num == refs.num 
+			&& read.alignment.alignv[i].part == refs.part)
 		{
 			// (λ*S - ln(K))/ln(2)
 			uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
-				* (read.hits_align_info.alignv[i].score1) - std::log(refstats.gumbel[refs.num].second)) / (float)std::log(2));
+				* (read.alignment.alignv[i].score1) - std::log(refstats.gumbel[refs.num].second)) / (float)std::log(2));
 
 			// E = Kmn*exp(-λS)
 			double evalue_score = (double)refstats.gumbel[refs.num].second
 				* refstats.full_ref[refs.num]
 				* refstats.full_read[refs.num]
-				* std::exp(-refstats.gumbel[refs.num].first * read.hits_align_info.alignv[i].score1);
+				* std::exp(-refstats.gumbel[refs.num].first * read.alignment.alignv[i].score1);
 
-			std::string refseq = refs.buffer[read.hits_align_info.alignv[i].ref_seq].sequence;
-			std::string ref_id = refs.buffer[read.hits_align_info.alignv[i].ref_seq].id;
+			std::string refseq = refs.buffer[read.alignment.alignv[i].ref_seq].sequence;
+			std::string ref_id = refs.buffer[read.alignment.alignv[i].ref_seq].id;
 
-			if (read.hits_align_info.alignv[i].strand)
+			if (read.alignment.alignv[i].strand)
 				strandmark = '+';
 			else
 				strandmark = '-';
 
-			if (read.hits_align_info.alignv[i].strand == read.reversed) // XNOR
+			if (read.alignment.alignv[i].strand == read.reversed) // XNOR
 				read.revIntStr(); // reverse if necessary
 
 			// Blast-like pairwise alignment (only for aligned reads)
@@ -282,19 +282,19 @@ void Output::report_blast
 				blast_os << read.getSeqId();
 				blast_os << std::endl;
 
-				blast_os << "Score: " << read.hits_align_info.alignv[i].score1 << " bits (" << bitscore << ")\t";
+				blast_os << "Score: " << read.alignment.alignv[i].score1 << " bits (" << bitscore << ")\t";
 				blast_os.precision(3);
 				blast_os << "Expect: " << evalue_score << "\t";
 
 				blast_os << "strand: " << strandmark << std::endl << std::endl;
 
-				if (read.hits_align_info.alignv[i].cigar.size() > 0)
+				if (read.alignment.alignv[i].cigar.size() > 0)
 				{
 					uint32_t j, c = 0, left = 0, e = 0,
-						qb = read.hits_align_info.alignv[i].ref_begin1,
-						pb = read.hits_align_info.alignv[i].read_begin1;
+						qb = read.alignment.alignv[i].ref_begin1,
+						pb = read.alignment.alignv[i].read_begin1;
 
-					while (e < read.hits_align_info.alignv[i].cigar.size() || left > 0)
+					while (e < read.alignment.alignv[i].cigar.size() || left > 0)
 					{
 						int32_t count = 0;
 						int32_t q = qb;
@@ -303,12 +303,12 @@ void Output::report_blast
 						blast_os.width(8);
 						blast_os << q + 1 << "    ";
 						// process CIGAR
-						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
 							// 4 Low bits encode a Letter: M | D | S
-							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
+							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
 							// 28 High bits encode the number of occurencies e.g. 34
-							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
@@ -328,11 +328,11 @@ void Output::report_blast
 						blast_os << " ";
 						q = qb;
 						count = 0;
-						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
 							//uint32_t letter = 0xf & *(a->cigar + c);
-							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
+							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
@@ -363,10 +363,10 @@ void Output::report_blast
 						blast_os.width(9);
 						blast_os << p + 1 << "    ";
 						count = 0;
-						for (c = e; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
-							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
+							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
@@ -400,7 +400,7 @@ void Output::report_blast
 				blast_os << read.getSeqId();
 
 				// print null alignment for non-aligned read
-				if (opts.is_print_all_reads && (read.hits_align_info.alignv.size() == 0))
+				if (opts.is_print_all_reads && (read.alignment.alignv.size() == 0))
 				{
 					blast_os << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
 					for (uint32_t l = 0; l < opts.blastops.size(); l++)
@@ -426,19 +426,19 @@ void Output::report_blast
 				blast_os.precision(3);
 				blast_os << (double)id / (mismatches + gaps + id) * 100 << "\t";
 				// (4) alignment length
-				blast_os << (read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1) << "\t";
+				blast_os << (read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1) << "\t";
 				// (5) mismatches
 				blast_os << mismatches << "\t";
 				// (6) gap openings
 				blast_os << gaps << "\t";
 				// (7) q.start
-				blast_os << read.hits_align_info.alignv[i].read_begin1 + 1 << "\t";
+				blast_os << read.alignment.alignv[i].read_begin1 + 1 << "\t";
 				// (8) q.end
-				blast_os << read.hits_align_info.alignv[i].read_end1 + 1 << "\t";
+				blast_os << read.alignment.alignv[i].read_end1 + 1 << "\t";
 				// (9) s.start
-				blast_os << read.hits_align_info.alignv[i].ref_begin1 + 1 << "\t";
+				blast_os << read.alignment.alignv[i].ref_begin1 + 1 << "\t";
 				// (10) s.end
-				blast_os << read.hits_align_info.alignv[i].ref_end1 + 1 << "\t";
+				blast_os << read.alignment.alignv[i].ref_end1 + 1 << "\t";
 				// (11) e-value
 				blast_os << evalue_score << "\t";
 				// (12) bit score
@@ -451,18 +451,18 @@ void Output::report_blast
 					{
 						blast_os << "\t";
 						// masked region at beginning of alignment
-						if (read.hits_align_info.alignv[i].read_begin1 != 0) blast_os << read.hits_align_info.alignv[i].read_begin1 << "S";
-						for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+						if (read.alignment.alignv[i].read_begin1 != 0) blast_os << read.alignment.alignv[i].read_begin1 << "S";
+						for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
-							uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-							uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
+							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
 							blast_os << length;
 							if (letter == 0) blast_os << "M";
 							else if (letter == 1) blast_os << "I";
 							else blast_os << "D";
 						}
 
-						auto end_mask = read.sequence.length() - read.hits_align_info.alignv[i].read_end1 - 1;
+						auto end_mask = read.sequence.length() - read.alignment.alignv[i].read_end1 - 1;
 						// output the masked region at end of alignment
 						if (end_mask > 0) blast_os << end_mask << "S";
 					}
@@ -471,8 +471,8 @@ void Output::report_blast
 					{
 						blast_os << "\t";
 						blast_os.precision(3);
-						double coverage = abs(read.hits_align_info.alignv[i].read_end1 - read.hits_align_info.alignv[i].read_begin1 + 1)
-							/ read.hits_align_info.alignv[i].readlen;
+						double coverage = abs(read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1)
+							/ read.alignment.alignv[i].readlen;
 						blast_os << coverage * 100; // (double)align_len / readlen
 					}
 					// output strand
@@ -480,7 +480,7 @@ void Output::report_blast
 					{
 						blast_os << "\t";
 						blast_os << strandmark;
-						//if (read.hits_align_info.alignv[i].strand) blastout << "+";
+						//if (read.alignment.alignv[i].strand) blastout << "+";
 						//else blastout << "-";
 					}
 				}
@@ -536,11 +536,11 @@ void Output::report_sam
 {
 	if (read.is03) read.flip34();
 
-	//if (read.hits_align_info.alignv.size() == 0 && !opts.print_all_reads)
+	//if (read.alignment.alignv.size() == 0 && !opts.print_all_reads)
 	//	return;
 
 	// read did not align, output null string
-	if (opts.is_print_all_reads && read.hits_align_info.alignv.size() == 0)
+	if (opts.is_print_all_reads && read.alignment.alignv.size() == 0)
 	{
 		// (1) Query
 		sam_os << read.getSeqId();
@@ -550,51 +550,51 @@ void Output::report_sam
 
 	// read aligned, output full alignment
 	// iterate read alignments
-	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
+	for (int i = 0; i < read.alignment.alignv.size(); ++i)
 	{
-		if (read.hits_align_info.alignv[i].index_num == refs.num 
-			&& read.hits_align_info.alignv[i].part == refs.part)
+		if (read.alignment.alignv[i].index_num == refs.num 
+			&& read.alignment.alignv[i].part == refs.part)
 		{
 			// (1) Query
 			sam_os << read.getSeqId();
 			// (2) flag Forward/Reversed
-			if (!read.hits_align_info.alignv[i].strand) sam_os << "\t16\t";
+			if (!read.alignment.alignv[i].strand) sam_os << "\t16\t";
 			else sam_os << "\t0\t";
 			// (3) Subject
-			sam_os << refs.buffer[read.hits_align_info.alignv[i].ref_seq].id;
+			sam_os << refs.buffer[read.alignment.alignv[i].ref_seq].id;
 			// (4) Ref start
-			sam_os << "\t" << read.hits_align_info.alignv[i].ref_begin1 + 1;
+			sam_os << "\t" << read.alignment.alignv[i].ref_begin1 + 1;
 			// (5) mapq
 			sam_os << "\t" << 255 << "\t";
 			// (6) CIGAR
 			// output the masked region at beginning of alignment
-			if (read.hits_align_info.alignv[i].read_begin1 != 0)
-				sam_os << read.hits_align_info.alignv[i].read_begin1 << "S";
+			if (read.alignment.alignv[i].read_begin1 != 0)
+				sam_os << read.alignment.alignv[i].read_begin1 << "S";
 
-			for (int c = 0; c < read.hits_align_info.alignv[i].cigar.size(); ++c)
+			for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
 			{
-				uint32_t letter = 0xf & read.hits_align_info.alignv[i].cigar[c];
-				uint32_t length = (0xfffffff0 & read.hits_align_info.alignv[i].cigar[c]) >> 4;
+				uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
+				uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
 				sam_os << length;
 				if (letter == 0) sam_os << "M";
 				else if (letter == 1) sam_os << "I";
 				else sam_os << "D";
 			}
 
-			auto end_mask = read.sequence.size() - read.hits_align_info.alignv[i].read_end1 - 1;
+			auto end_mask = read.sequence.size() - read.alignment.alignv[i].read_end1 - 1;
 			// output the masked region at end of alignment
 			if (end_mask > 0) sam_os << end_mask << "S";
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
 			sam_os << "\t*\t0\t0\t";
 			// (10) SEQ
 
-			if ( read.hits_align_info.alignv[i].strand == read.reversed ) // XNOR
+			if ( read.alignment.alignv[i].strand == read.reversed ) // XNOR
 				read.revIntStr();
 			sam_os << read.get04alphaSeq();
 			// (11) QUAL
 			sam_os << "\t";
 			// reverse-complement strand
-			if (read.quality.size() > 0 && !read.hits_align_info.alignv[i].strand)
+			if (read.quality.size() > 0 && !read.alignment.alignv[i].strand)
 			{
 				std::reverse(read.quality.begin(), read.quality.end());
 				sam_os << read.quality;
@@ -607,7 +607,7 @@ void Output::report_sam
 			else sam_os << "*";
 
 			// (12) OPTIONAL FIELD: SW alignment score generated by aligner
-			sam_os << "\tAS:i:" << read.hits_align_info.alignv[i].score1;
+			sam_os << "\tAS:i:" << read.alignment.alignv[i].score1;
 			// (13) OPTIONAL FIELD: edit distance to the reference
 			uint32_t mismatches = 0;
 			uint32_t gaps = 0;

@@ -158,7 +158,7 @@ Read::Read(const Read & that)
 	readhit = that.readhit;
 	best = that.best;
 	id_win_hits = that.id_win_hits;
-	hits_align_info = that.hits_align_info;
+	alignment = that.alignment;
 	scoring_matrix = that.scoring_matrix;
 }
 
@@ -193,7 +193,7 @@ Read & Read::operator=(const Read & that)
 	readhit = that.readhit;
 	best = that.best;
 	id_win_hits = that.id_win_hits;
-	hits_align_info = that.hits_align_info;
+	alignment = that.alignment;
 	scoring_matrix = that.scoring_matrix;
 
 	return *this; // by convention always return *this
@@ -279,7 +279,7 @@ void Read::clear()
 	readhit = 0;
 	best = 0;
 	id_win_hits.clear();
-	hits_align_info.clear();
+	alignment.clear();
 	scoring_matrix.clear();
 } // ~Read::clear
 
@@ -372,7 +372,7 @@ std::string Read::matchesToJson() {
 	writer.Key("num_alignments");
 	writer.Int(num_alignments);
 
-	writer.Key("hits_align_info");
+	writer.Key("alignment");
 	writer.StartObject();
 	writer.String("max_size");
 	writer.Uint(10);
@@ -388,7 +388,7 @@ std::string Read::matchesToJson() {
  */
 std::string Read::toBinString()
 {
-	if (hits_align_info.alignv.size() == 0)
+	if (alignment.alignv.size() == 0)
 		return "";
 
 	// hit, hit_denovo, null_align_output, max_SW_count, num_alignments, readhit, best
@@ -409,11 +409,11 @@ std::string Read::toBinString()
 	std::copy_n(static_cast<char*>(static_cast<void*>(&id_win_hits_size)), sizeof(id_win_hits_size), std::back_inserter(buf)); // add vector size
 	for (auto it = id_win_hits.begin(); it != id_win_hits.end(); ++it) buf += it->toString(); // add values
 #endif
-	// hits_align_info
-	std::string hits_align_info_str = hits_align_info.toString();
-	size_t hits_align_info_size = hits_align_info_str.length();
-	std::copy_n(static_cast<char*>(static_cast<void*>(&hits_align_info_size)), sizeof(hits_align_info_size), std::back_inserter(buf)); // add size
-	buf += hits_align_info_str; //  add string
+	// alignment
+	std::string alignment_str = alignment.toString();
+	size_t alignment_size = alignment_str.length();
+	std::copy_n(static_cast<char*>(static_cast<void*>(&alignment_size)), sizeof(alignment_size), std::back_inserter(buf)); // add size
+	buf += alignment_str; //  add string
 
 	return buf;
 } // ~Read::toBinString
@@ -471,14 +471,14 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 		id_win_str.clear();
 	}
 #endif
-	// alignment_struct2 hits_align_info
-	size_t hits_align_info_size = 0;
-	std::memcpy(static_cast<void*>(&hits_align_info_size), bstr.data() + offset, sizeof(hits_align_info_size));
-	offset += sizeof(hits_align_info_size);
-	std::string hits_align_info_str(bstr.data() + offset, bstr.data() + offset + hits_align_info_size);
-	alignment_struct2 alignstruct(hits_align_info_str);
-	hits_align_info = alignstruct;
-	offset += hits_align_info_size;
+	// alignment_struct2 alignment
+	size_t alignment_size = 0;
+	std::memcpy(static_cast<void*>(&alignment_size), bstr.data() + offset, sizeof(alignment_size));
+	offset += sizeof(alignment_size);
+	std::string alignment_str(bstr.data() + offset, bstr.data() + offset + alignment_size);
+	alignment_struct2 alignstruct(alignment_str);
+	alignment = alignstruct;
+	offset += alignment_size;
 
 	isRestored = true;
 	return isRestored;
@@ -498,28 +498,28 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 *
 * @param IN Refs  references
 * @param IN Read
-* @param IN alignIdx index into Read.hits_align_info.alignv
+* @param IN alignIdx index into Read.alignment.alignv
 * @param OUT mismatches  calculated here for the given Read Alignment
 * @param OUT gaps
 * @param OUT id   matched characters
 */
 void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id)
 {
-	if (alignIdx >= hits_align_info.alignv.size()) return; // index exceeds the size of the alignment vector
+	if (alignIdx >= alignment.alignv.size()) return; // index exceeds the size of the alignment vector
 
 	mismatches = 0; // count of mismatched characters
 	gaps = 0; // count of gaps
 	id = 0; // count of matched characters
 
-	int32_t qb = hits_align_info.alignv[alignIdx].ref_begin1; // index of the first char in the reference matched part
-	int32_t pb = hits_align_info.alignv[alignIdx].read_begin1; // index of the first char in the read matched part
+	int32_t qb = alignment.alignv[alignIdx].ref_begin1; // index of the first char in the reference matched part
+	int32_t pb = alignment.alignv[alignIdx].read_begin1; // index of the first char in the read matched part
 
-	std::string refseq = refs.buffer[hits_align_info.alignv[alignIdx].ref_seq].sequence;
+	std::string refseq = refs.buffer[alignment.alignv[alignIdx].ref_seq].sequence;
 
-	for (uint32_t cidx = 0; cidx < hits_align_info.alignv[alignIdx].cigar.size(); ++cidx)
+	for (uint32_t cidx = 0; cidx < alignment.alignv[alignIdx].cigar.size(); ++cidx)
 	{
-		uint32_t letter = 0xf & hits_align_info.alignv[alignIdx].cigar[cidx]; // 4 low bits
-		uint32_t length = (0xfffffff0 & hits_align_info.alignv[alignIdx].cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
+		uint32_t letter = 0xf & alignment.alignv[alignIdx].cigar[cidx]; // 4 low bits
+		uint32_t length = (0xfffffff0 & alignment.alignv[alignIdx].cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
 		if (letter == 0)
 		{
 			for (uint32_t u = 0; u < length; ++u)

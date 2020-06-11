@@ -81,7 +81,7 @@ public:
 
 	std::vector<id_win> id_win_hits; // [1] positions of hits on the reference sequence in given index/part
 
-	alignment_struct2 hits_align_info; // stored in DB
+	alignment_struct2 alignment; // stored in DB
 
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <---- END store in database

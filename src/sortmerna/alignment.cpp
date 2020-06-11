@@ -431,44 +431,44 @@ void compute_lis_alignment
 							if (opts.min_lis > -1)
 							{
 								// an alignment for this read already exists
-								if (read.hits_align_info.alignv.size() > 0)
+								if (read.alignment.alignv.size() > 0)
 								{
-									uint32_t smallest_score_index = read.hits_align_info.min_index;
-									uint32_t highest_score_index = read.hits_align_info.max_index;
-									uint32_t hits_size = read.hits_align_info.alignv.size();
+									uint32_t smallest_score_index = read.alignment.min_index;
+									uint32_t highest_score_index = read.alignment.max_index;
+									uint32_t hits_size = read.alignment.alignv.size();
 
 									// number of alignments stored per read < 'num_best_hits', 
 									// add alignment to array without comparison to other members of array
 									if (opts.num_best_hits == 0 || hits_size < (uint32_t)opts.num_best_hits)
 									{
 										auto rescopy = copyAlignment(result);
-										if (rescopy == read.hits_align_info.alignv.back())
+										if (rescopy == read.alignment.alignv.back())
 											; // skip equivalent alignment
-										else if (rescopy.score1 > read.hits_align_info.alignv.back().score1)
+										else if (rescopy.score1 > read.alignment.alignv.back().score1)
 										{
-											if (rescopy.ref_seq == read.hits_align_info.alignv.back().ref_seq)
+											if (rescopy.ref_seq == read.alignment.alignv.back().ref_seq)
 											{
-												read.hits_align_info.alignv.back() = rescopy; // replace alignment
+												read.alignment.alignv.back() = rescopy; // replace alignment
 											}
 											else
 											{
 												// add alignment
-												read.hits_align_info.alignv.push_back(rescopy);
+												read.alignment.alignv.push_back(rescopy);
 												++hits_size;
 
 												// read alignments are filled to max size, find the smallest
 												// alignment score and set the smallest_score_index
 												// (this is not done when num_best_hits_gv == 0 since
 												// we want to output all alignments for some --min_lis)
-												if (read.hits_align_info.alignv.size() == (uint32_t)opts.num_best_hits)
+												if (read.alignment.alignv.size() == (uint32_t)opts.num_best_hits)
 												{
-													read.hits_align_info.min_index = findMinIndex(read);
+													read.alignment.min_index = findMinIndex(read);
 												}
 
 												// update the index position of the first occurrence of the highest alignment score
-												if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
+												if (result->score1 > read.alignment.alignv[highest_score_index].score1)
 												{
-													read.hits_align_info.max_index = hits_size - 1;
+													read.alignment.max_index = hits_size - 1;
 												}
 
 												// the maximum possible score for this read has been found
@@ -485,23 +485,23 @@ void compute_lis_alignment
 
 									// all num_best_hits slots have been filled,
 									// replace the alignment having the lowest score
-									else if (result->score1 > read.hits_align_info.alignv[smallest_score_index].score1)
+									else if (result->score1 > read.alignment.alignv[smallest_score_index].score1)
 									{
 										// update max_index to the position of the first occurrence
 										// of the highest scoring alignment
-										if (result->score1 > read.hits_align_info.alignv[highest_score_index].score1)
-											read.hits_align_info.max_index = smallest_score_index;
+										if (result->score1 > read.alignment.alignv[highest_score_index].score1)
+											read.alignment.max_index = smallest_score_index;
 
 										// decrement number of reads mapped to database with lower score
-										--readstats.reads_matched_per_db[read.hits_align_info.alignv[smallest_score_index].index_num];
+										--readstats.reads_matched_per_db[read.alignment.alignv[smallest_score_index].index_num];
 
 										// increment number of reads mapped to database with higher score
 										++readstats.reads_matched_per_db[index.index_num];
 
 										// replace an old smallest scored alignment with the new one
-										read.hits_align_info.alignv[smallest_score_index] = copyAlignment(result);
+										read.alignment.alignv[smallest_score_index] = copyAlignment(result);
 
-										read.hits_align_info.min_index = findMinIndex(read);
+										read.alignment.min_index = findMinIndex(read);
 
 										// the maximum possible score for this read has been found
 										if (result->score1 == max_SW_score) {
@@ -529,7 +529,7 @@ void compute_lis_alignment
 									else 
 										max_size = BEST_HITS_INCREMENT;
 
-									read.hits_align_info.alignv.push_back( copyAlignment(result) );
+									read.alignment.alignv.push_back( copyAlignment(result) );
 
 									// the maximum possible score for this read has been found
 									if (result->score1 == max_SW_score) read.max_SW_count++;
@@ -543,7 +543,7 @@ void compute_lis_alignment
 							else if (opts.num_alignments > -1)
 							{
 								// add alignment to the read. TODO: check how this affects the old logic
-								read.hits_align_info.alignv.push_back(copyAlignment(result));
+								read.alignment.alignv.push_back(copyAlignment(result));
 
 								// the maximum possible score for this read has been found
 								if (result->score1 == max_SW_score)
@@ -561,7 +561,7 @@ void compute_lis_alignment
 								uint32_t id = 0;
 								uint32_t mismatches = 0;
 								uint32_t gaps = 0;
-								read.calcMismatchGapId(refs, read.hits_align_info.alignv.size()-1, mismatches, gaps, id);
+								read.calcMismatchGapId(refs, read.alignment.alignv.size()-1, mismatches, gaps, id);
 
 								int32_t align_len = abs(result->read_end1 + 1 - result->read_begin1);
 								int32_t total_pos = mismatches + gaps + id;
@@ -598,20 +598,16 @@ void compute_lis_alignment
 
 							// maximum score possible for the read has been reached,
 							// stop searching for further matches
-							if ((opts.num_best_hits != 0) && (read.max_SW_count == opts.num_best_hits))
+							if (opts.num_best_hits != 0 && read.max_SW_count == opts.num_best_hits)
 							{
 								break;
 							}
 
 							// stop search after the first num_alignments alignments
 							// for this read
-							if (opts.num_alignments > 0)
+							if (opts.num_alignments > 0 && read.num_alignments <= 0)
 							{
-								// go to next read (do not search for further alignments)
-								if (read.num_alignments <= 0)
-								{
-									break; // num_alignments_x[readn]
-								}
+								break;
 							}
 						}//~if read aligned
 						else if(result != 0)  // the read did not align
@@ -670,13 +666,13 @@ s_align2 copyAlignment(s_align* pAlign)
 
 uint32_t findMinIndex(Read & read)
 {
-	uint32_t smallest_score = read.hits_align_info.alignv[0].score1;
+	uint32_t smallest_score = read.alignment.alignv[0].score1;
 	uint32_t index = 0;
-	for (int i = 0; i < read.hits_align_info.alignv.size(); ++i)
+	for (int i = 0; i < read.alignment.alignv.size(); ++i)
 	{
-		if (read.hits_align_info.alignv[i].score1 < smallest_score)
+		if (read.alignment.alignv[i].score1 < smallest_score)
 		{
-			smallest_score = read.hits_align_info.alignv[i].score1;
+			smallest_score = read.alignment.alignv[i].score1;
 			index = i;
 		}
 	}

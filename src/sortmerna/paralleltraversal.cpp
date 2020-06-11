@@ -89,24 +89,20 @@ void align_cb
 	read.lastIndex = index.index_num;
 	read.lastPart = index.part;
 
-	// for reverse reads
-	if (read.reversed)
-	{
-		// output the first num_alignments_gv alignments
-		if (opts.num_alignments > 0)
-		{
-			// all num_alignments_gv alignments have been output
-			if (read.num_alignments < 0) return;
-		}
-		// the maximum scoring alignment has been found, go to next read
-		// (unless all alignments are being output)
-		else if (opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits)
-			return;
-	}
-
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
-	// the read length is too short
+	// for reverse reads - stop searching if
+	// 'num_alignments' was set and all num_alignments have been found 
+	//   OR
+	// 'best' was set and the maximum scoring alignment has been found (unless all alignments are being output)
+	bool is_num_alignments_done = opts.num_alignments > 0 && read.num_alignments < 0;
+	bool is_best_done = opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits;
+	if (read.reversed && (is_num_alignments_done || is_best_done))
+	{
+		return;
+	}
+
+	// the read length is too short - don't search
 	if (read.sequence.size() < refstats.lnwin[index.index_num])
 	{
 		//WARN("Processor thread: " , std::this_thread::get_id() , " The read.id: " , read.id , 
@@ -171,7 +167,6 @@ void align_cb
 
 				// TODO: remove in production
 				if (index.lookup_tbl.size() <= keyf) {
-					std::stringstream ss;
 					size_t vsize = index.lookup_tbl.size();
 					uint16_t idxn = index.index_num;
 					uint16_t idxp = index.part;
@@ -228,7 +223,6 @@ void align_cb
 
 					// TODO: remove in production
 					if (index.lookup_tbl.size() <= keyr) {
-						std::stringstream ss;
 						size_t vsize = index.lookup_tbl.size();
 						uint16_t idxn = index.index_num;
 						uint16_t idxp = index.part;
@@ -237,7 +231,7 @@ void align_cb
 						bool is04 = read.is04;
 						ERR("Thread: ", std::this_thread::get_id(), " lookup index: ", keyr, 
 							" is larger than lookup_tbl.size: ", vsize, " Index: ", idxn, " Part: ", idxp, 
-							" Read.id: ", id, " Read.is03: ", is03, " Read.is04: ", is04, " Aborting..");
+							" Read.id: ", id, " Read.is03: ", is03, " Read.is04: ", is04, " Aborting...");
 						exit(EXIT_FAILURE);
 					}
 
