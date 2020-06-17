@@ -962,8 +962,8 @@ void align_destroy(s_align **a) {
  * @param char* read_seq is set to the first nucleotide in the read (if strand=0,
  *              read_seq points to the reverse-complement read)
  * @param char* read_qual points to the first character of the quality (must be set to NULL for FASTA)
- * @param char* ref_seq is in the numerical alphabet (0-4) and in the forward or
- *              reverse-complement direction, ref_seq is set to the first nucleotide
+ * @param char* ref_num is in the numerical alphabet (0-4) and in the forward or
+ *              reverse-complement direction, ref_num is set to the first nucleotide
  *              (only 1 newline at end of sequence)
  * @param double evalue is the E-value
  * @param int readlen is the read length for the current read
@@ -978,7 +978,7 @@ void ssw_write(FILE** fileout,
 	char* read_seq,
 	char* read_qual,
 	char* ref_name,
-	char* ref_seq,
+	char* ref_num,
 	double evalue,
 	int readlen,
 	unsigned int bitscore,
@@ -1018,7 +1018,7 @@ void ssw_write(FILE** fileout,
 					for (i = 0; i < l; ++i) {
 						if (letter == 1) fprintf(*fileout, "-");
 						else {
-							fprintf(*fileout, "%c", to_char[(int)*(ref_seq + q)]);
+							fprintf(*fileout, "%c", to_char[(int)*(ref_num + q)]);
 							++q;
 						}
 						++count;
@@ -1035,7 +1035,7 @@ void ssw_write(FILE** fileout,
 					int32_t l = (count == 0 && left > 0) ? left : length;
 					for (i = 0; i < l; ++i) {
 						if (letter == 0) {
-							if ((char)to_char[(int)*(ref_seq + q)] == (char)to_char[(int)*(read_seq + p)]) fprintf(*fileout, "|");
+							if ((char)to_char[(int)*(ref_num + q)] == (char)to_char[(int)*(read_seq + p)]) fprintf(*fileout, "|");
 							else fprintf(*fileout, "*");
 							++q;
 							++p;
@@ -1168,7 +1168,7 @@ void ssw_write(FILE** fileout,
 				int32_t length = (0xfffffff0 & *(a->cigar + c)) >> 4;
 				if (letter == 0) {
 					for (p = 0; p < length; ++p) {
-						if ((char)to_char[(int)*(ref_seq + qb)] != (char)*(read_seq + pb)) ++diff;
+						if ((char)to_char[(int)*(ref_num + qb)] != (char)*(read_seq + pb)) ++diff;
 						++qb;
 						++pb;
 					}
