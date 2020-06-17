@@ -52,7 +52,7 @@ static const bool True = 1;
 
 typedef struct {
 	uint32_t* cigar;
-	uint32_t ref_seq;
+	uint32_t ref_num;
  	int32_t ref_begin1;
 	int32_t ref_end1; 
 	int32_t	read_begin1;

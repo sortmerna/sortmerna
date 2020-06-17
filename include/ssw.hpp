@@ -10,7 +10,7 @@
 
 typedef struct s_align2 {
 	std::vector<uint32_t> cigar;
-	uint32_t ref_seq;
+	uint32_t ref_num; // position of the sequence in the reference file [0...number of sequences in the ref.file - 1]
 	int32_t ref_begin1;
 	int32_t ref_end1;
 	int32_t	read_begin1;
@@ -22,7 +22,7 @@ typedef struct s_align2 {
 	bool strand; // flags whether this alignment was done on a forward (true) or reverse-complement (false) read.
 
 	// default construct
-	s_align2() : ref_seq(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0) {}
+	s_align2() : ref_num(0), ref_begin1(0), ref_end1(0), read_begin1(0), read_end1(0), readlen(0), score1(0), part(0), index_num(0), strand(false) {}
 
 	// construct from binary string
 	s_align2(std::string bstr)
@@ -37,9 +37,9 @@ typedef struct s_align2 {
 		cigar.assign(len, 0);
 		std::memcpy(static_cast<void*>(cigar.data()), bstr.data() + offset, len * sizeof(uint32_t));
 		offset += len * sizeof(uint32_t);
-		// ref_seq
-		std::memcpy(static_cast<void*>(&ref_seq), bstr.data() + offset, sizeof(ref_seq));
-		offset += sizeof(ref_seq);
+		// ref_num
+		std::memcpy(static_cast<void*>(&ref_num), bstr.data() + offset, sizeof(ref_num));
+		offset += sizeof(ref_num);
 		// ref_begin1
 		std::memcpy(static_cast<void*>(&ref_begin1), bstr.data() + offset, sizeof(ref_begin1));
 		offset += sizeof(ref_begin1);
@@ -81,8 +81,8 @@ typedef struct s_align2 {
 		beginIt = static_cast<char*>(static_cast<void*>(cigar.data()));
 		std::copy_n(beginIt, cigarlen * sizeof(cigar[0]), std::back_inserter(buf));
 		
-		beginIt = static_cast<char*>(static_cast<void*>(&ref_seq));
-		std::copy_n(beginIt, sizeof(ref_seq), std::back_inserter(buf)); // ref_seq
+		beginIt = static_cast<char*>(static_cast<void*>(&ref_num));
+		std::copy_n(beginIt, sizeof(ref_num), std::back_inserter(buf)); // ref_num
 		beginIt = static_cast<char*>(static_cast<void*>(&ref_begin1));
 		std::copy_n(beginIt, sizeof(ref_begin1), std::back_inserter(buf)); // ref_begin1
 		beginIt = static_cast<char*>(static_cast<void*>(&ref_end1));
@@ -109,7 +109,7 @@ typedef struct s_align2 {
 	// for serialization
 	size_t size() {
 		return sizeof(uint32_t) * cigar.size()
-			+ sizeof(ref_seq)
+			+ sizeof(ref_num)
 			+ sizeof(ref_begin1)
 			+ sizeof(ref_end1)
 			+ sizeof(read_begin1)
@@ -124,7 +124,7 @@ typedef struct s_align2 {
 	bool operator==(const s_align2& other)
 	{
 		return other.cigar == cigar &&
-			other.ref_seq == ref_seq &&
+			other.ref_num == ref_num &&
 			other.ref_begin1 == ref_begin1 &&
 			other.ref_end1 == ref_end1 &&
 			other.read_begin1 == read_begin1 &&
