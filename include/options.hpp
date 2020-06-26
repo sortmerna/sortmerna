@@ -34,7 +34,7 @@ OPT_SQ = "SQ",
 OPT_BLAST = "blast",
 OPT_LOG = "log",
 OPT_NUM_ALIGNMENTS = "num_alignments",
-OPT_BEST = "best",
+OPT_NO_BEST = "no-best",
 OPT_MIN_LIS = "min_lis",
 OPT_PRINT_ALL_READS = "print_all_reads",
 OPT_PAIRED = "paired",
@@ -57,7 +57,7 @@ OPT_R = "R",
 OPT_V = "v",
 OPT_ID = "id",
 OPT_COVERAGE = "coverage",
-OPT_DENOVO_OTU = "denovo_otu",
+OPT_DENOVO_OTU = "de_novo_otu",
 OPT_OTU_MAP = "otu_map",
 OPT_PASSES = "passes",
 OPT_EDGES = "edges",
@@ -157,11 +157,13 @@ help_log =
 	"                                            TODO: remove\n",
 help_num_alignments = 
 	"Positive integer (INT >=0).\n"
-	"                                            Report first INT alignments per read reaching E-value\n"
+	"                                            Report first INT alignments per read reaching E-value threshold\n"
 	"                                            If INT = 0, all alignments will be output\n"
-	"                                            Mutually exclusive with option '"+ OPT_BEST +"'\n",
-help_best = 
-	"Report INT best alignments per read reaching E-value    1\n"
+	//"                                            Mutually exclusive with option '"+ OPT_BEST +"'\n"
+	//"                                            Mutually exclusive with option '" + OPT_OTU_MAP + "'\n"
+	"                                            This option allows to lower the CPU time and memory use.",
+help_no_best = 
+	"Disable best alignments search                          1\n"
 	"                                            by searching --min_lis INT candidate alignments\n"
 	"                                            If INT == 0: search All candidate alignments\n"
 	"                                            If INT > 0: search INT best alignments.\n"
@@ -169,17 +171,19 @@ help_best =
 	"                                            Explanation:\n"
 	"                                            A read can potentially be aligned (reaching E-value threshold)\n"
 	"                                            to multiple reference sequences.\n"
-	"                                            The 'best' alignment is an alignment that is better\n"
-	"                                            than the previously found alignments.\n"
-	"                                            The very first found alignment is automatically the best alignment\n"
-	"                                            until a better one is found.\n",
+	"                                            The 'best' alignment is the highest scoring alignment out of All\n"
+	"                                            alignments of a Read.\n"
+	"                                            To find the Best alignment - an exhaustive search over All\n"
+	"                                            references has to be performed.\n"
+	"                                            'best 1' and 'best 0' (all the bests) are Equally intensive processes\n"
+	"                                            requiring the exhaustive search. Only the size of reports will differ.\n",
 help_min_lis = 
 	"Search all alignments having the first INT longest LIS  2\n"
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
 	"                                            it is computed using seeds' positions to expand hits into\n"
-	"                                            longer matches prior to Smith - Waterman alignment.\n"
-	"                                            Requires option '"+ OPT_BEST +"'.\n"
-	"                                            Mutually exclusive with option '"+ OPT_NUM_ALIGNMENTS +"'\n",
+	"                                            longer matches prior to Smith - Waterman alignment.\n",
+	//"                                            Requires option '"+ OPT_BEST +"'.\n"
+	//"                                            Mutually exclusive with option '"+ OPT_NUM_ALIGNMENTS +"'\n",
 help_print_all_reads = 
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files\n",
@@ -353,9 +357,9 @@ public:
 public:
 	// Option selection Flags
 	//    alignment control
-	bool is_best = false; // OPT_BEST was specified
+	bool is_best = true; // default if no OPT_NO_BEST was specified
 	bool is_min_lis = false;
-	bool is_num_alignments = false; // OPT_NUM_ALIGNEMENTS was specified
+	bool is_num_alignments = false; // OPT_NUM_ALIGNMENTS was specified
 	bool is_full_search = false; // OPT_FULL_SEARCH was selected
 	bool is_forward = false; // OPT_F was selected i.e. search only the forward strand
 	bool is_reverse = false; // OPT_R was selected i.e. search only the reverse-complementary strand
@@ -404,9 +408,9 @@ public:
 
 	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
 
-	int32_t num_alignments = -1; // [3] help_num_alignments
-	int32_t min_lis = -1; // OPT_MIN_LIS search all alignments having the first N longest LIS
-	int32_t seed_hits = -1; // OPT_NUM_SEEDS number of seeds
+	int32_t num_alignments = 1; // [3] help_num_alignments
+	int32_t min_lis = 2; // OPT_MIN_LIS search all alignments having the first N longest LIS
+	int32_t hit_seeds = -1; // OPT_NUM_SEEDS Min number of seeds on a read that have matches in DB prior calculating LIS
 	int32_t num_best_hits = 0;
 	int32_t edges = -1; // OPT_EDGES
 
@@ -424,7 +428,7 @@ public:
 
 	// indexing options
 	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.
-	uint32_t seed_win_len = 18; // OPT_L seed length
+	uint32_t seed_win_len = 18; // OPT_L seed kmer length
 	uint32_t interval = 1; // size of k-mer window shift. Default 1 is the min possible to generate max number of k-mers.
 	uint32_t max_pos = 10000;
 	// ~ END indexing options
@@ -453,9 +457,9 @@ private:
 	void validate_other_pfx();
 
 	void opt_sort();
-	void opt_reads(const std::string &val);
-	void opt_reads_gz(char **argv, int &narg);
-	void opt_ref(const std::string &val);
+	void opt_reads(const std::string& val);
+	void opt_reads_gz(char **argv, int& narg);
+	void opt_ref(const std::string& val);
 	void opt_aligned(const std::string &val);
 	void opt_other(const std::string &val);
 	void opt_log(const std::string &val);
@@ -476,7 +480,7 @@ private:
 	void opt_sam(const std::string& val);
 	void opt_blast(const std::string& val);
 	void opt_min_lis(const std::string& val);
-	void opt_best(const std::string& val);
+	void opt_no_best(const std::string& val);
 	void opt_num_alignments(const std::string& val);
 	void opt_edges(const std::string& val);
 	void opt_full_search(const std::string& val);
@@ -508,9 +512,9 @@ private:
 	void opt_L(const std::string &val);
 	void opt_max_pos(const std::string &val);
 
-	void opt_default(const std::string &opt);
-	void opt_dbg_put_db(const std::string &opt);
-	void opt_unknown(char **argv, int &narg, char * opt);
+	void opt_default(const std::string& opt);
+	void opt_dbg_put_db(const std::string& opt);
+	void opt_unknown(char** argv, int& narg, char* opt);
 
 	std::string to_string();
 	std::string to_bin_string();
@@ -546,7 +550,7 @@ private:
 		std::make_tuple(OPT_ALIGNED,        "STRING/BOOL", COMMON,      false, help_aligned, &Runopts::opt_aligned),
 		std::make_tuple(OPT_OTHER,          "STRING/BOOL", COMMON,      false, help_other, &Runopts::opt_other),
 		std::make_tuple(OPT_NUM_ALIGNMENTS, "INT",         COMMON,      false, help_num_alignments, &Runopts::opt_num_alignments),
-		std::make_tuple(OPT_BEST,           "INT",         COMMON,      false, help_best, &Runopts::opt_best),
+		std::make_tuple(OPT_NO_BEST,        "BOOL",        COMMON,      false, help_no_best, &Runopts::opt_no_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),
 		std::make_tuple(OPT_PRINT_ALL_READS,"BOOL",        COMMON,      false, help_print_all_reads, &Runopts::opt_print_all_reads),
 		std::make_tuple(OPT_PAIRED,         "BOOL",        COMMON,      false, help_paired, &Runopts::opt_paired),

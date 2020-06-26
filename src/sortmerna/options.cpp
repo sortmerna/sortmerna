@@ -294,13 +294,13 @@ void Runopts::opt_other(const std::string &file)
 	is_other = true;
 } // ~Runopts::opt_other
 
-void Runopts::opt_log(const std::string &val)
+void Runopts::opt_log(const std::string& val)
 {
 	if (is_log)
 		WARN("'--", OPT_LOG, "' is deprecated. True by default.");
 } // ~Runopts::optLog
 
-void Runopts::opt_denovo_otu(const std::string &val)
+void Runopts::opt_denovo_otu(const std::string& val)
 {
 	is_denovo_otu = true;
 } // ~Runopts::opt_de_novo_otu
@@ -465,11 +465,11 @@ void Runopts::opt_num_seeds(const std::string &val)
 		exit(EXIT_FAILURE);
 	}
 	// set number of seeds
-	if (seed_hits < 0)
+	if (hit_seeds < 0)
 	{
 		char* end = 0;
-		seed_hits = (int)strtol(val.data(), &end, 10); // convert to integer
-		if (seed_hits <= 0)
+		hit_seeds = (int)strtol(val.data(), &end, 10); // convert to integer
+		if (hit_seeds <= 0)
 		{
 			ERR("--num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
 			exit(EXIT_FAILURE);
@@ -499,11 +499,9 @@ void Runopts::opt_fastx(const std::string &val)
 
 void Runopts::opt_sam(const std::string &val)
 {
-	std::stringstream ss;
 	if (is_sam)
 	{
-		ss << STAMP << "'" << OPT_SAM << "' has already been set. Ignoring second flag.";
-		WARN(ss.str());
+		WARN("'" , OPT_SAM , "' has already been set. Ignoring second flag.");
 	}
 	else
 	{
@@ -562,26 +560,20 @@ void Runopts::opt_blast(const std::string &val)
 		}
 		if (!match_found)
 		{
-			ss.str("");
-			ss << ": `" << opt << "` is not supported in --blast [STRING].";
-			ERR(ss.str());
+			ERR("'" , opt , "' is not supported in --blast [STRING].");
 			exit(EXIT_FAILURE);
 		}
 	}
 	// more than 1 field with blast human-readable format given
 	if (blast_human_readable && (blastops.size() > 1))
 	{
-		ss.str("");
-		ss << ": for human-readable format, --blast [STRING] can only contain a single field '0'.";
-		ERR(ss.str());
+		ERR("for human-readable format, --blast [STRING] can only contain a single field '0'.");
 		exit(EXIT_FAILURE);
 	}
 	// both human-readable and tabular format options have been chosen
 	if (blast_human_readable && blastFormat == BlastFormat::TABULAR)
 	{
-		ss.str("");
-		ss << ": --blast [STRING] can only have one of the options '0' (human-readable) or '1' (tabular).";
-		ERR(ss.str());
+		ERR("--blast [STRING] can only have one of the options '0' (human-readable) or '1' (tabular).");
 		exit(EXIT_FAILURE);
 	}
 
@@ -614,29 +606,10 @@ void Runopts::opt_min_lis(const std::string &val)
 	}
 } // ~Runopts::opt_min_lis
 
-void Runopts::opt_best(const std::string &val)
+void Runopts::opt_no_best(const std::string &val)
 {
-	std::stringstream ss;
-	if (val.size() == 0)
-	{
-		ERR("'" , OPT_BEST , "'" , " [INT] requires a positive integer e.g. 2).");
-		exit(EXIT_FAILURE);
-	}
-
-	if (is_best)
-	{
-		ERR("'" , OPT_BEST , "'" , " [INT] has been set twice, please verify your choice.");
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		if ((sscanf(val.data(), "%d", &num_best_hits) != 1))
-		{
-			ERR("Could not read '" , OPT_BEST , "' [INT] as integer");
-			exit(EXIT_FAILURE);
-		}
-		is_best = true;
-	}
+	is_best = false;
+	INFO("'", OPT_NO_BEST, "' was selected. Disabling Best search.");
 } // ~Runopts::opt_best
 
 void Runopts::opt_num_alignments(const std::string &val)
@@ -973,12 +946,12 @@ void Runopts::opt_threp(const std::string &val)
 	}
 } // ~Runopts::opt_threads
 
-void Runopts::opt_dbg_put_db(const std::string &val)
+void Runopts::opt_dbg_put_db(const std::string& val)
 {
 	is_dbg_put_kvdb = true;
 }
 
-void Runopts::opt_default(const std::string &opt)
+void Runopts::opt_default(const std::string& opt)
 {
 	ERR("Option: '", opt, "' is not recognized");
 	print_help();
@@ -1100,7 +1073,7 @@ void Runopts::opt_L(const std::string &val)
 	auto count = mopt.count(OPT_L);
 	if (count > 1)
 	{
-		WARN(" Option '" , OPT_L , "' entered [" , count , "] times. Only the last value will be used.\n" , "\tHelp: " , help_L);
+		WARN(" Option '", OPT_L, "' entered [", count, "] times. Only the last value will be used.\n", "\tHelp: ", help_L);
 	}
 
 	if (val.size() == 0)
@@ -1113,9 +1086,8 @@ void Runopts::opt_L(const std::string &val)
 
 		if (lnwin_t <= 0 || lnwin_t % 2 == 1 || lnwin_t < 8 || lnwin_t > 26)
 		{
-			WARN("Option '" , OPT_L , 
-				"' takes a Positive Even integer between 8 and 26 inclusive e.g. 10, 12, 14, .. , 20. Provided value: "
-				, lnwin_t , " Default will be used: " , seed_win_len);
+			WARN("Option '", OPT_L, "' takes a Positive Even integer between 8 and 26 inclusive"
+				" e.g. 10, 12, 14, .. , 20. Provided value: ", lnwin_t, " Default will be used: ", seed_win_len);
 		}
 		else
 		{
@@ -1298,12 +1270,12 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 
 	if (argc == 1)
 	{
-		about();
 		ERR("Missing required command options");
+		about();
 		exit(EXIT_FAILURE);
 	}
 
-	std::cout << "\n" << STAMP << "=== Options processing starts ... ===\n\n";
+	INFO("=== Options processing starts ... ===");
 
 	// store the command line
 	for (int i = 0; i < argc; i++)
@@ -1407,7 +1379,8 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		}
 	}
 
-	std::cout << "\n" << STAMP << "=== Options processing done ===\n\n";
+	INFO("=== Options processing done ===");
+	INFO("Running with best: ", is_best, " num_alignments: ", num_alignments, " min_lis: ", min_lis);
 
 	if (!is_help_opt)
 	{
@@ -1421,8 +1394,6 @@ void Runopts::process(int argc, char**argv, bool dryrun)
  */
 void Runopts::validate()
 {
-	std::stringstream ss;
-
 	validate_kvdbdir();
 	validate_idxdir();
 	validate_aligned_pfx(); // there is always some output like log => validate
@@ -1448,10 +1419,10 @@ void Runopts::validate()
 	}
 
 	if (is_out2 && !is_paired) {
-		WARN("Option '" , OPT_OUT2 , 
+		WARN("Option '", OPT_OUT2, 
 			"' is Ignored because it can only be used with paired reads."
 			" The reads are considered paired if either 2 reads files are supplied, or '", 
-			OPT_PAIRED_IN , "', or '" , OPT_PAIRED_OUT , "' is specified");
+			OPT_PAIRED_IN, "', or '", OPT_PAIRED_OUT, "' is specified");
 		is_out2 = false;
 	}
 
@@ -1481,14 +1452,6 @@ void Runopts::validate()
 		exit(EXIT_FAILURE);
 	}
 
-	// If --best output was chosen, check an alignment format has also been chosen
-	if (is_best && !(is_blast || is_sam || is_otu_map))
-	{
-		WARN("'" , OPT_BEST	, 
-			"' [INT] has been set but no output format has been chosen (--blast | --sam | --otu_map). Using default '", 
-			OPT_BLAST , "'");
-	}
-
 	// Check gap extend score < gap open score
 	if (gap_extension > gap_open)
 	{
@@ -1501,17 +1464,6 @@ void Runopts::validate()
 	if (is_print_all_reads && is_blast && blastFormat != BlastFormat::TABULAR)
 	{
 		ERR("--print_all_reads [BOOL] can only be used with BLAST-like");
-		exit(EXIT_FAILURE);
-	}
-
-	// Only one of these options is allowed (--best outputs one alignment,
-	// --num_alignments outputs > 1 alignments)
-	if (is_best && is_num_alignments)
-	{
-		ERR("'" , OPT_BEST , "' [INT] and '", OPT_NUM_ALIGNMENTS , "' [INT] cannot be set together.\n'"
-			, OPT_BEST , "' searches [INT] highest scoring reference sequences\n"
-			"and outputs a single best alignment, whereas '"
-			, OPT_NUM_ALIGNMENTS , "'\noutputs the first [INT] alignments.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1593,8 +1545,8 @@ void Runopts::validate()
 		min_lis = 2;
 
 	// default number of seed hits before searching for candidate LIS
-	if (seed_hits < 0) 
-		seed_hits = 2;
+	if (hit_seeds < 0)
+		hit_seeds = 2;
 
 	// default number of nucleotides to add to each edge of an alignment
 	// region before extension
