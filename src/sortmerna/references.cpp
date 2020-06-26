@@ -23,7 +23,6 @@
  */
 void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
-	std::stringstream ss;
 	num = idx_num;
 	part = idx_part;
 	uint32_t numseq_part = refstats.index_parts_stats_vec[idx_num][idx_part].numseq_part;
@@ -32,9 +31,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 
 	if (!ifs.is_open())
 	{
-		ss << STAMP << "Could not open file " << opts.indexfiles[idx_num].first;
-		ERR(ss.str());
-		std::cerr << ss.str();
+		ERR("Could not open file ", opts.indexfiles[idx_num].first);
 		exit(EXIT_FAILURE);
 	}
 
@@ -42,13 +39,12 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 	ifs.seekg(refstats.index_parts_stats_vec[idx_num][idx_part].start_part);
 	if (ifs.fail())
 	{
-		ss << STAMP << "Could not locate the reference file " << opts.indexfiles[idx_num].first << " used to construct the index";
-		ERR(ss.str());
+		ERR("Could not locate the reference file ", opts.indexfiles[idx_num].first, " used to construct the index");
 		exit(EXIT_FAILURE);
 	}
 
 	// load references sequences, skipping the empty lines & spaces
-	uint64_t num_seq_read = 0;
+	size_t num_seq_read = 0; // count of sequences in the reference file
 	std::string line;
 	References::BaseRecord rec;
 	bool isFastq = true;
@@ -105,8 +101,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		{
 			if (isFastq && count > 3) 
 			{
-				ss << STAMP <<  "too many lines (> 4) for FASTQ file";
-				ERR(ss.str());
+				ERR("too many lines (> 4) for FASTQ file");
 				exit(EXIT_FAILURE);
 			}
 

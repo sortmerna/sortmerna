@@ -52,7 +52,7 @@ uint32_t findMinIndex(Read & read);
 /*
  * see alignment.hpp for documentation
  */
-void find_lis( deque<pair<uint32_t, uint32_t>> &a, vector<uint32_t> &b )
+void find_lis( deque<pair<uint32_t, uint32_t>>& a, vector<uint32_t>& b )
 {
 	vector<uint32_t> p(a.size());
 	std::size_t u, v;
@@ -96,6 +96,11 @@ void find_lis( deque<pair<uint32_t, uint32_t>> &a, vector<uint32_t> &b )
 
 /* 
  * called on each idx * part * read * strand * [1..max opts.skiplengths[index_num].size (3 by default)] 
+ *
+ * @param search OUT boolean
+ *        return 'True' to indicate keep searching for more seed matches and better alignment. 
+ *		  return 'False' - stop search, the alignment is found
+ * @param max_SW_score  the maximum SW score attainable for this read i.e. perfect match
  */
 void compute_lis_alignment
 	(
@@ -105,18 +110,12 @@ void compute_lis_alignment
 		bool& read_to_count
 	)
 {
-	// true if SW alignment succeeded between
-	// the read and a candidate reference sequence
+	// true if SW alignment between the read and a candidate reference meets the threshold
 	bool aligned = false;
 
-	// if the number of matching windows on the read is less than the threshold => return
-	// default seed_hits = 2
-	if (read.readhit < (uint32_t)opts.seed_hits)
-		return;
-
 	map<uint32_t, uint32_t> kmer_count_map;
-	//    |         |_number of the k-mer occurrences
-	//    |_reference file number
+	//    |         |_number of k-mer hits on the reference
+	//    |_reference number/position in the ref file
 
 	vector<uint32pair> kmer_count_vec; // use to sort the 'kmer_count_map' (map cannot be sorted)
 	map<uint32_t, uint32_t>::iterator map_it;
@@ -143,7 +142,7 @@ void compute_lis_alignment
 	// consider only candidate references that have enough seed hits
 	for (auto freq_pair: kmer_count_map)
 	{
-		if (freq_pair.second >= (uint32_t)opts.seed_hits)
+		if (freq_pair.second >= (uint32_t)opts.hit_seeds)
 			kmer_count_vec.push_back(freq_pair);
 	}
 
@@ -153,35 +152,33 @@ void compute_lis_alignment
 	std::sort(kmer_count_vec.begin(), kmer_count_vec.end(),
 		[](std::pair<uint32_t, uint32_t> e1, std::pair<uint32_t, uint32_t> e2) {
 		if (e1.second == e2.second) 
-			return e1.first ASCENDING e2.first; // order references ascending for equal frequencies (originally: descending)
+			return e1.first ASCENDING e2.first; // order references ascending for equal frequencies (originally - descending)
 		return e1.second DESCENDING e2.second; // order frequencies descending
 	});
 
-	// 2. for each reference sequence candidate, starting from the highest scoring.
+	// 2. loop reference candidates, starting from the one with the highest number of kmer hits.
 	for (uint32_t k = 0; k < kmer_count_vec.size(); k++)
 	{
 		// the maximum scoring alignment has been found - stop searching for more alignments
-		if (opts.num_best_hits != 0 && read.max_SW_count == opts.num_best_hits) {
+		if (opts.num_best_hits > 0 && opts.num_best_hits == read.max_SW_count) {
 			break;
 		}
 
 		max_ref = kmer_count_vec[k].first;
 		max_occur = kmer_count_vec[k].second;
               
-		// not enough window hits, try to collect more hits or next read
-		if (max_occur < (uint32_t)opts.seed_hits) {
+		// not enough hits on the reference, try to collect more hits or next read
+		if (max_occur < (uint32_t)opts.hit_seeds) {
 			break;
 		}
 
 		// update number of reference sequences remaining to check
 		// only decrement read.best if the current ref sequence to check
 		// has a lower seed count than the previous one
-		if ( opts.min_lis > 0 && aligned && k > 0 && max_occur < kmer_count_vec[k - 1].second )
+		if (aligned && opts.min_lis > 0 && k > 0 && max_occur < kmer_count_vec[k - 1].second )
 		{
-			read.best--;
-			if (read.best < 1) {
-				break;
-			}
+			--read.best;
+			if (read.best < 1) break;
 		}
 
 		// check if the maximum number of alignments per read
@@ -191,7 +188,7 @@ void compute_lis_alignment
 			break;
 		}
 
-		// array of matching pairs on a given reference: (read k-mer position, ref k-mer position)
+		// array of matching kmer pairs on a given reference: (read's k-mer position, ref's k-mer position)
 		//  [0] : (493, 0)
 		//	...
 		//	[3] : (674, 18)
@@ -227,12 +224,12 @@ void compute_lis_alignment
 		// iterate over the set of hits, output windows of
 		// length == read which have at least ratio hits
 		vector<uint32pair>::iterator hits_per_ref_iter = hits_per_ref.begin();
-		deque<uint32pair> match_chain; // chain of matching k-mers fit along the read length window
+		deque<uint32pair> match_chain; // chain of matching k-mers fit along the read length
 
 		// 4. run a sliding window of read's length across the reference, 
 		//    searching for windows with enough k-mer hits
-		uint32_t lcs_ref_start = 0; // match start position on reference
-		uint32_t lcs_que_start = 0; // match start position on read
+		uint32_t lcs_ref_start = 0; // match (LCS) start position on reference
+		uint32_t lcs_que_start = 0; // match (LCS) start position on read
 		uint32_t begin_ref = hits_per_ref_iter->first; // hit position on reference
 		uint32_t begin_read = hits_per_ref_iter->second; // hit position on read
                        
@@ -263,7 +260,7 @@ void compute_lis_alignment
 			aligned = false;
 #endif                              
 			// enough windows at this position on genome to search for LIS
-			if (match_chain.size() >= (uint32_t)opts.seed_hits)
+			if (match_chain.size() >= (uint32_t)opts.hit_seeds)
 			{
 				vector<uint32_t> lis_arr; // array of Indices of matches from the match_chain comprising the LIS
 				find_lis(match_chain, lis_arr);
@@ -273,7 +270,7 @@ void compute_lis_alignment
 				{
 #endif                                      
 					// LIS long enough to perform Smith-Waterman alignment
-					if (lis_arr.size() >= (uint32_t)opts.seed_hits)
+					if (lis_arr.size() >= (size_t)opts.hit_seeds)
 					{
 #ifdef HEURISTIC1_OFF
 						lcs_ref_start = match_chain[lis_arr[list_n]].first;
@@ -401,10 +398,10 @@ void compute_lis_alignment
 						if ( result != 0 && result->score1 > refstats.minimal_score[index.index_num] )
 								aligned = true;
 
-						// Alignment succeeded, output (--all) or store (--best)
-						// the alignment and go to next alignment
+						// Alignment succeeded
 						if (aligned)
 						{
+							++read.num_hits;
 							// read has not been yet mapped, set bit to true for this read
 							// (this is the Only place where read_hits can be modified)
 							if (!read.is_hit)
@@ -421,140 +418,45 @@ void compute_lis_alignment
 							result->read_begin1 += align_que_start;
 							result->read_end1 += align_que_start;
 							result->readlen = read.sequence.length();
-							result->ref_seq = max_ref;
+							result->ref_num = max_ref;
 
 							result->index_num = index.index_num;
 							result->part = index.part;
 							result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
 
-							// update best alignment
-							if (opts.min_lis > -1)
+							// a maximum possible score for this read has been found
+							if (result->score1 == max_SW_score) ++read.max_SW_count;
+
+							// if N == 0 or Not is_best or (is_best And read.alignments.size < N) => 
+							//   simply add the new alignment to read.alignments
+							if (opts.num_alignments == 0 || !opts.is_best || (opts.is_best && read.alignment.alignv.size() < opts.num_alignments))
 							{
-								// an alignment for this read already exists
-								if (read.alignment.alignv.size() > 0)
-								{
-									uint32_t smallest_score_index = read.alignment.min_index;
-									uint32_t highest_score_index = read.alignment.max_index;
-									uint32_t hits_size = read.alignment.alignv.size();
-
-									// number of alignments stored per read < 'num_best_hits', 
-									// add alignment to array without comparison to other members of array
-									if (opts.num_best_hits == 0 || hits_size < (uint32_t)opts.num_best_hits)
-									{
-										auto rescopy = copyAlignment(result);
-										if (rescopy == read.alignment.alignv.back())
-											; // skip equivalent alignment
-										else if (rescopy.score1 > read.alignment.alignv.back().score1)
-										{
-											if (rescopy.ref_seq == read.alignment.alignv.back().ref_seq)
-											{
-												read.alignment.alignv.back() = rescopy; // replace alignment
-											}
-											else
-											{
-												// add alignment
-												read.alignment.alignv.push_back(rescopy);
-												++hits_size;
-
-												// read alignments are filled to max size, find the smallest
-												// alignment score and set the smallest_score_index
-												// (this is not done when num_best_hits_gv == 0 since
-												// we want to output all alignments for some --min_lis)
-												if (read.alignment.alignv.size() == (uint32_t)opts.num_best_hits)
-												{
-													read.alignment.min_index = findMinIndex(read);
-												}
-
-												// update the index position of the first occurrence of the highest alignment score
-												if (result->score1 > read.alignment.alignv[highest_score_index].score1)
-												{
-													read.alignment.max_index = hits_size - 1;
-												}
-
-												// the maximum possible score for this read has been found
-												if (result->score1 == max_SW_score)
-												{
-													read.max_SW_count++;
-												}
-											}
-
-											free(result); // free result
-											result = NULL;
-										}
-									}//~if (array_size < num_best_hits_gv)
-
-									// all num_best_hits slots have been filled,
-									// replace the alignment having the lowest score
-									else if (result->score1 > read.alignment.alignv[smallest_score_index].score1)
-									{
-										// update max_index to the position of the first occurrence
-										// of the highest scoring alignment
-										if (result->score1 > read.alignment.alignv[highest_score_index].score1)
-											read.alignment.max_index = smallest_score_index;
-
-										// decrement number of reads mapped to database with lower score
-										--readstats.reads_matched_per_db[read.alignment.alignv[smallest_score_index].index_num];
-
-										// increment number of reads mapped to database with higher score
-										++readstats.reads_matched_per_db[index.index_num];
-
-										// replace an old smallest scored alignment with the new one
-										read.alignment.alignv[smallest_score_index] = copyAlignment(result);
-
-										read.alignment.min_index = findMinIndex(read);
-
-										// the maximum possible score for this read has been found
-										if (result->score1 == max_SW_score) {
-											read.max_SW_count++;
-										}
-										
-										free(result); // free result, except the cigar (now new cigar)
-										result = NULL;
-									}
-									else if (result != NULL)
-									{
-										// new alignment has a lower score, destroy it
-										 free(result);
-										 result = 0;
-									}
-								}
-								// an alignment for this read doesn't exist, add the first alignment
-								else
-								{
-									// maximum size of s_align array
-									uint32_t max_size = 0;
-									// create new instance of alignments
-									if ((opts.num_best_hits > 0) && (opts.num_best_hits < BEST_HITS_INCREMENT + 1))
-										max_size = opts.num_best_hits;
-									else 
-										max_size = BEST_HITS_INCREMENT;
-
-									read.alignment.alignv.push_back( copyAlignment(result) );
-
-									// the maximum possible score for this read has been found
-									if (result->score1 == max_SW_score) read.max_SW_count++;
-
-									// free result, except the cigar
-									free(result);
-									result = NULL;
-								}
+								read.alignment.alignv.emplace_back(copyAlignment(result));
+								free(result); // free result, except the cigar
+								result = NULL;
 							}
-							// output the Nth alignment (set by --num_alignments [INT] parameter)
-							else if (opts.num_alignments > -1)
+							else if ( opts.is_best 
+									&& read.alignment.alignv.size() == opts.num_alignments 
+									&& read.alignment.alignv[read.alignment.min_index].score1 < result->score1 )
 							{
-								// add alignment to the read. TODO: check how this affects the old logic
-								read.alignment.alignv.push_back(copyAlignment(result));
+								uint32_t min_score_index = read.alignment.min_index;
+								uint32_t max_score_index = read.alignment.max_index;
 
-								// the maximum possible score for this read has been found
-								if (result->score1 == max_SW_score)
-								{
-									read.max_SW_count++;
-								}
+								// replace the old smallest scored alignment with the new one
+								read.alignment.alignv[min_score_index] = copyAlignment(result);
 
-								// update number of alignments to output per read
-								if (opts.num_alignments > 0) {
-									read.num_alignments--; // when 0 reached, alignment output stops
-								}
+								// if new_hit > max_hit: the old min_hit_idx becomes the new max_hit_idx
+								if (result->score1 > read.alignment.alignv[max_score_index].score1)
+									read.alignment.max_index = min_score_index;
+
+								// decrement number of reads mapped to database with lower score
+								--readstats.reads_matched_per_db[read.alignment.alignv[min_score_index].index_num];
+
+								// increment number of reads mapped to database with higher score
+								++readstats.reads_matched_per_db[index.index_num];
+
+								//if (opts.num_alignments > 0 && (size_t)opts.num_alignments == read.alignment.alignv.size()) 
+								//	read.is_aligned = true; // stop searching for more alignments
 
 								// get the edit distance between reference and read (serves for
 								// SAM output and computing %id and %query coverage)
@@ -576,8 +478,7 @@ void compute_lis_alignment
 								ss >> align_id_round >> align_cov_round;
 
 								// the alignment passed the Identity and Coverage threshold => NOT is_denovo
-								if ( align_id_round >= opts.min_id && align_cov_round >= opts.min_cov && read_to_count)
-								{
+								if ( align_id_round >= opts.min_id && align_cov_round >= opts.min_cov && read_to_count)	{
 									if (!readstats.is_total_reads_mapped_cov)
 										++readstats.total_reads_mapped_cov; // also calculated in post-processor 'computeStats'
 									read_to_count = false;
@@ -586,30 +487,15 @@ void compute_lis_alignment
 								}
 								// <----------------------------------------- TODO
 
-								if (result != 0) 
-								{
+								if (result != 0) {
 									free(result); // free alignment info
 									result = 0;
 								}
-							}//~if output all alignments
+							}//~if not is_best
 
 							// continue to next read (do not need to collect more seeds using another pass)
 							search = false;
-
-							// maximum score possible for the read has been reached,
-							// stop searching for further matches
-							if (opts.num_best_hits != 0 && read.max_SW_count == opts.num_best_hits)
-							{
-								break;
-							}
-
-							// stop search after the first num_alignments alignments
-							// for this read
-							if (opts.num_alignments > 0 && read.num_alignments <= 0)
-							{
-								break;
-							}
-						}//~if read aligned
+						}//~if aligned
 						else if(result != 0)  // the read did not align
 						{
 							free(result); // free alignment info
@@ -657,13 +543,16 @@ s_align2 copyAlignment(s_align* pAlign)
 	ret_align.read_end1 = pAlign->read_end1;
 	ret_align.ref_begin1 = pAlign->ref_begin1;
 	ret_align.ref_end1 = pAlign->ref_end1;
-	ret_align.ref_seq = pAlign->ref_seq;
+	ret_align.ref_num = pAlign->ref_num;
 	ret_align.score1 = pAlign->score1;
 	ret_align.strand = pAlign->strand;
 
 	return ret_align;
 }
 
+/* 
+ * find the index of the alignment with the smallest score 
+ */
 uint32_t findMinIndex(Read & read)
 {
 	uint32_t smallest_score = read.alignment.alignv[0].score1;

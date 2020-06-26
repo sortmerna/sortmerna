@@ -46,7 +46,7 @@ void Processor::run()
 			read.load_db(kvdb);
 			is_processed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
 
-			if (read.isEmpty || !read.isValid || is_processed) {
+			if (read.isEmpty || !read.isValid || is_processed || read.is_aligned) {
 				if (is_processed) {
 					//INFO("Skpping read ID: ", read.id);
 					++num_skipped;

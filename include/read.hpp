@@ -71,18 +71,18 @@ public:
 	unsigned int lastIndex; // last index number this read was aligned against. Set in Processor::callback
 	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
-	bool is_hit; // read's SW_score > min_SW_score i.e a match for this Read has been found
+	bool is_aligned; // all alignments have been found => stop searching
+	bool is_hit; // read's SW_score >= min_SW_score i.e a match for this Read has been found
 	bool is_denovo; // pass SW & fail (%Cov & %ID)
 	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
-	uint16_t max_SW_count; // count of matches that have Max Smith-Waterman score for this read
-	int32_t num_alignments; // number of alignments to output per read
-	uint32_t readhit; // number of seeds matches between read and database. (? readhit == id_win_hits.size)
+	unsigned num_hits; // number of matching references found so far for this read
+	uint16_t max_SW_count; // count of alignments that have Max possible Smith-Waterman score for this read
+	int32_t num_alignments; // counter of alignments to keep for reporting
+	uint32_t hit_seeds; // count of read's seed k-mers that have DB matches.
 	int32_t best; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
 
-	std::vector<id_win> id_win_hits; // [1] positions of hits on the reference sequence in given index/part
-
+	std::vector<id_win> id_win_hits; // [1] positions of kmer hits on the reference sequence in given index/part
 	alignment_struct2 alignment; // stored in DB
-
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
 	// <---- END store in database
 
@@ -93,7 +93,7 @@ public:
 	Read(std::string id, std::string header, std::string sequence, std::string quality, Format format);
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment
-	~Read();
+	//~Read();
 
 public:
 	void generate_id();

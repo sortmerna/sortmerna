@@ -98,12 +98,14 @@ Read::Read()
 	lastIndex(0),
 	lastPart(0),
 	reversed(false),
+	is_aligned(false),
 	is_hit(false),
 	is_denovo(true),
 	null_align_output(false),
+	num_hits(0),
 	max_SW_count(0),
 	num_alignments(0),
-	readhit(0),
+	hit_seeds(0),
 	best(0),
 	format(Format::FASTA)
 {}
@@ -128,7 +130,7 @@ Read::Read(std::string id, std::string header, std::string sequence, std::string
 	validate();
 }
 
-Read::~Read() {}
+//Read::~Read() {}
 
 // copy constructor
 Read::Read(const Read & that)
@@ -150,12 +152,14 @@ Read::Read(const Read & that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
+	is_aligned = that.is_aligned;
 	is_hit = that.is_hit;
 	is_denovo = that.is_denovo;
+	num_hits = that.num_hits;
 	null_align_output = that.null_align_output;
 	max_SW_count = that.max_SW_count;
 	num_alignments = that.num_alignments;
-	readhit = that.readhit;
+	hit_seeds = that.hit_seeds;
 	best = that.best;
 	id_win_hits = that.id_win_hits;
 	alignment = that.alignment;
@@ -163,11 +167,11 @@ Read::Read(const Read & that)
 }
 
 // copy assignment
-Read & Read::operator=(const Read & that)
+Read & Read::operator=(const Read& that)
 {
 	if (&that == this) return *this; // else *this = that
 
-	//printf("Read copy assignment called\n");
+	//INFO("Read copy assignment called");
 	id = that.id;
 	read_num = that.read_num;
 	readfile_idx = that.readfile_idx;
@@ -186,11 +190,12 @@ Read & Read::operator=(const Read & that)
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
 	is_hit = that.is_hit;
+	num_hits = that.num_hits;
 	is_denovo = that.is_denovo;
 	null_align_output = that.null_align_output;
 	max_SW_count = that.max_SW_count;
 	num_alignments = that.num_alignments;
-	readhit = that.readhit;
+	hit_seeds = that.hit_seeds;
 	best = that.best;
 	id_win_hits = that.id_win_hits;
 	alignment = that.alignment;
@@ -218,7 +223,7 @@ void Read::generate_id()
 /**
  * 5 options are used here, which would make this method to take 7 args => use Runopts as arg
  */
-void Read::init(Runopts & opts)
+void Read::init(Runopts& opts)
 {
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
@@ -271,12 +276,14 @@ void Read::clear()
 	isRestored = false;
 	lastIndex = 0;
 	lastPart = 0;
+	is_aligned = false;
 	is_hit = false;
 	is_denovo = true;
 	null_align_output = false;
+	num_hits = 0;
 	max_SW_count = 0;
 	num_alignments = 0;
-	readhit = 0;
+	hit_seeds = 0;
 	best = 0;
 	id_win_hits.clear();
 	alignment.clear();
@@ -361,12 +368,16 @@ std::string Read::matchesToJson() {
 	rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
 
 	writer.StartObject();
+	writer.Key("aligned");
+	writer.Bool(is_aligned);
 	writer.Key("hit");
 	writer.Bool(is_hit);
 	writer.Key("is_denovo");
 	writer.Bool(is_denovo);
 	writer.Key("null_align_output");
 	writer.Bool(null_align_output);
+	writer.Key("num_hits");
+	writer.Uint(num_hits);
 	writer.Key("max_SW_count");
 	writer.Uint(max_SW_count);
 	writer.Key("num_alignments");
@@ -395,12 +406,14 @@ std::string Read::toBinString()
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_aligned)), sizeof(is_aligned), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_hit)), sizeof(is_hit), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_denovo)), sizeof(is_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&num_hits)), sizeof(num_hits), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_SW_count)), sizeof(max_SW_count), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_alignments)), sizeof(num_alignments), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&readhit)), sizeof(readhit), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&hit_seeds)), sizeof(hit_seeds), std::back_inserter(buf));
 	//std::copy_n(static_cast<char*>(static_cast<void*>(&best)), sizeof(best), std::back_inserter(buf));
 
 	// id_win_hits vector - TODO: remove?
@@ -434,6 +447,9 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&lastPart), bstr.data() + offset, sizeof(lastPart));
 	offset += sizeof(lastPart);
 
+	std::memcpy(static_cast<void*>(&is_aligned), bstr.data() + offset, sizeof(is_aligned));
+	offset += sizeof(is_aligned);
+
 	std::memcpy(static_cast<void*>(&is_hit), bstr.data() + offset, sizeof(is_hit));
 	offset += sizeof(is_hit);
 
@@ -443,14 +459,17 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 	std::memcpy(static_cast<void*>(&null_align_output), bstr.data() + offset, sizeof(null_align_output));
 	offset += sizeof(null_align_output);
 
+	std::memcpy(static_cast<void*>(&num_hits), bstr.data() + offset, sizeof(num_hits));
+	offset += sizeof(num_hits);
+
 	std::memcpy(static_cast<void*>(&max_SW_count), bstr.data() + offset, sizeof(max_SW_count));
 	offset += sizeof(max_SW_count);
 
 	std::memcpy(static_cast<void*>(&num_alignments), bstr.data() + offset, sizeof(num_alignments));
 	offset += sizeof(num_alignments);
 
-	std::memcpy(static_cast<void*>(&readhit), bstr.data() + offset, sizeof(readhit));
-	offset += sizeof(readhit);
+	std::memcpy(static_cast<void*>(&hit_seeds), bstr.data() + offset, sizeof(hit_seeds));
+	offset += sizeof(hit_seeds);
 
 	//std::memcpy(static_cast<void*>(&best), bstr.data() + offset, sizeof(best));
 	//offset += sizeof(best);
@@ -514,7 +533,7 @@ void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatc
 	int32_t qb = alignment.alignv[alignIdx].ref_begin1; // index of the first char in the reference matched part
 	int32_t pb = alignment.alignv[alignIdx].read_begin1; // index of the first char in the read matched part
 
-	std::string refseq = refs.buffer[alignment.alignv[alignIdx].ref_seq].sequence;
+	std::string refseq = refs.buffer[alignment.alignv[alignIdx].ref_num].sequence;
 
 	for (uint32_t cidx = 0; cidx < alignment.alignv[alignIdx].cigar.size(); ++cidx)
 	{

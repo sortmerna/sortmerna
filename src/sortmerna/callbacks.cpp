@@ -102,7 +102,7 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 					if (opts.is_otu_map)
 					{
 						// reference sequence identifier for mapped read
-						std::string refhead = refs.buffer[read.alignment.alignv[p].ref_seq].header;
+						std::string refhead = refs.buffer[read.alignment.alignv[p].ref_num].header;
 						std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
 						// left trim '>' or '@'
 						ref_seq_str.erase(ref_seq_str.begin(),

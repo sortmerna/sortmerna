@@ -95,12 +95,11 @@ void align_cb
 	// 'num_alignments' was set and all num_alignments have been found 
 	//   OR
 	// 'best' was set and the maximum scoring alignment has been found (unless all alignments are being output)
-	bool is_num_alignments_done = opts.num_alignments > 0 && read.num_alignments < 0;
-	bool is_best_done = opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits;
-	if (read.reversed && (is_num_alignments_done || is_best_done))
-	{
-		return;
-	}
+	//bool is_done = (opts.is_best && read.num_best_hits == opts.num_best_hits) || (!opts.is_best && read.num_alignments == opts.num_alignments);
+	bool is_done = (opts.num_alignments > 0 && read.num_alignments < 0) || 
+		(opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits);
+
+	if (read.reversed && is_done) return;
 
 	// the read length is too short - don't search
 	if (read.sequence.size() < refstats.lnwin[index.index_num])
@@ -113,13 +112,13 @@ void align_cb
 		return;
 	}
 
-	uint32_t windowshift = opts.skiplengths[index.index_num][0];
+	uint32_t win_shift = opts.skiplengths[index.index_num][0];
 	// keep track of windows (read positions) which have been already traversed in the burst trie
 	// initially all False
 	vector<bool> read_pos_searched(read.sequence.size());
 
 	uint32_t pass_n = 0; // Pass number (possible value 0,1,2)
-	uint32_t max_SW_score = read.sequence.size() *opts.match; // the maximum SW score attainable for this read
+	uint32_t max_SW_score = read.sequence.size() * opts.match; // the maximum SW score attainable for this read
 
 	std::vector<UCHAR> bitvec; // window (prefix/suffix) bitvector
 
@@ -135,12 +134,12 @@ void align_cb
 		// number of k-mer windows fit along the read given 
 		// the window size and a search step (windowshift)
 		uint32_t numwin = ( 
-			read.sequence.size() - refstats.lnwin[index.index_num] + windowshift 
-			) / windowshift;
+				read.sequence.size() - refstats.lnwin[index.index_num] + win_shift
+			) / win_shift;
 
-		uint32_t win_pos = 0; // position (index) of the window's first char on the read i.e. [0..read.sequence.length-1]
+		uint32_t win_pos = 0; // position (index) of the window's first char on the read i.e. [0...read.sequence.length-1]
 		// iterate the windows
-		for (uint32_t win_num = 0; win_num < numwin; win_num++)
+		for (uint32_t win_num = 0; win_num < numwin; ++win_num)
 		{
 			if (read.is04) read.flip34(); // Make sure the read is in 03 encoding for index search
 
@@ -151,7 +150,7 @@ void align_cb
 				// this flag it set to true if a match is found during
 				// subsearch 1(a), to skip subsearch 1(b)
 				bool accept_zero_kmer = false;
-				// ids for k-mers that hit the database
+				// ids for k-mers hits on the reference database
 				vector<id_win> id_hits; // TODO: add directly to 'id_win_hits'? - No, id_win_hits may contain hits from different index parts.
 
 				bitvec.resize(bitvec_size);
@@ -199,7 +198,6 @@ void align_cb
 						&bitvec[offset],
 						accept_zero_kmer,
 						id_hits,
-						//read.id,
 						win_pos,
 						refstats.partialwin[index.index_num],
 						opts
@@ -256,30 +254,30 @@ void align_cb
 							&bitvec[offset],
 							accept_zero_kmer,
 							id_hits,
-							//read.id,
 							win_pos,
 							refstats.partialwin[index.index_num], 
 							opts);
 					}//~if exact half window exists in the reverse burst trie                    
 				}//~if (!accept_zero_kmer)
 
-				// associate the ids with the read window number
+				// associate the ids with the read's window number
 				if (!id_hits.empty())
 				{
 					for (uint32_t i = 0; i < id_hits.size(); i++)
 					{
 						read.id_win_hits.push_back(id_hits[i]);
 					}
-					read.readhit++;
+					++read.hit_seeds;
 				}
 			} // ~if not read_pos_searched[win_pos]
 
-			// continue read analysis if threshold seeds were matched
-			if (win_num == numwin - 1)
+			// continue analysis when read's k-mers for a given shift-size were looked-up,
+			// and the number of matching seeds on the read meets the threshold (default 2)
+			if (win_num == numwin - 1 && read.hit_seeds >= (uint32_t)opts.hit_seeds)
 			{
 				compute_lis_alignment(
 					read, opts, index, refs, readstats, refstats,
-					search, // returns False if the alignment is found -> stop searching
+					search,
 					max_SW_score,
 					read_to_count
 				);
@@ -293,20 +291,32 @@ void align_cb
 					else
 					{
 						// the next interval size equals to the current one, skip it
-						while ( pass_n < 3 &&
-							opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1] )
+						while ( pass_n < 3 
+							&& opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1] )
 							++pass_n;
 						if (++pass_n > 2) search = false;
 						// set interval skip length for next Pass
-						else windowshift = opts.skiplengths[index.index_num][pass_n];
+						else win_shift = opts.skiplengths[index.index_num][pass_n];
 					}
 				}
 				break; // last possible position reached for given window and skip length -> go to the next skip length
 			}//~( win_num == NUMWIN-1 )
-			win_pos += windowshift;
+			win_pos += win_shift;
 		}//~for (each window)                
-			//~while all three window skip lengths have not been tested, or a match has not been found
+			//~while all skip/shift lengths have not been tested, or a match has not been found
 	}// ~while (search);
+
+	// all_N_best_max_SW Or all_N hits found - stop further processing of this read
+	if (opts.num_alignments > 0) {
+		if (opts.is_best && opts.num_alignments == read.max_SW_count ||
+			(!opts.is_best && read.alignment.alignv.size() == opts.num_alignments)) {
+			read.is_aligned = true;
+		}
+	}
+	// end of processing and read.alignments > 0
+	else if (isLastStrand && read.lastIndex == index.index_num && read.lastPart == index.part && read.alignment.alignv.size() > 0) {
+			read.is_aligned = true;
+	}
 
 	// the read didn't align => NOT is_denovo
 	if (isLastStrand && !read.is_hit && opts.num_alignments > -1 && opts.is_denovo_otu && read.is_denovo)
@@ -419,7 +429,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
  *  - alignment results are stored
  *  - read statistics are stored and is_done = True
  */
-bool is_aligned(Runopts & opts, Readstats & readstats, Output & output, Index &index, KeyValueDatabase &kvdb)
+bool is_aligned(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
 {
 	INFO("TODO");
 	return false;

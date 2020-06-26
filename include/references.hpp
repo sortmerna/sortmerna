@@ -19,7 +19,7 @@ class References {
 public:
 	struct BaseRecord
 	{
-		size_t nid; // index into Reference file
+		size_t nid; // position of the sequence in the Reference file [0...'number of sequences in the ref.file - 1']
 		std::string id; // ID from header
 		std::string header;
 		std::string sequence;

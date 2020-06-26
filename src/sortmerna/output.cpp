@@ -260,8 +260,8 @@ void Output::report_blast
 				* refstats.full_read[refs.num]
 				* std::exp(-refstats.gumbel[refs.num].first * read.alignment.alignv[i].score1);
 
-			std::string refseq = refs.buffer[read.alignment.alignv[i].ref_seq].sequence;
-			std::string ref_id = refs.buffer[read.alignment.alignv[i].ref_seq].id;
+			std::string refseq = refs.buffer[read.alignment.alignv[i].ref_num].sequence;
+			std::string ref_id = refs.buffer[read.alignment.alignv[i].ref_num].id;
 
 			if (read.alignment.alignv[i].strand)
 				strandmark = '+';
@@ -561,7 +561,7 @@ void Output::report_sam
 			if (!read.alignment.alignv[i].strand) sam_os << "\t16\t";
 			else sam_os << "\t0\t";
 			// (3) Subject
-			sam_os << refs.buffer[read.alignment.alignv[i].ref_seq].id;
+			sam_os << refs.buffer[read.alignment.alignv[i].ref_num].id;
 			// (4) Ref start
 			sam_os << "\t" << read.alignment.alignv[i].ref_begin1 + 1;
 			// (5) mapq
@@ -976,7 +976,7 @@ std::string Summary::to_string(Runopts& opts, Refstats& refstats)
 		   << "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
 		++idx;
 	}
-	ss << "    Number of seeds = " << opts.seed_hits << std::endl
+	ss << "    Number of seeds = " << opts.hit_seeds << std::endl
 	   << "    Edges = " << opts.edges << std::endl
 	   << "    SW match = " << opts.match << std::endl
 	   << "    SW mismatch = " << opts.mismatch << std::endl

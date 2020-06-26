@@ -46,17 +46,17 @@
  // Universal Levenshtein table for k=1
 extern uint32_t table[4][16][14];
 
-/* for each 18-mer hit on the read, we store the
-   key to find the positions and the window number
-   on the read at which the 18-mer occurs */
+/* 
+ * for each 18-mer hit on the read, we store the
+ * key to find the positions and the window number
+ * on the read at which the 18-mer occurs 
+ */
 struct id_win
 {
-	// key value to find index positions
-	uint32_t id;
-	// the associated window number on the read 
-	uint32_t win;
+	uint32_t id; // key to find index positions
+	uint32_t win; // the associated window number on the read 
 
-	id_win(){}
+	id_win() : id(0), win(0) {}
 	id_win(uint32_t id, uint32_t win) : id(id), win(win) {}
 
 	id_win(std::string str)
@@ -68,7 +68,7 @@ struct id_win
 		}
 		else
 		{
-			std::cout << "ERROR in id_win.fromString: string size " << str.size() << " not equal to " << sizeof(id) + sizeof(win) << " Cannot restore\n";
+			ERR("ERROR in id_win.fromString: string size ", str.size(), " not equal to ", sizeof(id) + sizeof(win), " Cannot restore.");
 			exit(1);
 		}
 	}
@@ -102,7 +102,7 @@ struct id_win
 	@param uint32_t readn,
 	@param uint32_t win_num,
 	@param uint32_t partialwin
-	@return none
+	@return void
 */
 void traversetrie_align(
 	NodeElement *trie_t /**< root node to mini burst trie */,

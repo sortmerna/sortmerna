@@ -95,17 +95,16 @@ uint32_t table[4][16][14] = {
 
 /*! @fn traversetrie_align() */
 void traversetrie_align(
-	NodeElement *trie_t,
+	NodeElement* trie_t,
 	uint32_t lev_t,
-	unsigned char depth,
-	UCHAR *win_k1_ptr,
-	UCHAR *win_k1_full,
-	bool &accept_zero_kmer,
-	std::vector<id_win> &id_hits,
-	//int64_t readn, // TODO: never used - remove?
+	UCHAR depth,
+	UCHAR* win_k1_ptr,
+	UCHAR* win_k1_full,
+	bool& accept_zero_kmer,
+	std::vector<id_win>& id_hits,
 	uint32_t win_num,
 	uint32_t partialwin,
-	Runopts & opts
+	Runopts& opts
 )
 {
 	uint16_t lev_t_trie_pivot = lev_t;
@@ -156,7 +155,6 @@ void traversetrie_align(
 						win_k1_full,
 						accept_zero_kmer,
 						id_hits,
-						//readn,
 						win_num,
 						partialwin,
 						opts
