@@ -271,35 +271,38 @@ void align_cb
 				}
 			} // ~if not read_pos_searched[win_pos]
 
-			// continue analysis when read's k-mers for a given shift-size were looked-up,
-			// and the number of matching seeds on the read meets the threshold (default 2)
-			if (win_num == numwin - 1 && read.hit_seeds >= (uint32_t)opts.hit_seeds)
+			// k-mers for a given shift-size were all looked-up
+			if (win_num == numwin - 1)
 			{
-				compute_lis_alignment(
-					read, opts, index, refs, readstats, refstats,
-					search,
-					max_SW_score,
-					read_to_count
-				);
+				// calculate LIS if the number of matching seeds on the read meets the threshold (default 2)
+				if (read.hit_seeds >= (uint32_t)opts.hit_seeds) {
+					compute_lis_alignment(
+						read, opts, index, refs, readstats, refstats,
+						search,
+						max_SW_score,
+						read_to_count
+					);
+				}
 
-				// the read was not accepted at current window shift,
+				// the read was not accepted at the current shift,
 				// use the next (smaller) window shift
 				if (search)
 				{
 					// last (3rd) Pass has been made
-					if (pass_n == 2) search = false;
+					if (pass_n == 2) 
+						search = false;
 					else
 					{
 						// the next interval size equals to the current one, skip it
-						while ( pass_n < 3 
-							&& opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1] )
+						while (pass_n < 3
+							&& opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1])
 							++pass_n;
 						if (++pass_n > 2) search = false;
 						// set interval skip length for next Pass
 						else win_shift = opts.skiplengths[index.index_num][pass_n];
 					}
 				}
-				break; // last possible position reached for given window and skip length -> go to the next skip length
+				break; // go to the next skip length
 			}//~( win_num == NUMWIN-1 )
 			win_pos += win_shift;
 		}//~for (each window)                
@@ -351,7 +354,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 	INFO("Number of cores: ", numCores, " Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
 
 	ThreadPool tpool(numThreads);
-	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
+	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
 	Refstats refstats(opts, readstats);
 	References refs;
 
