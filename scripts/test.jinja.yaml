@@ -94,6 +94,7 @@ t3:
     - -otu_map
     - -de_novo_otu
     - -fastx
+    - -other
     - -blast
     - '1 cigar qcov'
     - -v
@@ -105,6 +106,7 @@ t3:
     num_denovo:      52018 # pass SW & fail (%Cov & %ID)
     num_pass_id_cov: 47981 # pass SW and pass (%Cov & %ID)
     num_groups: [264, 265] # 264 lnx (sometimes), 265 win (bizarre behavior of Lnx VM on Win host)
+    non_aligned_id: L1S23.273699_272664 # 0_64412
 
 # original test only performed indexing i.e. no alignment and not reads
 # TODO: add option '-i' 'index only'?
