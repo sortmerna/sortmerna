@@ -48,9 +48,9 @@ void Processor::run()
 
 			if (read.isEmpty || !read.isValid || is_processed || read.is_aligned) {
 				if (is_processed) {
-					//INFO("Skpping read ID: ", read.id);
 					++num_skipped;
 				}
+				//INFO("Skpping read ID: ", read.id);
 				continue;
 			}
 
