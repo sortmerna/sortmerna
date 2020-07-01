@@ -43,11 +43,7 @@ public:
 			threads_.emplace_back(std::bind(&ThreadPool::threadEntry, this, i));
 		}
 
-		{
-			std::stringstream ss;
-			ss << STAMP << "initialized Pool with [" << numThreads << "] threads" << std::endl << std::endl;
-			std::cout << ss.str();
-		}
+		INFO("initialized Pool with [", numThreads, "] threads\n");
 	}
 
 	~ThreadPool()
@@ -79,9 +75,7 @@ protected:
 
 					if (jobs_.empty()) // No jobs to do and shutting down
 					{
-						std::stringstream ss;
-						ss << "Thread  " << std::this_thread::get_id() << " job done" << std::endl;
-						std::cout << ss.str();
+						INFO("Thread  ", std::this_thread::get_id(), " job done");
 						return;
 					}
 
@@ -94,11 +88,7 @@ protected:
 				job(); // Do the job without holding any locks
 				--running_threads;
 
-				{
-					std::stringstream ss;
-					ss << STAMP << "number of running_threads= " << running_threads.load() << " jobs queue is empty= " << jobs_.empty() << std::endl;
-					std::cout << ss.str(); ss.str("");
-				}
+				INFO("number of running_threads= ", running_threads.load(), " jobs queue is empty= ", jobs_.empty());
 
 				cv_done.notify_one(); // wake up the main thread waiting in 'waitAll'. Keep it here for multi-reference cases.
 			} // ~for
