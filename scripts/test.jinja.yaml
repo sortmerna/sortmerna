@@ -616,6 +616,10 @@ t19:
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
 
 t20:
   name: single paired reads file + paired_in + joint FWD/REV output

@@ -52,7 +52,7 @@
 
 
 // forward
-void reportsJob(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output); // callback
+void reportsJob(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output); // callback
 
 Summary::Summary():
 	is_de_novo_otu(false), 
@@ -73,7 +73,7 @@ Output::Output(Runopts& opts, Readstats& readstats)
 }
 Output::~Output() { closefiles(); }
 
-void Output::init(Runopts & opts, Readstats & readstats)
+void Output::init(Runopts& opts, Readstats& readstats)
 {
 	summary.pid_str = std::to_string(getpid());
 
@@ -624,7 +624,7 @@ void Output::report_sam
  *
  * @param reads: 1 or 2 (paired) reads
  */
-void Output::report_fasta(Runopts & opts, std::vector<Read> & reads)
+void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 {
 	std::stringstream ss;
 
@@ -1047,16 +1047,16 @@ void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyVal
 	if (opts.is_sam) output.writeSamHeader(opts);
 
 	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
-	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
+	for (uint16_t ref_idx = 0; ref_idx < (uint16_t)opts.indexfiles.size(); ++ref_idx)
 	{
 		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
+		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[ref_idx]; ++idx_part)
 		{
-			INFO("Loading reference ", index_num, " part ", idx_part+1, "/", refstats.num_index_parts[index_num], "  ... ");
+			INFO("Loading reference ", ref_idx, " part ", idx_part+1, "/", refstats.num_index_parts[ref_idx], "  ... ");
 
 			auto starts = std::chrono::high_resolution_clock::now();
 
-			refs.load(index_num, idx_part, opts, refstats);
+			refs.load(ref_idx, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
 			INFO("done. Elapsed sec [" , elapsed.count());
 
@@ -1073,11 +1073,11 @@ void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyVal
 			read_queue.reset();
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
-			INFO("Done reference ", index_num, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
+			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
 
 			if (!opts.is_blast && !opts.is_sam)	break;;
 		} // ~for(idx_part)
-	} // ~for(index_num)
+	} // ~for(ref_idx)
 
 	INFO("=== Done Reports generation ===\n");
 } // ~generateReports

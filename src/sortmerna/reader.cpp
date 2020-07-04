@@ -250,7 +250,7 @@ std::string Reader::nextfwd(std::ifstream& ifs) {
 		{
 			if (state_fwd.line_count == 1)
 			{
-				read << 0 << '_' << state_fwd.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << file_num << '_' << state_fwd.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
 				read << line << '\n'; // the very first header
 				count = 0;
 			}
@@ -356,7 +356,7 @@ std::string Reader::nextrev(std::ifstream& ifs) {
 		{
 			if (state_rev.line_count == 1)
 			{
-				read << 0 << '_' << state_rev.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << file_num << '_' << state_rev.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
 				read << line << '\n'; // the very first header
 				count = 0;
 			}
