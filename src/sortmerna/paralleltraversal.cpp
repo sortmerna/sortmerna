@@ -117,7 +117,7 @@ void align_cb
 	// initially all False
 	vector<bool> read_pos_searched(read.sequence.size());
 
-	uint32_t pass_n = 0; // Pass number (possible value 0,1,2)
+	size_t pass_n = 0; // Pass number (possible value 0,1,2)
 	uint32_t max_SW_score = read.sequence.size() * opts.match; // the maximum SW score attainable for this read
 
 	std::vector<UCHAR> bitvec; // window (prefix/suffix) bitvector
@@ -278,19 +278,16 @@ void align_cb
 				if (read.hit_seeds >= (uint32_t)opts.hit_seeds) {
 					compute_lis_alignment(
 						read, opts, index, refs, readstats, refstats,
-						search,
-						max_SW_score,
-						read_to_count
+						search,	max_SW_score, read_to_count
 					);
 				}
 
-				// the read was not accepted at the current shift,
+				// if the read was not accepted at the current shift,
 				// use the next (smaller) window shift
 				if (search)
 				{
-					// last (3rd) Pass has been made
 					if (pass_n == 2) 
-						search = false;
+						search = false; // if the last (3rd) Pass has been made
 					else
 					{
 						// the next interval size equals to the current one, skip it
@@ -331,8 +328,6 @@ void align_cb
 // called from main
 void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
 {
-	std::stringstream ss;
-
 	INFO("==== Starting alignment ====");
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
@@ -411,7 +406,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 	INFO("==== Done alignment ====\n");
 
 	// store readstats calculated in alignment
-	readstats.set_is_total_reads_mapped_cov(); // TODO: seems not necessary here. See TODO: alignment.cpp:569
+	readstats.set_is_total_mapped_sw_id_cov();
 	readstats.store_to_db(kvdb);
 } // ~align
 

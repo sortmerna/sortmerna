@@ -47,7 +47,9 @@
 
 // forward
 s_align2 copyAlignment(s_align* pAlign);
-uint32_t findMinIndex(Read & read);
+uint32_t inline findMinIndex(std::vector<s_align2>& alignv);
+uint32_t inline findMaxIndex(std::vector<s_align2>& alignv);
+bool is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts);
 
 /*
  * see alignment.hpp for documentation
@@ -101,6 +103,7 @@ void find_lis( deque<pair<uint32_t, uint32_t>>& a, vector<uint32_t>& b )
  *        return 'True' to indicate keep searching for more seed matches and better alignment. 
  *		  return 'False' - stop search, the alignment is found
  * @param max_SW_score  the maximum SW score attainable for this read i.e. perfect match
+ * @param read_to_count
  */
 void compute_lis_alignment
 	(
@@ -394,22 +397,15 @@ void compute_lis_alignment
 						if (profile != 0) 
 							init_destroy(&profile);
 
-						// check alignment satisfies all thresholds
+						// check alignment passes the threshold
 						if ( result != 0 && result->score1 > refstats.minimal_score[index.index_num] )
 								aligned = true;
 
-						// Alignment succeeded
 						if (aligned)
 						{
 							++read.num_hits;
-							// read has not been yet mapped, set bit to true for this read
-							// (this is the Only place where read_hits can be modified)
-							if (!read.is_hit)
-							{
-								read.is_hit = true;
-								++readstats.total_reads_aligned;
-								++readstats.reads_matched_per_db[index.index_num];
-							}
+							if (result->score1 == max_SW_score) 
+								++read.max_SW_count; // a max possible score has been found
 
 							// add the offset calculated by the LCS (from the beginning of the sequence)
 							// to the offset computed by SW alignment
@@ -424,81 +420,80 @@ void compute_lis_alignment
 							result->part = index.part;
 							result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
 
-							// a maximum possible score for this read has been found
-							if (result->score1 == max_SW_score) ++read.max_SW_count;
+							s_align2 alignment = copyAlignment(result); // new alignment
 
-							// if N == 0 or Not is_best or (is_best And read.alignments.size < N) => 
+							// read has not yet been mapped, set bit to true for this read
+							// (this is the Only place where read.is_hit can be modified)
+							if (!read.is_hit)
+							{
+								read.is_hit = true;
+								++readstats.total_reads_aligned;
+								++readstats.reads_matched_per_db[index.index_num];
+							}
+
+							// calculate read.is_id_cov and read.is_denovo if
+							// not searching for Best alignments that also pass ID + COV (default)
+							if (!read.is_id_cov && !opts.is_best_id_cov)
+							{
+								bool is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
+
+								// the alignment passed the Identity and Coverage threshold => NOT is_denovo
+								if (is_id_cov) {
+									read.is_id_cov = true;
+									read.is_denovo = false;
+									++readstats.total_mapped_sw_id_cov; // also calculated in post-processor 'computeStats'
+								}
+							}
+
+							// if 'N == 0' or 'Not is_best' or 'is_best And read.alignments.size < N' => 
 							//   simply add the new alignment to read.alignments
 							if (opts.num_alignments == 0 || !opts.is_best || (opts.is_best && read.alignment.alignv.size() < opts.num_alignments))
 							{
-								read.alignment.alignv.emplace_back(copyAlignment(result));
-								free(result); // free result, except the cigar
-								result = NULL;
+								read.alignment.alignv.emplace_back(alignment);
 							}
 							else if ( opts.is_best 
 									&& read.alignment.alignv.size() == opts.num_alignments 
 									&& read.alignment.alignv[read.alignment.min_index].score1 < result->score1 )
 							{
-								uint32_t min_score_index = read.alignment.min_index;
-								uint32_t max_score_index = read.alignment.max_index;
+								if (!opts.is_best_id_cov) {
+									// set min and max pointers - just once, after all the reads' alignments were filled
+									if (opts.num_alignments > 1 && read.alignment.max_index == 0 && read.alignment.min_index == 0) {
+										read.alignment.min_index = findMinIndex(read.alignment.alignv);
+										read.alignment.max_index = findMaxIndex(read.alignment.alignv);
+									}
 
-								// replace the old smallest scored alignment with the new one
-								read.alignment.alignv[min_score_index] = copyAlignment(result);
+									uint32_t min_score_index = read.alignment.min_index;
+									uint32_t max_score_index = read.alignment.max_index;
 
-								// if new_hit > max_hit: the old min_hit_idx becomes the new max_hit_idx
-								if (result->score1 > read.alignment.alignv[max_score_index].score1)
-									read.alignment.max_index = min_score_index;
+									// replace the old smallest scored alignment with the new one
+									read.alignment.alignv[min_score_index] = alignment;
 
-								// decrement number of reads mapped to database with lower score
-								--readstats.reads_matched_per_db[read.alignment.alignv[min_score_index].index_num];
+									// if new_hit > max_hit: the old min_hit_idx becomes the new max_hit_idx
+									// only do if num_alignments > 1 i.e. max_idx != min_idx
+									if (result->score1 > read.alignment.alignv[max_score_index].score1 && read.alignment.alignv.size() > 1) {
+										read.alignment.max_index = min_score_index; // new max index
+										read.alignment.min_index = findMinIndex(read.alignment.alignv); // new min index
+									}
 
-								// increment number of reads mapped to database with higher score
-								++readstats.reads_matched_per_db[index.index_num];
-
-								//if (opts.num_alignments > 0 && (size_t)opts.num_alignments == read.alignment.alignv.size()) 
-								//	read.is_aligned = true; // stop searching for more alignments
-
-								// get the edit distance between reference and read (serves for
-								// SAM output and computing %id and %query coverage)
-								uint32_t id = 0;
-								uint32_t mismatches = 0;
-								uint32_t gaps = 0;
-								read.calcMismatchGapId(refs, read.alignment.alignv.size()-1, mismatches, gaps, id);
-
-								int32_t align_len = abs(result->read_end1 + 1 - result->read_begin1);
-								int32_t total_pos = mismatches + gaps + id;
-								stringstream ss;
-								ss.precision(3);
-								ss << (double)id / total_pos << ' ' << (double)align_len / read.sequence.length();
-
-								// TODO: ---------------------------------------->
-								// the 'if' below seems to be always false 
-								double align_id_round = 0.0;
-								double align_cov_round = 0.0;
-								ss >> align_id_round >> align_cov_round;
-
-								// the alignment passed the Identity and Coverage threshold => NOT is_denovo
-								if ( align_id_round >= opts.min_id && align_cov_round >= opts.min_cov && read_to_count)	{
-									if (!readstats.is_total_reads_mapped_cov)
-										++readstats.total_reads_mapped_cov; // also calculated in post-processor 'computeStats'
-									read_to_count = false;
-
-									if (opts.is_denovo_otu) read.is_denovo = false; // saved in DB
+									// decrement number of reads mapped to database with lower score
+									--readstats.reads_matched_per_db[read.alignment.alignv[min_score_index].index_num];
+									//                                                           |_old min index
+									// increment number of reads mapped to database with higher score
+									++readstats.reads_matched_per_db[index.index_num];
 								}
-								// <----------------------------------------- TODO
-
-								if (result != 0) {
-									free(result); // free alignment info
-									result = 0;
-								}
-							}//~if not is_best
+								//else {
+								// TODO: new case to implement 20200703
+								//}
+							}//~if
 
 							// continue to next read (do not need to collect more seeds using another pass)
 							search = false;
 						}//~if aligned
-						else if(result != 0)  // the read did not align
+						
+						// free alignment info
+						if(result != 0)
 						{
-							free(result); // free alignment info
+							free(result);
 							result = 0;
 						}
 					}//~if LIS long enough                               
@@ -553,17 +548,92 @@ s_align2 copyAlignment(s_align* pAlign)
 /* 
  * find the index of the alignment with the smallest score 
  */
-uint32_t findMinIndex(Read & read)
+uint32_t inline findMinIndex(std::vector<s_align2>& alignv)
 {
-	uint32_t smallest_score = read.alignment.alignv[0].score1;
-	uint32_t index = 0;
-	for (int i = 0; i < read.alignment.alignv.size(); ++i)
+	uint32_t min_score = alignv[0].score1;
+	uint32_t min_idx = 0;
+	for (int i = 0; i < alignv.size(); ++i)
 	{
-		if (read.alignment.alignv[i].score1 < smallest_score)
+		if (alignv[i].score1 < min_score)
 		{
-			smallest_score = read.alignment.alignv[i].score1;
-			index = i;
+			min_score = alignv[i].score1;
+			min_idx = i;
 		}
 	}
-	return index;
+	return min_idx;
 }
+
+uint32_t inline findMaxIndex(std::vector<s_align2>& alignv)
+{
+	uint32_t max_idx = 0;
+	uint32_t max_score = alignv[0].score1;
+	for (int i = 0; i < alignv.size(); ++i)
+	{
+		if (alignv[i].score1 > max_score)
+		{
+			max_score = alignv[i].score1;
+			max_idx = i;
+		}
+	}
+	return max_idx;
+}
+
+/* 
+ * calculate whether the alignment passes ID and COV thresholds 
+ * serves for SAM output
+ *
+ * @param read_iseq  read sequence in integer alphabet, see 'read.isequence'
+ * @param alignment to check
+ * @return true (passes ID and COV) | false (fails ID and COV
+ *
+ */
+bool inline is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts)
+{
+	// calculate id, mismatches, gaps for the given alignment
+	int id = 0; // count of mismatched characters
+	int mismatches = 0; // count of gaps
+	int gaps = 0; // count of matched characters
+
+	int32_t ridx = alignment.ref_begin1; // index of the first char in the reference matched part
+	int32_t qidx = alignment.read_begin1; // index of the first char in the read matched part
+
+	std::string refseq = refs.buffer[alignment.ref_num].sequence; // reference sequence
+	int32_t align_len = abs(alignment.read_end1 + 1 - alignment.read_begin1); // alignment length
+
+	for (uint32_t cidx = 0; cidx < alignment.cigar.size(); ++cidx)
+	{
+		uint32_t letter = 0xf & alignment.cigar[cidx]; // 4 low bits
+		uint32_t length = (0xfffffff0 & alignment.cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
+		if (letter == 0)
+		{
+			for (uint32_t u = 0; u < length; ++u)
+			{
+				if (refseq[ridx] != read_iseq[qidx]) ++mismatches;
+				else ++id;
+				++ridx;
+				++qidx;
+			}
+		}
+		else if (letter == 1)
+		{
+			qidx += length;
+			gaps += length;
+		}
+		else
+		{
+			ridx += length;
+			gaps += length;
+		}
+	}
+
+	// round to 3 decimal places
+	stringstream ss;
+	ss.precision(3);
+	ss << (double)id / (mismatches + gaps + id) << ' ' << (double)align_len / read_iseq.length();
+
+	double align_id_round = 0.0;
+	double align_cov_round = 0.0;
+	ss >> align_id_round >> align_cov_round;
+
+	return (align_id_round >= opts.min_id && align_cov_round >= opts.min_cov);
+} // ~is_id_cov_pass

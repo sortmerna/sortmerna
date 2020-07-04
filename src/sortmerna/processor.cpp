@@ -220,7 +220,7 @@ void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDa
 
 		INFO("total_reads_denovo_clustering = " , readstats.total_reads_denovo_clustering);
 
-		readstats.set_is_total_reads_mapped_cov();
+		readstats.set_is_total_mapped_sw_id_cov();
 		readstats.is_stats_calc = true;
 		readstats.store_to_db(kvdb); // store reads statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done

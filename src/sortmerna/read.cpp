@@ -100,6 +100,7 @@ Read::Read()
 	reversed(false),
 	is_aligned(false),
 	is_hit(false),
+	is_id_cov(false),
 	is_denovo(true),
 	null_align_output(false),
 	num_hits(0),
@@ -154,6 +155,7 @@ Read::Read(const Read & that)
 	lastPart = that.lastPart;
 	is_aligned = that.is_aligned;
 	is_hit = that.is_hit;
+	is_id_cov = that.is_id_cov;
 	is_denovo = that.is_denovo;
 	num_hits = that.num_hits;
 	null_align_output = that.null_align_output;
@@ -190,6 +192,7 @@ Read & Read::operator=(const Read& that)
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
 	is_hit = that.is_hit;
+	is_id_cov = that.is_id_cov;
 	num_hits = that.num_hits;
 	is_denovo = that.is_denovo;
 	null_align_output = that.null_align_output;
@@ -372,6 +375,8 @@ std::string Read::matchesToJson() {
 	writer.Bool(is_aligned);
 	writer.Key("hit");
 	writer.Bool(is_hit);
+	writer.Key("id_cov");
+	writer.Bool(is_id_cov);
 	writer.Key("is_denovo");
 	writer.Bool(is_denovo);
 	writer.Key("null_align_output");
@@ -408,6 +413,7 @@ std::string Read::toBinString()
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_aligned)), sizeof(is_aligned), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_hit)), sizeof(is_hit), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_id_cov)), sizeof(is_id_cov), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_denovo)), sizeof(is_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_hits)), sizeof(num_hits), std::back_inserter(buf));
@@ -434,7 +440,7 @@ std::string Read::toBinString()
 /* 
  * load read alignment data from DB 
  */
-bool Read::load_db(KeyValueDatabase & kvdb)
+bool Read::load_db(KeyValueDatabase& kvdb)
 {
 	int id_win_hits_len = 0;
 	std::string bstr = kvdb.get(id);
@@ -452,6 +458,9 @@ bool Read::load_db(KeyValueDatabase & kvdb)
 
 	std::memcpy(static_cast<void*>(&is_hit), bstr.data() + offset, sizeof(is_hit));
 	offset += sizeof(is_hit);
+
+	std::memcpy(static_cast<void*>(&is_id_cov), bstr.data() + offset, sizeof(is_id_cov));
+	offset += sizeof(is_id_cov);
 
 	std::memcpy(static_cast<void*>(&is_denovo), bstr.data() + offset, sizeof(is_denovo));
 	offset += sizeof(is_denovo);
@@ -522,7 +531,7 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 * @param OUT gaps
 * @param OUT id   matched characters
 */
-void Read::calcMismatchGapId(References & refs, int alignIdx, uint32_t & mismatches, uint32_t & gaps, uint32_t & id)
+void Read::calcMismatchGapId(References& refs, int alignIdx, uint32_t& mismatches, uint32_t& gaps, uint32_t& id)
 {
 	if (alignIdx >= alignment.alignv.size()) return; // index exceeds the size of the alignment vector
 

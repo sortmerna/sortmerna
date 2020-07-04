@@ -36,14 +36,14 @@ Readstats::Readstats(Runopts& opts, KeyValueDatabase& kvdb)
 	min_read_len(MAX_READ_LEN),
 	max_read_len(0),
 	total_reads_aligned(0),
-	total_reads_mapped_cov(0),
+	total_mapped_sw_id_cov(0),
 	short_reads_num(0),
 	all_reads_count(0),
 	all_reads_len(0),
 	reads_matched_per_db(opts.indexfiles.size(), 0),
 	total_reads_denovo_clustering(0),
 	is_stats_calc(false),
-	is_total_reads_mapped_cov(false)
+	is_total_mapped_sw_id_cov(false)
 {
 	// calculate this->dbkey
 	std::string key_str_tmp("");
@@ -249,7 +249,7 @@ std::string Readstats::toBstring()
 	auto val = total_reads_aligned.load();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// total_reads_mapped_cov (atomic int)
-	val = total_reads_mapped_cov.load();
+	val = total_mapped_sw_id_cov.load();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// short_reads_num
 	std::copy_n(static_cast<char*>(static_cast<void*>(&short_reads_num)), sizeof(short_reads_num), std::back_inserter(buf));
@@ -268,7 +268,7 @@ std::string Readstats::toBstring()
 	// stats_calc_done (bool)
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_stats_calc)), sizeof(is_stats_calc), std::back_inserter(buf));
 	// is_total_reads_mapped_cov
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_total_reads_mapped_cov)), sizeof(is_total_reads_mapped_cov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_total_mapped_sw_id_cov)), sizeof(is_total_mapped_sw_id_cov), std::back_inserter(buf));
 
 	return buf;
 } // ~Readstats::toBstring
@@ -284,18 +284,18 @@ std::string Readstats::toString()
 		<< " all_reads_count= " << all_reads_count
 		<< " all_reads_len= " << all_reads_len
 		<< " total_reads_mapped= " << total_reads_aligned
-		<< " total_reads_mapped_cov= " << total_reads_mapped_cov
+		<< " total_reads_mapped_cov= " << total_mapped_sw_id_cov
 		<< " short_reads_num= " << short_reads_num
 		<< " reads_matched_per_db= " << "TODO"
-		<< " is_total_reads_mapped_cov= " << is_total_reads_mapped_cov
+		<< " is_total_reads_mapped_cov= " << is_total_mapped_sw_id_cov
 		<< " is_stats_calc= " << is_stats_calc << std::endl;
 	return ss.str();
 } // ~Readstats::toString
 
-void Readstats::set_is_total_reads_mapped_cov()
+void Readstats::set_is_total_mapped_sw_id_cov()
 {
-	if (!is_total_reads_mapped_cov && total_reads_mapped_cov > 0)
-		is_total_reads_mapped_cov = true;
+	if (!is_total_mapped_sw_id_cov && total_mapped_sw_id_cov > 0)
+		is_total_mapped_sw_id_cov = true;
 }
 
 /**
@@ -324,7 +324,7 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		// total_reads_mapped_cov
 		val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		total_reads_mapped_cov = val;
+		total_mapped_sw_id_cov = val;
 		offset += sizeof(val);
 		// short_reads_num
 		std::memcpy(static_cast<void*>(&short_reads_num), bstr.data() + offset, sizeof(short_reads_num));
@@ -363,8 +363,8 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		offset += sizeof(is_stats_calc);
 
 		// stats_calc_done
-		std::memcpy(static_cast<void*>(&is_total_reads_mapped_cov), bstr.data() + offset, sizeof(is_total_reads_mapped_cov));
-		offset += sizeof(is_total_reads_mapped_cov);
+		std::memcpy(static_cast<void*>(&is_total_mapped_sw_id_cov), bstr.data() + offset, sizeof(is_total_mapped_sw_id_cov));
+		offset += sizeof(is_total_mapped_sw_id_cov);
 	} // ~if data found in DB
 
 	return ret;

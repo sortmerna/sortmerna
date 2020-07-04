@@ -583,7 +583,6 @@ def t2(datad, ret={}, **kwarg):
 
 def t3(datad, ret={}, **kwarg):
     '''
-    @param name  name of this test
     @param datad   Data directory
     @param outd    results output directory
     @param kwargs  validation args
@@ -607,15 +606,23 @@ def t3(datad, ret={}, **kwarg):
 
     # sort order (descending/ascending) of candidate references (alignment.cpp)
     is_refs_descending = False
+    # 'Total OTUs' in aligned.log has to be equal 'num_groups' in test.jinja.yaml
     if is_refs_descending:
         assert logd['num_otus'][1] == vald['num_groups'][0] # originally
     else:
-        assert logd['num_otus'][1] == vald['num_groups'][1]
+        assert logd['num_otus'][1] == vald['num_groups'][1], \
+            '{}:num_otus = {} != num_groups = {} expected'.format(LOG_BASE, logd['num_otus'][1], vald['num_groups'][1])
 
+    # OTU file contains one line per OTU group, so the number of lines
+    # has to be equal 'Total OTUs' in aligned.log
     with open(OTUF) as f_otumap:
         num_clusters_file = sum(1 for line in f_otumap)
-    assert logd['num_otus'][1] == num_clusters_file
+    assert logd['num_otus'][1] == num_clusters_file, \
+        '{}:num_otus = {} != {}:num_otus = {}'.format(LOG_BASE, \
+            logd['num_otus'][1], OTU_BASE, num_clusters_file)
 
+    # number of reads in aligned_denovo.fasta has to be equal the
+    # 'Total reads for de novo clustering' in aligned.log
     num_denovo_file = 0
     for seq in skbio.io.read(DENOVOF, format='fasta'):
         num_denovo_file += 1

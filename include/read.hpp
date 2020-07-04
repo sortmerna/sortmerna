@@ -73,6 +73,7 @@ public:
 	// matching results
 	bool is_aligned; // all alignments have been found => stop searching
 	bool is_hit; // read's SW_score >= min_SW_score i.e a match for this Read has been found
+	bool is_id_cov; // read passes SW + ID + COV
 	bool is_denovo; // pass SW & fail (%Cov & %ID)
 	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
 	unsigned num_hits; // number of matching references found so far for this read
@@ -100,16 +101,16 @@ public:
 	void initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N);
 	void validate();
 	void clear();
-	void init(Runopts & opts);
+	void init(Runopts& opts);
 	std::string matchesToJson();
-	void unmarshallJson(KeyValueDatabase & kvdb);
+	void unmarshallJson(KeyValueDatabase& kvdb);
 	std::string toBinString();
-	bool load_db(KeyValueDatabase & kvdb);
+	bool load_db(KeyValueDatabase& kvdb);
 	void seqToIntStr();
 	void revIntStr();
 	std::string get04alphaSeq();
 	void flip34();
-	void calcMismatchGapId(References &refs, int alignIdx, uint32_t &mismatches, uint32_t &gaps, uint32_t &id);
+	void calcMismatchGapId(References& refs, int alignIdx, uint32_t &mismatches, uint32_t& gaps, uint32_t& id);
 	std::string getSeqId();
 	uint32_t hashKmer(uint32_t pos, uint32_t len);
 	bool from_string(std::string& readstr);

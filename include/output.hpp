@@ -61,7 +61,7 @@ public:
 	uint64_t total_reads;
 	uint64_t total_reads_denovo_clustering;
 	uint64_t total_reads_mapped;
-	uint64_t total_reads_mapped_cov;
+	uint64_t total_mapped_sw_id_cov;
 	uint32_t min_read_len;
 	uint32_t max_read_len;
 	uint64_t all_reads_len;

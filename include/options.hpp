@@ -358,6 +358,7 @@ public:
 	// Option selection Flags
 	//    alignment control
 	bool is_best = true; // default if no OPT_NO_BEST was specified
+	bool is_best_id_cov = false; // search for best alignments that also pass ID and COV
 	bool is_min_lis = false;
 	bool is_num_alignments = false; // OPT_NUM_ALIGNMENTS was specified
 	bool is_full_search = false; // OPT_FULL_SEARCH was selected

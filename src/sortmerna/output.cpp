@@ -60,7 +60,7 @@ Summary::Summary():
 	total_reads(0), 
 	total_reads_denovo_clustering(0),
 	total_reads_mapped(0),
-	total_reads_mapped_cov(0),
+	total_mapped_sw_id_cov(0),
 	min_read_len(0),
 	max_read_len(0),
 	all_reads_len(0),
@@ -895,7 +895,7 @@ void Output::writeLog(Runopts& opts, Refstats& refstats, Readstats& readstats)
 
 	if (opts.is_otu_map) {
 		summary.is_otumapout = opts.is_otu_map;
-		summary.total_reads_mapped_cov = readstats.total_reads_mapped_cov.load();
+		summary.total_mapped_sw_id_cov = readstats.total_mapped_sw_id_cov.load();
 		summary.total_otu = readstats.otu_map.size();
 	}
 
@@ -1016,7 +1016,7 @@ std::string Summary::to_string(Runopts& opts, Refstats& refstats)
 
 	if (is_otumapout)
 	{
-		ss << " Total reads passing %%id and %%coverage thresholds = " << total_reads_mapped_cov << std::endl
+		ss << " Total reads passing %%id and %%coverage thresholds = " << total_mapped_sw_id_cov << std::endl
 		   << " Total OTUs = " << total_otu << std::endl;
 	}
 
