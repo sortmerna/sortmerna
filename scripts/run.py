@@ -331,8 +331,8 @@ def process_output(**kwarg):
 
     # Check number of reads
     if vald.get('num_reads'):
-        tmpl = '{} Testing num_reads: {}: {} Expected: {}'
-        print(tmpl.format(STAMP, LOG_BASE, logd['num_reads'][1], vald['num_reads']))
+        tmpl = 'Testing num_reads: {}: {} Expected: {}'
+        print(tmpl.format(LOG_BASE, logd['num_reads'][1], vald['num_reads']))
         assert vald['num_reads'] == logd['num_reads'][1]
 
     # Check reads count in aligned_fwd
@@ -345,8 +345,8 @@ def process_output(**kwarg):
             else:
                 for seq in skbio.io.read(ALI_FWD, format=READS_EXT[1:]):
                     num_fwd += 1
-            tmpl = '{} Testing count of FWD aligned reads: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, '{}{}'.format(ALI_FWD_BASE, READS_EXT), num_fwd, vald['num_aligned_fwd']))
+            tmpl = 'Testing count of FWD aligned reads: {}: {} Expected: {}'
+            print(tmpl.format('{}{}'.format(ALI_FWD_BASE, READS_EXT), num_fwd, vald['num_aligned_fwd']))
             assert num_fwd == vald['num_aligned_fwd'], \
                 '{} not equals {}'.format(num_fwd, vald['num_aligned_fwd'])
 
@@ -360,8 +360,8 @@ def process_output(**kwarg):
             else:
                 for seq in skbio.io.read(ALI_REV, format=READS_EXT[1:]):
                     num_rev += 1
-            tmpl = '{} Testing count of REV aligned reads: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, '{}{}'.format(ALI_REV_BASE, READS_EXT), num_rev, vald['num_aligned_rev']))
+            tmpl = 'Testing count of REV aligned reads: {}: {} Expected: {}'
+            print(tmpl.format('{}{}'.format(ALI_REV_BASE, READS_EXT), num_rev, vald['num_aligned_rev']))
             assert num_rev == vald['num_aligned_rev'], \
                 '{} not equals {}'.format(num_rev, vald['num_aligned_rev'])
 
@@ -375,8 +375,8 @@ def process_output(**kwarg):
             else:
                 for seq in skbio.io.read(OTH_FWD, format=READS_EXT[1:]):
                     num_fwd += 1
-            tmpl = '{} Testing count of FWD non-aligned reads: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, '{}{}'.format(OTH_FWD_BASE, READS_EXT), num_fwd, vald['num_other_fwd']))
+            tmpl = 'Testing count of FWD non-aligned reads: {}: {} Expected: {}'
+            print(tmpl.format('{}{}'.format(OTH_FWD_BASE, READS_EXT), num_fwd, vald['num_other_fwd']))
             assert num_fwd == vald['num_other_fwd'], \
                 '{} not equals {}'.format(num_fwd, vald['num_other_fwd'])
 
@@ -391,8 +391,8 @@ def process_output(**kwarg):
             else:
                 for seq in skbio.io.read(OTH_REV, format=READS_EXT[1:]):
                     num_rev += 1
-            tmpl = '{} Testing count REV non-aligned reads: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, '{}{}'.format(OTH_REV_BASE, READS_EXT), num_rev, vald['num_other_rev']))
+            tmpl = 'Testing count REV non-aligned reads: {}: {} Expected: {}'
+            print(tmpl.format('{}{}'.format(OTH_REV_BASE, READS_EXT), num_rev, vald['num_other_rev']))
             assert num_rev == vald['num_other_rev'], \
                 '{} not equals {}'.format(num_rev, vald['num_other_rev'])
 
@@ -409,8 +409,8 @@ def process_output(**kwarg):
     
     # Check number of reads mapped
     if vald.get('num_hits'):
-        tmpl = '{} Testing num_hits: {}: {} Expected: {}'
-        print(tmpl.format(STAMP, LOG_BASE, logd['results']['num_hits'][1], vald['num_hits']))
+        tmpl = 'Testing num_hits: {}: {} Expected: {}'
+        print(tmpl.format(LOG_BASE, logd['results']['num_hits'][1], vald['num_hits']))
         assert vald['num_hits'] == logd['results']['num_hits'][1]
         num_hits_file = 0
         if os.path.exists(ALIF):
@@ -422,18 +422,18 @@ def process_output(**kwarg):
                     num_hits_file += 1
 
             if not IS_PAIRED_IN and not IS_PAIRED_OUT:
-                tmpl = '{} Testing num_hits: {}{}: {} Expected: {}'
-                print(tmpl.format(STAMP, ALI_BASE, READS_EXT, num_hits_file, vald['num_hits']))
+                tmpl = 'Testing num_hits: {}{}: {} Expected: {}'
+                print(tmpl.format(ALI_BASE, READS_EXT, num_hits_file, vald['num_hits']))
                 assert logd['results']['num_hits'][1] == num_hits_file
             else:
-                tmpl = '{} Testing count of aligned reads: {}{}: {} Expected: {}'
-                print(tmpl.format(STAMP, ALI_BASE, READS_EXT, num_hits_file, vald['num_aligned']))
+                tmpl = 'Testing count of aligned reads: {}{}: {} Expected: {}'
+                print(tmpl.format(ALI_BASE, READS_EXT, num_hits_file, vald['num_aligned']))
                 assert num_hits_file == vald['num_aligned']
 
     # Check number of reads not mapped
     if vald.get('num_fail'):
-        tmpl = '{} Testing num_fail: {}: {} Expected: {}'
-        print(tmpl.format(STAMP, LOG_BASE, logd['results']['num_fail'][1], vald['num_fail']))
+        tmpl = 'Testing num_fail: {}: {} Expected: {}'
+        print(tmpl.format(LOG_BASE, logd['results']['num_fail'][1], vald['num_fail']))
         assert vald['num_fail']  == logd['results']['num_fail'][1]
         num_fails_file = 0
         if OTHF and os.path.exists(OTHF):
@@ -446,12 +446,12 @@ def process_output(**kwarg):
                         num_fails_file += 1
 
             if not IS_PAIRED_IN and not IS_PAIRED_OUT:
-                tmpl = '{} Testing num_fail: {}{}: {} Expected: {}'
-                print(tmpl.format(STAMP, OTH_BASE, READS_EXT, num_fails_file, vald['num_fail']))
+                tmpl = 'Testing num_fail: {}{}: {} Expected: {}'
+                print(tmpl.format(OTH_BASE, READS_EXT, num_fails_file, vald['num_fail']))
                 assert logd['results']['num_fail'][1] == num_fails_file
             else:
-                tmpl = '{} Testing count of non-aligned reads: {}{}: {} Expected: {}'
-                print(tmpl.format(STAMP, OTH_BASE, READS_EXT, num_fails_file, vald['num_other']))
+                tmpl = 'Testing count of non-aligned reads: {}{}: {} Expected: {}'
+                print(tmpl.format(OTH_BASE, READS_EXT, num_fails_file, vald['num_other']))
                 assert num_fails_file == vald['num_other']
 
     
@@ -488,17 +488,18 @@ def process_output(**kwarg):
                         if is_pass_id and is_pass_cov:
                             num_pass_id_cov_file += 1
         
-        tmpl = '{} from {}: num_pass_id= {} num_pass_cov= {} num_pass_id_cov= {}'
-        print(tmpl.format(STAMP, BLAST_BASE, num_pass_id, num_pass_cov, num_pass_id_cov_file))
+        BLAST_BASE = os.path.basename(BLASTF)
+        tmpl = 'from {}: num_pass_id= {} num_pass_cov= {} num_pass_id_cov= {}'
+        print(tmpl.format(BLAST_BASE, num_pass_id, num_pass_cov, num_pass_id_cov_file))
         
         if vald['blast'].get('num_pass_id'):
-            tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, BLAST_BASE, num_pass_id, vald['blast']['num_pass_id']))
+            tmpl = 'Testing reads passing ID threshold: {}: {} Expected: {}'
+            print(tmpl.format(BLAST_BASE, num_pass_id, vald['blast']['num_pass_id']))
             assert num_pass_id == vald['blast']['num_pass_id'], \
                 '{} not equals {}'.format(vald['blast']['num_pass_id'], num_pass_id)
         
-        tmpl = '{} Testing num_hits: {}: {} Expected: {}'
-        print(tmpl.format(STAMP, BLAST_BASE, num_hits_file, vald['blast']['num_recs']))
+        tmpl = 'Testing num_hits: {}: {} Expected: {}'
+        print(tmpl.format(BLAST_BASE, num_hits_file, vald['blast']['num_recs']))
         assert num_hits_file == vald['blast']['num_recs'], \
             '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
 
@@ -841,7 +842,7 @@ if __name__ == "__main__":
     python scripts/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     # process options
     optpar = OptionParser()

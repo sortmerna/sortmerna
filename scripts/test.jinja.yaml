@@ -112,6 +112,10 @@ t3:
     num_pass_id_cov: 47981 # pass SW + %Cov + %ID
     num_groups: [264, 264] # 264 lnx (sometimes), 265 win (bizarre behavior of Lnx VM on Win host)
     non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
+    runtime:
+      win:
+        - threads: 8
+          sec: [12.5046, 0.714079, 4.0937] # align, log, reports
 
 # original test only performed indexing i.e. no alignment and not reads
 # TODO: add option '-i' 'index only'?
@@ -1014,6 +1018,208 @@ t31:
     num_hits:   6000
     num_fail:   4000
     variant:   sanger # fastq quality variant
+
+t32:
+  name: 2 reads + no_best + N_1 + paired_in + out2 (separate FWD/REV output)
+  note:
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -num_alignments
+    - '1'
+    - -no-best
+    - -fastx
+    - -other
+    - -blast
+    - '1 cigar qcov'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    - -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:      9188
+      num_pass_id:     21
+      num_pass_cov:    11
+      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [0.743277, 0.348923, 0.672172] # align, log, reports
+    memory:
+      note: |
+        only for alignment. 
+        KB
+        format: [loaded index, alignment done, unloaded index and refs]
+      win: [145808, 162104, 50744]
+      lnx: []
+
+t33:
+  name: 2 reads + best + N_1 + paired_in + out2 (separate FWD/REV output)
+  note:
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -num_alignments
+    - '1 cigar qcov'
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    - -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:      9188
+      num_pass_id:     16
+      num_pass_cov:     0
+      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [0.743277, 0.348923, 0.672172] # align, log, reports
+    memory:
+      note: |
+        only for alignment. 
+        KB
+        format: [loaded index, alignment done, unloaded index and refs]
+      win: [145808, 162104, 50744]
+      lnx: []
+
+t34:
+  name: 2 reads + best + N_3 + paired_in + out2 (separate FWD/REV output)
+  note:
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -num_alignments
+    - '3'
+    - -fastx
+    - -other
+    - -blast
+    - '1 cigar qcov'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    - -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:     16701
+      num_pass_id:     30 
+      num_pass_cov:    12
+      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.07325, 0.337265, 0.650805] # align, log, reports
+    memory:
+      note: |
+        only for alignment. 
+        KB
+        format: [loaded index, alignment done, unloaded index and refs]
+      win: [145808, 162104, 50744]
+      lnx: []
+
+t35:
+  name: 2 reads + N_0 (all alignments) + paired_in + out2 (separate FWD/REV output)
+  note:
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -num_alignments
+    - '0'
+    - -fastx
+    - -other
+    - -blast
+    - '1 cigar qcov'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    - -out2
+    - -workdir
+    - {{ SMR_SRC }}/run
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:     47552
+      num_pass_id:    113
+      num_pass_cov:    12
+      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.07325, 0.337265, 0.650805] # align, log, reports
+    memory:
+      note: |
+        only for alignment. 
+        KB
+        format: [loaded index, alignment done, unloaded index and refs]
+      win: [145808, 162104, 50744]
+      lnx: []
+
 
 #
 # custom tests
