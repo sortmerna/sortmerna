@@ -49,7 +49,7 @@
 s_align2 copyAlignment(s_align* pAlign);
 uint32_t inline findMinIndex(std::vector<s_align2>& alignv);
 uint32_t inline findMaxIndex(std::vector<s_align2>& alignv);
-bool is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts);
+std::pair<bool,bool> is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts);
 
 /*
  * see alignment.hpp for documentation
@@ -160,13 +160,9 @@ void compute_lis_alignment
 	});
 
 	// 2. loop reference candidates, starting from the one with the highest number of kmer hits.
-	for (uint32_t k = 0; k < kmer_count_vec.size(); k++)
+	bool is_search_candidates = true;
+	for (uint32_t k = 0; k < kmer_count_vec.size() && is_search_candidates; k++)
 	{
-		// the maximum scoring alignment has been found - stop searching for more alignments
-		if (opts.num_best_hits > 0 && opts.num_best_hits == read.max_SW_count) {
-			break;
-		}
-
 		max_ref = kmer_count_vec[k].first;
 		max_occur = kmer_count_vec[k].second;
               
@@ -182,13 +178,6 @@ void compute_lis_alignment
 		{
 			--read.best;
 			if (read.best < 1) break;
-		}
-
-		// check if the maximum number of alignments per read
-		// (--num_alignments INT) have been output
-		if (opts.num_alignments > 0 && read.num_alignments <= 0)
-		{
-			break;
 		}
 
 		// array of matching kmer pairs on a given reference: (read's k-mer position, ref's k-mer position)
@@ -236,10 +225,9 @@ void compute_lis_alignment
 		uint32_t begin_ref = hits_per_ref_iter->first; // hit position on reference
 		uint32_t begin_read = hits_per_ref_iter->second; // hit position on read
                        
-		// LIS alignment is done within this loop.
 		// TODO: Always does a single iteration because of the line '++hits_per_ref_iter'. 
 		//       It has 3 'break' instructions though. Convoluted.
-		while (hits_per_ref_iter != hits_per_ref.end())
+		while (hits_per_ref_iter != hits_per_ref.end() && is_search_candidates)
 		{
 			// TODO: should it be
 			auto stop_ref = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num] + 1; // position on reference
@@ -249,7 +237,7 @@ void compute_lis_alignment
 			{
 				match_chain.push_back(*hits_per_ref_iter);
 				push = true;
-				hits_per_ref_iter++;
+				++hits_per_ref_iter;
 			}
 			// heuristic 1: a new window hit was not pushed back, pop queue until new window can be pushed back
 			// this heuristic significantly speeds up the algorithm because we don't perform alignments for
@@ -273,7 +261,7 @@ void compute_lis_alignment
 				{
 #endif                                      
 					// LIS long enough to perform Smith-Waterman alignment
-					if (lis_arr.size() >= (size_t)opts.hit_seeds)
+					if (lis_arr.size() >= (size_t)opts.min_lis)
 					{
 #ifdef HEURISTIC1_OFF
 						lcs_ref_start = match_chain[lis_arr[list_n]].first;
@@ -433,15 +421,16 @@ void compute_lis_alignment
 
 							// calculate read.is_id_cov and read.is_denovo if
 							// not searching for Best alignments that also pass ID + COV (default)
-							if (!read.is_id_cov && !opts.is_best_id_cov)
+							if (!read.is_id && !read.is_cov && !opts.is_best_id_cov)
 							{
-								bool is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
+								std::pair<bool,bool> is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
 
 								// the alignment passed the Identity and Coverage threshold => NOT is_denovo
-								if (is_id_cov) {
-									read.is_id_cov = true;
+								if (is_id_cov.first && is_id_cov.second) {
+									read.is_id = true;
+									read.is_cov = true;
 									read.is_denovo = false;
-									++readstats.total_mapped_sw_id_cov; // also calculated in post-processor 'computeStats'
+									++readstats.total_mapped_sw_id_cov;
 								}
 							}
 
@@ -485,6 +474,16 @@ void compute_lis_alignment
 								// TODO: new case to implement 20200703
 								//}
 							}//~if
+
+							// all alignments have been found - stop searching
+							if (opts.num_alignments > 0) {
+								if (opts.is_best) {
+									if (opts.num_alignments == read.max_SW_count)
+										is_search_candidates = false;
+								}
+								else if (opts.num_alignments == read.alignment.alignv.size())
+									is_search_candidates = false;
+							}
 
 							// continue to next read (do not need to collect more seeds using another pass)
 							search = false;
@@ -587,7 +586,7 @@ uint32_t inline findMaxIndex(std::vector<s_align2>& alignv)
  * @return true (passes ID and COV) | false (fails ID and COV
  *
  */
-bool inline is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts)
+std::pair<bool,bool> inline is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts)
 {
 	// calculate id, mismatches, gaps for the given alignment
 	int id = 0; // count of mismatched characters
@@ -635,5 +634,6 @@ bool inline is_id_cov_pass(std::string& read_iseq, s_align2& alignment, Referenc
 	double align_cov_round = 0.0;
 	ss >> align_id_round >> align_cov_round;
 
-	return (align_id_round >= opts.min_id && align_cov_round >= opts.min_cov);
+	//return (align_id_round >= opts.min_id && align_cov_round >= opts.min_cov);
+	return { align_id_round >= opts.min_id, align_cov_round >= opts.min_cov };
 } // ~is_id_cov_pass

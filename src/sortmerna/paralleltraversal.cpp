@@ -91,27 +91,6 @@ void align_cb
 
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
-	// for reverse reads - stop searching if
-	// 'num_alignments' was set and all num_alignments have been found 
-	//   OR
-	// 'best' was set and the maximum scoring alignment has been found (unless all alignments are being output)
-	//bool is_done = (opts.is_best && read.num_best_hits == opts.num_best_hits) || (!opts.is_best && read.num_alignments == opts.num_alignments);
-	bool is_done = (opts.num_alignments > 0 && read.num_alignments < 0) || 
-		(opts.num_best_hits > 0 && opts.min_lis > 0 && read.max_SW_count == opts.num_best_hits);
-
-	if (read.reversed && is_done) return;
-
-	// the read length is too short - don't search
-	if (read.sequence.size() < refstats.lnwin[index.index_num])
-	{
-		//WARN("Processor thread: " , std::this_thread::get_id() , " The read.id: " , read.id , 
-		//	" read.header: " , read.header , " is shorter than "
-		//	, refstats.lnwin[index.index_num] , " nucleotides, by default it will not be searched");
-		readstats.short_reads_num.fetch_add(1, std::memory_order_relaxed);
-		read.isValid = false;
-		return;
-	}
-
 	uint32_t win_shift = opts.skiplengths[index.index_num][0];
 	// keep track of windows (read positions) which have been already traversed in the burst trie
 	// initially all False
@@ -128,7 +107,7 @@ void align_cb
 	uint32_t offset = (refstats.partialwin[index.index_num] - 3) << 2; // e.g. 9 - 3 = 0000 0110 << 2 = 0001 1000 = 24
 
 	// loop search positions on the read in multiple passes
-	// changing the step (windowshift) when necessary
+	// changing the step (skip length/windowshift) when necessary
 	for (bool search = true; search; )
 	{
 		// number of k-mer windows fit along the read given 
@@ -271,7 +250,7 @@ void align_cb
 				}
 			} // ~if not read_pos_searched[win_pos]
 
-			// k-mers for a given shift-size were all looked-up
+			// all k-mers for a given shift-size were looked-up - proceed to LIS calculation
 			if (win_num == numwin - 1)
 			{
 				// calculate LIS if the number of matching seeds on the read meets the threshold (default 2)
@@ -315,7 +294,7 @@ void align_cb
 	}
 	// end of processing and read.alignments > 0
 	else if (isLastStrand && read.lastIndex == index.index_num && read.lastPart == index.part && read.alignment.alignv.size() > 0) {
-			read.is_aligned = true;
+		read.is_aligned = true;
 	}
 
 	// the read didn't align => NOT is_denovo

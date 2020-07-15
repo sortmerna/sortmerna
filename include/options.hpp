@@ -410,9 +410,8 @@ public:
 	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
 
 	int32_t num_alignments = 1; // [3] help_num_alignments
+	int32_t hit_seeds = 2; // OPT_NUM_SEEDS Min number of seeds on a read that have matches in DB prior calculating LIS
 	int32_t min_lis = 2; // OPT_MIN_LIS search all alignments having the first N longest LIS
-	int32_t hit_seeds = -1; // OPT_NUM_SEEDS Min number of seeds on a read that have matches in DB prior calculating LIS
-	int32_t num_best_hits = 0;
 	int32_t edges = -1; // OPT_EDGES
 
 	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'

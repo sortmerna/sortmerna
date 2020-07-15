@@ -92,6 +92,7 @@ Read::Read()
 	readfile_idx(0),
 	isValid(false),
 	isEmpty(true),
+	is_too_short(false),
 	is03(false),
 	is04(false),
 	isRestored(false),
@@ -100,7 +101,8 @@ Read::Read()
 	reversed(false),
 	is_aligned(false),
 	is_hit(false),
-	is_id_cov(false),
+	is_id(false),
+	is_cov(false),
 	is_denovo(true),
 	null_align_output(false),
 	num_hits(0),
@@ -141,6 +143,7 @@ Read::Read(const Read & that)
 	readfile_idx = that.readfile_idx;
 	isValid = that.isValid;
 	isEmpty = that.isEmpty;
+	is_too_short = that.is_too_short;
 	is03 = that.is03;
 	is04 = that.is04;
 	isRestored = that.isRestored;
@@ -155,7 +158,8 @@ Read::Read(const Read & that)
 	lastPart = that.lastPart;
 	is_aligned = that.is_aligned;
 	is_hit = that.is_hit;
-	is_id_cov = that.is_id_cov;
+	is_id = that.is_id;
+	is_cov = that.is_cov;
 	is_denovo = that.is_denovo;
 	num_hits = that.num_hits;
 	null_align_output = that.null_align_output;
@@ -179,6 +183,7 @@ Read & Read::operator=(const Read& that)
 	readfile_idx = that.readfile_idx;
 	isValid = that.isValid;
 	isEmpty = that.isEmpty;
+	is_too_short = that.is_too_short;
 	is03 = that.is03;
 	is04 = that.is04;
 	isRestored = that.isRestored;
@@ -192,7 +197,8 @@ Read & Read::operator=(const Read& that)
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
 	is_hit = that.is_hit;
-	is_id_cov = that.is_id_cov;
+	is_id = that.is_id;
+	is_cov = that.is_cov;
 	num_hits = that.num_hits;
 	is_denovo = that.is_denovo;
 	null_align_output = that.null_align_output;
@@ -253,7 +259,6 @@ void Read::initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N)
 }
 
 void Read::validate() {
-	std::stringstream ss;
 	if (sequence.size() > MAX_READ_LEN)
 	{
 		ERR("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
@@ -376,7 +381,8 @@ std::string Read::matchesToJson() {
 	writer.Key("hit");
 	writer.Bool(is_hit);
 	writer.Key("id_cov");
-	writer.Bool(is_id_cov);
+	writer.Bool(is_id);
+	writer.Bool(is_cov);
 	writer.Key("is_denovo");
 	writer.Bool(is_denovo);
 	writer.Key("null_align_output");
@@ -413,7 +419,8 @@ std::string Read::toBinString()
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_aligned)), sizeof(is_aligned), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_hit)), sizeof(is_hit), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_id_cov)), sizeof(is_id_cov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_id)), sizeof(is_id), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_cov)), sizeof(is_cov), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_denovo)), sizeof(is_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_hits)), sizeof(num_hits), std::back_inserter(buf));
@@ -459,8 +466,11 @@ bool Read::load_db(KeyValueDatabase& kvdb)
 	std::memcpy(static_cast<void*>(&is_hit), bstr.data() + offset, sizeof(is_hit));
 	offset += sizeof(is_hit);
 
-	std::memcpy(static_cast<void*>(&is_id_cov), bstr.data() + offset, sizeof(is_id_cov));
-	offset += sizeof(is_id_cov);
+	std::memcpy(static_cast<void*>(&is_id), bstr.data() + offset, sizeof(is_id));
+	offset += sizeof(is_id);
+
+	std::memcpy(static_cast<void*>(&is_cov), bstr.data() + offset, sizeof(is_cov));
+	offset += sizeof(is_cov);
 
 	std::memcpy(static_cast<void*>(&is_denovo), bstr.data() + offset, sizeof(is_denovo));
 	offset += sizeof(is_denovo);

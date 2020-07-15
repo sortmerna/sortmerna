@@ -32,8 +32,7 @@ void Processor::run()
 {
 	unsigned num_all = 0; // all reads this processor sees
 	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
-	unsigned num_aligned = 0; // count of reads with read.hit = true
-	bool is_processed = false; // read was already processed
+	unsigned num_hit = 0; // count of reads with read.hit = true
 	std::string readstr;
 	
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
@@ -43,11 +42,19 @@ void Processor::run()
 		{
 			Read read(readstr);
 			read.init(opts);
-			read.load_db(kvdb);
-			is_processed = (read.isRestored && read.lastIndex == index.index_num && read.lastPart == index.part);
+			read.is_too_short = read.sequence.size() < refstats.lnwin[index.index_num];
 
-			if (read.isEmpty || !read.isValid || is_processed || read.is_aligned) {
-				if (is_processed) {
+			if (read.is_too_short) {
+				read.isValid = false;
+				readstats.short_reads_num.fetch_add(1, std::memory_order_relaxed);
+			}
+
+			if (read.isValid) {
+				read.load_db(kvdb);
+			}
+
+			if (read.isEmpty || !read.isValid || read.is_aligned) {
+				if (read.is_aligned) {
 					++num_skipped;
 				}
 				//INFO("Skpping read ID: ", read.id);
@@ -55,7 +62,7 @@ void Processor::run()
 			}
 
 			// search the forward and/or reverse strands depending on Run options
-			int32_t num_strands = 0;
+			auto num_strands = 0;
 			//opts.forward = true; // TODO: this discards the possiblity of forward = false
 			bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
 			if (search_single_strand)
@@ -63,7 +70,8 @@ void Processor::run()
 			else
 				num_strands = 2; // search both strands. The default when neither -F or -R were specified
 
-			for (int32_t count = 0; count < num_strands; ++count)
+			//                                                  |- stop if read was aligned on FWD strand
+			for (auto count = 0; count < num_strands && !read.is_aligned; ++count)
 			{
 				if ((search_single_strand && opts.is_reverse) || count == 1)
 				{
@@ -78,7 +86,7 @@ void Processor::run()
 			// write to DB - thread safe
 			if (read.isValid && !read.isEmpty)
 			{
-				if (read.is_hit) ++num_aligned;
+				if (read.is_hit) ++num_hit;
 				kvdb.put(read.id, read.toBinString());
 			}
 
@@ -88,7 +96,7 @@ void Processor::run()
 	} // ~while there are reads
 
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " done. Processed ", num_all, 
-		" reads. Skipped already processed: ", num_skipped, " reads", " Aligned reads (passing E-value): ", num_aligned);
+		" reads. Skipped already processed: ", num_skipped, " reads", " Aligned reads (passing E-value): ", num_hit);
 } // ~Processor::run
 
 void PostProcessor::run()

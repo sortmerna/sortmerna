@@ -61,7 +61,7 @@ void computeStats(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 	if (read.is03) read.flip34();
 
 	// populate OTU map
-	if (opts.is_otu_map && read.is_id_cov) {
+	if (opts.is_otu_map && read.is_id && read.is_cov) {
 		// reference sequence identifier for mapped read
 		std::string refhead = refs.buffer[read.alignment.alignv[read.alignment.max_index].ref_num].header;
 		std::string ref_seq_str = refhead.substr(0, refhead.find(' '));

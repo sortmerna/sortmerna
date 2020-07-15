@@ -457,30 +457,22 @@ void Runopts::opt_gap_ext(const std::string &val)
 	}
 } // ~Runopts::opt_gap_ext
 
-void Runopts::opt_num_seeds(const std::string &val)
+void Runopts::opt_num_seeds(const std::string& val)
 {
 	if (val.size() == 0)
 	{
 		ERR("--num_seeds [INT] requires a positive integer as input (ex. --num_seeds 6)");
 		exit(EXIT_FAILURE);
 	}
-	// set number of seeds
-	if (hit_seeds < 0)
+
+	char* end = 0;
+	hit_seeds = (int)strtol(val.data(), &end, 10); // convert to integer
+	if (hit_seeds <= 0)
 	{
-		char* end = 0;
-		hit_seeds = (int)strtol(val.data(), &end, 10); // convert to integer
-		if (hit_seeds <= 0)
-		{
-			ERR("--num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
-			exit(EXIT_FAILURE);
-		}
-	}
-	else
-	{
-		ERR("--num_seeds [INT] has been set twice, please verify your choice");
-		print_help();
+		ERR("--num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
 		exit(EXIT_FAILURE);
 	}
+
 } // ~Runopts::opt_num_seeds
 
 /* --fastx */
@@ -1534,7 +1526,6 @@ void Runopts::validate()
 		// output single best alignment from best candidate hits
 		else
 		{
-			num_best_hits = 1;
 			min_lis = 2;
 		}
 	}

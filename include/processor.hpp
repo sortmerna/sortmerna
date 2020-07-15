@@ -61,11 +61,11 @@ protected:
 protected:
 	std::string id;
 	ReadsQueue& readQueue;
-	Runopts & opts; 
-	Index & index; 
-	References & refs; 
-	Readstats & readstats; 
-	Refstats & refstats;
+	Runopts& opts; 
+	Index& index; 
+	References& refs; 
+	Readstats& readstats; 
+	Refstats& refstats;
 	KeyValueDatabase& kvdb;
 }; // ~class Processor
 

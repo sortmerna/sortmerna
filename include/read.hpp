@@ -53,6 +53,7 @@ public:
 	std::size_t readfile_idx; // index into Runopts::readfiles
 	bool isValid; // flags the record valid/non-valid
 	bool isEmpty; // flags the Read object is empty i.e. just a placeholder for copy assignment
+	bool is_too_short; // calculate for each reference file
 	bool is03; // indicates Read::isequence is in 0..3 alphabet
 	bool is04; // indicates Read:iseqeunce is in 0..4 alphabet. Seed search cannot proceed on 0-4 alphabet
 	bool isRestored; // flags the read is restored from Database. See 'Read::restoreFromDb'
@@ -72,8 +73,9 @@ public:
 	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
 	bool is_aligned; // all alignments have been found => stop searching
-	bool is_hit; // read's SW_score >= min_SW_score i.e a match for this Read has been found
-	bool is_id_cov; // read passes SW + ID + COV
+	bool is_hit; // at least one alignment 'SW_score >= min_SW_score' has been found
+	bool is_id; // read passes ID
+	bool is_cov; // read passes SW + ID + COV
 	bool is_denovo; // pass SW & fail (%Cov & %ID)
 	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
 	unsigned num_hits; // number of matching references found so far for this read

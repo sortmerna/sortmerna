@@ -224,10 +224,10 @@ void Output::init(Runopts& opts, Readstats& readstats)
  */
 void Output::report_blast
 (
-	Runopts & opts,
-	Refstats & refstats,
-	References & refs,
-	Read & read
+	Runopts& opts,
+	Refstats& refstats,
+	References& refs,
+	Read& read
 )
 {
 	const char MATCH = '|';
@@ -469,10 +469,11 @@ void Output::report_blast
 					// output % query coverage
 					else if (opts.blastops[l].compare("qcov") == 0)
 					{
+						double coverage = (double)abs(read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1)
+							/ read.alignment.alignv[i].readlen;
+
 						blast_os << "\t";
 						blast_os.precision(3);
-						double coverage = abs(read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1)
-							/ read.alignment.alignv[i].readlen;
 						blast_os << coverage * 100; // (double)align_len / readlen
 					}
 					// output strand
