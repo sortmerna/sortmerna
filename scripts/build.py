@@ -626,7 +626,7 @@ if __name__ == "__main__":
     print('Current dir: {}'.format(cur_dir))
 
     # check env.yaml. If no env file specified, try the current directory
-    envfile = os.path.join(cur_dir, 'env.yaml') if not opts.envfile else opts.envfile
+    envfile = os.path.join(cur_dir, 'env.jinja.yaml') if not opts.envfile else opts.envfile
     if not os.path.exists(envfile):
         print('No environment config file found. Please, provide one using \'--env\' option')
         sys.exit(1)
