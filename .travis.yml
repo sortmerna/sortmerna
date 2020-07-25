@@ -126,6 +126,7 @@ install:
   - which pyenv
   - pyenv versions
   - python3 --version
+  # switch to Python 3.7
   - pyenv global 3.7.1
   #- pyenv install –-list # errors for some reason. Travis bug.
   - which python3

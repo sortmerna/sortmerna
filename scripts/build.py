@@ -7,7 +7,7 @@ import sys
 import subprocess
 import platform
 from optparse import OptionParser
-import urllib.request
+import requests
 import tarfile
 import re
 import fileinput
@@ -131,21 +131,22 @@ def conda_install(cfg, dir=None, force=False, clean=False):
     # download the installer if not already present
     if not os.path.exists(os.path.join(dir, fsh)):
         url_conda = cfg[CONDA]['url'][MY_OS]
-        if sys.version_info[1] < 7:
+        #if sys.version_info[1] < 7:
             # 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
-            req = urllib.request.Request(url_conda, headers={'User-Agent': 'Mozilla/5.0'})
-        else:
+        #    req = urllib.request.Request(url_conda, headers={'User-Agent': 'Mozilla/5.0'})
+        #else:
             # this works with conda but not standard python3
-            req = url_conda
+        #    req = url_conda
 
         print('{} Loading Conda from url: {}'.format(STAMP, url_conda))
         try:
-            with urllib.request.urlopen(req) as surl:
-                with open(fsh, 'wb') as fp:
-                    fp.write(surl.read()) # loads the file into memory before writing to disk. No good for very big files.
-        except urllib.request.HTTPError as ex:
-            print('{} Exception getting Conda distro: {}'.format(STAMP, ex.read()))
-            return
+            req = requests.get(url_conda, allow_redirects=True)
+            #with urllib.request.urlopen(req) as surl:
+            with open(fsh, 'wb') as fp:
+                fp.write(req.read()) # loads the file into memory before writing to disk. No good for very big files.
+        except:
+            print('{} Exception getting Conda distro: {} {}'.format(STAMP, sys.exc_info()[1], sys.exc_info()[0]))
+            sys.exit(1)
 
     # run the installer
     if os.path.exists(os.path.join(dir, fsh)):
@@ -181,7 +182,7 @@ def conda_install(cfg, dir=None, force=False, clean=False):
 
 def cmake_install(cfg, dir=None, force=False):
     '''
-    @param url CMake download URL
+    @param cfg configuration dict
     @param dir installation directory. Default User Home
 
     Download and extract CMake release archive
@@ -205,12 +206,13 @@ def cmake_install(cfg, dir=None, force=False):
         # download the installer if not already present
         if not os.path.exists(zipped):
             # load file from URL
+            req = requests.get(url, allow_redirects=True)
             try:
-                with urllib.request.urlopen(url) as surl:
-                    with open(zipped, 'wb') as fp:
-                        fp.write(surl.read()) # loads all file into memory first before writing to disk. No good for very big files.
-            except urllib.request.HTTPError as ex:
-                print(ex.read())
+                #with urllib.request.urlopen(url) as surl:
+                with open(zipped, 'wb') as fp:
+                    fp.write(req.read()) # loads all file into memory first before writing to disk. No good for very big files.
+            except:
+                print('{} Exception getting CMake distro: {} {}'.format(STAMP, sys.exc_info()[1], sys.exc_info()[0]))
                 sys.exit(1)
 
         # extract archive
