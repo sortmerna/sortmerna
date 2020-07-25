@@ -157,7 +157,7 @@ install:
   #    brew upgrade cmake;
   #    brew install dos2unix;
   #  fi
-  - python $TRAVIS_BUILD_DIR/scripts/build.py --name cmake
+  - python $TRAVIS_BUILD_DIR/scripts/build.py --name cmake --envn LNX_TRAVIS
   - ls -lrt $HOME
   # add CMake to PATH
   - export PATH="$HOME/$(basename -- $(find $HOME -type d -name 'cmake-*x86_64'))/bin:$PATH"
@@ -180,7 +180,7 @@ script:
     fi
 
   # build SortmeRNA
-  - python $TRAVIS_BUILD_DIR/scripts/build.py --name all
+  - python $TRAVIS_BUILD_DIR/scripts/build.py --name all --envn LNX_TRAVIS
 
   # run tests
   #- export PATH="$PWD/dist/bin:$PATH"
