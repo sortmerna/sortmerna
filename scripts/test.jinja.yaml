@@ -21,7 +21,7 @@ t0:
     - '0'
     - -v
     - -workdir
-    - run
+    - {{WRK_DIR}}
   validate: 
     func: t0 # name of the validation function
 
@@ -245,7 +245,7 @@ t9:
     - -sam
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func: t9
     num_reads: 1
@@ -296,7 +296,7 @@ t10:
     - {{ SMR_SRC }}/data/illumina_GQ099317.fasta # 1 read
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   cwd:
   capture: True
   validate:
@@ -322,7 +322,7 @@ t11:
     - -other
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func: t11
     num_reads: 30000
@@ -359,7 +359,7 @@ t12:
     - -other
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func: t12
     num_reads: 30000
@@ -397,7 +397,7 @@ t13:
     - '20'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func: t13
     num_reads: 30000
@@ -435,7 +435,7 @@ t14:
     - '10'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func: t14
     num_reads: 30000
@@ -468,7 +468,7 @@ t15:
     - '5'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
 
 t16:
   name: test_relative_path
@@ -487,8 +487,6 @@ t16:
     - -v
     - -workdir
     - run
-    - -workdir
-    - {{ SMR_SRC }}/run
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -524,7 +522,7 @@ t17:
     - '1'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func: t17
@@ -561,7 +559,7 @@ t18:
     #- '1e-15'
     #- -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_reads:  10000
@@ -604,7 +602,7 @@ t19:
     #- '1e-15'
     - -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_reads:      10000
@@ -643,7 +641,7 @@ t20:
     - -v
     #- -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_hits:    9188
@@ -793,7 +791,7 @@ t25:
     - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
     - -v
     - -workdir
-    - run
+    - {{ WRK_DIR }}
     - -fastx
     - -aligned
     - out1/out2/set4
@@ -826,7 +824,7 @@ t26:
     - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
     - -v
     - -workdir
-    - run
+    - {{ WRK_DIR }}
     - -kvdb
     - run/kvdb_1
     - -idx
@@ -862,9 +860,6 @@ t27:
     - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
     - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
-    - -v
-    - -workdir
-    - run
     - -kvdb
     - run/kvdb_1
     - -idx
@@ -873,6 +868,9 @@ t27:
     - -aligned
     - run/out_1/set4_aligned
     - -other
+    - -workdir
+    - {{ WRK_DIR }}
+    - -v
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -899,9 +897,6 @@ t28:
     - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
     - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
-    - -v
-    - -workdir
-    - run
     - -kvdb
     - run/kvdb_1
     - -idx
@@ -910,6 +905,9 @@ t28:
     - -aligned
     - run/out_1/
     - -other
+    - -v
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1042,7 +1040,7 @@ t32:
     #- '1e-15'
     - -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_reads:      10000
@@ -1092,7 +1090,7 @@ t33:
     #- '1e-15'
     - -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_reads:      10000
@@ -1142,7 +1140,7 @@ t34:
     #- '1e-15'
     - -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_reads:      10000
@@ -1192,7 +1190,7 @@ t35:
     #- '1e-15'
     - -out2
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   validate:
     func:
     num_reads:      10000
@@ -1345,7 +1343,7 @@ tc20:
     - '1 cigar qcov'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1396,7 +1394,7 @@ tc21:
     - '1 cigar qcov'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1447,7 +1445,7 @@ tc22:
     - '1 cigar qcov'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1484,7 +1482,7 @@ tc23:
     - '1 cigar qcov'
     - -v
     - -workdir
-    - {{ SMR_SRC }}/run
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:

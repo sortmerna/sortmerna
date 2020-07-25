@@ -17,6 +17,8 @@ from jinja2 import Environment, FileSystemLoader
 
 # globals
 OS = None
+ENV = None # WIN | WSL | LNX_AWS | LNX_TRAVIS
+WRK_DIR = None
 
 # define platform
 pf = platform.platform()
@@ -842,7 +844,9 @@ if __name__ == "__main__":
     python scripts/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
-    #import pdb; pdb.set_trace()
+    STAMP = '[run.py:__main__]'
+    import pdb; pdb.set_trace()
+    is_opts_ok = True
 
     # process options
     optpar = OptionParser()
@@ -856,6 +860,9 @@ if __name__ == "__main__":
     optpar.add_option('--ddir', dest='ddir', help = 'Data directory')
     optpar.add_option('--config', dest='config', help='Tests configuration file.')
     optpar.add_option('--env', dest='envfile', help='Environment variables')
+    optpar.add_option('--envn', dest='envname', help=('Name of environment: WIN | WSL '
+                                                  '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
+    optpar.add_option('--workdir', dest='workdir', help='Environment variables')
 
     (opts, args) = optpar.parse_args()
 
@@ -871,8 +878,14 @@ if __name__ == "__main__":
     else:
         # load properties from env.yaml
         print('Using Environment configuration file: {}'.format(env_yaml))
-        with open(env_yaml, 'r') as envh:
-            env = yaml.load(envh, Loader=yaml.FullLoader)
+        #with open(env_yaml, 'r') as envh:
+        #    env = yaml.load(envh, Loader=yaml.FullLoader)
+        env_jj = Environment(loader=FileSystemLoader(os.path.dirname(env_yaml)), trim_blocks=True, lstrip_blocks=True)
+        env_template = env_jj.get_template(os.path.basename(env_yaml))
+    
+        #   render jinja template
+        env_str = env_template.render({'UHOME': UHOME})
+        env = yaml.load(env_str, Loader=yaml.FullLoader)
 
     # check jinja.yaml
     cfgfile = os.path.join(cur_dir, 'test.jinja.yaml') if not opts.config else opts.config
@@ -882,20 +895,41 @@ if __name__ == "__main__":
     else:
         print('Using Build configuration template: {}'.format(cfgfile))
 
-    # load jinja template
+    # load 'env.jinja.yaml' template
     jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
     template = jjenv.get_template(os.path.basename(cfgfile))
 
-    # render jinja template
-    SMR_SRC  = env[OS][SMR]['src'] if env[OS][SMR]['src'] else '{}/sortmerna'.format(UHOME)
+    if opts.envname:
+        ENV = opts.envname
+    elif IS_WIN or IS_WSL: 
+        ENV = OS
+        print('{} --envn was not specified - using {}'.format(STAMP, ENV))
+    else:
+        print('{} --envn is required on OS {}'.format(STAMP, OS))
+        is_opts_ok = False
+
+    # WRK_DIR priority:
+    #   (1. opts.workdir, 2. env.jinja.yaml:WRK_DIR, 3. UHOME/sortmerna/run)
+    if opts.workdir:
+        WRK_DIR = opts.workdir
+    else:
+        val = env.get('WRK_DIR',{}).get(ENV)
+        WRK_DIR = val if val else os.path.join(UHOME, 'sortmerna', 'run')
+
+    # render 'test.jinja.yaml' template
+    val = env.get(SMR,{}).get('src',{}).get(ENV)
+    SMR_SRC  = val if val else '{}/sortmerna'.format(UHOME)
     if not os.path.exists(SMR_SRC):
-        print('Sortmerna source directory {} not found. Either specify location in env.yaml or make sure the sources exist at {}'.format(SMR_SRC, SMR_SRC))
-    DATA_DIR = env[OS]['DATA_DIR']
-    cfg_str = template.render({'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR})
+        print(('Sortmerna source directory {} not found. '
+            'Either specify location in env.jinja.yaml or '
+            'make sure the sources exist at {}'.format(SMR_SRC, SMR_SRC)))
+    DATA_DIR = env['DATA_DIR'][ENV]
+    cfg_str = template.render({'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR})
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     
-    SMR_DIST = env[OS][SMR]['dist'] if env[OS][SMR]['dist'] else '{}/dist'.format(SMR_SRC)
+    val = env.get(SMR,{}).get('dist', {}).get(ENV)
+    SMR_DIST = val if val else '{}/dist'.format(SMR_SRC)
     SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
     SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna')
     TEST_DATA = os.path.join(SMR_SRC, 'data')

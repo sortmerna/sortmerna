@@ -38,6 +38,7 @@ URL_SMR    = None
 URL_CONCURRENTQUEUE = None
 
 MY_OS = None
+ENV = None # WIN | WSL | LNX_AWS | LNX_TRAVIS
 
 # define platform
 pf = platform.platform()
@@ -512,9 +513,9 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
             PORTABLE = 1 # sets '-static' flag
     elif IS_WIN:
         # ZLIB
-        zlib_link_type   = cfg[SMR][MY_OS]['link'][ptype][ZLIB] # ZLIB linkage type used for SMR given linkage type
-        zlib_lib_release = cfg[ZLIB][MY_OS]['link'][zlib_link_type]['release']
-        zlib_lib_debug   = cfg[ZLIB][MY_OS]['link'][zlib_link_type]['debug']
+        zlib_link_type   = cfg[SMR]['link'][MY_OS][ptype][ZLIB] # ZLIB linkage type used for SMR given linkage type
+        zlib_lib_release = cfg[ZLIB]['link'][MY_OS][zlib_link_type]['release']
+        zlib_lib_debug   = cfg[ZLIB]['link'][MY_OS][zlib_link_type]['debug']
         ZLIB_LIBRARY_RELEASE = '{}/lib/{}'.format(ZLIB_DIST, zlib_lib_release)
         ZLIB_LIBRARY_DEBUG = '{}/lib/{}'.format(ZLIB_DIST, zlib_lib_debug)
         #ROCKSDB_SRC = os.path.join(LIBDIR, 'rocksdb')
@@ -589,12 +590,15 @@ def concurrentqueue_build(cfg={}):
 
 if __name__ == "__main__":
     '''
-    python scripts/build.py --name sortmerna [--env scripts/env_non_git.yaml]
+    python scripts/build.py --name sortmerna [--envn WIN] [--env scripts/env_non_git.yaml]
     python scripts/build.py --name sortmerna
     python scripts/build.py --name cmake [--env scripts/env_non_git.yaml]
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
-    #import pdb; pdb.set_trace()
+    STAMP = '[build.py:__main__]'
+    import pdb; pdb.set_trace()
+
+    is_opts_ok = True
 
     # options
     optpar = OptionParser()
@@ -611,6 +615,8 @@ if __name__ == "__main__":
     optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
     optpar.add_option('--vb', action="store_true", help='Export compile commands')
     optpar.add_option('--env', dest='envfile', help='Env configuration file.')
+    optpar.add_option('--envn', dest='envname', help=('Name of environment: WIN | WSL '
+                                                  '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     optpar.add_option('--config', dest='config', help='Build configuration file.')
     (opts, args) = optpar.parse_args()
 
@@ -624,88 +630,97 @@ if __name__ == "__main__":
     if not os.path.exists(envfile):
         print('No environment config file found. Please, provide one using \'--env\' option')
         sys.exit(1)
+
+    # load properties from env.jinja.yaml
+    print('Using Environment configuration file: {}'.format(envfile))
+    #with open(envfile, 'r') as envh:
+    #    env = yaml.load(envh, Loader=yaml.FullLoader)
+    env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
+    env_template = env_jj.get_template(os.path.basename(envfile))
+
+    #   render jinja template
+    env_str = env_template.render({'UHOME': UHOME})
+    env = yaml.load(env_str, Loader=yaml.FullLoader)
+
+    if not opts.envname:
+        if IS_WIN or IS_WSL: 
+            ENV = MY_OS
+            print('{} --envn was not specified - using {}'.format(STAMP, ENV))
+        else:
+            print('{} --envn is required on OS {}'.format(STAMP, MY_OS))
+            is_opts_ok = False
     else:
-        # load properties from env.yaml
-        print('Using Environment configuration file: {}'.format(envfile))
-        with open(envfile, 'r') as envh:
-            env = yaml.load(envh, Loader=yaml.FullLoader)
+        ENV = opts.envname
 
     # check build.jinja.yaml
-    cfgfile = os.path.join(cur_dir, 'build.jinja.yaml') if not opts.config else opts.config
-    if not os.path.exists(cfgfile):
-        print('No build configuration template found. Please, provide one using \'--config\' option')
-        sys.exit(1)
-    else:
-        print('Using Build configuration template: {}'.format(cfgfile))
+    #cfgfile = os.path.join(cur_dir, 'build.jinja.yaml') if not opts.config else opts.config
+    #if not os.path.exists(cfgfile):
+    #    print('No build configuration template found. Please, provide one using \'--config\' option')
+    #    sys.exit(1)
+    #else:
+    #    print('Using Build configuration template: {}'.format(cfgfile))
 
     # load jinja template
-    jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
-    template = jjenv.get_template(os.path.basename(cfgfile))
+    #jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
+    #template = jjenv.get_template(os.path.basename(cfgfile))
 
     # render jinja template
-    env['UHOME'] = UHOME
-    cfg_str = template.render(env) # env[OS]
-    cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
-    
-    val = cfg.get(MY_OS, {}).get('lib')
-    LIB_DIR =  val if val else UHOME # '{}/3rdparty'.format(SMR_SRC)
+    #env['UHOME'] = UHOME
+    #cfg_str = template.render(env) # env[OS]
+    #cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
+    #
+    libdir = env.get('LIB_DIR', {}).get(ENV)
+    LIB_DIR =  libdir if libdir else UHOME
 
-    URL_ZLIB   = cfg[ZLIB]['url']
-    URL_ROCKS  = cfg[ROCKS]['url']
-    URL_DIRENT = cfg[DIRENT]['url']
-    URL_RAPID  = cfg[RAPID]['url']
-    URL_SMR    = cfg[SMR]['url']
-    URL_CONCURRENTQUEUE = cfg[CCQUEUE]['url']
+    URL_ZLIB   = env[ZLIB]['url']
+    URL_ROCKS  = env[ROCKS]['url']
+    URL_DIRENT = env[DIRENT]['url']
+    URL_RAPID  = env[RAPID]['url']
+    URL_SMR    = env[SMR]['url']
+    URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
 
-    DIRENT_DIST = cfg[DIRENT]['src']
-
-    CMAKE_GEN = cfg[MY_OS]['cmake_gen']
+    CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
 
     # SMR
-    map = cfg.get(SMR, {}).get(MY_OS, {})
-    val = map.get('src') if map else None
+    val = env.get(SMR,{}).get('src',{}).get(ENV)
     SMR_SRC   = val if val else '{}/sortmerna'.format(UHOME)
-    val = map.get('build') if map else None
+    val = env.get(SMR,{}).get('build',{}).get(ENV)
     SMR_BUILD = val if val else '{}/build'.format(SMR_SRC)
-    val = map.get('dist') if map else None
+    val = env.get(SMR,{}).get('dist',{}).get(ENV)
     SMR_DIST  = val if val else '{}/dist'.format(SMR_SRC)
-    SMR_VER   = map.get('ver')
+    SMR_VER   = env.get(SMR,{}).get('ver')
 
     # ZLIB
-    map = cfg.get(ZLIB, {}).get(MY_OS, {})
-    val = map.get('src')
+    val = env.get(ZLIB,{}).get('src',{}).get(ENV)
     ZLIB_SRC   = val if val else '{}/{}'.format(LIB_DIR, ZLIB)
-    val = map.get('build')
+    val = env.get(ZLIB,{}).get('build',{}).get(ENV)
     ZLIB_BUILD = val if val else '{}/build'.format(ZLIB_SRC)
-    val = map.get('dist')
+    val = env.get(ZLIB,{}).get('dist',{}).get(ENV)
     ZLIB_DIST  = val if val else '{}/dist'.format(ZLIB_SRC)
 
     # ROCKSDB
-    map = cfg.get(ROCKS, {}).get(MY_OS, {})
-    val = map.get('src') if map else None
+    val = env.get(ROCKS,{}).get('src',{}).get(ENV)
     ROCKS_SRC   = val if val else '{}/{}'.format(LIB_DIR, ROCKS)
-    val = map.get('build') if map else None
+    val = env.get(ROCKS,{}).get('build',{}).get(ENV)
     ROCKS_BUILD = val if val else '{}/build'.format(ROCKS_SRC)
-    val = map.get('dist') if map else None
+    val = env.get(ROCKS,{}).get('dist',{}).get(ENV)
     ROCKS_DIST  = val if val else '{}/dist'.format(ROCKS_SRC)
-    ROCKS_VER   = cfg.get(ROCKS, {}).get('ver')
+    ROCKS_VER   = env.get(ROCKS, {}).get('ver')
 
     # RAPIDJSON
     # no binaries, so always build Release only
-    map = cfg.get(RAPID, {}).get(MY_OS, {})
-    val = map.get('src') if map else None
+    val = env.get(RAPID,{}).get('src',{}).get(ENV)
     RAPID_SRC   = val if val else '{}/{}'.format(LIB_DIR, RAPID)
-    val = map.get('build') if map else None
+    val = env.get(RAPID,{}).get('build',{}).get(ENV)
     RAPID_BUILD = val if val else '{}/build'.format(RAPID_SRC)
-    val = map.get('dist') if map else None
+    val = env.get(RAPID,{}).get('dist',{}).get(ENV)
     RAPID_DIST  = val if val else '{}/dist'.format(RAPID_SRC)
 
     # CONCURRENTQUEUE
-    map = cfg.get(CCQUEUE, {}).get(MY_OS, {})
-    val = map.get('src') if map else None
+    val = env.get(CCQUEUE,{}).get('src',{}).get(ENV)
     CCQUEUE_SRC = val if val else '{}/{}'.format(LIB_DIR, CCQUEUE)
 
-    if IS_WIN:
+    if 'WIN' == ENV:
         SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
 
         # zlib puts both Debug and Release at the same location => no btype
@@ -715,22 +730,24 @@ if __name__ == "__main__":
         opts.pt_rocks = 't3' if not opts.pt_rocks else opts.pt_rocks
         ROCKS_DIST  = ROCKS_DIST + '/{}/{}'.format(opts.pt_rocks, opts.btype)
 
-        DIRENT_SRC = '{}/{}'.format(LIB_DIR, DIRENT) if not cfg[DIRENT]['src'] else cfg[RAPID]['src']
-        DIRENT_DIST = cfg[DIRENT]['dist'] if cfg[DIRENT]['dist'] else DIRENT_SRC
+        val = env.get(DIRENT, {}).get('src', {}).get(ENV)
+        DIRENT_SRC = val if val else '{}/{}'.format(LIB_DIR, DIRENT)
+        val = env.get(DIRENT, {}).get('dist')
+        DIRENT_DIST = val.get(ENV) if val and isinstance(val, dict) else DIRENT_SRC
 
     # call functions
-    if opts.name:
+    if is_opts_ok and opts.name:
         if opts.name == ALL:
             concurrentqueue_build(cfg) 
             rapidjson_build()
             zlib_build()
             rocksdb_build(ROCKS_VER)
-            smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=cfg)
+            smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=env)
         if opts.name == SMR: 
             if opts.clean:
                 clean(SMR_BUILD)
             else:
-                smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=cfg)
+                smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=env)
         elif opts.name == ZLIB: 
             zlib_build()
         elif opts.name == RAPID: 
