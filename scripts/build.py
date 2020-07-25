@@ -633,11 +633,8 @@ if __name__ == "__main__":
 
     # load properties from env.jinja.yaml
     print('Using Environment configuration file: {}'.format(envfile))
-    #with open(envfile, 'r') as envh:
-    #    env = yaml.load(envh, Loader=yaml.FullLoader)
     env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
     env_template = env_jj.get_template(os.path.basename(envfile))
-
     #   render jinja template
     env_str = env_template.render({'UHOME': UHOME})
     env = yaml.load(env_str, Loader=yaml.FullLoader)
@@ -652,23 +649,6 @@ if __name__ == "__main__":
     else:
         ENV = opts.envname
 
-    # check build.jinja.yaml
-    #cfgfile = os.path.join(cur_dir, 'build.jinja.yaml') if not opts.config else opts.config
-    #if not os.path.exists(cfgfile):
-    #    print('No build configuration template found. Please, provide one using \'--config\' option')
-    #    sys.exit(1)
-    #else:
-    #    print('Using Build configuration template: {}'.format(cfgfile))
-
-    # load jinja template
-    #jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
-    #template = jjenv.get_template(os.path.basename(cfgfile))
-
-    # render jinja template
-    #env['UHOME'] = UHOME
-    #cfg_str = template.render(env) # env[OS]
-    #cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
-    #
     libdir = env.get('LIB_DIR', {}).get(ENV)
     LIB_DIR =  libdir if libdir else UHOME
 
@@ -763,9 +743,9 @@ if __name__ == "__main__":
         elif opts.name == CMAKE: 
             if opts.clone:
                 git_clone(cfg[CMAKE]['url'], LIB_DIR)
-            cmake_install(cfg) 
+            cmake_install(env) 
         elif opts.name == CONDA: 
-            conda_install(cfg) 
+            conda_install(env) 
         elif opts.name == CCQUEUE: 
-            concurrentqueue_build(cfg) 
+            concurrentqueue_build(env) 
         else: test()
