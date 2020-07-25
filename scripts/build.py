@@ -596,7 +596,7 @@ if __name__ == "__main__":
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
     STAMP = '[build.py:__main__]'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     is_opts_ok = True
 
