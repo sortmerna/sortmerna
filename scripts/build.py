@@ -106,7 +106,6 @@ def git_clone(url, pdir, force=False):
 
 def conda_install(cfg, dir=None, force=False, clean=False):
     '''
-    @param MY_OS WIN | WSL | LNX | OSX
     @param cfg   Config dictionary
     @dir         installation root dir. Default: User Home
 
@@ -116,6 +115,7 @@ def conda_install(cfg, dir=None, force=False, clean=False):
     STAMP = '[conda_install]'
     dir = UHOME if not dir else dir
     fsh = 'miniconda.sh'
+    is_install_ok = False
     #os.chdir(dir)
     # check already installed
     bin_conda = os.path.join(dir, 'miniconda3', 'bin')
@@ -138,38 +138,43 @@ def conda_install(cfg, dir=None, force=False, clean=False):
             # this works with conda but not standard python3
             req = url_conda
 
+        print('{} Loading Conda from url: {}'.format(STAMP, url_conda))
         try:
             with urllib.request.urlopen(req) as surl:
                 with open(fsh, 'wb') as fp:
                     fp.write(surl.read()) # loads the file into memory before writing to disk. No good for very big files.
         except urllib.request.HTTPError as ex:
-            print(ex.read())
+            print('{} Exception getting Conda distro: {}'.format(STAMP, ex.read()))
+            return
 
     # run the installer
-    cmd = ['bash', fsh, '-b']
-    #cmd = ['bash', fsh, '-b', '-p', '{}/miniconda'.format(dir)]
-    proc_run(cmd, dir)
+    if os.path.exists(os.path.join(dir, fsh)):
+        cmd = ['bash', fsh, '-b']
+        #cmd = ['bash', fsh, '-b', '-p', '{}/miniconda'.format(dir)]
+        proc_run(cmd, dir)
 
-    # delete the installer
-    if clean:
-        print('{} Deleting the installer {}'.format(STAMP, os.path.join(dir, fsh)))
-        os.remove(os.path.join(dir, fsh))
+        # delete the installer
+        if clean:
+            print('{} Deleting the installer {}'.format(STAMP, os.path.join(dir, fsh)))
+            os.remove(os.path.join(dir, fsh))
 
-    print('{} Installed conda in {}'.format(STAMP, os.path.join(dir, 'miniconda3')))
+        print('{} Installed conda in {}'.format(STAMP, os.path.join(dir, 'miniconda3')))
 
-    # install packages required to use sortmerna's build.py
-    print('{} Installing PyYaml package'.format(STAMP))
-    bin_pip = os.path.join(bin_conda, 'pip')
-    cmd = [bin_pip, 'install', 'pyyaml']
-    proc_run(cmd, bin_conda)
+        # install packages required to use sortmerna's build.py
+        print('{} Installing PyYaml package'.format(STAMP))
+        bin_pip = os.path.join(bin_conda, 'pip')
+        cmd = [bin_pip, 'install', 'pyyaml']
+        proc_run(cmd, bin_conda)
 
-    print('{} Installing Jinja2 package'.format(STAMP))
-    cmd = [bin_pip, 'install', 'jinja2']
-    proc_run(cmd, bin_conda)
+        print('{} Installing Jinja2 package'.format(STAMP))
+        cmd = [bin_pip, 'install', 'jinja2']
+        proc_run(cmd, bin_conda)
 
-    print('{} Installing scikit-bio package'.format(STAMP))
-    cmd = [bin_pip, 'install', 'scikit-bio']
-    proc_run(cmd, bin_conda)
+        print('{} Installing scikit-bio package'.format(STAMP))
+        cmd = [bin_pip, 'install', 'scikit-bio']
+        proc_run(cmd, bin_conda)
+    else:
+        print('{} Conda installer not found - likely failed to download'.format(STAMP))
 
     print('{} Done'.format(STAMP))
 #END conda_install
@@ -184,9 +189,9 @@ def cmake_install(cfg, dir=None, force=False):
     '''
     STAMP = '[cmake_install]'
     is_installed = False
-    url = cfg['cmake'][MY_OS]['url']
+    url = cfg[CMAKE]['url'][MY_OS]
     zipped = url.split('/')[-1] # tar.gz or zip
-    cmake_home = cfg['cmake'][MY_OS]['home'] # home directory
+    cmake_home = cfg[CMAKE][MY_OS]['home'] # home directory
     # check already installed
     cmake_bin = '{}/bin/cmake'.format(cmake_home)
     if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
@@ -623,16 +628,16 @@ if __name__ == "__main__":
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
-    print('Current dir: {}'.format(cur_dir))
+    print('{} Current dir: {}'.format(STAMP, cur_dir))
 
     # check env.yaml. If no env file specified, try the current directory
     envfile = os.path.join(cur_dir, 'env.jinja.yaml') if not opts.envfile else opts.envfile
     if not os.path.exists(envfile):
-        print('No environment config file found. Please, provide one using \'--env\' option')
+        print('{} No environment config file found. Please, provide one using \'--env\' option'.format(STAMP))
         sys.exit(1)
 
     # load properties from env.jinja.yaml
-    print('Using Environment configuration file: {}'.format(envfile))
+    print('{} Using Environment configuration file: {}'.format(STAMP, envfile))
     env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
     env_template = env_jj.get_template(os.path.basename(envfile))
     #   render jinja template
