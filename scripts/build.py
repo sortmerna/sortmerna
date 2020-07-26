@@ -143,7 +143,7 @@ def conda_install(cfg, dir=None, force=False, clean=False):
             req = requests.get(url_conda, allow_redirects=True)
             #with urllib.request.urlopen(req) as surl:
             with open(fsh, 'wb') as fp:
-                fp.write(req.read()) # loads the file into memory before writing to disk. No good for very big files.
+                fp.write(req.content) # loads the file into memory before writing to disk. No good for very big files.
         except:
             print('{} Exception getting Conda distro: {} {}'.format(STAMP, sys.exc_info()[1], sys.exc_info()[0]))
             sys.exit(1)
@@ -210,7 +210,7 @@ def cmake_install(cfg, dir=None, force=False):
             try:
                 #with urllib.request.urlopen(url) as surl:
                 with open(zipped, 'wb') as fp:
-                    fp.write(req.read()) # loads all file into memory first before writing to disk. No good for very big files.
+                    fp.write(req.content) # loads all file into memory first before writing to disk. No good for very big files.
             except:
                 print('{} Exception getting CMake distro: {} {}'.format(STAMP, sys.exc_info()[1], sys.exc_info()[0]))
                 sys.exit(1)
