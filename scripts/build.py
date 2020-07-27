@@ -192,7 +192,9 @@ def cmake_install(cfg, dir=None, force=False):
     is_installed = False
     url = cfg[CMAKE]['url'][MY_OS]
     zipped = url.split('/')[-1] # tar.gz or zip
-    cmake_home = cfg[CMAKE][MY_OS]['home'] # home directory
+    val = cfg.get(CMAKE,{}).get('home',{}).get(MY_OS)
+    cmake_home = val if val else os.join(UHOME, 'cmake-{}-win64-x64'.format(cfg.get('CMAKE_VER')))
+    #                                       |_ default         
     # check already installed
     cmake_bin = '{}/bin/cmake'.format(cmake_home)
     if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
@@ -202,6 +204,7 @@ def cmake_install(cfg, dir=None, force=False):
             is_installed = True
 
     if not is_installed:
+        print('{} CMake not found at: {} - installing'.format(STAMP, cmake_bin))
         os.chdir(Path(cmake_home).parent.as_posix()) # navigate to the parent dir e.g. installation root (pathlib)
         # download the installer if not already present
         if not os.path.exists(zipped):
