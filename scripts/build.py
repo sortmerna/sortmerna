@@ -193,8 +193,8 @@ def cmake_install(cfg, dir=None, force=False):
     url = cfg[CMAKE]['url'][MY_OS]
     zipped = url.split('/')[-1] # tar.gz or zip
     val = cfg.get(CMAKE,{}).get('home',{}).get(MY_OS)
-    cmake_home = val if val else os.join(UHOME, 'cmake-{}-win64-x64'.format(cfg.get('CMAKE_VER')))
-    #                                       |_ default         
+    cmake_home = val if val else os.path.join(UHOME, 'cmake-{}-win64-x64'.format(cfg.get('CMAKE_VER')))
+    #                                          |_ default         
     # check already installed
     cmake_bin = '{}/bin/cmake'.format(cmake_home)
     if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
