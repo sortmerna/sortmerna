@@ -728,7 +728,7 @@ if __name__ == "__main__":
     # call functions
     if is_opts_ok and opts.name:
         if opts.name == ALL:
-            concurrentqueue_build(cfg) 
+            concurrentqueue_build(cfg=env) 
             rapidjson_build()
             zlib_build()
             rocksdb_build(ROCKS_VER)
