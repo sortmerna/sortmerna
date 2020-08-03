@@ -32,7 +32,7 @@ else:
     print('Unable to define the platform: {}'.format(pf))
     sys.exit(1)
 
-UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
+UHOME = os.environ.get('USERPROFILE') if IS_WIN else os.environ.get('HOME')
 
 SMR = 'sortmerna'
 SMR_SRC  = None # source root dir
@@ -845,7 +845,7 @@ if __name__ == "__main__":
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
     STAMP = '[run.py:__main__]'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # process options
@@ -871,13 +871,13 @@ if __name__ == "__main__":
     print('Current dir: {}'.format(cur_dir))
 
     # check env.yaml. If no env file specified, try the current directory
-    env_yaml = os.path.join(cur_dir, 'env.yaml') if not opts.envfile else opts.envfile
+    env_yaml = os.path.join(cur_dir, 'env.jinja.yaml') if not opts.envfile else opts.envfile
     if not os.path.exists(env_yaml):
-        print('No environment config file found. Please, provide one using \'--env\' option')
+        print('{} No environment config file found. Please, provide one using \'--env\' option'.format(STAMP))
         sys.exit(1)
     else:
         # load properties from env.yaml
-        print('Using Environment configuration file: {}'.format(env_yaml))
+        print('{} Using Environment configuration file: {}'.format(STAMP, env_yaml))
         #with open(env_yaml, 'r') as envh:
         #    env = yaml.load(envh, Loader=yaml.FullLoader)
         env_jj = Environment(loader=FileSystemLoader(os.path.dirname(env_yaml)), trim_blocks=True, lstrip_blocks=True)
@@ -890,10 +890,10 @@ if __name__ == "__main__":
     # check jinja.yaml
     cfgfile = os.path.join(cur_dir, 'test.jinja.yaml') if not opts.config else opts.config
     if not os.path.exists(cfgfile):
-        print('No build configuration template found. Please, provide one using \'--config\' option')
+        print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(STAMP))
         sys.exit(1)
     else:
-        print('Using Build configuration template: {}'.format(cfgfile))
+        print('{} Using Build configuration template: {}'.format(STAMP, cfgfile))
 
     # load 'env.jinja.yaml' template
     jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
@@ -920,18 +920,29 @@ if __name__ == "__main__":
     val = env.get(SMR,{}).get('src',{}).get(ENV)
     SMR_SRC  = val if val else '{}/sortmerna'.format(UHOME)
     if not os.path.exists(SMR_SRC):
-        print(('Sortmerna source directory {} not found. '
+        print(('{} Sortmerna source directory {} not found. '
             'Either specify location in env.jinja.yaml or '
-            'make sure the sources exist at {}'.format(SMR_SRC, SMR_SRC)))
+            'make sure the sources exist at {}'.format(STAMP, SMR_SRC, SMR_SRC)))
     DATA_DIR = env['DATA_DIR'][ENV]
     cfg_str = template.render({'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR})
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     
-    val = env.get(SMR,{}).get('dist', {}).get(ENV)
-    SMR_DIST = val if val else '{}/dist'.format(SMR_SRC)
-    SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
-    SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna')
+    val = env.get(SMR,{}).get('bin', {}).get(ENV)
+    if val:
+      SMR_EXE = os.path.join(val, 'sortmerna')
+    else:
+      val = env.get(SMR,{}).get('dist', {}).get(ENV)
+      SMR_DIST = val if val else '{}/dist'.format(SMR_SRC)
+      SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
+      SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna')
+
+    if SMR_EXE and os.path.exists(SMR_EXE):
+        print('{} using {}'.format(STAMP, SMR_EXE))
+    else:
+        print('{} sortmerna executable {} does not exist or not set'.format(STAMP, SMR_EXE))
+        sys.exit(1)
+
     TEST_DATA = os.path.join(SMR_SRC, 'data')
 
     process_smr_opts(cfg[opts.name]['cmd'])
@@ -948,25 +959,25 @@ if __name__ == "__main__":
 
     # clean previous alignments (KVDB)
     if os.path.exists(KVDB_DIR):
-        print('Removing KVDB dir: {}'.format(KVDB_DIR))
+        print('{} Removing KVDB dir: {}'.format(STAMP, KVDB_DIR))
         shutil.rmtree(KVDB_DIR)
 
     # clean output
     ali_dir = os.path.dirname(ALIF)
     if ali_dir and os.path.exists(ali_dir) and not opts.validate_only:
-        print('Removing Aligned Output: {}'.format(ali_dir))
+        print('{} Removing Aligned Output: {}'.format(STAMP, ali_dir))
         shutil.rmtree(ali_dir)
 
     if OTHF:
         oth_dir = os.path.dirname(OTHF)
         if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not opts.validate_only:
-            print('Removing Non-Aligned Output: {}'.format(oth_dir))
+            print('{} Removing Non-Aligned Output: {}'.format(STAMP, oth_dir))
             shutil.rmtree(oth_dir)
 
     # run alignment
     ret = {}
     if not opts.validate_only:
-        print('Running {}: {}'.format(opts.name, cfg[opts.name]['name']))
+        print('{} Running {}: {}'.format(STAMP, opts.name, cfg[opts.name]['name']))
         cfg[opts.name]['cmd'].insert(0, SMR_EXE)
         is_capture = cfg[opts.name].get('capture', False)
         ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)

@@ -546,9 +546,9 @@ t18:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -589,9 +589,9 @@ t19:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -632,7 +632,7 @@ t20:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -663,7 +663,7 @@ t21:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -695,7 +695,7 @@ t22:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -723,7 +723,7 @@ t23:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -754,7 +754,7 @@ t24:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
     - -fastx
     - -other
     - -blast
@@ -1024,9 +1024,9 @@ t32:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -num_alignments
     - '1'
     - -no-best
@@ -1075,9 +1075,9 @@ t33:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -num_alignments
     - '1 cigar qcov'
     - -fastx
@@ -1125,9 +1125,9 @@ t34:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -num_alignments
     - '3'
     - -fastx
@@ -1175,9 +1175,9 @@ t35:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
     - -num_alignments
     - '0'
     - -fastx
@@ -1298,7 +1298,7 @@ tc19:
   - -ref
   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta # 
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/bioinformatics/rna/smr_iss_207_20200123_test.fq.gz #
+  - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/smr_iss_207_20200123_test.fq.gz #
   #- -num_alignments
   #- '0'
   - -e
