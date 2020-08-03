@@ -220,6 +220,7 @@ def process_smr_opts(args):
     '''
     args  list of parameters passed to sortmerna
     '''
+    STAMP = '[process_smr_opts]'
     WDIR = '-workdir'
     KVD = '-kvdb'
     IDX = '-idx'
@@ -265,7 +266,7 @@ def process_smr_opts(args):
             ALIF = os.path.abspath(aln_pfx + READS_EXT)
     elif WDIR in args:
         wdir = args[args.index(WDIR) + 1]
-        print('\'-workdir\' option was provided. Using workdir: [{}]'.format(os.path.realpath(wdir)))
+        print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(STAMP, os.path.realpath(wdir)))
         ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
     else:
         ALIF = os.path.join(UHOME, 'sortmerna', 'run', 'out', ALI_BASE + READS_EXT)
@@ -286,6 +287,10 @@ def process_smr_opts(args):
                 OTHF = os.path.abspath(oth_pfx + READS_EXT)
         elif ALN in args:
             OTHF = os.path.join(os.path.dirname(ALIF), OTH_BASE + READS_EXT) # use the same out dir as ALN
+        elif WDIR in args:
+            wdir = args[args.index(WDIR) + 1]
+            print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(STAMP, os.path.realpath(wdir)))
+            ALIF = os.path.join(wdir, 'out', OTH_BASE + READS_EXT)
         else:
             OTHF = os.path.join(UHOME, 'sortmerna', 'run', 'out', OTH_BASE + READS_EXT)
 
