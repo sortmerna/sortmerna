@@ -850,7 +850,7 @@ if __name__ == "__main__":
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
     STAMP = '[run.py:__main__]'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # process options
