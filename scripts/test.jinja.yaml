@@ -6,11 +6,56 @@
 # Rendered using Jinja
 #
 
-#
-# Standard tests included with distro
-#
+test.list:
+  - t0: test_blast_format_0 - single reference + single read
+  - t0_other: test_blast_format_0_other - single reference + single read
+  - t1: test_blast_format_1 - single reference + single read
+  - t2: test_cigar_lcs_1
+  - t3: test_environmental_output
+  - t4: test_indexing_split_databases
+  - t5: test_mate_pairs - part 1
+  - t6:
+  - t7:
+  - t8:
+  - t9: test_output_all_alignments_f_rc
+  - t10:
+  - t11:
+  - t12:
+  - t13:
+  - t14:
+  - t15:
+  - t16:
+  - t17:
+  - t18:
+  - t19:
+  - t20:
+  - t21:
+  - t22:
+  - t23:
+  - t24:
+  - t25:
+  - t26:
+  - t27:
+  - t28:
+  - t29:
+  - t30:
+  - t31:
+  - t32:
+  - t33:
+  - t34:
+  - t35:
+  - t36:
+  - t37:
+  - t38:
+  - t39:
+  - t40: pre-stress  - 8 reference databases + 2500 reads
+  - t41: stress test - 8 reference databases + 1M reads
+  - t42: stress test - 8 reference databases + 2.5M reads
+  - t43: stress test - 8 reference databases + 50M reads
+
 t0:
-  name: test_blast_format_0 # descriptive name of this test
+  name: test_blast_format_0
+  note: single reference + single read
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
@@ -120,7 +165,7 @@ t3:
 # original test only performed indexing i.e. no alignment and not reads
 # TODO: add option '-i' 'index only'?
 t4:
-  name: test_indexdb_split_databases
+  name: test_indexing_split_databases
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta # 27,424 bytes (27KB) file
@@ -1222,7 +1267,7 @@ t35:
 #
 # custom tests
 #
-tc16:
+t36:
   name: Single reads file, 250 reads
   cmd:
   - -ref
@@ -1236,7 +1281,7 @@ tc16:
   validate:
     func: t16
 
-tc17:
+t37:
   name: Paired reads
   cmd:
   - -ref
@@ -1261,15 +1306,15 @@ tc17:
     num_hits:    66387
     num_fail:  1212093
 
-tc18:
+t38:
   name: Paired reads GZ 2 x 2 GB
   cmd:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 12,734,464 ~12MB
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
+  - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
+  - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
   - -v
   - -blast
   - '1 cigar qcov'
@@ -1282,7 +1327,7 @@ tc18:
     time:          1841.62 # 1015.39 + 404.34 + 421.89 = 1841.62 / 60 = 30.69  (4608.04 >1hr on a busy VM on Win host)
     cpus:             8
 
-tc19:
+t39:
   name: issue 207
   note: |
     sortmerna -m 4096 -a 4 -L 8 --fastx --blast 1 --workdir test 
@@ -1314,7 +1359,7 @@ tc19:
     time:           860.05 # 678.62 + 87.14 + 94.29 = 860.05 / 60 = 14.33 min
     cpus:             8
 
-tc20:
+t40:
   name: issue 231 8x2500
   note: 8 reference databases + 2500 reads
   cmd:
@@ -1335,9 +1380,9 @@ tc20:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1_5K.fastq.gz # 1,250 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5K.fastq.gz # 1,250 reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2_5K.fastq.gz # 1,250 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5K.fastq.gz # 1,250 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -1351,23 +1396,28 @@ tc20:
     num_hits:   127
     num_fail:  2373
     time:
-      align:   [0.362669, 0.39506,  0.407958, 0.387674, 0.51132,  0.476758, 0.334519, 0.439789] # sec
-      stats:   [0.311779, 0.32385,  0.290391, 0.26897,  0.292911, 0.29353,  0.29669,  0.275751]
-      reports: [0.297409, 0.332624, 0.360632, 0.323509, 0.338248, 0.279327, 0.341752, 0.317718]
-      total:   []
-      index_stats_calc: 4.01 # sec
-      idx_load: 2.118 # sec
-      ref_load: 0.161 # sec
+      win_8_16:
+        host: Windows 10 + 8 CPUs + 16 GiB RAM
+        align:   [0.362669, 0.39506,  0.407958, 0.387674, 0.51132,  0.476758, 0.334519, 0.439789] # sec
+        stats:   [0.311779, 0.32385,  0.290391, 0.26897,  0.292911, 0.29353,  0.29669,  0.275751]
+        reports: [0.297409, 0.332624, 0.360632, 0.323509, 0.338248, 0.279327, 0.341752, 0.317718]
+        total:   []
+        index_stats_calc: 4.01 # sec
+        idx_load: 2.118 # sec
+        ref_load: 0.161 # sec
+      ubuntu18_4_16_32:
+        host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HD
     memory:
-      prior_idx_load:     [5036, ] # MB
-      idx_load:         378584 # MB
-      ref_load:         395820 # MB
-      align_done:       [404848, 379752, 370604, 500176, 155276, 214912, 271628, 258980] # MB
-      idx_ref_unloaded:  98144 # MB
+      win_8_16:
+        prior_idx_load:   [5036, ] # MB
+        idx_load:         378584 # MB
+        ref_load:         395820 # MB
+        align_done:       [404848, 379752, 370604, 500176, 155276, 214912, 271628, 258980] # MB
+        idx_ref_unloaded: 98144 # MB
 
-tc21:
+t41:
   name: issue 231 8x1M
-  note: 8 reference databases + 1M reads
+  note: stress test - 8 reference databases + 1M reads
   cmd:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
@@ -1386,9 +1436,9 @@ tc21:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1_2M.fastq.gz # 500,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_2M.fastq.gz # 500,000 reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2_2M.fastq.gz # 500,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_2M.fastq.gz # 500,000 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -1402,13 +1452,13 @@ tc21:
     num_hits:    49909
     num_fail:   950091
   time:
-    align:   [14.6285, 15.4647, 18.4473, 21.348, 10.3554, 12.1012, 12.9385, 10.3874]
+    align:   [14.6285, 15.4647, 18.4473, 21.348, 10.3554, 12.1012, 12.9385, 10.3874] # sec
     stats:   []
     reports: []
     total:
     index_stats_calc:
     idx_load: [1.53757, ]
-    ref_load: [0.112886. ]
+    ref_load: [0.112886, ]
   memory:
     prior_idx_load: [  5100, ]
     idx_load:       [378400, ]
@@ -1416,9 +1466,9 @@ tc21:
     align_done:     [441044, 384996, 437648, 556836, 249236, 286252, 322048, 267984]
     idx_ref_unloaded:
 
-tc22:
+t42:
   name: issue 231 8x2.5M
-  note: 8 reference databases + 2.5M reads
+  note: stress test - 8 reference databases + 2.5M reads
   cmd:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
@@ -1437,9 +1487,9 @@ tc22:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1_5M.fastq.gz # 1.25M reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5M.fastq.gz # 1.25M reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2_5M.fastq.gz # 1.25M reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5M.fastq.gz # 1.25M reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -1453,9 +1503,9 @@ tc22:
     num_hits:   5944
     num_fail:   4056
 
-tc23:
+t43:
   name: issue 231 8x50M
-  note: 8 reference databases + 50M reads
+  note: stress test - 8 reference databases + 50M reads
   cmd:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
@@ -1474,9 +1524,9 @@ tc23:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -1490,13 +1540,17 @@ tc23:
     num_hits:   0
     num_fail:   0
     time:
-      align:   [1085.8, 1168.05, 1130.03, ?, 607.784, 792.255, ?, ?]
-      stats:   []
-      reports: []
-      total:
-      index_stats_calc:
-      idx_load: [1.53757, ]
-      ref_load: [0.112886. ]
+      win_8_16:
+        host: Windows 10 + 8 CPUs + 16 GiB RAM
+        align:   [1085.8, 1168.05, 1130.03, ?, 607.784, 792.255, ?, ?] # sec
+        stats:   []
+        reports: []
+        total:
+        index_stats_calc:
+        idx_load: [1.53757, ]
+        ref_load: [0.112886, ]
+      ubuntu18_4_16_32:
+        host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HDD
     memory:
       prior_idx_load: [  5100, ]
       idx_load:       [378400, ]
