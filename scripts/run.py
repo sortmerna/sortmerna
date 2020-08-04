@@ -850,7 +850,7 @@ if __name__ == "__main__":
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''
     STAMP = '[run.py:__main__]'
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # process options
@@ -941,6 +941,11 @@ if __name__ == "__main__":
       SMR_DIST = val if val else '{}/dist'.format(SMR_SRC)
       SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
       SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna')
+
+    if IS_WIN:
+        file, ext = os.path.splitext(SMR_EXE)
+        if not ext:
+            SMR_EXE = '{}.exe'.format(SMR_EXE)
 
     if SMR_EXE and os.path.exists(SMR_EXE):
         print('{} using {}'.format(STAMP, SMR_EXE))
