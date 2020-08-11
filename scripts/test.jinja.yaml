@@ -50,7 +50,7 @@ test.list:
   - t39:
   - t40: pre-stress  - 8 reference databases + 2500 reads
   - t41: stress test - 8 reference databases + 1M reads
-  - t42: stress test - 8 reference databases + 2.5M reads
+  - t42: stress test - 8 reference databases + 10M reads
   - t43: stress test - 8 reference databases + 50M reads
 
 t0:
@@ -1399,8 +1399,10 @@ t40:
     time:
       win_8_16:
         host: Windows 10 + 8 CPUs + 16 GiB RAM
+        total: 37.01 # sec
+        index_stats_calc: 4.01 # sec
         align:
-          # [ load idx, load refs, align ]
+          # [ load idx, load refs, align ] # sec
           - [2.033460, 0.0194314, 1.115530]
           - [1.899010, 0.1086190, 1.018200]
           - [1.286980, 0.1299090, 1.294970]
@@ -1408,9 +1410,9 @@ t40:
           - [0.346673, 0.0055980, 1.201430]
           - [0.692833, 0.0498388, 0.957983]
           - [0.838499, 0.1390180, 0.943279]
-          - [0.283566, 0.0261384, 0.979882] # sec
+          - [0.283566, 0.0261384, 0.979882]
         stats:
-          # [ load refs, calculate ]
+          # [ load refs, calculate ] # sec
           - [0.1260650, 0.879666]
           - [0.1934290, 0.756772]
           - [0.2242860, 0.819015]
@@ -1420,7 +1422,7 @@ t40:
           - [0.1631920, 0.580496]
           - [0.0345357, 0.553701]
         reports: 
-          # [ load refs, write ]
+          # [ load refs, write ] # sec
           - [0.1663490, 0.710342]
           - [0.1235280, 0.714348]
           - [0.1318760, 0.613343]
@@ -1430,13 +1432,10 @@ t40:
           - [0.2027080, 0.810572]
           - [0.0692027, 0.797114]
         total:   []
-        index_stats_calc: 4.01 # sec
-        idx_load: 2.118 # sec
-        ref_load: 0.161 # sec
       ubuntu18_4_16_32:
         host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HD
         align:
-          # [ load idx, load refs, align   ]
+          # [ load idx, load refs, align   ] # sec
           - [0.673854, 0.02615310, 0.0894852]
           - [0.637125, 0.01947890, 0.0715212]
           - [0.526297, 0.01813620, 0.0874868]
@@ -1444,7 +1443,41 @@ t40:
           - [0.108825, 0.00112116, 0.0438021]
           - [0.228702, 0.00607886, 0.0482503]
           - [0.333577, 0.03573250, 0.0475301]
-          - [0.116219, 0.00789596, 0.0478913] # sec
+          - [0.116219, 0.00789596, 0.0478913]
+      ubuntu18_8_32_32:
+        host: AWS t3.2xlarge + Ubuntu 18 + 8 cpu + 32 GB RAM + 32 GB HD
+        total: 435.83 # sec - python trace from command sent to response received. Includes index building
+        reads_stats_calc: [0.00403101, 0.00386887, ] # 2 x 1250 = 2500
+        index_stats_calc: [4.63, ]
+        # average CPU load as shown by 'top'
+        cpu_load: 96 # apparently because the threads idling most of the time
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - [0.673508, 0.02614100, 0.1287440]
+          - [0.688735, 0.02109240, 0.0734461]
+          - [0.700572, 0.02214820, 0.0520064]
+          - [0.833986, 0.03527280, 0.0475622]
+          - [0.127238, 0.00107915, 0.0282112]
+          - [0.287171, 0.00621006, 0.0306184]
+          - [0.328916, 0.03380940, 0.0540666]
+          - [0.121714, 0.00850745, 0.0456736]
+      ubuntu18_16_64_32:
+        host: AWS m5.4xlarge + Ubuntu 18 + 16 cpu + 64 GB RAM + 32 GB HD
+        # alignment cpu load: [ max,   min,  avr]
+        cpu_load_align:       [0, 0,    ] 
+        total: 507.63 # sec - python trace from command sent to response received - with indexing
+        reads_stats_calc: [1.63729, 1.63938, ]
+        index_stats_calc: [4.62, ]
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - [0.660503, 0.02655530, 11.8961]
+          - [0.549080, 0.01971100, 11.7154]
+          - [0.513501, 0.01789650, 12.6161]
+          - [0.778753, 0.03570890, 13.1982]
+          - [0.107538, 0.00110315, 6.58972]
+          - [0.224024, 0.00597738, 7.61811]
+          - [0.299101, 0.03337340, 8.39568]
+          - [0.108896, 0.00776617, 7.11024]
     memory:
       win_8_16:
         prior_idx_load:   [5036, ] # MB
@@ -1474,9 +1507,9 @@ t41:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_2M.fastq.gz # 500,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_2M.fastq.gz # 40MB, 500,000 reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_2M.fastq.gz # 500,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_2M.fastq.gz # 40MB, 500,000 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -1491,23 +1524,100 @@ t41:
     num_fail:   950091
     variant:    sanger # fastq quality variant
   time:
-    align:   [14.6285, 15.4647, 18.4473, 21.348, 10.3554, 12.1012, 12.9385, 10.3874] # sec
-    stats:   []
-    reports: []
-    total:
-    index_stats_calc:
-    idx_load: [1.53757, ]
-    ref_load: [0.112886, ]
+    win_8_16:
+      host: Windows 10 + 8 CPUs + 16 GiB RAM
+      total: 224.7367 # sec - no indexing
+      #                 [file_1,  file_2,    both ] sec
+      reads_stats_calc: [1.06534, 1.01161, 2.07695] # 1M reads
+      index_stats_calc: 
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [1.609760, 0.1460960, 13.8608]
+        - [1.569410, 0.0944589, 13.7952]
+        - [1.435490, 0.0912657, 17.2376]
+        - [1.895420, 0.1422490, 19.3190]
+        - [0.284600, 0.0065129, 10.7379]
+        - [0.640762, 0.0723266, 11.4848]
+        - [0.788337, 0.1347490, 11.5609]
+        - [0.292100, 0.0274563, 10.7468]
+      stats:   []
+      reports: []
+      total:
+    ubuntu18_4_16_32:
+      host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HD
+      total: 315.02 # sec - python trace from command sent to response received
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [0.760232, 0.02598330, 28.7143]
+        - [0.561553, 0.01946190, 28.5440]
+        - [0.526224, 0.01802220, 31.6420]
+        - [0.800176, 0.03483680, 35.0931]
+        - [0.109194, 0.00113233, 15.5079]
+        - [0.228446, 0.00601414, 19.1100]
+        - [0.304582, 0.03343890, 23.4172]
+        - [0.115192, 0.00771964, 15.7117]
+    ubuntu18_8_32_32:
+      host: AWS t3.2xlarge + Ubuntu 18 + 8 cpu + 32 GB RAM + 32 GB HD
+      # alignment cpu load: [ max,   min,  avr]
+      cpu_load_align:       [768.3, 534.2,    ] # all cores working
+      total: 248.359 # sec - python trace from command sent to response received - no indexing
+      reads_stats_calc: [1.65323, 1.63713, ]
+      index_stats_calc: [4.66, ]
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [0.761488, 0.02586880, 18.2870]
+        - [0.562772, 0.01954540, 18.8262]
+        - [0.528802, 0.01783780, 17.4979]
+        - [0.797004, 0.03432540, 18.6449]
+        - [0.108343, 0.00108414, 10.5488]
+        - [0.229871, 0.00602308, 13.4270]
+        - [0.304157, 0.03303930, 14.9851]
+        - [0.111445, 0.00778464, 11.0326]
+    ubuntu18_16_64_32:
+      host: AWS m5.4xlarge + Ubuntu 18 + 16 cpu + 64 GB RAM + 32 GB HD
+      # alignment cpu load: [ max,   min,  avr]
+      cpu_load_align:       [1540, 897.7,    ] 
+      total: 507.63 # sec - python trace from command sent to response received - with indexing
+      reads_stats_calc: [1.63729, 1.63938, ]
+      index_stats_calc: [4.62, ]
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [0.660503, 0.02655530, 11.8961]
+        - [0.549080, 0.01971100, 11.7154]
+        - [0.513501, 0.01789650, 12.6161]
+        - [0.778753, 0.03570890, 13.1982]
+        - [0.107538, 0.00110315, 6.58972]
+        - [0.224024, 0.00597738, 7.61811]
+        - [0.299101, 0.03337340, 8.39568]
+        - [0.108896, 0.00776617, 7.11024]
+    ubuntu18_32_128_32:
+      # ~10 min to setup the instance and run the test: 1.536 / 6 = 0.256 per test
+      host: AWS m5.8xlarge + Ubuntu 18 + 32 cpu + 128 GB RAM + 32 GB HD
+      # alignment cpu load: [ max,   min,  avr]
+      cpu_load_align:       [] 
+      total: 485.936 # sec - python trace from command sent to response received - with indexing
+      reads_stats_calc: [4.51]
+      index_stats_calc: [ ]
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [0.648937, 0.02581660, 7.42657]
+        - [0.541040, 0.01928010, 7.36926]
+        - [0.506856, 0.01764540, 7.54293]
+        - [0.762611, 0.03471340, 7.83780]
+        - [0.105484, 0.00107155, 5.39101]
+        - [0.220171, 0.00586116, 5.68825]
+        - [0.293652, 0.03250720, 5.88965]
+        - [0.106713, 0.00752926, 5.59118]
   memory:
-    prior_idx_load: [  5100, ]
-    idx_load:       [378400, ]
-    ref_load:       [395924.]
-    align_done:     [441044, 384996, 437648, 556836, 249236, 286252, 322048, 267984]
+    prior_idx_load: []
+    idx_load:       []
+    ref_load:       []
+    align_done:     []
     idx_ref_unloaded:
 
 t42:
-  name: issue 231 8x2.5M
-  note: stress test - 8 reference databases + 2.5M reads
+  name: issue 231 8x10M
+  note: stress test - 8 reference databases + 10M reads
   cmd:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
@@ -1526,9 +1636,9 @@ t42:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5M.fastq.gz # 1.25M reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_20M.fastq.gz # 5M reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5M.fastq.gz # 1.25M reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_20M.fastq.gz # 5M reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -1538,10 +1648,32 @@ t42:
   cwd: {{ SMR_SRC }}
   validate:
     func:
-    num_reads: 2500000
-    num_hits:   5944
-    num_fail:   4056
+    num_reads: 10000000
+    num_hits:   
+    num_fail:   
     variant:    sanger # fastq quality variant
+  time:
+    win_8_16:
+      host: Windows 10 + 8 CPUs + 16 GiB RAM
+      notes:
+      ref:
+        - a01_data/logs/sortmerna/win10_8_16_smr_t42_20200811_0905.log
+      cpu_load_align: [0, 0,    ] 
+      total: 3167.055 # sec ~53min with indexing
+      reads_stats_calc: [12.759, 11.2564]
+      index_stats_calc: [3.53]
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [1.60562, 0.1169340, 181.983]
+        - [1.953170, 0.1422260, 230.752]
+        - [1.786920, 0.1307010, 263.262]
+        - [2.183380, 0.1681940, 286.366]
+        - [0.389963, 0.0063583, 155.173]
+        - [0.655249, 0.0311714, 161.248]
+        - [0.895592, 0.1327380, 185.717]
+        - [0.356574, 0.0285677, 156.206]
+      stats:   []
+      reports: []
 
 t43:
   name: issue 231 8x50M
@@ -1577,21 +1709,90 @@ t43:
   validate:
     func:
     num_reads: 49309188
-    num_hits:   0
-    num_fail:   0
+    num_hits:   2499868
+    num_fail:  46809320
+    num_hits_db:
+      euk_28s_id98: 0.51
+      euk_18s_id95: 0.02
+      bac_23s_id98: 3.18
+      bac_16s_id90: 1.33
+      arc_23s_id98: 0
+      arc_16s_id95: 0
+      nc_5s_id98:   0.03  # non-coding - RFAM
+      nc_5.8s_id98: 0     # non-coding - RFAM
     variant:     sanger # fastq quality variant
     time:
       win_8_16:
         host: Windows 10 + 8 CPUs + 16 GiB RAM
-        align:   [1085.8, 1168.05, 1130.03, ?, 607.784, 792.255, ?, ?] # sec
+        notes: |
+          Win apparently limits the amount of memory available to the process, 
+          which seems to slow it down because less memory is available to RocksDB. 
+          On Ubuntu the memory used by the process is much higher, and the process runs faster.
+        cpu_load_align: [0, 0,    ] 
+        total: 17587.01 # sec ~5hrs
+        reads_stats_calc: [48.9792, 51.3097]
+        index_stats_calc: [3.28]
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - [1.524470, 0.1747970, 997.416]
+          - [1.493490, 0.1027610, 1088.52]
+          - [1.743100, 0.1538530, 1225.69]
+          - [2.095270, 0.1605110, 1403.62]
+          - [0.578855, 0.0110253, 759.637]
+          - [0.622625, 0.0311962, 884.362]
+          - [1.437610, 0.1885500, 1061.30]
+          - [0.815040, 0.0601514, 888.134]
         stats:   []
         reports: []
-        total:
-        index_stats_calc:
-        idx_load: [1.53757, ]
-        ref_load: [0.112886, ]
       ubuntu18_4_16_32:
         host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HDD
+      ubuntu18_8_16_32:
+        host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
+        total:
+        reads_stats_calc: [75.4094, 75.6198]
+        index_stats_calc: [4.05]
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - [0.626602, 0.0234840, 634.723]
+          - [0.505618, 0.0173236, 652.722]
+          - [0.474568, 0.0158996, 729.239]
+          - [0.715952, 0.0316894, ]
+          - [] # ExecutionTimedOut bug
+      ubuntu18_16_64_32:
+        host: AWS m5.4xlarge + Ubuntu 18 + 16 cpu + 64 GB RAM + 32 GB HD
+        # alignment cpu load: [ max,   min,  avr]
+        cpu_load_align:       [] 
+        total:  # sec - python trace from command sent to response received - with indexing
+        reads_stats_calc: [81.6487, 81.9596]
+        index_stats_calc: [ ]
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+      ubuntu18_32_128_32:
+        # ~10 min to setup the instance and run the test: 1.536 / 6 = 0.256 per test
+        host: AWS m5.8xlarge + Ubuntu 18 + 32 cpu + 128 GB RAM + 32 GB HD
+        # alignment cpu load: [ max,   min,  avr]
+        cpu_load_align:       [] 
+        total:  # sec - python trace from command sent to response received - with indexing
+        reads_stats_calc: []
+        index_stats_calc: [ ]
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
     memory:
       prior_idx_load: [  5100, ]
       idx_load:       [378400, ]
