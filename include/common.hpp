@@ -90,7 +90,7 @@ extern timeval t;
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
 /*! @brief Print function for verbose mode */
-#define DBG(verbose, format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
+//#define DBG(verbose, format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
 
 /*! @brief start color text red */
 #if defined(_WIN32)
@@ -180,6 +180,14 @@ static inline size_t get_memory() {
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__) << std::endl; \
+		std::cout << ss.str(); \
+	}
+
+// No Stamp, no endl
+#define INFO_NS(...) \
+	{\
+		std::stringstream ss; \
+		ss << fold_to_string(__VA_ARGS__); \
 		std::cout << ss.str(); \
 	}
 
