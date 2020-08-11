@@ -34,16 +34,13 @@
 #include <sys/sysctl.h>
 #endif
 
-/*! @brief Measure time using this variable. */
-//timeval t;
-
 // forward
 void about();
 //void help();
 std::string get_user_home(); // util.cpp
 std::string trim_leading_dashes(std::string const& name); // util.cpp
-std::string get_basename(const std::string &file); // util.cpp
-std::streampos filesize(const std::string &file); // util.cpp
+std::string get_basename(const std::string& file); // util.cpp
+std::streampos filesize(const std::string& file); // util.cpp
 
 Runopts::Runopts(int argc, char** argv, bool dryrun)
 {

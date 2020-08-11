@@ -1143,16 +1143,21 @@ int build_index(Runopts& opts)
 	std::string keys_file;
 	get_keys_file(keys_file, opts);
 
-	DBG(opts.is_verbose, "\n  Parameters summary: \n");
-	DBG(opts.is_verbose, "    K-mer size: %d\n", opts.seed_win_len + 1);
-	DBG(opts.is_verbose, "    K-mer interval: %d\n", opts.interval);
+	if (opts.is_verbose) {
+		INFO_NS(
+			"\n  Parameters summary: \n", 
+			"    K-mer size: ", opts.seed_win_len + 1, "\n", 
+			"    K-mer interval: ", opts.interval, "\n");
 
-	if (opts.max_pos == 0)
-		DBG(opts.is_verbose, "    Maximum positions to store per unique K-mer: all\n");
-	else
-		DBG(opts.is_verbose, "    Maximum positions to store per unique K-mer: %d\n", opts.max_pos);
+		if (opts.max_pos == 0) {
+			INFO_NS("    Maximum positions to store per unique K-mer: all\n");
+		}
+		else {
+			INFO_NS("    Maximum positions to store per unique K-mer: ", opts.max_pos, "\n");
+		}
 
-	DBG(opts.is_verbose, "\n  Total number of databases to index: %d\n", (int)opts.indexfiles.size());
+		INFO_NS("\n  Total number of databases to index: ", opts.indexfiles.size(), "\n\n");
+	}
 
 	// build index for each pair in indexfiles vector
 	// Split the index into smaller parts when 'opts.max_file_size' is exceeded
@@ -1182,12 +1187,7 @@ int build_index(Runopts& opts)
 			exit(EXIT_FAILURE);
 		}
 		else {
-			ss.str("");
-			ss << std::endl << STAMP
-				<< "Begin indexing file " << BLUE << idxpair.first << COLOFF
-				<< " of size: " << filesize
-				<< " under index name " << BLUE << idxpair.second << COLOFF << std::endl;
-			DBG(opts.is_verbose, ss.str().data());
+			INFO("Begin indexing file ", idxpair.first, " of size: ", filesize, " under index name ", idxpair.second);
 		}
 
 		// STEP 1 ************************************************************
@@ -1208,7 +1208,8 @@ int build_index(Runopts& opts)
 		uint64_t full_len = 0;
 		int nt = 0;
 
-		DBG(opts.is_verbose, "  Collecting nucleotide distribution statistics ..");
+		if (opts.is_verbose)
+			INFO_NS("\n  Collecting nucleotide distribution statistics ..");
 
 		TIME(start);
 		do
@@ -1223,11 +1224,8 @@ int build_index(Runopts& opts)
 			if (nt == '>') strs += 2;
 			else
 			{
-				ss.str("");
-				ss << STAMP
-					<< "Each read header of the database fasta file must begin with '>';" << std::endl
-					<< "  check sequence # " << strs;
-				ERR(ss.str());
+				ERR("Each read header of the database fasta file must begin with '>';\n",
+					"  check sequence # ", strs);
 				exit(EXIT_FAILURE);
 			}
 
@@ -1274,7 +1272,8 @@ int build_index(Runopts& opts)
 
 		TIME(end); // End collecting the nucleotide distribution statistics
 
-		DBG(opts.is_verbose, "  done  [%f sec]\n", (end - start));
+		if (opts.is_verbose)
+			INFO_NS("  done  [", (end - start), " sec]\n");
 
 		// set file pointer back to the beginning of file
 		rewind(fp);
@@ -1335,8 +1334,10 @@ int build_index(Runopts& opts)
 			// total size of index so far in bytes
 			index_size = 0;
 
-			DBG(opts.is_verbose, "\n  start index part # %d: \n", part_num);
-			DBG(opts.is_verbose, "    (1/3) building burst tries ..");
+			if (opts.is_verbose) {
+				INFO_NS("\n  start index part # ", part_num, ":\n");
+				INFO_NS("    (1/3) building burst tries ..");
+			}
 
 			TIME(start);
 
@@ -1553,9 +1554,9 @@ int build_index(Runopts& opts)
 			// no index can be created, all reference sequences are too large to fit alone into maximum memory
 			if (index_size == 0)
 			{
-				DBG(opts.is_verbose, "\n  %sERROR%s: no index was created, all of your sequences are "
-					"too large to be indexed with the current memory limit of %e Mbytes.\n",
-					RED, COLOFF, opts.max_file_size);
+				if (opts.is_verbose) 
+					ERR("\nno index was created, all of your sequences are too large to be indexed ",
+					"with the current memory limit of ", opts.max_file_size, " Mbytes.\n");
 				break;
 			}
 			// continue to build hash and positions tables
@@ -1563,17 +1564,20 @@ int build_index(Runopts& opts)
 
 			rewind(keys);
 
-			DBG(opts.is_verbose, " done  [%f sec]\n", (end - start));
+			if (opts.is_verbose)
+				INFO_NS(" done  [", (end - start), " sec]\n");
 
 			// 4. build MPHF on the unique 18-mers
-			DBG(opts.is_verbose, "    (2/3) building CMPH hash ..");
+			if (opts.is_verbose)
+				INFO_NS("    (2/3) building CMPH hash ..");
+
 			TIME(start);
 			cmph_t *hash = NULL;
 
 			FILE * keys_fd = keys;
 			if (keys_fd == NULL)
 			{
-				std::cerr << "File '"<< keys_file << "' not found" << std::endl;
+				ERR("File '", keys_file, "' not found");
 				exit(EXIT_FAILURE);
 			}
 			cmph_io_adapter_t *source = cmph_io_nlfile_adapter(keys_fd);
@@ -1589,20 +1593,20 @@ int build_index(Runopts& opts)
 
 			TIME(end);
 
-			DBG(opts.is_verbose, " done  [%f sec]\n", (end - start));
+			if (opts.is_verbose)
+				INFO_NS(" done  [", (end - start), " sec]\n");
 
 			int ret = remove(keys_file.c_str());
 			if (ret != 0)
 			{
-				ss.str("");
-				ss << STAMP << "Could not delete temporary file " << keys_file;
-				WARN(ss.str());
+				WARN("Could not delete temporary file ", keys_file);
 			}
 
 			// 5. add ids to burst trie
 			// 6. build the positions lookup table using MPHF
 
-			DBG(opts.is_verbose, "    (3/3) building position lookup tables ..");
+			if (opts.is_verbose)
+				INFO_NS("    (3/3) building position lookup tables ..");
 
 			// positions_tbl[kmer_id] will return a pointer to an array of pairs, each pair
 			// stores the sequence number and index on the sequence of the kmer_id 19-mer
@@ -1611,7 +1615,7 @@ int build_index(Runopts& opts)
 			positions_tbl = (kmer_origin*)malloc(number_elements * sizeof(kmer_origin));
 			if (positions_tbl == NULL)
 			{
-				std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for positions_tbl (main(), indexdb.cpp)" << std::endl;
+				ERR("could not allocate memory for positions_tbl (main(), indexdb.cpp)");
 				exit(EXIT_FAILURE);
 			}
 
@@ -1750,9 +1754,11 @@ int build_index(Runopts& opts)
 			} while (nt != EOF); // for all file     
 
 			TIME(end);
-			DBG(opts.is_verbose, " done [%f sec]\n", (end - start));
 
-			DBG(opts.is_verbose, "    total number of sequences in this part = %d\n", i);
+			if (opts.is_verbose) {
+				INFO_NS(" done [", (end - start), " sec]\n");
+				INFO_NS("    total number of sequences in this part = ", i, "\n");
+			}
 
 			// Destroy hash
 			cmph_destroy(hash);
@@ -1945,14 +1951,14 @@ int build_index(Runopts& opts)
 			std::ofstream oskmer(idx_file, std::ios::binary);
 			if (!oskmer.is_open())
 			{
-				ss.str("");
-				ss << STAMP << "Failed to open file: " << idx_file << " for writing. Error: " << strerror(errno);
-				ERR(ss.str());
+				ERR("Failed to open file: ", idx_file, " for writing. Error: ", strerror(errno));
 				exit(1);
 			}
 
-			DBG(opts.is_verbose, "      temporary file was here: %s\n", keys_file.data());
-			DBG(opts.is_verbose, "      writing kmer data to %s\n", idx_file.data());
+			if (opts.is_verbose) {
+				INFO_NS("      temporary file was here: ", keys_file.data(), "\n");
+				INFO_NS("      writing kmer data to ", idx_file.data(), "\n")
+			}
 
 			index_parts_stats thispart;
 			thispart.start_part = start_part;
@@ -1970,10 +1976,10 @@ int build_index(Runopts& opts)
 
 			// 2. mini-burst tries
 			// load 9-mer look-up table and mini-burst tries to /index/bursttrief.dat
-			ss.str("");
 			idx_file = idxpair.second + ".bursttrie_" + part_str + ".dat";
-			ss << std::endl << "      writing burst tries to " << idx_file << std::endl;
-			DBG(opts.is_verbose, ss.str().data());
+			if (opts.is_verbose) {
+				INFO_NS("      writing burst tries to ", idx_file, "\n");
+			}
 
 			load_index(lookup_table, (char*)idx_file.data(), opts);
 
@@ -1981,7 +1987,9 @@ int build_index(Runopts& opts)
 			idx_file = idxpair.second + ".pos_" + part_str + ".dat";
 			std::ofstream ospos(idx_file, std::ios::binary);
 
-			DBG(opts.is_verbose, "      writing position lookup table to %s\n", idx_file.data());
+			if (opts.is_verbose) {
+				INFO_NS("      writing position lookup table to ", idx_file.data(), "\n");
+			}
 
 			// number of unique 19-mers
 			ospos.write(reinterpret_cast<const char*>(&number_elements), sizeof(uint32_t));
@@ -2020,14 +2028,14 @@ int build_index(Runopts& opts)
 
 		if (index_size != 0)
 		{
-			DBG(opts.is_verbose, "      writing nucleotide distribution statistics to %s\n", (idxpair.second + ".stats").data());
+			if (opts.is_verbose) {
+				INFO_NS("      writing nucleotide distribution statistics to ", idxpair.second + ".stats\n");
+			}
 
 			std::ofstream stats(idxpair.second + ".stats", std::ios::binary);
 			if (!stats.good())
 			{
-				ss.str("");
-				ss << STAMP << "The file '" << idxpair.second + ".stats" << "' cannot be created: " << strerror(errno);
-				ERR(ss.str());
+				ERR("The file '", idxpair.second + ".stats", "' cannot be created: ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
@@ -2082,7 +2090,7 @@ int build_index(Runopts& opts)
 			}
 			stats.close();
 
-			DBG(opts.is_verbose, "    done.\n\n");
+			INFO_NS("  done.\n\n");
 		}
 
 		// Free map'd memory
