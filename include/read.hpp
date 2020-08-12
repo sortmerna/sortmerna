@@ -74,6 +74,7 @@ public:
 	// matching results
 	bool is_aligned; // all alignments have been found => stop searching
 	bool is_hit; // at least one alignment 'SW_score >= min_SW_score' has been found
+	bool is_new_hit; // indicates a new hit was found so the read has to be stored. Init to False before each index search. NO DB store.
 	bool is_id; // read passes ID
 	bool is_cov; // read passes SW + ID + COV
 	bool is_denovo; // pass SW & fail (%Cov & %ID)
@@ -82,11 +83,11 @@ public:
 	uint16_t max_SW_count; // count of alignments that have Max possible Smith-Waterman score for this read
 	int32_t num_alignments; // counter of alignments to keep for reporting
 	uint32_t hit_seeds; // count of read's seed k-mers that have DB matches.
-	int32_t best; // init with opts.min_lis, see 'this.init'. Don't DB store/restore (bug 51).
+	int32_t best; // init with opts.min_lis, see 'this.init'. NO DB store/restore (bug 51).
 
-	std::vector<id_win> id_win_hits; // [1] positions of kmer hits on the reference sequence in given index/part
-	alignment_struct2 alignment; // stored in DB
-	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix
+	std::vector<id_win> id_win_hits; // [1] positions of kmer hits on the reference sequence in given index/part. NO DB store.
+	alignment_struct2 alignment; // store in DB
+	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix  No DB store
 	// <---- END store in database
 
 public:

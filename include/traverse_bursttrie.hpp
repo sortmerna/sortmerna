@@ -68,7 +68,7 @@ struct id_win
 		}
 		else
 		{
-			ERR("ERROR in id_win.fromString: string size ", str.size(), " not equal to ", sizeof(id) + sizeof(win), " Cannot restore.");
+			ERR("string size ", str.size(), " not equal to ", sizeof(id) + sizeof(win), " Cannot restore.");
 			exit(1);
 		}
 	}
@@ -92,28 +92,26 @@ struct id_win
 		pattern = |------ [p_1] ------|------ [p_2] --....--|<br/>
 				  |------ trie -------|----- tail ----....--|<br/>
 
-	@param NodeElement* trie_t
-	@param uint32_t lev_t
-	@param unsigned char depth
-	@param MYBITSET *win_k1_ptr
-	@param MYBITSET *win_k1_full
-	@param bool &accept_zero_kmer,
-	@param vector< id_win > &id_hits,
-	@param uint32_t readn,
-	@param uint32_t win_num,
-	@param uint32_t partialwin
+	@param  NodeElement*     trie_t             root node to mini burst trie
+	@param  uint32_t         lev_t              initial Levenshtein automaton state
+	@param  unsigned char    depth              trie node depth
+	@param  MYBITSET*        win_k1_ptr         pointer to start of forward L/2-mer bitvector
+	@param  MYBITSET*        win_k1_full        pointer to start of structure storing all bitvectors
+	@param  bool&            accept_zero_kmer   if true, if a match is found during forward subsearch, then skip reverse subsearch
+	@param  vector<id_win>&  id_hits            vector storing IDs of all candidate L-mers (matching in mini burst trie)
+	@param  uint32_t         win_num            sliding window (seed) number on read
+	@param  uint32_t         partialwin
 	@return void
 */
 void traversetrie_align(
-	NodeElement *trie_t /**< root node to mini burst trie */,
-	uint32_t lev_t /**< initial Levenshtein automaton state */,
-	unsigned char depth /**< trie node depth */,
-	UCHAR *win_k1_ptr /**< pointer to start of forward L/2-mer bitvector */,
-	UCHAR *win_k1_full /**< pointer to start of structure storing all bitvectors */,
-	bool &accept_zero_kmer /**< if true, if a match is found during forward subsearch, then skip reverse subsearch */,
-	std::vector< id_win > &id_hits /**< vector storing IDs of all candidate L-mers (matching in mini burst trie) */,
-	//int64_t readn /**< read number */,
-	uint32_t win_num /**< sliding window (seed) number on read */,
-	uint32_t partialwin, /**< */
+	NodeElement * trie_t,
+	uint32_t lev_t,
+	unsigned char depth,
+	UCHAR * win_k1_ptr,
+	UCHAR * win_k1_full,
+	bool & accept_zero_kmer,
+	std::vector<id_win> & id_hits,
+	uint32_t win_num,
+	uint32_t partialwin,
 	Runopts & opts
 );

@@ -101,6 +101,7 @@ Read::Read()
 	reversed(false),
 	is_aligned(false),
 	is_hit(false),
+	is_new_hit(false),
 	is_id(false),
 	is_cov(false),
 	is_denovo(true),
@@ -158,6 +159,7 @@ Read::Read(const Read & that)
 	lastPart = that.lastPart;
 	is_aligned = that.is_aligned;
 	is_hit = that.is_hit;
+	is_new_hit = that.is_new_hit;
 	is_id = that.is_id;
 	is_cov = that.is_cov;
 	is_denovo = that.is_denovo;
@@ -197,6 +199,7 @@ Read & Read::operator=(const Read& that)
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
 	is_hit = that.is_hit;
+	is_new_hit = that.is_new_hit;
 	is_id = that.is_id;
 	is_cov = that.is_cov;
 	num_hits = that.num_hits;
@@ -286,6 +289,7 @@ void Read::clear()
 	lastPart = 0;
 	is_aligned = false;
 	is_hit = false;
+	is_new_hit = false;
 	is_denovo = true;
 	null_align_output = false;
 	num_hits = 0;

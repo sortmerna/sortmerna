@@ -32,7 +32,7 @@ void Processor::run()
 {
 	unsigned num_all = 0; // all reads this processor sees
 	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
-	unsigned num_hit = 0; // count of reads with read.hit = true
+	unsigned num_hit = 0; // count of reads with read.hit = true found by a single thread - just for logging
 	std::string readstr;
 	
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
@@ -87,7 +87,8 @@ void Processor::run()
 			if (read.isValid && !read.isEmpty)
 			{
 				if (read.is_hit) ++num_hit;
-				kvdb.put(read.id, read.toBinString());
+				if (read.is_new_hit)
+					kvdb.put(read.id, read.toBinString());
 			}
 
 			readstr.resize(0);

@@ -114,7 +114,7 @@ void compute_lis_alignment
 	)
 {
 	// true if SW alignment between the read and a candidate reference meets the threshold
-	bool aligned = false;
+	bool is_aligned = false;
 
 	map<uint32_t, uint32_t> kmer_count_map;
 	//    |         |_number of k-mer hits on the reference
@@ -174,7 +174,7 @@ void compute_lis_alignment
 		// update number of reference sequences remaining to check
 		// only decrement read.best if the current ref sequence to check
 		// has a lower seed count than the previous one
-		if (aligned && opts.min_lis > 0 && k > 0 && max_occur < kmer_count_vec[k - 1].second )
+		if (is_aligned && opts.min_lis > 0 && k > 0 && max_occur < kmer_count_vec[k - 1].second )
 		{
 			--read.best;
 			if (read.best < 1) break;
@@ -244,8 +244,8 @@ void compute_lis_alignment
 			// every sub-LIS of a window if an alignment reaching threshold has already been made. It assumes
 			// that every sub-LIS yields the same alignment score, which is true for 99.99% of cases.
 #ifndef HEURISTIC1_OFF
-			if (!push && aligned) goto pop;
-			else aligned = false;
+			if (!push && is_aligned) goto pop;
+			else is_aligned = false;
 #endif
 #ifdef HEURISTIC1_OFF
 			aligned = false;
@@ -386,10 +386,8 @@ void compute_lis_alignment
 							init_destroy(&profile);
 
 						// check alignment passes the threshold
-						if ( result != 0 && result->score1 > refstats.minimal_score[index.index_num] )
-								aligned = true;
-
-						if (aligned)
+						is_aligned = (result != 0 && result->score1 > refstats.minimal_score[index.index_num]);
+						if (is_aligned)
 						{
 							++read.num_hits;
 							if (result->score1 == max_SW_score) 
@@ -439,6 +437,7 @@ void compute_lis_alignment
 							if (opts.num_alignments == 0 || !opts.is_best || (opts.is_best && read.alignment.alignv.size() < opts.num_alignments))
 							{
 								read.alignment.alignv.emplace_back(alignment);
+								read.is_new_hit = true; // flag to store in DB
 							}
 							else if ( opts.is_best 
 									&& read.alignment.alignv.size() == opts.num_alignments 
@@ -456,6 +455,7 @@ void compute_lis_alignment
 
 									// replace the old smallest scored alignment with the new one
 									read.alignment.alignv[min_score_index] = alignment;
+									read.is_new_hit = true; // flag to store in DB
 
 									// if new_hit > max_hit: the old min_hit_idx becomes the new max_hit_idx
 									// only do if num_alignments > 1 i.e. max_idx != min_idx

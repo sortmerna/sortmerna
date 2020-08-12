@@ -89,9 +89,6 @@ extern timeval t;
 /*! @brief Macro for timing */
 #define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
 
-/*! @brief Print function for verbose mode */
-//#define DBG(verbose, format, ...) do {if (verbose) fprintf(stdout, format, ##__VA_ARGS__);} while(0)
-
 /*! @brief start color text red */
 #if defined(_WIN32)
 #  define RED    ""
@@ -198,7 +195,6 @@ static inline size_t get_memory() {
 		std::cout << ss.str();\
 	}
 
-//#define WARN(MSG) std::cerr << std::endl << YELLOW << "WARNING" << COLOFF << ": " << MSG << std::endl;
 #define WARN(...) \
 	{\
 		std::stringstream ss; \
@@ -206,7 +202,6 @@ static inline size_t get_memory() {
 		std::cout << ss.str();\
 	}
 
-//#define ERR(MSG) std::cerr << std::endl << RED << "ERROR" << COLOFF << ": " << MSG << std::endl;
 #define ERR(...) \
 	{\
 		std::stringstream ss; \
