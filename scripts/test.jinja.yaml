@@ -1686,26 +1686,64 @@ t42:
     ubuntu18_8_16_32:
       host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
       notes: |
-        a01_data/logs/sortmerna/aws_ubuntu18_8_16_smr_t42_20200811_1319.log
+        a01_data/logs/sortmerna/
+          aws_ubuntu18_8_16_smr_t42_20200811_1319.log
+          aws_ubuntu18_8_16_smr_t42_20200812_1224.log
       total: 2112.456 # sec ~35min - 1.5 times faster than Win due the higher memory usage
       reads_stats_calc: [15.209, 15.2475]
       index_stats_calc: [4.13]
       align:
         # [ load idx, load refs, align   ] # sec
-        - [0.6063060, 0.023527600, 127.800]
-        - [0.5058690, 0.017446900, 129.218]
-        - [0.4738500, 0.016018800, 145.244]
-        - [0.4738500, 0.016018800, 145.244]
-        - [0.7163300, 0.031674400, 156.436]
-        - [0.0989179, 0.000968392, 85.0219] # ExecutionTimedOut bug
-        - [0.2071560, 0.005402960, 95.7626]
-        - [0.2750360, 0.030034000, 107.765]
-        - [0.1001070, 0.006940960, 80.1587]
-      stats:   []
+        - [0.6063, 0.0235, 127.800] # slow because All reads were stored to DB. See results after the fix below.
+        - [0.5058, 0.0174, 129.218]
+        - [0.4738, 0.0160, 145.244]
+        - [0.7163, 0.0316, 156.436]
+        - [0.0989, 0.0009, 85.0219] # ExecutionTimedOut bug
+        - [0.2071, 0.0054, 95.7626]
+        - [0.2750, 0.0300, 107.765]
+        - [0.1001, 0.0069, 80.1587]
+        - [2.984,  0.132,  927.406] # Total: 15.51min
+        # aws_ubuntu18_8_16_smr_t42_20200812_1224.log  storing only reads with new alignments  20200812
+        - [0.6039, 0.0288, 94.5576] # 25% better
+        - [0.4850, 0.0220, 90.1960] # 30%
+        - [0.4534, 0.0205, 104.777] # 28%
+        - [0.6907, 0.0380, 120.065] # 23%
+        - [0.0942, 0.0012, 50.7922] # 41%
+        - [0.1971, 0.0066, 52.7791] # 45%
+        - [0.2634, 0.0325, 59.6349] # 47%
+        - [0.0965, 0.0074, 50.4277] # 38%
+        - [2.885,  0.157,  623.230] # Total: 10.4min 33% better
+      stats:
+        - [0.0236, 38.732]
+        - [0.0262, 38.744]
+        - [0.0206, 38.770]
+        - [0.0327, 38.729]
+        - [0.0012, 38.701]
+        - [0.0067, 38.771]
+        - [0.0313, 38.736]
+        - [0.0075, 38.724]
+        - [0.1498, 309.907] # Total: 5.2min
       reports: []
     ubuntu18_16_32_32:
       host: AWS c5.4xlarge + Ubuntu 18 + 16 cpu + 32 GB RAM + 32 GB HDD
-
+      notes: |
+        a01_data/logs/sortmerna/
+          aws_ubuntu18_16_32_smr_t42_20200812_1441.log
+        Using 16 threads almost makes no sense. Compared to 8 threads the speed gain is minimal.
+        The single reader is not fast enough to supply the reads, so the threads are idling.
+      total:  # sec 
+      reads_stats_calc: [15.25, 15.29]
+      index_stats_calc: [4.42]
+      align:
+        # [ load idx, load refs, align   ] # sec
+        - [0.64, 0.030, 56.25]
+        - [0.51, 0.023, 55.70]
+        - [0.48, 0.022, 60.85]
+        - [0.73, 0.040, 69.54]
+        - [0.10, 0.001, 52.61]
+        - [0.21, 0.007, 53.17]
+        - [0.28, 0.033, 54.36]
+        - [0.10, 0.007, 52.17]
 t43:
   name: issue 231 8x50M
   note: stress test - 8 reference databases + 50M reads

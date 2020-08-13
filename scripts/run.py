@@ -846,6 +846,7 @@ def t17(datad, ret={}, **kwarg):
 if __name__ == "__main__":
     '''
     python scripts/run.py --name t0 [--capture] [--env scripts/env_non_git.yaml] [--validate-only]
+    python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
     python scripts/run.py --name t16 --env /home/xx/env.yaml
     python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
     '''

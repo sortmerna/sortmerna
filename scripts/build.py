@@ -600,7 +600,8 @@ def concurrentqueue_build(cfg={}):
 
 if __name__ == "__main__":
     '''
-    python scripts/build.py --name sortmerna --envn WIN
+    python scripts/build.py --name sortmerna [--envn WIN]
+    python scripts/build.py --name sortmerna --envn LNX_VBox_Ubuntu_1804
     python scripts/build.py --name cmake --envn WIN [--env scripts/env_non_git.yaml]
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
