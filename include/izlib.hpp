@@ -16,11 +16,11 @@
 #define   RL_END 1
 #define   RL_ERR -1
 
-class Gzip
+class Izlib
 {
 public:
-	Gzip(bool gzipped);
-	//~Gzip();
+	Izlib(bool gzipped);
+	//~Izlib();
 
 	void init();
 	int getline(std::ifstream & ifs, std::string & line);

@@ -16,7 +16,7 @@
 #include <locale> // std::isspace
 
 #include "readsfile.hpp"
-#include "gzip.hpp"
+#include "izlib.hpp"
 
 Readsfile::Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz)
 	:
@@ -27,8 +27,8 @@ Readsfile::Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles,
 	is_next_fwd(true),
 	readfiles(readfiles),
 	readQueue(readQueue),
-	gzip_fwd(is_gz),
-	gzip_rev(is_gz)
+	izlib_fwd(is_gz),
+	izlib_rev(is_gz)
 {} // ~Readsfile::Readsfile
 
 //Readsfile::~Readsfile() {}
@@ -57,8 +57,8 @@ void Readsfile::run()
 	}
 
 	// without this getting Z_STREAM_ERROR even though init is called at construction time
-	gzip_fwd.init();
-	gzip_rev.init();
+	izlib_fwd.init();
+	izlib_rev.init();
 
 	// loop until EOF - get reads - push on queue
 	for (;;)
@@ -205,7 +205,7 @@ std::string Readsfile::nextfwd(std::ifstream& ifs) {
 
 		// read a line
 		if (!state_fwd.is_done)
-			stat = gzip_fwd.getline(ifs, line);
+			stat = izlib_fwd.getline(ifs, line);
 
 		// EOF reached - return last read
 		if (stat == RL_END)
@@ -311,7 +311,7 @@ std::string Readsfile::nextrev(std::ifstream& ifs) {
 
 		// read a line
 		if (!state_rev.is_done)
-			stat = gzip_rev.getline(ifs, line);
+			stat = izlib_rev.getline(ifs, line);
 
 		// EOF reached - return last read
 		if (stat == RL_END)

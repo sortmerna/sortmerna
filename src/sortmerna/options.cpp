@@ -13,7 +13,7 @@
 #include "build_version.h"
 #include "options.hpp"
 #include "common.hpp"
-#include "gzip.hpp"
+#include "izlib.hpp"
 #include "kvdb.hpp"
 
  // standard
@@ -118,8 +118,8 @@ void Runopts::opt_reads(const std::string &file)
 	int stat = -1;
 
 	if (has_gz_ext) {
-		Gzip gzip(true);
-		stat = gzip.getline(ifs, line);
+		Izlib izlib(true);
+		stat = izlib.getline(ifs, line);
 		if (RL_OK == stat)
 		{
 			is_gz = true;
@@ -127,8 +127,8 @@ void Runopts::opt_reads(const std::string &file)
 	} // ~Gzip
 	else
 	{
-		Gzip gzip(false);
-		stat = gzip.getline(ifs, line);
+		Izlib izlib(false);
+		stat = izlib.getline(ifs, line);
 		if (RL_OK == stat) {
 			is_gz = false;
 		}
@@ -138,8 +138,8 @@ void Runopts::opt_reads(const std::string &file)
 	if (RL_OK != stat && !has_gz_ext)
 	{
 		INFO("Trying to read ", file, " as gzipped even though it has no '.gz' extension.");
-		Gzip gzip(true);
-		stat = gzip.getline(ifs, line);
+		Izlib izlib(true);
+		stat = izlib.getline(ifs, line);
 		if (RL_OK == stat) {
 			is_gz = true;
 		}

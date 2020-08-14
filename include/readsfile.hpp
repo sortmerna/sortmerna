@@ -12,7 +12,7 @@
 #include "readsqueue.hpp"
 #include "kvdb.hpp"
 #include "options.hpp"
-#include "gzip.hpp"
+#include "izlib.hpp"
 
  // forward
 class Read;
@@ -61,8 +61,8 @@ private:
 	ReadsQueue& readQueue;
 	Readstate state_fwd;
 	Readstate state_rev;
-	Gzip gzip_fwd;
-	Gzip gzip_rev;
+	Izlib izlib_fwd;
+	Izlib izlib_rev;
 };
 
 // ~reader.hpp

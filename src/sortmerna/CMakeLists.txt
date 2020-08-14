@@ -100,7 +100,7 @@ set(SMR_SRCS
 	bitvector.cpp
 	callbacks.cpp
 	cmd.cpp
-	gzip.cpp
+	izlib.cpp
 	index.cpp
 	indexdb.cpp
 	kseq_load.cpp

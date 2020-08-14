@@ -25,7 +25,7 @@
 // SMR
 #include "readstats.hpp"
 #include "kvdb.hpp"
-#include "gzip.hpp"
+#include "izlib.hpp"
 
 // forward
 std::string string_hash(const std::string &val); // util.cpp
@@ -100,7 +100,7 @@ void Readstats::calculate(Runopts &opts)
 			bool isFastq = false;
 			bool isFasta = false;
 			uint64_t tcount = 0; // count of lines in a file
-			Gzip gzip(opts.is_gz);
+			Izlib izlib(opts.is_gz);
 
 			auto t = std::chrono::high_resolution_clock::now();
 
@@ -108,7 +108,7 @@ void Readstats::calculate(Runopts &opts)
 
 			for (int count = 0, stat = 0; ; ++count) // count of lines in a Single record
 			{
-				stat = gzip.getline(ifs, line);
+				stat = izlib.getline(ifs, line);
 				++tcount;
 
 				if (stat == RL_END)

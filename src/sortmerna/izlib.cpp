@@ -11,10 +11,10 @@
 #include <cassert>
 #include <algorithm>
 
-#include "gzip.hpp"
+#include "izlib.hpp"
 
 
-Gzip::Gzip(bool gzipped) 
+Izlib::Izlib(bool gzipped)
 	: 
 	gzipped(gzipped), 
 	line_start(0)
@@ -24,7 +24,7 @@ Gzip::Gzip(bool gzipped)
 }
 
 
-//Gzip::~Gzip() {
+//Izlib::~Izlib() {
 //	line_start = 0;
 //	strm.zalloc = Z_NULL;
 //	strm.zfree = Z_NULL;
@@ -37,7 +37,7 @@ Gzip::Gzip(bool gzipped)
 /*
  * Called from constructor
  */
-void Gzip::init()
+void Izlib::init()
 {
 	strm.zalloc = Z_NULL;
 	strm.zfree = Z_NULL;
@@ -65,7 +65,7 @@ void Gzip::init()
  *       std::getline doesn't return error if the stream is not 
  *       readable/closed. It returns the same input it was passed.
  */
-int Gzip::getline(std::ifstream& ifs, std::string& line)
+int Izlib::getline(std::ifstream& ifs, std::string& line)
 {
 	char* line_end = 0;
 	int ret = RL_OK;
@@ -79,7 +79,7 @@ int Gzip::getline(std::ifstream& ifs, std::string& line)
 		{
 			if (!line_start || !line_start[0])
 			{
-				ret = Gzip::inflatez(ifs); // inflate
+				ret = Izlib::inflatez(ifs); // inflate
 
 				if (ret == Z_STREAM_END && strm.avail_out == OUT_SIZE) 
 					return RL_END;
@@ -131,12 +131,12 @@ int Gzip::getline(std::ifstream& ifs, std::string& line)
 	}
 
 	return RL_OK;
-} // ~Gzip::getline
+} // ~Izlib::getline
 
 /*
  * Called from getline
  */
-int Gzip::inflatez(std::ifstream & ifs)
+int Izlib::inflatez(std::ifstream & ifs)
 {
 	int ret;
 	std::stringstream ss;
@@ -203,4 +203,4 @@ int Gzip::inflatez(std::ifstream & ifs)
 	} // for(;;)
 
 	return ret;// == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
-} // ~Gzip::inflatez
+} // ~Izlib::inflatez
