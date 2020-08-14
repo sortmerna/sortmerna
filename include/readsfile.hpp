@@ -33,9 +33,9 @@ struct Readstate {
 /* 
  * reads Reads file and, generates Read objects
  */
-class Reader {
+class Readsfile {
 public:
-	Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz);
+	Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz);
 
 	void operator()() { run(); }
 	void run();

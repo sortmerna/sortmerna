@@ -22,7 +22,7 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
-#include "reader.hpp"
+#include "readsfile.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);
@@ -211,7 +211,7 @@ void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDa
 				starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 				// start Reader
-				tpool.addJob(Reader(read_queue, opts.readfiles, opts.is_gz));
+				tpool.addJob(Readsfile(read_queue, opts.readfiles, opts.is_gz));
 
 				// start Processor
 				tpool.addJob(PostProcessor("postproc_1", read_queue, opts, refs, readstats, refstats, kvdb, computeStats));

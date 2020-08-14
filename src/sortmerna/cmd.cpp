@@ -21,7 +21,7 @@
 #include "refstats.hpp"
 #include "references.hpp"
 #include "index.hpp"
-#include "reader.hpp"
+#include "readsfile.hpp"
 
 const std::string OPT_DB   = "--db";
 //const std::string OPT_IDX  = "--idx";
@@ -106,7 +106,7 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 		else
 		{
 			read.id = readid;
-			bool isok = Reader::loadReadByIdx(read);
+			bool isok = Readsfile::loadReadByIdx(read);
 			ss << "Read load OK " << isok << std::endl;
 		}
 	}
@@ -150,7 +150,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	// find half-kmer prefix/suffix matches
 	//
 	read.id = readid;
-	isok = Reader::loadReadByIdx(read);
+	isok = Readsfile::loadReadByIdx(read);
 	if (read.sequence.size() > 0 && read.isequence.size() == 0)
 		read.seqToIntStr();
 	index.load(std::stoi(idxval), std::stoi(partval), opts.indexfiles, refstats);

@@ -6,7 +6,7 @@
 #include <vector>
 #include <iomanip> // setprecision
 
-#include "reader.hpp"
+#include "readsfile.hpp"
 #include "ThreadPool.hpp"
 #include "common.hpp"
 #include "index.hpp"
@@ -96,7 +96,7 @@ void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_rea
 	auto start = std::chrono::high_resolution_clock::now();
 
 	// Push thread - Reader
-	tpool.addJob(Reader(read_queue, readfiles, true));
+	tpool.addJob(Readsfile(read_queue, readfiles, true));
 	// Pop thread
 	tpool.addJob([&]() {
 		std::string readstr;

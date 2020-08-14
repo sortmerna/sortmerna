@@ -15,10 +15,10 @@
 #include <iomanip> // std::precision
 #include <locale> // std::isspace
 
-#include "reader.hpp"
+#include "readsfile.hpp"
 #include "gzip.hpp"
 
-Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz)
+Readsfile::Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz)
 	:
 	is_done(false),
 	count_all(0),
@@ -29,14 +29,14 @@ Reader::Reader(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool 
 	readQueue(readQueue),
 	gzip_fwd(is_gz),
 	gzip_rev(is_gz)
-{} // ~Reader::Reader
+{} // ~Readsfile::Readsfile
 
-//Reader::~Reader() {}
+//Readsfile::~Readsfile() {}
 
 /* 
  * thread runnable 
  */
-void Reader::run()
+void Readsfile::run()
 {
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Reader::run thread ", std::this_thread::get_id(), " started");
@@ -86,9 +86,9 @@ void Reader::run()
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 	INFO("Reader::run thread ", std::this_thread::get_id(), " done. Reads count: ", count_all, " Runtime sec: ", elapsed.count());
-} // ~Reader::run
+} // ~Readsfile::run
 
-bool Reader::loadReadByIdx(Read & read)
+bool Readsfile::loadReadByIdx(Read & read)
 {
 	std::stringstream ss;
 	bool isok = false;
@@ -170,14 +170,14 @@ bool Reader::loadReadByIdx(Read & read)
 #endif
 	return isok;
 
-} // ~Reader::loadRead
+} // ~Readsfile::loadRead
 
-bool Reader::loadReadById(Read& read)
+bool Readsfile::loadReadById(Read& read)
 {
 	return true;
-} // ~Reader::loadReadById
+} // ~Readsfile::loadReadById
 
-std::string Reader::nextread(std::ifstream& ifs) {
+std::string Readsfile::nextread(std::ifstream& ifs) {
 	std::string line;
 	return line;
 }
@@ -186,7 +186,7 @@ std::string Reader::nextread(std::ifstream& ifs) {
  * @param array of read files - one or two (if paired) files
  * @return string with format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
  */
-std::string Reader::nextfwd(std::ifstream& ifs) {
+std::string Readsfile::nextfwd(std::ifstream& ifs) {
 
 	std::string line;
 	std::stringstream read; // an empty read
@@ -285,14 +285,14 @@ std::string Reader::nextfwd(std::ifstream& ifs) {
 	++state_fwd.read_count;
 
 	return read.str();
-} // ~Reader::nextfwd
+} // ~Readsfile::nextfwd
 
 /* 
  * TODO: identical to nextfwd.
  * dereferencing Gzip always causes errors. 
  * Cannot store Gzip in an array and cannot pass it by reference (may be can).
  */
-std::string Reader::nextrev(std::ifstream& ifs) {
+std::string Readsfile::nextrev(std::ifstream& ifs) {
 
 	std::string line;
 	std::stringstream read; // an empty read
@@ -391,14 +391,14 @@ std::string Reader::nextrev(std::ifstream& ifs) {
 	++state_rev.read_count;
 
 	return read.str();
-} // ~Reader::nextrev
+} // ~Readsfile::nextrev
 
 
 /**
  * get a next read sequence from the reads file
  * @return true if record exists, else false
  */
-bool Reader::nextread(std::string readsfile, std::string &seq)
+bool Readsfile::nextread(std::string readsfile, std::string &seq)
 {
 	bool has_seq = false;
 	seq = ""; // ensure empty
@@ -478,18 +478,18 @@ bool Reader::nextread(std::string readsfile, std::string &seq)
 	has_seq = seq.size() > 0 ? true : false;
 #endif
 	return has_seq;
-} // ~Reader::nextread
+} // ~Readsfile::nextread
 
 /**
  * test if there is a next read in the reads file
  */
-bool Reader::hasnext(std::ifstream& ifs)
+bool Readsfile::hasnext(std::ifstream& ifs)
 {
 	bool is_next = false;
 	return is_next;
-} // ~Reader::hasnext
+} // ~Readsfile::hasnext
 
-void Reader::reset()
+void Readsfile::reset()
 {
 	is_done = false;
 	count_all = 0;

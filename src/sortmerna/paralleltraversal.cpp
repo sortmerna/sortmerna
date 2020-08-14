@@ -51,7 +51,7 @@
 #include "references.hpp"
 #include "kvdb.hpp"
 #include "processor.hpp"
-#include "reader.hpp"
+#include "readsfile.hpp"
 #include "output.hpp"
 #include "readsqueue.hpp"
 
@@ -359,8 +359,8 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 
 			starts = std::chrono::high_resolution_clock::now();
 
-			// add Reader job
-			tpool.addJob(Reader(read_queue, opts.readfiles, opts.is_gz));
+			// add Readsfile job
+			tpool.addJob(Readsfile(read_queue, opts.readfiles, opts.is_gz));
 
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
