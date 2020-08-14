@@ -42,6 +42,7 @@
 #include "kvdb.hpp"
 #include "index.hpp"
 #include "indexdb.hpp"
+#include "readsfile.hpp"
 
 namespace fs = std::filesystem;
 
@@ -64,6 +65,7 @@ int main(int argc, char** argv)
 
 	Index index(opts); // reference index DB
 	KeyValueDatabase kvdb(opts.kvdbdir.string());
+	Readsfile readsf(opts.readfiles, opts.is_gz);
 
 	if (opts.is_cmd) {
 		CmdSession cmd;
@@ -73,6 +75,8 @@ int main(int argc, char** argv)
 	{
 		Readstats readstats(opts, kvdb);
 		Output output(opts, readstats);
+
+		readsf.split(2, "");
 
 		switch (opts.alirep)
 		{

@@ -18,7 +18,7 @@
 #include "readsfile.hpp"
 #include "izlib.hpp"
 
-Readsfile::Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz)
+Readsfile::Readsfile(std::vector<std::string>& readfiles, bool is_gz)
 	:
 	is_done(false),
 	count_all(0),
@@ -26,7 +26,6 @@ Readsfile::Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles,
 	is_two_files(readfiles.size() > 1),
 	is_next_fwd(true),
 	readfiles(readfiles),
-	readQueue(readQueue),
 	izlib_fwd(is_gz),
 	izlib_rev(is_gz)
 {} // ~Readsfile::Readsfile
@@ -56,7 +55,7 @@ void Readsfile::run()
 		}
 	}
 
-	// without this getting Z_STREAM_ERROR even though init is called at construction time
+	// bug 114 - Z_STREAM_ERROR even though init is called at construction time
 	izlib_fwd.init();
 	izlib_rev.init();
 
@@ -64,14 +63,14 @@ void Readsfile::run()
 	for (;;)
 	{
 		if (is_next_fwd) {
-			if (readQueue.push(nextfwd(fs_fwd))) {
+			if (nextfwd(fs_fwd).size() > 0) {
 				++count_all;
 				if (is_two_files)
 					is_next_fwd = false;
 			}
 		}
 		else {
-			if (readQueue.push(nextrev(fs_rev))) {
+			if (nextrev(fs_rev).size() > 0) {
 				++count_all;
 				is_next_fwd = true;
 			}
@@ -177,7 +176,7 @@ bool Readsfile::loadReadById(Read& read)
 	return true;
 } // ~Readsfile::loadReadById
 
-std::string Readsfile::nextread(std::ifstream& ifs) {
+std::string Readsfile::next(std::ifstream& ifs) {
 	std::string line;
 	return line;
 }
@@ -292,8 +291,8 @@ std::string Readsfile::nextfwd(std::ifstream& ifs) {
  * dereferencing Gzip always causes errors. 
  * Cannot store Gzip in an array and cannot pass it by reference (may be can).
  */
-std::string Readsfile::nextrev(std::ifstream& ifs) {
-
+std::string Readsfile::nextrev(std::ifstream& ifs) 
+{
 	std::string line;
 	std::stringstream read; // an empty read
 	auto stat = state_rev.last_stat;
@@ -395,90 +394,123 @@ std::string Readsfile::nextrev(std::ifstream& ifs) {
 
 
 /**
- * get a next read sequence from the reads file
- * @return true if record exists, else false
- */
-bool Readsfile::nextread(std::string readsfile, std::string &seq)
-{
-	bool has_seq = false;
-	seq = ""; // ensure empty
-	std::string line;
-#if 0
-	// read lines from the reads file and create Read object
-	for (int count = last_count, stat = last_stat; !is_done; ++count) // count lines in a single record/read
-	{
-		stat = gzip.getline(ifs, line);
+   get a next read sequence from a reads file
 
-		if (stat == RL_ERR)
+   @param  fstreams IN     vector of reads streams, one entry per a reads file
+   @param  vzlib    IN     vector of Izlib interfaces, one entry per a reads file
+   @param  vstate   IN     vector of reading states, one per a reads file
+   @param  inext    IN/OUT index of the stream to read. Automatically toggled.
+   @param  seq      OUT    read sequence
+   @return true if record exists, else false
+ */
+bool Readsfile::next(std::vector<std::ifstream>& fstreams, 
+                     std::vector<Izlib>& vzlib, 
+                     std::vector<Readstate>& vstate, 
+                     int& inext, 
+                     std::string& seq )
+{
+	std::string line;
+	std::stringstream read; // an empty read
+	auto stat = vstate[inext].last_stat;
+
+	// read lines from the reads file and extract a single read
+	for (auto count = vstate[inext].last_count; !vstate[inext].is_done; ++count) // count lines in a single record/read
+	{
+		if (vstate[inext].last_header.size() > 0)
 		{
-			std::cerr << STAMP << "ERROR reading from file: [" << readsfile << "]. Exiting..." << std::endl;
-			exit(1);
+			read << inext << '_' << vstate[inext].read_count << '\n';
+			read << vstate[inext].last_header << '\n';
+			vstate[inext].last_header = "";
 		}
 
+		// read a line
+		if (!vstate[inext].is_done)
+			stat = izlib_rev.getline(fstreams[inext], line);
+
+		// EOF reached - return last read
 		if (stat == RL_END)
 		{
-			// the last Read processed
-			if (!seq.empty())
-			{
-				++read_count;
-				is_done = true;
-				reset();
-			}
+			vstate[inext].is_done = true;
+			auto FR = inext == 0 ? "FWD" : "REF";
+			INFO("EOF ", FR, " reached. Total reads: ", ++vstate[inext].read_count);
 			break;
 		}
 
-		// skip empty lines
+		if (stat == RL_ERR)
+		{
+			auto FR = inext == 0 ? "FWD" : "REF";
+			ERR("reading from ", FR, " file. Exiting...");
+			exit(1);
+		}
+
 		if (line.empty())
 		{
 			--count;
 			continue;
 		}
 
-		++line_count; // total lines read so far
+		++vstate[inext].line_count;
 
-		// left trim space and '>' or '@'
+		// right-trim whitespace in place (removes '\r' too)
 		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 
-		if (line_count == 1)
+		// the first line in file
+		if (vstate[inext].line_count == 1)
 		{
-			isFastq = (line[0] == FASTQ_HEADER_START);
-			isFasta = (line[0] == FASTA_HEADER_START);
+			vstate[inext].isFastq = (line[0] == FASTQ_HEADER_START);
+			vstate[inext].isFasta = (line[0] == FASTA_HEADER_START);
 		}
 
-		if (count == 4 && isFastq)
+		if (count == 4 && vstate[inext].isFastq)
 		{
 			count = 0;
 		}
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((isFasta && line[0] == FASTA_HEADER_START) || (isFastq && count == 0)) // header reached
+		if ((vstate[inext].isFasta && line[0] == FASTA_HEADER_START) || (vstate[inext].isFastq && count == 0)) // header line reached
 		{
-			if (!seq.empty())
+			if (vstate[inext].line_count == 1)
 			{
-				++read_count;
-				last_count = 1;
-				last_stat = stat;
+				read << inext << '_' << vstate[inext].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << line << '\n'; // the very first header
+				count = 0;
+			}
+			else
+			{
+				// read is ready - return
+				vstate[inext].last_header = line;
+				vstate[inext].last_count = 1;
+				vstate[inext].last_stat = stat;
 				break;
 			}
-
-			count = 0; // FASTA record start
 		} // ~if header line
 		else
-		{
-			if (isFastq && (count == 2 || count == 3))
+		{ // add sequence -->
+			if (vstate[inext].isFastq)
 			{
-				continue; // skip + and quality line in Fastq
+				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
+					continue;
+				if (count == 3)
+				{
+					read << line;
+					continue;
+				}
+				read << line << '\n'; // FQ sequence
 			}
-
-			seq += line; // FASTA multi-line sequence or FASTQ sequence
+			else {
+				read << line; // FASTA sequence possibly multiline
+			}
 		}
 	} // ~for getline
 
-	has_seq = seq.size() > 0 ? true : false;
-#endif
-	return has_seq;
-} // ~Readsfile::nextread
+	++vstate[inext].read_count;
+
+	if (fstreams.size() > 1)
+		inext = inext == 0 ? 1 : 0; // toggle the stream index
+
+	return read.str().size() > 0;
+} // ~Readsfile::next
 
 /**
  * test if there is a next read in the reads file
@@ -495,3 +527,51 @@ void Readsfile::reset()
 	count_all = 0;
 	is_next_fwd = true;
 }
+
+/*
+ input options:
+   2 paired file
+   1 paired file
+   1 non-paired file
+*/
+bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
+{
+	auto starts = std::chrono::high_resolution_clock::now();
+	INFO("start splitting");
+
+	std::vector<std::ifstream> fstreams(readfiles.size());
+	for (int i = 0; i < readfiles.size(); ++i) {
+		fstreams[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+		if (!fstreams[i].is_open()) {
+			std::cerr << STAMP << "Failed to open file " << readfiles[i] << std::endl;
+			exit(1);
+		}
+	}
+
+	std::vector<Izlib> vzlib(2, Izlib(true));
+	std::vector<Readstate> vstate(2);
+	int inext = 0; // fwd
+	std::string readstr;
+
+	// loop until EOF - get reads - push on queue
+	for (;;)
+	{
+		if (next(fstreams, vzlib, vstate, inext, readstr)) {
+			++count_all;
+			if (is_two_files)
+				is_next_fwd = false;
+		}
+
+		is_done = true;
+		for (auto state: vstate ) {
+			is_done = is_done && state.is_done;
+		}
+		if (is_done) {
+			break;
+		}
+	} // ~for
+
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	INFO("Done splitting. Reads count: ", count_all, " Runtime sec: ", elapsed.count(), "\n");
+	return true;
+} // ~Readsfile::split

@@ -35,16 +35,17 @@ struct Readstate {
  */
 class Readsfile {
 public:
-	Readsfile(ReadsQueue& readQueue, std::vector<std::string>& readfiles, bool is_gz);
+	Readsfile(std::vector<std::string>& readfiles, bool is_gz);
 
 	void operator()() { run(); }
 	void run();
 
-	std::string nextread(std::ifstream& ifs); // new line separated read data. FA - 2 lines, FQ - 4 lines
+	std::string next(std::ifstream& ifs); // new line separated read data. FA - 2 lines, FQ - 4 lines
 	std::string nextfwd(std::ifstream& ifs);
 	std::string nextrev(std::ifstream& ifs);
-	bool nextread(const std::string readsfile, std::string &seq);
+	bool next(std::vector<std::ifstream>& fstreams, std::vector<Izlib>& vzlib, std::vector<Readstate>& vstate, int& inext, std::string& seq);
 	void reset();
+	bool split(const unsigned num_parts, const std::string& outdir);
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
 	static bool loadReadById(Read& read);
@@ -58,7 +59,7 @@ private:
 	bool is_two_files; // flags two read files are processed (otherwise single file)
 	bool is_next_fwd; // flags the next file to be read is FWD (otherwise REV)
 	std::vector<std::string>& readfiles;
-	ReadsQueue& readQueue;
+	//ReadsQueue& readQueue;
 	Readstate state_fwd;
 	Readstate state_rev;
 	Izlib izlib_fwd;

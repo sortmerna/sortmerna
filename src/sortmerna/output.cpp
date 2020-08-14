@@ -1064,7 +1064,7 @@ void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyVal
 			starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			// start Reader
-			tpool.addJob(Readsfile(read_queue, opts.readfiles, opts.is_gz));
+			tpool.addJob(Readsfile(opts.readfiles, opts.is_gz));
 
 			// start processor
 			tpool.addJob(ReportProcessor("report_proc_1", read_queue, opts, refs, output, refstats, kvdb, reportsJob));
