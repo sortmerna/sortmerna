@@ -9,7 +9,6 @@
 #include <string>
 #include <fstream> // std::ifstream
 
-#include "readsqueue.hpp"
 #include "kvdb.hpp"
 #include "options.hpp"
 #include "izlib.hpp"
@@ -40,7 +39,7 @@ public:
 	void operator()() { run(); }
 	void run();
 
-	std::string next(std::ifstream& ifs); // new line separated read data. FA - 2 lines, FQ - 4 lines
+	std::string next(std::ifstream& ifs); // \n separated read data. FA - 2 lines, FQ - 4 lines
 	std::string nextfwd(std::ifstream& ifs);
 	std::string nextrev(std::ifstream& ifs);
 	bool next(std::vector<std::ifstream>& fstreams, std::vector<Izlib>& vzlib, std::vector<Readstate>& vstate, int& inext, std::string& seq);
@@ -59,7 +58,6 @@ private:
 	bool is_two_files; // flags two read files are processed (otherwise single file)
 	bool is_next_fwd; // flags the next file to be read is FWD (otherwise REV)
 	std::vector<std::string>& readfiles;
-	//ReadsQueue& readQueue;
 	Readstate state_fwd;
 	Readstate state_rev;
 	Izlib izlib_fwd;

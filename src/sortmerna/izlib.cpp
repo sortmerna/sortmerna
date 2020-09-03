@@ -12,6 +12,7 @@
 #include <algorithm>
 
 #include "izlib.hpp"
+#include "common.hpp"
 
 
 Izlib::Izlib(bool gzipped)
@@ -59,11 +60,13 @@ void Izlib::init()
 } // ~Gzip::init
 
 /* 
- * return values: RL_OK (0) | RL_END (1)  | RL_ERR (-1)
- *
- * TODO: Make sure the stream is OK before calling this function.
- *       std::getline doesn't return error if the stream is not 
- *       readable/closed. It returns the same input it was passed.
+  get a line from the compressed stream
+ 
+  TODO: Make sure the stream is OK before calling this function.
+        std::getline doesn't return error if the stream is not 
+        readable/closed. It returns the same input it was passed.
+
+  return values: RL_OK (0) | RL_END (1)  | RL_ERR (-1)
  */
 int Izlib::getline(std::ifstream& ifs, std::string& line)
 {
@@ -139,15 +142,14 @@ int Izlib::getline(std::ifstream& ifs, std::string& line)
 int Izlib::inflatez(std::ifstream & ifs)
 {
 	int ret;
-	std::stringstream ss;
 
 	for (;;)
 	{
 		if (strm.avail_in == 0 && !ifs.eof()) // in buffer empty
 		{
-			std::fill(z_in.begin(), z_in.end(), 0); // reset buffer to 0
-			ifs.read((char*)z_in.data(), IN_SIZE);
-			if (!ifs.eof() && ifs.fail())
+			std::fill(z_in.begin(), z_in.end(), 0); // reset IN buffer to 0
+			ifs.read((char*)z_in.data(), IN_SIZE); // get data from reads file into IN buffer 
+			if (!ifs.eof() && ifs.fail()) // not end of reads file And read fail -> round up and return error
 			{
 				(void)inflateEnd(&strm);
 				return Z_ERRNO;
@@ -166,7 +168,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 
 			if (ret != Z_STREAM_END)
 			{
-				INFO("xINFO: inflateEnd status is " , ret);
+				INFO("inflateEnd status is ", ret);
 			}
 
 			return Z_STREAM_END;
@@ -204,3 +206,54 @@ int Izlib::inflatez(std::ifstream & ifs)
 
 	return ret;// == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 } // ~Izlib::inflatez
+
+/*
+  deflate passed string and append it to the output file
+  prototype: https://github.com/madler/zlib/blob/master/examples/zpipe.c:def
+
+  @param   readstr  read as string
+  @param   ofs      compressed output file stream
+  @return           execution status
+*/
+int Izlib::deflatez(std::string& readstr, std::ofstream& ofs)
+{
+	std::stringstream readss(readstr);
+	int ret = Z_OK;
+	int flush = Z_NO_FLUSH; // zlib:deflate parameter
+
+	for (; flush != Z_FINISH && ret != Z_ERRNO;) {
+		readss.read(reinterpret_cast<char*>(&z_in[0]), IN_SIZE);
+		strm_def.avail_in = readss.gcount();
+		if (!readss.eof() && readss.fail()) {
+			(void)deflateEnd(&strm_def);
+			ret = Z_ERRNO;
+			break;
+		}
+		flush = readss.eof() ? Z_FINISH : Z_NO_FLUSH;
+		strm_def.next_in = z_in.data();
+
+		// run deflate() on input until output buffer not full,
+		// finish compression if all of source has been read in
+		for (; strm_def.avail_out == 0;) {
+			strm_def.avail_out = OUT_SIZE;
+			strm_def.next_out = z_out.data();
+			ret = deflate(&strm_def, flush);
+			assert(ret != Z_STREAM_ERROR);
+			// append to the output file (std::ios_base::app)
+			ofs.write(reinterpret_cast<char*>(z_out.data()), OUT_SIZE - strm_def.avail_out);
+			if (ofs.fail()) {
+				(void)deflateEnd(&strm_def);
+				ret = Z_ERRNO;
+				break;
+			}
+			// done when last data in file processed
+		} // ~for
+
+		assert(strm_def.avail_in == 0); // all input will be used
+	} // ~for
+
+	assert(ret == Z_STREAM_END); // stream will be complete
+
+	(void)deflateEnd(&strm_def); // clean up
+	return Z_OK;
+} // ~Izlib::deflatez

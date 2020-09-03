@@ -13,6 +13,7 @@
 #include "readstats.hpp"
 #include "refstats.hpp"
 #include "references.hpp"
+#include "read.hpp"
 
 // forward
 void kvdb_clear();
@@ -82,6 +83,7 @@ size_t align(Read& read)
  */
 void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_read=false)
 {
+#if 0
 	size_t queue_size_max = 1000;
 	ThreadPool tpool(2);
 	ReadsQueue read_queue("queue_1", queue_size_max, num_reads);
@@ -123,6 +125,7 @@ void test_2(std::vector<std::string>& readfiles, size_t num_reads, bool with_rea
 		ss << STAMP << "Time elapsed: " << diff.count() << " sec. Memory KB: " << (get_memory() >> 10) << std::endl;
 		std::cout << ss.str();
 	}
+#endif
 } // ~test_2
 
 /*

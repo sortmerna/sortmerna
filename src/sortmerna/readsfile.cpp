@@ -14,9 +14,11 @@
 #include <chrono> // std::chrono
 #include <iomanip> // std::precision
 #include <locale> // std::isspace
+#include <thread>
 
 #include "readsfile.hpp"
 #include "izlib.hpp"
+#include "common.hpp"
 
 Readsfile::Readsfile(std::vector<std::string>& readfiles, bool is_gz)
 	:
@@ -38,7 +40,7 @@ Readsfile::Readsfile(std::vector<std::string>& readfiles, bool is_gz)
 void Readsfile::run()
 {
 	auto starts = std::chrono::high_resolution_clock::now();
-	INFO("Reader::run thread ", std::this_thread::get_id(), " started");
+	INFO("Readsfile::run thread ", std::this_thread::get_id(), " started");
 
 	std::ifstream fs_fwd;
 	std::ifstream fs_rev;
