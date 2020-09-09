@@ -1,9 +1,9 @@
 #pragma once
 /**
- * FILE: reader.hpp
+ * FILE: Readsfile.hpp
  * Created: Nov 06, 2017 Mon
  *
- * Reads 'Reads file' and pushes the records to a shared queue for further processing
+ * Encapsulates operations on the 'Reads' files both flat and archived
  */
 
 #include <string>

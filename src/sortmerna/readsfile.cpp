@@ -15,6 +15,7 @@
 #include <iomanip> // std::precision
 #include <locale> // std::isspace
 #include <thread>
+#include <filesystem>
 
 #include "readsfile.hpp"
 #include "izlib.hpp"
@@ -427,7 +428,7 @@ bool Readsfile::next(std::vector<std::ifstream>& fstreams,
 
 		// read a line
 		if (!vstate[inext].is_done)
-			stat = izlib_rev.getline(fstreams[inext], line);
+			stat = vzlib[inext].getline(fstreams[inext], line);
 
 		// EOF reached - return last read
 		if (stat == RL_END)
@@ -511,6 +512,8 @@ bool Readsfile::next(std::vector<std::ifstream>& fstreams,
 	if (fstreams.size() > 1)
 		inext = inext == 0 ? 1 : 0; // toggle the stream index
 
+	if (read.str().size() > 0)
+		seq = read.str();
 	return read.str().size() > 0;
 } // ~Readsfile::next
 
@@ -532,40 +535,90 @@ void Readsfile::reset()
 
 /*
  input options:
-   2 paired file
-   1 paired file
-   1 non-paired file
+   2 paired file     -> num files out = 2 x num_parts i.e. each paired file is split into specified number of parts
+   1 paired file     -> num files out = 1 x num_parts AND ensure each part has even number of reads
+   1 non-paired file -> num files out = 1 x num_parts
 */
 bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 {
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("start splitting");
+	auto retval = true;
 
-	std::vector<std::ifstream> fstreams(readfiles.size());
+	std::vector<std::ifstream> ifsv(readfiles.size());
 	for (int i = 0; i < readfiles.size(); ++i) {
-		fstreams[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
-		if (!fstreams[i].is_open()) {
-			std::cerr << STAMP << "Failed to open file " << readfiles[i] << std::endl;
+		ifsv[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+		if (!ifsv[i].is_open()) {
+			ERR("Failed to open file ", readfiles[i]);
 			exit(1);
 		}
 	}
 
-	std::vector<Izlib> vzlib(2, Izlib(true));
-	std::vector<Readstate> vstate(2);
-	int inext = 0; // fwd
+	// prepare zlib interfaces for inflating reads files
+	bool is_gz = true;
+	std::vector<Izlib> vzlib_in(2, Izlib(is_gz));
+	for (auto i = 0; i < vzlib_in.size(); ++i) {
+		vzlib_in[i].init(false);
+	}
+
+	std::vector<Readstate> vstate_in(2);
+	int inext = 0; // fwd - index of the input file
 	std::string readstr;
 
-	// loop until EOF - get reads - push on queue
+	// prepare split files to output
+	std::vector<std::ofstream> ofsv(num_parts * readfiles.size());
+	size_t idx = 0; // stream index
+	for (int i = 0; i < readfiles.size(); ++i) {
+		auto pdir = std::filesystem::path(readfiles[i]).parent_path();
+		auto stem = i == 0 ? "fwd_" : "rev_";
+		std::stringstream ss;
+		for (int j = 0; j < num_parts; ++j) {
+			ss << stem << j << ".fq.gz";
+			auto fn = pdir / ss.str();
+			ofsv[idx].open(fn);
+			if (!ofsv[idx].is_open()) {
+				ERR("Failed to open file ", fn);
+				exit(1);
+			}
+			else {
+				INFO("opened file: ", fn);
+			}
+			ss.str("");
+			++idx;
+		}
+	}
+
+	// prepare zlib interface for writing split files
+	std::vector<Izlib> vzlib_out(num_parts * readfiles.size(), Izlib(true, true, true));
+	for (auto i = 0; i < vzlib_out.size(); ++i) {
+		vzlib_out[i].init(true);
+	}
+
+	std::vector<Readstate> vstate_out(num_parts * readfiles.size());
+	int iout = 0;
+
+	// loop until EOF - get reads - write into split files
 	for (;;)
 	{
-		if (next(fstreams, vzlib, vstate, inext, readstr)) {
+		if (next(ifsv, vzlib_in, vstate_in, inext, readstr)) {
 			++count_all;
-			if (is_two_files)
+			if (is_two_files) {
 				is_next_fwd = false;
+				auto ret = vzlib_out[iout].deflatez(readstr, ofsv[iout]);
+				if (iout == 2 * num_parts) iout = 0;
+				else {
+					iout = inext == 0 ? iout - 2 : iout + num_parts;
+				}
+				if (ret != Z_OK) {
+					ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib error: ", ret);
+					retval = false;
+					break;
+				}
+			}
 		}
 
 		is_done = true;
-		for (auto state: vstate ) {
+		for (auto state: vstate_in ) {
 			is_done = is_done && state.is_done;
 		}
 		if (is_done) {
@@ -573,7 +626,25 @@ bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 		}
 	} // ~for
 
+	// close in file streams
+	for (int i = 0; i < ifsv.size(); ++i) {
+		if (ifsv[i].is_open()) {
+			ifsv[i].close();
+		}
+	}
+
+	// close out file streams
+	for (auto i = 0; i < ofsv.size(); ++i) {
+		if (ofsv[i].is_open())
+			ofsv[i].close();
+	}
+
+	// clean up zlib deflate streams
+	for (auto i = 0; i < vzlib_out.size(); ++i) {
+		vzlib_out[i].clean();
+	}
+
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 	INFO("Done splitting. Reads count: ", count_all, " Runtime sec: ", elapsed.count(), "\n");
-	return true;
+	return retval;
 } // ~Readsfile::split

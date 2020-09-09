@@ -15,13 +15,14 @@
 #include "common.hpp"
 
 
-Izlib::Izlib(bool gzipped)
+Izlib::Izlib(bool gzipped, bool is_compress, bool is_init)
 	: 
 	gzipped(gzipped), 
-	line_start(0)
+	line_start(0),
+	strm()
 { 
-	if (gzipped) 
-		init(); 
+	if (is_init && gzipped) 
+		init(is_compress); 
 }
 
 
@@ -38,16 +39,16 @@ Izlib::Izlib(bool gzipped)
 /*
  * Called from constructor
  */
-void Izlib::init()
+void Izlib::init(bool is_compress)
 {
 	strm.zalloc = Z_NULL;
 	strm.zfree = Z_NULL;
 	strm.opaque = Z_NULL;
 	strm.avail_in = 0;
 	strm.next_in = Z_NULL;
-	int ret = inflateInit2(&strm, 47);
+	int ret = is_compress ? deflateInit(&strm, Z_DEFAULT_COMPRESSION) : inflateInit2(&strm, 47);
 	if (ret != Z_OK) {
-		ERR("Reader::initZstream failed. Error: " , ret);
+		ERR("Izlib::init failed. Error: " , ret);
 		exit(EXIT_FAILURE);;
 	}
 
@@ -57,7 +58,11 @@ void Izlib::init()
 	z_out.resize(OUT_SIZE);
 	std::fill(z_in.begin(), z_in.end(), 0); // fill IN buffer with 0s
 	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer with 0s
-} // ~Gzip::init
+} // ~Izlib::init
+
+void Izlib::clean() {
+	(void)deflateEnd(&strm);
+}
 
 /* 
   get a line from the compressed stream
@@ -217,43 +222,43 @@ int Izlib::inflatez(std::ifstream & ifs)
 */
 int Izlib::deflatez(std::string& readstr, std::ofstream& ofs)
 {
-	std::stringstream readss(readstr);
+	std::stringstream ss(readstr);
 	int ret = Z_OK;
 	int flush = Z_NO_FLUSH; // zlib:deflate parameter
 
 	for (; flush != Z_FINISH && ret != Z_ERRNO;) {
-		readss.read(reinterpret_cast<char*>(&z_in[0]), IN_SIZE);
-		strm_def.avail_in = readss.gcount();
-		if (!readss.eof() && readss.fail()) {
-			(void)deflateEnd(&strm_def);
+		ss.read(reinterpret_cast<char*>(&z_in[0]), IN_SIZE);
+		strm.avail_in = ss.gcount();
+		if (!ss.eof() && ss.fail()) {
+			(void)deflateEnd(&strm);
 			ret = Z_ERRNO;
 			break;
 		}
-		flush = readss.eof() ? Z_FINISH : Z_NO_FLUSH;
-		strm_def.next_in = z_in.data();
+		flush = ss.eof() ? Z_FINISH : Z_NO_FLUSH;
+		strm.next_in = z_in.data();
 
 		// run deflate() on input until output buffer not full,
 		// finish compression if all of source has been read in
-		for (; strm_def.avail_out == 0;) {
-			strm_def.avail_out = OUT_SIZE;
-			strm_def.next_out = z_out.data();
-			ret = deflate(&strm_def, flush);
+		for (; strm.avail_out == 0;) {
+			strm.avail_out = OUT_SIZE;
+			strm.next_out = z_out.data();
+			ret = deflate(&strm, flush);
 			assert(ret != Z_STREAM_ERROR);
 			// append to the output file (std::ios_base::app)
-			ofs.write(reinterpret_cast<char*>(z_out.data()), OUT_SIZE - strm_def.avail_out);
+			ofs.write(reinterpret_cast<char*>(z_out.data()), OUT_SIZE - strm.avail_out);
 			if (ofs.fail()) {
-				(void)deflateEnd(&strm_def);
+				(void)deflateEnd(&strm);
 				ret = Z_ERRNO;
 				break;
 			}
 			// done when last data in file processed
 		} // ~for
 
-		assert(strm_def.avail_in == 0); // all input will be used
+		assert(strm.avail_in == 0); // all input will be used
 	} // ~for
 
 	assert(ret == Z_STREAM_END); // stream will be complete
 
-	(void)deflateEnd(&strm_def); // clean up
-	return Z_OK;
+	//(void)deflateEnd(&strm); // strm is reused on repeated calls
+	return ret;
 } // ~Izlib::deflatez
