@@ -575,8 +575,8 @@ bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 		for (int j = 0; j < num_parts; ++j) {
 			ss << stem << j << ".fq.gz";
 			auto fn = pdir / ss.str();
-			ofsv[idx].open(fn);
-			if (!ofsv[idx].is_open()) {
+			ofsv[idx].open(fn, std::ios::app | std::ios::binary);
+			if (!ofsv[idx].good()) {
 				ERR("Failed to open file ", fn);
 				exit(1);
 			}
@@ -595,6 +595,18 @@ bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 	}
 
 	std::vector<Readstate> vstate_out(num_parts * readfiles.size());
+
+	// calculate number of reads in each of the output files
+	size_t numreads = 1250; // num reads in a single input file
+	size_t xx = numreads / num_parts;
+	auto yy = numreads - xx * num_parts;
+	for (auto i = 0; i < num_parts; ++i) {
+		auto len = i < yy ? xx + 1 : xx;
+		for (auto j = 0; j < readfiles.size(); ++j) {
+			vstate_out[i + j * num_parts].max_reads = len;
+		}
+	}
+
 	int iout = 0;
 
 	// loop until EOF - get reads - write into split files
@@ -604,22 +616,24 @@ bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 			++count_all;
 			if (is_two_files) {
 				is_next_fwd = false;
-				auto ret = vzlib_out[iout].deflatez(readstr, ofsv[iout]);
-				if (iout == 2 * num_parts) iout = 0;
-				else {
-					iout = inext == 0 ? iout - 2 : iout + num_parts;
-				}
-				if (ret != Z_OK) {
-					ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib error: ", ret);
+				++vstate_out[iout].read_count;
+				auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == vstate_out[iout].max_reads); // Z_STREAM_END | Z_OK - ok
+				if (ret < Z_OK || ret > Z_STREAM_END) {
+					ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
 					retval = false;
 					break;
+				}
+				// set next value of the out file index
+				if (iout == 2 * num_parts - 1) iout = 0;
+				else {
+					iout = inext == 0 ? iout - num_parts + 1 : iout + num_parts;
 				}
 			}
 		}
 
 		is_done = true;
-		for (auto state: vstate_in ) {
-			is_done = is_done && state.is_done;
+		for (auto i = 0; i < vstate_in.size(); ++i) {
+			is_done = is_done && vstate_in[i].is_done;
 		}
 		if (is_done) {
 			break;

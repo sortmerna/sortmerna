@@ -18,13 +18,14 @@ class Read;
 
 struct Readstate {
 	Readstate()	: is_done(false), isFastq(false), isFasta(false), 
-		read_count(0), line_count(0), last_count(0), last_stat(0) {}
+		read_count(0), line_count(0), last_count(0), max_reads(0), last_stat(0) {}
 	bool is_done;
 	bool isFastq; // file is FASTQ
 	bool isFasta; // file is FASTA
 	unsigned read_count; // count of reads in the file
 	unsigned line_count; // count of non-empty lines in the reads file
 	unsigned last_count; // count of lines in a single read
+	unsigned max_reads;  // max reads expected to be processed
 	int last_stat;
 	std::string last_header; // header line last read
 };

@@ -19,7 +19,9 @@ Izlib::Izlib(bool gzipped, bool is_compress, bool is_init)
 	: 
 	gzipped(gzipped), 
 	line_start(0),
-	strm()
+	strm(),
+	buf_in_size(0),
+	buf_out_size(0)
 { 
 	if (is_init && gzipped) 
 		init(is_compress); 
@@ -54,8 +56,12 @@ void Izlib::init(bool is_compress)
 
 	strm.avail_out = 0;
 
-	z_in.resize(IN_SIZE);
-	z_out.resize(OUT_SIZE);
+	// compress: in size > out size, inflate: in size < out size
+	buf_in_size = is_compress ? SIZE_32 : SIZE_16;
+	buf_out_size = is_compress ? SIZE_16 : SIZE_32;
+	z_in.resize(buf_in_size);
+	z_out.resize(buf_out_size);
+
 	std::fill(z_in.begin(), z_in.end(), 0); // fill IN buffer with 0s
 	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer with 0s
 } // ~Izlib::init
@@ -89,7 +95,7 @@ int Izlib::getline(std::ifstream& ifs, std::string& line)
 			{
 				ret = Izlib::inflatez(ifs); // inflate
 
-				if (ret == Z_STREAM_END && strm.avail_out == OUT_SIZE) 
+				if (ret == Z_STREAM_END && strm.avail_out == buf_out_size)
 					return RL_END;
 
 				if (ret < 0) 
@@ -100,14 +106,14 @@ int Izlib::getline(std::ifstream& ifs, std::string& line)
 			}
 
 			//line_end = strstr(line_start, "\n"); // returns 0 if '\n' not found
-			line_end = std::find(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, 10); // '\n'
+			line_end = std::find(line_start, (char*)&z_out[0] + buf_out_size - strm.avail_out - 1, 10); // '\n'
 			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return ch == 10; });
 			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return std::isspace(ch, l); });
 			if (line_end && line_end[0] == 10)
 			{
 				std::copy(line_start, line_end, std::back_inserter(line));
 
-				if (line_end < (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1) // check there is data after line_end
+				if (line_end < (char*)&z_out[0] + buf_out_size - strm.avail_out - 1) // check there is data after line_end
 					line_start = line_end + 1; // skip '\n'
 				else
 				{
@@ -122,7 +128,7 @@ int Izlib::getline(std::ifstream& ifs, std::string& line)
 			}
 			else
 			{
-				line_end = (char*)&z_out[0] + OUT_SIZE - strm.avail_out; // end of data in out buffer
+				line_end = (char*)&z_out[0] + buf_out_size - strm.avail_out; // end of data in out buffer
 				std::copy(line_start, line_end, std::back_inserter(line));
 				line_start = (strm.avail_out == 0) ? 0 : line_end;
 				line_end = 0;
@@ -153,7 +159,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 		if (strm.avail_in == 0 && !ifs.eof()) // in buffer empty
 		{
 			std::fill(z_in.begin(), z_in.end(), 0); // reset IN buffer to 0
-			ifs.read((char*)z_in.data(), IN_SIZE); // get data from reads file into IN buffer 
+			ifs.read((char*)z_in.data(), buf_in_size); // get data from reads file into IN buffer 
 			if (!ifs.eof() && ifs.fail()) // not end of reads file And read fail -> round up and return error
 			{
 				(void)inflateEnd(&strm);
@@ -166,8 +172,8 @@ int Izlib::inflatez(std::ifstream & ifs)
 
 		if (strm.avail_in == 0 && ifs.eof())
 		{
-			if (strm.avail_out < OUT_SIZE)
-				strm.avail_out = OUT_SIZE;
+			if (strm.avail_out < buf_out_size)
+				strm.avail_out = buf_out_size;
 
 			ret = inflateEnd(&strm); // free up the resources
 
@@ -182,7 +188,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 		if (strm.avail_out == 0) // out buffer is full - reset
 		{
 			std::fill(z_out.begin(), z_out.end(), 0); // reset buffer to 0
-			strm.avail_out = OUT_SIZE;
+			strm.avail_out = buf_out_size;
 			strm.next_out = z_out.data();
 		}
 
@@ -205,7 +211,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 		// avail_out == 0 means OUT buffer is Full i.e. no space left
 		// avail_in  == 0 means  IN buffer is Empty
 		// second condition checks if there is still data left in OUT buffer when IN buffer is empty
-		if ( strm.avail_out == 0 || ( strm.avail_out < OUT_SIZE && strm.avail_in == 0 ) ) 
+		if ( strm.avail_out == 0 || ( strm.avail_out < buf_out_size && strm.avail_in == 0 ) )
 			break;
 	} // for(;;)
 
@@ -213,52 +219,87 @@ int Izlib::inflatez(std::ifstream & ifs)
 } // ~Izlib::inflatez
 
 /*
-  deflate passed string and append it to the output file
+  deflate passed string and append it to the file stream. Finish processing when the string has 0 size
   prototype: https://github.com/madler/zlib/blob/master/examples/zpipe.c:def
 
-  @param   readstr  read as string
+  @param   readstr  a Read as string to be compressed. String of 0 size indicates the end of processing.
   @param   ofs      compressed output file stream
+  @param   is_last  flags the last string passed -> Finish compressing
   @return           execution status
 */
-int Izlib::deflatez(std::string& readstr, std::ofstream& ofs)
+int Izlib::defstr(std::string& readstr, std::ofstream& ofs, bool is_last)
 {
 	std::stringstream ss(readstr);
 	int ret = Z_OK;
 	int flush = Z_NO_FLUSH; // zlib:deflate parameter
+	bool is_eos = false; // end of readstr reached
+	bool is_deflate = false;
+	unsigned pending_bytes = 0;
+	int pending_bits = 0;
 
-	for (; flush != Z_FINISH && ret != Z_ERRNO;) {
-		ss.read(reinterpret_cast<char*>(&z_in[0]), IN_SIZE);
-		strm.avail_in = ss.gcount();
+	// this loop is for repeated reading 'readstr' if
+	// it doesn't fit into the IN buffer in one read (very large reads)
+	for (; !(is_eos || flush == Z_FINISH || ret == Z_ERRNO);) {
+		// add data to IN buffer. Fill up the whole buffer before deflating
+		ss.read(reinterpret_cast<char*>(&z_in[0] + strm.avail_in), buf_in_size - strm.avail_in);
+		strm.avail_in += ss.gcount();
 		if (!ss.eof() && ss.fail()) {
 			(void)deflateEnd(&strm);
 			ret = Z_ERRNO;
 			break;
 		}
-		flush = ss.eof() ? Z_FINISH : Z_NO_FLUSH;
+		
+		// deflate or keep accumulating IN?
+		if (is_deflate) {
+			if (strm.avail_in < buf_in_size && readstr.size() > 0) {
+				is_deflate = false;
+				break; // keep accumulating IN
+			}
+		}
+		else if (strm.avail_in == buf_in_size || is_last) {
+			is_deflate = true; // IN is full - start deflating
+		}
+		else {
+			break; // keep accumulating IN
+		}
+
 		strm.next_in = z_in.data();
 
-		// run deflate() on input until output buffer not full,
+		flush = is_last ? Z_FINISH : Z_NO_FLUSH; // finish if readstr.size is 0
+
+		// run deflate() until OUT is full i.e. no free space in OUT buffer
 		// finish compression if all of source has been read in
-		for (; strm.avail_out == 0;) {
-			strm.avail_out = OUT_SIZE;
-			strm.next_out = z_out.data();
-			ret = deflate(&strm, flush);
+		for (;;) {
+			if (strm.avail_out == 0) {
+				strm.avail_out = buf_out_size;
+				strm.next_out = z_out.data();
+			}
+			ret = deflate(&strm, flush); // runs until OUT is full or IN is empty
 			assert(ret != Z_STREAM_ERROR);
+			// check accumulated output
+			//ret = deflatePending(&strm, &pending_bytes, &pending_bits);
+			//assert(ret != Z_STREAM_ERROR);
 			// append to the output file (std::ios_base::app)
-			ofs.write(reinterpret_cast<char*>(z_out.data()), OUT_SIZE - strm.avail_out);
+			ofs.write(reinterpret_cast<char*>(z_out.data()), buf_out_size - strm.avail_out);
 			if (ofs.fail()) {
 				(void)deflateEnd(&strm);
 				ret = Z_ERRNO;
 				break;
 			}
-			// done when last data in file processed
+			if (strm.avail_out > 0 || (strm.avail_out == 0 && is_last))
+				break;
 		} // ~for
 
-		assert(strm.avail_in == 0); // all input will be used
+		assert(strm.avail_in == 0); // all input was used
+		is_eos = ss.eof();
 	} // ~for
 
-	assert(ret == Z_STREAM_END); // stream will be complete
+	if (is_deflate && !is_last) {
+		assert(ret == Z_STREAM_END); // stream will be complete
+	}
 
-	//(void)deflateEnd(&strm); // strm is reused on repeated calls
+	if (flush == Z_FINISH) {
+		(void)deflateEnd(&strm);
+	}
 	return ret;
 } // ~Izlib::deflatez
