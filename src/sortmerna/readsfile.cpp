@@ -597,13 +597,13 @@ bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 	std::vector<Readstate> vstate_out(num_parts * readfiles.size());
 
 	// calculate number of reads in each of the output files
-	size_t numreads = 1250; // num reads in a single input file
-	size_t xx = numreads / num_parts;
-	auto yy = numreads - xx * num_parts;
+	size_t numreads = 1250; // num reads in a single input file e.g. FWD
+	size_t minr = numreads / num_parts; // quotient i.e. min number of reads in each output file
+	auto surplus = numreads - minr * num_parts; // remainder of reads to be distributed between the output files
 	for (auto i = 0; i < num_parts; ++i) {
-		auto len = i < yy ? xx + 1 : xx;
+		auto maxr = i < surplus ? minr + 1 : minr; // distribute the surplus
 		for (auto j = 0; j < readfiles.size(); ++j) {
-			vstate_out[i + j * num_parts].max_reads = len;
+			vstate_out[i + j * num_parts].max_reads = maxr;
 		}
 	}
 
