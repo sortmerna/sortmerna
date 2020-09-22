@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 		Readstats readstats(opts, kvdb);
 		Output output(opts, readstats);
 
-		readsf.split(3, "");
+		readsf.split(3, readstats.all_reads_count, "");
 
 		switch (opts.alirep)
 		{

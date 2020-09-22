@@ -538,8 +538,11 @@ void Readsfile::reset()
    2 paired file     -> num files out = 2 x num_parts i.e. each paired file is split into specified number of parts
    1 paired file     -> num files out = 1 x num_parts AND ensure each part has even number of reads
    1 non-paired file -> num files out = 1 x num_parts
+
+  @param num_parts  number of parts to split the file into
+  @param num_reads  total number of reads in all read files (Readstats::all_reads_count)
 */
-bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
+bool Readsfile::split(const unsigned num_parts, const unsigned num_reads, const std::string& outdir)
 {
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("start splitting");
@@ -597,9 +600,9 @@ bool Readsfile::split(const unsigned num_parts, const std::string& outdir)
 	std::vector<Readstate> vstate_out(num_parts * readfiles.size());
 
 	// calculate number of reads in each of the output files
-	size_t numreads = 1250; // num reads in a single input file e.g. FWD
-	size_t minr = numreads / num_parts; // quotient i.e. min number of reads in each output file
-	auto surplus = numreads - minr * num_parts; // remainder of reads to be distributed between the output files
+	auto nreads = readfiles.size() == 2 ? num_reads / 2 : num_reads; // num reads in a single input file e.g. FWD
+	auto minr = nreads / num_parts; // quotient i.e. min number of reads in each output file
+	auto surplus = nreads - minr * num_parts; // remainder of reads to be distributed between the output files
 	for (auto i = 0; i < num_parts; ++i) {
 		auto maxr = i < surplus ? minr + 1 : minr; // distribute the surplus
 		for (auto j = 0; j < readfiles.size(); ++j) {

@@ -45,7 +45,7 @@ public:
 	std::string nextrev(std::ifstream& ifs);
 	bool next(std::vector<std::ifstream>& fstreams, std::vector<Izlib>& vzlib, std::vector<Readstate>& vstate, int& inext, std::string& seq);
 	void reset();
-	bool split(const unsigned num_parts, const std::string& outdir);
+	bool split(const unsigned num_parts, const unsigned num_reads, const std::string& outdir);
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
 	static bool loadReadById(Read& read);
