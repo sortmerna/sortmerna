@@ -21,7 +21,7 @@
 #include "izlib.hpp"
 #include "common.hpp"
 
-Readsfile::Readsfile(std::vector<std::string>& readfiles, bool is_gz)
+Readfeed::Readfeed(std::vector<std::string>& readfiles, bool is_gz)
 	:
 	is_done(false),
 	count_all(0),
@@ -31,14 +31,14 @@ Readsfile::Readsfile(std::vector<std::string>& readfiles, bool is_gz)
 	readfiles(readfiles),
 	izlib_fwd(is_gz),
 	izlib_rev(is_gz)
-{} // ~Readsfile::Readsfile
+{} // ~Readfeed::Readfeed
 
-//Readsfile::~Readsfile() {}
+//Readfeed::~Readfeed() {}
 
 /* 
  * thread runnable 
  */
-void Readsfile::run()
+void Readfeed::run()
 {
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Readsfile::run thread ", std::this_thread::get_id(), " started");
@@ -88,9 +88,9 @@ void Readsfile::run()
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 	INFO("Reader::run thread ", std::this_thread::get_id(), " done. Reads count: ", count_all, " Runtime sec: ", elapsed.count());
-} // ~Readsfile::run
+} // ~Readfeed::run
 
-bool Readsfile::loadReadByIdx(Read & read)
+bool Readfeed::loadReadByIdx(Read & read)
 {
 	std::stringstream ss;
 	bool isok = false;
@@ -172,14 +172,14 @@ bool Readsfile::loadReadByIdx(Read & read)
 #endif
 	return isok;
 
-} // ~Readsfile::loadRead
+} // ~Readfeed::loadRead
 
-bool Readsfile::loadReadById(Read& read)
+bool Readfeed::loadReadById(Read& read)
 {
 	return true;
-} // ~Readsfile::loadReadById
+} // ~Readfeed::loadReadById
 
-std::string Readsfile::next(std::ifstream& ifs) {
+std::string Readfeed::next(std::ifstream& ifs) {
 	std::string line;
 	return line;
 }
@@ -188,7 +188,7 @@ std::string Readsfile::next(std::ifstream& ifs) {
  * @param array of read files - one or two (if paired) files
  * @return string with format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
  */
-std::string Readsfile::nextfwd(std::ifstream& ifs) {
+std::string Readfeed::nextfwd(std::ifstream& ifs) {
 
 	std::string line;
 	std::stringstream read; // an empty read
@@ -287,14 +287,14 @@ std::string Readsfile::nextfwd(std::ifstream& ifs) {
 	++state_fwd.read_count;
 
 	return read.str();
-} // ~Readsfile::nextfwd
+} // ~Readfeed::nextfwd
 
 /* 
  * TODO: identical to nextfwd.
  * dereferencing Gzip always causes errors. 
  * Cannot store Gzip in an array and cannot pass it by reference (may be can).
  */
-std::string Readsfile::nextrev(std::ifstream& ifs) 
+std::string Readfeed::nextrev(std::ifstream& ifs)
 {
 	std::string line;
 	std::stringstream read; // an empty read
@@ -393,7 +393,7 @@ std::string Readsfile::nextrev(std::ifstream& ifs)
 	++state_rev.read_count;
 
 	return read.str();
-} // ~Readsfile::nextrev
+} // ~Readfeed::nextrev
 
 
 /**
@@ -406,7 +406,7 @@ std::string Readsfile::nextrev(std::ifstream& ifs)
    @param  seq      OUT    read sequence
    @return true if record exists, else false
  */
-bool Readsfile::next(std::vector<std::ifstream>& fstreams, 
+bool Readfeed::next(std::vector<std::ifstream>& fstreams,
                      std::vector<Izlib>& vzlib, 
                      std::vector<Readstate>& vstate, 
                      int& inext, 
@@ -515,18 +515,18 @@ bool Readsfile::next(std::vector<std::ifstream>& fstreams,
 	if (read.str().size() > 0)
 		seq = read.str();
 	return read.str().size() > 0;
-} // ~Readsfile::next
+} // ~Readfeed::next
 
 /**
  * test if there is a next read in the reads file
  */
-bool Readsfile::hasnext(std::ifstream& ifs)
+bool Readfeed::hasnext(std::ifstream& ifs)
 {
 	bool is_next = false;
 	return is_next;
-} // ~Readsfile::hasnext
+} // ~Readfeed::hasnext
 
-void Readsfile::reset()
+void Readfeed::reset()
 {
 	is_done = false;
 	count_all = 0;
@@ -542,7 +542,7 @@ void Readsfile::reset()
   @param num_parts  number of parts to split the file into
   @param num_reads  total number of reads in all read files (Readstats::all_reads_count)
 */
-bool Readsfile::split(const unsigned num_parts, const unsigned num_reads, const std::string& outdir)
+bool Readfeed::split(const unsigned num_parts, const unsigned num_reads, const std::string& outdir)
 {
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("start splitting");
@@ -664,4 +664,4 @@ bool Readsfile::split(const unsigned num_parts, const unsigned num_reads, const 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 	INFO("Done splitting. Reads count: ", count_all, " Runtime sec: ", elapsed.count(), "\n");
 	return retval;
-} // ~Readsfile::split
+} // ~Readfeed::split

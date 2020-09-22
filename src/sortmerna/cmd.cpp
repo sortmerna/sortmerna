@@ -106,7 +106,7 @@ void CmdSession::cmdRead(Runopts & opts, std::string & cmd)
 		else
 		{
 			read.id = readid;
-			bool isok = Readsfile::loadReadByIdx(read);
+			bool isok = Readfeed::loadReadByIdx(read);
 			ss << "Read load OK " << isok << std::endl;
 		}
 	}
@@ -150,7 +150,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	// find half-kmer prefix/suffix matches
 	//
 	read.id = readid;
-	isok = Readsfile::loadReadByIdx(read);
+	isok = Readfeed::loadReadByIdx(read);
 	if (read.sequence.size() > 0 && read.isequence.size() == 0)
 		read.seqToIntStr();
 	index.load(std::stoi(idxval), std::stoi(partval), opts.indexfiles, refstats);

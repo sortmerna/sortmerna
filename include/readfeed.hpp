@@ -33,9 +33,9 @@ struct Readstate {
 /* 
  * reads Reads file and, generates Read objects
  */
-class Readsfile {
+class Readfeed {
 public:
-	Readsfile(std::vector<std::string>& readfiles, bool is_gz);
+	Readfeed(std::vector<std::string>& readfiles, bool is_gz);
 
 	void operator()() { run(); }
 	void run();
@@ -65,4 +65,4 @@ private:
 	Izlib izlib_rev;
 };
 
-// ~reader.hpp
+// ~readfeed.hpp

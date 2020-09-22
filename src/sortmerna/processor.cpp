@@ -211,7 +211,7 @@ void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDa
 				starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 				// start Reader
-				tpool.addJob(Readsfile(opts.readfiles, opts.is_gz));
+				tpool.addJob(Readfeed(opts.readfiles, opts.is_gz));
 
 				// start Processor
 				tpool.addJob(PostProcessor("postproc_1", read_queue, opts, refs, readstats, refstats, kvdb, computeStats));

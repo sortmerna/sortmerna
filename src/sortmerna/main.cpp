@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
 	Index index(opts); // reference index DB
 	KeyValueDatabase kvdb(opts.kvdbdir.string());
-	Readsfile readsf(opts.readfiles, opts.is_gz);
+	Readfeed readsf(opts.readfiles, opts.is_gz);
 
 	if (opts.is_cmd) {
 		CmdSession cmd;

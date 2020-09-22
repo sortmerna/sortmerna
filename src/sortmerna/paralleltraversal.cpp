@@ -360,7 +360,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			starts = std::chrono::high_resolution_clock::now();
 
 			// add Readsfile job
-			tpool.addJob(Readsfile(opts.readfiles, opts.is_gz));
+			tpool.addJob(Readfeed(opts.readfiles, opts.is_gz));
 
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
