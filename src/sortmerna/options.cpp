@@ -966,7 +966,7 @@ void Runopts::opt_task(const std::string &val)
 	case 3: alirep = alipost; break;
 	case 4: alirep = all; break;
 	}
-} // ~Runopts::optReport
+} // ~Runopts::opt_task
 
 // interactive session '--cmd'
 void Runopts::opt_cmd(const std::string &val)
@@ -1103,6 +1103,18 @@ void Runopts::opt_max_pos(const std::string &val)
 		max_pos = std::stoi(val);
 	}
 }
+
+void Runopts::opt_reads_feed(const std::string& val)
+{
+	int reads_feed_type = std::stoi(val);
+	int max_feedn = 1;
+
+	if (reads_feed_type > max_feedn)
+	{
+		ERR("Option '", OPT_READS_FEED, "' can only take values in range [0..", max_feedn, "] Provided value is [", val, "'");
+		exit(EXIT_FAILURE);
+	}
+} // ~Runopts::opt_reads_feed
 
 /* 
  * called from validate

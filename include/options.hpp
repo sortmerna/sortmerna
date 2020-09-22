@@ -73,7 +73,8 @@ OPT_THREP = "threp",
 OPT_DBG_PUT_DB = "dbg_put_db",
 OPT_TMPDIR = "tmpdir",
 OPT_INTERVAL = "interval",
-OPT_MAX_POS = "max_pos";
+OPT_MAX_POS = "max_pos",
+OPT_READS_FEED = "reads_feed";
 
 // help strings
 const std::string \
@@ -296,7 +297,13 @@ help_L =
 	"Indexing: seed length.                                  18\n",
 help_max_pos = 
 	"Indexing: maximum (integer) number of positions to store  1000\n"
-	"                                            for each unique L-mer. If 0 all positions are stored.\n"
+	"                                            for each unique L-mer. If 0 all positions are stored.\n",
+help_reads_feed = 
+	"Method of accessing the reads by the reads processors   0\n"
+	"                                            0 - Split reads. Reads files are split into parts equal the number of processors\n"
+	"                                            1 - Lockless queue. Reads are put into a lockless queue to be popped by the processors\n"
+	"                                            3 - FUTURE: Random access to the archived reads files\n"
+	"                                            4 - FUTURE: combination of the random access and the lockless queue\n"
 ;
 
 const std::string WORKDIR_DEF_SFX = "sortmerna/run";
@@ -421,6 +428,7 @@ public:
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
 	int score_N = 0; // '-N' SW penalty for ambiguous letters (N's)
+	int reads_feed_type = 0; // OPT_READS_FEED
 
 	double evalue = -1.0; // '-e' E-value threshold
 	double min_id = -1.0; // OTU-picking option: Identity threshold (%ID)
@@ -511,6 +519,7 @@ private:
 	void opt_m(const std::string &val);
 	void opt_L(const std::string &val);
 	void opt_max_pos(const std::string &val);
+	void opt_reads_feed(const std::string& val);
 
 	void opt_default(const std::string& opt);
 	void opt_dbg_put_db(const std::string& opt);
@@ -537,7 +546,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 48> options = {
+	const std::array<opt_6_tuple, 49> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
@@ -565,6 +574,7 @@ private:
 		std::make_tuple(OPT_F,              "BOOL",        COMMON,      false, help_F, &Runopts::opt_F),
 		std::make_tuple(OPT_N,              "BOOL",        COMMON,      false, help_N, &Runopts::opt_N),
 		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
+		std::make_tuple(OPT_READS_FEED,     "INT",         COMMON,      false, help_reads_feed, &Runopts::opt_reads_feed),
 		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
 		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),
 		std::make_tuple(OPT_DENOVO_OTU,     "BOOL",        OTU_PICKING, false, help_denovo_otu, &Runopts::opt_denovo_otu),
