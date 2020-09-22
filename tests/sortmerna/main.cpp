@@ -6,7 +6,7 @@
 #include <vector>
 #include <iomanip> // setprecision
 
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 #include "ThreadPool.hpp"
 #include "common.hpp"
 #include "index.hpp"

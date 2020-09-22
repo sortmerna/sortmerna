@@ -17,7 +17,7 @@
 #include <thread>
 #include <filesystem>
 
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 #include "izlib.hpp"
 #include "common.hpp"
 

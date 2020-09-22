@@ -42,7 +42,7 @@
 #include "kvdb.hpp"
 #include "index.hpp"
 #include "indexdb.hpp"
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 
 namespace fs = std::filesystem;
 

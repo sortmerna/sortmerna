@@ -22,7 +22,7 @@
 #include "options.hpp"
 #include "read.hpp"
 #include "ThreadPool.hpp"
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 
 // forward
 void computeStats(Read & read, Readstats & readstats, Refstats & refstats, References & refs, Runopts & opts);

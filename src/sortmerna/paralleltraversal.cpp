@@ -51,7 +51,7 @@
 #include "references.hpp"
 #include "kvdb.hpp"
 #include "processor.hpp"
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 #include "output.hpp"
 #include "readsqueue.hpp"
 

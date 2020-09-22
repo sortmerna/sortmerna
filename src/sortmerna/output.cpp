@@ -48,7 +48,7 @@
 #include "options.hpp"
 #include "refstats.hpp"
 #include "readsqueue.hpp"
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 
 
 // forward

@@ -21,7 +21,7 @@
 #include "refstats.hpp"
 #include "references.hpp"
 #include "index.hpp"
-#include "readsfile.hpp"
+#include "readfeed.hpp"
 
 const std::string OPT_DB   = "--db";
 //const std::string OPT_IDX  = "--idx";

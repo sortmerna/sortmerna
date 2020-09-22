@@ -111,7 +111,7 @@ set(SMR_SRCS
 	processor.cpp
 	read.cpp
 	#read_control.cpp
-	readsfile.cpp
+	readfeed.cpp
 	readstats.cpp
 	references.cpp
 	refstats.cpp
