@@ -22,73 +22,12 @@
 #include "references.hpp"
 #include "options.hpp"
 #include "read.hpp"
-#include "ThreadPool.hpp"
+//#include "ThreadPool.hpp"
 #include "readfeed.hpp"
 
 // forward
 void computeStats(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
-
-// 20201005 Mon  moved to 'align2'. TODO: remove Processor all together
-void Processor::run()
-{} // ~Processor::run
-
-// 20201006 Tue moved to 'postProcess2'. TODO: remove PostProcessor
-void PostProcessor::run()
-{} // ~PostProcessor::run
-
-void ReportProcessor::run()
-{
-	unsigned countReads = 0;
-	unsigned num_invalid = 0; // empty or invalid reads count
-	std::size_t num_reads = opts.is_paired ? 2 : 1;
-	std::string readstr;
-	std::vector<Read> reads; // two reads if paired, a single read otherwise
-
-	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " started.");
-
-	for (bool isDone = false; !isDone;)
-	{
-		reads.clear();
-		for (std::size_t i = 0; i < num_reads; ++i)
-		{
-			if (readfeed.next(id, readstr))
-			{
-				Read read(readstr);
-				read.init(opts);
-				read.load_db(kvdb);
-				reads.push_back(read);
-				readstr.resize(0);
-				++countReads;
-			}
-			else {
-				isDone = true;
-			}
-		}
-
-		if (!isDone) {
-			if (reads.back().isEmpty || !reads.back().isValid) {
-				++num_invalid;
-			}
-			else {
-				job(reads, opts, refs, refstats, output);
-			}
-		}
-	} // ~for
-
-	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
-} // ~ReportProcessor::run
-
-/*
-   called on each read or a pair of reads (if paired)
-*/
-void ReportProcessor::job(std::vector<Read>& reads,
-						Runopts& opts, 
-						References& refs, 
-						Refstats& refstats, 
-						Output& output) 
-{
-} // ~ReportProcessor::job
 
 /*
   runs in a thread
@@ -139,7 +78,7 @@ void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDa
 		numThreads = opts.num_proc_thread_pp;
 		INFO("Using total threads: ", numThreads);
 	}
-	//ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS + opts.num_write_thread);
+
 	std::vector<std::thread> tpool;
 	tpool.reserve(numThreads);
 	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
