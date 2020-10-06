@@ -75,7 +75,7 @@ int clear_dir(std::string dpath);
  *
  * @param isLastStrand flags when the last strand (out of max 2 strands) is passed for matching
  */
-void align_cb
+void traverse
 	(
 		Runopts& opts, 
 		Index& index, 
@@ -302,92 +302,7 @@ void align_cb
 	{
 		read.is_denovo = false;
 	}
-} // ~align_cb
-
-// called from main
-void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
-{
-	INFO("==== Starting alignment ====");
-
-	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
-
-	// Init thread pool with the given number of threads
-	int numProcThread = 0;
-	if (opts.num_proc_thread == 0) {
-		numProcThread = numCores; // default
-		INFO("Using default number of Processor threads equals num CPU cores: ", numCores);
-	}
-	else
-	{
-		numProcThread = opts.num_proc_thread; // set using '--thread'
-		INFO("Using number of Processor threads set in run options: ", numProcThread);
-	}
-
-	int numThreads = opts.num_read_thread + numProcThread; //  + opts.num_write_thread
-
-	INFO("Number of cores: ", numCores, " Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
-
-	ThreadPool tpool(numThreads);
-	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
-	Refstats refstats(opts, readstats);
-	References refs;
-
-	int loopCount = 0; // counter of total number of processing iterations
-
-	// perform alignment
-	auto starts = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> elapsed;
-
-	// loop through every index passed to option '--ref'
-	for (size_t index_num = 0; index_num < opts.indexfiles.size(); ++index_num)
-	{
-		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
-		{
-			INFO("Loading index: ", index_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[index_num], " Memory KB: ", (get_memory() >> 10), " ... ");
-			starts = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part, opts.indexfiles, refstats);
-			readstats.short_reads_num.store(0, std::memory_order_relaxed); // reset the short reads counter
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO_MEM("done [", elapsed.count(), "] sec");
-
-			INFO("Loading references ...");
-			starts = std::chrono::high_resolution_clock::now();
-			refs.load(index_num, idx_part, opts, refstats);
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO_MEM("done [", elapsed.count(), "] sec.");
-
-			starts = std::chrono::high_resolution_clock::now();
-
-			// add Readsfile job
-			tpool.addJob(Readfeed(opts.readfiles, opts.is_gz));
-
-			// add Processor jobs
-			for (int i = 0; i < numProcThread; i++)
-			{
-				tpool.addJob(Processor("proc_" + std::to_string(i), read_queue, opts, index, refs, readstats, refstats, kvdb, align_cb));
-			}
-			++loopCount;
-
-			tpool.waitAll(); // wait till all reads are processed against the current part
-
-			elapsed = std::chrono::high_resolution_clock::now() - starts;
-			INFO_MEM("Done index ", index_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
-
-			index.unload();
-			refs.unload();
-			INFO_MEM("Index and References unloaded.")
-
-			read_queue.reset();
-		} // ~for(idx_part)
-	} // ~for(index_num)
-
-	INFO("==== Done alignment ====\n");
-
-	// store readstats calculated in alignment
-	readstats.set_is_total_mapped_sw_id_cov();
-	readstats.store_to_db(kvdb);
-} // ~align
+} // ~traverse
 
 /**
  * verify the alignment was already performed by querying the KVDB

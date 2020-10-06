@@ -43,18 +43,11 @@
 #include "index.hpp"
 #include "indexdb.hpp"
 #include "readfeed.hpp"
+#include "processor.hpp"
 
-namespace fs = std::filesystem;
 
-// forward
-void postProcess(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb); // processor.cpp
-//void setup_workspace(Runopts & opts);
-
-/*! @fn main()
-	@brief main function, parses command line arguments and launches the processing
-	@param int argc
-	@param char** argv
-	@return none
+/*
+  main entry of the sortmerna application
  */
 int main(int argc, char** argv)
 {
@@ -65,7 +58,6 @@ int main(int argc, char** argv)
 
 	Index index(opts); // reference index DB
 	KeyValueDatabase kvdb(opts.kvdbdir.string());
-	Readfeed readsf(opts.readfiles, opts.is_gz);
 
 	if (opts.is_cmd) {
 		CmdSession cmd;
@@ -75,8 +67,6 @@ int main(int argc, char** argv)
 	{
 		Readstats readstats(opts, kvdb);
 		Output output(opts, readstats);
-
-		readsf.split(3, readstats.all_reads_count, "");
 
 		switch (opts.alirep)
 		{

@@ -36,6 +36,7 @@
 #include <fstream>
 #include <cmath> // log, exp
 #include <filesystem>
+#include <functional> // std::ref
 
 #include "output.hpp"
 #include "ThreadPool.hpp"
@@ -52,7 +53,7 @@
 
 
 // forward
-void reportsJob(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output); // callback
+//void reportsJob(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output); // callback
 
 Summary::Summary():
 	is_de_novo_otu(false), 
@@ -1025,60 +1026,3 @@ std::string Summary::to_string(Runopts& opts, Refstats& refstats)
 
 	return ss.str();
 } // ~Summary::to_string
-
-// called from main. TODO: move into a class?
-void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb)
-{
-	int N_READ_THREADS = opts.num_read_thread_rep;
-	int N_PROC_THREADS = opts.num_proc_thread_rep;
-
-	INFO("=== Report generation starts. Thread: ", std::this_thread::get_id() , " ===\n");
-
-	ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
-	bool indb = readstats.restoreFromDb(kvdb);
-
-	if (indb) {
-		INFO("Restored Readstats from DB: ", indb); 
-	}
-	ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
-	Refstats refstats(opts, readstats);
-	References refs;
-
-	output.openfiles(opts);
-	if (opts.is_sam) output.writeSamHeader(opts);
-
-	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
-	for (uint16_t ref_idx = 0; ref_idx < (uint16_t)opts.indexfiles.size(); ++ref_idx)
-	{
-		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[ref_idx]; ++idx_part)
-		{
-			INFO("Loading reference ", ref_idx, " part ", idx_part+1, "/", refstats.num_index_parts[ref_idx], "  ... ");
-
-			auto starts = std::chrono::high_resolution_clock::now();
-
-			refs.load(ref_idx, idx_part, opts, refstats);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO("done. Elapsed sec [" , elapsed.count());
-
-			starts = std::chrono::high_resolution_clock::now(); // index processing starts
-
-			// start Reader
-			tpool.addJob(Readfeed(opts.readfiles, opts.is_gz));
-
-			// start processor
-			tpool.addJob(ReportProcessor("report_proc_1", read_queue, opts, refs, output, refstats, kvdb, reportsJob));
-
-			tpool.waitAll(); // wait till processing is done on one index part
-			refs.unload();
-			read_queue.reset();
-
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
-			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
-
-			if (!opts.is_blast && !opts.is_sam)	break;;
-		} // ~for(idx_part)
-	} // ~for(ref_idx)
-
-	INFO("=== Done Reports generation ===\n");
-} // ~generateReports

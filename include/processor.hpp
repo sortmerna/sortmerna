@@ -15,7 +15,7 @@
 
 // forward
 class Read;
-class ReadsQueue;
+class Readfeed;
 struct Runopts;
 struct Index;
 class References;
@@ -23,14 +23,22 @@ class Output;
 struct Readstats;
 class Refstats;
 
+void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb);
+void align2(int id, Readfeed& readfeed, Index& index, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts);
+void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb);
+void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb);
+void computeStats(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
+void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb);
+void reportsJob(Readfeed& readfeed, Runopts& opts, References& refs, Refstats& refstats, Output& output, KeyValueDatabase& kvdb);
+
 /* 
  * performs alignment
  */
 class Processor {
 public:
 	Processor(
-		std::string id,
-		ReadsQueue& readQueue,
+		int id,
+		Readfeed& readfeed,
 		Runopts& opts, 
 		Index& index, 
 		References& refs, 
@@ -41,7 +49,7 @@ public:
 		void(*callback)(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand)
 	) :
 		id(id),
-		readQueue(readQueue),
+		readfeed(readfeed),
 		opts(opts),
 		index(index),
 		refs(refs),
@@ -51,7 +59,7 @@ public:
 		callback(callback) 
 	{}
 
-	void operator()() { run(); }
+	//void operator()() { run(); }
 
 protected:
 	void run();
@@ -59,8 +67,8 @@ protected:
 	void(*callback)(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
 
 protected:
-	std::string id;
-	ReadsQueue& readQueue;
+	int id;
+	Readfeed& readfeed;
 	Runopts& opts; 
 	Index& index; 
 	References& refs; 
@@ -73,8 +81,8 @@ protected:
 class PostProcessor {
 public:
 	PostProcessor(
-		std::string id,
-		ReadsQueue& readQueue,
+		int id,
+		Readfeed& readfeed,
 		Runopts& opts,
 		References& refs,
 		Readstats& readstats,
@@ -83,7 +91,7 @@ public:
 		void(*callback)(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
 	) :
 		id(id),
-		readQueue(readQueue),
+		readfeed(readfeed),
 		opts(opts),
 		refs(refs),
 		readstats(readstats),
@@ -92,16 +100,16 @@ public:
 		callback(callback)
 	{}
 
-	void operator()() { run(); }
+	//void operator()() { run(); }
 
 protected:
 	void run();
 	void(*callback)(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
 
 protected:
-	std::string id;
+	int id;
 	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
-	ReadsQueue& readQueue;
+	Readfeed& readfeed;
 	Runopts& opts;
 	References& refs;
 	Readstats& readstats;
@@ -113,34 +121,35 @@ protected:
 class ReportProcessor {
 public:
 	ReportProcessor(
-		std::string id,
-		ReadsQueue& readQueue,
+		int id,
+		Readfeed& readfeed,
 		Runopts& opts,
 		References& refs, 
 		Output& output, 
 		Refstats& refstats,
-		KeyValueDatabase& kvdb,
-		void(*callback)(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output)
+		KeyValueDatabase& kvdb
+		//void(*callback)(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output)
 	) :
 		id(id),
-		readQueue(readQueue),
+		readfeed(readfeed),
 		opts(opts),
 		refs(refs),
 		output(output),
 		refstats(refstats),
-		kvdb(kvdb),
-		callback(callback)
+		kvdb(kvdb)
+		//callback(callback)
 	{}
 
-	void operator()() { run(); }
+	//void operator()() { run(); }
 
 protected:
 	void run();
-	void(*callback)(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output);
+	//void(*callback)(std::vector<Read> & reads, Runopts & opts, References & refs, Refstats & refstats, Output & output);
+	void job(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output); // report job
 
 protected:
-	std::string id;
-	ReadsQueue& readQueue;
+	int id;
+	Readfeed& readfeed;
 	// callback parameters. TODO: a better way of binding. (std::bind doesn't look better)
 	Runopts& opts; 
 	References& refs;

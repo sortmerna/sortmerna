@@ -127,6 +127,3 @@ private:
 	void write_a_read(std::ofstream& strm, Read& read);
 
 }; // ~class Output
-
-
-void generateReports(Runopts & opts, Readstats & readstats, Output & output, KeyValueDatabase &kvdb);

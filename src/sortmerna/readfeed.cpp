@@ -21,9 +21,16 @@
 #include "izlib.hpp"
 #include "common.hpp"
 
-Readfeed::Readfeed(std::vector<std::string>& readfiles, bool is_gz)
+/*
+ @param type       feed type
+ @param readfiles  vector with reads file paths
+ @param is_gz      flags the readsfiles format gzip | non-gzip (flat)
+*/
+Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, bool is_gz)
 	:
+	type(type),
 	is_done(false),
+	is_ready(false),
 	count_all(0),
 	is_gzipped(is_gz),
 	is_two_files(readfiles.size() > 1),
@@ -179,10 +186,114 @@ bool Readfeed::loadReadById(Read& read)
 	return true;
 } // ~Readfeed::loadReadById
 
-std::string Readfeed::next(std::ifstream& ifs) {
+/*
+ @param fs_idx  index of the file stream into Readfeed::ifsv
+*/
+bool Readfeed::next(int fs_idx, std::string& seq) {
 	std::string line;
-	return line;
-}
+	std::stringstream read; // an empty read
+	auto stat = vstate_in[fs_idx].last_stat;
+	auto inext = vnext_fwd_in[fs_idx] ? fs_idx : fs_idx + 1; // index of the next file stream i.e. idx fwd | idx rev
+
+	// read lines from the reads file and extract a single read
+	for (auto count = vstate_in[inext].last_count; !vstate_in[inext].is_done; ++count) // count lines in a single record/read
+	{
+		if (vstate_in[inext].last_header.size() > 0)
+		{
+			read << inext << '_' << vstate_in[inext].read_count << '\n';
+			read << vstate_in[inext].last_header << '\n';
+			vstate_in[inext].last_header = "";
+		}
+
+		// read a line
+		if (!vstate_in[inext].is_done)
+			stat = vzlib_in[inext].getline(ifsv[inext], line);
+
+		// EOF reached - return last read
+		if (stat == RL_END)
+		{
+			vstate_in[inext].is_done = true;
+			auto FR = inext == 0 ? "FWD" : "REF";
+			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[inext].read_count);
+			break;
+		}
+
+		if (stat == RL_ERR)
+		{
+			auto FR = vnext_fwd_in[fs_idx] ? "FWD" : "REF";
+			ERR("reading from ", FR, " file. Exiting...");
+			exit(1);
+		}
+
+		if (line.empty())
+		{
+			--count;
+			continue;
+		}
+
+		++vstate_in[inext].line_count;
+
+		// right-trim whitespace in place (removes '\r' too)
+		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+
+		// the first line in file
+		if (vstate_in[inext].line_count == 1)
+		{
+			vstate_in[inext].isFastq = (line[0] == FASTQ_HEADER_START);
+			vstate_in[inext].isFasta = (line[0] == FASTA_HEADER_START);
+		}
+
+		if (count == 4 && vstate_in[inext].isFastq)
+		{
+			count = 0;
+		}
+
+		// fastq: 0(header), 1(seq), 2(+), 3(quality)
+		// fasta: 0(header), 1(seq)
+		if ((vstate_in[inext].isFasta && line[0] == FASTA_HEADER_START) || (vstate_in[inext].isFastq && count == 0)) // header line reached
+		{
+			if (vstate_in[inext].line_count == 1)
+			{
+				read << inext << '_' << vstate_in[inext].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				read << line << '\n'; // the very first header
+				count = 0;
+			}
+			else
+			{
+				// read is ready - return
+				vstate_in[inext].last_header = line;
+				vstate_in[inext].last_count = 1;
+				vstate_in[inext].last_stat = stat;
+				break;
+			}
+		} // ~if header line
+		else
+		{ // add sequence -->
+			if (vstate_in[inext].isFastq)
+			{
+				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
+					continue;
+				if (count == 3)
+				{
+					read << line;
+					continue;
+				}
+				read << line << '\n'; // FQ sequence
+			}
+			else {
+				read << line; // FASTA sequence possibly multiline
+			}
+		}
+	} // ~for getline
+
+	++vstate_in[inext].read_count;
+
+	vnext_fwd_in[fs_idx] != vnext_fwd_in[fs_idx]; // toggle the stream index
+
+	if (read.str().size() > 0)
+		seq = read.str();
+	return read.str().size() > 0;
+} // ~Readfeed::next
 
 /* 
  * @param array of read files - one or two (if paired) files
@@ -548,7 +659,8 @@ bool Readfeed::split(const unsigned num_parts, const unsigned num_reads, const s
 	INFO("start splitting");
 	auto retval = true;
 
-	std::vector<std::ifstream> ifsv(readfiles.size());
+	//std::vector<std::ifstream> ifsv(readfiles.size());
+	ifsv.resize(readfiles.size());
 	for (int i = 0; i < readfiles.size(); ++i) {
 		ifsv[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
 		if (!ifsv[i].is_open()) {
@@ -559,17 +671,20 @@ bool Readfeed::split(const unsigned num_parts, const unsigned num_reads, const s
 
 	// prepare zlib interfaces for inflating reads files
 	bool is_gz = true;
-	std::vector<Izlib> vzlib_in(2, Izlib(is_gz));
+	//std::vector<Izlib> vzlib_in(2, Izlib(is_gz));
+	vzlib_in.resize(readfiles.size(), Izlib(is_gz));
 	for (auto i = 0; i < vzlib_in.size(); ++i) {
 		vzlib_in[i].init(false);
 	}
 
-	std::vector<Readstate> vstate_in(2);
+	//std::vector<Readstate> vstate_in(2);
+	vstate_in.resize(readfiles.size());
 	int inext = 0; // fwd - index of the input file
 	std::string readstr;
 
 	// prepare split files to output
-	std::vector<std::ofstream> ofsv(num_parts * readfiles.size());
+	//std::vector<std::ofstream> ofsv(num_parts * readfiles.size());
+	ofsv.resize(num_parts * readfiles.size());
 	size_t idx = 0; // stream index
 	for (int i = 0; i < readfiles.size(); ++i) {
 		auto pdir = std::filesystem::path(readfiles[i]).parent_path();
@@ -592,12 +707,14 @@ bool Readfeed::split(const unsigned num_parts, const unsigned num_reads, const s
 	}
 
 	// prepare zlib interface for writing split files
-	std::vector<Izlib> vzlib_out(num_parts * readfiles.size(), Izlib(true, true, true));
+	//std::vector<Izlib> vzlib_out(num_parts * readfiles.size(), Izlib(true, true, true));
+	vzlib_out.resize(num_parts * readfiles.size(), Izlib(true, true, true));
 	for (auto i = 0; i < vzlib_out.size(); ++i) {
 		vzlib_out[i].init(true);
 	}
 
-	std::vector<Readstate> vstate_out(num_parts * readfiles.size());
+	//std::vector<Readstate> vstate_out(num_parts * readfiles.size());
+	vstate_out.resize(num_parts * readfiles.size());
 
 	// calculate number of reads in each of the output files
 	auto nreads = readfiles.size() == 2 ? num_reads / 2 : num_reads; // num reads in a single input file e.g. FWD
@@ -665,3 +782,31 @@ bool Readfeed::split(const unsigned num_parts, const unsigned num_reads, const s
 	INFO("Done splitting. Reads count: ", count_all, " Runtime sec: ", elapsed.count(), "\n");
 	return retval;
 } // ~Readfeed::split
+
+/*
+  20200924 Thu
+  verify the split is already performed and ready to use
+
+  Upon the split the following descriptor file is generated in the split files directory:
+    stamp:
+	  time: <timestamp>
+      source files count: 2
+      split files count:  6
+	  total reads:        10M
+	  source read files: []
+	  split files: []
+
+  @param  num_part   number of splits on each source reads file
+  @param  num_reads  total count of reads in all source files
+  @param  dbdir      directory where the split reads are located
+  @param  readfiles  source reads files paths
+*/
+bool Readfeed::is_split_done(
+	const unsigned num_parts, 
+	const unsigned num_reads, 
+	const std::string dbdir, 
+	const std::vector<std::string>& readfiles)
+{
+	INFO("TODO: implement");
+	return true;
+} // ~Readfeed::is_split_ready
