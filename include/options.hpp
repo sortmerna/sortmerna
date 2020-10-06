@@ -17,7 +17,8 @@
 #include <filesystem>
 
 #include "common.hpp"
-#include "kvdb.hpp"
+
+enum class FEED_TYPE : unsigned { SPLIT_READS = 0, LOCKLESS = 1, MAX = LOCKLESS };
 
 // global constants
 const std::string \
@@ -28,6 +29,7 @@ OPT_OTHER = "other",
 OPT_WORKDIR = "workdir",
 OPT_KVDB = "kvdb",
 OPT_IDX = "idx",
+OPT_READB = "readb",
 OPT_FASTX = "fastx",
 OPT_SAM = "sam",
 OPT_SQ = "SQ",
@@ -138,6 +140,10 @@ help_kvdb =
 help_idx =
 	"Directory for storing Reference index.      WORKDIR/idx\n"
 	"                                            \n",
+help_readb = 
+	"Directory for storing split reads or        WORKDIR/readb/\n"
+	"                                            split reads index\n"
+	"                                            Use with '" + OPT_READS_FEED + "'\n",
 help_sam = 
 	"Output SAM alignment for aligned reads.\n",
 help_SQ = 
@@ -402,6 +408,7 @@ public:
 	std::filesystem::path idxdir;
 	std::filesystem::path kvdbdir;
 	std::filesystem::path outdir;
+	std::filesystem::path readb_dir; // Reads DB directory to use for split reads or split reads index. See option REED_FEED.
 	std::filesystem::path aligned_pfx; // aligned reads output file prefix [dir/][pfx]
 	std::filesystem::path other_pfx; // non-aligned reads output file prefix [dir/][pfx]
 	std::string cmdline;
@@ -428,7 +435,7 @@ public:
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
 	int score_N = 0; // '-N' SW penalty for ambiguous letters (N's)
-	int reads_feed_type = 0; // OPT_READS_FEED
+	FEED_TYPE feed_type = FEED_TYPE::SPLIT_READS; // OPT_READS_FEED
 
 	double evalue = -1.0; // '-e' E-value threshold
 	double min_id = -1.0; // OTU-picking option: Identity threshold (%ID)
@@ -450,6 +457,7 @@ public:
 	const std::string IDX_DIR  = "idx";
 	const std::string KVDB_DIR = "kvdb";
 	const std::string OUT_DIR  = "out";
+	const std::string READB_DIR = "readb";
 
 	enum ALIGN_REPORT { align, postproc, report, alipost, all };
 	ALIGN_REPORT alirep = ALIGN_REPORT::all;
@@ -461,6 +469,7 @@ private:
 	void validate();
 	void validate_idxdir(); // called from validate
 	void validate_kvdbdir(); // called from validate
+	void validate_readb_dir(); // called from validate
 	void validate_aligned_pfx();
 	void validate_other_pfx();
 
@@ -512,6 +521,7 @@ private:
 	void opt_workdir(const std::string& path);
 	void opt_kvdb(const std::string& path);
 	void opt_idx(const std::string& path);
+	void opt_readb(const std::string& path);
 
 	// ref tmpdir interval m L max_pos v h  // indexing options
 	void opt_tmpdir(const std::string &val);
@@ -527,7 +537,7 @@ private:
 
 	std::string to_string();
 	std::string to_bin_string();
-	void store_to_db(KeyValueDatabase& kvdb);
+	//void store_to_db(KeyValueDatabase& kvdb);
 
 	// variables
 private:
@@ -546,12 +556,13 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 49> options = {
+	const std::array<opt_6_tuple, 50> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
 		std::make_tuple(OPT_KVDB,           "PATH",        COMMON,      false, help_kvdb, &Runopts::opt_kvdb),
 		std::make_tuple(OPT_IDX,            "PATH",        COMMON,      false, help_idx, &Runopts::opt_idx),
+		std::make_tuple(OPT_READB,          "PATH",        COMMON,      false, help_readb, &Runopts::opt_readb),
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),

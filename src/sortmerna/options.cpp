@@ -1012,6 +1012,18 @@ void Runopts::opt_idx(const std::string& path) {
 	}
 }
 
+void Runopts::opt_readb(const std::string& path) {
+	if (path.size() == 0)
+	{
+		ERR("'", OPT_READB, "' option takes an argument - a directory path. None was provided.\n", help_readb);
+		exit(EXIT_FAILURE);
+	}
+	else {
+		readb_dir = path;
+		INFO("Using Reads DB dir: [", std::filesystem::absolute(readb_dir), " as specified");
+	}
+}
+
 // indexing options
 void Runopts::opt_tmpdir(const std::string &val)
 {
@@ -1106,14 +1118,15 @@ void Runopts::opt_max_pos(const std::string &val)
 
 void Runopts::opt_reads_feed(const std::string& val)
 {
-	int reads_feed_type = std::stoi(val);
-	int max_feedn = 1;
+	FEED_TYPE ftype = static_cast<FEED_TYPE>(std::stoi(val));
 
-	if (reads_feed_type > max_feedn)
+	if (ftype > FEED_TYPE::MAX)
 	{
-		ERR("Option '", OPT_READS_FEED, "' can only take values in range [0..", max_feedn, "] Provided value is [", val, "'");
+		ERR("Option '", OPT_READS_FEED, "' can only take values in range [0..", static_cast<int>(FEED_TYPE::MAX), "] Provided value is ['", val, "'");
 		exit(EXIT_FAILURE);
 	}
+
+	feed_type = ftype;
 } // ~Runopts::opt_reads_feed
 
 /* 
@@ -1205,6 +1218,40 @@ void Runopts::validate_kvdbdir()
 		}
 	}
 } // ~validate_kvdbdir
+
+/*
+  validate split reads directory
+*/
+void Runopts::validate_readb_dir() {
+	const auto SR = "split reads";
+	const auto SR_DIR = "split reads directory";
+	if (readb_dir.empty()) {
+		if (workdir.empty()) {
+			INFO("'", OPT_WORKDIR, "' option was not provided. Using USERDIR as the location for the ",SR);
+			workdir = std::filesystem::path(get_user_home()) / WORKDIR_DEF_SFX;
+		}
+		readb_dir = workdir / READB_DIR; // default
+	}
+	INFO("Using ",SR_DIR," : ", std::filesystem::absolute(readb_dir));
+	if (!std::filesystem::exists(readb_dir)) {
+		bool is_dir_ok = std::filesystem::create_directory(readb_dir);
+		if (!is_dir_ok) {
+			ERR("Failed creating ",SR_DIR," : ", std::filesystem::absolute(readb_dir));
+			exit(EXIT_FAILURE);
+		}
+		else {
+			INFO("Created ",SR_DIR," - OK");
+		}
+	}
+	else {
+		if (std::filesystem::is_empty(readb_dir)) {
+			INFO(SR_DIR," : ", std::filesystem::absolute(readb_dir), " exists and is empty");
+		}
+		else {
+			INFO(SR_DIR," : ", std::filesystem::absolute(readb_dir), " exists and is not empty");
+		}
+	}
+} // ~Runopts::validate_readb_dir
 
 void Runopts::validate_aligned_pfx() {
 	if (aligned_pfx.empty()) {
@@ -1397,6 +1444,8 @@ void Runopts::validate()
 {
 	validate_kvdbdir();
 	validate_idxdir();
+	if (feed_type == FEED_TYPE::SPLIT_READS)
+		validate_readb_dir();
 	validate_aligned_pfx(); // there is always some output like log => validate
 	if (is_other) {
 		validate_other_pfx();
@@ -1694,9 +1743,6 @@ void Runopts::print_help()
 	}
 	std::cout << ss.str();
 }
-
-void Runopts::store_to_db(KeyValueDatabase& kvdb)
-{}
 
   /*! @fn welcome()
   *  @brief outputs copyright, disclaimer and contact information
