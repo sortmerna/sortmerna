@@ -98,7 +98,7 @@ public:
 	/** 
 	 * lock the jobs queue and add a job
 	 */
-	void addJob(std::function <void(void)> func)
+	void addJob(std::function <void()> func)
 	{
 		std::lock_guard<std::mutex> lk(job_queue_mx);
 		jobs_.emplace(std::move(func));
