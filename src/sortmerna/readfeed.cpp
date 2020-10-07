@@ -35,60 +35,93 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, bool is_
 	is_gzipped(is_gz),
 	is_two_files(readfiles.size() > 1),
 	is_next_fwd(true),
-	readfiles(readfiles),
-	izlib_fwd(is_gz),
-	izlib_rev(is_gz)
-{} // ~Readfeed::Readfeed
+	readfiles(readfiles)
+{
+	// verify the read feed is ready
+	if (type == FEED_TYPE::SPLIT_READS)
+		is_ready = is_split_ready();
+} // ~Readfeed::Readfeed 1
+
+Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, const unsigned num_reads, const std::string& outdir)
+	:
+	type(type),
+	is_done(false),
+	is_ready(false),
+	count_all(0),
+	is_gzipped(false),
+	is_two_files(readfiles.size() > 1),
+	is_next_fwd(true),
+	readfiles(readfiles)
+{
+	// define files format (FASTA, FASTQ) and compression (gz, non-gz)
+
+} //~Readfeed::Readfeed 2
 
 //Readfeed::~Readfeed() {}
 
 /* 
- * thread runnable 
+  verify the split was already performed and the feed is ready
+  Split readfeed descriptor:
+    timestamp: xxx
+	num_input: 2  # number of input files
+	num_parts: 3  # number of split parts. split[].size = num_input * num_parts
+    input:
+	  - file_1: name, sha
+	  - file_2: name, sha
+	split:
+	 - file_1: name, sha
+	 - file_2: name, sha
+	 ...
+	 - file_n: name, sha
+*/
+bool Readfeed::is_split_ready() {
+	is_ready = false;
+	return is_ready;
+} // ~Readfeed::is_split_ready
+
+/* 
+ * can be run in a thread
  */
 void Readfeed::run()
 {
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Readsfile::run thread ", std::this_thread::get_id(), " started");
 
-	std::ifstream fs_fwd;
-	std::ifstream fs_rev;
-	fs_fwd.open(readfiles[0], std::ios_base::in | std::ios_base::binary);
-	if (!fs_fwd.is_open()) {
-		std::cerr << STAMP << "Failed to open file " << readfiles[0] << std::endl;
-		exit(1);
-	}
-	if (is_two_files) {
-		fs_rev.open(readfiles[1], std::ios_base::in | std::ios_base::binary);
-		if (!fs_rev.is_open()) {
-			std::cerr << STAMP << "Failed to open file " << readfiles[1] << std::endl;
+	// init input file streams
+	ifsv.resize(readfiles.size());
+	for (int i = 0; i < readfiles.size(); ++i) {
+		ifsv[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+		if (!ifsv[i].is_open()) {
+			ERR("Failed to open file ", readfiles[i]);
 			exit(1);
 		}
 	}
 
 	// bug 114 - Z_STREAM_ERROR even though init is called at construction time
-	izlib_fwd.init();
-	izlib_rev.init();
+	vzlib_in.resize(readfiles.size(), Izlib(true));
+	for (auto i = 0; i < vzlib_in.size(); ++i) {
+		vzlib_in[i].init(false);
+	}
+
+	std::string readstr;
+	int inext = 0;
 
 	// loop until EOF - get reads - push on queue
 	for (;;)
 	{
-		if (is_next_fwd) {
-			if (nextfwd(fs_fwd).size() > 0) {
-				++count_all;
-				if (is_two_files)
-					is_next_fwd = false;
+		if (next(inext, readstr)) {
+			++count_all;
+			if (is_two_files) {
+				is_next_fwd = false;
+				inext = inext == 0 ? 1 : 0; // toggle next file index
 			}
 		}
-		else {
-			if (nextrev(fs_rev).size() > 0) {
-				++count_all;
-				is_next_fwd = true;
-			}
+
+		is_done = true;
+		for (auto i = 0; i < vstate_in.size(); ++i) {
+			is_done = is_done && vstate_in[i].is_done;
 		}
-		
-		is_done = is_two_files ? state_fwd.is_done && state_rev.is_done : state_fwd.is_done;
 		if (is_done) {
-			INFO("Reader::run thread ", std::this_thread::get_id(), " Done Reading from all streams");
 			break;
 		}
 	} // ~for
@@ -294,217 +327,6 @@ bool Readfeed::next(int fs_idx, std::string& seq) {
 		seq = read.str();
 	return read.str().size() > 0;
 } // ~Readfeed::next
-
-/* 
- * @param array of read files - one or two (if paired) files
- * @return string with format: 'read_id \n read', where read_id = 'filenum_readnum' e.g. '0_1001', read = 'header \n sequence \n quality'
- */
-std::string Readfeed::nextfwd(std::ifstream& ifs) {
-
-	std::string line;
-	std::stringstream read; // an empty read
-	auto stat = state_fwd.last_stat;
-	auto file_num = 0; // FWD file
-
-	// read lines from the reads file and extract a single read
-	for (auto count = state_fwd.last_count; !state_fwd.is_done; ++count) // count lines in a single record/read
-	{
-		if (state_fwd.last_header.size() > 0)
-		{
-			read << file_num << '_' << state_fwd.read_count << '\n';
-			read << state_fwd.last_header << '\n';
-			state_fwd.last_header = "";
-		}
-
-		// read a line
-		if (!state_fwd.is_done)
-			stat = izlib_fwd.getline(ifs, line);
-
-		// EOF reached - return last read
-		if (stat == RL_END)
-		{
-			state_fwd.is_done = true;
-			INFO("EOF FWD reached. Total reads: ", ++state_fwd.read_count);
-			break;
-		}
-
-		if (stat == RL_ERR)
-		{
-			ERR("reading from FWD file. Exiting...");
-			exit(1);
-		}
-
-		if (line.empty())
-		{
-			--count;
-			continue;
-		}
-
-		++state_fwd.line_count;
-
-		// right-trim whitespace in place (removes '\r' too)
-		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-
-		// the first line in file
-		if (state_fwd.line_count == 1)
-		{
-			state_fwd.isFastq = (line[0] == FASTQ_HEADER_START);
-			state_fwd.isFasta = (line[0] == FASTA_HEADER_START);
-		}
-
-		if (count == 4 && state_fwd.isFastq)
-		{
-			count = 0;
-		}
-
-		// fastq: 0(header), 1(seq), 2(+), 3(quality)
-		// fasta: 0(header), 1(seq)
-		if ((state_fwd.isFasta && line[0] == FASTA_HEADER_START) || (state_fwd.isFastq && count == 0)) // header line reached
-		{
-			if (state_fwd.line_count == 1)
-			{
-				read << file_num << '_' << state_fwd.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
-				read << line << '\n'; // the very first header
-				count = 0;
-			}
-			else 
-			{
-				// read is ready - return
-				state_fwd.last_header = line;
-				state_fwd.last_count = 1;
-				state_fwd.last_stat = stat;
-				break;
-			}
-		} // ~if header line
-		else
-		{ // add sequence -->
-			if (state_fwd.isFastq)
-			{
-				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
-					continue;
-				if (count == 3)
-				{
-					read << line;
-					continue;
-				}
-				read << line << '\n'; // FQ sequence
-			}
-			else {
-				read << line; // FASTA sequence possibly multiline
-			}
-		}
-	} // ~for getline
-
-	++state_fwd.read_count;
-
-	return read.str();
-} // ~Readfeed::nextfwd
-
-/* 
- * TODO: identical to nextfwd.
- * dereferencing Gzip always causes errors. 
- * Cannot store Gzip in an array and cannot pass it by reference (may be can).
- */
-std::string Readfeed::nextrev(std::ifstream& ifs)
-{
-	std::string line;
-	std::stringstream read; // an empty read
-	auto stat = state_rev.last_stat;
-	auto file_num = 1; // REV file
-
-	// read lines from the reads file and extract a single read
-	for (auto count = state_rev.last_count; !state_rev.is_done; ++count) // count lines in a single record/read
-	{
-		if (state_rev.last_header.size() > 0)
-		{
-			read << file_num << '_' << state_rev.read_count << '\n';
-			read << state_rev.last_header << '\n';
-			state_rev.last_header = "";
-		}
-
-		// read a line
-		if (!state_rev.is_done)
-			stat = izlib_rev.getline(ifs, line);
-
-		// EOF reached - return last read
-		if (stat == RL_END)
-		{
-			state_rev.is_done = true;
-			INFO("EOF REV reached. Total reads: " , ++state_rev.read_count);
-			break;
-		}
-
-		if (stat == RL_ERR)
-		{
-			ERR("reading from REV file. Exiting...");
-			exit(1);
-		}
-
-		if (line.empty())
-		{
-			--count;
-			continue;
-		}
-
-		++state_rev.line_count;
-
-		// right-trim whitespace in place (removes '\r' too)
-		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-
-		// the first line in file
-		if (state_rev.line_count == 1)
-		{
-			state_rev.isFastq = (line[0] == FASTQ_HEADER_START);
-			state_rev.isFasta = (line[0] == FASTA_HEADER_START);
-		}
-
-		if (count == 4 && state_rev.isFastq)
-		{
-			count = 0;
-		}
-
-		// fastq: 0(header), 1(seq), 2(+), 3(quality)
-		// fasta: 0(header), 1(seq)
-		if ((state_rev.isFasta && line[0] == FASTA_HEADER_START) || (state_rev.isFastq && count == 0)) // header line reached
-		{
-			if (state_rev.line_count == 1)
-			{
-				read << file_num << '_' << state_rev.read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
-				read << line << '\n'; // the very first header
-				count = 0;
-			}
-			else
-			{
-				// read is ready - return
-				state_rev.last_header = line;
-				state_rev.last_count = 1;
-				state_rev.last_stat = stat;
-				break;
-			}
-		} // ~if header line
-		else
-		{ // add sequence -->
-			if (state_rev.isFastq)
-			{
-				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
-					continue;
-				if (count == 3)
-				{
-					read << line;
-					continue;
-				}
-				read << line << '\n'; // FQ sequence
-			}
-			else {
-				read << line; // FASTA sequence possibly multiline
-			}
-		}
-	} // ~for getline
-
-	++state_rev.read_count;
-
-	return read.str();
-} // ~Readfeed::nextrev
 
 
 /**

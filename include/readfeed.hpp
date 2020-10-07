@@ -36,14 +36,13 @@ struct Readstate {
 class Readfeed {
 public:
 	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, bool is_gz);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, const unsigned num_reads, const std::string& outdir);
 
-	//void operator()() { run(); }
 	void run();
+	bool is_split_ready();
 
 	bool next(int fs_idx, std::string& seq); // \n separated read data. FA - 2 lines, FQ - 4 lines
 	bool next(std::vector<std::ifstream>& fstreams, std::vector<Izlib>& vzlib, std::vector<Readstate>& vstate, int& inext, std::string& seq);
-	std::string nextfwd(std::ifstream& ifs);
-	std::string nextrev(std::ifstream& ifs);
 	void reset();
 	bool split(const unsigned num_parts, const unsigned num_reads, const std::string& outdir);
 	static bool is_split_done(const unsigned num_parts, const unsigned num_reads, const std::string dbdir, const std::vector<std::string>& readfiles);
@@ -74,12 +73,6 @@ private:
 	std::vector<Izlib> vzlib_out;
 	std::vector<Readstate> vstate_out;
 	std::vector<bool> vnext_fwd_out; // size = num processors
-
-	// TODO: remove
-	Readstate state_fwd;
-	Readstate state_rev;
-	Izlib izlib_fwd;
-	Izlib izlib_rev;
 };
 
 // ~readfeed.hpp
