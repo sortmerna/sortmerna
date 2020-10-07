@@ -285,7 +285,7 @@ help_a =
 	"                                            processing threads to use.\n"
 	"                                            Automatically redirects to '-threads'\n",
 help_threads = 
-	"Number of Processing threads to use                     numCores\n",
+	"Number of Processing threads to use                     2\n",
 help_thpp = 
 	"Number of Post-Processing Read:Process threads to use   1:1\n",
 help_threp = 
@@ -413,11 +413,11 @@ public:
 	std::filesystem::path other_pfx; // non-aligned reads output file prefix [dir/][pfx]
 	std::string cmdline;
 
-	int num_read_thread = 1; // number of threads reading the Reads file.
-	int num_write_thread = 1; // number of threads writing to Key-value database
-	int num_proc_thread = 0; // '-a' number of threads to use for alignment, post-processing, reporting. Default - all available cores.
-	int num_read_thread_pp = 1; // number of post-processing read threads
-	int num_proc_thread_pp = 1; // number of post-processing processor threads
+	int num_read_thread = 1;     // number of threads reading the Reads file.
+	int num_write_thread = 1;    // number of threads writing to Key-value database
+	int num_proc_thread = 2;     // number of threads to use for alignment
+	int num_read_thread_pp = 1;  // number of post-processing read threads
+	int num_proc_thread_pp = 1;  // number of post-processing processor threads
 	int num_read_thread_rep = 1; // number of report reader threads
 	int num_proc_thread_rep = 1; // number of report processor threads
 
