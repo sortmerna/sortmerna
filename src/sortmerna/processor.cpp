@@ -386,15 +386,8 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 
 	// Init thread pool with the given number of threads
 	int numProcThread = 0;
-	if (opts.num_proc_thread == 0) {
-		numProcThread = numCores; // default
-		INFO("Using default number of Processor threads equals num CPU cores: ", numCores);
-	}
-	else
-	{
-		numProcThread = opts.num_proc_thread; // set using '--thread'
-		INFO("Using number of Processor threads set in run options: ", numProcThread);
-	}
+	numProcThread = opts.num_proc_thread; // '-thread'
+	INFO("Using number of Processor threads: ", numProcThread);
 
 	// calculate the number of threads to use
 	int numThreads = 0;

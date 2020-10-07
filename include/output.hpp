@@ -37,7 +37,6 @@
 #include <vector>
 
 #include "common.hpp"
-#include "kvdb.hpp"
 
 // forward
 struct Index;
@@ -46,6 +45,7 @@ class Read;
 class Refstats;
 struct Readstats;
 struct Runopts;
+class KeyValueDatabase;
 
 /**
  * Summary report (log) data structure
@@ -99,26 +99,13 @@ public:
 	Output(Runopts& opts, Readstats& readstats);
 	~Output();
 
-	void report_blast(
-		Runopts & opts,
-		Refstats & refstats,
-		References & refs,
-		Read & read
-	);
-
-	void report_sam(
-		Runopts & opts,
-		References & refs,
-		Read & read
-	);
-
+	void report_blast(Runopts & opts, Refstats & refstats, References & refs, Read & read);
+	void report_sam(Runopts & opts, References & refs, Read & read);
 	void writeSamHeader(Runopts & opts);
-
 	void report_fasta(Runopts & opts, std::vector<Read> &reads);
 	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
 	void writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats);
-
 	void openfiles(Runopts & opts);
 	void closefiles();
 

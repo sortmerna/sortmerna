@@ -38,22 +38,19 @@
 #include <filesystem>
 #include <functional> // std::ref
 
+#include "options.hpp"
 #include "output.hpp"
-#include "ThreadPool.hpp"
-#include "kvdb.hpp"
-#include "read.hpp"
-#include "index.hpp"
 #include "references.hpp"
 #include "readstats.hpp"
 #include "processor.hpp"
-#include "options.hpp"
 #include "refstats.hpp"
 #include "readsqueue.hpp"
 #include "readfeed.hpp"
 
-
 // forward
-//void reportsJob(std::vector<Read>& reads, Runopts& opts, References& refs, Refstats& refstats, Output& output); // callback
+class Read;
+struct Index;
+class KeyValueDatabase;
 
 Summary::Summary():
 	is_de_novo_otu(false), 
