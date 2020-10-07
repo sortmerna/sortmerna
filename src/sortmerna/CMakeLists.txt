@@ -98,7 +98,7 @@ endif()
 set(SMR_SRCS
 	alignment.cpp
 	bitvector.cpp
-	callbacks.cpp
+	#callbacks.cpp
 	cmd.cpp
 	izlib.cpp
 	index.cpp
