@@ -62,7 +62,7 @@ void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, R
 }
 
 // called from main
-void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb)
+void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
 {
 	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
 	
@@ -85,11 +85,6 @@ void postProcess(Runopts& opts, Readstats& readstats, Output& output, KeyValueDa
 	bool indb = readstats.restoreFromDb(kvdb);
 
 	if (indb) {	INFO("Restored Readstats from DB:\n    ", readstats.toString()); }
-
-	Readfeed readfeed(opts.feed_type, opts.readfiles, opts.is_gz);
-	if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-		readfeed.split(1, readstats.all_reads_count, "");
-	}
 
 	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
 
@@ -230,7 +225,7 @@ void reportsJob(Readfeed& readfeed,
 
 
 // called from main. generateReports -> reportsJob
-void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyValueDatabase& kvdb)
+void generateReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
 {
 	int N_READ_THREADS = opts.num_read_thread_rep;
 	int N_PROC_THREADS = opts.num_proc_thread_rep;
@@ -248,7 +243,6 @@ void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyVal
 
 	Refstats refstats(opts, readstats);
 	References refs;
-	Readfeed readfeed(opts.feed_type, opts.readfiles, opts.is_gz);
 	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 
 	output.openfiles(opts);
@@ -296,15 +290,9 @@ void generateReports(Runopts& opts, Readstats& readstats, Output& output, KeyVal
 
 /*
   runs in a thread.  align -> align2
+  @param  id
 */
-void align2(int id,
-            Readfeed& readfeed,
-            Index& index,
-            References& refs,
-            Readstats& readstats,
-            Refstats& refstats,
-            KeyValueDatabase& kvdb,
-            Runopts& opts)
+void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	unsigned num_all = 0; // all reads this processor sees
 	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
@@ -377,7 +365,7 @@ void align2(int id,
 } // ~align2
 
 // called from main
-void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
 {
 	INFO("==== Starting alignment ====");
 
@@ -395,24 +383,22 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 	{
 		numThreads = opts.num_read_thread + numProcThread;
 		INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
+		//ThreadPool tpool(numThreads);
+		//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
 	}
 	else {
 		numThreads = numProcThread;
 		INFO("Using total of Processor threads: ", numProcThread);
 	}
-
-	//ThreadPool tpool(numThreads);
-	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
 	std::vector<std::thread> tpool;
 	tpool.reserve(numThreads);
 
 	Refstats refstats(opts, readstats);
 	References refs;
 
-	Readfeed readfeed(opts.feed_type, opts.readfiles, opts.is_gz);
-	if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-		readfeed.split(numProcThread, readstats.all_reads_count, "");
-	}
+	//if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
+	//	readfeed.split(numProcThread, readstats.all_reads_count, "");
+	//}
 
 	int loopCount = 0; // counter of total number of processing iterations
 
@@ -452,14 +438,14 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), std::ref(index), 
-					std::ref(refs), std::ref(readstats), std::ref(refstats), std::ref(kvdb), std::ref(opts)));
+				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), std::ref(readstats), std::ref(index),
+					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(opts)));
 			}
-			++loopCount;
-
 			for (auto i = 0; i < tpool.size(); ++i) {
 				tpool[i].join();
 			}
+
+			++loopCount;
 
 			elapsed = std::chrono::high_resolution_clock::now() - starts;
 			//INFO_MEM("Done index ", index_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
@@ -468,7 +454,7 @@ void align(Runopts& opts, Readstats& readstats, Output& output, Index& index, Ke
 			refs.unload();
 			INFO_MEM("Index and References unloaded.")
 
-				//read_queue.reset();
+			//read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(index_num)
 

@@ -111,7 +111,7 @@ Read::Read()
 	num_alignments(0),
 	hit_seeds(0),
 	best(0),
-	format(Format::FASTA)
+	format(BIO_FORMAT::FASTA)
 {}
 
 Read::Read(std::string& readstr)
@@ -126,7 +126,7 @@ Read::Read(std::string id, std::string& read)
 	Read()
 	{ id = id; }
 
-Read::Read(std::string id, std::string header, std::string sequence, std::string quality, Format format)
+Read::Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format)
 	:
 	id(id), header(std::move(header)), sequence(sequence),
 	quality(quality), format(format), isEmpty(false)
@@ -623,14 +623,14 @@ bool Read::from_string(std::string& readstr)
 			read_num = std::atoi(line.substr(pos+1, line.size() - pos -1).data());
 		}
 		else if (i == 1) {
-			format = line.front() == FASTA_HEADER_START ? Format::FASTA : Format::FASTQ;
+			format = line.front() == FASTA_HEADER_START ? BIO_FORMAT::FASTA : BIO_FORMAT::FASTQ;
 			header = line;
 		}
 		else if (i == 2) {
 			sequence = line;
 		}
 		else if (i == 3) {
-			if (format == Format::FASTQ) {
+			if (format == BIO_FORMAT::FASTQ) {
 				quality = line;
 			}
 			else {

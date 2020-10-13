@@ -17,11 +17,14 @@
 class Read;
 
 struct Readstate {
-	Readstate()	: is_done(false), isFastq(false), isFasta(false), 
+	Readstate()	: isFastq(false), isFasta(false), isZip(false), is_done(false),
 		read_count(0), line_count(0), last_count(0), max_reads(0), last_stat(0) {}
-	bool is_done;
+	void reset() { is_done = false; read_count = 0; line_count = 0; 
+		last_count = 0; max_reads = 0; last_stat = 0; last_header.clear(); }
 	bool isFastq; // file is FASTQ
 	bool isFasta; // file is FASTA
+	bool isZip;   // true (compressed) | false (flat)
+	bool is_done;
 	unsigned read_count; // count of reads in the file
 	unsigned line_count; // count of non-empty lines in the reads file
 	unsigned last_count; // count of lines in a single read
@@ -35,16 +38,18 @@ struct Readstate {
  */
 class Readfeed {
 public:
-	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, bool is_gz);
-	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, const unsigned num_reads, const std::string& outdir);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const std::string& basedir);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, const std::string& basedir);
 
 	void run();
 	bool is_split_ready();
 
-	bool next(int fs_idx, std::string& seq); // \n separated read data. FA - 2 lines, FQ - 4 lines
-	bool next(std::vector<std::ifstream>& fstreams, std::vector<Izlib>& vzlib, std::vector<Readstate>& vstate, int& inext, std::string& seq);
+	bool next(int inext, std::string& readstr);
+	bool next(int inext, unsigned& readlen, std::string& readstr); // \n separated read data. FA - 2 lines, FQ - 4 lines
 	void reset();
-	bool split(const unsigned num_parts, const unsigned num_reads, const std::string& outdir);
+	bool split(const unsigned num_parts);
+	bool define_format();
+	void count_reads();
 	static bool is_split_done(const unsigned num_parts, const unsigned num_reads, const std::string dbdir, const std::vector<std::string>& readfiles);
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
@@ -52,12 +57,18 @@ public:
 
 public:
 	FEED_TYPE type;
+	BIO_FORMAT biof;
+	ZIP_FORMAT zipf;
 	bool is_done; // flags end of all read streams
 	bool is_ready; // flags the read feed is ready i.e. no need to run split
-	unsigned count_all; // count of reads in all streams
+	bool is_format_defined; // flags the file format is defined i.e. 'define_format' was success
+	unsigned num_orig_files; // number of original reads files
+	unsigned num_splits;
+	unsigned num_reads_tot; // count of reads in all streams
+	unsigned length_all; // length of all reads from all files
+	const std::string& basedir; // split files root directory opts.readb
 
 private:
-	bool is_gzipped;
 	bool is_two_files; // flags two read files are processed (otherwise single file)
 	bool is_next_fwd; // flags the next file to be read is FWD (otherwise REV) TODO: remove
 	std::vector<std::string>& readfiles;
@@ -66,13 +77,13 @@ private:
 	std::vector<std::ifstream> ifsv; // [fwd_0, rev_0, fwd_1, rev_1, ... fwd_n-1, rev_n-1]
 	std::vector<Izlib> vzlib_in;
 	std::vector<Readstate> vstate_in;
-	std::vector<bool> vnext_fwd_in; // size = num processors
+	//std::vector<bool> vnext_fwd_in; // size = num processors
 
 	// output processing
 	std::vector<std::ofstream> ofsv;
 	std::vector<Izlib> vzlib_out;
 	std::vector<Readstate> vstate_out;
-	std::vector<bool> vnext_fwd_out; // size = num processors
+	//std::vector<bool> vnext_fwd_out; // size = num processors
 };
 
 // ~readfeed.hpp

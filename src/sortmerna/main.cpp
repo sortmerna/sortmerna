@@ -56,37 +56,38 @@ int main(int argc, char** argv)
 
 	INFO("Running command:\n", opts.cmdline);
 
-	Index index(opts); // reference index DB
-	KeyValueDatabase kvdb(opts.kvdbdir.string());
-
 	if (opts.is_cmd) {
 		CmdSession cmd;
 		cmd.run(opts);
 	}
 	else
 	{
-		Readstats readstats(opts, kvdb);
+		// init common objects
+		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.readb_dir.generic_string());
+		Index index(opts); // reference index DB
+		KeyValueDatabase kvdb(opts.kvdbdir.string());
+		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, kvdb, opts);
 		Output output(opts, readstats);
 
 		switch (opts.alirep)
 		{
 		case Runopts::ALIGN_REPORT::align:
-			align(opts, readstats, output, index, kvdb);
+			align(readfeed, readstats, index, kvdb, output, opts);
 			break;
 		case Runopts::ALIGN_REPORT::postproc:
-			postProcess(opts, readstats, output, kvdb);
+			postProcess(readfeed, readstats, kvdb, output, opts);
 			break;
 		case Runopts::ALIGN_REPORT::report:
-			generateReports(opts, readstats, output, kvdb);
+			generateReports(readfeed, readstats, kvdb, output, opts);
 			break;
 		case Runopts::ALIGN_REPORT::alipost:
-			align(opts, readstats, output, index, kvdb);
-			postProcess(opts, readstats, output, kvdb);
+			align(readfeed, readstats, index, kvdb, output, opts);
+			postProcess(readfeed, readstats, kvdb, output, opts);
 			break;
 		case Runopts::ALIGN_REPORT::all:
-			align(opts, readstats, output, index, kvdb);
-			postProcess(opts, readstats, output, kvdb);
-			generateReports(opts, readstats, output, kvdb);
+			align(readfeed, readstats, index, kvdb, output, opts);
+			postProcess(readfeed, readstats, kvdb, output, opts);
+			generateReports(readfeed, readstats, kvdb, output, opts);
 			break;
 		}
 	}

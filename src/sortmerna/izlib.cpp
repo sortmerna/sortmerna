@@ -15,15 +15,14 @@
 #include "common.hpp"
 
 
-Izlib::Izlib(bool gzipped, bool is_compress, bool is_init)
+Izlib::Izlib(bool is_compress, bool is_init)
 	: 
-	gzipped(gzipped), 
 	line_start(0),
 	strm(),
 	buf_in_size(0),
 	buf_out_size(0)
 { 
-	if (is_init && gzipped) 
+	if (is_init) 
 		init(is_compress); 
 }
 
@@ -63,6 +62,7 @@ void Izlib::init(bool is_compress)
 
 	strm.avail_out = 0;
 
+	line_start = 0;
 	// compress: in size > out size, inflate: in size < out size
 	buf_in_size = is_compress ? SIZE_32 : SIZE_16;
 	buf_out_size = is_compress ? SIZE_16 : SIZE_32;
@@ -73,8 +73,26 @@ void Izlib::init(bool is_compress)
 	std::fill(z_out.begin(), z_out.end(), 0); // fill OUT buffer with 0s
 } // ~Izlib::init
 
-void Izlib::clean() {
-	(void)deflateEnd(&strm);
+int Izlib::reset_deflate() {
+	int stat = deflateEnd(&strm);
+	return stat;
+}
+/*
+  TODO: 20201013: inflate(Z_FINISH) gives Z_BUF_ERROR (-5) always. inflate(Z_NO_FLUSH) gives Z_OK. Why?
+*/
+int Izlib::reset_inflate()
+{
+	int ret = 0;
+	for (;strm.avail_in > 0;) {
+		std::fill(z_out.begin(), z_out.end(), 0); // reset buffer to 0
+		strm.avail_out = buf_out_size;
+		strm.next_out = &z_out[0];
+		ret = inflate(&strm, Z_NO_FLUSH); // Z_FINISH -> Z_BUF_ERROR, Z_NO_FLUSH -> Z_OK
+		assert(ret == Z_OK || ret == Z_STREAM_END);
+	}
+	ret = inflateEnd(&strm); // ret is Z_OK, not Z_STREAM_END
+	assert(ret == Z_OK || ret == Z_STREAM_END);
+	return ret;
 }
 
 /* 
@@ -93,63 +111,53 @@ int Izlib::getline(std::ifstream& ifs, std::string& line)
 
 	line.clear();
 
-	if (gzipped)
+	bool line_ready = false;
+	for (; !line_ready; )
 	{
-		bool line_ready = false;
-		for (; !line_ready; )
+		if (!line_start || !line_start[0])
 		{
-			if (!line_start || !line_start[0])
-			{
-				ret = Izlib::inflatez(ifs); // inflate
+			ret = Izlib::inflatez(ifs); // inflate
 
-				if (ret == Z_STREAM_END && strm.avail_out == buf_out_size)
-					return RL_END;
+			if (ret == Z_STREAM_END && strm.avail_out == buf_out_size)
+				return RL_END;
 
-				if (ret < 0) 
-					return RL_ERR;
+			if (ret < 0) 
+				return RL_ERR;
 
-				if (!line_start)
-					line_start = (char*)z_out.data();
-			}
+			if (!line_start)
+				line_start = (char*)z_out.data();
+		}
 
-			//line_end = strstr(line_start, "\n"); // returns 0 if '\n' not found
-			line_end = std::find(line_start, (char*)&z_out[0] + buf_out_size - strm.avail_out - 1, 10); // '\n'
-			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return ch == 10; });
-			//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return std::isspace(ch, l); });
-			if (line_end && line_end[0] == 10)
-			{
-				std::copy(line_start, line_end, std::back_inserter(line));
+		//line_end = strstr(line_start, "\n"); // returns 0 if '\n' not found
+		line_end = std::find(line_start, (char*)&z_out[0] + buf_out_size - strm.avail_out - 1, 10); // '\n'
+		//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return ch == 10; });
+		//line_end = std::find_if(line_start, (char*)&z_out[0] + OUT_SIZE - strm.avail_out - 1, [l = std::locale{}](auto ch) { return std::isspace(ch, l); });
+		if (line_end && line_end[0] == 10)
+		{
+			std::copy(line_start, line_end, std::back_inserter(line));
 
-				if (line_end < (char*)&z_out[0] + buf_out_size - strm.avail_out - 1) // check there is data after line_end
-					line_start = line_end + 1; // skip '\n'
-				else
-				{
-					line_start = 0; // no more data in OUT buffer - flag to inflate more
-					strm.avail_out = 0; // mark OUT buffer as Full to reflush from the beginning [bug 61]
-				}
-
-				line_ready = true; // DEBUG: 
-				
-				//if (line == "@SRR1635864.196 196 length=101")
-				//	std::cout << "HERE";
-			}
+			if (line_end < (char*)&z_out[0] + buf_out_size - strm.avail_out - 1) // check there is data after line_end
+				line_start = line_end + 1; // skip '\n'
 			else
 			{
-				line_end = (char*)&z_out[0] + buf_out_size - strm.avail_out; // end of data in out buffer
-				std::copy(line_start, line_end, std::back_inserter(line));
-				line_start = (strm.avail_out == 0) ? 0 : line_end;
-				line_end = 0;
-				line_ready = false;
+				line_start = 0; // no more data in OUT buffer - flag to inflate more
+				strm.avail_out = 0; // mark OUT buffer as Full to reflush from the beginning [bug 61]
 			}
-		} // ~for !line_ready
-	}
-	else // non-compressed file
-	{
-		if (ifs.eof()) return RL_END;
 
-		std::getline(ifs, line);
-		//if (ifs.fail()) return RL_ERR;
-	}
+			line_ready = true; // DEBUG: 
+				
+			//if (line == "@SRR1635864.196 196 length=101")
+			//	std::cout << "HERE";
+		}
+		else
+		{
+			line_end = (char*)&z_out[0] + buf_out_size - strm.avail_out; // end of data in out buffer
+			std::copy(line_start, line_end, std::back_inserter(line));
+			line_start = (strm.avail_out == 0) ? 0 : line_end;
+			line_end = 0;
+			line_ready = false;
+		}
+	} // ~for !line_ready
 
 	return RL_OK;
 } // ~Izlib::getline
@@ -166,10 +174,10 @@ int Izlib::inflatez(std::ifstream & ifs)
 		if (strm.avail_in == 0 && !ifs.eof()) // in buffer empty
 		{
 			std::fill(z_in.begin(), z_in.end(), 0); // reset IN buffer to 0
-			ifs.read((char*)z_in.data(), buf_in_size); // get data from reads file into IN buffer 
+			ifs.read((char*)z_in.data(), buf_in_size); // add data into IN buffer 
 			if (!ifs.eof() && ifs.fail()) // not end of reads file And read fail -> round up and return error
 			{
-				(void)inflateEnd(&strm);
+				inflateEnd(&strm);
 				return Z_ERRNO;
 			}
 
@@ -179,16 +187,9 @@ int Izlib::inflatez(std::ifstream & ifs)
 
 		if (strm.avail_in == 0 && ifs.eof())
 		{
-			if (strm.avail_out < buf_out_size)
-				strm.avail_out = buf_out_size;
-
+			if (strm.avail_out < buf_out_size) strm.avail_out = buf_out_size;
 			ret = inflateEnd(&strm); // free up the resources
-
-			if (ret != Z_STREAM_END)
-			{
-				INFO("inflateEnd status is ", ret);
-			}
-
+			assert(ret == Z_OK || ret == Z_STREAM_END); // seems always Z_OK, never Z_STREAM_END - why?
 			return Z_STREAM_END;
 		}
 
@@ -207,7 +208,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 			ret = Z_DATA_ERROR; /* and fall through */
 		case Z_DATA_ERROR:
 		case Z_MEM_ERROR:
-			(void)inflateEnd(&strm);
+			inflateEnd(&strm);
 			return ret;
 		case Z_STREAM_END:
 			break;

@@ -18,8 +18,6 @@
 
 #include "common.hpp"
 
-enum class FEED_TYPE : unsigned { SPLIT_READS = 0, LOCKLESS = 1, MAX = LOCKLESS };
-
 // global constants
 const std::string \
 OPT_REF = "ref",
@@ -142,7 +140,7 @@ help_idx =
 	"                                            \n",
 help_readb = 
 	"Directory for storing split reads or        WORKDIR/readb/\n"
-	"                                            split reads index\n"
+	"                                            or the random access index of zipped reads\n"
 	"                                            Use with '" + OPT_READS_FEED + "'\n",
 help_sam = 
 	"Output SAM alignment for aligned reads.\n",
@@ -176,14 +174,14 @@ help_no_best =
 	"                                            If INT > 0: search INT best alignments.\n"
 	"                                            The larger is the INT, the longer is the search time.\n"
 	"                                            Explanation:\n"
-	"                                            A read can potentially be aligned (reaching E-value threshold)\n"
-	"                                            to multiple reference sequences.\n"
-	"                                            The 'best' alignment is the highest scoring alignment out of All\n"
-	"                                            alignments of a Read.\n"
-	"                                            To find the Best alignment - an exhaustive search over All\n"
-	"                                            references has to be performed.\n"
-	"                                            'best 1' and 'best 0' (all the bests) are Equally intensive processes\n"
-	"                                            requiring the exhaustive search. Only the size of reports will differ.\n",
+	"                                              A read can potentially be aligned (reaching E-value threshold)\n"
+	"                                                to multiple reference sequences.\n"
+	"                                              The 'best' alignment is the highest scoring alignment out of All\n"
+	"                                                alignments of a Read.\n"
+	"                                              To find the Best alignment - an exhaustive search over All\n"
+	"                                                references has to be performed.\n"
+	"                                              'best 1' and 'best 0' (all the bests) are Equally intensive processes\n"
+	"                                                requiring the exhaustive search. Only the size of reports will differ.\n",
 help_min_lis = 
 	"Search all alignments having the first INT longest LIS  2\n"
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
@@ -306,10 +304,13 @@ help_max_pos =
 	"                                            for each unique L-mer. If 0 all positions are stored.\n",
 help_reads_feed = 
 	"Method of accessing the reads by the reads processors   0\n"
-	"                                            0 - Split reads. Reads files are split into parts equal the number of processors\n"
-	"                                            1 - Lockless queue. Reads are put into a lockless queue to be popped by the processors\n"
+	"                                            0 - Split reads. Reads files are split into parts equal\n"
+	"                                                the number of processing threads\n"
+	"                                            1 - Lockless queue. Reads are put into a lockless queue\n"
+	"                                                to be popped by the processing threads\n"
 	"                                            3 - FUTURE: Random access to the archived reads files\n"
-	"                                            4 - FUTURE: combination of the random access and the lockless queue\n"
+	"                                            4 - FUTURE: combination of the random access and\n"
+	"                                                        the lockless queue\n"
 ;
 
 const std::string WORKDIR_DEF_SFX = "sortmerna/run";
@@ -401,7 +402,7 @@ public:
 	// Other flags
 	bool exit_early = false; // TODO: has no action? Flag to exit processing when either the reads or the reference file is empty or not FASTA/FASTQ
 	bool is_index_built = false; // flags the index is built and ready for use. TODO: this is no Option flag. Move to a more appropriate place.
-	bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
+	//bool is_gz = false; // flags reads file is compressed and can be read. TODO: no Option related flag. Move to a proper place.
 	bool is_paired = false; // flags the reads are paired
 
 	std::filesystem::path workdir; // Directory for index, KVDB, Output

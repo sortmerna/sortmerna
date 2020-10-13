@@ -31,15 +31,15 @@
 std::string string_hash(const std::string &val); // util.cpp
 std::string to_lower(std::string& val); // util.cpp
 
-Readstats::Readstats(Runopts& opts, KeyValueDatabase& kvdb)
+Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, KeyValueDatabase& kvdb, Runopts& opts)
 	:
 	min_read_len(MAX_READ_LEN),
 	max_read_len(0),
 	total_reads_aligned(0),
 	total_mapped_sw_id_cov(0),
 	short_reads_num(0),
-	all_reads_count(0),
-	all_reads_len(0),
+	all_reads_count(all_reads_count),
+	all_reads_len(all_reads_len),
 	reads_matched_per_db(opts.indexfiles.size(), 0),
 	total_reads_denovo_clustering(0),
 	is_stats_calc(false),
@@ -64,158 +64,15 @@ Readstats::Readstats(Runopts& opts, KeyValueDatabase& kvdb)
 	{
 		if (!is_restored || !(is_restored && all_reads_count > 0 && all_reads_len > 0))
 		{
-			calculate(opts);
 			store_to_db(kvdb);
 		}
 		else
 		{
 			INFO("Found reads statistics in the KVDB: all_reads_count= ", all_reads_count, 
-				" all_reads_len= ", all_reads_len, " Skipping calculation...");
+				" all_reads_len= ", all_reads_len);
 		}
 	}
 } // ~Readstats::Readstats
-
-/** 
- * Go through the reads file, collect, and store in the DB the following statistics:
- *   - Total number of reads
- *   - Total length of all sequences
- *
- * Original code used a single file for paired reads => statistics is to be collected from both separate files
- */
-void Readstats::calculate(Runopts &opts)
-{
-	std::stringstream ss;
-
-	for (auto readfile : opts.readfiles)
-	{
-		std::ifstream ifs(readfile, std::ios_base::in | std::ios_base::binary);
-		if (!ifs.is_open()) {
-			ERR("Failed to open Reads file: " , readfile);
-			exit(EXIT_FAILURE);
-		}
-		else
-		{
-			std::string line; // line from the Reads file
-			std::string sequence; // full sequence of a Read (can contain multiple lines for Fasta files)
-			bool isFastq = false;
-			bool isFasta = false;
-			uint64_t tcount = 0; // count of lines in a file
-			Izlib izlib(opts.is_gz);
-
-			auto t = std::chrono::high_resolution_clock::now();
-
-			INFO("Starting statistics calculation on file: '" , readfile , "'  ...   ");
-
-			for (int count = 0, stat = 0; ; ++count) // count of lines in a Single record
-			{
-				stat = izlib.getline(ifs, line);
-				++tcount;
-
-				if (stat == RL_END)
-				{
-					if (!sequence.empty())
-					{
-						// process the last record
-						++all_reads_count;
-						all_reads_len += sequence.length();
-
-						// update the minimum sequence length
-						if (sequence.size() < min_read_len.load())
-							min_read_len = static_cast<uint32_t>(sequence.size());
-
-						// update the maximum sequence length
-						if (sequence.size() > max_read_len.load())
-							max_read_len = static_cast<uint32_t>(sequence.size());
-					}
-					break;
-				}
-
-				if (stat == RL_ERR)
-				{
-					ERR("Failed reading from file ", readfile, " Exiting...");
-					exit(EXIT_FAILURE);
-				}
-
-				if (line.empty())
-				{
-					--count;
-					--tcount;
-					continue; // skip empty line
-				}
-
-				// right-trim whitespace in place (removes '\r' too)
-				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-				//line.erase(std::remove_if(begin(line), end(line), [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), end(line));
-
-				if (tcount == 1)
-				{
-					isFastq = (line[0] == FASTQ_HEADER_START);
-					isFasta = (line[0] == FASTA_HEADER_START);
-
-					if (!(isFasta || isFastq))
-					{
-						ERR("the line [" , line , "] is not FASTA/Q header");
-						exit(EXIT_FAILURE);
-					}
-				}
-
-				if (count == 4 && isFastq)
-				{
-					count = 0;
-					if (line[0] != FASTQ_HEADER_START)
-					{
-						ERR("the line [", line, "] is not FASTQ header. all_reads_count = ", all_reads_count, " tcount= ",  tcount);
-						exit(EXIT_FAILURE);
-					}
-				}
-
-				// fastq: 0(header), 1(seq), 2(+), 3(quality)
-				// fasta: 0(header), 1(seq)
-				if ((isFasta && line[0] == FASTA_HEADER_START) || (count == 0 && isFastq))
-				{
-					// process previous sequence
-					if (!sequence.empty())
-					{
-						++all_reads_count;
-						all_reads_len += sequence.length();
-
-						// update the minimum sequence length
-						if (sequence.size() < min_read_len.load())
-							min_read_len = static_cast<uint32_t>(sequence.size());
-
-						// update the maximum sequence length
-						if (sequence.size() > max_read_len.load())
-							max_read_len = static_cast<uint32_t>(sequence.size());
-					}
-
-					count = 0; // FASTA record start
-					sequence.clear(); // clear container for the new record
-				} // ~if header line
-				else
-				{
-					if (isFastq)
-					{
-						if (count > 3)
-						{
-							ERR(" Unexpected number of lines : ", count, 
-								" in a single FASTQ Read. Total reads processed: ", all_reads_count,
-								" Last sequence: ", sequence, " Last line read: ", line, " Exiting...");
-							exit(EXIT_FAILURE);
-						}
-						if (count == 3 || line[0] == '+')
-							continue; // fastq.quality
-					} // ~if fastq
-
-					sequence += line; // fasta multiline sequence
-				}
-			} // ~for getline
-
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t;
-			INFO("Done statistics on file. Elapsed time: ", elapsed.count(), " sec. all_reads_count= ", all_reads_count);
-			ifs.close();
-		}
-	} // ~for iterating reads files
-} // ~Readstats::calculate
 
 // determine the suffix (fasta, fastq, ...) of aligned strings
 // use the same suffix as the original reads file without 'gz' if gzipped.
@@ -226,7 +83,8 @@ void Readstats::calcSuffix(Runopts &opts)
 	std::string sfx = opts.readfiles[0].substr(pos + 1);
 	std::string sfx_lower = to_lower(sfx);
 
-	if (opts.is_gz && "gz" == sfx_lower)
+	//if (opts.is_gz && "gz" == sfx_lower)
+	if ("gz" == sfx_lower)
 	{
 		pos2 = opts.readfiles[0].rfind('.', pos - 1);
 		sfx = opts.readfiles[0].substr(pos2 + 1, pos - pos2 - 1);

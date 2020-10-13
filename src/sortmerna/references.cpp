@@ -93,7 +93,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 			// start new record
 			rec.clear();
 			isFastq = (line[0] == FASTQ_HEADER_START);
-			rec.format = isFastq ? Format::FASTQ : Format::FASTA;
+			rec.format = isFastq ? BIO_FORMAT::FASTQ : BIO_FORMAT::FASTA;
 			rec.header = line;
 			rec.isEmpty = false;
 		} // ~header or last record

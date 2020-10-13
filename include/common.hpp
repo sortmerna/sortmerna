@@ -48,10 +48,13 @@
 
 const char FASTA_HEADER_START = '>';
 const char FASTQ_HEADER_START = '@';
+const std::string FWD = "FWD";
+const std::string REV = "REV";
 
-enum class Format { FASTA, FASTQ }; // format of Reads and References files. Used in References and Read
+enum class BIO_FORMAT : unsigned { FASTQ = 0, FASTA = 1 };
+enum class ZIP_FORMAT : unsigned { GZIP = 0, ZLIB = 1, FLAT = 2, XPRESS = 3 };
+enum class FEED_TYPE : unsigned { SPLIT_READS = 0, LOCKLESS = 1, MAX = LOCKLESS };
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
-enum class CompressionType { XPRESS, ZLIB };
 
 /*! @brief Map nucleotides to integers.
 Ambiguous letters map to 4.

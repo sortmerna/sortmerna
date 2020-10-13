@@ -18,19 +18,18 @@ class Izlib
 {
 public:
 	/*
-	  @param gzipped      flags the file is gzipped (true) otherwise flat (false)
 	  @param is_compress  flags to compress (true) or inflate (false) the output
 	  @param is_init      flags to perform the zlib stream initialization
 	*/
-	Izlib(bool gzipped=true, bool is_compress=false, bool is_init=true);
+	Izlib(bool is_compress=false, bool is_init=true);
 
 	void init(bool is_compress = false);
-	void clean(); // clean up z_stream
+	int reset_deflate(); // clean up z_stream
+	int reset_inflate();
 	int getline(std::ifstream & ifs, std::string & line);
 	int defstr(std::string& readstr, std::ofstream& ofs, bool is_last=false);
 
 private:
-	bool gzipped;
 	char* line_start; // pointer to the start of a line within the 'z_out' buffer
 	z_stream strm; // stream control structure. Holds stream in/out buffers (byte arrays), sizes, positions etc.
 	size_t buf_in_size;

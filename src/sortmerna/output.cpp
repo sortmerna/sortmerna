@@ -949,7 +949,7 @@ void Output::writeLog(Runopts& opts, Refstats& refstats, Readstats& readstats)
 void Output::write_a_read(std::ofstream& strm, Read& read)
 {
 	strm << read.header << std::endl << read.sequence << std::endl;
-	if (read.format == Format::FASTQ)
+	if (read.format == BIO_FORMAT::FASTQ)
 		strm << '+' << std::endl << read.quality << std::endl;
 }
 

@@ -143,7 +143,7 @@ void test_3(int argc, char** argv)
 	{
 		KeyValueDatabase kvdb(opts.kvdbdir.string());
 		PRN_MEM("DB created.");
-		Readstats readstats(opts, kvdb);
+		Readstats readstats(0, 0, kvdb, opts);
 		PRN_MEM("Readstats created.");
 		Index index(opts);
 		PRN_MEM("Index created.");

@@ -58,10 +58,8 @@ struct Readstats
 	bool is_stats_calc; // flags 'computeStats' was called. Set in 'postProcess'
 	bool is_total_mapped_sw_id_cov; // flag 'total_mapped_sw_id_cov' was calculated (so no need to calculate no more)
 
-	Readstats(Runopts& opts, KeyValueDatabase& kvdb);
-	//~Readstats() {}
+	Readstats(uint64_t all_reads_count, uint64_t all_reads_len, KeyValueDatabase& kvdb, Runopts& opts);
 
-	void calculate(Runopts& opts); // calculate statistics from readsfile
 	void calcSuffix(Runopts& opts);
 	std::string toBstring();
 	std::string toString();

@@ -24,7 +24,7 @@ public:
 		std::string header;
 		std::string sequence;
 		std::string quality; // "" (fasta) | "xxx..." (fastq)
-		Format format; // FASTA | FATSQ
+		BIO_FORMAT format; // FASTA | FATSQ
 		bool isEmpty;
 		BaseRecord(): isEmpty(true) {}
 		void clear()

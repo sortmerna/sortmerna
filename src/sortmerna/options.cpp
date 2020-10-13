@@ -73,7 +73,7 @@ void Runopts::opt_reads(const std::string &file)
 		exit(EXIT_FAILURE);
 	}
 
-	// check file exists and can be read
+	// check file exists
 	auto fpath = std::filesystem::path(file);
 	auto fpath_a = std::filesystem::path(); // absolute path
 
@@ -106,13 +106,21 @@ void Runopts::opt_reads(const std::string &file)
 		exit(EXIT_FAILURE);
 	}
 
+	// check the file can be read
 	std::ifstream ifs(fpath_a, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open())
 	{
 		ERR("Failed to open file [" , fpath_a , "]");
 		exit(EXIT_FAILURE);
 	}
+	else {
+		ifs.close();
+		have_reads = true;
+		readfiles.push_back(fpath_a.generic_string());
+	}
 
+	// 20201008 TODO: remove this code. Validate files at the time of the Readfeed initialization
+#if 0
 	bool has_gz_ext = "gz" == file.substr(file.rfind('.') + 1); // file ends with 'gz'
 	std::string line;
 	int stat = -1;
@@ -122,7 +130,7 @@ void Runopts::opt_reads(const std::string &file)
 		stat = izlib.getline(ifs, line);
 		if (RL_OK == stat)
 		{
-			is_gz = true;
+			//is_gz = true;
 		}
 	} // ~Gzip
 	else
@@ -130,7 +138,7 @@ void Runopts::opt_reads(const std::string &file)
 		Izlib izlib(false);
 		stat = izlib.getline(ifs, line);
 		if (RL_OK == stat) {
-			is_gz = false;
+			//is_gz = false;
 		}
 	}
 
@@ -141,10 +149,9 @@ void Runopts::opt_reads(const std::string &file)
 		Izlib izlib(true);
 		stat = izlib.getline(ifs, line);
 		if (RL_OK == stat) {
-			is_gz = true;
+			//is_gz = true;
 		}
 	}
-
 	if (RL_OK == stat && line.size() > 0)
 	{
 		have_reads = true;
@@ -152,12 +159,10 @@ void Runopts::opt_reads(const std::string &file)
 	}
 	else
 	{
-		ERR("Could not read from file " , file , " [" , strerror(errno) , "]");
+		ERR("Could not read from file ", file, " [", strerror(errno), "]");
 		exit(EXIT_FAILURE);
 	}
-
-	if (ifs.is_open())
-		ifs.close();
+#endif
 } // ~Runopts::opt_reads
 
 void Runopts::opt_ref(const std::string &refpath)

@@ -61,7 +61,7 @@ public:
 	std::string header;
 	std::string sequence;
 	std::string quality; // "" (fasta) | "xxx..." (fastq)
-	Format format; // fasta | fastq
+	BIO_FORMAT format; // fasta | fastq
 
 	// calculated
 	std::string isequence; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
@@ -94,7 +94,7 @@ public:
 	Read();
 	Read(std::string& readstr);
 	Read(std::string id, std::string& read);
-	Read(std::string id, std::string header, std::string sequence, std::string quality, Format format);
+	Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format);
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment
 	//~Read();
