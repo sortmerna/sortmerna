@@ -48,8 +48,8 @@ struct Readstats
 	std::atomic<uint64_t> total_mapped_sw_id_cov; // [2] total number of reads passing E-value, %id, %query coverage thresholds
 	std::atomic<uint64_t> short_reads_num; // reads shorter than a threshold of N nucleotides. Reset for each index.
 
-	uint64_t all_reads_count; // [1] total number of reads in file. Non-sync. 'Readstats::calculate'
-	uint64_t all_reads_len; // total number of nucleotides in all reads i.e. sum of length of All read sequences 'Readstats::calculate'
+	uint64_t all_reads_count; // [1] total number of reads in file.
+	uint64_t all_reads_len; // total number of nucleotides in all reads i.e. sum of length of All read sequences
 	uint64_t total_reads_denovo_clustering; // [4] total number of reads for de novo clustering. 'computeStats' post-processing callback
 
 	std::vector<uint64_t> reads_matched_per_db; // [3] total number of reads matched for each database. `compute_lis_alignment`.

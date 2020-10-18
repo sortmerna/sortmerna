@@ -8,6 +8,7 @@
 
 #include <string>
 #include <fstream> // std::ifstream
+#include <filesystem>
 
 #include "kvdb.hpp"
 #include "options.hpp"
@@ -38,8 +39,8 @@ struct Readstate {
  */
 class Readfeed {
 public:
-	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const std::string& basedir);
-	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, const std::string& basedir);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir);
 
 	void run();
 	bool is_split_ready();
@@ -47,6 +48,8 @@ public:
 	bool next(int inext, std::string& readstr);
 	bool next(int inext, unsigned& readlen, std::string& readstr); // \n separated read data. FA - 2 lines, FQ - 4 lines
 	void reset();
+	void rewind();
+	void rewind_in();
 	bool split(const unsigned num_parts);
 	bool define_format();
 	void count_reads();
@@ -66,11 +69,10 @@ public:
 	unsigned num_splits;
 	unsigned num_reads_tot; // count of reads in all streams
 	unsigned length_all; // length of all reads from all files
-	const std::string& basedir; // split files root directory opts.readb
+	std::filesystem::path& basedir; // split files root directory opts.readb
 
 private:
 	bool is_two_files; // flags two read files are processed (otherwise single file)
-	bool is_next_fwd; // flags the next file to be read is FWD (otherwise REV) TODO: remove
 	std::vector<std::string>& readfiles;
 
 	// input processing

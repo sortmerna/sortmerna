@@ -306,6 +306,8 @@ int Izlib::defstr(std::string& readstr, std::ofstream& ofs, bool is_last)
 	if (flush == Z_FINISH) {
 		assert(ret == Z_STREAM_END);
 		(void)deflateEnd(&strm);
+		ofs.flush();
+		INFO("deflateEnd called");
 	}
 	return ret;
-} // ~Izlib::deflatez
+} // ~Izlib::defstr

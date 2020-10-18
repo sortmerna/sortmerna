@@ -63,10 +63,12 @@ int main(int argc, char** argv)
 	else
 	{
 		// init common objects
-		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.readb_dir.generic_string());
-		Index index(opts); // reference index DB
 		KeyValueDatabase kvdb(opts.kvdbdir.string());
+		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.readb_dir);
+		if (opts.feed_type == FEED_TYPE::SPLIT_READS)
+			readfeed.split(opts.num_proc_thread);
 		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, kvdb, opts);
+		Index index(opts); // reference index DB
 		Output output(opts, readstats);
 
 		switch (opts.alirep)

@@ -396,10 +396,6 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	Refstats refstats(opts, readstats);
 	References refs;
 
-	//if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-	//	readfeed.split(numProcThread, readstats.all_reads_count, "");
-	//}
-
 	int loopCount = 0; // counter of total number of processing iterations
 
 	// perform alignment
