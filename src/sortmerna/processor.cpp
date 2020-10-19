@@ -457,8 +457,11 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 
 			index.unload();
 			refs.unload();
-			INFO_MEM("Index and References unloaded.")
-			// rewind Readfeed here for the next index
+			INFO_MEM("Index and References unloaded.");
+			tpool.clear();
+			// rewind for the next index
+			readfeed.rewind_in();
+			readfeed.init_vzlib_in();
 			//read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(index_num)

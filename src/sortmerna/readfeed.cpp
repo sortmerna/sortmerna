@@ -42,6 +42,8 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::fil
 	num_splits(0),
 	num_reads_tot(0),
 	length_all(0),
+	min_read_len(0),
+	max_read_len(0),
 	basedir(basedir),
 	readfiles(readfiles)
 {
@@ -69,6 +71,8 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const un
 	num_splits(num_parts),
 	num_reads_tot(0),
 	length_all(0),
+	min_read_len(0),
+	max_read_len(0),
 	basedir(basedir),
 	readfiles(readfiles)
 {
@@ -528,7 +532,7 @@ void Readfeed::rewind() {
 */
 void Readfeed::rewind_in() {
 	if (ifsv.size() >= num_orig_files) {
-		for (auto i = 0; i < num_orig_files; ++i) {
+		for (auto i = 0; i < ifsv.size(); ++i) {
 			if (ifsv[i].is_open()) {
 				if (ifsv[i].rdstate() != std::ios_base::goodbit) {
 					ifsv[i].clear();
@@ -610,13 +614,13 @@ bool Readfeed::split(const unsigned num_parts)
 
 	for (auto i = 0; i < ofsv.size(); ++i) {
 		if (!ofsv[i].is_open()) {
-			ofsv[i].open(readfiles[i+num_orig_files], std::ios::app | std::ios::binary);
+			ofsv[i].open(readfiles[(size_t)i + num_orig_files], std::ios::app | std::ios::binary);
 		}
 		if (!ofsv[i].is_open()) {
-			ERR("Failed to open file ", readfiles[i + num_orig_files]);
+			ERR("Failed to open file ", readfiles[(size_t)i + num_orig_files]);
 			exit(1);
 		}
-		INFO("opened file: ", readfiles[i + num_orig_files]);
+		//INFO("opened file: ", readfiles[i + num_orig_files]);
 	}
 
 	// prepare zlib interface for writing split files
@@ -845,6 +849,8 @@ void Readfeed::count_reads()
 	{
 		++num_reads_tot;
 		length_all += seqlen;
+		if (max_read_len < seqlen) max_read_len = seqlen;
+		if (min_read_len > seqlen || min_read_len == 0) min_read_len = seqlen;
 		inext = is_two_files ? inext ^ 1 : inext; // toggle the index of the input file
 	} // ~for
 
@@ -907,3 +913,11 @@ void Readfeed::read_descriptor()
 		vzlib_in[i].init();
 	}
 } // ~Readfeed::read_descriptor
+
+void Readfeed::init_vzlib_in()
+{
+	for (auto i = 0; i < vzlib_in.size(); ++i) {
+		if (vstate_in[i].isZip)
+			vzlib_in[i].init();
+	}
+}
