@@ -45,14 +45,17 @@ public:
 	void run();
 	bool is_split_ready();
 
-	bool next(int inext, std::string& readstr);
-	bool next(int inext, unsigned& readlen, std::string& readstr); // \n separated read data. FA - 2 lines, FQ - 4 lines
+	bool next(int inext, std::string& readstr, bool is_orig = false);
+	bool next(int inext, unsigned& readlen, std::string& readstr, bool is_orig = false); // \n separated read data. FA - 2 lines, FQ - 4 lines
 	void reset();
 	void rewind();
 	void rewind_in();
 	bool split(const unsigned num_parts);
 	bool define_format();
 	void count_reads();
+	void init_split_input();
+	void write_descriptor();
+	void read_descriptor();
 	static bool is_split_done(const unsigned num_parts, const unsigned num_reads, const std::string dbdir, const std::vector<std::string>& readfiles);
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
@@ -65,14 +68,13 @@ public:
 	bool is_done; // flags end of all read streams
 	bool is_ready; // flags the read feed is ready i.e. no need to run split
 	bool is_format_defined; // flags the file format is defined i.e. 'define_format' was success
+	bool is_two_files; // flags two read files are processed (otherwise single file)
 	unsigned num_orig_files; // number of original reads files
 	unsigned num_splits;
 	unsigned num_reads_tot; // count of reads in all streams
 	unsigned length_all; // length of all reads from all files
 	std::filesystem::path& basedir; // split files root directory opts.readb
-
 private:
-	bool is_two_files; // flags two read files are processed (otherwise single file)
 	std::vector<std::string>& readfiles;
 
 	// input processing

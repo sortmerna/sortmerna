@@ -301,7 +301,9 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
 
-	while (readfeed.next(id, readstr))
+	int del = 1;
+	auto istrm = id * readfeed.num_orig_files; // index of a stream in readfeed.ifsv
+	for (; readfeed.next(istrm, readstr);)
 	{
 		{
 			Read read(readstr);
@@ -358,6 +360,12 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 			readstr.resize(0);
 			++num_all;
 		} // ~if & read destroyed
+
+		// switch FWD-REV if two files are processed
+		if (readfeed.is_two_files) {
+			istrm += del;
+			del *= -1;
+		}
 	} // ~while there are reads
 
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " done. Processed ", num_all,
@@ -389,6 +397,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	else {
 		numThreads = numProcThread;
 		INFO("Using total of Processor threads: ", numProcThread);
+		readfeed.read_descriptor();
 	}
 	std::vector<std::thread> tpool;
 	tpool.reserve(numThreads);
@@ -449,7 +458,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			index.unload();
 			refs.unload();
 			INFO_MEM("Index and References unloaded.")
-
+			// rewind Readfeed here for the next index
 			//read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(index_num)

@@ -37,12 +37,12 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::fil
 	is_done(false),
 	is_ready(false),
 	is_format_defined(false),
+	is_two_files(readfiles.size() > 1),
 	num_orig_files(readfiles.size()),
 	num_splits(0),
 	num_reads_tot(0),
 	length_all(0),
 	basedir(basedir),
-	is_two_files(readfiles.size() > 1),
 	readfiles(readfiles)
 {
 	if (type == FEED_TYPE::SPLIT_READS)
@@ -64,12 +64,12 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const un
 	is_done(false),
 	is_ready(false),
 	is_format_defined(false),
+	is_two_files(readfiles.size() > 1),
 	num_orig_files(readfiles.size()),
 	num_splits(num_parts),
 	num_reads_tot(0),
 	length_all(0),
 	basedir(basedir),
-	is_two_files(readfiles.size() > 1),
 	readfiles(readfiles)
 {
 	if (type == FEED_TYPE::SPLIT_READS)
@@ -248,9 +248,10 @@ bool Readfeed::loadReadById(Read& read)
 
  @param inext   IN   index of the file into the Readfeed::readfiles vector
  @param seqlen  OUT  length of the read sequence
- @param read    OUT  read
+ @param read    OUT  read string
+ @param is_orig IN   flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
 */
-bool Readfeed::next(int inext, unsigned& seqlen, std::string& read) {
+bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig) {
 	std::string line;
 	std::stringstream readss; // an empty read
 	auto stat = vstate_in[inext].last_stat;
@@ -261,7 +262,8 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read) {
 	{
 		if (vstate_in[inext].last_header.size() > 0)
 		{
-			readss << inext << '_' << vstate_in[inext].read_count << '\n';
+			if (!is_orig)
+				readss << inext << '_' << vstate_in[inext].read_count << '\n';
 			readss << vstate_in[inext].last_header << '\n';
 			vstate_in[inext].last_header = "";
 		}
@@ -324,7 +326,8 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read) {
 		{
 			if (vstate_in[inext].line_count == 1)
 			{
-				readss << inext << '_' << vstate_in[inext].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				if (!is_orig)
+					readss << inext << '_' << vstate_in[inext].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
 				readss << line << '\n'; // the very first header
 				count = 0;
 			}
@@ -341,11 +344,16 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read) {
 		{ // add sequence -->
 			if (vstate_in[inext].isFastq)
 			{
-				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
+				if (count == 2) {
+					if (is_orig)
+						readss << line << '\n'; // line[0] == '+'
 					continue;
+				}
 				if (count == 3)
 				{
-					readss << line;
+					readss << line; // FQ quality
+					if (is_orig)
+						readss << '\n';
 					continue;
 				}
 				readss << line << '\n'; // FQ sequence
@@ -360,8 +368,6 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read) {
 
 	++vstate_in[inext].read_count;
 
-	//vnext_fwd_in[inext] != vnext_fwd_in[inext]; // toggle the stream index
-
 	if (readss.str().size() > 0)
 		read = readss.str();
 	return readss.str().size() > 0;
@@ -371,13 +377,13 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read) {
 /**
    get a next read string from a reads file
    20201012: TODO: exactly the same as next(int, str, str) but doesn't count sequence length.
-                   Counting sequence length could be a very small overhead -> no need for this oveload?
+                   Counting sequence length could be a very small overhead -> no need for this overload?
 
    @param  inext    IN     index of the stream to read.
    @param  readstr  OUT    read sequence
    @return true if record exists, else false
  */
-bool Readfeed::next(int inext, std::string& readstr )
+bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
 {
 	std::string line;
 	std::stringstream readss; // an empty read
@@ -388,7 +394,8 @@ bool Readfeed::next(int inext, std::string& readstr )
 	{
 		if (vstate_in[inext].last_header.size() > 0)
 		{
-			readss << inext << '_' << vstate_in[inext].read_count << '\n';
+			if (!is_orig)
+				readss << inext << '_' << vstate_in[inext].read_count << '\n';
 			readss << vstate_in[inext].last_header << '\n';
 			vstate_in[inext].last_header = "";
 		}
@@ -451,7 +458,8 @@ bool Readfeed::next(int inext, std::string& readstr )
 		{
 			if (vstate_in[inext].line_count == 1)
 			{
-				readss << inext << '_' << vstate_in[inext].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
+				if (!is_orig)
+					readss << inext << '_' << vstate_in[inext].read_count << '\n'; // add read id 'filenum_readnum' starting with '0_0'
 				readss << line << '\n'; // the very first header
 				count = 0;
 			}
@@ -468,8 +476,11 @@ bool Readfeed::next(int inext, std::string& readstr )
 		{ // add sequence -->
 			if (vstate_in[inext].isFastq)
 			{
-				if (count == 2) // line[0] == '+' validation is already done by readstats::calculate
+				if (count == 2) {
+					if (is_orig)
+						readss << line << '\n'; // line[0] == '+'
 					continue;
+				}
 				if (count == 3)
 				{
 					readss << line;
@@ -614,7 +625,17 @@ bool Readfeed::split(const unsigned num_parts)
 		vzlib_out[i].init(true);
 	}
 
+	// prepare Readstates OUT
 	vstate_out.resize(num_split_files);
+	for (auto i = 0; i < num_splits; ++i) {
+		auto del = i * num_orig_files;
+		for (auto j = 0; j < num_orig_files; ++j) {
+			auto idx = j + del;
+			vstate_out[idx].isFasta = vstate_in[j].isFasta;
+			vstate_out[idx].isFastq = vstate_in[j].isFastq;
+			vstate_out[idx].isZip = vstate_in[j].isZip;
+		}
+	}
 
 	// calculate number of reads in each of the output files
 	auto nreads = num_orig_files == 2 ? num_reads_tot / 2 : num_reads_tot; // num reads in a single input file e.g. FWD
@@ -631,7 +652,7 @@ bool Readfeed::split(const unsigned num_parts)
 	std::string readstr;
 
 	// loop until EOF - get reads - write into split files
-	for (int inext = 0, isplit = 0, iout = 0, del = 0; next(inext, seqlen, readstr);)
+	for (int inext = 0, isplit = 0, iout = 0, del = 0; next(inext, seqlen, readstr, true);)
 	{
 		++vstate_out[iout].read_count;
 		auto is_last = vstate_out[iout].read_count == vstate_out[iout].max_reads;
@@ -670,6 +691,8 @@ bool Readfeed::split(const unsigned num_parts)
 	}
 
 	// zlib deflate streams already cleaned by now
+
+	// write readfead descriptor
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 	INFO("Done splitting. Reads count: ", num_reads_tot, " Runtime sec: ", elapsed.count(), "\n");
@@ -829,3 +852,58 @@ void Readfeed::count_reads()
 	INFO("done count. Elapsed time: ", elapsed.count(), " sec. Total reads: ", num_reads_tot);
 
 } // ~Readfeed::count_reads
+
+/*
+  resize input streams vector to fit all split streams and open the streams
+  resize and init Readstats and Izlibs
+*/
+void Readfeed::init_split_input() 
+{
+}
+
+/*
+  time:
+  num_splits: 3
+  num_orig_files: 2
+  file:
+  lines:
+  file:
+  lines:
+  files:
+  lines:
+*/
+void Readfeed::write_descriptor()
+{
+	std::filesystem::path fn = basedir / "readfeed";
+
+}
+
+void Readfeed::read_descriptor()
+{
+	auto nfiles = num_splits * num_orig_files;
+	ifsv.resize((nfiles));
+	auto ridx = num_orig_files; // split files follow original files in the 'ifsv'
+	for (auto i = 0; i < ifsv.size(); ++i, ++ridx) {
+		ifsv[i].open(readfiles[ridx], std::ios_base::in | std::ios_base::binary);
+		if (!ifsv[i].is_open()) {
+			ERR("Failed to open file ", readfiles[ridx]);
+			exit(1);
+		}
+	}
+
+	// prepare split Readstates
+	vstate_in.resize(nfiles);
+	vstate_in.resize(nfiles);
+	for (auto i = 0; i < nfiles; ++i) {
+		vstate_in[i].isFasta = vstate_out[i].isFasta;
+		vstate_in[i].isFastq = vstate_out[i].isFastq;
+		vstate_in[i].isZip = true;
+		vstate_in[i].max_reads = vstate_out[i].max_reads;
+	}
+
+	// prepare Izlib
+	vzlib_in.resize(nfiles);
+	for (size_t i = 0; i < nfiles; ++i) {
+		vzlib_in[i].init();
+	}
+} // ~Readfeed::read_descriptor
