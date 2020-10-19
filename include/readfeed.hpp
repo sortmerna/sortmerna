@@ -18,18 +18,18 @@
 class Read;
 
 struct Readstate {
-	Readstate()	: isFastq(false), isFasta(false), isZip(false), is_done(false),
-		read_count(0), line_count(0), last_count(0), max_reads(0), last_stat(0) {}
+	Readstate()	: isFastq(false), isFasta(false), isZip(false), is_done(false), 
+		max_reads(0), read_count(0), line_count(0), last_count(0), last_stat(0) {}
 	void reset() { is_done = false; read_count = 0; line_count = 0; 
-		last_count = 0; max_reads = 0; last_stat = 0; last_header.clear(); }
+		last_count = 0; last_stat = 0; last_header.clear(); }
 	bool isFastq; // file is FASTQ
 	bool isFasta; // file is FASTA
 	bool isZip;   // true (compressed) | false (flat)
 	bool is_done;
+	unsigned max_reads;  // max reads expected to be processed
 	unsigned read_count; // count of reads in the file
 	unsigned line_count; // count of non-empty lines in the reads file
 	unsigned last_count; // count of lines in a single read
-	unsigned max_reads;  // max reads expected to be processed
 	int last_stat;
 	std::string last_header; // header line last read
 };
@@ -50,6 +50,7 @@ public:
 	void reset();
 	void rewind();
 	void rewind_in();
+	void init_vzlib_in();
 	bool split(const unsigned num_parts);
 	bool define_format();
 	void count_reads();
@@ -73,6 +74,8 @@ public:
 	unsigned num_splits;
 	unsigned num_reads_tot; // count of reads in all streams
 	unsigned length_all; // length of all reads from all files
+	unsigned min_read_len;
+	unsigned max_read_len;
 	std::filesystem::path& basedir; // split files root directory opts.readb
 private:
 	std::vector<std::string>& readfiles;
