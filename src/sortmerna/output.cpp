@@ -880,9 +880,9 @@ void Output::writeLog(Runopts& opts, Refstats& refstats, Readstats& readstats)
 		summary.is_de_novo_otu = opts.is_denovo_otu;
 		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
 	}
-	summary.total_reads_mapped = readstats.total_reads_aligned.load();
-	summary.min_read_len = readstats.min_read_len.load();
-	summary.max_read_len = readstats.max_read_len.load();
+	summary.total_reads_mapped = readstats.total_reads_aligned.load(std::memory_order_relaxed);
+	summary.min_read_len = readstats.min_read_len;
+	summary.max_read_len = readstats.max_read_len;
 	summary.all_reads_len = readstats.all_reads_len;
 
 	// stats by database
@@ -894,55 +894,15 @@ void Output::writeLog(Runopts& opts, Refstats& refstats, Readstats& readstats)
 
 	if (opts.is_otu_map) {
 		summary.is_otumapout = opts.is_otu_map;
-		summary.total_mapped_sw_id_cov = readstats.total_mapped_sw_id_cov.load();
+		summary.total_mapped_sw_id_cov = readstats.total_mapped_sw_id_cov.load(std::memory_order_relaxed);
 		summary.total_otu = readstats.otu_map.size();
 	}
 
-	std::stringstream ss;
-	time_t q = time(0);
-	struct tm *now = localtime(&q);
-	ss << asctime(now);
-	summary.timestamp = ss.str();
+	// set timestamp  <ctime>
+	std::time_t tm = std::time(0);
+	summary.timestamp = std::ctime(&tm); // Tue Oct 20 08:39:35 2020  Win deprecation: use 'ctime_s' or _CRT_SECURE_NO_WARNINGS
 
 	log_os << summary.to_string(opts, refstats);
-#if 0
-	logstream << " Command: [" << opts.cmdline << "]\n\n";
-
-	// output total number of reads
-	logstream << " Results:\n";
-	logstream << "    Total reads = " << readstats.all_reads_count << std::endl;
-	if (opts.de_novo_otu)
-	{
-		// all reads that have read::hit_denovo == true
-		logstream << "    Total reads for de novo clustering = " << readstats.total_reads_denovo_clustering << std::endl;
-	}
-	// output total non-rrna + rrna reads
-	logstream << std::setprecision(2) << std::fixed
-		<< "    Total reads passing E-value threshold = " << readstats.total_reads_mapped.load()
-		<< " (" << (float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count) * 100 << ")" << std::endl
-		<< "    Total reads failing E-value threshold = "
-		<< readstats.all_reads_count - readstats.total_reads_mapped.load()
-		<< " (" << (1 - ((float)((float)readstats.total_reads_mapped.load() / (float)readstats.all_reads_count))) * 100 << ")" << std::endl
-		<< "    Minimum read length = " << readstats.min_read_len.load() << std::endl
-		<< "    Maximum read length = " << readstats.max_read_len.load() << std::endl
-		<< "    Mean read length    = " << readstats.all_reads_len / readstats.all_reads_count << std::endl
-		<< " By database:" << std::endl;
-
-	// output stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
-		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
-		std::make_pair(opts.indexfiles[index_num].first, pcn);
-		logstream << "    " << opts.indexfiles[index_num].first << "\t\t" << pcn << std::endl;
-	}
-
-	if (opts.otumapout)
-	{
-		logstream << " Total reads passing %%id and %%coverage thresholds = " << readstats.total_reads_mapped_cov.load() << std::endl;
-		logstream << " Total OTUs = " << readstats.otu_map.size() << std::endl;
-	}
-	logstream << std::endl << " " << asctime(now) << std::endl;
-#endif
 	log_os.close();
 } // ~Output::writeLog
 

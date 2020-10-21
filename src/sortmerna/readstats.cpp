@@ -31,10 +31,10 @@
 std::string string_hash(const std::string &val); // util.cpp
 std::string to_lower(std::string& val); // util.cpp
 
-Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, KeyValueDatabase& kvdb, Runopts& opts)
+Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t min_read_len, uint32_t max_read_len, KeyValueDatabase& kvdb, Runopts& opts)
 	:
-	min_read_len(MAX_READ_LEN),
-	max_read_len(0),
+	min_read_len(max_read_len),
+	max_read_len(min_read_len),
 	total_reads_aligned(0),
 	total_mapped_sw_id_cov(0),
 	short_reads_num(0),
@@ -104,10 +104,10 @@ std::string Readstats::toBstring()
 	// max_read_len
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_read_len)), sizeof(max_read_len), std::back_inserter(buf));
 	// total_reads_mapped (atomic int)
-	auto val = total_reads_aligned.load();
+	auto val = total_reads_aligned.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// total_reads_mapped_cov (atomic int)
-	val = total_mapped_sw_id_cov.load();
+	val = total_mapped_sw_id_cov.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// short_reads_num
 	std::copy_n(static_cast<char*>(static_cast<void*>(&short_reads_num)), sizeof(short_reads_num), std::back_inserter(buf));

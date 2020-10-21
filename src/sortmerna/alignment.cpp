@@ -413,7 +413,7 @@ void compute_lis_alignment
 							if (!read.is_hit)
 							{
 								read.is_hit = true;
-								++readstats.total_reads_aligned;
+								readstats.total_reads_aligned.fetch_add(1, std::memory_order_relaxed);
 								++readstats.reads_matched_per_db[index.index_num];
 							}
 
@@ -428,7 +428,7 @@ void compute_lis_alignment
 									read.is_id = true;
 									read.is_cov = true;
 									read.is_denovo = false;
-									++readstats.total_mapped_sw_id_cov;
+									readstats.total_mapped_sw_id_cov.fetch_add(1, std::memory_order_relaxed);
 								}
 							}
 

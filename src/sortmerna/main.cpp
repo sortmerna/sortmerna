@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.readb_dir);
 		if (opts.feed_type == FEED_TYPE::SPLIT_READS)
 			readfeed.split(opts.num_proc_thread);
-		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, kvdb, opts);
+		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, readfeed.min_read_len, readfeed.max_read_len, kvdb, opts);
 		Index index(opts); // reference index DB
 		Output output(opts, readstats);
 

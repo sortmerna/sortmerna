@@ -42,23 +42,24 @@ struct Readstats
 	std::string dbkey; // Hashed concatenation of underscore separated basenames of the read files. Used as the key into the Key-value DB. 
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
-	std::atomic<uint32_t> min_read_len; // length of the shortest Read in the Reads file. 'parallelTraversalJob'
-	std::atomic<uint32_t> max_read_len; // length of the longest Read in the Reads file. 'parallelTraversalJob'
-	std::atomic<uint64_t> total_reads_aligned; // total number of reads passing E-value threshold. Set in 'compute_lis_alignment'
-	std::atomic<uint64_t> total_mapped_sw_id_cov; // [2] total number of reads passing E-value, %id, %query coverage thresholds
+	std::atomic<uint64_t> total_reads_aligned; // total number of reads passing E-value threshold. 'compute_lis_alignment'
+	std::atomic<uint64_t> total_mapped_sw_id_cov; // [2] total number of reads passing E-value, %id, %query coverage thresholds. 'compute_lis_alignment'
 	std::atomic<uint64_t> short_reads_num; // reads shorter than a threshold of N nucleotides. Reset for each index.
 
+    uint32_t min_read_len; // shortest Read length. (read only)
+    uint32_t max_read_len; // longest Read length. (read only)
 	uint64_t all_reads_count; // [1] total number of reads in file.
 	uint64_t all_reads_len; // total number of nucleotides in all reads i.e. sum of length of All read sequences
 	uint64_t total_reads_denovo_clustering; // [4] total number of reads for de novo clustering. 'computeStats' post-processing callback
 
-	std::vector<uint64_t> reads_matched_per_db; // [3] total number of reads matched for each database. `compute_lis_alignment`.
+	std::vector<uint64_t> reads_matched_per_db; // [3] total number of reads matched per database. 'compute_lis_alignment'.
+    //              |_TODO: should be atomic std::atomic<uint64_t> 20201019
 	std::map<std::string, std::vector<std::string>> otu_map; // [5] Populated in 'computeStats' post-processor callback
 
 	bool is_stats_calc; // flags 'computeStats' was called. Set in 'postProcess'
 	bool is_total_mapped_sw_id_cov; // flag 'total_mapped_sw_id_cov' was calculated (so no need to calculate no more)
 
-	Readstats(uint64_t all_reads_count, uint64_t all_reads_len, KeyValueDatabase& kvdb, Runopts& opts);
+	Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t min_read_len, uint32_t max_read_len, KeyValueDatabase& kvdb, Runopts& opts);
 
 	void calcSuffix(Runopts& opts);
 	std::string toBstring();

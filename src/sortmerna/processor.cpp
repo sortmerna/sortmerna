@@ -26,8 +26,46 @@
 #include "readfeed.hpp"
 
 // forward
-void computeStats(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
+void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
+
+/*
+ * Called for each index*index_part*read
+ *
+ * populate 'readstats.otu_map'
+ * count 'readstats.total_reads_denovo_clustering'
+ */
+void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
+{
+	// OTU-map: index of alignment holding maximum SW score
+	//uint32_t index_max_score = read.alignment.max_index;
+	if (read.is03) read.flip34();
+
+	// populate OTU map
+	if (opts.is_otu_map && read.is_id && read.is_cov) {
+		// reference sequence identifier for mapped read
+		std::string refhead = refs.buffer[read.alignment.alignv[read.alignment.max_index].ref_num].header;
+		std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
+		// left trim '>' or '@'
+		ref_seq_str.erase(ref_seq_str.begin(),
+			std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
+				[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+
+		// read identifier
+		std::string read_seq_str = read.getSeqId();
+		readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
+	}
+
+	// only call once per read, on the last index/part
+	if (opts.is_denovo_otu
+		&& refs.num == opts.indexfiles.size() - 1
+		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] - 1
+		&& read.is_hit
+		&& read.is_denovo)
+	{
+		++readstats.total_reads_denovo_clustering;
+	}
+} // ~postProcess3
 
 /*
   runs in a thread
@@ -50,7 +88,7 @@ void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, R
 			if (!read.isValid)
 				continue;
 
-			computeStats(read, readstats, refstats, refs, opts);
+			postProcess3(read, readstats, refstats, refs, opts);
 			readstr.resize(0);
 			++countReads;
 			if (read.is_hit) ++count_reads_aligned;
@@ -64,78 +102,77 @@ void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, R
 // called from main
 void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
 {
-	int loopCount = 0; // counter of total number of processing iterations. TODO: no need here?
-	
 	INFO("==== Starting Post-processing (alignment statistics report) ====\n\n");
 
-	int numThreads = 0;
-	if (opts.feed_type == FEED_TYPE::LOCKLESS)
-	{
-		numThreads = opts.num_read_thread_pp + opts.num_proc_thread_pp;
-		INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread_pp, " Processor threads: ", opts.num_proc_thread_pp);
-	}
-	else {
-		numThreads = opts.num_proc_thread_pp;
-		INFO("Using total threads: ", numThreads);
-	}
-
-	std::vector<std::thread> tpool;
-	tpool.reserve(numThreads);
-	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	bool indb = readstats.restoreFromDb(kvdb);
-
-	if (indb) {	INFO("Restored Readstats from DB:\n    ", readstats.toString()); }
+	if (indb) 
+		INFO("Restored Readstats from DB:\n    ", readstats.toString());
 
 	readstats.total_reads_denovo_clustering = 0; // TODO: to prevent incrementing the stored value. Change this if ever using 'stats_calc_done"
 
 	//if (!readstats.stats_calc_done)
 	//{
 		Refstats refstats(opts, readstats);
-		References refs;
 
-		// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
-		for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); ++index_num)
-		{
-			// iterate parts of reference files
-			for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
+		// this part is only necessary for OTU map and/or deNovo clustering
+		if (opts.is_otu_map || opts.is_denovo_otu) {
+			//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
+			int numThreads = 0;
+			if (opts.feed_type == FEED_TYPE::LOCKLESS)
 			{
-				INFO("Loading reference ", index_num, " part ", idx_part + 1, "/", refstats.num_index_parts[index_num], "  ... ");
+				numThreads = opts.num_read_thread_pp + opts.num_proc_thread_pp;
+				INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread_pp, " Processor threads: ", opts.num_proc_thread_pp);
+			}
+			else {
+				numThreads = opts.num_proc_thread_pp;
+				INFO("Using total threads: ", numThreads);
+			}
 
-				auto starts = std::chrono::high_resolution_clock::now(); // index loading start
-				refs.load(index_num, idx_part, opts, refstats);
-				std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+			std::vector<std::thread> tpool;
+			tpool.reserve(numThreads);
 
-				INFO("done. Elapsed sec: [", elapsed.count(), "]");
-
-				starts = std::chrono::high_resolution_clock::now(); // index processing starts
-
-				// add Readfeed job if necessary
-				if (opts.feed_type == FEED_TYPE::LOCKLESS)
+			References refs;
+			// loop through every reference file part
+			for (uint16_t idx = 0; idx < opts.indexfiles.size(); ++idx)
+			{
+				// iterate parts
+				for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[idx]; ++idx_part)
 				{
-					//tpool.addJob(f_readfeed_run);
-					//tpool.addJob(Readfeed(opts.feed_type, opts.readfiles, opts.is_gz));
-				}
+					INFO("Loading reference ", idx, " part ", idx_part + 1, "/", refstats.num_index_parts[idx], "  ... ");
 
-				// start Processor
-				tpool.emplace_back(std::thread(postProcess2, 0, std::ref(readfeed), std::ref(opts), std::ref(refs), 
-					std::ref(readstats), std::ref(refstats), std::ref(kvdb)));
+					auto starts = std::chrono::high_resolution_clock::now(); // index loading start
+					refs.load(idx, idx_part, opts, refstats);
+					std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 
-				// wait till processing is done on one index part
-				//tpool.waitAll(); 
-				for (auto i = 0; i < tpool.size(); ++i) {
-					tpool[i].join();
-				}
+					INFO("done. Elapsed sec: [", elapsed.count(), "]");
 
-				refs.unload();
-				//read_queue.reset();
-				++loopCount;
+					starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
-				elapsed = std::chrono::high_resolution_clock::now() - starts;
-				INFO_MEM("Done reference ", index_num, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
-			} // ~for(idx_part)
-		} // ~for(index_num)
+					// add Readfeed job if necessary
+					if (opts.feed_type == FEED_TYPE::LOCKLESS)
+					{
+						//tpool.addJob(f_readfeed_run);
+						//tpool.addJob(Readfeed(opts.feed_type, opts.readfiles, opts.is_gz));
+					}
+					tpool.emplace_back(std::thread(postProcess2, 0, std::ref(readfeed), std::ref(opts), std::ref(refs),
+						std::ref(readstats), std::ref(refstats), std::ref(kvdb)));
 
-		INFO("total_reads_denovo_clustering = " , readstats.total_reads_denovo_clustering);
+					// wait till processing is done on one index part
+					//tpool.waitAll(); 
+					for (auto i = 0; i < tpool.size(); ++i) {
+						tpool[i].join();
+					}
+
+					refs.unload();
+					//read_queue.reset();
+
+					elapsed = std::chrono::high_resolution_clock::now() - starts;
+					INFO_MEM("Done reference ", idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
+				} // ~for(idx_part)
+			} // ~for(idx)
+
+			INFO("total_reads_denovo_clustering = ", readstats.total_reads_denovo_clustering);
+		} // ~if opts.is_otu_map || opts.is_denovo_otu
 
 		readstats.set_is_total_mapped_sw_id_cov();
 		readstats.is_stats_calc = true;
@@ -151,7 +188,7 @@ void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvd
 } // ~postProcess
 
 // 20201004 moved here from callbacks.cpp
-void reportsJob(Readfeed& readfeed, 
+void report(Readfeed& readfeed, 
 	            Runopts& opts, 
 	            References& refs, 
 	            Refstats& refstats, 
@@ -221,7 +258,7 @@ void reportsJob(Readfeed& readfeed,
 	} // ~for
 
 	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
-} // ~reportsJob
+} // ~report
 
 
 // called from main. generateReports -> reportsJob
@@ -268,7 +305,7 @@ void generateReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase&
 			//tpool.addJob(f_readfeed_run);
 
 			// start processor
-			tpool.emplace_back(std::thread(reportsJob, std::ref(readfeed), std::ref(opts), std::ref(refs), std::ref(refstats), std::ref(output), std::ref(kvdb)));
+			tpool.emplace_back(std::thread(report, std::ref(readfeed), std::ref(opts), std::ref(refs), std::ref(refstats), std::ref(output), std::ref(kvdb)));
 
 			// wait till processing is done
 			for (auto i = 0; i < tpool.size(); ++i) {
@@ -472,44 +509,3 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	readstats.set_is_total_mapped_sw_id_cov();
 	readstats.store_to_db(kvdb);
 } // ~align
-
-/*
- * Called for each index*index_part*read from PostProcessor::run
- *
- * Calculate:
- *     readstats.total_reads_mapped_cov
- *     readstats.otu_map
- *     //read.hit_denovo see TODO in the function body
- */
-void computeStats(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
-{
-	// OTU-map: index of alignment holding maximum SW score
-	uint32_t index_max_score = read.alignment.max_index;
-	if (read.is03) read.flip34();
-
-	// populate OTU map
-	if (opts.is_otu_map && read.is_id && read.is_cov) {
-		// reference sequence identifier for mapped read
-		std::string refhead = refs.buffer[read.alignment.alignv[read.alignment.max_index].ref_num].header;
-		std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
-		// left trim '>' or '@'
-		ref_seq_str.erase(ref_seq_str.begin(),
-			std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
-				[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
-
-		// read identifier
-		std::string read_seq_str = read.getSeqId();
-		readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
-	}
-
-	// only call once per read, on the last index/part
-	if (opts.is_denovo_otu
-		&& refs.num == opts.indexfiles.size() - 1
-		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] - 1
-		&& read.is_hit
-		&& read.is_denovo)
-	{
-		++readstats.total_reads_denovo_clustering;
-	}
-
-} // ~computeStats
