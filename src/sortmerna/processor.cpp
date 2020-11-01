@@ -37,33 +37,38 @@ void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstat
  */
 void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
 {
-	// OTU-map: index of alignment holding maximum SW score
-	//uint32_t index_max_score = read.alignment.max_index;
-	if (read.is03) read.flip34();
+	//uint32_t index_max_score = read.alignment.max_index; // index of alignment holding maximum SW score
+
+	if (opts.is_otu_map || opts.is_denovo_otu) {
+		if (read.is03) read.flip34();
+	}
 
 	// populate OTU map
-	if (opts.is_otu_map && read.is_id && read.is_cov) {
-		// reference sequence identifier for mapped read
-		std::string refhead = refs.buffer[read.alignment.alignv[read.alignment.max_index].ref_num].header;
-		std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
-		// left trim '>' or '@'
-		ref_seq_str.erase(ref_seq_str.begin(),
-			std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
-				[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+	if (opts.is_otu_map) {
+		if (read.is_id && read.is_cov) {
+			// reference sequence identifier for mapped read
+			std::string refhead = refs.buffer[read.alignment.alignv[read.alignment.max_index].ref_num].header;
+			std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
+			// left trim '>' or '@'
+			ref_seq_str.erase(ref_seq_str.begin(),
+				std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
+					[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 
-		// read identifier
-		std::string read_seq_str = read.getSeqId();
-		readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
+			// read identifier
+			std::string read_seq_str = read.getSeqId();
+			readstats.pushOtuMap(ref_seq_str, read_seq_str); // thread safe
+		}
 	}
 
 	// only call once per read, on the last index/part
-	if (opts.is_denovo_otu
-		&& refs.num == opts.indexfiles.size() - 1
-		&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] - 1
-		&& read.is_hit
-		&& read.is_denovo)
-	{
-		++readstats.total_reads_denovo_clustering;
+	if (opts.is_denovo_otu) {
+		if (refs.num == opts.indexfiles.size() - 1
+			&& refs.part == refstats.num_index_parts[opts.indexfiles.size() - 1] - 1
+			&& read.is_hit
+			&& read.is_denovo)
+		{
+			++readstats.total_reads_denovo_clustering;
+		}
 	}
 } // ~postProcess3
 
@@ -133,17 +138,13 @@ void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvd
 
 			References refs;
 			// loop through every reference file part
-			for (uint16_t idx = 0; idx < opts.indexfiles.size(); ++idx)
-			{
-				// iterate parts
-				for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[idx]; ++idx_part)
-				{
-					INFO("Loading reference ", idx, " part ", idx_part + 1, "/", refstats.num_index_parts[idx], "  ... ");
-
-					auto starts = std::chrono::high_resolution_clock::now(); // index loading start
-					refs.load(idx, idx_part, opts, refstats);
+			for (uint16_t idx = 0; idx < opts.indexfiles.size(); ++idx) {
+				for (uint16_t ipart = 0; ipart < refstats.num_index_parts[idx]; ++ipart) {
+					// load reference
+					INFO("Loading reference ", idx, " part ", ipart + 1, "/", refstats.num_index_parts[idx], "  ... ");
+					auto starts = std::chrono::high_resolution_clock::now();
+					refs.load(idx, ipart, opts, refstats);
 					std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
-
 					INFO("done. Elapsed sec: [", elapsed.count(), "]");
 
 					starts = std::chrono::high_resolution_clock::now(); // index processing starts
@@ -167,8 +168,8 @@ void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvd
 					//read_queue.reset();
 
 					elapsed = std::chrono::high_resolution_clock::now() - starts;
-					INFO_MEM("Done reference ", idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
-				} // ~for(idx_part)
+					INFO_MEM("Done reference ", idx, " Part: ", ipart + 1, " Elapsed sec: ", elapsed.count());
+				} // ~for(ipart)
 			} // ~for(idx)
 
 			INFO("total_reads_denovo_clustering = ", readstats.total_reads_denovo_clustering);
@@ -337,10 +338,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 	std::string readstr;
 
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
-
-	int del = 1;
-	auto istrm = id * readfeed.num_orig_files; // index of a stream in readfeed.ifsv
-	for (; readfeed.next(istrm, readstr);)
+	auto idx = id * readfeed.num_orig_files;
+	for (auto incr = 1; readfeed.next(idx, readstr);)
 	{
 		{
 			Read read(readstr);
@@ -366,7 +365,6 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 
 			// search the forward and/or reverse strands depending on Run options
 			auto num_strands = 0;
-			//opts.forward = true; // TODO: this discards the possiblity of forward = false
 			bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
 			if (search_single_strand)
 				num_strands = 1; // only search the forward xor reverse strand
@@ -381,8 +379,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 					if (!read.reversed)
 						read.revIntStr();
 				}
-				// 'paralleltraversal.cpp::traverse'
-				traverse(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1);
+				
+				traverse(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1); // 'paralleltraversal.cpp'
 				read.id_win_hits.clear(); // bug 46
 			}
 
@@ -400,8 +398,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 
 		// switch FWD-REV if two files are processed
 		if (readfeed.is_two_files) {
-			istrm += del;
-			del *= -1;
+			idx += incr;
+			incr = incr > 0 ? -1 : 1;
 		}
 	} // ~while there are reads
 
@@ -420,7 +418,6 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	// Init thread pool with the given number of threads
 	int numProcThread = 0;
 	numProcThread = opts.num_proc_thread; // '-thread'
-	INFO("Using number of Processor threads: ", numProcThread);
 
 	// calculate the number of threads to use
 	int numThreads = 0;
@@ -433,8 +430,8 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	}
 	else {
 		numThreads = numProcThread;
-		INFO("Using total of Processor threads: ", numProcThread);
-		readfeed.read_descriptor();
+		INFO("Using number of Processor threads: ", numProcThread);
+		readfeed.init_reading(); // prepare readfeed
 	}
 	std::vector<std::thread> tpool;
 	tpool.reserve(numThreads);

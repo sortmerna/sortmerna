@@ -20,6 +20,9 @@
 #include "izlib.hpp"
 #include "common.hpp"
 
+// forward
+std::streampos filesize(const std::string& file); //util.cpp
+
 /*
  @param type       feed type
  @param readfiles  vector with reads file paths
@@ -44,18 +47,9 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::fil
 	length_all(0),
 	min_read_len(0),
 	max_read_len(0),
-	basedir(basedir),
-	readfiles(readfiles)
+	basedir(basedir)
 {
-	if (type == FEED_TYPE::SPLIT_READS)
-		is_ready = is_split_ready();
-	else
-		is_ready = true;
-
-	if (!is_ready) {
-		define_format();
-		count_reads();
-	}
+	init(readfiles);
 } // ~Readfeed::Readfeed 1
 
 Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir)
@@ -73,41 +67,34 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const un
 	length_all(0),
 	min_read_len(0),
 	max_read_len(0),
-	basedir(basedir),
-	readfiles(readfiles)
+	basedir(basedir)
 {
-	if (type == FEED_TYPE::SPLIT_READS)
-		is_ready = is_split_ready();
-	else
-		is_ready = true;
-
-	if (!is_ready) {
-		define_format();
-		count_reads();
-	}
+	init(readfiles);
 } //~Readfeed::Readfeed 2
 
 //Readfeed::~Readfeed() {}
 
-/* 
-  verify the split was already performed and the feed is ready
-  Split readfeed descriptor:
-    timestamp: xxx
-	num_input: 2  # number of input files
-	num_parts: 3  # number of split parts. split[].size = num_input * num_parts
-    input:
-	  - file_1: name, sha
-	  - file_2: name, sha
-	split:
-	 - file_1: name, sha
-	 - file_2: name, sha
-	 ...
-	 - file_n: name, sha
-*/
-bool Readfeed::is_split_ready() {
-	is_ready = false;
-	return is_ready;
-} // ~Readfeed::is_split_ready
+void Readfeed::init(std::vector<std::string>& readfiles)
+{
+	// init read files
+	orig_files.resize(num_orig_files);
+	for (auto i = 0; i < num_orig_files; ++i) {
+		orig_files[i].path = readfiles[i];
+		orig_files[i].size = filesize(readfiles[i]);
+	}
+
+	// always do even when split is ready (need for validation)
+	define_format();
+	count_reads();
+
+	if (type == FEED_TYPE::SPLIT_READS) {
+		init_split_files();
+		is_ready = is_split_ready();
+	}
+	else {
+		is_ready = true;
+	}
+}
 
 /* 
  * can be run in a thread
@@ -118,17 +105,17 @@ void Readfeed::run()
 	INFO("Readsfile::run thread ", std::this_thread::get_id(), " started");
 
 	// init input file streams
-	ifsv.resize(readfiles.size());
-	for (int i = 0; i < readfiles.size(); ++i) {
-		ifsv[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+	ifsv.resize(split_files.size());
+	for (int i = 0; i < split_files.size(); ++i) {
+		ifsv[i].open(split_files[i].path, std::ios_base::in | std::ios_base::binary);
 		if (!ifsv[i].is_open()) {
-			ERR("Failed to open file ", readfiles[i]);
+			ERR("Failed to open file ", split_files[i].path);
 			exit(1);
 		}
 	}
 
 	// bug 114 - Z_STREAM_ERROR even though init is called at construction time
-	vzlib_in.resize(readfiles.size(), Izlib(true));
+	vzlib_in.resize(split_files.size(), Izlib(true));
 	for (auto i = 0; i < vzlib_in.size(); ++i) {
 		vzlib_in[i].init(false);
 	}
@@ -140,7 +127,7 @@ void Readfeed::run()
 	// loop until EOF - get reads - push on queue
 	for (;;)
 	{
-		if (next(inext, seqlen, readstr)) {
+		if (next(inext, readstr, seqlen, split_files)) {
 			++num_reads_tot;
 			inext = is_two_files ? inext ^ 1 : inext; // toggle next file index
 		}
@@ -250,12 +237,12 @@ bool Readfeed::loadReadById(Read& read)
 /*
  uses zlib if files are gzipped or reads flat files
 
- @param inext   IN   index of the file into the Readfeed::readfiles vector
+ @param inext   IN   index into the Readfeed::files vector
  @param seqlen  OUT  length of the read sequence
  @param read    OUT  read string
  @param is_orig IN   flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
 */
-bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig) {
+bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig, std::vector<Readfile>& files) {
 	std::string line;
 	std::stringstream readss; // an empty read
 	auto stat = vstate_in[inext].last_stat;
@@ -274,11 +261,11 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig
 
 		// read a line
 		if (!vstate_in[inext].is_done) {
-			if (vstate_in[inext].isZip) {
+			if (files[inext].isZip) {
 				stat = vzlib_in[inext].getline(ifsv[inext], line);
 			}
 			else {
-				if (ifsv[inext].eof()) 
+				if (ifsv[inext].eof())
 					stat = RL_END;
 				else 
 					std::getline(ifsv[inext], line);
@@ -289,14 +276,14 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig
 		if (stat == RL_END)
 		{
 			vstate_in[inext].is_done = true;
-			auto FR = inext == 0 ? FWD : REV;
+			auto FR = (inext & 1) == 0 ? FWD : REV;
 			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[inext].read_count);
 			break;
 		}
 
 		if (stat == RL_ERR)
 		{
-			auto FR = inext == 0 ? FWD : REV;
+			auto FR = (inext & 1) == 0 ? FWD : REV;
 			ERR("reading from ", FR, " file. Exiting...");
 			exit(1);
 		}
@@ -315,18 +302,18 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig
 		// the first line in file
 		if (vstate_in[inext].line_count == 1)
 		{
-			vstate_in[inext].isFastq = (line[0] == FASTQ_HEADER_START);
-			vstate_in[inext].isFasta = (line[0] == FASTA_HEADER_START);
+			files[inext].isFastq = (line[0] == FASTQ_HEADER_START);
+			files[inext].isFasta = (line[0] == FASTA_HEADER_START);
 		}
 
-		if (count == 4 && vstate_in[inext].isFastq)
+		if (count == 4 && files[inext].isFastq)
 		{
 			count = 0;
 		}
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((vstate_in[inext].isFasta && line[0] == FASTA_HEADER_START) || (vstate_in[inext].isFastq && count == 0)) // header line reached
+		if ((files[inext].isFasta && line[0] == FASTA_HEADER_START) || (files[inext].isFastq && count == 0)) // header line reached
 		{
 			if (vstate_in[inext].line_count == 1)
 			{
@@ -346,7 +333,7 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig
 		} // ~if header line
 		else
 		{ // add sequence -->
-			if (vstate_in[inext].isFastq)
+			if (files[inext].isFastq)
 			{
 				if (count == 2) {
 					if (is_orig)
@@ -377,17 +364,16 @@ bool Readfeed::next(int inext, unsigned& seqlen, std::string& read, bool is_orig
 	return readss.str().size() > 0;
 } // ~Readfeed::next
 
-
 /**
    get a next read string from a reads file
-   20201012: TODO: exactly the same as next(int, str, str) but doesn't count sequence length.
+   20201012: TODO: exactly the same as next(int, uint, str, bool) but doesn't count sequence length.
                    Counting sequence length could be a very small overhead -> no need for this overload?
 
    @param  inext    IN     index of the stream to read.
    @param  readstr  OUT    read sequence
    @return true if record exists, else false
  */
-bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
+bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<Readfile>& files)
 {
 	std::string line;
 	std::stringstream readss; // an empty read
@@ -406,7 +392,7 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
 
 		// read a line
 		if (!vstate_in[inext].is_done) {
-			if (vstate_in[inext].isZip) {
+			if (files[inext].isZip) {
 				stat = vzlib_in[inext].getline(ifsv[inext], line);
 			}
 			else {
@@ -421,14 +407,14 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
 		if (stat == RL_END)
 		{
 			vstate_in[inext].is_done = true;
-			auto FR = inext == 0 ? FWD : REV;
+			auto FR = (inext & 1) == 0 ? FWD : REV; // if index is even -> FWD
 			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[inext].read_count);
 			break;
 		}
 
 		if (stat == RL_ERR)
 		{
-			auto FR = inext == 0 ? FWD : REV;
+			auto FR = (inext & 1) == 0 ? FWD : REV;
 			ERR("reading from ", FR, " file. Exiting...");
 			exit(1);
 		}
@@ -447,18 +433,18 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
 		// the first line in file
 		if (vstate_in[inext].line_count == 1)
 		{
-			vstate_in[inext].isFastq = (line[0] == FASTQ_HEADER_START);
-			vstate_in[inext].isFasta = (line[0] == FASTA_HEADER_START);
+			files[inext].isFastq = (line[0] == FASTQ_HEADER_START);
+			files[inext].isFasta = (line[0] == FASTA_HEADER_START);
 		}
 
-		if (count == 4 && vstate_in[inext].isFastq)
+		if (count == 4 && files[inext].isFastq)
 		{
 			count = 0;
 		}
 
 		// fastq: 0(header), 1(seq), 2(+), 3(quality)
 		// fasta: 0(header), 1(seq)
-		if ((vstate_in[inext].isFasta && line[0] == FASTA_HEADER_START) || (vstate_in[inext].isFastq && count == 0)) // header line reached
+		if ((files[inext].isFasta && line[0] == FASTA_HEADER_START) || (files[inext].isFastq && count == 0)) // header line reached
 		{
 			if (vstate_in[inext].line_count == 1)
 			{
@@ -478,7 +464,7 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
 		} // ~if header line
 		else
 		{ // add sequence -->
-			if (vstate_in[inext].isFastq)
+			if (files[inext].isFastq)
 			{
 				if (count == 2) {
 					if (is_orig)
@@ -500,13 +486,22 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig)
 
 	++vstate_in[inext].read_count;
 
-	//vnext_fwd_in[inext] != vnext_fwd_in[inext]; // toggle the stream index
-
 	auto is_read_ok = readss.str().size() > 0;
 	if (is_read_ok)
 		readstr = readss.str();
 	return is_read_ok;
 } // ~Readfeed::next
+
+/*
+ * public function
+ */
+bool Readfeed::next(int inext, std::string& readstr)
+{
+	auto has_read = false;
+	if (type == FEED_TYPE::SPLIT_READS)
+		has_read = next(inext, readstr, false, split_files);
+	return has_read;
+}
 
 /**
  * test if there is a next read in the reads file
@@ -531,21 +526,19 @@ void Readfeed::rewind() {
   rewind IN feed
 */
 void Readfeed::rewind_in() {
-	if (ifsv.size() >= num_orig_files) {
-		for (auto i = 0; i < ifsv.size(); ++i) {
-			if (ifsv[i].is_open()) {
-				if (ifsv[i].rdstate() != std::ios_base::goodbit) {
-					ifsv[i].clear();
-				}
-				ifsv[i].seekg(0); // rewind
-
-				if (!ifsv[i].good()) {
-					ERR("failed rewind stream: ", readfiles[i], " iostate: ", ifsv[i].rdstate());
-					exit(1);
-				}
+	for (auto i = 0; i < ifsv.size(); ++i) {
+		if (ifsv[i].is_open()) {
+			if (ifsv[i].rdstate() != std::ios_base::goodbit) {
+				ifsv[i].clear();
 			}
-			vstate_in[i].reset();
+			ifsv[i].seekg(0); // rewind
+
+			if (!ifsv[i].good()) {
+				ERR("failed rewind stream idx: ", i, " in vector of size: ", ifsv.size(), " iostate: ", ifsv[i].rdstate());
+				exit(1);
+			}
 		}
+		vstate_in[i].reset();
 	}
 }
 
@@ -554,11 +547,8 @@ void Readfeed::rewind_in() {
    2 paired file     -> num files out = 2 x num_parts i.e. each paired file is split into specified number of parts
    1 paired file     -> num files out = 1 x num_parts AND ensure each part has even number of reads
    1 non-paired file -> num files out = 1 x num_parts
-
-  @param num_parts  number of parts to split the file into
-  @param num_reads  total number of reads in all read files (Readstats::all_reads_count)
 */
-bool Readfeed::split(const unsigned num_parts)
+bool Readfeed::split()
 {
 	if (is_ready) {
 		INFO("split is ready - no need to run");
@@ -566,58 +556,41 @@ bool Readfeed::split(const unsigned num_parts)
 	}
 
 	auto starts = std::chrono::high_resolution_clock::now();
-	INFO("start splitting. Using number of splits equals number of processing threads: ", num_parts);
+	INFO("start splitting. Using number of splits equals number of processing threads: ", num_splits);
 	auto retval = true;
-	num_splits = num_parts;
 	auto num_split_files = num_splits * num_orig_files;
-	auto tot_files = num_split_files + num_orig_files; // splits + original read files
 
 	// orig streams are ready at this stage - just check them
-	if (ifsv.size() >= num_orig_files) {
-		for (int i = 0; i < num_orig_files; ++i) {
-			if (!ifsv[i].is_open()) {
-				ifsv[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
-			}
-			if (!ifsv[i].is_open()) {
-				ERR("Failed to open file ", readfiles[i]);
-				exit(1);
-			}
+	for (auto i = 0; i < ifsv.size(); ++i) {
+		if (!ifsv[i].is_open()) {
+			ifsv[i].open(orig_files[i].path, std::ios_base::in | std::ios_base::binary);
+		}
+		if (!ifsv[i].is_open()) {
+			ERR("Failed to open file ", orig_files[i].path);
+			exit(1);
 		}
 	}
 	rewind_in();
 
-	// init zlib for inflation
-	for (int i = 0; i < num_orig_files; ++i) {
-		if (vstate_in[i].isZip) {
+	// init zlib IN for inflation
+	for (int i = 0; i < orig_files.size(); ++i) {
+		if (orig_files[i].isZip) {
 			vzlib_in[i].init();
 		}
 	}
 
 	// prepare split files to output:
+	//init_split_files(num_splits);
 	// [ fwd_1.fq.gz, rev_1.fq.gz,   fwd_2.fq.gz, rev_2.fq.gz,   ...,   fwd_n.fq.gz, ref_n.fq.gz ]
 	ofsv.resize(num_split_files);
-	readfiles.reserve(tot_files); // reserve space for new (split) names
-	size_t idx = 0; // stream index
-	std::stringstream ss;
-	for (int i = 0; i < num_splits; ++i) {
-		for (int j = 0; j < num_orig_files; ++j) {
-			std::string stem = j == 0 ? "fwd_" : "rev_";
-			std::string sfx_1 = vstate_in[j].isFasta ? ".fa" : ".fq";
-			auto sfx = vstate_in[j].isZip ? sfx_1 + ".gz" : sfx_1;
-			ss << stem << i << sfx; // split file basename
-			auto fn = basedir / ss.str(); // split file name
-			INFO("adding file: ", fn.generic_string());
-			readfiles.emplace_back(fn.generic_string()); // add split file
-			ss.str("");
-		}
-	}
 
 	for (auto i = 0; i < ofsv.size(); ++i) {
 		if (!ofsv[i].is_open()) {
-			ofsv[i].open(readfiles[(size_t)i + num_orig_files], std::ios::app | std::ios::binary);
+			ofsv[i].open(split_files[i].path, std::ios::app | std::ios::binary);
 		}
 		if (!ofsv[i].is_open()) {
-			ERR("Failed to open file ", readfiles[(size_t)i + num_orig_files]);
+			auto idx = num_orig_files + i;
+			ERR("Failed to open file ", split_files[i].path.generic_string());
 			exit(1);
 		}
 		//INFO("opened file: ", readfiles[i + num_orig_files]);
@@ -631,50 +604,47 @@ bool Readfeed::split(const unsigned num_parts)
 
 	// prepare Readstates OUT
 	vstate_out.resize(num_split_files);
-	for (auto i = 0; i < num_splits; ++i) {
-		auto del = i * num_orig_files;
-		for (auto j = 0; j < num_orig_files; ++j) {
-			auto idx = j + del;
-			vstate_out[idx].isFasta = vstate_in[j].isFasta;
-			vstate_out[idx].isFastq = vstate_in[j].isFastq;
-			vstate_out[idx].isZip = vstate_in[j].isZip;
-		}
-	}
-
-	// calculate number of reads in each of the output files
-	auto nreads = num_orig_files == 2 ? num_reads_tot / 2 : num_reads_tot; // num reads in a single input file e.g. FWD
-	auto minr = nreads / num_parts; // quotient i.e. min number of reads in each output file
-	auto surplus = nreads - minr * num_parts; // remainder of reads to be distributed between the output files
-	for (auto i = 0; i < num_parts; ++i) {
-		auto maxr = i < surplus ? minr + 1 : minr; // distribute the surplus
-		for (auto j = 0; j < num_orig_files; ++j) {
-			vstate_out[j+i*num_orig_files].max_reads = maxr;
-		}
-	}
 
 	unsigned seqlen = 0;
 	std::string readstr;
 
 	// loop until EOF - get reads - write into split files
-	for (int inext = 0, isplit = 0, iout = 0, del = 0; next(inext, seqlen, readstr, true);)
-	{
-		++vstate_out[iout].read_count;
-		auto is_last = vstate_out[iout].read_count == vstate_out[iout].max_reads;
-		auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], is_last); // Z_STREAM_END | Z_OK - ok
-		if (ret < Z_OK || ret > Z_STREAM_END) {
-			ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
-			retval = false;
-			break;
-		}
+	for (auto inext = 0, iout = 0; inext < num_orig_files; ++inext, iout = inext) {
+		for (; next(inext, readstr, seqlen, true, orig_files);)
+		{
+			++vstate_out[iout].read_count;
+			auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
+			if (ret < Z_OK || ret > Z_STREAM_END) {
+				ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
+				retval = false;
+				break;
+			}
+			if (vstate_out[iout].read_count == split_files[iout].numreads) {
+				iout += num_orig_files; // switch to next split
+			}
+		} // ~for
+	}
 
-		// split fwd, split rev:  FDW -> FDW_1,FDW_2,FWD_n; REV -> REV_1,REV_2,REV_n;
-		if (is_last && inext == 1) {
-			++isplit; // next split index
-			del = isplit * num_orig_files; // distance between iout of 0th split and a current split
-		}
-		inext = is_two_files ? inext ^ 1 : inext; // toggle the index of the input file
-		iout =  inext + del; // next out index
-	} // ~for
+	// loop until EOF - get reads - write into split files
+	//for (int inext = 0, isplit = 0, iout = 0, del = 0; next(inext, readstr, seqlen, true, orig_files);)
+	//{
+	//	++vstate_out[iout].read_count;
+	//	auto ofdx = iout + num_orig_files; // split file index into files vector
+	//	auto is_last = vstate_out[iout].read_count == split_files[ofdx].numreads;
+	//	auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], is_last); // Z_STREAM_END | Z_OK - ok
+	//	if (ret < Z_OK || ret > Z_STREAM_END) {
+	//		ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
+	//		retval = false;
+	//		break;
+	//	}
+	//
+	//	if (is_last && inext == 1) {
+	//		++isplit; // next split index
+	//		del = isplit * num_orig_files; // distance between iout of 0th split and a current split
+	//	}
+	//	inext = is_two_files ? inext ^ 1 : inext; // toggle the index of the input file
+	//	iout =  inext + del; // next out index
+	//} // ~for
 
 	// close IN file streams
 	for (int i = 0; i < num_orig_files; ++i) {
@@ -696,12 +666,127 @@ bool Readfeed::split(const unsigned num_parts)
 
 	// zlib deflate streams already cleaned by now
 
+	// calculate split file sizes
+	for (auto i = 0; i < split_files.size(); ++i) {
+		split_files[i].size = filesize(split_files[i].path.generic_string());
+	}
+
 	// write readfead descriptor
+	write_descriptor();
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
 	INFO("Done splitting. Reads count: ", num_reads_tot, " Runtime sec: ", elapsed.count(), "\n");
 	return retval;
 } // ~Readfeed::split
+
+/*
+  verify the split was already performed and the feed is ready
+  logic:
+	Read feed descriptor and verify:
+	  - original files have the same name, size and line count
+	  - num splits are the same
+	  - split files names, count, and line count are the same
+  Split readfeed descriptor:
+	timestamp: xxx
+	num_input: 2  # number of input files
+	num_parts: 3  # number of split parts. split[].size = num_input * num_parts
+	input:
+	  - file_1: name, sha
+	  - file_2: name, sha
+	split:
+	 - file_1: name, sha
+	 - file_2: name, sha
+	 ...
+	 - file_n: name, sha
+*/
+bool Readfeed::is_split_ready() {
+	// compare with data in descriptor
+	std::ifstream ifs;
+	std::filesystem::path fn = basedir / "readfeed";
+	if (std::filesystem::exists(fn)) {
+		ifs.open(fn, std::ios_base::in | std::ios_base::binary);
+		if (!ifs.is_open()) {
+			ERR("failed to open: ", fn.generic_string());
+			exit(1);
+		}
+
+		int lidx = 0; // line index
+		int fidx = 0; // file index
+		int fpidx = 0; // index of file parameters: name, size, lines, zip, fastq/fasta
+		for (std::string line; std::getline(ifs, line); ) {
+			if (!line.empty()) {
+				// trim
+				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+				// skip comments
+				if (line[0] != '#') {
+					if (lidx == 0)
+						is_ready = true; // timestamp
+					else if (lidx == 1)
+						is_ready = is_ready && std::stoi(line) == num_orig_files;
+					else if (lidx == 2)
+						is_ready = is_ready && std::stoi(line) == num_splits;
+					else if (lidx == 3)
+						is_ready = is_ready && std::stoi(line) == num_reads_tot;
+					else {
+						if (fpidx == 0) {
+							if (fidx >= split_files.size()) {
+								INFO("expected max file index: ", split_files.size() - 1, " current file index in the descriptor: ", fidx);
+								is_ready = false;
+								break;
+							}
+							is_ready = is_ready && line == split_files[fidx].path; // file path
+						}
+						else if (fpidx == 1) {
+							if (fidx < num_orig_files) {
+								is_ready = is_ready && std::stoi(line) == split_files[fidx].size; // file size of original files
+							}
+							else {
+								split_files[fidx].size = std::stoi(line); // set sizes of split files
+							}
+						}
+						else if (fpidx == 2) {
+							is_ready = is_ready && std::stoi(line) == split_files[fidx].numreads; // number of reads
+						}
+						else if (fpidx == 3) {
+							auto isZip = std::stoi(line) == 1;
+							is_ready = is_ready && split_files[fidx].isZip == isZip; // is zip
+						}
+						else if (fpidx == 4) {
+							auto isFastq = line == "fastq";
+							auto isFasta = line == "fasta";
+							is_ready = is_ready && split_files[fidx].isFastq == isFastq;
+							is_ready = is_ready && split_files[fidx].isFasta == isFasta; // is fastq/a
+							fpidx = 0;
+							++fidx;
+							++lidx;
+							continue;
+						}
+						++fpidx;
+					}
+					if (!is_ready)
+						break;
+					++lidx;
+				}
+			}
+		} // ~for lines in descriptor
+		// verify count of files
+		is_ready = is_ready && (size_t)fidx == split_files.size();
+
+		// reset split file sizes if not ready
+		if (!is_ready) {
+			for (auto i = 0; i < split_files.size(); ++i) {
+				split_files[i].size = 0;
+			}
+		}
+	}
+	else {
+		is_ready = false; // descriptor does not exist
+	}
+
+	if (ifs.is_open()) ifs.close(); // close the descriptor
+
+	return is_ready;
+} // ~Readfeed::is_split_ready
 
 /*
   20200924 Thu
@@ -749,20 +834,17 @@ bool Readfeed::define_format()
 	bool is_ascii = true;
 	is_format_defined = true;
 
-	if (ifsv.size() < num_orig_files) {
-		ifsv.resize(num_orig_files);
-	}
-	if (vstate_in.size() < num_orig_files) {
-		vstate_in.resize(num_orig_files);
-	}
+	ifsv.resize(num_orig_files);
+	vstate_in.resize(num_orig_files);
+
 	std::string str(100, '\0');
 	unsigned seqlen = 0;
 	for (int i = 0; i < num_orig_files; ++i) {
 		if (!ifsv[i].is_open()) {
-			ifsv[i].open(readfiles[i], std::ios_base::in | std::ios_base::binary);
+			ifsv[i].open(orig_files[i].path, std::ios_base::in | std::ios_base::binary);
 		}
 		if (!ifsv[i].is_open()) {
-			ERR("Failed to open file ", readfiles[i]);
+			ERR("Failed to open file ", orig_files[i].path);
 			exit(1);
 		}
 		ifsv[i].read(&str[0], 100); // get 100 bytes from the stream
@@ -773,7 +855,7 @@ bool Readfeed::define_format()
 				break;
 			}
 		}
-		vstate_in[i].isZip = !is_ascii;
+		orig_files[i].isZip = !is_ascii;
 		if (!is_ascii) {
 			// init izlib for inflation
 			if (vzlib_in.size() < i+1) {
@@ -784,15 +866,15 @@ bool Readfeed::define_format()
 		
 		ifsv[i].seekg(0); // rewind stream to the start
 		// get a read
-		if (next(i, seqlen, str)) {
-			std::string fmt = vstate_in[i].isZip ? "gzipped" : "flat ASCII";
-			if (vstate_in[i].isFasta) {
+		if (next(i, str, seqlen, orig_files)) {
+			std::string fmt = orig_files[i].isZip ? "gzipped" : "flat ASCII";
+			if (orig_files[i].isFasta) {
 				biof = BIO_FORMAT::FASTA;
-				INFO("file: ", readfiles[i], " is FASTA ", fmt);
+				INFO("file: ", orig_files[i].path, " is FASTA ", fmt);
 			}
-			else if (vstate_in[i].isFastq) {
+			else if (orig_files[i].isFastq) {
 				biof = BIO_FORMAT::FASTQ;
-				INFO("file: ", readfiles[i], " is FASTQ ", fmt);
+				INFO("file: ", orig_files[i].path, " is FASTQ ", fmt);
 			}
 			else {
 				is_format_defined = false;
@@ -805,18 +887,18 @@ bool Readfeed::define_format()
 		}
 
 		if (!is_format_defined) {
-			ERR("Cannot define format for file: ", readfiles[i]);
+			ERR("Cannot define format for file: ", orig_files[i].path);
 			exit(1);
 		}
 
 		// reset Izlib
-		if (vstate_in[i].isZip) {
+		if (orig_files[i].isZip) {
 			// seems this Has to be done here i.e. within 
 			// the same context where 'init' was called.
 			// Otherwise 'Z_STREAM_ERROR'
 			auto stat = vzlib_in[i].reset_inflate();
 		}
-	}
+	} // ~for orig files
 
 	return is_format_defined;
 } // ~Readfeed::define_format
@@ -835,8 +917,8 @@ void Readfeed::count_reads()
 	rewind_in();
 
 	// init zlib
-	for (int i = 0; i < num_orig_files; ++i) {
-		if (vstate_in[i].isZip) {
+	for (int i = 0; i < orig_files.size(); ++i) {
+		if (orig_files[i].isZip) {
 			vzlib_in[i].init();
 		}
 	}
@@ -845,9 +927,10 @@ void Readfeed::count_reads()
 	unsigned seqlen = 0;
 
 	// loop until EOF - count reads and sequence lengths
-	for (int inext = 0; next(inext, seqlen, readstr);)
+	for (int inext = 0; next(inext, readstr, seqlen, true, orig_files);)
 	{
 		++num_reads_tot;
+		++orig_files[inext].numreads;
 		length_all += seqlen;
 		if (max_read_len < seqlen) max_read_len = seqlen;
 		if (min_read_len > seqlen || min_read_len == 0) min_read_len = seqlen;
@@ -860,64 +943,143 @@ void Readfeed::count_reads()
 } // ~Readfeed::count_reads
 
 /*
-  resize input streams vector to fit all split streams and open the streams
-  resize and init Readstats and Izlibs
+  init split files' names, and attributes including format fastq/a, zip, number of reads.
 */
-void Readfeed::init_split_input() 
+void Readfeed::init_split_files()
 {
+	auto n_split_files = num_orig_files * num_splits;
+	split_files.resize(n_split_files);
+
+	std::stringstream ss;
+	for (int i = 0, idx = 0; i < num_splits; ++i) {
+		for (int j = 0; j < num_orig_files; ++j, ++idx) {
+			std::string stem = j == 0 ? "fwd_" : "rev_";
+			std::string sfx_1 = orig_files[j].isFasta ? ".fa" : ".fq";
+			auto sfx = orig_files[j].isZip ? sfx_1 + ".gz" : sfx_1;
+			ss << stem << i << sfx; // split file basename
+			//auto idx = i * num_orig_files + j;
+			split_files[idx].path = basedir / ss.str();
+			ss.str("");
+			INFO("added file: ", split_files[idx].path.generic_string());
+		}
+	}
+
+	// calculate number of reads in each of the split files
+	auto nreads = num_orig_files == 2 ? num_reads_tot / 2 : num_reads_tot; // num reads in a single input file e.g. FWD
+	auto minr = nreads / num_splits; // quotient i.e. min number of reads in each output file
+	auto surplus = nreads - minr * num_splits; // remainder of reads to be distributed between the output files
+	for (auto i = 0, idx = 0; i < num_splits; ++i) {
+		auto maxr = i < surplus ? minr + 1 : minr; // distribute the surplus
+		for (auto j = 0; j < num_orig_files; ++j, ++idx) {
+			//auto idx = i * num_orig_files + num_orig_files + j;
+			split_files[idx].numreads = maxr;
+			split_files[idx].isZip = orig_files[j].isZip;
+			split_files[idx].isFastq = orig_files[j].isFastq;
+			split_files[idx].isFasta = orig_files[j].isFasta;
+		}
+	}
 }
 
 /*
-  time:
-  num_splits: 3
-  num_orig_files: 2
-  file:
-  lines:
-  file:
-  lines:
-  files:
-  lines:
+  format:
+    time:
+    num_orig_files: 2
+    num_splits: 3
+	total_reads: xx
+    [ file:
+      size:
+      reads:
+    ]  <- as many as num_orig_files*(num_splits + 1)
 */
 void Readfeed::write_descriptor()
 {
-	std::filesystem::path fn = basedir / "readfeed";
+	const std::string comments = 
+		"# format of this file:\n"
+	    "#   time\n"
+		"#   num_orig_files\n"
+		"#   num_splits\n"
+		"#   num_reads_tot\n"
+        "#   [\n"
+		"#     file\n"
+		"#     size\n"
+		"#     reads\n"
+		"#     zip\n"
+		"#     fastq/a\n"
+        "#   ] for each file both original and split\n";
 
+	if (!is_ready) {
+		std::filesystem::path fn = basedir / "readfeed";
+		std::ofstream ofs(fn, std::ios::app | std::ios::binary);
+		if (!ofs.is_open()) {
+			ERR("failed to open file: ", fn.generic_string());
+			exit(1);
+		}
+
+		ofs << comments << '\n';
+		std::time_t tm = std::time(0);
+		ofs << std::ctime(&tm) << '\n'; // line 0: timestamp  <ctime> 'Tue Oct 20 08:39:35 2020'
+		ofs << num_orig_files << '\n';  // line 1:
+		ofs << num_splits << '\n';      // line 2:
+		ofs << num_reads_tot << '\n';   // line 3:
+		for (auto i = 0; i < orig_files.size(); ++i) {
+			ofs << orig_files[i].path.generic_string() << '\n';     // file path
+			ofs << orig_files[i].size << '\n';     // file size
+			ofs << orig_files[i].numreads << '\n'; // reads count
+			ofs << orig_files[i].isZip << '\n';    // zip
+			auto fx = orig_files[i].isFastq == true ? "fastq" : "fasta";
+			ofs << fx << '\n';
+		}
+		for (auto i = 0; i < split_files.size(); ++i) {
+			ofs << split_files[i].path.generic_string() << '\n';     // file path
+			ofs << split_files[i].size << '\n';     // file size
+			ofs << split_files[i].numreads << '\n'; // reads count
+			ofs << split_files[i].isZip << '\n';    // zip
+			auto fx = split_files[i].isFastq == true ? "fastq" : "fasta";
+			ofs << fx << '\n';
+		}
+		is_ready = true;
+	}
+	else {
+		INFO("split is ready - no write_descriptor necessary");
+	}
+} // ~Readfeed::write_descriptor
+
+void Readfeed::init_vzlib_in()
+{
+	vzlib_in.resize(split_files.size());
+	for (auto i = 0; i < vzlib_in.size(); ++i) {
+		if (split_files[i].isZip) vzlib_in[i].init();
+	}
 }
 
-void Readfeed::read_descriptor()
+/*
+ * called at the start of reading the split files 
+ * init readfeed for reading:
+ *   ifsv
+ *   vstate_in
+ *   vzlib_in
+ */
+void Readfeed::init_reading()
 {
-	auto nfiles = num_splits * num_orig_files;
-	ifsv.resize((nfiles));
-	auto ridx = num_orig_files; // split files follow original files in the 'ifsv'
-	for (auto i = 0; i < ifsv.size(); ++i, ++ridx) {
-		ifsv[i].open(readfiles[ridx], std::ios_base::in | std::ios_base::binary);
+	for (auto i = 0; i < vstate_in.size(); ++i) {
+		vstate_in[i].reset();
+	}
+	vstate_in.resize(split_files.size());
+
+	// ifsv
+	for (auto i = 0; i < ifsv.size(); ++i) {
+		if (ifsv[i].is_open()) ifsv[i].close();
+	}
+	ifsv.resize(split_files.size());
+	for (auto i = 0; i < split_files.size(); ++i) {
+		ifsv[i].open(split_files[i].path, std::ios_base::in | std::ios_base::binary);
 		if (!ifsv[i].is_open()) {
-			ERR("Failed to open file ", readfiles[ridx]);
+			ERR("failed to open: ", split_files[i].path.generic_string());
 			exit(1);
 		}
 	}
 
-	// prepare split Readstates
-	vstate_in.resize(nfiles);
-	vstate_in.resize(nfiles);
-	for (auto i = 0; i < nfiles; ++i) {
-		vstate_in[i].isFasta = vstate_out[i].isFasta;
-		vstate_in[i].isFastq = vstate_out[i].isFastq;
-		vstate_in[i].isZip = true;
-		vstate_in[i].max_reads = vstate_out[i].max_reads;
-	}
+	// vzlib_in
+	init_vzlib_in();
 
-	// prepare Izlib
-	vzlib_in.resize(nfiles);
-	for (size_t i = 0; i < nfiles; ++i) {
-		vzlib_in[i].init();
-	}
-} // ~Readfeed::read_descriptor
-
-void Readfeed::init_vzlib_in()
-{
-	for (auto i = 0; i < vzlib_in.size(); ++i) {
-		if (vstate_in[i].isZip)
-			vzlib_in[i].init();
-	}
-}
+} // ~Readfeed::init_reading
