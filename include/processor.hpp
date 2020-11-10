@@ -19,10 +19,10 @@ struct Readstats;
 class Refstats;
 class KeyValueDatabase;
 
-void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Output& output, Runopts& opts);
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts);
 void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts);
-void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts); /* post-alignment tasks like calculating statistics */
-void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb);
-void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
-void generateReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts);
-void report(Readfeed& readfeed, Runopts& opts, References& refs, Refstats& refstats, Output& output, KeyValueDatabase& kvdb);
+void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts); /* post-alignment tasks like calculating statistics */
+void writeSummary2(int id, Readfeed& readfeed, Runopts& opts, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb);
+void writeSummary3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
+void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
+void report(int id, Readfeed& readfeed, Runopts& opts, References& refs, Refstats& refstats, Output& output, KeyValueDatabase& kvdb);

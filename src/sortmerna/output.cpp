@@ -52,170 +52,130 @@ class Read;
 struct Index;
 class KeyValueDatabase;
 
-Summary::Summary():
-	is_de_novo_otu(false), 
-	is_otumapout(false), 
-	total_reads(0), 
-	total_reads_denovo_clustering(0),
-	total_reads_mapped(0),
-	total_mapped_sw_id_cov(0),
-	min_read_len(0),
-	max_read_len(0),
-	all_reads_len(0),
-	total_otu(0)
-{}
-
-Output::Output(Runopts& opts, Readstats& readstats)
+Output::Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats) : out_type(0)
 {
-	init(opts, readstats);
+	init(readfeed, opts, readstats);
 }
 Output::~Output() { closefiles(); }
 
-void Output::init(Runopts& opts, Readstats& readstats)
+void Output::init(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
 {
-	summary.pid_str = std::to_string(getpid());
+	calc_out_type(opts);
+	set_num_out();
 
-	// init aligned output files
 	if (opts.is_fastx)
-	{
-		// fasta/q output  WORKDIR/out/aligned.fastq
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += "." + readstats.suffix;
-		size_t nfiles = opts.is_out2 ? 2 : 1;
-		aligned_os.resize(nfiles);
-		aligned_f.resize(nfiles);
-		for (size_t i = 0; i < aligned_os.size(); ++i) {
-			std::string sfx2 = "";
-			if (opts.is_out2) {
-				sfx2 = i == 0 ? "_fwd" : "_rev";
-			}
-
-			// test the file
-			aligned_f[i] = opts.aligned_pfx.string() + sfx2 + sfx;
-			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(aligned_f[i])));
-			aligned_os[i].open(aligned_f[i]);
-			aligned_os[i].close();
-			if (!aligned_os[i]) {
-				ERR("Failed operating stream on file ", aligned_f[i]);
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
-
-	if (opts.is_other && opts.is_fastx)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += "." + readstats.suffix;
-		size_t nfiles = opts.is_out2 ? 2 : 1;
-		other_os.resize(nfiles);
-		other_f.resize(nfiles);
-		for (size_t i = 0; i < other_os.size(); ++i) {
-			std::string sfx2 = "";
-			if (opts.is_out2) {
-				sfx2 = i == 0 ? "_fwd" : "_rev";
-			}
-			// test the file
-			other_f[i] = opts.other_pfx.string() + sfx2 + sfx;
-			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(other_f[i])));
-			other_os[i].open(other_f[i]);
-			other_os[i].close();
-			if (!other_os[i]) {
-				ERR("Failed operating stream on file ", other_f[i]);
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
-
-	if (opts.is_sam)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += ".sam";
-		sam_f = opts.aligned_pfx.string() + sfx;
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(sam_f)));
-		sam_os.open(sam_f);
-		sam_os.close();
-	}
+		init_fastx(readfeed, opts);
 
 	if (opts.is_blast)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += ".blast";
-		blast_f = opts.aligned_pfx.string() + sfx;
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(blast_f)));
-		blast_os.open(blast_f);
-		blast_os.close();
-		if (!blast_os) {
-			ERR("Failed operating stream on file ", blast_f);
-			exit(EXIT_FAILURE);
-		}
-	}
+		init_blast(opts);
 
-	if (opts.is_otu_map)
-	{
-		// OTU map output file  WORKDIR/out/aligned_otus.txt
-		std::ofstream otumap;
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += "_otus.txt";
-		otumap_f = opts.aligned_pfx.string() + sfx;
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(otumap_f)));
-		otumap.open(otumap_f);
-		otumap.close();
-	}
+	if (opts.is_sam)
+		init_sam(opts);
 
 	if (opts.is_denovo_otu)
-	{
-		std::ofstream denovo_otu;
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
+		init_denovo_otu(readfeed, opts);
+} // ~Output::init
+
+/*
+* aligned_fwd.fq, aligned_rev.fq
+*/
+void Output::init_fastx(Readfeed& readfeed, Runopts& opts)
+{
+	auto pid_str = std::to_string(getpid());
+	auto num_out_tot = readfeed.num_splits * num_out;
+	ofs_aligned.resize(num_out_tot);
+	f_aligned.resize(num_out_tot);
+	if (opts.is_other) {
+		f_other.resize(num_out_tot);
+		ofs_other.resize(num_out_tot);
+	}
+	// fasta/q output  WORKDIR/out/aligned.fastq
+	std::string sfx = opts.is_pid ? "_" + pid_str : "";
+
+	for (int i = 0; i < readfeed.num_splits; ++i) {
+		auto orig_idx = i & 1;
+		std::string orig_sfx = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
+		sfx += orig_sfx;
+		for (int j = 0; j < num_out; ++j) {
+			std::string sfx2 = "";
+			if (out_type == 0x44) {
+				if (j == 0 || j == 1) sfx2 += "_paired";
+				else if (j == 2 || j == 3) sfx2 += "_singleton";
+			}
+			if (opts.is_out2)
+				sfx2 += orig_idx == 0 ? "_fwd" : "_rev";
+			sfx2 += std::to_string(i);
+
+			// test the file(s)
+			f_aligned[i] = opts.aligned_pfx.string() + sfx2 + sfx; // e.g. aligned_paired_fwd_0.fq
+			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_aligned[i])));
+			ofs_aligned[i].open(f_aligned[i]);
+			ofs_aligned[i].close();
+			if (!ofs_aligned[i]) {
+				ERR("Failed operating stream on file ", f_aligned[i]);
+				exit(EXIT_FAILURE);
+			}
+			if (opts.is_other) {
+				f_other[i] = opts.other_pfx.string() + sfx2 + sfx; // e.g. other_paired_fwd_0.fq
+				INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_other[i])));
+				ofs_other[i].open(f_other[i]);
+				ofs_other[i].close();
+				if (!ofs_other[i]) {
+					ERR("Failed operating stream on file ", f_other[i]);
+					exit(EXIT_FAILURE);
+				}
+			}
 		}
-		sfx += "_denovo." + readstats.suffix;
-		denovo_otus_f = opts.aligned_pfx.string() + sfx;
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(denovo_otus_f)));
-		denovo_otu.open(denovo_otus_f);
+	}
+} // ~Output::init_fastx
+
+void Output::init_blast(Runopts& opts)
+{
+	std::string sfx;
+	if (opts.is_pid)
+	{
+		sfx += "_" + std::to_string(getpid());
+	}
+	sfx += ".blast";
+	f_blast = opts.aligned_pfx.string() + sfx;
+	INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_blast)));
+	ofs_blast.open(f_blast);
+	ofs_blast.close();
+	if (!ofs_blast) {
+		ERR("Failed operating stream on file ", f_blast);
+		exit(EXIT_FAILURE);
+	}
+} // ~Output::init_blast
+
+void Output::init_sam(Runopts& opts)
+{
+	std::string sfx;
+	if (opts.is_pid)
+	{
+		sfx += "_" + std::to_string(getpid());
+	}
+	sfx += ".sam";
+	f_sam = opts.aligned_pfx.string() + sfx;
+	INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_sam)));
+	ofs_sam.open(f_sam);
+	ofs_sam.close();
+}
+
+void Output::init_denovo_otu(Readfeed& readfeed, Runopts& opts)
+{
+	std::ofstream denovo_otu;
+	std::string sfx = opts.is_pid ? "_" + std::to_string(getpid()) : "";
+
+	for (int i = 0; i < readfeed.num_splits; ++i) {
+		auto orig_idx = i & 1;
+		std::string orig_sfx = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
+		sfx += "_denovo" + std::to_string(i) + "." + orig_sfx;
+		f_denovo_otus = opts.aligned_pfx.string() + sfx; // aligned_denovo_0.fq
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_denovo_otus)));
+		denovo_otu.open(f_denovo_otus);
 		denovo_otu.close();
 	}
-
-	// don't touch the log if only reports are generated
-	if (opts.is_log && opts.alirep != Runopts::ALIGN_REPORT::report)
-	{
-		std::string sfx;
-		if (opts.is_pid)
-		{
-			sfx += "_" + summary.pid_str;
-		}
-		sfx += ".log";
-		log_f = opts.aligned_pfx.string() + sfx;
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(log_f)));
-		log_os.open(log_f);
-		log_os.close();
-		if (!log_os) {
-			ERR("Failed operating stream on file ", log_f);
-			exit(EXIT_FAILURE);
-		}
-	}
-} // ~Output::init
+}
 
 /**
  * called on each read => keep stream handle between calls 
@@ -272,19 +232,19 @@ void Output::report_blast
 			// Blast-like pairwise alignment (only for aligned reads)
 			if (opts.blastFormat == BlastFormat::REGULAR)
 			{
-				blast_os << "Sequence ID: ";
-				blast_os << ref_id; // print only start of the header till first space
-				blast_os << std::endl;
+				ofs_blast << "Sequence ID: ";
+				ofs_blast << ref_id; // print only start of the header till first space
+				ofs_blast << std::endl;
 
-				blast_os << "Query ID: ";
-				blast_os << read.getSeqId();
-				blast_os << std::endl;
+				ofs_blast << "Query ID: ";
+				ofs_blast << read.getSeqId();
+				ofs_blast << std::endl;
 
-				blast_os << "Score: " << read.alignment.alignv[i].score1 << " bits (" << bitscore << ")\t";
-				blast_os.precision(3);
-				blast_os << "Expect: " << evalue_score << "\t";
+				ofs_blast << "Score: " << read.alignment.alignv[i].score1 << " bits (" << bitscore << ")\t";
+				ofs_blast.precision(3);
+				ofs_blast << "Expect: " << evalue_score << "\t";
 
-				blast_os << "strand: " << strandmark << std::endl << std::endl;
+				ofs_blast << "strand: " << strandmark << std::endl << std::endl;
 
 				if (read.alignment.alignv[i].cigar.size() > 0)
 				{
@@ -297,9 +257,9 @@ void Output::report_blast
 						int32_t count = 0;
 						int32_t q = qb;
 						int32_t p = pb;
-						blast_os << "Target: ";
-						blast_os.width(8);
-						blast_os << q + 1 << "    ";
+						ofs_blast << "Target: ";
+						ofs_blast.width(8);
+						ofs_blast << q + 1 << "    ";
 						// process CIGAR
 						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
@@ -310,10 +270,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 1) blast_os << INDEL; // mark indel
+								if (letter == 1) ofs_blast << INDEL; // mark indel
 								else
 								{
-									blast_os << nt_map[(int)refseq[q]];
+									ofs_blast << nt_map[(int)refseq[q]];
 									++q;
 								}
 								++count;
@@ -321,9 +281,9 @@ void Output::report_blast
 							}
 						}
 					step2:
-						blast_os << "    " << q << "\n";
-						blast_os.width(20);
-						blast_os << " ";
+						ofs_blast << "    " << q << "\n";
+						ofs_blast.width(20);
+						ofs_blast << " ";
 						q = qb;
 						count = 0;
 						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
@@ -336,14 +296,14 @@ void Output::report_blast
 							{
 								if (letter == 0)
 								{
-									if ((char)nt_map[(int)refseq[q]] == (char)nt_map[(int)read.isequence[p]]) blast_os << MATCH; // mark match
-									else blast_os << MISMATCH; // mark mismatch
+									if ((char)nt_map[(int)refseq[q]] == (char)nt_map[(int)read.isequence[p]]) ofs_blast << MATCH; // mark match
+									else ofs_blast << MISMATCH; // mark mismatch
 									++q;
 									++p;
 								}
 								else
 								{
-									blast_os << " ";
+									ofs_blast << " ";
 									if (letter == 1) ++p;
 									else ++q;
 								}
@@ -357,9 +317,9 @@ void Output::report_blast
 						}
 					step3:
 						p = pb;
-						blast_os << "\nQuery: ";
-						blast_os.width(9);
-						blast_os << p + 1 << "    ";
+						ofs_blast << "\nQuery: ";
+						ofs_blast.width(9);
+						ofs_blast << p + 1 << "    ";
 						count = 0;
 						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
@@ -368,10 +328,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 2) blast_os << INDEL; // mark indel
+								if (letter == 2) ofs_blast << INDEL; // mark indel
 								else
 								{
-									blast_os << nt_map[(int)read.isequence[p]];
+									ofs_blast << nt_map[(int)read.isequence[p]];
 									++p;
 								}
 								++count;
@@ -387,7 +347,7 @@ void Output::report_blast
 						e = c;
 						left = 0;
 					end:
-						blast_os << "    " << p << "\n\n";
+						ofs_blast << "    " << p << "\n\n";
 					}
 				}
 			}
@@ -395,21 +355,21 @@ void Output::report_blast
 			else if (opts.blastFormat == BlastFormat::TABULAR)
 			{
 				// (1) Query ID
-				blast_os << read.getSeqId();
+				ofs_blast << read.getSeqId();
 
 				// print null alignment for non-aligned read
 				if (opts.is_print_all_reads && (read.alignment.alignv.size() == 0))
 				{
-					blast_os << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+					ofs_blast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
 					for (uint32_t l = 0; l < opts.blastops.size(); l++)
 					{
 						if (opts.blastops[l].compare("cigar") == 0)
-							blast_os << "\t*";
+							ofs_blast << "\t*";
 						else if (opts.blastops[l].compare("qcov") == 0)
-							blast_os << "\t0";
+							ofs_blast << "\t0";
 						else if (opts.blastops[l].compare("qstrand") == 0)
-							blast_os << "\t*";
-						blast_os << "\n";
+							ofs_blast << "\t*";
+						ofs_blast << "\n";
 					}
 					return;
 				}
@@ -417,52 +377,52 @@ void Output::report_blast
 				read.calcMismatchGapId(refs, i, mismatches, gaps, id);
 				int32_t total_pos = mismatches + gaps + id;
 
-				blast_os << "\t";
+				ofs_blast << "\t";
 				// (2) Subject
-				blast_os << ref_id << "\t";
+				ofs_blast << ref_id << "\t";
 				// (3) %id
-				blast_os.precision(3);
-				blast_os << (double)id / (mismatches + gaps + id) * 100 << "\t";
+				ofs_blast.precision(3);
+				ofs_blast << (double)id / (mismatches + gaps + id) * 100 << "\t";
 				// (4) alignment length
-				blast_os << (read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1) << "\t";
+				ofs_blast << (read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1) << "\t";
 				// (5) mismatches
-				blast_os << mismatches << "\t";
+				ofs_blast << mismatches << "\t";
 				// (6) gap openings
-				blast_os << gaps << "\t";
+				ofs_blast << gaps << "\t";
 				// (7) q.start
-				blast_os << read.alignment.alignv[i].read_begin1 + 1 << "\t";
+				ofs_blast << read.alignment.alignv[i].read_begin1 + 1 << "\t";
 				// (8) q.end
-				blast_os << read.alignment.alignv[i].read_end1 + 1 << "\t";
+				ofs_blast << read.alignment.alignv[i].read_end1 + 1 << "\t";
 				// (9) s.start
-				blast_os << read.alignment.alignv[i].ref_begin1 + 1 << "\t";
+				ofs_blast << read.alignment.alignv[i].ref_begin1 + 1 << "\t";
 				// (10) s.end
-				blast_os << read.alignment.alignv[i].ref_end1 + 1 << "\t";
+				ofs_blast << read.alignment.alignv[i].ref_end1 + 1 << "\t";
 				// (11) e-value
-				blast_os << evalue_score << "\t";
+				ofs_blast << evalue_score << "\t";
 				// (12) bit score
-				blast_os << bitscore;
+				ofs_blast << bitscore;
 				// OPTIONAL columns
 				for (uint32_t l = 0; l < opts.blastops.size(); l++)
 				{
 					// output CIGAR string
 					if (opts.blastops[l].compare("cigar") == 0)
 					{
-						blast_os << "\t";
+						ofs_blast << "\t";
 						// masked region at beginning of alignment
-						if (read.alignment.alignv[i].read_begin1 != 0) blast_os << read.alignment.alignv[i].read_begin1 << "S";
+						if (read.alignment.alignv[i].read_begin1 != 0) ofs_blast << read.alignment.alignv[i].read_begin1 << "S";
 						for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
 							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
 							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
-							blast_os << length;
-							if (letter == 0) blast_os << "M";
-							else if (letter == 1) blast_os << "I";
-							else blast_os << "D";
+							ofs_blast << length;
+							if (letter == 0) ofs_blast << "M";
+							else if (letter == 1) ofs_blast << "I";
+							else ofs_blast << "D";
 						}
 
 						auto end_mask = read.sequence.length() - read.alignment.alignv[i].read_end1 - 1;
 						// output the masked region at end of alignment
-						if (end_mask > 0) blast_os << end_mask << "S";
+						if (end_mask > 0) ofs_blast << end_mask << "S";
 					}
 					// output % query coverage
 					else if (opts.blastops[l].compare("qcov") == 0)
@@ -470,20 +430,20 @@ void Output::report_blast
 						double coverage = (double)abs(read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1)
 							/ read.alignment.alignv[i].readlen;
 
-						blast_os << "\t";
-						blast_os.precision(3);
-						blast_os << coverage * 100; // (double)align_len / readlen
+						ofs_blast << "\t";
+						ofs_blast.precision(3);
+						ofs_blast << coverage * 100; // (double)align_len / readlen
 					}
 					// output strand
 					else if (opts.blastops[l].compare("qstrand") == 0)
 					{
-						blast_os << "\t";
-						blast_os << strandmark;
+						ofs_blast << "\t";
+						ofs_blast << strandmark;
 						//if (read.alignment.alignv[i].strand) blastout << "+";
 						//else blastout << "-";
 					}
 				}
-				blast_os << std::endl;
+				ofs_blast << std::endl;
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
@@ -492,7 +452,7 @@ void Output::report_blast
 
 void Output::writeSamHeader(Runopts & opts)
 {
-	sam_os << "@HD\tVN:1.0\tSO:unsorted\n";
+	ofs_sam << "@HD\tVN:1.0\tSO:unsorted\n";
 
 	// TODO: this line is taken from "Index::load_stats". To be finished (20171215).
 #if 0
@@ -522,7 +482,7 @@ void Output::writeSamHeader(Runopts & opts)
 		} // ~for
 	} // ~for
 #endif
-	sam_os << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
+	ofs_sam << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
 
 } // ~Output::writeSamHeader
 
@@ -542,8 +502,8 @@ void Output::report_sam
 	if (opts.is_print_all_reads && read.alignment.alignv.size() == 0)
 	{
 		// (1) Query
-		sam_os << read.getSeqId();
-		sam_os << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
+		ofs_sam << read.getSeqId();
+		ofs_sam << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
 	}
 
@@ -555,64 +515,64 @@ void Output::report_sam
 			&& read.alignment.alignv[i].part == refs.part)
 		{
 			// (1) Query
-			sam_os << read.getSeqId();
+			ofs_sam << read.getSeqId();
 			// (2) flag Forward/Reversed
-			if (!read.alignment.alignv[i].strand) sam_os << "\t16\t";
-			else sam_os << "\t0\t";
+			if (!read.alignment.alignv[i].strand) ofs_sam << "\t16\t";
+			else ofs_sam << "\t0\t";
 			// (3) Subject
-			sam_os << refs.buffer[read.alignment.alignv[i].ref_num].id;
+			ofs_sam << refs.buffer[read.alignment.alignv[i].ref_num].id;
 			// (4) Ref start
-			sam_os << "\t" << read.alignment.alignv[i].ref_begin1 + 1;
+			ofs_sam << "\t" << read.alignment.alignv[i].ref_begin1 + 1;
 			// (5) mapq
-			sam_os << "\t" << 255 << "\t";
+			ofs_sam << "\t" << 255 << "\t";
 			// (6) CIGAR
 			// output the masked region at beginning of alignment
 			if (read.alignment.alignv[i].read_begin1 != 0)
-				sam_os << read.alignment.alignv[i].read_begin1 << "S";
+				ofs_sam << read.alignment.alignv[i].read_begin1 << "S";
 
 			for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
 			{
 				uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
 				uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
-				sam_os << length;
-				if (letter == 0) sam_os << "M";
-				else if (letter == 1) sam_os << "I";
-				else sam_os << "D";
+				ofs_sam << length;
+				if (letter == 0) ofs_sam << "M";
+				else if (letter == 1) ofs_sam << "I";
+				else ofs_sam << "D";
 			}
 
 			auto end_mask = read.sequence.size() - read.alignment.alignv[i].read_end1 - 1;
 			// output the masked region at end of alignment
-			if (end_mask > 0) sam_os << end_mask << "S";
+			if (end_mask > 0) ofs_sam << end_mask << "S";
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
-			sam_os << "\t*\t0\t0\t";
+			ofs_sam << "\t*\t0\t0\t";
 			// (10) SEQ
 
 			if ( read.alignment.alignv[i].strand == read.reversed ) // XNOR
 				read.revIntStr();
-			sam_os << read.get04alphaSeq();
+			ofs_sam << read.get04alphaSeq();
 			// (11) QUAL
-			sam_os << "\t";
+			ofs_sam << "\t";
 			// reverse-complement strand
 			if (read.quality.size() > 0 && !read.alignment.alignv[i].strand)
 			{
 				std::reverse(read.quality.begin(), read.quality.end());
-				sam_os << read.quality;
+				ofs_sam << read.quality;
 			}
 			else if (read.quality.size() > 0) // forward strand
 			{
-				sam_os << read.quality;
+				ofs_sam << read.quality;
 				// FASTA read
 			}
-			else sam_os << "*";
+			else ofs_sam << "*";
 
 			// (12) OPTIONAL FIELD: SW alignment score generated by aligner
-			sam_os << "\tAS:i:" << read.alignment.alignv[i].score1;
+			ofs_sam << "\tAS:i:" << read.alignment.alignv[i].score1;
 			// (13) OPTIONAL FIELD: edit distance to the reference
 			uint32_t mismatches = 0;
 			uint32_t gaps = 0;
 			uint32_t id = 0;
 			read.calcMismatchGapId(refs, i, mismatches, gaps, id);
-			sam_os << "\tNM:i:" << mismatches + gaps << "\n";
+			ofs_sam << "\tNM:i:" << mismatches + gaps << "\n";
 		}
 	} // ~for read.alignments
 } // ~Output::report_sam
@@ -652,10 +612,10 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 					for (size_t i = 0; i < reads.size(); ++i)
 					{
 						if (opts.is_out2) {
-							write_a_read(aligned_os[i], reads[i]); // fwd and rev go into different files
+							write_a_read(ofs_aligned[i], reads[i]); // fwd and rev go into different files
 						}
 						else {
-							write_a_read(aligned_os[0], reads[i]); // fwd and rev go into the same file
+							write_a_read(ofs_aligned[0], reads[i]); // fwd and rev go into the same file
 						}
 					}
 				}
@@ -663,10 +623,10 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 					for (size_t i = 0; i < reads.size(); ++i)
 					{
 						if (opts.is_out2) {
-							write_a_read(other_os[i], reads[i]); // fwd and rev go into different files
+							write_a_read(ofs_other[i], reads[i]); // fwd and rev go into different files
 						}
 						else {
-							write_a_read(other_os[0], reads[i]); // fwd and rev go into the same file
+							write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
 						}
 					}
 				}
@@ -677,10 +637,10 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 					for (size_t i = 0; i < reads.size(); ++i)
 					{
 						if (opts.is_out2) {
-							write_a_read(aligned_os[i], reads[i]); // fwd and rev go into different files
+							write_a_read(ofs_aligned[i], reads[i]); // fwd and rev go into different files
 						}
 						else {
-							write_a_read(aligned_os[0], reads[i]); // fwd and rev go into the same file
+							write_a_read(ofs_aligned[0], reads[i]); // fwd and rev go into the same file
 						}
 					}
 				}
@@ -689,10 +649,10 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 					for (size_t i = 0; i < reads.size(); ++i)
 					{
 						if (opts.is_out2) {
-							write_a_read(other_os[i], reads[i]); // fwd and rev go into different files
+							write_a_read(ofs_other[i], reads[i]); // fwd and rev go into different files
 						}
 						else {
-							write_a_read(other_os[0], reads[i]); // fwd and rev go into the same file
+							write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
 						}
 					}
 				}
@@ -704,18 +664,18 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 				{
 					if (reads[i].is_hit) {
 						if (opts.is_out2) {
-							write_a_read(aligned_os[i], reads[i]); // fwd and rev go into different files
+							write_a_read(ofs_aligned[i], reads[i]); // fwd and rev go into different files
 						}
 						else {
-							write_a_read(aligned_os[0], reads[i]); // fwd and rev go into the same file
+							write_a_read(ofs_aligned[0], reads[i]); // fwd and rev go into the same file
 						}
 					}
 					else if (opts.is_other) {
 						if (opts.is_out2) {
-							write_a_read(other_os[i], reads[i]);
+							write_a_read(ofs_other[i], reads[i]);
 						}
 						else {
-							write_a_read(other_os[0], reads[i]); // fwd and rev go into the same file
+							write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
 						}
 					}
 				}
@@ -727,10 +687,10 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
 			// the read was accepted - output
 			if (reads[0].is_hit)
 			{
-				write_a_read(aligned_os[0], reads[0]);
+				write_a_read(ofs_aligned[0], reads[0]);
 			}
 			else if (opts.is_other) {
-				write_a_read(other_os[0], reads[0]);
+				write_a_read(ofs_other[0], reads[0]);
 			}
 		}
 	}//~if is_fastx 
@@ -742,7 +702,7 @@ void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
  */
 void Output::report_denovo(Runopts& opts, std::vector<Read>& reads)
 {
-	if (denovo_otus_f.size() != 0)
+	if (f_denovo_otus.size() != 0)
 	{
 		// paired reads
 		if (opts.is_paired_in || opts.is_paired_out)
@@ -751,7 +711,7 @@ void Output::report_denovo(Runopts& opts, std::vector<Read>& reads)
 			if ( opts.is_paired_in && reads[0].is_hit && reads[1].is_hit && (reads[0].is_denovo || reads[1].is_denovo) )
 			{
 				for (Read read : reads)
-					denovo_os << read.header << std::endl << read.sequence << std::endl;
+					ofs_denovo << read.header << std::endl << read.sequence << std::endl;
 			}
 		}
 		// non-paired
@@ -759,7 +719,7 @@ void Output::report_denovo(Runopts& opts, std::vector<Read>& reads)
 		{
 			if (reads[0].is_hit && reads[0].is_denovo)
 			{
-				denovo_os << reads[0].header << std::endl << reads[0].sequence << std::endl;
+				ofs_denovo << reads[0].header << std::endl << reads[0].sequence << std::endl;
 			}
 		}
 	}
@@ -767,23 +727,23 @@ void Output::report_denovo(Runopts& opts, std::vector<Read>& reads)
 
 void Output::report_biom(){
 
-	biom_os.open(biom_f, std::ios::in);
+	ofs_biom.open(f_biom, std::ios::in);
 
-	if (biom_os.is_open())
+	if (ofs_biom.is_open())
 	{
-		biom_os << "\"id:\"null,";
-		biom_os << "\"format\": \"Biological Observation Matrix 1.0.0\",";
-		biom_os << "\"format_url\": \"http://biom-format.org/documentation/format_versions/biom-1.0.html\"";
-		biom_os << "\"type\": \"OTU table\",";
-		biom_os << "\"generated_by\": \"SortMeRNA v2.0\",";
-		biom_os << "\"date\": \"\",";
-		biom_os << "\"rows\":[";
-		biom_os << "\"matrix_type\": \"sparse\",";
-		biom_os << "\"matrix_element_type\": \"int\",";
-		biom_os << "\"shape\":";
-		biom_os << "\"data\":";
+		ofs_biom << "\"id:\"null,";
+		ofs_biom << "\"format\": \"Biological Observation Matrix 1.0.0\",";
+		ofs_biom << "\"format_url\": \"http://biom-format.org/documentation/format_versions/biom-1.0.html\"";
+		ofs_biom << "\"type\": \"OTU table\",";
+		ofs_biom << "\"generated_by\": \"SortMeRNA v2.0\",";
+		ofs_biom << "\"date\": \"\",";
+		ofs_biom << "\"rows\":[";
+		ofs_biom << "\"matrix_type\": \"sparse\",";
+		ofs_biom << "\"matrix_element_type\": \"int\",";
+		ofs_biom << "\"shape\":";
+		ofs_biom << "\"data\":";
 
-		biom_os.close();
+		ofs_biom.close();
 	}
 } // ~Output::report_biom
 
@@ -794,30 +754,30 @@ void Output::openfiles(Runopts & opts)
 {
 	std::stringstream ss;
 
-	if (opts.is_blast && !blast_os.is_open()) {
-		blast_os.open(blast_f);
-		if (!blast_os.good())
+	if (opts.is_blast && !ofs_blast.is_open()) {
+		ofs_blast.open(f_blast);
+		if (!ofs_blast.good())
 		{
-			ERR("Could not open BLAST output file: [", blast_f, "] for writing.");
+			ERR("Could not open BLAST output file: [", f_blast, "] for writing.");
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	if (opts.is_sam && !sam_os.is_open()) {
-		sam_os.open(sam_f);
-		if (!sam_os.good()) {
-			ERR("Could not open SAM output file [", sam_f, "] for writing.");
+	if (opts.is_sam && !ofs_sam.is_open()) {
+		ofs_sam.open(f_sam);
+		if (!ofs_sam.good()) {
+			ERR("Could not open SAM output file [", f_sam, "] for writing.");
 			exit(EXIT_FAILURE);
 		}
 	}
 
 	if (opts.is_fastx) {
-		for (size_t i = 0; i < aligned_os.size(); ++i) {
-			if (!aligned_os[i].is_open()) {
-				aligned_os[i].open(aligned_f[i], std::ios::app | std::ios::binary);
+		for (size_t i = 0; i < ofs_aligned.size(); ++i) {
+			if (!ofs_aligned[i].is_open()) {
+				ofs_aligned[i].open(f_aligned[i], std::ios::app | std::ios::binary);
 			}
-			if (!aligned_os[i].good()) {
-				ERR("Could not open FASTA/Q output file [" , aligned_f[i] , "] for writing.");
+			if (!ofs_aligned[i].good()) {
+				ERR("Could not open FASTA/Q output file [" , f_aligned[i] , "] for writing.");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -825,23 +785,23 @@ void Output::openfiles(Runopts & opts)
 
 	if (opts.is_fastx && opts.is_other)
 	{
-		for (size_t i = 0; i < other_os.size(); ++i) {
-			if (!other_os[i].is_open()) {
-				other_os[i].open(other_f[i], std::ios::app | std::ios::binary);
+		for (size_t i = 0; i < ofs_other.size(); ++i) {
+			if (!ofs_other[i].is_open()) {
+				ofs_other[i].open(f_other[i], std::ios::app | std::ios::binary);
 			}
-			if (!other_os[i].good())
+			if (!ofs_other[i].good())
 			{
-				ERR("Could not open FASTA/Q Non-aligned output file [", other_f[i], "] for writing.");
+				ERR("Could not open FASTA/Q Non-aligned output file [", f_other[i], "] for writing.");
 				exit(EXIT_FAILURE);
 			}
 		}
 	}
 
-	if (denovo_otus_f.size() != 0 && !denovo_os.is_open())
+	if (f_denovo_otus.size() != 0 && !ofs_denovo.is_open())
 	{
-		denovo_os.open(denovo_otus_f, std::ios::app | std::ios::binary);
-		if (!denovo_os.good()) {
-			ERR("Could not open denovo otus: [", denovo_otus_f, "] for writing.");
+		ofs_denovo.open(f_denovo_otus, std::ios::app | std::ios::binary);
+		if (!ofs_denovo.good()) {
+			ERR("Could not open denovo otus: [", f_denovo_otus, "] for writing.");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -849,62 +809,18 @@ void Output::openfiles(Runopts & opts)
 
 void Output::closefiles()
 {
-	if (blast_os.is_open()) { blast_os.flush(); blast_os.close(); }
-	if (sam_os.is_open()) { sam_os.flush(); sam_os.close(); }
-	for (size_t i = 0; i < aligned_os.size(); ++i) {
-		if (aligned_os[i].is_open()) { aligned_os[i].flush(); aligned_os[i].close(); }
+	if (ofs_blast.is_open()) { ofs_blast.flush(); ofs_blast.close(); }
+	if (ofs_sam.is_open()) { ofs_sam.flush(); ofs_sam.close(); }
+	for (size_t i = 0; i < ofs_aligned.size(); ++i) {
+		if (ofs_aligned[i].is_open()) { ofs_aligned[i].flush(); ofs_aligned[i].close(); }
 	}
-	for (size_t i = 0; i < other_os.size(); ++i) {
-		if (other_os[i].is_open()) { other_os[i].flush(); other_os[i].close(); }
+	for (size_t i = 0; i < ofs_other.size(); ++i) {
+		if (ofs_other[i].is_open()) { ofs_other[i].flush(); ofs_other[i].close(); }
 	}
-	if (denovo_os.is_open()) { denovo_os.flush(); denovo_os.close(); }
+	if (ofs_denovo.is_open()) { ofs_denovo.flush(); ofs_denovo.close(); }
 
 	INFO("Flushed and closed");
 }
-
-/** 
- * called from postProcess 
- */
-void Output::writeLog(Runopts& opts, Refstats& refstats, Readstats& readstats)
-{
-	if (!log_os.is_open())
-	{
-		log_os.open(log_f, std::ofstream::binary | std::ofstream::app);
-	}
-
-	INFO("Using Log file: ", std::filesystem::absolute(log_f));
-
-	summary.cmd = opts.cmdline;
-	summary.total_reads = readstats.all_reads_count;
-	if (opts.is_denovo_otu) {
-		summary.is_de_novo_otu = opts.is_denovo_otu;
-		summary.total_reads_denovo_clustering = readstats.total_reads_denovo_clustering;
-	}
-	summary.total_reads_mapped = readstats.total_reads_aligned.load(std::memory_order_relaxed);
-	summary.min_read_len = readstats.min_read_len;
-	summary.max_read_len = readstats.max_read_len;
-	summary.all_reads_len = readstats.all_reads_len;
-
-	// stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
-		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
-		summary.db_matches.emplace_back(std::make_pair(opts.indexfiles[index_num].first, pcn));
-	}
-
-	if (opts.is_otu_map) {
-		summary.is_otumapout = opts.is_otu_map;
-		summary.total_mapped_sw_id_cov = readstats.total_mapped_sw_id_cov.load(std::memory_order_relaxed);
-		summary.total_otu = readstats.otu_map.size();
-	}
-
-	// set timestamp  <ctime>
-	std::time_t tm = std::time(0);
-	summary.timestamp = std::ctime(&tm); // Tue Oct 20 08:39:35 2020  Win deprecation: use 'ctime_s' or _CRT_SECURE_NO_WARNINGS
-
-	log_os << summary.to_string(opts, refstats);
-	log_os.close();
-} // ~Output::writeLog
 
 void Output::write_a_read(std::ofstream& strm, Read& read)
 {
@@ -913,73 +829,20 @@ void Output::write_a_read(std::ofstream& strm, Read& read)
 		strm << '+' << std::endl << read.quality << std::endl;
 }
 
-std::string Summary::to_string(Runopts& opts, Refstats& refstats)
+void Output::calc_out_type(Runopts& opts)
 {
-	std::stringstream ss;
-	size_t idx = 0;
+	if (opts.readfiles.size() == 1) out_type |= mask_1_file;
+	if (opts.is_paired) out_type |= mask_paired;
+	if (opts.readfiles.size() == 2) out_type |= mask_2_file;
+	if (opts.is_other) out_type |= mask_other;
+	if (opts.is_paired_in) out_type |= mask_paired_in;
+	if (opts.is_paired_out) out_type |= mask_paired_out;
+	if (opts.is_out2) out_type |= mask_out2;
 
-	ss << " Command:\n    " << cmd << std::endl << std::endl
+	INFO("Output type: ", out_type);
+}
 
-	   << " Process pid = " << pid_str << std::endl << std::endl
-
-	   << " Parameters summary: " << std::endl;
-
-	for (auto ref : opts.indexfiles) {
-		ss << "    Reference file: " << ref.first << std::endl
-		   << "        Seed length = " << opts.seed_win_len << std::endl
-		   << "        Pass 1 = " << opts.skiplengths[idx][0] 
-				 << ", Pass 2 = " << opts.skiplengths[idx][1] 
-				 << ", Pass 3 = " << opts.skiplengths[idx][2] << std::endl
-		   << "        Gumbel lambda = " << refstats.gumbel[idx].first << std::endl
-		   << "        Gumbel K = " << refstats.gumbel[idx].second << std::endl
-		   << "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
-		++idx;
-	}
-	ss << "    Number of seeds = " << opts.hit_seeds << std::endl
-	   << "    Edges = " << opts.edges << std::endl
-	   << "    SW match = " << opts.match << std::endl
-	   << "    SW mismatch = " << opts.mismatch << std::endl
-	   << "    SW gap open penalty = " << opts.gap_open << std::endl
-	   << "    SW gap extend penalty = " << opts.gap_extension << std::endl
-	   << "    SW ambiguous nucleotide = " << opts.score_N << std::endl
-	   << "    SQ tags are " << (opts.is_SQ ? "" : "not ") << "output" << std::endl
-	   << "    Number of alignment processing threads = " << opts.num_proc_thread << std::endl;
-	for (auto readf : opts.readfiles) {
-		ss << "    Reads file: " << readf << std::endl;
-	}
-	ss << "    Total reads = " << total_reads << std::endl << std::endl;
-
-	ss << " Results:" << std::endl;
-	if (is_de_novo_otu)
-	{
-		// all reads that have read::hit_denovo == true
-		ss << "    Total reads for de novo clustering = " << total_reads_denovo_clustering << std::endl;
-	}
-	// output total non-rrna + rrna reads
-	ss << std::setprecision(2) << std::fixed
-		<< "    Total reads passing E-value threshold = " << total_reads_mapped
-		<< " (" << ((float)total_reads_mapped / (float)total_reads * 100) << ")" << std::endl
-		<< "    Total reads failing E-value threshold = " << total_reads - total_reads_mapped
-		<< " (" << (1 - ((float)((float)total_reads_mapped / (float)total_reads))) * 100 << ")" << std::endl
-		<< "    Minimum read length = " << min_read_len << std::endl
-		<< "    Maximum read length = " << max_read_len << std::endl
-		<< "    Mean read length    = " << all_reads_len / total_reads << std::endl << std::endl;
-
-	ss << " Coverage by database:" << std::endl;
-
-	// output stats by database
-	for (auto match: db_matches)
-	{
-		ss << "    " << match.first << "\t\t" << match.second << std::endl;
-	}
-
-	if (is_otumapout)
-	{
-		ss << " Total reads passing %%id and %%coverage thresholds = " << total_mapped_sw_id_cov << std::endl
-		   << " Total OTUs = " << total_otu << std::endl;
-	}
-
-	ss << std::endl << " " << timestamp << std::endl;
-
-	return ss.str();
-} // ~Summary::to_string
+void Output::set_num_out()
+{
+	if (out_type == 0x44) num_out = 4; // apf, apr, asf, asr   'af.size != ar.size' in general. Only aligned reads.
+}

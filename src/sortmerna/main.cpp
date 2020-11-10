@@ -65,31 +65,28 @@ int main(int argc, char** argv)
 		// init common objects
 		KeyValueDatabase kvdb(opts.kvdbdir.string());
 		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.num_proc_thread, opts.readb_dir);
-		if (opts.feed_type == FEED_TYPE::SPLIT_READS)
-			readfeed.split();
 		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, readfeed.min_read_len, readfeed.max_read_len, kvdb, opts);
 		Index index(opts); // reference index DB
-		Output output(opts, readstats);
 
 		switch (opts.alirep)
 		{
 		case Runopts::ALIGN_REPORT::align:
-			align(readfeed, readstats, index, kvdb, output, opts);
+			align(readfeed, readstats, index, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::postproc:
-			postProcess(readfeed, readstats, kvdb, output, opts);
+			writeSummary(readfeed, readstats, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::report:
-			generateReports(readfeed, readstats, kvdb, output, opts);
+			writeReports(readfeed, readstats, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::alipost:
-			align(readfeed, readstats, index, kvdb, output, opts);
-			postProcess(readfeed, readstats, kvdb, output, opts);
+			align(readfeed, readstats, index, kvdb, opts);
+			writeSummary(readfeed, readstats, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::all:
-			align(readfeed, readstats, index, kvdb, output, opts);
-			postProcess(readfeed, readstats, kvdb, output, opts);
-			generateReports(readfeed, readstats, kvdb, output, opts);
+			align(readfeed, readstats, index, kvdb, opts);
+			writeSummary(readfeed, readstats, kvdb, opts);
+			writeReports(readfeed, readstats, kvdb, opts);
 			break;
 		}
 	}

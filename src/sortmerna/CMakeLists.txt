@@ -107,6 +107,7 @@ set(SMR_SRCS
 	kvdb.cpp
 	options.cpp
 	output.cpp
+	summary.cpp
 	paralleltraversal.cpp
 	processor.cpp
 	read.cpp

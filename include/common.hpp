@@ -36,6 +36,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream> // std::cout
 
 #include <sys/time.h>
 #include "config.h"

@@ -24,9 +24,10 @@
 #include "read.hpp"
 //#include "ThreadPool.hpp"
 #include "readfeed.hpp"
+#include "summary.hpp"
 
 // forward
-void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
+void writeSummary3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
 
 /*
@@ -35,7 +36,7 @@ void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstat
  * populate 'readstats.otu_map'
  * count 'readstats.total_reads_denovo_clustering'
  */
-void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
+void writeSummary3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts)
 {
 	//uint32_t index_max_score = read.alignment.max_index; // index of alignment holding maximum SW score
 
@@ -75,7 +76,7 @@ void postProcess3(Read& read, Readstats& readstats, Refstats& refstats, Referenc
 /*
   runs in a thread
 */
-void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb)
+void writeSummary2(int id, Readfeed& readfeed, Runopts& opts, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb)
 {
 	unsigned countReads = 0;
 	unsigned count_reads_aligned = 0;
@@ -93,7 +94,7 @@ void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, R
 			if (!read.isValid)
 				continue;
 
-			postProcess3(read, readstats, refstats, refs, opts);
+			writeSummary3(read, readstats, refstats, refs, opts);
 			readstr.resize(0);
 			++countReads;
 			if (read.is_hit) ++count_reads_aligned;
@@ -105,10 +106,10 @@ void postProcess2(int id, Readfeed& readfeed, Runopts& opts, References& refs, R
 }
 
 // called from main
-void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
+void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
-	INFO("==== Starting Post-processing (alignment statistics report) ====\n\n");
-
+	INFO("==== Starting summary (alignment statistics report) ====\n\n");
+	Summary summary;
 	bool indb = readstats.restoreFromDb(kvdb);
 	if (indb) 
 		INFO("Restored Readstats from DB:\n    ", readstats.toString());
@@ -155,7 +156,7 @@ void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvd
 						//tpool.addJob(f_readfeed_run);
 						//tpool.addJob(Readfeed(opts.feed_type, opts.readfiles, opts.is_gz));
 					}
-					tpool.emplace_back(std::thread(postProcess2, 0, std::ref(readfeed), std::ref(opts), std::ref(refs),
+					tpool.emplace_back(std::thread(writeSummary2, 0, std::ref(readfeed), std::ref(opts), std::ref(refs),
 						std::ref(readstats), std::ref(refstats), std::ref(kvdb)));
 
 					// wait till processing is done on one index part
@@ -180,16 +181,27 @@ void postProcess(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvd
 		readstats.store_to_db(kvdb); // store reads statistics computed by post-processor
 	//} // ~if !readstats.stats_calc_done
 
-	output.writeLog(opts, refstats, readstats);
+	summary.write(opts, refstats, readstats);
 
-	if (opts.is_otu_map)
-		readstats.printOtuMap(output.otumap_f);
+	if (opts.is_otu_map) {
+		// OTU map output file  WORKDIR/out/aligned_otus.txt
+		std::string f_otumap;
+		std::ofstream otumap;
+		std::string sfx;
+		if (opts.is_pid)
+		{
+			sfx += "_" + std::to_string(getpid());
+		}
+		sfx += "_otus.txt";
+		f_otumap = opts.aligned_pfx.string() + sfx;
+		readstats.printOtuMap(f_otumap);
+	}
 
 	INFO("==== Done Post-processing (alignment statistics report) ====\n\n");
-} // ~postProcess
+} // ~writeSummary
 
 // 20201004 moved here from callbacks.cpp
-void report(Readfeed& readfeed, 
+void report(int id, Readfeed& readfeed, 
 	            Runopts& opts, 
 	            References& refs, 
 	            Refstats& refstats, 
@@ -201,7 +213,6 @@ void report(Readfeed& readfeed,
 	std::size_t num_reads = opts.is_paired ? 2 : 1;
 	std::string readstr;
 	std::vector<Read> reads; // two reads if paired, a single read otherwise
-	auto id = 0;
 
 	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " started.");
 
@@ -263,16 +274,18 @@ void report(Readfeed& readfeed,
 
 
 // called from main. generateReports -> reportsJob
-void generateReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
+void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
-	int N_READ_THREADS = opts.num_read_thread_rep;
-	int N_PROC_THREADS = opts.num_proc_thread_rep;
-
 	INFO("=== Report generation starts. Thread: ", std::this_thread::get_id(), " ===\n");
+
+	int nthreads = 0;
+	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
+		nthreads = opts.num_proc_thread;
+	}
 
 	//ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	std::vector<std::thread> tpool;
-	tpool.reserve(N_READ_THREADS + N_PROC_THREADS);
+	tpool.reserve(nthreads);
 
 	bool indb = readstats.restoreFromDb(kvdb);
 	if (indb) {
@@ -282,6 +295,7 @@ void generateReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase&
 	Refstats refstats(opts, readstats);
 	References refs;
 	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
+	Output output(readfeed, opts, readstats);
 
 	output.openfiles(opts);
 	if (opts.is_sam) output.writeSamHeader(opts);
@@ -302,12 +316,13 @@ void generateReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase&
 
 			starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
-			// start Reader
-			//tpool.addJob(f_readfeed_run);
-
 			// start processor
-			tpool.emplace_back(std::thread(report, std::ref(readfeed), std::ref(opts), std::ref(refs), std::ref(refstats), std::ref(output), std::ref(kvdb)));
-
+			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
+				for (int i = 0; i < tpool.size(); ++i) {
+					tpool.emplace_back(std::thread(report, i, std::ref(readfeed), std::ref(opts), 
+						std::ref(refs), std::ref(refstats), std::ref(output), std::ref(kvdb)));
+				}
+			}
 			// wait till processing is done
 			for (auto i = 0; i < tpool.size(); ++i) {
 				tpool[i].join();
@@ -408,7 +423,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 } // ~align2
 
 // called from main
-void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Output& output, Runopts& opts)
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("==== Starting alignment ====");
 

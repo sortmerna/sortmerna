@@ -46,57 +46,29 @@ class Refstats;
 struct Readstats;
 struct Runopts;
 class KeyValueDatabase;
-
-/**
- * Summary report (log) data structure
- */
-class Summary {
-public:
-	// vars
-	bool is_de_novo_otu;
-	bool is_otumapout;
-	std::string cmd;
-	std::string timestamp;
-	std::string pid_str;
-	uint64_t total_reads;
-	uint64_t total_reads_denovo_clustering;
-	uint64_t total_reads_mapped;
-	uint64_t total_mapped_sw_id_cov;
-	uint32_t min_read_len;
-	uint32_t max_read_len;
-	uint64_t all_reads_len;
-	size_t total_otu;
-	std::vector<std::pair<std::string, float>> db_matches;
-
-	// methods
-	Summary();
-	std::string to_string(Runopts& opts, Refstats& refstats);
-};
+class Readfeed;
 
 class Output {
 public:
 	// output streams
-	std::vector<std::ofstream> aligned_os; // fasta/q    20200127 2 files if 'out2', 1 file otherwise
-	std::vector<std::ofstream> other_os; // fasta/q non-aligned   20200127 2 files if 'out2', 1 file otherwise
-	std::ofstream sam_os; // SAM
-	std::ofstream blast_os; // BLAST
-	std::ofstream log_os;
-	std::ofstream denovo_os;
-	std::ofstream biom_os;
+	std::vector<std::ofstream> ofs_aligned; // fasta/q    20200127 2 files if 'out2', 1 file otherwise
+	std::vector<std::ofstream> ofs_other; // fasta/q non-aligned   20200127 2 files if 'out2', 1 file otherwise
+	std::ofstream ofs_blast; // BLAST
+	std::ofstream ofs_sam; // SAM
+	std::ofstream ofs_denovo;
+	std::ofstream ofs_biom;
 
 	// output file names
-	std::vector<std::string> aligned_f; // 20200127 2 files if 'out2'
-	std::vector<std::string> other_f; // 20200127 2 files if 'out2'
-	std::string sam_f;
-	std::string blast_f;
-	std::string log_f;
-	std::string denovo_otus_f;
-	std::string otumap_f;
-	std::string biom_f;
+	std::vector<std::string> f_aligned; // 20200127 2 files if 'out2'
+	std::vector<std::string> f_other; // 20200127 2 files if 'out2'
+	std::string f_blast;
+	std::string f_sam;
+	std::string f_denovo_otus;
+	std::string f_biom;
 
-	Summary summary;
+	int num_out; // number of output files
 
-	Output(Runopts& opts, Readstats& readstats);
+	Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
 	~Output();
 
 	void report_blast(Runopts & opts, Refstats & refstats, References & refs, Read & read);
@@ -105,12 +77,27 @@ public:
 	void report_fasta(Runopts & opts, std::vector<Read> &reads);
 	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
-	void writeLog(Runopts &opts, Refstats &refstats, Readstats &readstats);
 	void openfiles(Runopts & opts);
 	void closefiles();
+	void calc_out_type(Runopts& opts);
+	void set_num_out();
 
 private:
-	void init(Runopts & opts, Readstats & readstats);
+	int out_type; //  = 0x00
+	const int mask_1_file = 0x01;
+	const int mask_paired = 0x02;
+	const int mask_2_file = 0x04;
+	const int mask_other  = 0x08;
+	const int mask_paired_in = 0x10;
+	const int mask_paired_out = 0x20;
+	const int mask_out2 = 0x40;
+
+private:
+	void init(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
+	void init_fastx(Readfeed& readfeed, Runopts& opts);
+	void init_blast(Runopts& opts);
+	void init_sam(Runopts& opts);
+	void init_denovo_otu(Readfeed& readfeed, Runopts& opts);
 	void write_a_read(std::ofstream& strm, Read& read);
 
 }; // ~class Output

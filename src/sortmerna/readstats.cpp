@@ -239,6 +239,10 @@ void Readstats::printOtuMap(std::string otumapfile)
 {
 	std::ofstream omstrm;
 	omstrm.open(otumapfile);
+	if (!omstrm.is_open()) {
+		ERR("Failed to open: ", otumapfile);
+		exit(1);
+	}
 
 	INFO("Printing OTU Map ...");
 

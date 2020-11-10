@@ -87,8 +87,8 @@ public:
 	unsigned min_read_len;
 	unsigned max_read_len;
 	std::filesystem::path& basedir; // split files root directory opts.readb
-private:
 	std::vector<Readfile> orig_files;
+private:
 	std::vector<Readfile> split_files;
 
 	// input processing

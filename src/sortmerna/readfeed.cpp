@@ -90,6 +90,8 @@ void Readfeed::init(std::vector<std::string>& readfiles)
 	if (type == FEED_TYPE::SPLIT_READS) {
 		init_split_files();
 		is_ready = is_split_ready();
+		if (is_ready) { INFO("split is ready - no need to run"); }
+		else split();
 	}
 	else {
 		is_ready = true;
@@ -711,14 +713,15 @@ bool Readfeed::is_split_ready() {
 		}
 
 		int lidx = 0; // line index
+		int fcnt = 0; // count of file entries in the desctiptor
+		int fcnt_max = (1 + num_splits) * num_orig_files;
 		int fidx = 0; // file index
 		int fpidx = 0; // index of file parameters: name, size, lines, zip, fastq/fasta
 		for (std::string line; std::getline(ifs, line); ) {
 			if (!line.empty()) {
 				// trim
 				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-				// skip comments
-				if (line[0] != '#') {
+				if (line[0] != '#') { // skip comments
 					if (lidx == 0)
 						is_ready = true; // timestamp
 					else if (lidx == 1)
@@ -728,34 +731,50 @@ bool Readfeed::is_split_ready() {
 					else if (lidx == 3)
 						is_ready = is_ready && std::stoi(line) == num_reads_tot;
 					else {
-						if (fpidx == 0) {
-							if (fidx >= split_files.size()) {
-								INFO("expected max file index: ", split_files.size() - 1, " current file index in the descriptor: ", fidx);
+						if (fpidx == 0) { // file path
+							++fcnt;
+							if (fcnt == num_orig_files+1)	fidx = 0; // switch file index orig -> split files
+							if (fcnt > fcnt_max) {
+								INFO("expected max file count: ", fcnt_max, " current file count in the descriptor: ", fcnt);
 								is_ready = false;
 								break;
 							}
-							is_ready = is_ready && line == split_files[fidx].path; // file path
+							if (fcnt <= num_orig_files)
+								is_ready = is_ready && line == orig_files[fidx].path;
+							else
+								is_ready = is_ready && line == split_files[fidx].path;
 						}
-						else if (fpidx == 1) {
-							if (fidx < num_orig_files) {
-								is_ready = is_ready && std::stoi(line) == split_files[fidx].size; // file size of original files
-							}
-							else {
+						else if (fpidx == 1) { // file size
+							if (fcnt <= num_orig_files)
+								is_ready = is_ready && std::stoi(line) == orig_files[fidx].size; // original files
+							else
 								split_files[fidx].size = std::stoi(line); // set sizes of split files
-							}
 						}
-						else if (fpidx == 2) {
-							is_ready = is_ready && std::stoi(line) == split_files[fidx].numreads; // number of reads
+						else if (fpidx == 2) { // number of reads
+							if (fcnt <= num_orig_files)
+								is_ready = is_ready && std::stoi(line) == orig_files[fidx].numreads;
+							else
+								is_ready = is_ready && std::stoi(line) == split_files[fidx].numreads;
 						}
-						else if (fpidx == 3) {
+						else if (fpidx == 3) { // is zip
 							auto isZip = std::stoi(line) == 1;
-							is_ready = is_ready && split_files[fidx].isZip == isZip; // is zip
+							if (fcnt <= num_orig_files)
+								is_ready = is_ready && orig_files[fidx].isZip == isZip;
+							else
+								is_ready = is_ready && split_files[fidx].isZip == isZip;
 						}
-						else if (fpidx == 4) {
+						else if (fpidx == 4) { // fastq/a
 							auto isFastq = line == "fastq";
 							auto isFasta = line == "fasta";
-							is_ready = is_ready && split_files[fidx].isFastq == isFastq;
-							is_ready = is_ready && split_files[fidx].isFasta == isFasta; // is fastq/a
+							if (fcnt <= num_orig_files) {
+								is_ready = is_ready && orig_files[fidx].isFastq == isFastq;
+								is_ready = is_ready && orig_files[fidx].isFasta == isFasta;
+							}
+							else {
+								is_ready = is_ready && split_files[fidx].isFastq == isFastq;
+								is_ready = is_ready && split_files[fidx].isFasta == isFasta;
+							}
+
 							fpidx = 0;
 							++fidx;
 							++lidx;
