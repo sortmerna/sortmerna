@@ -24,14 +24,15 @@ void Summary::write(Runopts& opts, Refstats& refstats, Readstats& readstats)
 	std::filesystem::path f_log;
 	std::ofstream ofs_log;
 	std::string sfx;
+	pid_str = std::to_string(getpid());
 	if (opts.is_pid)
 	{
-		sfx += "_" + std::to_string(getpid());
+		sfx += "_" + pid_str;
 	}
 	sfx += ".log";
 	f_log = opts.aligned_pfx.string() + sfx;
 	INFO("Using summary file: ", f_log.generic_string());
-	ofs_log.open(f_log, std::ofstream::binary | std::ofstream::app);
+	ofs_log.open(f_log, std::ofstream::binary | std::ofstream::out);
 	if (!ofs_log.is_open()) {
 		ERR("Failed opening file ", f_log);
 		exit(EXIT_FAILURE);

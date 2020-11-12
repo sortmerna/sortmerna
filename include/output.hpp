@@ -71,10 +71,10 @@ public:
 	Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
 	~Output();
 
+	void report_fasta(int id, std::vector<Read>& reads, Runopts& opts);
 	void report_blast(Runopts & opts, Refstats & refstats, References & refs, Read & read);
 	void report_sam(Runopts & opts, References & refs, Read & read);
 	void writeSamHeader(Runopts & opts);
-	void report_fasta(Runopts & opts, std::vector<Read> &reads);
 	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
 	void openfiles(Runopts & opts);

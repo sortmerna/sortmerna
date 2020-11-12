@@ -1100,5 +1100,4 @@ void Readfeed::init_reading()
 
 	// vzlib_in
 	init_vzlib_in();
-
 } // ~Readfeed::init_reading

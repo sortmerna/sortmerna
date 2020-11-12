@@ -82,49 +82,54 @@ void Output::init(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
 void Output::init_fastx(Readfeed& readfeed, Runopts& opts)
 {
 	auto pid_str = std::to_string(getpid());
-	auto num_out_tot = readfeed.num_splits * num_out;
-	ofs_aligned.resize(num_out_tot);
-	f_aligned.resize(num_out_tot);
+	auto num_aln = opts.is_other ? num_out >> 1 : num_out; // 1 | 2 | 4
+	auto num_aln_split = readfeed.num_splits * num_aln;
+	auto num_oth_split = opts.is_other ? num_aln_split : 0;
+	ofs_aligned.resize(num_aln_split);
+	f_aligned.resize(num_aln_split);
 	if (opts.is_other) {
-		f_other.resize(num_out_tot);
-		ofs_other.resize(num_out_tot);
+		f_other.resize(num_oth_split);
+		ofs_other.resize(num_oth_split);
 	}
-	// fasta/q output  WORKDIR/out/aligned.fastq
-	std::string sfx = opts.is_pid ? "_" + pid_str : "";
-
+	// fasta/q output  WORKDIR/out/aligned_paired_fwd_0_PID.fq
+	//                              pfx + sfx1 + sfx2 + sfx3 + sfx4 + ext
 	for (int i = 0; i < readfeed.num_splits; ++i) {
-		auto orig_idx = i & 1;
-		std::string orig_sfx = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
-		sfx += orig_sfx;
-		for (int j = 0; j < num_out; ++j) {
-			std::string sfx2 = "";
-			if (out_type == 0x44) {
-				if (j == 0 || j == 1) sfx2 += "_paired";
-				else if (j == 2 || j == 3) sfx2 += "_singleton";
+		for (int j = 0, idx = 0, orig_idx = 0; j < num_aln; ++j) {
+			std::string sfx1 = "";
+			if (out_type == 0x44) { // apf, apr, asf, asr
+				if (j == 0 || j == 1) sfx1 = "_paired";
+				else if (j == 2 || j == 3) sfx1 = "_singleton";
 			}
-			if (opts.is_out2)
-				sfx2 += orig_idx == 0 ? "_fwd" : "_rev";
-			sfx2 += std::to_string(i);
+			//(out_type == 0x5C || out_type == 0x5E) { // af, ar, of, or
+			std::string sfx2 = "";
+			sfx2 = opts.is_out2 && orig_idx == 0 ? "_fwd" : "_rev";
+
+			std::string sfx3 = "_" + std::to_string(i);
+			std::string sfx4 = opts.is_pid ? "_" + pid_str : "";
+			std::string orig_ext = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
 
 			// test the file(s)
-			f_aligned[i] = opts.aligned_pfx.string() + sfx2 + sfx; // e.g. aligned_paired_fwd_0.fq
-			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_aligned[i])));
-			ofs_aligned[i].open(f_aligned[i]);
-			ofs_aligned[i].close();
-			if (!ofs_aligned[i]) {
-				ERR("Failed operating stream on file ", f_aligned[i]);
+			idx = i * readfeed.num_orig_files + j;
+			f_aligned[idx] = opts.aligned_pfx.string() + sfx1 + sfx2 + sfx3 + orig_ext; // e.g. aligned_paired_fwd_0_PID.fq
+			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_aligned[idx])));
+			ofs_aligned[idx].open(f_aligned[idx]);
+			ofs_aligned[idx].close();
+			if (!ofs_aligned[idx]) {
+				ERR("Failed operating stream on file ", f_aligned[idx]);
 				exit(EXIT_FAILURE);
 			}
+
 			if (opts.is_other) {
-				f_other[i] = opts.other_pfx.string() + sfx2 + sfx; // e.g. other_paired_fwd_0.fq
-				INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_other[i])));
-				ofs_other[i].open(f_other[i]);
-				ofs_other[i].close();
-				if (!ofs_other[i]) {
-					ERR("Failed operating stream on file ", f_other[i]);
+				f_other[idx] = opts.other_pfx.string() + sfx1 + sfx2 + sfx3 + sfx4 + orig_ext; // e.g. other_paired_fwd_0_PID.fq
+				INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_other[idx])));
+				ofs_other[idx].open(f_other[idx]);
+				ofs_other[idx].close();
+				if (!ofs_other[idx]) {
+					ERR("Failed operating stream on file ", f_other[idx]);
 					exit(EXIT_FAILURE);
 				}
 			}
+			orig_idx = readfeed.is_two_files ? orig_idx^=1: orig_idx; // flip
 		}
 	}
 } // ~Output::init_fastx
@@ -583,117 +588,115 @@ void Output::report_sam
  *
  * @param reads: 1 or 2 (paired) reads
  */
-void Output::report_fasta(Runopts& opts, std::vector<Read>& reads)
+void Output::report_fasta(int id, std::vector<Read>& reads, Runopts& opts)
 {
-	std::stringstream ss;
-
-	// output accepted reads
-	if (opts.is_fastx)
+	if (reads.size() == 2)
 	{
-		//bool is_paired = opts.readfiles.size() == 2; // paired reads
-		if (opts.is_paired)
-		{
-			if (opts.is_paired_in) {
-				// if Either is aligned -> aligned
-				if (reads[0].is_hit || reads[1].is_hit) {
-					// validate the reads are paired in case of two reads files
-					if (opts.readfiles.size() == 2 
-						&& (reads[0].read_num != reads[1].read_num 
-							|| reads[0].readfile_idx == reads[1].readfile_idx)) 
-					{
-						ERR("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ", 
-							reads[0].read_num, " reads[0].readfile_idx= ", reads[0].readfile_idx,
-							" reads[1].id=", reads[1].id, " reads[1].read_num = ", reads[1].read_num, 
-							" reads[1].readfile_idx = ", reads[1].readfile_idx);
-						exit(EXIT_FAILURE);
-					}
-					
-					// reads[0]
-					for (size_t i = 0; i < reads.size(); ++i)
-					{
-						if (opts.is_out2) {
-							write_a_read(ofs_aligned[i], reads[i]); // fwd and rev go into different files
-						}
-						else {
-							write_a_read(ofs_aligned[0], reads[i]); // fwd and rev go into the same file
-						}
-					}
-				}
-				else if (opts.is_other) {
-					for (size_t i = 0; i < reads.size(); ++i)
-					{
-						if (opts.is_out2) {
-							write_a_read(ofs_other[i], reads[i]); // fwd and rev go into different files
-						}
-						else {
-							write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
-						}
-					}
-				}
-			}
-			else if (opts.is_paired_out) {
-				// if Both aligned -> aligned
-				if (reads[0].is_hit && reads[1].is_hit) {
-					for (size_t i = 0; i < reads.size(); ++i)
-					{
-						if (opts.is_out2) {
-							write_a_read(ofs_aligned[i], reads[i]); // fwd and rev go into different files
-						}
-						else {
-							write_a_read(ofs_aligned[0], reads[i]); // fwd and rev go into the same file
-						}
-					}
-				}
-				// both non-aligned and is_other -> other
-				else if (opts.is_other) {
-					for (size_t i = 0; i < reads.size(); ++i)
-					{
-						if (opts.is_out2) {
-							write_a_read(ofs_other[i], reads[i]); // fwd and rev go into different files
-						}
-						else {
-							write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
-						}
-					}
-				}
-			}
-			else {
-				// Neither 'paired_in' nor 'paired_out' specified -> only aligned
-				// reads go to aligned file, and only non-aligned to other file
-				for (size_t i = 0; i < reads.size(); ++i)
+		if (opts.is_paired_in) {
+			// if Either is aligned -> both to aligned
+			if (reads[0].is_hit || reads[1].is_hit) {
+				// validate the reads are paired in case of two reads files
+				if (opts.readfiles.size() == 2 
+					&& (reads[0].read_num != reads[1].read_num 
+						|| reads[0].readfile_idx == reads[1].readfile_idx)) 
 				{
-					if (reads[i].is_hit) {
-						if (opts.is_out2) {
-							write_a_read(ofs_aligned[i], reads[i]); // fwd and rev go into different files
-						}
-						else {
-							write_a_read(ofs_aligned[0], reads[i]); // fwd and rev go into the same file
-						}
+					ERR("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ", 
+						reads[0].read_num, " reads[0].readfile_idx= ", reads[0].readfile_idx,
+						" reads[1].id=", reads[1].id, " reads[1].read_num = ", reads[1].read_num, 
+						" reads[1].readfile_idx = ", reads[1].readfile_idx);
+					exit(EXIT_FAILURE);
+				}
+				
+				// reads[0]
+				for (int i = 0, idx = id*reads.size(); i < reads.size(); ++i)
+				{
+					if (opts.is_out2) {
+						write_a_read(ofs_aligned[idx], reads[i]);
+						++idx; // fwd and rev go into different files
 					}
-					else if (opts.is_other) {
-						if (opts.is_out2) {
-							write_a_read(ofs_other[i], reads[i]);
-						}
-						else {
-							write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
-						}
+					else {
+						write_a_read(ofs_aligned[idx], reads[i]); // fwd and rev go into the same file
 					}
 				}
-			}
-		}//~if paired
-		// non-paired
-		else
-		{
-			// the read was accepted - output
-			if (reads[0].is_hit)
-			{
-				write_a_read(ofs_aligned[0], reads[0]);
 			}
 			else if (opts.is_other) {
-				write_a_read(ofs_other[0], reads[0]);
+				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
+				{
+					if (opts.is_out2) {
+						write_a_read(ofs_other[idx], reads[i]); // fwd and rev go into different files
+						++idx;
+					}
+					else {
+						write_a_read(ofs_other[0], reads[i]); // fwd and rev go into the same file
+					}
+				}
 			}
 		}
-	}//~if is_fastx 
+		else if (opts.is_paired_out) {
+			// if Both aligned -> aligned
+			if (reads[0].is_hit && reads[1].is_hit) {
+				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
+				{
+					if (opts.is_out2) {
+						write_a_read(ofs_aligned[idx], reads[i]); // fwd and rev go into different files
+						++idx;
+					}
+					else {
+						write_a_read(ofs_aligned[idx], reads[i]); // fwd and rev go into the same file
+					}
+				}
+			}
+			// both non-aligned and is_other -> other
+			else if (opts.is_other) {
+				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
+				{
+					if (opts.is_out2) {
+						write_a_read(ofs_other[idx], reads[i]);
+						++idx; // fwd and rev go into different files
+					}
+					else {
+						write_a_read(ofs_other[idx], reads[i]); // fwd and rev go into the same file
+					}
+				}
+			}
+		}
+		else {
+			// Neither 'paired_in' nor 'paired_out' specified -> only aligned
+			// reads go to aligned file, and only non-aligned to other file
+			for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
+			{
+				if (reads[i].is_hit) {
+					if (opts.is_out2) {
+						write_a_read(ofs_aligned[idx], reads[i]);
+						++idx; // fwd and rev go into different files
+					}
+					else {
+						write_a_read(ofs_aligned[idx], reads[i]); // fwd and rev go into the same file
+					}
+				}
+				else if (opts.is_other) {
+					if (opts.is_out2) {
+						write_a_read(ofs_other[idx], reads[i]);
+					}
+					else {
+						write_a_read(ofs_other[idx], reads[i]); // fwd and rev go into the same file
+					}
+				}
+			}
+		}
+	}//~if paired
+	// non-paired
+	else
+	{
+		// the read was accepted - output
+		if (reads[0].is_hit)
+		{
+			write_a_read(ofs_aligned[0], reads[0]);
+		}
+		else if (opts.is_other) {
+			write_a_read(ofs_other[0], reads[0]);
+		}
+	}
 } // ~Output::report_fasta
 
 /* 
@@ -750,9 +753,31 @@ void Output::report_biom(){
 /**
  * open streams for writing
  */
-void Output::openfiles(Runopts & opts)
+void Output::openfiles(Runopts& opts)
 {
-	std::stringstream ss;
+	if (opts.is_fastx) {
+		for (size_t i = 0; i < f_aligned.size(); ++i) {
+			// aligned
+			if (!ofs_aligned[i].is_open()) {
+				ofs_aligned[i].open(f_aligned[i], std::ios::app | std::ios::binary);
+			}
+			if (!ofs_aligned[i].good()) {
+				ERR("Could not open FASTA/Q output file [", f_aligned[i], "] for writing.");
+				exit(EXIT_FAILURE);
+			}
+			// other
+			if (opts.is_other) {
+				if (!ofs_other[i].is_open()) {
+					ofs_other[i].open(f_other[i], std::ios::app | std::ios::binary);
+				}
+				if (!ofs_other[i].good())
+				{
+					ERR("Could not open FASTA/Q Non-aligned output file [", f_other[i], "] for writing.");
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+	}
 
 	if (opts.is_blast && !ofs_blast.is_open()) {
 		ofs_blast.open(f_blast);
@@ -768,32 +793,6 @@ void Output::openfiles(Runopts & opts)
 		if (!ofs_sam.good()) {
 			ERR("Could not open SAM output file [", f_sam, "] for writing.");
 			exit(EXIT_FAILURE);
-		}
-	}
-
-	if (opts.is_fastx) {
-		for (size_t i = 0; i < ofs_aligned.size(); ++i) {
-			if (!ofs_aligned[i].is_open()) {
-				ofs_aligned[i].open(f_aligned[i], std::ios::app | std::ios::binary);
-			}
-			if (!ofs_aligned[i].good()) {
-				ERR("Could not open FASTA/Q output file [" , f_aligned[i] , "] for writing.");
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
-
-	if (opts.is_fastx && opts.is_other)
-	{
-		for (size_t i = 0; i < ofs_other.size(); ++i) {
-			if (!ofs_other[i].is_open()) {
-				ofs_other[i].open(f_other[i], std::ios::app | std::ios::binary);
-			}
-			if (!ofs_other[i].good())
-			{
-				ERR("Could not open FASTA/Q Non-aligned output file [", f_other[i], "] for writing.");
-				exit(EXIT_FAILURE);
-			}
 		}
 	}
 
@@ -845,4 +844,5 @@ void Output::calc_out_type(Runopts& opts)
 void Output::set_num_out()
 {
 	if (out_type == 0x44) num_out = 4; // apf, apr, asf, asr   'af.size != ar.size' in general. Only aligned reads.
+	else if (out_type == 0x5C || out_type == 0x5E) num_out = 4; // af, ar, of, or
 }

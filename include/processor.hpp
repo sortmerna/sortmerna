@@ -25,4 +25,4 @@ void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 void writeSummary2(int id, Readfeed& readfeed, Runopts& opts, References& refs, Readstats& readstats, Refstats& refstats, KeyValueDatabase& kvdb);
 void writeSummary3(Read& read, Readstats& readstats, Refstats& refstats, References& refs, Runopts& opts);
 void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
-void report(int id, Readfeed& readfeed, Runopts& opts, References& refs, Refstats& refstats, Output& output, KeyValueDatabase& kvdb);
+void report(int id, Readfeed& readfeed, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Output& output, Runopts& opts);

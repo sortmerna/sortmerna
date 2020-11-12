@@ -989,7 +989,7 @@ void Runopts::opt_workdir(const std::string &path)
 	}
 	else {
 		workdir = path;
-		INFO("Using WORKDIR: [", std::filesystem::absolute(workdir), "] as specified");
+		INFO("Using WORKDIR: ", std::filesystem::absolute(workdir), " as specified");
 	}
 }
 

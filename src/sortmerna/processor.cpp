@@ -201,12 +201,13 @@ void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 } // ~writeSummary
 
 // 20201004 moved here from callbacks.cpp
-void report(int id, Readfeed& readfeed, 
-	            Runopts& opts, 
-	            References& refs, 
-	            Refstats& refstats, 
-	            Output& output, 
-	            KeyValueDatabase& kvdb)
+void report(int id, 
+	Readfeed& readfeed, 
+	References& refs, 
+	Refstats& refstats, 
+	KeyValueDatabase& kvdb,
+	Output& output,
+	Runopts& opts)
 {
 	unsigned countReads = 0;
 	unsigned num_invalid = 0; // empty or invalid reads count
@@ -219,9 +220,10 @@ void report(int id, Readfeed& readfeed,
 	for (bool isDone = false; !isDone;)
 	{
 		reads.clear();
+		auto idx = id * readfeed.num_orig_files;
 		for (std::size_t i = 0; i < num_reads; ++i)
 		{
-			if (readfeed.next(id, readstr))
+			if (readfeed.next(idx, readstr))
 			{
 				Read read(readstr);
 				read.init(opts);
@@ -233,6 +235,7 @@ void report(int id, Readfeed& readfeed,
 			else {
 				isDone = true;
 			}
+			idx = i == 0 ? idx + 1 : idx - 1; // switch fwd-rev
 		}
 
 		if (!isDone) {
@@ -240,12 +243,10 @@ void report(int id, Readfeed& readfeed,
 				++num_invalid;
 			}
 			else {
-				//job(reads, opts, refs, refstats, output);
-
-	// only needs one loop through all read, no reference file dependency
+				// only needs one loop through all reads - reference file is not used
 				if (opts.is_fastx && refs.num == 0 && refs.part == 0)
 				{
-					output.report_fasta(opts, reads);
+					output.report_fasta(id, reads, opts);
 				}
 
 				// only needs one loop through all read, no reference file dependency
@@ -281,6 +282,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	int nthreads = 0;
 	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
 		nthreads = opts.num_proc_thread;
+		readfeed.init_reading(); // prepare readfeed
 	}
 
 	//ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
@@ -312,15 +314,15 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 			refs.load(ref_idx, idx_part, opts, refstats);
 			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO("done. Elapsed sec [", elapsed.count());
+			INFO("done. Elapsed sec [", elapsed.count(), "]");
 
 			starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			// start processor
 			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-				for (int i = 0; i < tpool.size(); ++i) {
-					tpool.emplace_back(std::thread(report, i, std::ref(readfeed), std::ref(opts), 
-						std::ref(refs), std::ref(refstats), std::ref(output), std::ref(kvdb)));
+				for (int i = 0; i < nthreads; ++i) {
+					tpool.emplace_back(std::thread(report, i, std::ref(readfeed), 
+						std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(output), std::ref(opts)));
 				}
 			}
 			// wait till processing is done
@@ -334,12 +336,19 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
 			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
 
+			refs.unload();
+			INFO_MEM("References unloaded.");
+			tpool.clear();
+			// rewind for the next index
+			readfeed.rewind_in();
+			readfeed.init_vzlib_in();
+
 			if (!opts.is_blast && !opts.is_sam)	break;;
 		} // ~for(idx_part)
 	} // ~for(ref_idx)
 
-	INFO("=== Done Reports generation ===\n");
-} // ~generateReports
+	INFO("=== Done Reports ===\n");
+} // ~writeReports
 
 /*
   runs in a thread.  align -> align2
