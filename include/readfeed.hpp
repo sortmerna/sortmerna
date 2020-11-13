@@ -40,7 +40,7 @@ struct Readfile {
 };
 
 /* 
- * Database like interface for accessing reads
+ * Database-like interface for accessing reads
  */
 class Readfeed {
 public:

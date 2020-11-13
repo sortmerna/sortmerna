@@ -200,7 +200,6 @@ void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	INFO("==== Done Post-processing (alignment statistics report) ====\n\n");
 } // ~writeSummary
 
-// 20201004 moved here from callbacks.cpp
 void report(int id, 
 	Readfeed& readfeed, 
 	References& refs, 
@@ -249,7 +248,7 @@ void report(int id,
 					output.report_fasta(id, reads, opts);
 				}
 
-				// only needs one loop through all read, no reference file dependency
+				// only needs one loop through all reads, no reference file dependency
 				if (opts.is_denovo_otu && refs.num == 0 && refs.part == 0) {
 					output.report_denovo(opts, reads);
 				}
@@ -258,7 +257,7 @@ void report(int id,
 				{
 					if (opts.is_blast)
 					{
-						output.report_blast(opts, refstats, refs, read);
+						output.report_blast(id, read, refs, refstats, opts);
 					}
 
 					if (opts.is_sam)

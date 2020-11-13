@@ -51,17 +51,17 @@ class Readfeed;
 class Output {
 public:
 	// output streams
-	std::vector<std::ofstream> ofs_aligned; // fasta/q    20200127 2 files if 'out2', 1 file otherwise
-	std::vector<std::ofstream> ofs_other; // fasta/q non-aligned   20200127 2 files if 'out2', 1 file otherwise
-	std::ofstream ofs_blast; // BLAST
+	std::vector<std::ofstream> ofs_aligned; // aligned fasta/q 
+	std::vector<std::ofstream> ofs_other; // non-aligned fasta/q 
+	std::vector<std::ofstream> ofs_blast; // BLAST
 	std::ofstream ofs_sam; // SAM
 	std::ofstream ofs_denovo;
 	std::ofstream ofs_biom;
 
 	// output file names
-	std::vector<std::string> f_aligned; // 20200127 2 files if 'out2'
-	std::vector<std::string> f_other; // 20200127 2 files if 'out2'
-	std::string f_blast;
+	std::vector<std::string> f_aligned;
+	std::vector<std::string> f_other;
+	std::vector<std::string> f_blast;
 	std::string f_sam;
 	std::string f_denovo_otus;
 	std::string f_biom;
@@ -72,7 +72,7 @@ public:
 	~Output();
 
 	void report_fasta(int id, std::vector<Read>& reads, Runopts& opts);
-	void report_blast(Runopts & opts, Refstats & refstats, References & refs, Read & read);
+	void report_blast(int id, Read& read, References& refs, Refstats& refstats, Runopts& opts);
 	void report_sam(Runopts & opts, References & refs, Read & read);
 	void writeSamHeader(Runopts & opts);
 	void report_denovo(Runopts & opts, std::vector<Read> &reads);
@@ -95,7 +95,7 @@ private:
 private:
 	void init(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
 	void init_fastx(Readfeed& readfeed, Runopts& opts);
-	void init_blast(Runopts& opts);
+	void init_blast(Readfeed& readfeed, Runopts& opts);
 	void init_sam(Runopts& opts);
 	void init_denovo_otu(Readfeed& readfeed, Runopts& opts);
 	void write_a_read(std::ofstream& strm, Read& read);

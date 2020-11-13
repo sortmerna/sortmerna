@@ -67,7 +67,7 @@ void Output::init(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
 		init_fastx(readfeed, opts);
 
 	if (opts.is_blast)
-		init_blast(opts);
+		init_blast(readfeed, opts);
 
 	if (opts.is_sam)
 		init_sam(opts);
@@ -134,21 +134,23 @@ void Output::init_fastx(Readfeed& readfeed, Runopts& opts)
 	}
 } // ~Output::init_fastx
 
-void Output::init_blast(Runopts& opts)
+void Output::init_blast(Readfeed& readfeed, Runopts& opts)
 {
-	std::string sfx;
-	if (opts.is_pid)
-	{
-		sfx += "_" + std::to_string(getpid());
-	}
-	sfx += ".blast";
-	f_blast = opts.aligned_pfx.string() + sfx;
-	INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_blast)));
-	ofs_blast.open(f_blast);
-	ofs_blast.close();
-	if (!ofs_blast) {
-		ERR("Failed operating stream on file ", f_blast);
-		exit(EXIT_FAILURE);
+	f_blast.resize(readfeed.num_splits);
+	ofs_blast.resize(readfeed.num_splits);
+	// WORKDIR/out/aligned_0_PID.blast
+	std::string ext = ".blast";
+	for (int i = 0; i < readfeed.num_splits; ++i) {
+		std::string sfx1 = "_" + std::to_string(i);
+		std::string sfx2 = opts.is_pid ? "_" + std::to_string(getpid()) : "";
+		f_blast[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_blast[i])));
+		ofs_blast[i].open(f_blast[i]);
+		ofs_blast[i].close();
+		if (!ofs_blast[i]) {
+			ERR("Failed stream on file ", f_blast[i]);
+			exit(EXIT_FAILURE);
+		}
 	}
 } // ~Output::init_blast
 
@@ -185,19 +187,13 @@ void Output::init_denovo_otu(Readfeed& readfeed, Runopts& opts)
 /**
  * called on each read => keep stream handle between calls 
  */
-void Output::report_blast
-(
-	Runopts& opts,
-	Refstats& refstats,
-	References& refs,
-	Read& read
-)
+void Output::report_blast(int id, Read& read, References& refs, Refstats& refstats, Runopts& opts)
 {
 	const char MATCH = '|';
 	const char MISMATCH = '*';
 	const char INDEL = '-';
 
-	uint32_t id = 0;
+	uint32_t mid = 0; // matches id
 	uint32_t mismatches = 0;
 	uint32_t gaps = 0;
 	char strandmark = '+';
@@ -237,19 +233,19 @@ void Output::report_blast
 			// Blast-like pairwise alignment (only for aligned reads)
 			if (opts.blastFormat == BlastFormat::REGULAR)
 			{
-				ofs_blast << "Sequence ID: ";
-				ofs_blast << ref_id; // print only start of the header till first space
-				ofs_blast << std::endl;
+				ofs_blast[id] << "Sequence ID: ";
+				ofs_blast[id] << ref_id; // print only start of the header till first space
+				ofs_blast[id] << std::endl;
 
-				ofs_blast << "Query ID: ";
-				ofs_blast << read.getSeqId();
-				ofs_blast << std::endl;
+				ofs_blast[id] << "Query ID: ";
+				ofs_blast[id] << read.getSeqId();
+				ofs_blast[id] << std::endl;
 
-				ofs_blast << "Score: " << read.alignment.alignv[i].score1 << " bits (" << bitscore << ")\t";
-				ofs_blast.precision(3);
-				ofs_blast << "Expect: " << evalue_score << "\t";
+				ofs_blast[id] << "Score: " << read.alignment.alignv[i].score1 << " bits (" << bitscore << ")\t";
+				ofs_blast[id].precision(3);
+				ofs_blast[id] << "Expect: " << evalue_score << "\t";
 
-				ofs_blast << "strand: " << strandmark << std::endl << std::endl;
+				ofs_blast[id] << "strand: " << strandmark << std::endl << std::endl;
 
 				if (read.alignment.alignv[i].cigar.size() > 0)
 				{
@@ -262,9 +258,9 @@ void Output::report_blast
 						int32_t count = 0;
 						int32_t q = qb;
 						int32_t p = pb;
-						ofs_blast << "Target: ";
-						ofs_blast.width(8);
-						ofs_blast << q + 1 << "    ";
+						ofs_blast[id] << "Target: ";
+						ofs_blast[id].width(8);
+						ofs_blast[id] << q + 1 << "    ";
 						// process CIGAR
 						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
@@ -275,10 +271,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 1) ofs_blast << INDEL; // mark indel
+								if (letter == 1) ofs_blast[id] << INDEL; // mark indel
 								else
 								{
-									ofs_blast << nt_map[(int)refseq[q]];
+									ofs_blast[id] << nt_map[(int)refseq[q]];
 									++q;
 								}
 								++count;
@@ -286,9 +282,9 @@ void Output::report_blast
 							}
 						}
 					step2:
-						ofs_blast << "    " << q << "\n";
-						ofs_blast.width(20);
-						ofs_blast << " ";
+						ofs_blast[id] << "    " << q << "\n";
+						ofs_blast[id].width(20);
+						ofs_blast[id] << " ";
 						q = qb;
 						count = 0;
 						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
@@ -301,14 +297,14 @@ void Output::report_blast
 							{
 								if (letter == 0)
 								{
-									if ((char)nt_map[(int)refseq[q]] == (char)nt_map[(int)read.isequence[p]]) ofs_blast << MATCH; // mark match
-									else ofs_blast << MISMATCH; // mark mismatch
+									if ((char)nt_map[(int)refseq[q]] == (char)nt_map[(int)read.isequence[p]]) ofs_blast[id] << MATCH; // mark match
+									else ofs_blast[id] << MISMATCH; // mark mismatch
 									++q;
 									++p;
 								}
 								else
 								{
-									ofs_blast << " ";
+									ofs_blast[id] << " ";
 									if (letter == 1) ++p;
 									else ++q;
 								}
@@ -322,9 +318,9 @@ void Output::report_blast
 						}
 					step3:
 						p = pb;
-						ofs_blast << "\nQuery: ";
-						ofs_blast.width(9);
-						ofs_blast << p + 1 << "    ";
+						ofs_blast[id] << "\nQuery: ";
+						ofs_blast[id].width(9);
+						ofs_blast[id] << p + 1 << "    ";
 						count = 0;
 						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
@@ -333,10 +329,10 @@ void Output::report_blast
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
-								if (letter == 2) ofs_blast << INDEL; // mark indel
+								if (letter == 2) ofs_blast[id] << INDEL; // mark indel
 								else
 								{
-									ofs_blast << nt_map[(int)read.isequence[p]];
+									ofs_blast[id] << nt_map[(int)read.isequence[p]];
 									++p;
 								}
 								++count;
@@ -352,7 +348,7 @@ void Output::report_blast
 						e = c;
 						left = 0;
 					end:
-						ofs_blast << "    " << p << "\n\n";
+						ofs_blast[id] << "    " << p << "\n\n";
 					}
 				}
 			}
@@ -360,74 +356,74 @@ void Output::report_blast
 			else if (opts.blastFormat == BlastFormat::TABULAR)
 			{
 				// (1) Query ID
-				ofs_blast << read.getSeqId();
+				ofs_blast[id] << read.getSeqId();
 
 				// print null alignment for non-aligned read
 				if (opts.is_print_all_reads && (read.alignment.alignv.size() == 0))
 				{
-					ofs_blast << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
+					ofs_blast[id] << "\t*\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0";
 					for (uint32_t l = 0; l < opts.blastops.size(); l++)
 					{
 						if (opts.blastops[l].compare("cigar") == 0)
-							ofs_blast << "\t*";
+							ofs_blast[id] << "\t*";
 						else if (opts.blastops[l].compare("qcov") == 0)
-							ofs_blast << "\t0";
+							ofs_blast[id] << "\t0";
 						else if (opts.blastops[l].compare("qstrand") == 0)
-							ofs_blast << "\t*";
-						ofs_blast << "\n";
+							ofs_blast[id] << "\t*";
+						ofs_blast[id] << "\n";
 					}
 					return;
 				}
 
-				read.calcMismatchGapId(refs, i, mismatches, gaps, id);
-				int32_t total_pos = mismatches + gaps + id;
+				read.calcMismatchGapId(refs, i, mismatches, gaps, mid);
+				int32_t total_pos = mismatches + gaps + mid;
 
-				ofs_blast << "\t";
+				ofs_blast[id] << "\t";
 				// (2) Subject
-				ofs_blast << ref_id << "\t";
+				ofs_blast[id] << ref_id << "\t";
 				// (3) %id
-				ofs_blast.precision(3);
-				ofs_blast << (double)id / (mismatches + gaps + id) * 100 << "\t";
+				ofs_blast[id].precision(3);
+				ofs_blast[id] << (double)mid / total_pos * 100 << "\t";
 				// (4) alignment length
-				ofs_blast << (read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1) << "\t";
+				ofs_blast[id] << (read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1) << "\t";
 				// (5) mismatches
-				ofs_blast << mismatches << "\t";
+				ofs_blast[id] << mismatches << "\t";
 				// (6) gap openings
-				ofs_blast << gaps << "\t";
+				ofs_blast[id] << gaps << "\t";
 				// (7) q.start
-				ofs_blast << read.alignment.alignv[i].read_begin1 + 1 << "\t";
+				ofs_blast[id] << read.alignment.alignv[i].read_begin1 + 1 << "\t";
 				// (8) q.end
-				ofs_blast << read.alignment.alignv[i].read_end1 + 1 << "\t";
+				ofs_blast[id] << read.alignment.alignv[i].read_end1 + 1 << "\t";
 				// (9) s.start
-				ofs_blast << read.alignment.alignv[i].ref_begin1 + 1 << "\t";
+				ofs_blast[id] << read.alignment.alignv[i].ref_begin1 + 1 << "\t";
 				// (10) s.end
-				ofs_blast << read.alignment.alignv[i].ref_end1 + 1 << "\t";
+				ofs_blast[id] << read.alignment.alignv[i].ref_end1 + 1 << "\t";
 				// (11) e-value
-				ofs_blast << evalue_score << "\t";
+				ofs_blast[id] << evalue_score << "\t";
 				// (12) bit score
-				ofs_blast << bitscore;
+				ofs_blast[id] << bitscore;
 				// OPTIONAL columns
 				for (uint32_t l = 0; l < opts.blastops.size(); l++)
 				{
 					// output CIGAR string
 					if (opts.blastops[l].compare("cigar") == 0)
 					{
-						ofs_blast << "\t";
+						ofs_blast[id] << "\t";
 						// masked region at beginning of alignment
-						if (read.alignment.alignv[i].read_begin1 != 0) ofs_blast << read.alignment.alignv[i].read_begin1 << "S";
+						if (read.alignment.alignv[i].read_begin1 != 0) ofs_blast[id] << read.alignment.alignv[i].read_begin1 << "S";
 						for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
 						{
 							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
 							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
-							ofs_blast << length;
-							if (letter == 0) ofs_blast << "M";
-							else if (letter == 1) ofs_blast << "I";
-							else ofs_blast << "D";
+							ofs_blast[id] << length;
+							if (letter == 0) ofs_blast[id] << "M";
+							else if (letter == 1) ofs_blast[id] << "I";
+							else ofs_blast[id] << "D";
 						}
 
 						auto end_mask = read.sequence.length() - read.alignment.alignv[i].read_end1 - 1;
 						// output the masked region at end of alignment
-						if (end_mask > 0) ofs_blast << end_mask << "S";
+						if (end_mask > 0) ofs_blast[id] << end_mask << "S";
 					}
 					// output % query coverage
 					else if (opts.blastops[l].compare("qcov") == 0)
@@ -435,20 +431,20 @@ void Output::report_blast
 						double coverage = (double)abs(read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1)
 							/ read.alignment.alignv[i].readlen;
 
-						ofs_blast << "\t";
-						ofs_blast.precision(3);
-						ofs_blast << coverage * 100; // (double)align_len / readlen
+						ofs_blast[id] << "\t";
+						ofs_blast[id].precision(3);
+						ofs_blast[id] << coverage * 100; // (double)align_len / readlen
 					}
 					// output strand
 					else if (opts.blastops[l].compare("qstrand") == 0)
 					{
-						ofs_blast << "\t";
-						ofs_blast << strandmark;
+						ofs_blast[id] << "\t";
+						ofs_blast[id] << strandmark;
 						//if (read.alignment.alignv[i].strand) blastout << "+";
 						//else blastout << "-";
 					}
 				}
-				ofs_blast << std::endl;
+				ofs_blast[id] << std::endl;
 			}//~blast tabular m8
 		}
 	} // ~iterate all alignments
@@ -779,12 +775,16 @@ void Output::openfiles(Runopts& opts)
 		}
 	}
 
-	if (opts.is_blast && !ofs_blast.is_open()) {
-		ofs_blast.open(f_blast);
-		if (!ofs_blast.good())
-		{
-			ERR("Could not open BLAST output file: [", f_blast, "] for writing.");
-			exit(EXIT_FAILURE);
+	if (opts.is_blast) {
+		for (int i = 0; i < ofs_blast.size(); ++i) {
+			if (!ofs_blast[i].is_open()) {
+				ofs_blast[i].open(f_blast[i]);
+				if (!ofs_blast[i].good())
+				{
+					ERR("Could not open BLAST output file: [", f_blast[i], "] for writing.");
+					exit(EXIT_FAILURE);
+				}
+			}
 		}
 	}
 
@@ -808,7 +808,13 @@ void Output::openfiles(Runopts& opts)
 
 void Output::closefiles()
 {
-	if (ofs_blast.is_open()) { ofs_blast.flush(); ofs_blast.close(); }
+	// blast
+	for (int i = 0; i < ofs_blast.size(); ++i) {
+		if (ofs_blast[i].is_open()) { 
+			ofs_blast[i].flush(); ofs_blast[i].close(); 
+		}
+	}
+	// sam
 	if (ofs_sam.is_open()) { ofs_sam.flush(); ofs_sam.close(); }
 	for (size_t i = 0; i < ofs_aligned.size(); ++i) {
 		if (ofs_aligned[i].is_open()) { ofs_aligned[i].flush(); ofs_aligned[i].close(); }
