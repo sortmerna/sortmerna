@@ -10,12 +10,13 @@
 #include <fstream> // std::ifstream
 #include <filesystem>
 
-#include "kvdb.hpp"
-#include "options.hpp"
+#include "common.hpp"
 #include "izlib.hpp"
 
  // forward
 class Read;
+class KeyValueDatabase;
+struct Runopts;
 
 struct Readstate {
 	Readstate()	: is_done(false), read_count(0), line_count(0), last_count(0), last_stat(0) {}

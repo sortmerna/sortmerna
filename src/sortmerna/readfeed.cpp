@@ -8,7 +8,6 @@
 
 #include <vector>
 #include <iostream>
-#include <sstream> // std::stringstream
 #include <ios> // std::ios_base
 #include <algorithm> // find, find_if
 #include <chrono> // std::chrono
@@ -17,8 +16,6 @@
 #include <thread>
 
 #include "readfeed.hpp"
-#include "izlib.hpp"
-#include "common.hpp"
 
 // forward
 std::streampos filesize(const std::string& file); //util.cpp

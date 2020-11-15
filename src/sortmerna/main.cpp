@@ -36,7 +36,6 @@
 
 #include "options.hpp"
 #include "paralleltraversal.hpp"
-#include "output.hpp"
 #include "readstats.hpp"
 #include "cmd.hpp"
 #include "kvdb.hpp"
@@ -44,6 +43,8 @@
 #include "indexdb.hpp"
 #include "readfeed.hpp"
 #include "processor.hpp"
+#include "summary.hpp"
+#include "output.hpp"
 
 
 /*

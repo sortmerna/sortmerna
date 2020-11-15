@@ -77,7 +77,7 @@ void Output::init(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
 } // ~Output::init
 
 /*
-* aligned_fwd.fq, aligned_rev.fq
+ * af.fq, ar.fq
 */
 void Output::init_fastx(Readfeed& readfeed, Runopts& opts)
 {
@@ -96,7 +96,7 @@ void Output::init_fastx(Readfeed& readfeed, Runopts& opts)
 	for (int i = 0; i < readfeed.num_splits; ++i) {
 		for (int j = 0, idx = 0, orig_idx = 0; j < num_aln; ++j) {
 			std::string sfx1 = "";
-			if (out_type == 0x44) { // apf, apr, asf, asr
+			if (out_type == 0x44 || out_type == 0x46) { // apf, apr, asf, asr
 				if (j == 0 || j == 1) sfx1 = "_paired";
 				else if (j == 2 || j == 3) sfx1 = "_singleton";
 			}
@@ -109,7 +109,7 @@ void Output::init_fastx(Readfeed& readfeed, Runopts& opts)
 			std::string orig_ext = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
 
 			// test the file(s)
-			idx = i * readfeed.num_orig_files + j;
+			idx = i * num_out + j;
 			f_aligned[idx] = opts.aligned_pfx.string() + sfx1 + sfx2 + sfx3 + orig_ext; // e.g. aligned_paired_fwd_0_PID.fq
 			INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_aligned[idx])));
 			ofs_aligned[idx].open(f_aligned[idx]);
@@ -657,25 +657,57 @@ void Output::report_fasta(int id, std::vector<Read>& reads, Runopts& opts)
 			}
 		}
 		else {
-			// Neither 'paired_in' nor 'paired_out' specified -> only aligned
-			// reads go to aligned file, and only non-aligned to other file
-			for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
-			{
-				if (reads[i].is_hit) {
-					if (opts.is_out2) {
-						write_a_read(ofs_aligned[idx], reads[i]);
-						++idx; // fwd and rev go into different files
-					}
-					else {
-						write_a_read(ofs_aligned[idx], reads[i]); // fwd and rev go into the same file
+			// Neither 'paired_in' nor 'paired_out' specified:
+			//   aligned     -> aligned file
+			//   non-aligned -> other file
+			auto idx = id * num_out;
+			if (reads[0].is_hit && reads[1].is_hit) {
+				if (opts.is_out2) {
+					write_a_read(ofs_aligned[idx], reads[0]); // apf
+					write_a_read(ofs_aligned[idx+1], reads[1]); // apr
+				}
+				else {
+					write_a_read(ofs_aligned[idx], reads[0]); // ap
+					write_a_read(ofs_aligned[idx], reads[1]); // ap
+				}
+			}
+			else if (reads[0].is_hit) { // fwd hit
+				if (opts.is_out2) {
+					write_a_read(ofs_aligned[idx+2], reads[0]); // asf
+					if (opts.is_other) {
+						write_a_read(ofs_other[idx + 2], reads[1]); // osf
 					}
 				}
-				else if (opts.is_other) {
+				else {
+					write_a_read(ofs_aligned[idx], reads[0]); // as
+					if (opts.is_other) {
+						write_a_read(ofs_other[idx], reads[1]); // os
+					}
+				}
+			}
+			else if (reads[1].is_hit) { // rev hit
+				if (opts.is_out2) {
+					write_a_read(ofs_aligned[idx+3], reads[0]); // asr
+					if (opts.is_other) {
+						write_a_read(ofs_other[idx+3], reads[1]); // osr
+					}
+				}
+				else {
+					write_a_read(ofs_aligned[idx+1], reads[0]); // as
+					if (opts.is_other) {
+						write_a_read(ofs_other[idx+1], reads[1]); // os
+					}
+				}
+			}
+			else { // none is hit
+				if (opts.is_other) {
 					if (opts.is_out2) {
-						write_a_read(ofs_other[idx], reads[i]);
+						write_a_read(ofs_other[idx], reads[0]); // opf
+						write_a_read(ofs_other[idx + 1], reads[1]); // opr
 					}
 					else {
-						write_a_read(ofs_other[idx], reads[i]); // fwd and rev go into the same file
+						write_a_read(ofs_other[idx], reads[0]); // op
+						write_a_read(ofs_other[idx], reads[1]); // op
 					}
 				}
 			}
@@ -849,6 +881,215 @@ void Output::calc_out_type(Runopts& opts)
 
 void Output::set_num_out()
 {
-	if (out_type == 0x44) num_out = 4; // apf, apr, asf, asr   'af.size != ar.size' in general. Only aligned reads.
+	if (out_type == 0x04 || out_type == 0x06) num_out = 2; // ap, as
+	else if (out_type == 0x14 || out_type == 0x16 
+		|| out_type == 0x24 || out_type == 0x26) num_out = 1; // a
+	else if (out_type == 0x44 || out_type == 0x46) num_out = 4; // apf, apr, asf, asr   'af.size != ar.size' in general. Only aligned reads.
+	else if (out_type == 0x4C || out_type == 0x4E) num_out = 8;
 	else if (out_type == 0x5C || out_type == 0x5E) num_out = 4; // af, ar, of, or
 }
+
+void Output::merge_fastx(int num_splits)
+{
+	for (int i = 0; i < num_out; ++i) {
+		std::ofstream ofs(f_aligned[i], std::ios_base::app | std::ios_base::binary);
+		if (!ofs.is_open()) {
+			ERR("failed to open for writing: ", f_aligned[i]);
+			exit(1);
+		}
+		for (int j = 1; j < num_splits; ++j) {
+			auto idx = i + j*num_out;
+			std::ifstream ifs(f_aligned[idx], std::ios_base::out | std::ios_base::binary);
+			if (ifs.is_open()) {
+				ofs << ifs.rdbuf();
+				INFO("merged ", f_aligned[idx], " -> ", f_aligned[i]);
+				ifs.close();
+				std::filesystem::remove(f_aligned[idx]);
+				INFO("deleted ", f_aligned[idx]);
+			}
+			else {
+				ERR("failed to open for reading: ", f_aligned[idx]);
+				exit(1);
+			}
+		}
+		ofs.close();
+	}
+}
+
+void Output::merge_blast(int num_splits)
+{
+	std::ofstream ofs(f_blast[0], std::ios_base::app | std::ios_base::binary);
+	if (!ofs.is_open()) {
+		ERR("failed to open for writing: ", f_blast[0]);
+		exit(1);
+	}
+	for (int i = 1; i < num_splits; ++i) {
+		std::ifstream ifs(f_blast[i], std::ios_base::out | std::ios_base::binary);
+		if (ifs.is_open()) {
+			ofs << ifs.rdbuf();
+			INFO("merged ", f_blast[i], " -> ", f_blast[0]);
+			ifs.close();
+			std::filesystem::remove(f_blast[i]);
+			INFO("deleted ", f_blast[i]);
+		}
+		else {
+			ERR("failed to open for reading: ", f_blast[i]);
+			exit(1);
+		}
+	}
+}
+
+void report(int id,
+	Readfeed& readfeed,
+	References& refs,
+	Refstats& refstats,
+	KeyValueDatabase& kvdb,
+	Output& output,
+	Runopts& opts)
+{
+	unsigned countReads = 0;
+	unsigned num_invalid = 0; // empty or invalid reads count
+	std::size_t num_reads = opts.is_paired ? 2 : 1;
+	std::string readstr;
+	std::vector<Read> reads; // two reads if paired, a single read otherwise
+
+	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " started.");
+
+	for (bool isDone = false; !isDone;)
+	{
+		reads.clear();
+		auto idx = id * readfeed.num_orig_files;
+		for (std::size_t i = 0; i < num_reads; ++i)
+		{
+			if (readfeed.next(idx, readstr))
+			{
+				Read read(readstr);
+				read.init(opts);
+				read.load_db(kvdb);
+				reads.push_back(read);
+				readstr.resize(0);
+				++countReads;
+			}
+			else {
+				isDone = true;
+			}
+			idx = i == 0 ? idx + 1 : idx - 1; // switch fwd-rev
+		}
+
+		if (!isDone) {
+			if (reads.back().isEmpty || !reads.back().isValid) {
+				++num_invalid;
+			}
+			else {
+				// only needs one loop through all reads - reference file is not used
+				if (opts.is_fastx && refs.num == 0 && refs.part == 0)
+				{
+					output.report_fasta(id, reads, opts);
+				}
+
+				// only needs one loop through all reads, no reference file dependency
+				if (opts.is_denovo_otu && refs.num == 0 && refs.part == 0) {
+					output.report_denovo(opts, reads);
+				}
+
+				for (Read read : reads)
+				{
+					if (opts.is_blast)
+					{
+						output.report_blast(id, read, refs, refstats, opts);
+					}
+
+					if (opts.is_sam)
+					{
+						output.report_sam(opts, refs, read);
+					}
+				} // ~for reads
+			}
+		}
+	} // ~for
+
+	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
+} // ~report
+
+
+// called from main. generateReports -> reportsJob
+void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
+{
+	INFO("=== Report generation starts. Thread: ", std::this_thread::get_id(), " ===\n");
+
+	int nthreads = 0;
+	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
+		nthreads = opts.num_proc_thread;
+		readfeed.init_reading(); // prepare readfeed
+	}
+
+	//ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
+	std::vector<std::thread> tpool;
+	tpool.reserve(nthreads);
+
+	bool indb = readstats.restoreFromDb(kvdb);
+	if (indb) {
+		INFO("Restored Readstats from DB: ", indb);
+	}
+
+	Refstats refstats(opts, readstats);
+	References refs;
+	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
+	Output output(readfeed, opts, readstats);
+
+	output.openfiles(opts);
+	if (opts.is_sam) output.writeSamHeader(opts);
+
+	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
+	for (uint16_t ref_idx = 0; ref_idx < (uint16_t)opts.indexfiles.size(); ++ref_idx)
+	{
+		// iterate every part of an index
+		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[ref_idx]; ++idx_part)
+		{
+			INFO("Loading reference ", ref_idx, " part ", idx_part + 1, "/", refstats.num_index_parts[ref_idx], "  ... ");
+
+			auto starts = std::chrono::high_resolution_clock::now();
+
+			refs.load(ref_idx, idx_part, opts, refstats);
+			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
+			INFO("done. Elapsed sec [", elapsed.count(), "]");
+
+			starts = std::chrono::high_resolution_clock::now(); // index processing starts
+
+			// start processor
+			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
+				for (int i = 0; i < nthreads; ++i) {
+					tpool.emplace_back(std::thread(report, i, std::ref(readfeed),
+						std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(output), std::ref(opts)));
+				}
+			}
+			// wait till processing is done
+			for (auto i = 0; i < tpool.size(); ++i) {
+				tpool[i].join();
+			}
+
+			refs.unload();
+			//read_queue.reset();
+
+			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
+			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
+
+			refs.unload();
+			INFO_MEM("References unloaded.");
+			tpool.clear();
+			// rewind for the next index
+			readfeed.rewind_in();
+			readfeed.init_vzlib_in();
+
+			if (!opts.is_blast && !opts.is_sam)	break;;
+		} // ~for(idx_part)
+	} // ~for(ref_idx)
+
+	output.closefiles();
+	if (opts.is_fastx)
+		output.merge_fastx(readfeed.num_splits);
+	if (opts.is_blast)
+		output.merge_blast(readfeed.num_splits);
+
+	INFO("=== Done Reports ===\n");
+} // ~writeReports

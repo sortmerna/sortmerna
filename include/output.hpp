@@ -48,6 +48,8 @@ struct Runopts;
 class KeyValueDatabase;
 class Readfeed;
 
+void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
+
 class Output {
 public:
 	// output streams
@@ -77,10 +79,10 @@ public:
 	void writeSamHeader(Runopts & opts);
 	void report_denovo(Runopts & opts, std::vector<Read> &reads);
 	void report_biom();
+	void merge_fastx(int num_splits);
+	void merge_blast(int num_splits);
 	void openfiles(Runopts & opts);
 	void closefiles();
-	void calc_out_type(Runopts& opts);
-	void set_num_out();
 
 private:
 	int out_type; //  = 0x00
@@ -93,6 +95,8 @@ private:
 	const int mask_out2 = 0x40;
 
 private:
+	void set_num_out();
+	void calc_out_type(Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
 	void init_fastx(Readfeed& readfeed, Runopts& opts);
 	void init_blast(Readfeed& readfeed, Runopts& opts);

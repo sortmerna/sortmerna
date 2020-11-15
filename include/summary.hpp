@@ -1,4 +1,6 @@
 #pragma once
+/* post-alignment tasks like calculating statistics */
+
 #include <string>
 #include <vector>
 
@@ -6,6 +8,11 @@
 struct Runopts;
 class Refstats;
 struct Readstats;
+class Readfeed;
+class References;
+class KeyValueDatabase;
+
+void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
 
 /**
  * Summary report (log) data structure
