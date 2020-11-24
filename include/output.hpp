@@ -56,16 +56,16 @@ public:
 	std::vector<std::ofstream> ofs_aligned; // aligned fasta/q 
 	std::vector<std::ofstream> ofs_other; // non-aligned fasta/q 
 	std::vector<std::ofstream> ofs_blast; // BLAST
-	std::ofstream ofs_sam; // SAM
-	std::ofstream ofs_denovo;
+	std::vector<std::ofstream> ofs_sam; // SAM
+	std::vector<std::ofstream> ofs_denovo;
 	std::ofstream ofs_biom;
 
 	// output file names
 	std::vector<std::string> f_aligned;
 	std::vector<std::string> f_other;
 	std::vector<std::string> f_blast;
-	std::string f_sam;
-	std::string f_denovo_otus;
+	std::vector<std::string> f_sam;
+	std::vector<std::string> f_denovo;
 	std::string f_biom;
 
 	int num_out; // number of output files
@@ -73,14 +73,16 @@ public:
 	Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
 	~Output();
 
-	void report_fasta(int id, std::vector<Read>& reads, Runopts& opts);
+	void report_fastx(int id, std::vector<Read>& reads, Runopts& opts);
 	void report_blast(int id, Read& read, References& refs, Refstats& refstats, Runopts& opts);
-	void report_sam(Runopts & opts, References & refs, Read & read);
+	void report_sam(int id, Read& read, References & refs, Runopts& opts);
 	void writeSamHeader(Runopts & opts);
-	void report_denovo(Runopts & opts, std::vector<Read> &reads);
+	void report_denovo(int id, Read& read, Runopts& opts);
 	void report_biom();
 	void merge_fastx(int num_splits);
 	void merge_blast(int num_splits);
+	void merge_sam(int num_splits);
+	void merge_denovo(int num_splits);
 	void openfiles(Runopts & opts);
 	void closefiles();
 
@@ -100,8 +102,8 @@ private:
 	void init(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
 	void init_fastx(Readfeed& readfeed, Runopts& opts);
 	void init_blast(Readfeed& readfeed, Runopts& opts);
-	void init_sam(Runopts& opts);
-	void init_denovo_otu(Readfeed& readfeed, Runopts& opts);
+	void init_sam(Readfeed& readfeed, Runopts& opts);
+	void init_denovo(Readfeed& readfeed, Runopts& opts);
 	void write_a_read(std::ofstream& strm, Read& read);
 
 }; // ~class Output

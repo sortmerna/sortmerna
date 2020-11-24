@@ -199,6 +199,6 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	INFO("==== Done alignment ====\n");
 
 	// store readstats calculated in alignment
-	readstats.set_is_total_mapped_sw_id_cov();
+	readstats.set_is_set_aligned_id_cov();
 	readstats.store_to_db(kvdb);
 } // ~align

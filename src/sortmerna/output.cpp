@@ -70,10 +70,10 @@ void Output::init(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
 		init_blast(readfeed, opts);
 
 	if (opts.is_sam)
-		init_sam(opts);
+		init_sam(readfeed, opts);
 
-	if (opts.is_denovo_otu)
-		init_denovo_otu(readfeed, opts);
+	if (opts.is_denovo)
+		init_denovo(readfeed, opts);
 } // ~Output::init
 
 /*
@@ -154,33 +154,43 @@ void Output::init_blast(Readfeed& readfeed, Runopts& opts)
 	}
 } // ~Output::init_blast
 
-void Output::init_sam(Runopts& opts)
+void Output::init_sam(Readfeed& readfeed, Runopts& opts)
 {
-	std::string sfx;
-	if (opts.is_pid)
-	{
-		sfx += "_" + std::to_string(getpid());
+	f_sam.resize(readfeed.num_splits);
+	ofs_sam.resize(readfeed.num_splits);
+	// WORKDIR/out/aligned_0_PID.sam
+	std::string ext = ".sam";
+	for (int i = 0; i < readfeed.num_splits; ++i) {
+		std::string sfx1 = "_" + std::to_string(i);
+		std::string sfx2 = opts.is_pid ? "_" + std::to_string(getpid()) : "";
+		f_sam[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext;
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_sam[i])));
+		ofs_sam[i].open(f_sam[i]);
+		ofs_sam[i].close();
+		if (!ofs_sam[i]) {
+			ERR("Failed stream on file ", f_sam[i]);
+			exit(EXIT_FAILURE);
+		}
 	}
-	sfx += ".sam";
-	f_sam = opts.aligned_pfx.string() + sfx;
-	INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_sam)));
-	ofs_sam.open(f_sam);
-	ofs_sam.close();
 }
 
-void Output::init_denovo_otu(Readfeed& readfeed, Runopts& opts)
+void Output::init_denovo(Readfeed& readfeed, Runopts& opts)
 {
-	std::ofstream denovo_otu;
-	std::string sfx = opts.is_pid ? "_" + std::to_string(getpid()) : "";
-
+	f_denovo.resize(readfeed.num_splits);
+	ofs_denovo.resize(readfeed.num_splits);
+	// WORKDIR/out/aligned_denovo_0_PID.fa
+	std::string ext = ".sam";
 	for (int i = 0; i < readfeed.num_splits; ++i) {
-		auto orig_idx = i & 1;
-		std::string orig_sfx = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
-		sfx += "_denovo" + std::to_string(i) + "." + orig_sfx;
-		f_denovo_otus = opts.aligned_pfx.string() + sfx; // aligned_denovo_0.fq
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_denovo_otus)));
-		denovo_otu.open(f_denovo_otus);
-		denovo_otu.close();
+		std::string sfx1 = "_" + std::to_string(i);
+		std::string sfx2 = opts.is_pid ? "_" + std::to_string(getpid()) : "";
+		f_denovo[i] = opts.aligned_pfx.string() + "_denovo" + sfx1 + sfx2 + ".fa";
+		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(f_denovo[i])));
+		ofs_denovo[i].open(f_denovo[i]);
+		ofs_denovo[i].close();
+		if (!ofs_denovo[i]) {
+			ERR("Failed stream on file ", f_denovo[i]);
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
@@ -451,9 +461,9 @@ void Output::report_blast(int id, Read& read, References& refs, Refstats& refsta
 } // ~ Output::report_blast
 
 
-void Output::writeSamHeader(Runopts & opts)
+void Output::writeSamHeader(Runopts& opts)
 {
-	ofs_sam << "@HD\tVN:1.0\tSO:unsorted\n";
+	ofs_sam[0] << "@HD\tVN:1.0\tSO:unsorted\n";
 
 	// TODO: this line is taken from "Index::load_stats". To be finished (20171215).
 #if 0
@@ -483,28 +493,20 @@ void Output::writeSamHeader(Runopts & opts)
 		} // ~for
 	} // ~for
 #endif
-	ofs_sam << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
+	ofs_sam[0] << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
 
 } // ~Output::writeSamHeader
 
-void Output::report_sam
-(
-	Runopts & opts,
-	References & refs,
-	Read & read
-)
+void Output::report_sam(int id, Read& read, References& refs, Runopts& opts)
 {
 	if (read.is03) read.flip34();
-
-	//if (read.alignment.alignv.size() == 0 && !opts.print_all_reads)
-	//	return;
 
 	// read did not align, output null string
 	if (opts.is_print_all_reads && read.alignment.alignv.size() == 0)
 	{
 		// (1) Query
-		ofs_sam << read.getSeqId();
-		ofs_sam << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
+		ofs_sam[id] << read.getSeqId();
+		ofs_sam[id] << "\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n";
 		return;
 	}
 
@@ -516,64 +518,64 @@ void Output::report_sam
 			&& read.alignment.alignv[i].part == refs.part)
 		{
 			// (1) Query
-			ofs_sam << read.getSeqId();
+			ofs_sam[id] << read.getSeqId();
 			// (2) flag Forward/Reversed
-			if (!read.alignment.alignv[i].strand) ofs_sam << "\t16\t";
-			else ofs_sam << "\t0\t";
+			if (!read.alignment.alignv[i].strand) ofs_sam[id] << "\t16\t";
+			else ofs_sam[id] << "\t0\t";
 			// (3) Subject
-			ofs_sam << refs.buffer[read.alignment.alignv[i].ref_num].id;
+			ofs_sam[id] << refs.buffer[read.alignment.alignv[i].ref_num].id;
 			// (4) Ref start
-			ofs_sam << "\t" << read.alignment.alignv[i].ref_begin1 + 1;
+			ofs_sam[id] << "\t" << read.alignment.alignv[i].ref_begin1 + 1;
 			// (5) mapq
-			ofs_sam << "\t" << 255 << "\t";
+			ofs_sam[id] << "\t" << 255 << "\t";
 			// (6) CIGAR
 			// output the masked region at beginning of alignment
 			if (read.alignment.alignv[i].read_begin1 != 0)
-				ofs_sam << read.alignment.alignv[i].read_begin1 << "S";
+				ofs_sam[id] << read.alignment.alignv[i].read_begin1 << "S";
 
 			for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
 			{
 				uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
 				uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
-				ofs_sam << length;
-				if (letter == 0) ofs_sam << "M";
-				else if (letter == 1) ofs_sam << "I";
-				else ofs_sam << "D";
+				ofs_sam[id] << length;
+				if (letter == 0) ofs_sam[id] << "M";
+				else if (letter == 1) ofs_sam[id] << "I";
+				else ofs_sam[id] << "D";
 			}
 
 			auto end_mask = read.sequence.size() - read.alignment.alignv[i].read_end1 - 1;
 			// output the masked region at end of alignment
-			if (end_mask > 0) ofs_sam << end_mask << "S";
+			if (end_mask > 0) ofs_sam[id] << end_mask << "S";
 			// (7) RNEXT, (8) PNEXT, (9) TLEN
-			ofs_sam << "\t*\t0\t0\t";
+			ofs_sam[id] << "\t*\t0\t0\t";
 			// (10) SEQ
 
 			if ( read.alignment.alignv[i].strand == read.reversed ) // XNOR
 				read.revIntStr();
-			ofs_sam << read.get04alphaSeq();
+			ofs_sam[id] << read.get04alphaSeq();
 			// (11) QUAL
-			ofs_sam << "\t";
+			ofs_sam[id] << "\t";
 			// reverse-complement strand
 			if (read.quality.size() > 0 && !read.alignment.alignv[i].strand)
 			{
 				std::reverse(read.quality.begin(), read.quality.end());
-				ofs_sam << read.quality;
+				ofs_sam[id] << read.quality;
 			}
 			else if (read.quality.size() > 0) // forward strand
 			{
-				ofs_sam << read.quality;
+				ofs_sam[id] << read.quality;
 				// FASTA read
 			}
-			else ofs_sam << "*";
+			else ofs_sam[id] << "*";
 
 			// (12) OPTIONAL FIELD: SW alignment score generated by aligner
-			ofs_sam << "\tAS:i:" << read.alignment.alignv[i].score1;
+			ofs_sam[id] << "\tAS:i:" << read.alignment.alignv[i].score1;
 			// (13) OPTIONAL FIELD: edit distance to the reference
 			uint32_t mismatches = 0;
 			uint32_t gaps = 0;
-			uint32_t id = 0;
-			read.calcMismatchGapId(refs, i, mismatches, gaps, id);
-			ofs_sam << "\tNM:i:" << mismatches + gaps << "\n";
+			uint32_t mid = 0;
+			read.calcMismatchGapId(refs, i, mismatches, gaps, mid);
+			ofs_sam[id] << "\tNM:i:" << mismatches + gaps << "\n";
 		}
 	} // ~for read.alignments
 } // ~Output::report_sam
@@ -584,7 +586,7 @@ void Output::report_sam
  *
  * @param reads: 1 or 2 (paired) reads
  */
-void Output::report_fasta(int id, std::vector<Read>& reads, Runopts& opts)
+void Output::report_fastx(int id, std::vector<Read>& reads, Runopts& opts)
 {
 	if (reads.size() == 2)
 	{
@@ -728,32 +730,13 @@ void Output::report_fasta(int id, std::vector<Read>& reads, Runopts& opts)
 } // ~Output::report_fasta
 
 /* 
- * output reads for de novo clustering i.e. reads that pass SW & fail (%Cov & %ID)
+ * output the 'de novo' reads i.e. reads that pass SW & fail (%Cov & %ID)
  * called on each read or a pair
  */
-void Output::report_denovo(Runopts& opts, std::vector<Read>& reads)
+void Output::report_denovo(int id, Read& read, Runopts& opts)
 {
-	if (f_denovo_otus.size() != 0)
-	{
-		// paired reads
-		if (opts.is_paired_in || opts.is_paired_out)
-		{
-			// either both reads are accepted, or one is accepted and paired_in
-			if ( opts.is_paired_in && reads[0].is_hit && reads[1].is_hit && (reads[0].is_denovo || reads[1].is_denovo) )
-			{
-				for (Read read : reads)
-					ofs_denovo << read.header << std::endl << read.sequence << std::endl;
-			}
-		}
-		// non-paired
-		else
-		{
-			if (reads[0].is_hit && reads[0].is_denovo)
-			{
-				ofs_denovo << reads[0].header << std::endl << reads[0].sequence << std::endl;
-			}
-		}
-	}
+	if (read.is_denovo)
+		ofs_denovo[id] << read.header << std::endl << read.sequence << std::endl;
 } // ~Output::report_denovo
 
 void Output::report_biom(){
@@ -820,26 +803,40 @@ void Output::openfiles(Runopts& opts)
 		}
 	}
 
-	if (opts.is_sam && !ofs_sam.is_open()) {
-		ofs_sam.open(f_sam);
-		if (!ofs_sam.good()) {
-			ERR("Could not open SAM output file [", f_sam, "] for writing.");
-			exit(EXIT_FAILURE);
+	if (opts.is_sam) {
+		for (int i = 0; i < ofs_sam.size(); ++i) {
+			if (!ofs_sam[i].is_open()) {
+				ofs_sam[i].open(f_sam[i]);
+				if (!ofs_sam[i].good()) {
+					ERR("Could not open SAM output file ", f_sam[i], " for writing.");
+					exit(EXIT_FAILURE);
+				}
+			}
 		}
 	}
 
-	if (f_denovo_otus.size() != 0 && !ofs_denovo.is_open())
-	{
-		ofs_denovo.open(f_denovo_otus, std::ios::app | std::ios::binary);
-		if (!ofs_denovo.good()) {
-			ERR("Could not open denovo otus: [", f_denovo_otus, "] for writing.");
-			exit(EXIT_FAILURE);
+	if (opts.is_denovo)	{
+		for (int i = 0; i < ofs_denovo.size(); ++i) {
+			if (!ofs_denovo[i].is_open()) {
+				ofs_denovo[i].open(f_denovo[i], std::ios::app | std::ios::binary);
+				if (!ofs_denovo[i].good()) {
+					ERR("Could not open: ", f_denovo[i], " for writing.");
+					exit(EXIT_FAILURE);
+				}
+			}
 		}
 	}
 } // ~Output::openfiles
 
 void Output::closefiles()
 {
+	// fastx
+	for (int i = 0; i < ofs_aligned.size(); ++i) {
+		if (ofs_aligned[i].is_open()) { ofs_aligned[i].flush(); ofs_aligned[i].close(); }
+	}
+	for (int i = 0; i < ofs_other.size(); ++i) {
+		if (ofs_other[i].is_open()) { ofs_other[i].flush(); ofs_other[i].close(); }
+	}
 	// blast
 	for (int i = 0; i < ofs_blast.size(); ++i) {
 		if (ofs_blast[i].is_open()) { 
@@ -847,14 +844,17 @@ void Output::closefiles()
 		}
 	}
 	// sam
-	if (ofs_sam.is_open()) { ofs_sam.flush(); ofs_sam.close(); }
-	for (size_t i = 0; i < ofs_aligned.size(); ++i) {
-		if (ofs_aligned[i].is_open()) { ofs_aligned[i].flush(); ofs_aligned[i].close(); }
+	for (int i = 0; i < ofs_sam.size(); ++i) {
+		if (ofs_sam[i].is_open()) {
+			ofs_sam[i].flush(); ofs_sam[i].close();
+		}
 	}
-	for (size_t i = 0; i < ofs_other.size(); ++i) {
-		if (ofs_other[i].is_open()) { ofs_other[i].flush(); ofs_other[i].close(); }
+	// denovo
+	for (int i = 0; i < ofs_denovo.size(); ++i) {
+		if (ofs_denovo[i].is_open()) { 
+			ofs_denovo[i].flush(); ofs_denovo[i].close(); 
+		}
 	}
-	if (ofs_denovo.is_open()) { ofs_denovo.flush(); ofs_denovo.close(); }
 
 	INFO("Flushed and closed");
 }
@@ -939,6 +939,52 @@ void Output::merge_blast(int num_splits)
 	}
 }
 
+void Output::merge_sam(int num_splits)
+{
+	std::ofstream ofs(f_sam[0], std::ios_base::app | std::ios_base::binary);
+	if (!ofs.is_open()) {
+		ERR("failed to open for writing: ", f_sam[0]);
+		exit(1);
+	}
+	for (int i = 1; i < num_splits; ++i) {
+		std::ifstream ifs(f_sam[i], std::ios_base::out | std::ios_base::binary);
+		if (ifs.is_open()) {
+			ofs << ifs.rdbuf();
+			INFO("merged ", f_sam[i], " -> ", f_sam[0]);
+			ifs.close();
+			std::filesystem::remove(f_sam[i]);
+			INFO("deleted ", f_sam[i]);
+		}
+		else {
+			ERR("failed to open for reading: ", f_sam[i]);
+			exit(1);
+		}
+	}
+}
+
+void Output::merge_denovo(int num_splits)
+{
+	std::ofstream ofs(f_denovo[0], std::ios_base::app | std::ios_base::binary);
+	if (!ofs.is_open()) {
+		ERR("failed to open for writing: ", f_denovo[0]);
+		exit(1);
+	}
+	for (int i = 1; i < num_splits; ++i) {
+		std::ifstream ifs(f_denovo[i], std::ios_base::out | std::ios_base::binary);
+		if (ifs.is_open()) {
+			ofs << ifs.rdbuf();
+			INFO("merged ", f_denovo[i], " -> ", f_denovo[0]);
+			ifs.close();
+			std::filesystem::remove(f_denovo[i]);
+			INFO("deleted ", f_denovo[i]);
+		}
+		else {
+			ERR("failed to open for reading: ", f_denovo[i]);
+			exit(1);
+		}
+	}
+}
+
 void report(int id,
 	Readfeed& readfeed,
 	References& refs,
@@ -984,25 +1030,15 @@ void report(int id,
 				// only needs one loop through all reads - reference file is not used
 				if (opts.is_fastx && refs.num == 0 && refs.part == 0)
 				{
-					output.report_fasta(id, reads, opts);
+					output.report_fastx(id, reads, opts);
 				}
 
-				// only needs one loop through all reads, no reference file dependency
-				if (opts.is_denovo_otu && refs.num == 0 && refs.part == 0) {
-					output.report_denovo(opts, reads);
-				}
-
-				for (Read read : reads)
+				for (int i = 0; i < reads.size(); ++i)
 				{
-					if (opts.is_blast)
-					{
-						output.report_blast(id, read, refs, refstats, opts);
-					}
-
-					if (opts.is_sam)
-					{
-						output.report_sam(opts, refs, read);
-					}
+					if (opts.is_blast) output.report_blast(id, reads[i], refs, refstats, opts);
+					if (opts.is_sam) output.report_sam(id, reads[i], refs, opts);
+					// only needs one loop through all reads, no reference file dependency
+					if (opts.is_denovo && refs.num == 0 && refs.part == 0) output.report_denovo(id, reads[i], opts);
 				} // ~for reads
 			}
 		}
@@ -1090,6 +1126,10 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.merge_fastx(readfeed.num_splits);
 	if (opts.is_blast)
 		output.merge_blast(readfeed.num_splits);
+	if (opts.is_sam)
+		output.merge_sam(readfeed.num_splits);
+	if (opts.is_denovo)
+		output.merge_denovo(readfeed.num_splits);
 
 	INFO("=== Done Reports ===\n");
 } // ~writeReports

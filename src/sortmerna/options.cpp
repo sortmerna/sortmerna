@@ -304,7 +304,7 @@ void Runopts::opt_log(const std::string& val)
 
 void Runopts::opt_denovo_otu(const std::string& val)
 {
-	is_denovo_otu = true;
+	is_denovo = true;
 } // ~Runopts::opt_de_novo_otu
 
 void Runopts::opt_otu_map(const std::string &val)
@@ -966,9 +966,9 @@ void Runopts::opt_task(const std::string &val)
 	switch (task_num)
 	{
 	case 0: alirep = align; break;
-	case 1: alirep = postproc; break;
+	case 1: alirep = summary; break;
 	case 2: alirep = report; break;
-	case 3: alirep = alipost; break;
+	case 3: alirep = alnsum; break;
 	case 4: alirep = all; break;
 	}
 } // ~Runopts::opt_task
@@ -1187,7 +1187,7 @@ void Runopts::validate_kvdbdir()
 		if (std::filesystem::is_empty(kvdbdir))
 		{
 			// dir exists and empty -> use
-			if (ALIGN_REPORT::postproc == alirep || ALIGN_REPORT::report == alirep)
+			if (ALIGN_REPORT::summary == alirep || ALIGN_REPORT::report == alirep)
 			{
 				INFO("KVDB directory: " , std::filesystem::absolute(kvdbdir) , " is empty. OK to use.");
 			}
@@ -1196,7 +1196,7 @@ void Runopts::validate_kvdbdir()
 		{
 			// TODO: Store some metadata in DB to verify the alignment.
 			// kvdb.verify()
-			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alipost == alirep)
+			if (ALIGN_REPORT::align == alirep || ALIGN_REPORT::all == alirep || ALIGN_REPORT::alnsum == alirep)
 			{
 				// if (kvdb.verify()) // TODO
 				// output the listing
@@ -1457,7 +1457,7 @@ void Runopts::validate()
 	}
 
 	// No output format has been chosen
-	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_denovo_otu))
+	if (!(is_fastx || is_blast || is_sam || is_otu_map || is_denovo))
 	{
 		is_blast = true;
 		INFO("No output format has been chosen (fastx|sam|blast|otu_map). Using default '" , OPT_BLAST , "'");
@@ -1584,7 +1584,7 @@ void Runopts::validate()
 	{
 		// TODO: looks arbitrary. Why the alignment contolling options would depend on the output?
 		// FASTA/FASTQ output, stop searching for alignments after the first match
-		if (is_fastx && !(is_blast || is_sam || is_otu_map || is_log || is_denovo_otu))
+		if (is_fastx && !(is_blast || is_sam || is_otu_map || is_log || is_denovo))
 			num_alignments = 1;
 		// output single best alignment from best candidate hits
 		else

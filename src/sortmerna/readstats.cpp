@@ -35,15 +35,16 @@ Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t 
 	:
 	min_read_len(max_read_len),
 	max_read_len(min_read_len),
-	total_reads_aligned(0),
-	total_mapped_sw_id_cov(0),
+	total_aligned(0),
+	total_aligned_id_cov(0),
 	short_reads_num(0),
 	all_reads_count(all_reads_count),
 	all_reads_len(all_reads_len),
 	reads_matched_per_db(opts.indexfiles.size(), 0),
-	total_reads_denovo_clustering(0),
+	total_denovo(0),
+	total_otu(),
 	is_stats_calc(false),
-	is_total_mapped_sw_id_cov(false)
+	is_set_aligned_id_cov(false)
 {
 	// calculate this->dbkey
 	std::string key_str_tmp("");
@@ -104,10 +105,10 @@ std::string Readstats::toBstring()
 	// max_read_len
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_read_len)), sizeof(max_read_len), std::back_inserter(buf));
 	// total_reads_mapped (atomic int)
-	auto val = total_reads_aligned.load(std::memory_order_relaxed);
+	auto val = total_aligned.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// total_reads_mapped_cov (atomic int)
-	val = total_mapped_sw_id_cov.load(std::memory_order_relaxed);
+	val = total_aligned_id_cov.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// short_reads_num
 	std::copy_n(static_cast<char*>(static_cast<void*>(&short_reads_num)), sizeof(short_reads_num), std::back_inserter(buf));
@@ -116,7 +117,7 @@ std::string Readstats::toBstring()
 	// all_reads_len (int)
 	std::copy_n(static_cast<char*>(static_cast<void*>(&all_reads_len)), sizeof(all_reads_len), std::back_inserter(buf));
 	// total_reads_denovo_clustering (int)
-	std::copy_n(static_cast<char*>(static_cast<void*>(&total_reads_denovo_clustering)), sizeof(total_reads_denovo_clustering), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&total_denovo)), sizeof(total_denovo), std::back_inserter(buf));
 	// reads_matched_per_db (vector)
 	size_t reads_matched_per_db_size = reads_matched_per_db.size();
 	std::copy_n(static_cast<char*>(static_cast<void*>(&reads_matched_per_db_size)), sizeof(reads_matched_per_db_size), std::back_inserter(buf));
@@ -126,7 +127,7 @@ std::string Readstats::toBstring()
 	// stats_calc_done (bool)
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_stats_calc)), sizeof(is_stats_calc), std::back_inserter(buf));
 	// is_total_reads_mapped_cov
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_total_mapped_sw_id_cov)), sizeof(is_total_mapped_sw_id_cov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_set_aligned_id_cov)), sizeof(is_set_aligned_id_cov), std::back_inserter(buf));
 
 	return buf;
 } // ~Readstats::toBstring
@@ -141,19 +142,19 @@ std::string Readstats::toString()
 		<< " max_read_len= " << max_read_len
 		<< " all_reads_count= " << all_reads_count
 		<< " all_reads_len= " << all_reads_len
-		<< " total_reads_mapped= " << total_reads_aligned
-		<< " total_reads_mapped_cov= " << total_mapped_sw_id_cov
+		<< " total_reads_mapped= " << total_aligned
+		<< " total_reads_mapped_cov= " << total_aligned_id_cov
 		<< " short_reads_num= " << short_reads_num
 		<< " reads_matched_per_db= " << "TODO"
-		<< " is_total_reads_mapped_cov= " << is_total_mapped_sw_id_cov
+		<< " is_total_reads_mapped_cov= " << is_set_aligned_id_cov
 		<< " is_stats_calc= " << is_stats_calc << std::endl;
 	return ss.str();
 } // ~Readstats::toString
 
-void Readstats::set_is_total_mapped_sw_id_cov()
+void Readstats::set_is_set_aligned_id_cov()
 {
-	if (!is_total_mapped_sw_id_cov && total_mapped_sw_id_cov > 0)
-		is_total_mapped_sw_id_cov = true;
+	if (!is_set_aligned_id_cov && total_aligned_id_cov > 0)
+		is_set_aligned_id_cov = true;
 }
 
 /**
@@ -177,12 +178,12 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		// total_reads_mapped
 		uint64_t val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		total_reads_aligned = val;
+		total_aligned = val;
 		offset += sizeof(val);
 		// total_reads_mapped_cov
 		val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		total_mapped_sw_id_cov = val;
+		total_aligned_id_cov = val;
 		offset += sizeof(val);
 		// short_reads_num
 		std::memcpy(static_cast<void*>(&short_reads_num), bstr.data() + offset, sizeof(short_reads_num));
@@ -194,8 +195,8 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		std::memcpy(static_cast<void*>(&all_reads_len), bstr.data() + offset, sizeof(all_reads_len));
 		offset += sizeof(all_reads_len);
 		// total_reads_denovo_clustering
-		std::memcpy(static_cast<void*>(&total_reads_denovo_clustering), bstr.data() + offset, sizeof(total_reads_denovo_clustering));
-		offset += sizeof(total_reads_denovo_clustering);
+		std::memcpy(static_cast<void*>(&total_denovo), bstr.data() + offset, sizeof(total_denovo));
+		offset += sizeof(total_denovo);
 		// reads_matched_per_db
 		size_t reads_matched_per_db_size = 0;
 		std::memcpy(static_cast<void*>(&reads_matched_per_db_size), bstr.data() + offset, sizeof(reads_matched_per_db_size));
@@ -221,47 +222,12 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		offset += sizeof(is_stats_calc);
 
 		// stats_calc_done
-		std::memcpy(static_cast<void*>(&is_total_mapped_sw_id_cov), bstr.data() + offset, sizeof(is_total_mapped_sw_id_cov));
-		offset += sizeof(is_total_mapped_sw_id_cov);
+		std::memcpy(static_cast<void*>(&is_set_aligned_id_cov), bstr.data() + offset, sizeof(is_set_aligned_id_cov));
+		offset += sizeof(is_set_aligned_id_cov);
 	} // ~if data found in DB
 
 	return ret;
 } // ~Readstats::restoreFromDb
-
-/* push entry to Readstats::otu_map*/
-void Readstats::pushOtuMap(std::string& ref_seq_str, std::string& read_seq_str)
-{
-	//std::lock_guard<std::mutex> omlg(otu_map_lock);
-	otu_map[ref_seq_str].push_back(read_seq_str);
-}
-
-void Readstats::printOtuMap(std::string otumapfile)
-{
-	std::ofstream omstrm;
-	omstrm.open(otumapfile);
-	if (!omstrm.is_open()) {
-		ERR("Failed to open: ", otumapfile);
-		exit(1);
-	}
-
-	INFO("Printing OTU Map ...");
-
-	for (std::map<std::string, std::vector<std::string>>::iterator it = otu_map.begin(); it != otu_map.end(); ++it)
-	{
-		omstrm << it->first << "\t";
-		int i = 0;
-		for (std::vector<std::string>::iterator itv = it->second.begin(); itv != it->second.end(); ++itv)
-		{
-			if (i < it->second.size() - 1)
-				omstrm << *itv << "\t";
-			else
-				omstrm << *itv; // last element
-			++i;
-		}
-		omstrm << std::endl;
-	}
-	if (omstrm.is_open()) omstrm.close();
-}
 
 void Readstats::store_to_db(KeyValueDatabase & kvdb)
 {

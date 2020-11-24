@@ -298,10 +298,10 @@ void traverse
 	}
 
 	// the read didn't align => NOT is_denovo
-	if (isLastStrand && !read.is_hit && opts.num_alignments > -1 && opts.is_denovo_otu && read.is_denovo)
-	{
-		read.is_denovo = false;
-	}
+	//if (isLastStrand && !read.is_hit && opts.num_alignments > -1 && opts.is_denovo_otu && read.is_denovo)
+	//{
+	//	read.is_denovo = false;
+	//}
 } // ~traverse
 
 /**

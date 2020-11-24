@@ -413,23 +413,23 @@ void compute_lis_alignment
 							if (!read.is_hit)
 							{
 								read.is_hit = true;
-								readstats.total_reads_aligned.fetch_add(1, std::memory_order_relaxed);
+								readstats.total_aligned.fetch_add(1, std::memory_order_relaxed);
 								++readstats.reads_matched_per_db[index.index_num];
 							}
 
-							// calculate read.is_id_cov and read.is_denovo if
-							// not searching for Best alignments that also pass ID + COV (default)
-							if (!read.is_id && !read.is_cov && !opts.is_best_id_cov)
+							// calculate %ID and %COV if OTU map or denovo were requested
+							if ((opts.is_otu_map || opts.is_denovo) && !read.is_id && !read.is_cov)
 							{
 								std::pair<bool,bool> is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
+								read.is_id = is_id_cov.first;
+								read.is_cov = is_id_cov.second;
+								read.is_denovo != is_id_cov.first && is_id_cov.second;
 
-								// the alignment passed the Identity and Coverage threshold => NOT is_denovo
-								if (is_id_cov.first && is_id_cov.second) {
-									read.is_id = true;
-									read.is_cov = true;
-									read.is_denovo = false;
-									readstats.total_mapped_sw_id_cov.fetch_add(1, std::memory_order_relaxed);
-								}
+								if (read.is_id && read.is_cov)
+									readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
+
+								if (read.is_denovo)
+									readstats.total_denovo.fetch_add(1, std::memory_order_relaxed);
 							}
 
 							// if 'N == 0' or 'Not is_best' or 'is_best And read.alignments.size < N' => 
@@ -443,7 +443,10 @@ void compute_lis_alignment
 									&& read.alignment.alignv.size() == opts.num_alignments 
 									&& read.alignment.alignv[read.alignment.min_index].score1 < result->score1 )
 							{
-								if (!opts.is_best_id_cov) {
+								if (opts.is_best_id_cov) {
+									// TODO: new case to implement 20200703
+								}
+								else {
 									// set min and max pointers - just once, after all the reads' alignments were filled
 									if (opts.num_alignments > 1 && read.alignment.max_index == 0 && read.alignment.min_index == 0) {
 										read.alignment.min_index = findMinIndex(read.alignment.alignv);
@@ -470,9 +473,6 @@ void compute_lis_alignment
 									// increment number of reads mapped to database with higher score
 									++readstats.reads_matched_per_db[index.index_num];
 								}
-								//else {
-								// TODO: new case to implement 20200703
-								//}
 							}//~if
 
 							// all alignments have been found - stop searching
@@ -579,11 +579,10 @@ uint32_t inline findMaxIndex(std::vector<s_align2>& alignv)
 
 /* 
  * calculate whether the alignment passes ID and COV thresholds 
- * serves for SAM output
  *
  * @param read_iseq  read sequence in integer alphabet, see 'read.isequence'
  * @param alignment to check
- * @return true (passes ID and COV) | false (fails ID and COV
+ * @return pair (is_ID, is_COV)  is_ID: true | false, is_COV: true | false
  *
  */
 std::pair<bool,bool> inline is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts)
@@ -628,12 +627,11 @@ std::pair<bool,bool> inline is_id_cov_pass(std::string& read_iseq, s_align2& ali
 	// round to 3 decimal places
 	stringstream ss;
 	ss.precision(3);
-	ss << (double)id / (mismatches + gaps + id) << ' ' << (double)align_len / read_iseq.length();
+	ss << (double)id / ((double)mismatches + gaps + id) << ' ' << (double)align_len / read_iseq.length();
 
 	double align_id_round = 0.0;
 	double align_cov_round = 0.0;
 	ss >> align_id_round >> align_cov_round;
 
-	//return (align_id_round >= opts.min_id && align_cov_round >= opts.min_cov);
 	return { align_id_round >= opts.min_id, align_cov_round >= opts.min_cov };
 } // ~is_id_cov_pass

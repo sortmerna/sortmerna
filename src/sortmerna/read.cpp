@@ -104,7 +104,7 @@ Read::Read()
 	is_new_hit(false),
 	is_id(false),
 	is_cov(false),
-	is_denovo(true),
+	is_denovo(false),
 	null_align_output(false),
 	num_hits(0),
 	max_SW_count(0),

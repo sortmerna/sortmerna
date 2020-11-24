@@ -243,11 +243,15 @@ help_coverage =
 	"%%query coverage threshold (the alignment must          0.97\n"
 	"                                            still pass the E-value threshold)\n",
 help_denovo_otu = 
-	"FASTA/FASTQ file for reads matching database < %%id     False\n"
-	"                                            (set using --id) and < %%cov (set using --coverage)\n"
-	"                                            (alignment must still pass the E-value threshold).\n",
+	"Output FASTA file with 'de novo' reads                  False\n"
+	"                                            Read is 'de novo' if its alignment score passes\n"
+	"                                            E-value threshold, and the Identity ('" + OPT_ID + "' option),\n"
+	"                                            and the Coverage ('" + OPT_COVERAGE + "' option) are below"
+	"                                            their corresponding thresholds i.e.\n"
+	"                                            ID < %%id and COV < %%cov\n",
 help_otu_map = 
-	"Output OTU map (input to QIIME's make_otu_table.py).    False\n",
+	"Output OTU map (input to QIIME's make_otu_table.py).    False\n"
+	"                                            Cannot be used with '" + OPT_NUM_ALIGNMENTS + "'\n",
 help_passes = 
 	"Three intervals at which to place the seed on the read  L,L/2,3\n"
 	"                                            (L is the seed length)\n",
@@ -372,7 +376,7 @@ public:
 	// Option selection Flags
 	//    alignment control
 	bool is_best = true; // default if no OPT_NO_BEST was specified
-	bool is_best_id_cov = false; // search for best alignments that also pass ID and COV
+	bool is_best_id_cov = false; // TODO: search for best alignments that also pass ID and COV. Not yet implemented 20200703
 	bool is_min_lis = false;
 	bool is_num_alignments = false; // OPT_NUM_ALIGNMENTS was specified
 	bool is_full_search = false; // OPT_FULL_SEARCH was selected
@@ -382,7 +386,8 @@ public:
 	bool is_paired_in = false; // OPT_PAIRED_IN was selected i.e. both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_out2 = false; // 20200127 output paired reads into separate files. Issue 202
-	bool is_denovo_otu = false; // output file with reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
+	bool is_otu_map = false; // OPT_OTU_MAP was selected i.e. output OTU map (input to QIIME's make_otu_table.py)
+	bool is_denovo = false; // output file with reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
 	bool is_log = true; // OPT_LOG was selected i.e. output overall statistics. TODO: remove this option, always generate.
 	bool is_print_all_reads = false; // '--print_all_reads' output null alignment strings for non-aligned reads to SAM and/or BLAST tabular files
 	bool is_sam = false; // OPT_SAM was specified. output SAM alignment (for aligned reads only)
@@ -390,7 +395,6 @@ public:
 	bool is_blast = false; // OPT_BLAST was specified
 	bool is_fastx = false; // OPT_FASTX was selected i.e. output FASTA/FASTQ file (for aligned and/or rejected reads)
 	bool is_other = false; // OPT_OTHER was selected i.e. flags to produce 'other' file
-	bool is_otu_map = false; // OPT_OTU_MAP was selected i.e. output OTU map (input to QIIME's make_otu_table.py)
 	bool is_verbose; // OPT_V was selected (indexing)
 	bool is_pid = false; // add pid to output file names
 	bool is_cmd = false; // start interactive session
@@ -460,7 +464,7 @@ public:
 	const std::string OUT_DIR  = "out";
 	const std::string READB_DIR = "readb";
 
-	enum ALIGN_REPORT { align, postproc, report, alipost, all };
+	enum ALIGN_REPORT { align, summary, report, alnsum, all };
 	ALIGN_REPORT alirep = ALIGN_REPORT::all;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 

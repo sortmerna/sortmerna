@@ -119,6 +119,7 @@ set(SMR_SRCS
 	ssw.c
 	traverse_bursttrie.cpp
 	util.cpp
+	otumap.cpp
 	#writer.cpp
 )
 

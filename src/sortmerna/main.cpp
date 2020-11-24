@@ -45,6 +45,8 @@
 #include "processor.hpp"
 #include "summary.hpp"
 #include "output.hpp"
+#include "otumap.h"
+#include "refstats.hpp"
 
 
 /*
@@ -74,18 +76,21 @@ int main(int argc, char** argv)
 		case Runopts::ALIGN_REPORT::align:
 			align(readfeed, readstats, index, kvdb, opts);
 			break;
-		case Runopts::ALIGN_REPORT::postproc:
+		case Runopts::ALIGN_REPORT::summary:
+			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::report:
 			writeReports(readfeed, readstats, kvdb, opts);
 			break;
-		case Runopts::ALIGN_REPORT::alipost:
+		case Runopts::ALIGN_REPORT::alnsum:
 			align(readfeed, readstats, index, kvdb, opts);
+			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::all:
 			align(readfeed, readstats, index, kvdb, opts);
+			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			writeReports(readfeed, readstats, kvdb, opts);
 			break;
