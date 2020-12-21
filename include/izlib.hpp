@@ -17,17 +17,13 @@
 class Izlib
 {
 public:
-	/*
-	  @param is_compress  flags to compress (true) or inflate (false) the output
-	  @param is_init      flags to perform the zlib stream initialization
-	*/
 	Izlib(bool is_compress=false, bool is_init=true);
 
 	void init(bool is_compress = false);
 	int reset_deflate(); // clean up z_stream
 	int reset_inflate();
 	int getline(std::ifstream & ifs, std::string & line);
-	int defstr(std::string& readstr, std::ofstream& ofs, bool is_last=false);
+	int defstr(std::string& readstr, std::ostream& ofs, bool is_last=false);
 
 private:
 	char* line_start; // pointer to the start of a line within the 'z_out' buffer

@@ -120,6 +120,14 @@ set(SMR_SRCS
 	traverse_bursttrie.cpp
 	util.cpp
 	otumap.cpp
+	report.cpp
+	report_fx_base.cpp
+	report_fastx.cpp
+	report_fx_other.cpp
+	report_blast.cpp
+	report_denovo.cpp
+	report_biom.cpp
+	report_sam.cpp
 	#writer.cpp
 )
 

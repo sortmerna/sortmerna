@@ -1,6 +1,6 @@
 #pragma once
 /**
- * FILE: Readsfile.hpp
+ * FILE: readfeed.hpp
  * Created: Nov 06, 2017 Mon
  *
  * Encapsulates operations on the 'Reads' files both flat and archived
@@ -12,33 +12,13 @@
 
 #include "common.hpp"
 #include "izlib.hpp"
+#include "readstate.h"
+#include "readfile.h"
 
  // forward
 class Read;
 class KeyValueDatabase;
 struct Runopts;
-
-struct Readstate {
-	Readstate()	: is_done(false), read_count(0), line_count(0), last_count(0), last_stat(0) {}
-	void reset() { is_done = false; read_count = 0; line_count = 0; 
-		last_count = 0; last_stat = 0; last_header.clear(); }
-	bool is_done; // flags EOF reached
-	unsigned read_count; // count of reads in the file
-	unsigned line_count; // count of non-empty lines in the reads file
-	unsigned last_count; // count of lines in a single read
-	int last_stat;
-	std::string last_header; // header line last read
-};
-
-struct Readfile {
-	Readfile() : isFastq(false), isFasta(false), isZip(false), size(0), numreads(0) {}
-	bool isFastq; // file is FASTQ
-	bool isFasta; // file is FASTA
-	bool isZip;   // true (compressed) | false (flat)
-	unsigned numreads;  // max reads expected to be processed
-	std::filesystem::path path;
-	std::streampos size;
-};
 
 /* 
  * Database-like interface for accessing reads
@@ -75,8 +55,6 @@ private:
 
 public:
 	FEED_TYPE type;
-	BIO_FORMAT biof;
-	ZIP_FORMAT zipf;
 	bool is_done; // flags end of all read streams
 	bool is_ready; // flags the read feed is ready i.e. no need to run split
 	bool is_format_defined; // flags the file format is defined i.e. 'define_format' was success
@@ -87,7 +65,7 @@ public:
 	unsigned length_all; // length of all reads from all files
 	unsigned min_read_len;
 	unsigned max_read_len;
-	std::filesystem::path& basedir; // split files root directory opts.readb
+	std::filesystem::path& basedir; // root directory for split files (opts.readb)
 	std::vector<Readfile> orig_files;
 private:
 	std::vector<Readfile> split_files;

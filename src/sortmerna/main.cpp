@@ -90,6 +90,7 @@ int main(int argc, char** argv)
 			break;
 		case Runopts::ALIGN_REPORT::all:
 			align(readfeed, readstats, index, kvdb, opts);
+			// TODO: combine processing otu map and reports to avoid double run through reads and refs (in this case only) 20201126
 			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			writeReports(readfeed, readstats, kvdb, opts);

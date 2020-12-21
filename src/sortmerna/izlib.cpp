@@ -15,6 +15,10 @@
 #include "common.hpp"
 
 
+/*
+ * @param is_compress  flags to compress (true) or inflate (false) the output
+ * @param is_init      flags to perform the zlib stream initialization
+ */
 Izlib::Izlib(bool is_compress, bool is_init)
 	: 
 	line_start(0),
@@ -235,7 +239,7 @@ int Izlib::inflatez(std::ifstream & ifs)
   @param   is_last  flags the last string passed -> Finish compressing
   @return           execution status
 */
-int Izlib::defstr(std::string& readstr, std::ofstream& ofs, bool is_last)
+int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 {
 	std::stringstream ss(readstr);
 	int ret = Z_OK;

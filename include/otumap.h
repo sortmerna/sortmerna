@@ -24,6 +24,7 @@ public:
 	std::filesystem::path fmap;
 	uint64_t total_otu; // total count of OTU groups in otu_map
 public:
+	OtuMap(int numThreads=1);
 	void push(int idx, std::string& ref_seq_str, std::string& read_seq_str);
 	void merge();
 	void write();

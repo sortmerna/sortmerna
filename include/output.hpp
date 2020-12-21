@@ -31,12 +31,12 @@
  *               Hélène Touzet, helene.touzet@lifl.fr
  *               Rob Knight, robknight@ucsd.edu
  */
-#include <fstream>
-#include <stdint.h>
-#include <string>
-#include <vector>
-
-#include "common.hpp"
+#include "report_fastx.h"
+#include "report_fx_other.h"
+#include "report_blast.h"
+#include "report_denovo.h"
+#include "report_sam.h"
+#include "report_biom.h"
 
 // forward
 struct Index;
@@ -52,58 +52,17 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 class Output {
 public:
-	// output streams
-	std::vector<std::ofstream> ofs_aligned; // aligned fasta/q 
-	std::vector<std::ofstream> ofs_other; // non-aligned fasta/q 
-	std::vector<std::ofstream> ofs_blast; // BLAST
-	std::vector<std::ofstream> ofs_sam; // SAM
-	std::vector<std::ofstream> ofs_denovo;
-	std::ofstream ofs_biom;
-
-	// output file names
-	std::vector<std::string> f_aligned;
-	std::vector<std::string> f_other;
-	std::vector<std::string> f_blast;
-	std::vector<std::string> f_sam;
-	std::vector<std::string> f_denovo;
-	std::string f_biom;
-
-	int num_out; // number of output files
+	ReportFastx fastx; // fastx aligned report
+	ReportFxOther fx_other; // fastx non-aligned report
+	ReportBlast blast;
+	ReportDenovo denovo;
+	ReportSam sam;
+	ReportBiom biom;
 
 	Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
-	~Output();
-
-	void report_fastx(int id, std::vector<Read>& reads, Runopts& opts);
-	void report_blast(int id, Read& read, References& refs, Refstats& refstats, Runopts& opts);
-	void report_sam(int id, Read& read, References & refs, Runopts& opts);
-	void writeSamHeader(Runopts & opts);
-	void report_denovo(int id, Read& read, Runopts& opts);
-	void report_biom();
-	void merge_fastx(int num_splits);
-	void merge_blast(int num_splits);
-	void merge_sam(int num_splits);
-	void merge_denovo(int num_splits);
-	void openfiles(Runopts & opts);
-	void closefiles();
+	//~Output();
 
 private:
-	int out_type; //  = 0x00
-	const int mask_1_file = 0x01;
-	const int mask_paired = 0x02;
-	const int mask_2_file = 0x04;
-	const int mask_other  = 0x08;
-	const int mask_paired_in = 0x10;
-	const int mask_paired_out = 0x20;
-	const int mask_out2 = 0x40;
-
-private:
-	void set_num_out();
-	void calc_out_type(Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts, Readstats& readstats);
-	void init_fastx(Readfeed& readfeed, Runopts& opts);
-	void init_blast(Readfeed& readfeed, Runopts& opts);
-	void init_sam(Readfeed& readfeed, Runopts& opts);
-	void init_denovo(Readfeed& readfeed, Runopts& opts);
-	void write_a_read(std::ofstream& strm, Read& read);
 
 }; // ~class Output

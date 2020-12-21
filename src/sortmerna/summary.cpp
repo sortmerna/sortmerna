@@ -16,7 +16,7 @@ Summary::Summary() :
 	total_reads(0),
 	total_mapped(0),
 	total_denovo(0),
-	total_sw_id_cov(0),
+	total_id_cov(0),
 	total_otu(0),
 	min_read_len(0),
 	max_read_len(0),
@@ -27,14 +27,8 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 {
 	std::ofstream ofs;
 	std::filesystem::path f_log;
-	std::string sfx;
-	pid_str = std::to_string(getpid());
-	if (opts.is_pid)
-	{
-		sfx += "_" + pid_str;
-	}
-	sfx += ".log";
-	f_log = opts.aligned_pfx.string() + sfx;
+	std::string sfx = opts.is_pid ? "_" + std::to_string(getpid()) : "";
+	f_log = opts.aligned_pfx.string() + sfx + ".log";
 	INFO("Using summary file: ", f_log.generic_string());
 	ofs.open(f_log, std::ofstream::binary | std::ofstream::out);
 	if (!ofs.is_open()) {
@@ -54,15 +48,14 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 	all_reads_len = readstats.all_reads_len;
 
 	// stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++)
-	{
+	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++) {
 		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
 		db_matches.emplace_back(std::make_pair(opts.indexfiles[index_num].first, pcn));
 	}
 
 	if (opts.is_otu_map) {
 		is_otumapout = opts.is_otu_map;
-		total_sw_id_cov = readstats.total_aligned_id_cov.load(std::memory_order_relaxed);
+		total_id_cov = readstats.total_aligned_id_cov.load(std::memory_order_relaxed);
 		total_otu = readstats.total_otu;
 	}
 
@@ -117,12 +110,22 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 		ss << "    Total reads for de novo clustering = " << total_denovo << std::endl;
 	}
 	// output total non-rrna + rrna reads
+	auto ev_pass_ratio = (float)total_mapped / total_reads;
 	ss << std::setprecision(2) << std::fixed
 		<< "    Total reads passing E-value threshold = " << total_mapped
-		<< " (" << ((float)total_mapped / (float)total_reads * 100) << ")" << std::endl
+		<< " (" << (ev_pass_ratio * 100) << ")" << std::endl
 		<< "    Total reads failing E-value threshold = " << total_reads - total_mapped
-		<< " (" << (1 - ((float)((float)total_mapped / (float)total_reads))) * 100 << ")" << std::endl
-		<< "    Minimum read length = " << min_read_len << std::endl
+		<< " (" << (1 - ev_pass_ratio) * 100 << ")" << std::endl;
+
+	if (is_otumapout)
+	{
+		auto idcov_pass_ratio = (float)total_id_cov / total_reads;
+		ss << "    Total reads passing %%id and %%coverage thresholds = " << total_id_cov
+			<< " (" << (idcov_pass_ratio * 100) << ")" << std::endl
+		   << "    Total OTUs = " << total_otu << std::endl;
+	}
+
+	ss	<< "    Minimum read length = " << min_read_len << std::endl
 		<< "    Maximum read length = " << max_read_len << std::endl
 		<< "    Mean read length    = " << all_reads_len / total_reads << std::endl << std::endl;
 
@@ -134,12 +137,6 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 		ss << "    " << match.first << "\t\t" << match.second << std::endl;
 	}
 
-	if (is_otumapout)
-	{
-		ss << " Total reads passing %%id and %%coverage thresholds = " << total_sw_id_cov << std::endl
-			<< " Total OTUs = " << total_otu << std::endl;
-	}
-
 	ss << std::endl << " " << timestamp << std::endl;
 
 	return ss.str();
@@ -149,13 +146,8 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 // called from main
 void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
-	INFO("==== Starting summary of alignment statistics ====\n\n");
+	INFO("==== Starting summary of alignment statistics ====");
 	Refstats refstats(opts, readstats);
-
-	// populate OTU map if necessary
-	if (opts.is_otu_map) {
-	}
-
 	Summary summary;
 	summary.write(refstats, readstats, opts);
 	INFO("==== Done summary of alignment statistics ====\n\n");

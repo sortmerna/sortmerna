@@ -1,9 +1,8 @@
 ﻿/**
- * FILE: reader.cpp
+ * FILE: readfeed.cpp
  * Created: Nov 26, 2017 Sun
  * @copyright 2016-20 Clarity Genomics BVBA
  * 
- * Processes Reads file, creates Read objects, and pushes them to a queue for further pick−up by Processor
  */
 
 #include <vector>
@@ -32,8 +31,6 @@ std::streampos filesize(const std::string& file); //util.cpp
 Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir)
 	:
 	type(type),
-	biof(BIO_FORMAT::FASTQ),
-	zipf(ZIP_FORMAT::GZIP),
 	is_done(false),
 	is_ready(false),
 	is_format_defined(false),
@@ -52,8 +49,6 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::fil
 Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir)
 	:
 	type(type),
-	biof(BIO_FORMAT::FASTQ),
-	zipf(ZIP_FORMAT::GZIP),
 	is_done(false),
 	is_ready(false),
 	is_format_defined(false),
@@ -542,11 +537,13 @@ void Readfeed::rewind_in() {
 }
 
 /*
- input options:
-   2 paired file     -> num files out = 2 x num_parts i.e. each paired file is split into specified number of parts
-   1 paired file     -> num files out = 1 x num_parts AND ensure each part has even number of reads
-   1 non-paired file -> num files out = 1 x num_parts
-*/
+ * read input files (possibly compressed) and output split files (compressed)
+ *
+ * input options:
+ *   2 paired file     -> num files out = 2 x num_parts i.e. each paired file is split into specified number of parts
+ *   1 paired file     -> num files out = 1 x num_parts AND ensure each part has even number of reads
+ *   1 non-paired file -> num files out = 1 x num_parts
+ */
 bool Readfeed::split()
 {
 	if (is_ready) {
@@ -607,7 +604,7 @@ bool Readfeed::split()
 	unsigned seqlen = 0;
 	std::string readstr;
 
-	// loop until EOF - get reads - write into split files
+	// loop until EOF - get reads from input files - write into split files
 	for (auto inext = 0, iout = 0; inext < num_orig_files; ++inext, iout = inext) {
 		for (; next(inext, readstr, seqlen, true, orig_files);)
 		{
@@ -623,27 +620,6 @@ bool Readfeed::split()
 			}
 		} // ~for
 	}
-
-	// loop until EOF - get reads - write into split files
-	//for (int inext = 0, isplit = 0, iout = 0, del = 0; next(inext, readstr, seqlen, true, orig_files);)
-	//{
-	//	++vstate_out[iout].read_count;
-	//	auto ofdx = iout + num_orig_files; // split file index into files vector
-	//	auto is_last = vstate_out[iout].read_count == split_files[ofdx].numreads;
-	//	auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], is_last); // Z_STREAM_END | Z_OK - ok
-	//	if (ret < Z_OK || ret > Z_STREAM_END) {
-	//		ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
-	//		retval = false;
-	//		break;
-	//	}
-	//
-	//	if (is_last && inext == 1) {
-	//		++isplit; // next split index
-	//		del = isplit * num_orig_files; // distance between iout of 0th split and a current split
-	//	}
-	//	inext = is_two_files ? inext ^ 1 : inext; // toggle the index of the input file
-	//	iout =  inext + del; // next out index
-	//} // ~for
 
 	// close IN file streams
 	for (int i = 0; i < num_orig_files; ++i) {
@@ -874,7 +850,7 @@ bool Readfeed::define_format()
 		orig_files[i].isZip = !is_ascii;
 		if (!is_ascii) {
 			// init izlib for inflation
-			if (vzlib_in.size() < i+1) {
+			if (vzlib_in.size() < (size_t)i+1) {
 				vzlib_in.emplace_back(Izlib());
 			}
 			vzlib_in[i].init(false);
@@ -885,11 +861,11 @@ bool Readfeed::define_format()
 		if (next(i, str, seqlen, orig_files)) {
 			std::string fmt = orig_files[i].isZip ? "gzipped" : "flat ASCII";
 			if (orig_files[i].isFasta) {
-				biof = BIO_FORMAT::FASTA;
+				//biof = BIO_FORMAT::FASTA;
 				INFO("file: ", orig_files[i].path, " is FASTA ", fmt);
 			}
 			else if (orig_files[i].isFastq) {
-				biof = BIO_FORMAT::FASTQ;
+				//biof = BIO_FORMAT::FASTQ;
 				INFO("file: ", orig_files[i].path, " is FASTQ ", fmt);
 			}
 			else {

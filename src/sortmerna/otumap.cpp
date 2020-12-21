@@ -11,19 +11,25 @@
 #include "refstats.hpp"
 #include "readstats.hpp"
 
+OtuMap::OtuMap(int numThreads) : mapv(numThreads), total_otu(0) {}
+
 void OtuMap::push(int idx, std::string& ref_seq_str, std::string& read_seq_str)
 {
-	mapv[idx][ref_seq_str].push_back(read_seq_str);
+	mapv[idx][ref_seq_str].emplace_back(read_seq_str);
 }
 
 void OtuMap::merge()
 {
+	INFO("=== Merging OTU map. Map vector size: ", mapv.size(), " ===");
+	auto starts = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < mapv.size(); ++i) {
 		if (i > 0) {
 			mapv[0].merge(mapv[i]);
 			mapv[i].clear();
 		}
 	}
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	INFO("=== Merging OTU map done in [", elapsed.count(), "] sec ===\n");
 }
 
 void OtuMap::write()
@@ -103,17 +109,23 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 			{
 				if (read.is03) read.flip34();
 				if (read.is_id && read.is_cov) {
-					// reference sequence identifier for mapped read
-					std::string refhead = refs.buffer[read.alignment.alignv[read.alignment.max_index].ref_num].header;
-					std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
-					// left trim '>' or '@'
-					ref_seq_str.erase(ref_seq_str.begin(),
-						std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
-							[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+					for (int i = 0; i < read.alignment.alignv.size(); ++i) {
+						// process alignments that match currently loaded reference part
+						auto is_right_ref = read.alignment.alignv[i].index_num == refs.num && read.alignment.alignv[i].part == refs.part;
+						if (is_right_ref) {
+							// reference sequence identifier for mapped read
+							std::string refhead = refs.buffer[read.alignment.alignv[i].ref_num].header;
+							std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
+							// left trim '>' or '@'
+							ref_seq_str.erase(ref_seq_str.begin(),
+								std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
+									[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 
-					// read identifier
-					std::string read_seq_str = read.getSeqId();
-					otumap.push(id, ref_seq_str, read_seq_str); // thread safe
+							// read identifier
+							std::string read_seq_str = read.getSeqId();
+							otumap.push(id, ref_seq_str, read_seq_str); // thread safe
+						}
+					}
 				}
 			}
 			readstr.resize(0);
@@ -128,10 +140,8 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 
 void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts, bool is_write)
 {
-	INFO("==== OTU groups processing started ====\n");
+	INFO("==== OTU groups processing started ====");
 	if (readstats.total_aligned_id_cov.load(std::memory_order_relaxed) > 0) {
-		Refstats refstats(opts, readstats);
-		OtuMap otumap;
 		int numThreads = 0;
 		if (opts.feed_type == FEED_TYPE::LOCKLESS)
 		{
@@ -147,6 +157,8 @@ void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		std::vector<std::thread> tpool;
 		tpool.reserve(numThreads);
 
+		Refstats refstats(opts, readstats);
+		OtuMap otumap(numThreads);
 		References refs;
 		// loop through every reference file part
 		for (uint16_t idx = 0; idx < opts.indexfiles.size(); ++idx) {
@@ -194,9 +206,9 @@ void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			} // ~for(ipart)
 		} // ~for(idx)
 
+		otumap.merge();
 		readstats.total_otu = otumap.count_otu();
 		if (is_write) {
-			otumap.merge();
 			otumap.init(opts); // prepare the file
 			otumap.write();
 		}

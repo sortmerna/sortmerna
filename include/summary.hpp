@@ -28,7 +28,7 @@ public:
 	uint64_t total_reads;
 	uint64_t total_mapped; // total passing SW
 	uint64_t total_denovo; // total SW + !ID + !COV
-	uint64_t total_sw_id_cov; // total SW + ID + COV
+	uint64_t total_id_cov; // total SW + ID + COV
 	uint64_t total_otu; // total number of OTU groups
 	uint32_t min_read_len;
 	uint32_t max_read_len;
