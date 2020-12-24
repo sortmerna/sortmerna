@@ -648,10 +648,22 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.fastx.closef();
 		output.fastx.merge(readfeed.num_splits);
 	}
-	if (opts.is_other) output.fx_other.merge(readfeed.num_splits);
-	if (opts.is_blast) output.blast.merge(readfeed.num_splits);
-	if (opts.is_sam) output.sam.merge(readfeed.num_splits);
-	if (opts.is_denovo) output.denovo.merge(readfeed.num_splits);
+	if (opts.is_other) {
+		output.fx_other.closef();
+		output.fx_other.merge(readfeed.num_splits);
+	}
+	if (opts.is_blast) {
+		output.blast.closef();
+		output.blast.merge(readfeed.num_splits);
+	}
+	if (opts.is_sam) {
+		output.sam.closef();
+		output.sam.merge(readfeed.num_splits);
+	}
+	if (opts.is_denovo) {
+		output.denovo.closef();
+		output.denovo.merge(readfeed.num_splits);
+	}
 
 	INFO("=== Done Reports ===\n");
 } // ~writeReports
