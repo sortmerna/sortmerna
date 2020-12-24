@@ -11,6 +11,7 @@ ReportBlast::ReportBlast(Runopts& opts)	: Report(opts) {}
 ReportBlast::ReportBlast(Readfeed& readfeed, Runopts& opts)	: ReportBlast(opts)
 {
 	init(readfeed, opts);
+	openfw();
 }
 
 void ReportBlast::init(Readfeed& readfeed, Runopts& opts) 
@@ -21,14 +22,9 @@ void ReportBlast::init(Readfeed& readfeed, Runopts& opts)
 	for (int i = 0; i < readfeed.num_splits; ++i) {
 		std::string sfx1 = "_" + std::to_string(i);
 		std::string sfx2 = opts.is_pid ? "_" + pid_str : "";
-		fv[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext;
-		INFO("Testing file: ", std::filesystem::absolute(std::filesystem::path(fv[i])));
-		fsv[i].open(fv[i]);
-		fsv[i].close();
-		if (!fsv[i]) {
-			ERR("Failed stream on file ", fv[i]);
-			exit(EXIT_FAILURE);
-		}
+		std::string gz = readfeed.orig_files[0].isZip ? ".gz" : "";
+		fv[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext + gz;
+		openfw(i);
 	}
 }
 

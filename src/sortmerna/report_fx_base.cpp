@@ -41,10 +41,11 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 			std::string sfx3 = "_" + std::to_string(i);
 			std::string sfx4 = opts.is_pid ? "_" + pid_str : "";
 			std::string orig_ext = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
+			std::string gz = readfeed.orig_files[orig_idx].isZip ? ".gz" : "";
 
 			// test the file(s)
 			idx = i * num_out + j;
-			fv[idx] = fpfx + sfx1 + sfx2 + sfx3 + orig_ext; // e.g. aligned_paired_fwd_0_PID.fq
+			fv[idx] = fpfx + sfx1 + sfx2 + sfx3 + orig_ext + gz; // e.g. aligned_paired_fwd_0_PID.fq
 			orig_idx = readfeed.is_two_files ? orig_idx ^= 1 : orig_idx; // flip
 		}
 	}
