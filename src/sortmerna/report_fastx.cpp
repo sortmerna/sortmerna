@@ -17,7 +17,8 @@ void ReportFastx::init(Readfeed& readfeed, Runopts& opts)
 	base.init(opts);
 	base.init(readfeed, opts, fv, fsv, opts.aligned_pfx.string(), pid_str);
 	openfw(); // open output files for writing
-	init_zip();
+	is_zip = readfeed.orig_files[0].isZip;
+	if (is_zip)	init_zip();
 } // ~ReportFastx::init
 
 void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last)
@@ -42,7 +43,10 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
 				{
 					// fwd and rev go into the same file if not OUT2 else to different files
-					base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last);
+					if (is_zip)
+						base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last);
+					else
+						base.write_a_read(fsv[idx], reads[i]);
 					if (opts.is_out2) {
 						++idx; // fwd and rev go into different files
 					}
@@ -55,11 +59,17 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
 				{
 					if (opts.is_out2) {
-						base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last); // fwd and rev go into different files
+						if (is_zip)
+							base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last); // fwd and rev go into different files
+						else
+							base.write_a_read(fsv[idx], reads[i]);
 						++idx;
 					}
 					else {
-						base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last); // fwd and rev go into the same file
+						if (is_zip)
+							base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last); // fwd and rev go into the same file
+						else
+							base.write_a_read(fsv[idx], reads[i]);
 					}
 				}
 			}
@@ -72,31 +82,55 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 			if (reads[0].is_hit && reads[1].is_hit) {
 				if (opts.is_out2) {
 					auto ii = (size_t)idx + 1;
-					base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // apf
-					base.write_a_read(fsv[ii], reads[1], vstate_out[ii], vzlib_out[ii], is_last); // apr
+					if (is_zip) {
+						base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // apf
+						base.write_a_read(fsv[ii], reads[1], vstate_out[ii], vzlib_out[ii], is_last); // apr
+					}
+					else {
+						base.write_a_read(fsv[idx], reads[0]); // apf
+						base.write_a_read(fsv[ii], reads[1]); // apr
+					}
 				}
 				else {
-					base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // ap
-					base.write_a_read(fsv[idx], reads[1], vstate_out[idx], vzlib_out[idx], is_last); // ap
+					if (is_zip) {
+						base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // ap
+						base.write_a_read(fsv[idx], reads[1], vstate_out[idx], vzlib_out[idx], is_last); // ap
+					}
+					else {
+						base.write_a_read(fsv[idx], reads[0]); // ap
+						base.write_a_read(fsv[idx], reads[1]); // ap
+					}
 				}
 			}
 			else if (reads[0].is_hit) { // fwd hit
 				if (opts.is_out2) {
 					auto ii = (size_t)idx + 2;
-					base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // asf
+					if (is_zip)
+						base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // asf
+					else
+						base.write_a_read(fsv[ii], reads[0]);
 				}
 				else {
-					base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // as
+					if (is_zip)
+						base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // as
+					else
+						base.write_a_read(fsv[idx], reads[0]);
 				}
 			}
 			else if (reads[1].is_hit) { // rev hit
 				if (opts.is_out2) {
 					auto ii = (size_t)idx + 3;
-					base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // asr
+					if (is_zip)
+						base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // asr
+					else
+						base.write_a_read(fsv[ii], reads[0]);
 				}
 				else {
 					auto ii = (size_t)idx + 1;
-					base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // as
+					if (is_zip)
+						base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // as
+					else
+						base.write_a_read(fsv[ii], reads[0]);
 				}
 			}
 		}
@@ -107,7 +141,10 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 		// the read was accepted - output
 		if (reads[0].is_hit)
 		{
-			base.write_a_read(fsv[0], reads[0], vstate_out[0], vzlib_out[0], is_last);
+			if (is_zip)
+				base.write_a_read(fsv[0], reads[0], vstate_out[0], vzlib_out[0], is_last);
+			else
+				base.write_a_read(fsv[0], reads[0]);
 		}
 	}
 } // ~ReportFasta::append

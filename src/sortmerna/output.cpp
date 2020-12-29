@@ -53,7 +53,7 @@ struct Index;
 class KeyValueDatabase;
 
 Output::Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
-	: fastx(opts), fx_other(fastx.getBase(), opts), blast(opts), denovo(opts), sam(opts), biom(opts)
+	: fastx(opts), fx_other(opts), blast(opts), denovo(opts), sam(opts), biom(opts)
 {
 	init(readfeed, opts, readstats);
 }
@@ -596,7 +596,6 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	Output output(readfeed, opts, readstats);
 
-	//output.openfiles(opts);
 	if (opts.is_sam) output.sam.write_header(opts);
 
 	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)

@@ -40,6 +40,7 @@ public:
 
 protected:
 	std::string pid_str; // std::to_string(getpid());
+	bool is_zip; // flags the report is compressed
 	std::vector<std::string> fv; // report files
 	std::vector<std::fstream> fsv;
 

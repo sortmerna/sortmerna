@@ -258,7 +258,7 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 		ss.read(reinterpret_cast<char*>(&z_in[0] + strm.avail_in), buf_in_size - strm.avail_in);
 		strm.avail_in += ss.gcount();
 		if (!ss.eof() && ss.fail()) {
-			(void)deflateEnd(&strm);
+			deflateEnd(&strm);
 			ret = Z_ERRNO;
 			break;
 		}
@@ -297,7 +297,7 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 			// append to the output file (std::ios_base::app)
 			ofs.write(reinterpret_cast<char*>(z_out.data()), buf_out_size - strm.avail_out);
 			if (ofs.fail()) {
-				(void)deflateEnd(&strm);
+				deflateEnd(&strm);
 				ret = Z_ERRNO;
 				break;
 			}
@@ -313,7 +313,7 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 
 	if (flush == Z_FINISH) {
 		assert(ret == Z_STREAM_END);
-		(void)deflateEnd(&strm);
+		deflateEnd(&strm);
 		ofs.flush();
 		INFO("deflateEnd called");
 	}

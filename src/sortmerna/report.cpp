@@ -98,8 +98,10 @@ void Report::closef()
 int Report::finish_deflate()
 {
 	int ret = 0;
-	for (int i = 0; i < vzlib_out.size(); ++i) {
-		ret += vzlib_out[i].finish_deflate(fsv[i]);
+	if (is_zip) {
+		for (int i = 0; i < vzlib_out.size(); ++i) {
+			ret += vzlib_out[i].finish_deflate(fsv[i]);
+		}
 	}
 	return ret;
 }
