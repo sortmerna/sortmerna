@@ -529,14 +529,16 @@ void report(int id,
 		{
 			if (readfeed.next(idx, readstr))
 			{
-				Read read(readstr);
-				read.init(opts);
-				read.load_db(kvdb);
-				reads.push_back(read);
+				reads.emplace_back(Read(readstr));
+				reads[i].init(opts);
+				reads[i].load_db(kvdb);
 				readstr.resize(0);
 				++countReads;
 			}
 			else {
+				// create empty reads to flush the deflation buffer downstream
+				//reads.emplace_back(Read());
+				//reads[i].is_hit = true;
 				isDone = true;
 			}
 			idx = i == 0 ? idx + 1 : idx - 1; // switch fwd-rev
@@ -545,24 +547,23 @@ void report(int id,
 		if (!isDone) {
 			if (reads.back().isEmpty || !reads.back().isValid) {
 				++num_invalid;
+				continue;
 			}
-			else {
-				// only needs one loop through all reads - reference file is not used
-				if (opts.is_fastx && refs.num == 0 && refs.part == 0)
-				{
-					//output.report_fastx(id, reads, opts);
-					output.fastx.append(id, reads, opts);
-					if (opts.is_other) output.fx_other.append(id, reads, opts);
-				}
 
-				for (int i = 0; i < reads.size(); ++i)
-				{
-					if (opts.is_blast) output.blast.append(id, reads[i], refs, refstats, opts);
-					if (opts.is_sam) output.sam.append(id, reads[i], refs, opts);
-					// only needs one loop through all reads, no reference file dependency
-					if (opts.is_denovo && refs.num == 0 && refs.part == 0) output.denovo.append(id, reads[i], opts);
-				} // ~for reads
+			// only needs one loop through all reads - reference file is not used
+			if (opts.is_fastx && refs.num == 0 && refs.part == 0)
+			{
+				output.fastx.append(id, reads, opts, isDone);
+				if (opts.is_other) output.fx_other.append(id, reads, opts, isDone);
 			}
+
+			for (int i = 0; i < reads.size(); ++i)
+			{
+				if (opts.is_blast) output.blast.append(id, reads[i], refs, refstats, opts);
+				if (opts.is_sam) output.sam.append(id, reads[i], refs, opts);
+				// only needs one loop through all reads, no reference file dependency
+				if (opts.is_denovo && refs.num == 0 && refs.part == 0) output.denovo.append(id, reads[i], opts);
+			} // ~for reads
 		}
 	} // ~for
 
@@ -645,14 +646,17 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 	//output.closefiles();
 	if (opts.is_fastx) {
+		output.fastx.finish_deflate();
 		output.fastx.closef();
 		output.fastx.merge(readfeed.num_splits);
 	}
 	if (opts.is_other) {
+		output.fx_other.finish_deflate();
 		output.fx_other.closef();
 		output.fx_other.merge(readfeed.num_splits);
 	}
 	if (opts.is_blast) {
+		output.blast.finish_deflate();
 		output.blast.closef();
 		output.blast.merge(readfeed.num_splits);
 	}

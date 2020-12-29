@@ -11,7 +11,7 @@ public:
 	ReportFxOther(ReportFxBase& base, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;
 	void merge(int num_splits) override;
-	void append(int id, std::vector<Read>& reads, Runopts& opts);
+	void append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last=false);
 
 private:
 	ReportFxBase& base;

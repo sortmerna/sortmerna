@@ -23,7 +23,7 @@ public:
 	*/
 	void init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, std::string& fpfx, std::string& pid_str);
 	void write_a_read(std::ostream& strm, Read& read);
-	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib);
+	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last=false);
 
 	int num_out; // number of aligned output files
 	int out_type; //  = 0x00

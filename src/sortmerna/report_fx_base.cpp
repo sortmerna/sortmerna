@@ -85,12 +85,15 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read)
 }
 
 
-void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib)
+void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last)
 {
 	++rstate.read_count;
 	std::stringstream ss;
-	ss << read.header << std::endl << read.sequence << std::endl;
-	auto ret = izlib.defstr(ss.str(), strm); // Z_STREAM_END | Z_OK - ok
+	if (is_last && read.sequence.empty())
+		ss.str("");
+	else
+		ss << read.header << std::endl << read.sequence << std::endl;
+	auto ret = izlib.defstr(ss.str(), strm, is_last); // Z_STREAM_END | Z_OK - ok
 	if (ret < Z_OK || ret > Z_STREAM_END) {
 		ERR("Failed deflating readstring: ", ss.str(), " zlib status: ", ret);
 	}

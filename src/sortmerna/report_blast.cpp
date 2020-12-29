@@ -26,6 +26,7 @@ void ReportBlast::init(Readfeed& readfeed, Runopts& opts)
 		fv[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext + gz;
 		openfw(i);
 	}
+	init_zip();
 }
 
 /**

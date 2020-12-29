@@ -24,7 +24,8 @@ Izlib::Izlib(bool is_compress, bool is_init)
 	line_start(0),
 	strm(),
 	buf_in_size(0),
-	buf_out_size(0)
+	buf_out_size(0),
+	z_in_num(0)
 { 
 	if (is_init) 
 		init(is_compress); 
@@ -78,9 +79,9 @@ void Izlib::init(bool is_compress)
 } // ~Izlib::init
 
 int Izlib::reset_deflate() {
-	int stat = deflateEnd(&strm);
-	return stat;
+	return deflateEnd(&strm);
 }
+
 /*
   TODO: 20201013: inflate(Z_FINISH) gives Z_BUF_ERROR (-5) always. inflate(Z_NO_FLUSH) gives Z_OK. Why?
 */
@@ -253,6 +254,7 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 	// it doesn't fit into the IN buffer in one read
 	for (; !(is_ess || flush == Z_FINISH || ret == Z_ERRNO);) {
 		// add data to IN buffer. Fill up the whole buffer before deflating
+		if (strm.avail_in == 0) strm.next_in = &z_in[0];
 		ss.read(reinterpret_cast<char*>(&z_in[0] + strm.avail_in), buf_in_size - strm.avail_in);
 		strm.avail_in += ss.gcount();
 		if (!ss.eof() && ss.fail()) {
@@ -260,8 +262,10 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 			ret = Z_ERRNO;
 			break;
 		}
+		is_ess = ss.eof();
+		if (is_ess) ++z_in_num;
 		
-		// deflate or keep accumulating IN?
+		// if IN not full and not last read -> return for more reads
 		if (is_deflate) {
 			if (strm.avail_in < buf_in_size && !is_last) {
 				is_deflate = false;
@@ -275,14 +279,13 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 			break; // keep accumulating IN
 		}
 
-		is_ess = ss.eof();
 		flush = is_last && is_ess ? Z_FINISH : Z_NO_FLUSH; // finish if the last string + end of the last string
-		strm.next_in = z_in.data();
 
 		// run deflate() until OUT is full i.e. no free space in OUT buffer
 		// finish compression if all of source has been read in
 		for (;;) {
 			// reset the OUT buffer as all deflated output was written to file at this point
+			//std::fill(z_out.begin(), z_out.end(), 0); // reset buffer to 0
 			strm.avail_out = buf_out_size;
 			strm.next_out = z_out.data();
 			// deflate
@@ -305,6 +308,7 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 		} // ~for
 
 		assert(strm.avail_in == 0); // all input was used
+		if (is_ess) z_in_num = 0; // reset
 	} // ~for
 
 	if (flush == Z_FINISH) {
@@ -315,3 +319,34 @@ int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
 	}
 	return ret;
 } // ~Izlib::defstr
+
+/*
+* flush the stream and reset deflate
+*/
+int Izlib::finish_deflate(std::ostream& ofs)
+{
+	int ret = Z_OK;
+	// run deflate() until OUT is full i.e. no free space in OUT buffer
+	// finish compression if all of source has been read in
+	for (;;) {
+		// reset the OUT buffer as all deflated output was written to file at this point
+		//std::fill(z_out.begin(), z_out.end(), 0); // reset buffer to 0
+		strm.avail_out = buf_out_size;
+		strm.next_out = z_out.data();
+		// deflate
+		ret = deflate(&strm, Z_FINISH); // runs until OUT is full or IN is empty
+		assert(ret != Z_STREAM_ERROR);
+		ofs.write(reinterpret_cast<char*>(z_out.data()), buf_out_size - strm.avail_out);
+		if (ofs.fail()) {
+			(void)deflateEnd(&strm);
+			ret = Z_ERRNO;
+			break;
+		}
+		if (ret == Z_OK || ret == Z_BUF_ERROR)
+			continue;
+		if (ret == Z_STREAM_END) break;
+	} // ~for
+	ofs.flush();
+	INFO("deflateEnd called");
+	return deflateEnd(&strm);
+}

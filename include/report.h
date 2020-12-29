@@ -26,13 +26,17 @@ public:
 	* fastx - override
 	*/
 	virtual void merge(int num_splits);
-	//virtual void write() = 0;
+	/*
+	* init zip interface. So far common to all the reports.
+	*/
+	virtual void init_zip();
 
 	void openfr(int idx); // open a single file for reading
 	void openfw(int idx);
 	void openfw(); // open report files for writing
 	void closef(int idx); // close a file
 	void closef(); // close report files
+	int finish_deflate();
 
 protected:
 	std::string pid_str; // std::to_string(getpid());

@@ -21,6 +21,7 @@ public:
 
 	void init(bool is_compress = false);
 	int reset_deflate(); // clean up z_stream
+	int finish_deflate(std::ostream& ofs);
 	int reset_inflate();
 	int getline(std::ifstream & ifs, std::string & line);
 	int defstr(std::string& readstr, std::ostream& ofs, bool is_last=false);
@@ -30,6 +31,7 @@ private:
 	z_stream strm; // stream control structure. Holds stream in/out buffers (byte arrays), sizes, positions etc.
 	size_t buf_in_size;
 	size_t buf_out_size;
+	unsigned z_in_num; // number of reads accumulated in IN buffer. For debugging.
 	std::vector<unsigned char> z_in; // IN buffer
 	std::vector<unsigned char> z_out; // OUT buffer
 
