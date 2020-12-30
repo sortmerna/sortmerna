@@ -74,119 +74,121 @@ OPT_DBG_PUT_DB = "dbg_put_db",
 OPT_TMPDIR = "tmpdir",
 OPT_INTERVAL = "interval",
 OPT_MAX_POS = "max_pos",
-OPT_READS_FEED = "reads_feed";
+OPT_READS_FEED = "reads_feed",
+OPT_ZIP_OUT = "zip-out";
 
 // help strings
 const std::string \
 help_header =
-"  Usage:   sortmerna --ref FILE [--ref FILE] --reads FWD_READS [--reads REV_READS] [OPTIONS]:\n"
+"  Usage:   sortmerna -ref FILE [-ref FILE] -reads FWD_READS [-reads REV_READS] [OPTIONS]:\n"
 "  -------------------------------------------------------------------------------------------------------------\n"
-"  | option            type-format           description                                            default    |\n"
+"  | option            type-format           description                                          default      |\n"
 "  -------------------------------------------------------------------------------------------------------------\n",
 help_ref = 
-	"Reference file (FASTA) absolute or relative path.\n"
-	"                                            Use mutliple times, once per a reference file\n",
+	"Reference file (FASTA) absolute or relative path.\n\n"
+	"       Use mutliple times, once per a reference file\n\n",
 help_reads = 
-	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n"
-	"                                            Use twice for files with paired reads\n",
+	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n\n"
+	"       Use twice for files with paired reads.\n"
+	"       The file extensions are Not important. The program automatically recognizes the\n"
+	"                                           file format as flat/compressed, fasta/fastq\n\n",
 help_aligned = 
-	"Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned\n"
-	"                                            Directory and file prefix for aligned output i.e.\n"
-	"                                            each output file will go into the specified directory with the given prefix.\n"
-	"                                            The appropriate extension (fasta|fastq|blast|sam|etc) will be automatically added.\n"
-	"                                            Both 'dir' and 'pfx' are optional.\n"
-	"                                            The 'dir' can be a relative or an absolute path.\n"
-	"                                            If 'dir' is not specified, the output will be created in the WORKDIR/out/\n"
-	"                                            If 'pfx' is not specified, the prefix 'aligned' will be used\n"
-	"                                            Examples:\n"
-	"                                             -aligned $MYDIR/dir_1/dir_2/1 -> $MYDIR/dir_1/dir_2/1.fasta\n"
-	"                                             -aligned dir_1/apfx           -> $PWD/dir_1/apfx.fasta\n"
-	"                                             -aligned dir_1/               -> $PWD/aligned.fasta\n"
-	"                                             -aligned apfx                 -> $PWD/apfx.fasta\n"
-	"                                             -aligned  (no argument)       -> WORKDIR/out/aligned.fasta\n",
+	"Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned\n\n"
+	"       Directory and file prefix for aligned output i.e. each output file goes into the\n"
+	"                                             specified directory with the given prefix.\n"
+	"       The appropriate extension: (fasta|fastq|blast|sam|etc) is automatically added.\n"
+	"       Both 'dir' and 'pfx' are optional.\n"
+	"       The 'dir' can be a relative or an absolute path.\n"
+	"       If 'dir' is not specified, the output is created in the WORKDIR/out/\n"
+	"       If 'pfx' is not specified, the prefix 'aligned' is used\n"
+	"       Examples:\n"
+	"       '-aligned $MYDIR/dir_1/dir_2/1' -> $MYDIR/dir_1/dir_2/1.fasta\n"
+	"       '-aligned dir_1/apfx'           -> $PWD/dir_1/apfx.fasta\n"
+	"       '-aligned dir_1/'               -> $PWD/aligned.fasta\n"
+	"       '-aligned apfx'                 -> $PWD/apfx.fasta\n"
+	"       '-aligned  (no argument)'       -> WORKDIR/out/aligned.fasta\n\n",
 help_other = 
-	"Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Directory and file prefix for non-aligned output i.e.\n"
-	"                                            each output file will go into the specified directory with the given prefix.\n"
-	"                                            The appropriate extension (fasta|fastq|blast|sam|etc) will be automatically added.\n"
-	"                                            Both 'dir' and 'pfx' are optional.\n"
-	"                                            The 'dir' can be a relative or an absolute path.\n"
-	"                                            If 'dir' is not specified, the output will be created in the WORKDIR/out/\n"
-	"                                            If 'pfx' is not specified, the prefix 'other' will be used\n"
-	"                                            Examples:\n"
-	"                                             -other $MYDIR/dir_1/dir_2/1 -> $MYDIR/dir_1/dir_2/1.fasta\n"
-	"                                             -other dir_1/apfx           -> $PWD/dir_1/apfx.fasta\n"
-	"                                             -other dir_1/               -> $PWD/dir_1/other.fasta\n"
-	"                                             -other apfx                 -> $PWD/apfx.fasta\n"
-	"                                             -other  (no argument)       -> aligned_out/other.fasta\n"
-	"                                                                            i.e. the same output directory as used\n"
-	"                                                                            for aligned output\n",
+	"Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other\n\n"
+	"       Must be used with '" + OPT_FASTX + "'.\n"
+	"       Directory and file prefix for non-aligned output i.e. each output file goes into the\n"
+	"                                                 specified directory with the given prefix.\n"
+	"       The appropriate extension: (fasta|fastq|blast|sam|etc) is automatically added.\n"
+	"       Both 'dir' and 'pfx' are optional.\n"
+	"       The 'dir' can be a relative or an absolute path.\n"
+	"       If 'dir' is not specified, the output is created in the WORKDIR/out/\n"
+	"       If 'pfx' is not specified, the prefix 'other' is used\n"
+	"       Examples:\n"
+	"       '-other $MYDIR/dir_1/dir_2/1' -> $MYDIR/dir_1/dir_2/1.fasta\n"
+	"       '-other dir_1/apfx'           -> $PWD/dir_1/apfx.fasta\n"
+	"       '-other dir_1/'               -> $PWD/dir_1/other.fasta\n"
+	"       '-other apfx'                 -> $PWD/apfx.fasta\n"
+	"       '-other  (no argument)'       -> aligned_out/other.fasta\n"
+	"                                        i.e. the same output directory as used for\n"
+	"                                                                    aligned output\n\n",
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 
-	"Directory for storing Reference index,      USRDIR/sortmerna/run/\n"
-	"                                            Key-value database, and the output.\n"
-	"                                            Default structure:\n"
-	"                                              WORKDIR/\n"
-	"                                                 idx/\n"
-	"                                                 kvdb/\n"
-	"                                                 out/\n",
+	"Workspace directory                         USRDIR/sortmerna/run/\n\n"
+	"       Default structure: WORKDIR/\n"
+	"                              idx/   (References index)\n"
+	"                              kvdb/  (Key-value storage for alignments)\n"
+	"                              out/   (processing output)\n"
+	"                              readb/ (pre-processed reads/index)\n\n",
 help_kvdb =
-	"Directory for storing Key-value database    WORKDIR/kvdb\n"
-	"                                            KVDB is used for storing alignement results.\n",
+	"Directory for Key-value database            WORKDIR/kvdb\n\n"
+	"       KVDB is used for storing the alignment results.\n\n",
 help_idx =
-	"Directory for storing Reference index.      WORKDIR/idx\n"
-	"                                            \n",
+	"Directory for storing Reference index.      WORKDIR/idx\n\n",
 help_readb = 
-	"Directory for storing split reads or        WORKDIR/readb/\n"
-	"                                            or the random access index of zipped reads\n"
-	"                                            Use with '" + OPT_READS_FEED + "'\n",
+	"Storage for pre-processed reads             WORKDIR/readb/\n\n"
+	"       Directory storing the split reads, or the random access index of compressed reads\n"
+	"       Use with '" + OPT_READS_FEED + "'\n\n",
 help_sam = 
-	"Output SAM alignment for aligned reads.\n",
+	"Output SAM alignment for aligned reads.\n\n",
 help_SQ = 
-	"Add SQ tags to the SAM file\n",
+	"Add SQ tags to the SAM file\n\n",
 help_blast = 
-	"output alignments in various Blast-like formats\n"
-	"                                            '0'                    - pairwise\n"
-	"                                            '1'                    - tabular(Blast - m 8 format)\n"
-	"                                            '1 cigar'              - tabular + column for CIGAR\n"
-	"                                            '1 cigar qcov'         - tabular + columns for CIGAR\n"
-	"                                                                     and query coverage\n"
-	"                                            '1 cigar qcov qstrand' - tabular + columns for CIGAR,\n"
-	"                                                                     query coverage and strand\n",
+	"output alignments in various Blast-like formats\n\n"
+	"       Sample values: '0'                    - pairwise\n"
+	"                      '1'                    - tabular (Blast - m 8 format)\n"
+	"                      '1 cigar'              - tabular + column for CIGAR\n"
+	"                      '1 cigar qcov'         - tabular + columns for CIGAR and query coverage\n"
+	"                      '1 cigar qcov qstrand' - tabular + columns for CIGAR, query coverage,\n"
+	"                                                                                  and strand\n\n",
 help_dbg_put_db = 
 	"",
 help_log = 
 	"Output overall statistics.                              True\n"
 	"                                            TODO: remove\n",
 help_num_alignments = 
-	"Positive integer (INT >=0).\n"
-	"                                            Report first INT alignments per read reaching E-value threshold\n"
-	"                                            If INT = 0, all alignments will be output\n"
-	//"                                            Mutually exclusive with option '"+ OPT_BEST +"'\n"
-	//"                                            Mutually exclusive with option '" + OPT_OTU_MAP + "'\n"
-	"                                            This option allows to lower the CPU time and memory use.",
+	"Positive integer (INT >=0).\n\n"
+	"       Report first INT alignments per read reaching E-value threshold\n"
+	"       If INT = 0, all alignments will be output\n"
+	//"  Mutually exclusive with option '"+ OPT_BEST +"'\n"
+	//"  Mutually exclusive with option '" + OPT_OTU_MAP + "'\n"
+	"       This option allows to lower the CPU time and memory use.\n\n",
 help_no_best = 
-	"Disable best alignments search                          1\n"
-	"                                            by searching --min_lis INT candidate alignments\n"
-	"                                            If INT == 0: search All candidate alignments\n"
-	"                                            If INT > 0: search INT best alignments.\n"
-	"                                            The larger is the INT, the longer is the search time.\n"
-	"                                            Explanation:\n"
-	"                                              A read can potentially be aligned (reaching E-value threshold)\n"
-	"                                                to multiple reference sequences.\n"
-	"                                              The 'best' alignment is the highest scoring alignment out of All\n"
-	"                                                alignments of a Read.\n"
-	"                                              To find the Best alignment - an exhaustive search over All\n"
-	"                                                references has to be performed.\n"
-	"                                              'best 1' and 'best 0' (all the bests) are Equally intensive processes\n"
-	"                                                requiring the exhaustive search. Only the size of reports will differ.\n",
+	"Disable best alignments search                          1\n\n"
+	"       By default the exchaustive alignments search is performed\n"
+	"                             by searching '-" + OPT_MIN_LIS + " N' candidate alignments\n"
+	"       If N == 0: All candidate alignments are searched\n"
+	"       If N > 0:  N best alignments are searched.\n"
+	"       Naturally the larger is the N, the longer is the search time.\n"
+	"       Explanation:\n"
+	"       A read can potentially be aligned (reaching E-value threshold) to multiple\n"
+	"                                                                        reference sequences.\n"
+	"       The 'best' alignment is the highest scoring alignment out of All alignments\n"
+	"                                                                                  of a Read.\n"
+	"       To find the Best alignment - an exhaustive search over All references\n"
+	"                                                                        has to be performed.\n"
+	"       'best 1' and 'best 0' (all the bests) are Equally intensive processes requiring the\n"
+	"                                exhaustive search, although the size of reports will differ.\n\n",
 help_min_lis = 
-	"Search all alignments having the first INT longest LIS  2\n"
+	"Search all alignments having the first INT              2\n"
+	"                                                                          longest LIS\n"
 	"                                            LIS stands for Longest Increasing Subsequence,\n"
-	"                                            it is computed using seeds' positions to expand hits into\n"
-	"                                            longer matches prior to Smith - Waterman alignment.\n",
+	"                                            it is computed using seeds' positions to expand hits\n"
+	"                                            into longer matches prior to Smith - Waterman alignment.\n",
 	//"                                            Requires option '"+ OPT_BEST +"'.\n"
 	//"                                            Mutually exclusive with option '"+ OPT_NUM_ALIGNMENTS +"'\n",
 help_print_all_reads = 
@@ -229,11 +231,10 @@ help_F =
 help_R = 
 	"Search only the reverse-complementary strand.           False\n",
 help_e = 
-	"E-value threshold.                                      1\n"
-	"                                            Defines the 'statistical significance' of a local alignment.\n"
-	"                                            Exponentially correllates with the Minimal Alignment Score.\n"
-	"                                            Higher E-values (100, 1000, ...) cause More reads\n"
-	"                                            to Pass the alignment threshold\n",
+	"E-value threshold.                                      1\n\n"
+	"       Defines the 'statistical significance' of a local alignment.\n"
+	"       Exponentially correllates with the Minimal Alignment score.\n"
+	"       Higher E-values (100, 1000, ...) cause More reads to Pass the alignment threshold\n\n",
 help_v = 
 	"Produce verbose output when building the index          True\n",
 help_id = 
@@ -243,18 +244,16 @@ help_coverage =
 	"%%query coverage threshold (the alignment must          0.97\n"
 	"                                            still pass the E-value threshold)\n",
 help_denovo_otu = 
-	"Output FASTA file with 'de novo' reads                  False\n"
-	"                                            Read is 'de novo' if its alignment score passes\n"
-	"                                            E-value threshold, and the Identity ('" + OPT_ID + "' option),\n"
-	"                                            and the Coverage ('" + OPT_COVERAGE + "' option) are below"
-	"                                            their corresponding thresholds i.e.\n"
-	"                                            ID < %%id and COV < %%cov\n",
+	"Output FASTA file with 'de novo' reads                  False\n\n"
+	"       Read is 'de novo' if its alignment score passes E-value threshold, and\n"
+	"       the identity ('" + OPT_ID + "'), and the ('" + OPT_COVERAGE + "') options are below\n"
+	"       their corresponding thresholds i.e. ID < %%id and COV < %%cov\n\n",
 help_otu_map = 
 	"Output OTU map (input to QIIME's make_otu_table.py).    False\n"
 	"                                            Cannot be used with '" + OPT_NUM_ALIGNMENTS + "'\n",
 help_passes = 
-	"Three intervals at which to place the seed on the read  L,L/2,3\n"
-	"                                            (L is the seed length)\n",
+	"Three intervals at which to place the seed on           L,L/2,3\n"
+	"                                             the read (L is the seed length)\n",
 help_edges = 
 	"Number (or percent if INT followed by %% sign) of       4\n"
 	"                                            nucleotides to add to each edge of the read\n"
@@ -276,12 +275,12 @@ help_version =
 help_cmd = 
 	"Launch an interactive session (command prompt)          False\n",
 help_task = 
-	"Processing Task:                                        4\n"
-	"                                            0 - align. Only perform alignment\n"
-	"                                            1 - post-processing (log writing)\n"
-	"                                            2 - generate reports\n"
-	"                                            3 - align and post-process\n"
-	"                                            4 - all\n",
+	"Processing Task                                         4\n\n"
+	"       Possible values: 0 - align. Only perform alignment\n"
+	"                        1 - post-processing (log writing)\n"
+	"                        2 - generate reports\n"
+	"                        3 - align and post-process\n"
+	"                        4 - all\n\n",
 help_a = 
 	"DEPRECATED in favour of '-threads'. Number of           numCores\n"
 	"                                            processing threads to use.\n"
@@ -299,22 +298,32 @@ help_interval =
 	"Indexing: Positive integer: index every Nth L-mer in    1\n"
 	"                                            the reference database e.g. '-interval 2'.\n",
 help_m = 
-	"Indexing: the amount of memory (in Mbytes) for building 3072\n"
-	"                                            the index.\n",
+	"Indexing: the amount of memory (in Mbytes) for          3072\n"
+	"                                            building the index.\n",
 help_L = 
 	"Indexing: seed length.                                  18\n",
 help_max_pos = 
-	"Indexing: maximum (integer) number of positions to store  1000\n"
-	"                                            for each unique L-mer. If 0 all positions are stored.\n",
+	"Indexing: maximum (integer) number of positions to      1000\n"
+	"                                            store for each unique L-mer.\n"
+	"                                            If 0 - all positions are stored.\n",
 help_reads_feed = 
-	"Method of accessing the reads by the reads processors   0\n"
-	"                                            0 - Split reads. Reads files are split into parts equal\n"
-	"                                                the number of processing threads\n"
-	"                                            1 - Lockless queue. Reads are put into a lockless queue\n"
-	"                                                to be popped by the processing threads\n"
-	"                                            3 - FUTURE: Random access to the archived reads files\n"
-	"                                            4 - FUTURE: combination of the random access and\n"
-	"                                                        the lockless queue\n"
+	"Method of accessing the reads by the                    0\n"
+	"                                            reads processors\n\n"
+	"       0 - Split reads. Reads files are split into parts equal the number of processing threads\n"
+	"       1 - FUTURE: Lockless queue. Reads are put into a lockless queue to be popped by the\n"
+	"                                                                        processing threads\n"
+	"       3 - FUTURE: Random access to the compresssed reads files\n"
+	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
+help_zip_out =
+	"Controls the output compression                         Yes/True\n\n"
+	"       By default the report files are produced in the same format as the input i.e.\n"
+	"       if the reads files are compressed (gz), the output is also compressed.\n"
+	"       The default behaviour can be overriden by using '-" + OPT_ZIP_OUT + "'.\n"
+	"       The possible values: Y(es), N(o), T(rue), F(alse). No value means 'True'.\n"
+	"       The values are Not case sensitive i.e. 'Yes, YES, yEs, Y, y' are all OK\n"
+	"       Examples:\n"
+	"       '-" + OPT_READS + " freads.gz -" + OPT_ZIP_OUT + " n' : generate flat output when the input is compressed\n"
+	"       '-" + OPT_READS + " freads.flat -" + OPT_ZIP_OUT + "' : compress the output when the input files are flat\n\n"
 ;
 
 const std::string WORKDIR_DEF_SFX = "sortmerna/run";
@@ -535,6 +544,7 @@ private:
 	void opt_L(const std::string &val);
 	void opt_max_pos(const std::string &val);
 	void opt_reads_feed(const std::string& val);
+	void opt_zip_out(const std::string& val);
 
 	void opt_default(const std::string& opt);
 	void opt_dbg_put_db(const std::string& opt);
@@ -561,7 +571,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 50> options = {
+	const std::array<opt_6_tuple, 51> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
@@ -571,9 +581,9 @@ private:
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),
-		std::make_tuple(OPT_BLAST,          "STRING",      COMMON,      false, help_blast, &Runopts::opt_blast),
-		std::make_tuple(OPT_ALIGNED,        "STRING/BOOL", COMMON,      false, help_aligned, &Runopts::opt_aligned),
-		std::make_tuple(OPT_OTHER,          "STRING/BOOL", COMMON,      false, help_other, &Runopts::opt_other),
+		std::make_tuple(OPT_BLAST,          "STR",         COMMON,      false, help_blast, &Runopts::opt_blast),
+		std::make_tuple(OPT_ALIGNED,        "STR/BOOL",    COMMON,      false, help_aligned, &Runopts::opt_aligned),
+		std::make_tuple(OPT_OTHER,          "STR/BOOL",    COMMON,      false, help_other, &Runopts::opt_other),
 		std::make_tuple(OPT_NUM_ALIGNMENTS, "INT",         COMMON,      false, help_num_alignments, &Runopts::opt_num_alignments),
 		std::make_tuple(OPT_NO_BEST,        "BOOL",        COMMON,      false, help_no_best, &Runopts::opt_no_best),
 		std::make_tuple(OPT_MIN_LIS,        "INT",         COMMON,      false, help_min_lis, &Runopts::opt_min_lis),
@@ -582,6 +592,7 @@ private:
 		std::make_tuple(OPT_PAIRED_IN,      "BOOL",        COMMON,      false, help_paired_in, &Runopts::opt_paired_in),
 		std::make_tuple(OPT_PAIRED_OUT,     "BOOL",        COMMON,      false, help_paired_out, &Runopts::opt_paired_out),
 		std::make_tuple(OPT_OUT2,           "BOOL",        COMMON,      false, help_out2, &Runopts::opt_out2),
+		std::make_tuple(OPT_ZIP_OUT,        "STR/BOOL",    COMMON,      false, help_zip_out, &Runopts::opt_zip_out),
 		std::make_tuple(OPT_MATCH,          "INT",         COMMON,      false, help_match, &Runopts::opt_match),
 		std::make_tuple(OPT_MISMATCH,       "INT",         COMMON,      false, help_mismatch, &Runopts::opt_mismatch),
 		std::make_tuple(OPT_GAP_OPEN,       "INT",         COMMON,      false, help_gap_open, &Runopts::opt_gap_open),
@@ -612,7 +623,6 @@ private:
 		std::make_tuple(OPT_DBG_PUT_DB,     "BOOL",        DEVELOPER,   false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
 		std::make_tuple(OPT_CMD,            "BOOL",        DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
 		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task)
-		//std::make_tuple(OPT_THPP,           "INT:INT",     DEVELOPER,   false, help_thpp, &Runopts::opt_thpp),
 		//std::make_tuple(OPT_THREP,          "INT:INT",     DEVELOPER,   false, help_threp, &Runopts::opt_threp)
 	};
 	// ~map options

@@ -1134,6 +1134,10 @@ void Runopts::opt_reads_feed(const std::string& val)
 	feed_type = ftype;
 } // ~Runopts::opt_reads_feed
 
+void Runopts::opt_zip_out(const std::string& val)
+{
+}
+
 /* 
  * called from validate
  */
