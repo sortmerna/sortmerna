@@ -65,6 +65,8 @@ t0:
     - -blast
     - '0'
     - -v
+    - threads
+    - 1
     - -workdir
     - {{WRK_DIR}}
   validate: 
