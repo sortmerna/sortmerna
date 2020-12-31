@@ -300,12 +300,15 @@ help_interval =
 help_m = 
 	"Indexing: the amount of memory (in Mbytes) for          3072\n"
 	"                                            building the index.\n",
+
 help_L = 
 	"Indexing: seed length.                                  18\n",
+
 help_max_pos = 
 	"Indexing: maximum (integer) number of positions to      1000\n"
 	"                                            store for each unique L-mer.\n"
 	"                                            If 0 - all positions are stored.\n",
+
 help_reads_feed = 
 	"Method of accessing the reads by the                    0\n"
 	"                                            reads processors\n\n"
@@ -314,6 +317,7 @@ help_reads_feed =
 	"                                                                        processing threads\n"
 	"       3 - FUTURE: Random access to the compresssed reads files\n"
 	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
+
 help_zip_out =
 	"Controls the output compression                         Yes/True\n\n"
 	"       By default the report files are produced in the same format as the input i.e.\n"
@@ -436,6 +440,17 @@ public:
 	int num_proc_thread_rep = 1; // number of report processor threads
 
 	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
+	/*
+	* read.is_zip  zip_out  out_zip
+	* -----------------------------
+	*      1         -1       1    zip
+	*      1          0       0    flat
+	*      1          1       1    zip
+	*      0         -1       0    flat
+	*      0          0       0    flat
+	*      0          1       1    zip
+	*/
+	int zip_out = -1; // - 0 (false) | 1 (true) | -1 (not set)
 
 	int32_t num_alignments = 1; // [3] help_num_alignments
 	int32_t hit_seeds = 2; // OPT_NUM_SEEDS Min number of seeds on a read that have matches in DB prior calculating LIS
