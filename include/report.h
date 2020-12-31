@@ -37,6 +37,14 @@ public:
 	void closef(int idx); // close a file
 	void closef(); // close report files
 	int finish_deflate();
+	/*
+	* strip the split suffix from the output file name 
+	* and rename the final output e.g. 
+	*   'aligned_0.blast -> aligned.blast'
+	* @param path  e.g. $HOME/sortmerna/run/out/aligned_0.blast
+	* @param sfx   e.g. '_0'
+	*/
+	void strip_path_sfx(std::string& path, std::string sfx="_0");
 
 protected:
 	std::string pid_str; // std::to_string(getpid());
