@@ -569,9 +569,11 @@ bool Readfeed::split()
 	rewind_in();
 
 	// init zlib IN for inflation
+	bool is_zip = false; // flags at least one file requires archiving operations
 	for (int i = 0; i < orig_files.size(); ++i) {
 		if (orig_files[i].isZip) {
 			vzlib_in[i].init();
+			is_zip = true;
 		}
 	}
 
@@ -593,9 +595,11 @@ bool Readfeed::split()
 	}
 
 	// prepare zlib interface for writing split files
-	vzlib_out.resize(num_split_files, Izlib(true, true));
-	for (auto i = 0; i < vzlib_out.size(); ++i) {
-		vzlib_out[i].init(true);
+	if (is_zip) {
+		vzlib_out.resize(num_split_files, Izlib(true, true));
+		for (auto i = 0; i < vzlib_out.size(); ++i) {
+			vzlib_out[i].init(true);
+		}
 	}
 
 	// prepare Readstates OUT
@@ -609,11 +613,16 @@ bool Readfeed::split()
 		for (; next(inext, readstr, seqlen, true, orig_files);)
 		{
 			++vstate_out[iout].read_count;
-			auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
-			if (ret < Z_OK || ret > Z_STREAM_END) {
-				ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
-				retval = false;
-				break;
+			if (orig_files[inext].isZip) {
+				auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
+				if (ret < Z_OK || ret > Z_STREAM_END) {
+					ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
+					retval = false;
+					break;
+				}
+			}
+			else {
+				ofsv[iout] << readstr;
 			}
 			if (vstate_out[iout].read_count == split_files[iout].numreads) {
 				iout += num_orig_files; // switch to next split
