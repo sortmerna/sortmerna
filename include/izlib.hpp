@@ -24,6 +24,15 @@ public:
 	int finish_deflate(std::ostream& ofs);
 	int reset_inflate();
 	int getline(std::ifstream & ifs, std::string & line);
+	/*
+    * deflate passed string and append it to the file stream. Finish processing when the string has 0 size
+    * prototype: https://github.com/madler/zlib/blob/master/examples/zpipe.c:def
+    * 
+    * @param   readstr  a Read as string to be compressed. String of 0 size indicates the end of processing.
+    * @param   ofs      compressed output file stream
+    * @param   is_last  flags the last string passed -> Finish compressing
+    * @return           execution status
+    */
 	int defstr(std::string& readstr, std::ostream& ofs, bool is_last=false);
 
 private:
