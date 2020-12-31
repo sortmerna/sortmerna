@@ -1136,6 +1136,16 @@ void Runopts::opt_reads_feed(const std::string& val)
 
 void Runopts::opt_zip_out(const std::string& val)
 {
+	if (val.size() > 0) {
+		auto ii = std::stoi(val);
+		if (!(ii == -1 || ii == 0 || ii == 2)) {
+			WARN("'", OPT_ZIP_OUT, "' can only take integer values: [", -1, ", ", 0, ", ", 1, "]. Provided value: ", val, " Using default: ", zip_out);
+		}
+		else {
+			INFO("using '", OPT_ZIP_OUT, "' with specified value ", ii);
+			zip_out = ii;
+		}
+	}
 }
 
 /* 
