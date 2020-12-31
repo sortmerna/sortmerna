@@ -163,6 +163,7 @@ void ReportFastx::merge(int num_splits)
 			INFO("deleted ", fv[idx]);
 		}
 		closef(i);
+		strip_path_sfx(fv[i]);
 	}
 }
 

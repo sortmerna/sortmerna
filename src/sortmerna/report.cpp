@@ -6,7 +6,7 @@
 #include "common.hpp"
 #include "options.hpp"
 
-Report::Report(Runopts& opts) : pid_str(std::to_string(getpid())) {}
+Report::Report(Runopts& opts) : pid_str(std::to_string(getpid())), is_zip(false) {}
 Report::~Report() {	closef(); }
 
 void Report::init_zip()
@@ -23,25 +23,30 @@ void Report::init_zip()
 
 void Report::merge(int num_splits)
 {
-	std::ofstream ofs(fv[0], std::ios_base::app | std::ios_base::binary);
-	if (!ofs.is_open()) {
-		ERR("failed to open for writing: ", fv[0]);
-		exit(1);
-	}
-	for (int i = 1; i < num_splits; ++i) {
-		std::ifstream ifs(fv[i], std::ios_base::out | std::ios_base::binary);
-		if (ifs.is_open()) {
-			ofs << ifs.rdbuf();
-			INFO("merged ", fv[i], " -> ", fv[0]);
-			ifs.close();
-			std::filesystem::remove(fv[i]);
-			INFO("deleted ", fv[i]);
-		}
-		else {
-			ERR("failed to open for reading: ", fv[i]);
+	// merge if there is more than one split
+	if (fv.size() > 1) {
+		std::ofstream ofs(fv[0], std::ios_base::app | std::ios_base::binary);
+		if (!ofs.is_open()) {
+			ERR("failed to open for writing: ", fv[0]);
 			exit(1);
 		}
+		for (int i = 1; i < num_splits; ++i) {
+			std::ifstream ifs(fv[i], std::ios_base::out | std::ios_base::binary);
+			if (ifs.is_open()) {
+				ofs << ifs.rdbuf();
+				INFO("merged ", fv[i], " -> ", fv[0]);
+				ifs.close();
+				std::filesystem::remove(fv[i]);
+				INFO("deleted ", fv[i]);
+			}
+			else {
+				ERR("failed to open for reading: ", fv[i]);
+				exit(1);
+			}
+		}
 	}
+
+	strip_path_sfx(fv[0]);
 }
 
 void Report::openfw(int idx)
@@ -84,8 +89,8 @@ void Report::closef(int idx)
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
 		fsv[idx].close();
+		INFO("Closed output file: ", fv[idx]);
 	}
-	INFO("Closed output file: ", fv[idx]);
 }
 
 void Report::closef()
@@ -104,4 +109,20 @@ int Report::finish_deflate()
 		}
 	}
 	return ret;
+}
+
+void Report::strip_path_sfx(std::string& path, std::string sfx)
+{
+	auto fnb = std::filesystem::path(path).filename().string();
+	auto dir = std::filesystem::path(path).parent_path();
+	auto pos = fnb.find(sfx);
+	if (pos != std::string::npos) {
+		fnb.replace(pos, sfx.size(), "");
+		auto fout = dir / fnb;
+		INFO("moving ", path, " -> ", fout);
+		std::filesystem::rename(path, fout);
+	}
+	else {
+		WARN("no ", sfx, " found in ", path);
+	}
 }
