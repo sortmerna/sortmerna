@@ -67,12 +67,17 @@ t0:
     - -blast
     - '0'
     - -v
-    - threads
+    - -threads
     - '1'
     - -workdir
     - {{WRK_DIR}}
   validate: 
     func: t0 # name of the validation function
+    num_reads: 1
+    num_hits: 1
+    num_fail: 0
+    min_len: 1487
+    max_len: 1487
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
