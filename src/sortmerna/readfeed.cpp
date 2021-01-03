@@ -229,12 +229,12 @@ bool Readfeed::loadReadById(Read& read)
 } // ~Readfeed::loadReadById
 
 /*
- uses zlib if files are gzipped or reads flat files
-
- @param inext   IN   index into the Readfeed::files vector
- @param seqlen  OUT  length of the read sequence
- @param read    OUT  read string
- @param is_orig IN   flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
+ * uses zlib if files are gzipped or reads flat files
+ * 
+ * @param inext   IN   index into the Readfeed::files vector
+ * @param seqlen  OUT  length of the read sequence
+ * @param read    OUT  read string
+ * @param is_orig IN   flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
 */
 bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig, std::vector<Readfile>& files) {
 	std::string line;
@@ -623,6 +623,8 @@ bool Readfeed::split()
 			}
 			else {
 				ofsv[iout] << readstr;
+				if (readstr.back() != '\n')
+					ofsv[iout] << '\n';
 			}
 			if (vstate_out[iout].read_count == split_files[iout].numreads) {
 				iout += num_orig_files; // switch to next split
