@@ -209,7 +209,10 @@ def parse_log(fpath):
             elif logd['results']['num_fail'][0] in line:
                 logd['results']['num_fail'][1] = int((re.split(' = | \(', line)[1]).strip())
             elif logd['num_id_cov'][0] in line:
-                logd['num_id_cov'][1] = int((re.split(' = ', line)[1]).strip())
+                # line: '..thresholds = 44223 (44.22)'
+                val = line.split('=')[1]
+                if val: val = val.split()[0].strip()
+                logd['num_id_cov'][1] = int(val)
             elif logd['num_otus'][0] in line:
                 logd['num_otus'][1] = int((re.split(' = ', line)[1]).strip())
 
@@ -619,15 +622,15 @@ def t3(datad, ret={}, **kwarg):
         assert logd['num_otus'][1] == vald['num_groups'][0] # originally
     else:
         assert logd['num_otus'][1] == vald['num_groups'][1], \
-            '{}:num_otus = {} != num_groups = {} expected'.format(LOG_BASE, logd['num_otus'][1], vald['num_groups'][1])
+            'num_otus = {} != num_groups = {} expected'.format(logd['num_otus'][1], vald['num_groups'][1])
 
     # OTU file contains one line per OTU group, so the number of lines
     # has to be equal 'Total OTUs' in aligned.log
     with open(OTUF) as f_otumap:
         num_clusters_file = sum(1 for line in f_otumap)
     assert logd['num_otus'][1] == num_clusters_file, \
-        '{}:num_otus = {} != {}:num_otus = {}'.format(LOG_BASE, \
-            logd['num_otus'][1], OTU_BASE, num_clusters_file)
+        'num_otus = {} != {}:num_otus = {}'.format(logd['num_otus'][1], 
+                                            OTU_BASE, num_clusters_file)
 
     # number of reads in aligned_denovo.fasta has to be equal the
     # 'Total reads for de novo clustering' in aligned.log

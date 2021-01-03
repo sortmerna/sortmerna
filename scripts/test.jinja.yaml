@@ -92,14 +92,24 @@ t0_other:
     - -blast
     - '1 qstrand'
     - -v
+    - -threads
+    - '1'
   validate: 
     func:
     num_reads: 1
     num_hits: 1
     num_fail: 0
+    min_len: 1487
+    max_len: 1487
+    files:
+      - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
 t1:
   name: test_blast_format_1
+  inf: |
+    same input as t0
+    using default number of threads (2)
+    blast format is different than tests 0, 0_other
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
@@ -114,6 +124,10 @@ t1:
     num_reads: 1
     num_hits: 1
     num_fail: 0
+    min_len: 1487
+    max_len: 1487
+    files:
+      - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
 t2:
   name: test_cigar_lcs_1
@@ -126,6 +140,8 @@ t2:
     - -blast
     - '1 qstrand cigar'
     - -v
+    - -threads
+    - '1'
     #- -workdir
     #- {{ SMR_SRC }}/run
   validate: 
@@ -159,6 +175,8 @@ t3:
     - -blast
     - '1 cigar qcov'
     - -v
+    #- -task
+    #- '2'
   validate: 
     func: t3
     num_reads:      100000
