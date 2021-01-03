@@ -6,7 +6,7 @@
 #include "options.hpp"
 #include "read.hpp"
 
-ReportFastx::ReportFastx(Runopts& opts): Report(opts), base(ReportFxBase()) {}
+ReportFastx::ReportFastx(Runopts& opts): Report(opts), base() {}
 ReportFastx::ReportFastx(Readfeed& readfeed, Runopts& opts): ReportFastx(opts)
 { 
 	init(readfeed, opts); 

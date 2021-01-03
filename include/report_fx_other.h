@@ -16,5 +16,5 @@ public:
 	ReportFxBase& getBase();
 
 private:
-	ReportFxBase& base;
+	ReportFxBase base;
 };

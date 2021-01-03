@@ -36,7 +36,8 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 			}
 			//(out_type == 0x5C || out_type == 0x5E) { // af, ar, of, or
 			std::string sfx2 = "";
-			sfx2 = opts.is_out2 && orig_idx == 0 ? "_fwd" : "_rev";
+			if (opts.is_out2)
+				sfx2 = opts.is_out2 && orig_idx == 0 ? "_fwd" : "_rev"; // fwd and rev separation only happens when out2 is specified
 
 			std::string sfx3 = "_" + std::to_string(i);
 			std::string sfx4 = opts.is_pid ? "_" + pid_str : "";
@@ -66,7 +67,8 @@ void ReportFxBase::calc_out_type(Runopts& opts)
 
 void ReportFxBase::set_num_out()
 {
-	if (out_type == 0x04 || out_type == 0x06) num_out = 2; // ap, as
+	if (out_type == 0x01 || out_type == 0x09) num_out = 1; // a | o
+	else if (out_type == 0x04 || out_type == 0x06) num_out = 2; // ap, as
 	else if (out_type == 0x14 || out_type == 0x16
 		|| out_type == 0x24 || out_type == 0x26) num_out = 1; // a
 	else if (out_type == 0x44 || out_type == 0x46) num_out = 4; // apf, apr, asf, asr   'af.size != ar.size' in general. Only aligned reads.
@@ -79,9 +81,11 @@ void ReportFxBase::set_num_out()
 */
 void ReportFxBase::write_a_read(std::ostream& strm, Read& read)
 {
-	strm << read.header << std::endl << read.sequence << std::endl;
+	std::stringstream ss;
+	ss << read.header << std::endl << read.sequence << std::endl;
 	if (read.format == BIO_FORMAT::FASTQ)
-		strm << '+' << std::endl << read.quality << std::endl;
+		ss << '+' << std::endl << read.quality << std::endl;
+	strm << ss.str();
 }
 
 
