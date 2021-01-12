@@ -25,18 +25,28 @@ public:
 	void write_a_read(std::ostream& strm, Read& read);
 	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last=false);
 
-	int num_out; // number of aligned output files
-	int out_type; //  = 0x00
+	int num_out; // number of aligned output files (1 | 2 | 4) depending on the output type below
+	/*
+	* output type: 255/2 -> ~120 possible types
+	* defines the number of the files to output
+	* out_type = mask | mask | mask ... where 'mask' depends on the specified option
+	*/
+	int out_type;
 
 private:
+	/*
+	* 1-file  2-files  paired  paired_in  paired_out  out2  sout  other
+	* x01     x02      x04     x08        x10         x20   x40   x80
+	*/
 	const int mask_1_file = 0x01;
-	const int mask_paired = 0x02;
-	const int mask_2_file = 0x04;
-	const int mask_other = 0x08;
-	const int mask_paired_in = 0x10;
-	const int mask_paired_out = 0x20;
-	const int mask_out2 = 0x40;
+	const int mask_2_file = 0x02;
+	const int mask_paired = 0x04;
+	const int mask_paired_in = 0x08;
+	const int mask_paired_out = 0x10;
+	const int mask_out2 = 0x20;
+	const int mask_sout = 0x40;
+	const int mask_other = 0x80;
 
-	void calc_out_type(Runopts& opts);
-	void set_num_out();
+	void validate_out_type(Runopts& opts);
+	void set_num_out(Runopts& opts);
 };

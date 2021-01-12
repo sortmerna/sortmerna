@@ -199,12 +199,19 @@ t4:
     - -ref
     - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta # 27,424 bytes (27KB) file
     - -reads
-    - {{ SMR_SRC }}/data/test_read.fasta
+    - {{ SMR_SRC }}/data/test_read.fasta # single read
     - -m
     - '0.05'
     - -v
+    - -threads
+    - '1'
   validate: 
     func: t4
+    num_reads: 1
+    num_hits: 1
+    num_fail: 0
+    min_len: 1487
+    max_len: 1487
     idx_sfx_win: 7828442710921335713
     idx_sfx_lin: 12011197668640222139
     num_idx: 7 # 7 index files of each kind is generated
@@ -320,6 +327,8 @@ t9:
     - -v
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '1'
   validate:
     func: t9
     num_reads: 1
@@ -397,6 +406,8 @@ t11:
     - -v
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '3'
   validate:
     func: t11
     num_reads: 30000
@@ -561,6 +572,8 @@ t16:
     - -v
     - -workdir
     - run
+    - -threads
+    - '8'
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -597,6 +610,8 @@ t17:
     - -v
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '8'
   cwd: {{ SMR_SRC }}
   validate:
     func: t17
@@ -634,6 +649,8 @@ t18:
     #- -out2
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '4'
   validate:
     func:
     num_reads:  10000
@@ -716,6 +733,8 @@ t20:
     #- -out2
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '4'
   validate:
     func:
     num_hits:    9188

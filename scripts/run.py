@@ -341,9 +341,10 @@ def process_output(**kwarg):
 
     # Check number of reads
     if vald.get('num_reads'):
-        tmpl = 'Testing num_reads: {}: {} Expected: {}'
-        print(tmpl.format(LOG_BASE, logd['num_reads'][1], vald['num_reads']))
-        assert vald['num_reads'] == logd['num_reads'][1]
+        tmpl = 'Testing num_reads: {} Expected: {}'
+        print(tmpl.format(logd['num_reads'][1], vald['num_reads']))
+        assert vald['num_reads'] == logd['num_reads'][1], \
+                '{} not equals {}'.format(vald['num_reads'], logd['num_reads'][1])
 
     # Check reads count in aligned_fwd
     if vald.get('num_aligned_fwd'):
@@ -419,9 +420,10 @@ def process_output(**kwarg):
     
     # Check number of reads mapped
     if vald.get('num_hits'):
-        tmpl = 'Testing num_hits: {}: {} Expected: {}'
-        print(tmpl.format(LOG_BASE, logd['results']['num_hits'][1], vald['num_hits']))
-        assert vald['num_hits'] == logd['results']['num_hits'][1]
+        tmpl = 'Testing num_hits: {} Expected: {}'
+        print(tmpl.format(logd['results']['num_hits'][1], vald['num_hits']))
+        assert vald['num_hits'] == logd['results']['num_hits'][1], \
+            '{} not equals {}'.format(vald['num_hits'], logd['results']['num_hits'][1])
         num_hits_file = 0
         if os.path.exists(ALIF):
             if IS_FASTQ:
@@ -442,9 +444,10 @@ def process_output(**kwarg):
 
     # Check number of reads not mapped
     if vald.get('num_fail'):
-        tmpl = 'Testing num_fail: {}: {} Expected: {}'
-        print(tmpl.format(LOG_BASE, logd['results']['num_fail'][1], vald['num_fail']))
-        assert vald['num_fail']  == logd['results']['num_fail'][1]
+        tmpl = 'Testing num_fail: {} Expected: {}'
+        print(tmpl.format(logd['results']['num_fail'][1], vald['num_fail']))
+        assert vald['num_fail'] == logd['results']['num_fail'][1], \
+            '{} not equals {}'.format(vald['num_fail'], logd['results']['num_fail'][1])
         num_fails_file = 0
         if OTHF and os.path.exists(OTHF):
             if os.stat(OTHF).st_size > 0:
@@ -468,9 +471,10 @@ def process_output(**kwarg):
     # Check count of reads passing %id and %coverage threshold
     # as given in alinged.log
     if vald.get('num_pass_id_cov'):
-        tmpl = '{} Testing reads passing ID_COV: {}: {} Expected: {}'
-        print(tmpl.format(STAMP, LOG_BASE, logd['num_id_cov'][1], vald['num_pass_id_cov']))
-        assert vald['num_pass_id_cov'] == logd['num_id_cov'][1]
+        tmpl = '{} Testing reads passing ID_COV: {} Expected: {}'
+        print(tmpl.format(STAMP, logd['num_id_cov'][1], vald['num_pass_id_cov']))
+        assert vald['num_pass_id_cov'] == logd['num_id_cov'][1], \
+            '{} not equals {}'.format(vald['num_pass_id_cov'], logd['num_id_cov'][1])
 
     # Check count of reads passing %id and %coverage threshold
     # as given in aligned.blast
@@ -639,7 +643,7 @@ def t3(datad, ret={}, **kwarg):
         num_denovo_file += 1
 
     assert logd['results']['num_denovo'][1] == num_denovo_file, \
-            '{}:num_denovo = {} != {}:num_denovo = {}'.format(LOG_BASE, \
+            'num_denovo = {} != {}:num_denovo = {}'.format(\
                 logd['results']['num_denovo'][1], DENOVO_BASE, num_denovo_file)
     
     print("{} Done".format(STAMP))

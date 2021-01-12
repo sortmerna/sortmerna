@@ -23,116 +23,68 @@ void ReportFastx::init(Readfeed& readfeed, Runopts& opts)
 
 void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last)
 {
-	if (reads.size() == 2) {
-		if (opts.is_paired_in) {
-			// if Either is aligned -> both to aligned
-			if (reads[0].is_hit || reads[1].is_hit) {
-				// validate the reads are paired in case of two reads files
-				if (opts.readfiles.size() == 2
-					&& (reads[0].read_num != reads[1].read_num
-						|| reads[0].readfile_idx == reads[1].readfile_idx))
-				{
-					ERR("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ",
-						reads[0].read_num, " reads[0].readfile_idx= ", reads[0].readfile_idx,
-						" reads[1].id=", reads[1].id, " reads[1].read_num = ", reads[1].read_num,
-						" reads[1].readfile_idx = ", reads[1].readfile_idx);
-					exit(EXIT_FAILURE);
-				}
+	if (opts.is_paired) {
+		// validate the reads are indeed paired in case of two reads files
+		if (opts.readfiles.size() == 2
+			&& (reads[0].read_num != reads[1].read_num
+				|| reads[0].readfile_idx == reads[1].readfile_idx))
+		{
+			ERR("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ",
+				reads[0].read_num, " reads[0].readfile_idx= ", reads[0].readfile_idx,
+				" reads[1].id=", reads[1].id, " reads[1].read_num = ", reads[1].read_num,
+				" reads[1].readfile_idx = ", reads[1].readfile_idx);
+			exit(EXIT_FAILURE);
+		}
 
-				// reads[0]
-				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
-				{
-					// fwd and rev go into the same file if not OUT2 else to different files
-					if (is_zip)
-						base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last);
-					else
-						base.write_a_read(fsv[idx], reads[i]);
-					if (opts.is_out2) {
-						++idx; // fwd and rev go into different files
-					}
-				}
+		if (!reads[0].is_hit && !reads[1].is_hit)
+			return; // neiher is aligned - nothing to write
+
+		// caclulate the index of the output file to write to
+		for (int i = 0, idx = 0; i < reads.size(); ++i)
+		{
+			// 1 output file a (aligned reads)
+			if (base.num_out == 1) {
+				if (reads[i].is_hit || opts.is_paired_in)
+					idx = id;
+				else
+					continue;
 			}
-		}
-		else if (opts.is_paired_out) {
-			// if Both aligned -> aligned
-			if (reads[0].is_hit && reads[1].is_hit) {
-				for (int i = 0, idx = id * reads.size(); i < reads.size(); ++i)
-				{
-					if (opts.is_out2) {
-						if (is_zip)
-							base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last); // fwd and rev go into different files
-						else
-							base.write_a_read(fsv[idx], reads[i]);
-						++idx;
-					}
-					else {
-						if (is_zip)
-							base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last); // fwd and rev go into the same file
-						else
-							base.write_a_read(fsv[idx], reads[i]);
-					}
-				}
-			}
-		}
-		else {
-			// Neither 'paired_in' nor 'paired_out' specified:
-			//   aligned     -> aligned file
-			//   non-aligned -> other file
-			auto idx = id * base.num_out;
-			if (reads[0].is_hit && reads[1].is_hit) {
+			// 2 output files ap,as (sout) | af,ar (out2)
+			else if (base.num_out == 2) {
 				if (opts.is_out2) {
-					auto ii = (size_t)idx + 1;
-					if (is_zip) {
-						base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // apf
-						base.write_a_read(fsv[ii], reads[1], vstate_out[ii], vzlib_out[ii], is_last); // apr
-					}
-					else {
-						base.write_a_read(fsv[idx], reads[0]); // apf
-						base.write_a_read(fsv[ii], reads[1]); // apr
-					}
+					if (opts.is_paired_out && !(reads[0].is_hit && reads[1].is_hit))
+						break; // if not both aligned -> non-aligned
+					else if (opts.is_paired_in || reads[i].is_hit)
+						idx = id * base.num_out + i;
 				}
-				else {
-					if (is_zip) {
-						base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // ap
-						base.write_a_read(fsv[idx], reads[1], vstate_out[idx], vzlib_out[idx], is_last); // ap
-					}
-					else {
-						base.write_a_read(fsv[idx], reads[0]); // ap
-						base.write_a_read(fsv[idx], reads[1]); // ap
-					}
+				else if (opts.is_sout) {
+					if (reads[0].is_hit && reads[1].is_hit)
+						idx = id * base.num_out; // both to 'ap' [0]
+					else if (reads[i].is_hit)
+						idx = id * base.num_out + 1; // hit to 'as' [1]
+					else
+						continue; // ignore non-aligned read
 				}
 			}
-			else if (reads[0].is_hit) { // fwd hit
-				if (opts.is_out2) {
-					auto ii = (size_t)idx + 2;
-					if (is_zip)
-						base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // asf
-					else
-						base.write_a_read(fsv[ii], reads[0]);
-				}
-				else {
-					if (is_zip)
-						base.write_a_read(fsv[idx], reads[0], vstate_out[idx], vzlib_out[idx], is_last); // as
-					else
-						base.write_a_read(fsv[idx], reads[0]);
-				}
+			// 4 output files: apf, apr, asf, asr
+			// being here means both is_out2 & is_sout were set => No paired_in/out
+			else if (base.num_out == 4) {
+				if (reads[0].is_hit && reads[1].is_hit)
+					idx = id * base.num_out + i; // 0 -> apf, 1 -> apr
+				else if (reads[i].is_hit)
+					idx = id * base.num_out + i + 2; // 0 -> asf, 1 -> asr
+				else
+					continue; // ignore a non-aligned singleton
 			}
-			else if (reads[1].is_hit) { // rev hit
-				if (opts.is_out2) {
-					auto ii = (size_t)idx + 3;
-					if (is_zip)
-						base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // asr
-					else
-						base.write_a_read(fsv[ii], reads[0]);
-				}
-				else {
-					auto ii = (size_t)idx + 1;
-					if (is_zip)
-						base.write_a_read(fsv[ii], reads[0], vstate_out[ii], vzlib_out[ii], is_last); // as
-					else
-						base.write_a_read(fsv[ii], reads[0]);
-				}
+			else {
+				ERR("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
+				exit(1);
 			}
+
+			if (is_zip)
+				base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last);
+			else
+				base.write_a_read(fsv[idx], reads[i]);
 		}
 	}//~if paired
 	// non-paired

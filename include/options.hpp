@@ -41,6 +41,7 @@ OPT_PAIRED = "paired",
 OPT_PAIRED_IN = "paired_in",
 OPT_PAIRED_OUT = "paired_out",
 OPT_OUT2 = "out2",
+OPT_SOUT = "sout",
 OPT_MATCH = "match",
 OPT_MISMATCH = "mismatch",
 OPT_GAP_OPEN = "gap_open",
@@ -195,26 +196,34 @@ help_print_all_reads =
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files\n",
 help_paired =
-	"Input is a single file with interleaved paired reads    False\n"
-	"                                            If such a file is used, and\n"
-	"                                            neither '" + OPT_PAIRED_IN + "' nor '" + OPT_PAIRED_OUT + "' are specified,\n"
-	"                                            use this option together with '" + OPT_OUT2 + "' to output\n"
-	"                                            FWD and REV reads into separate files\n",
+	"Flags paired reads                                      False\n\n"
+	"        If a single reads file is provided, use this option to indicate\n"
+	"        the file contains interleaved paired reads when neither\n"
+	"        '" + OPT_PAIRED_IN + "' | '" + OPT_PAIRED_OUT + "' | '"+ OPT_OUT2 + "' | '" + OPT_SOUT + "' are specified.\n\n",
 help_paired_in = 
-	"If one of the paired-end reads is Aligned,              False\n"
-	"                                            put both reads into Aligned FASTA/Q file\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Mutually exclusive with '" + OPT_PAIRED_OUT + "'.\n",
+	"Flags the paired-end reads as Aligned,                  False\n"
+	"                                            when either of them is Aligned.\n\n"
+	"        With this option both reads are output into Aligned FASTA/Q file\n"
+	"        Must be used with '" + OPT_FASTX + "'.\n"
+	"        Mutually exclusive with '" + OPT_PAIRED_OUT + "'.\n\n",
 help_paired_out = 
-	"If one of the paired-end reads is Non-aligned,          False\n"
-	"                                            put both reads into Non-Aligned FASTA/Q file\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Mutually exclusive with '" + OPT_PAIRED_IN + "'.\n",
+	"Flags the paired-end reads as Non-aligned,              False\n"
+	"                                            when either of them is non-aligned.\n\n"
+	"        With this option both reads are output into Non-Aligned FASTA/Q file\n"
+	"        Must be used with '" + OPT_FASTX + "'.\n"
+	"        Mutually exclusive with '" + OPT_PAIRED_IN + "'.\n\n",
 help_out2 =
-	"Output paired reads into separate files.                False\n"
-	"                                            Must be used with '" + OPT_FASTX + "'.\n"
-	"                                            Ignored without either of '" + OPT_PAIRED_IN + "' |\n"
-	"                                            '" + OPT_PAIRED_OUT + "' | '" + OPT_PAIRED + "' | two '" + OPT_READS + "'\n",
+	"Output paired reads into separate files.                False\n\n"
+	"       Must be used with '" + OPT_FASTX + "'.\n"
+	"       If a single reads file is provided, this options implies interleaved paired reads\n"
+	"       When used with '"+ OPT_SOUT + "', four (4) output files for aligned reads will be generated:\n"
+	"       'aligned-paired-fwd, aligned-paired-rev, aligned-singleton-fwd, aligned-singleton-rev'.\n"
+	"       If '" + OPT_OTHER + "' option is also used, eight (8) output files will be generated.\n\n",
+help_sout =
+	"Separate paired and singleton aligned reads.            False\n\n"
+	"       To be used with '" + OPT_FASTX + "'.\n"
+	"       If a single reads file is provided, this options implies interleaved paired reads\n"
+	"       Cannot be used with '" + OPT_PAIRED_IN + "' | '" + OPT_PAIRED_OUT + "'\n\n",
 help_match = 
 	"SW score (positive integer) for a match.                2\n",
 help_mismatch = 
@@ -399,6 +408,7 @@ public:
 	bool is_paired_in = false; // OPT_PAIRED_IN was selected i.e. both paired-end reads go in 'aligned' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_paired_out = false; // '--paired_out' both paired-end reads go in 'other' fasta/q file. Only Fasta/q and De-novo reporting.
 	bool is_out2 = false; // 20200127 output paired reads into separate files. Issue 202
+	bool is_sout = false; // 20210105 separate singletons and paired
 	bool is_otu_map = false; // OPT_OTU_MAP was selected i.e. output OTU map (input to QIIME's make_otu_table.py)
 	bool is_denovo = false; // output file with reads matching database < %%id (set using --id) and < %%cov (set using --coverage)
 	bool is_log = true; // OPT_LOG was selected i.e. output overall statistics. TODO: remove this option, always generate.
@@ -517,6 +527,7 @@ private:
 	void opt_paired_in(const std::string &val);
 	void opt_paired_out(const std::string &val);
 	void opt_out2(const std::string& val);
+	void opt_sout(const std::string& val);
 	void opt_match(const std::string &val);
 	void opt_mismatch(const std::string &val);
 	void opt_gap_open(const std::string &val);
@@ -586,7 +597,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 51> options = {
+	const std::array<opt_6_tuple, 52> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
@@ -607,6 +618,7 @@ private:
 		std::make_tuple(OPT_PAIRED_IN,      "BOOL",        COMMON,      false, help_paired_in, &Runopts::opt_paired_in),
 		std::make_tuple(OPT_PAIRED_OUT,     "BOOL",        COMMON,      false, help_paired_out, &Runopts::opt_paired_out),
 		std::make_tuple(OPT_OUT2,           "BOOL",        COMMON,      false, help_out2, &Runopts::opt_out2),
+		std::make_tuple(OPT_SOUT,           "BOOL",        COMMON,      false, help_sout, &Runopts::opt_sout),
 		std::make_tuple(OPT_ZIP_OUT,        "STR/BOOL",    COMMON,      false, help_zip_out, &Runopts::opt_zip_out),
 		std::make_tuple(OPT_MATCH,          "INT",         COMMON,      false, help_match, &Runopts::opt_match),
 		std::make_tuple(OPT_MISMATCH,       "INT",         COMMON,      false, help_mismatch, &Runopts::opt_mismatch),

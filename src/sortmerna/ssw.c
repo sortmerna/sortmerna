@@ -851,7 +851,6 @@ s_align* ssw_align(
 		//fprintf(stderr, "When maskLen < 15, the function ssw_align doesn't return 2nd best alignment information.\n");
 	}
 
-
 	// Find the alignment scores and ending positions
 	if (prof->profile_byte) {
 

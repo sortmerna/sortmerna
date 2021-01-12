@@ -118,51 +118,6 @@ void Runopts::opt_reads(const std::string &file)
 		have_reads = true;
 		readfiles.push_back(fpath_a.generic_string());
 	}
-
-	// 20201008 TODO: remove this code. Validate files at the time of the Readfeed initialization
-#if 0
-	bool has_gz_ext = "gz" == file.substr(file.rfind('.') + 1); // file ends with 'gz'
-	std::string line;
-	int stat = -1;
-
-	if (has_gz_ext) {
-		Izlib izlib(true);
-		stat = izlib.getline(ifs, line);
-		if (RL_OK == stat)
-		{
-			//is_gz = true;
-		}
-	} // ~Gzip
-	else
-	{
-		Izlib izlib(false);
-		stat = izlib.getline(ifs, line);
-		if (RL_OK == stat) {
-			//is_gz = false;
-		}
-	}
-
-	// failed to read so far and has no 'gz' extension - try gzipped
-	if (RL_OK != stat && !has_gz_ext)
-	{
-		INFO("Trying to read ", file, " as gzipped even though it has no '.gz' extension.");
-		Izlib izlib(true);
-		stat = izlib.getline(ifs, line);
-		if (RL_OK == stat) {
-			//is_gz = true;
-		}
-	}
-	if (RL_OK == stat && line.size() > 0)
-	{
-		have_reads = true;
-		readfiles.push_back(fpath_a.generic_string());
-	}
-	else
-	{
-		ERR("Could not read from file ", file, " [", strerror(errno), "]");
-		exit(EXIT_FAILURE);
-	}
-#endif
 } // ~Runopts::opt_reads
 
 void Runopts::opt_ref(const std::string &refpath)
@@ -354,6 +309,11 @@ void Runopts::opt_out2(const std::string& val)
 {
 	is_out2 = true;
 } // ~Runopts::opt_out2
+
+void Runopts::opt_sout(const std::string& val)
+{
+	is_sout = true;
+}
 
 void Runopts::opt_match(const std::string &val)
 {
@@ -1493,6 +1453,18 @@ void Runopts::validate()
 			" The reads are considered paired if either 2 reads files are supplied, or '", 
 			OPT_PAIRED_IN, "', or '", OPT_PAIRED_OUT, "' is specified");
 		is_out2 = false;
+	}
+
+	if (is_sout && !is_paired) {
+		WARN("Option '", OPT_SOUT, "' is Ignored because it can only be used with paired reads."
+			" for the purpose of '", OPT_SOUT, "' the reads are considered paired if either",
+			" 2 reads files are supplied, or '", OPT_PAIRED, "' is specified with a single reads file");
+		is_out2 = false;
+	}
+
+	if (is_sout && (is_paired_in || is_paired_out)) {
+		ERR("Option '", OPT_SOUT,"' cannot be used when either '", OPT_PAIRED_IN,"' or '", OPT_PAIRED_OUT,"' is specified.");
+		exit(EXIT_FAILURE);
 	}
 
 	// Options --paired_in and --paired_out can only be used with FASTA/Q output

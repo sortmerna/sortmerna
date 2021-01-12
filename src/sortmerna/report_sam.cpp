@@ -24,7 +24,6 @@ void ReportSam::init(Readfeed& readfeed, Runopts& opts)
 		std::string sfx2 = opts.is_pid ? "_" + pid_str : "";
 		std::string gz = is_zip ? ".gz" : "";
 		fv[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext + gz;
-		fv[i] = opts.aligned_pfx.string() + "_denovo" + sfx1 + sfx2 + ext + gz;
 		openfw(i);
 	}
 	if (is_zip) init_zip();
