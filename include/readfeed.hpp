@@ -43,6 +43,11 @@ public:
 	void count_reads();
 	void write_descriptor();
 	bool is_split_ready();
+	/*
+	* delete the readfeed i.e. delete Split files (Not original reads files) described in the readfeed descriptor
+	* @return  count of deleted split files
+	*/
+	int clean();
 	static bool is_split_done(const unsigned num_parts, const unsigned num_reads, const std::string dbdir, const std::vector<std::string>& readfiles);
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);

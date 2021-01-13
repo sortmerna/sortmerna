@@ -556,6 +556,9 @@ bool Readfeed::split()
 	auto retval = true;
 	auto num_split_files = num_splits * num_orig_files;
 
+	// remove existing split files
+	auto nf = clean();
+
 	// orig streams are ready at this stage - just check them
 	for (auto i = 0; i < ifsv.size(); ++i) {
 		if (!ifsv[i].is_open()) {
@@ -584,14 +587,13 @@ bool Readfeed::split()
 
 	for (auto i = 0; i < ofsv.size(); ++i) {
 		if (!ofsv[i].is_open()) {
-			ofsv[i].open(split_files[i].path, std::ios::app | std::ios::binary);
+			ofsv[i].open(split_files[i].path, std::ios::out | std::ios::binary | std::ios::trunc);
 		}
 		if (!ofsv[i].is_open()) {
 			auto idx = num_orig_files + i;
 			ERR("Failed to open file ", split_files[i].path.generic_string());
 			exit(1);
 		}
-		//INFO("opened file: ", readfiles[i + num_orig_files]);
 	}
 
 	// prepare zlib interface for writing split files
@@ -687,9 +689,10 @@ bool Readfeed::split()
 */
 bool Readfeed::is_split_ready() {
 	// compare with data in descriptor
-	std::ifstream ifs;
+	std::ifstream ifs; // descriptor file
 	std::filesystem::path fn = basedir / "readfeed";
 	if (std::filesystem::exists(fn)) {
+		INFO("found existing readfeed descriptor ", fn.generic_string());
 		ifs.open(fn, std::ios_base::in | std::ios_base::binary);
 		if (!ifs.is_open()) {
 			ERR("failed to open: ", fn.generic_string());
@@ -1012,7 +1015,7 @@ void Readfeed::write_descriptor()
 
 	if (!is_ready) {
 		std::filesystem::path fn = basedir / "readfeed";
-		std::ofstream ofs(fn, std::ios::app | std::ios::binary);
+		std::ofstream ofs(fn, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!ofs.is_open()) {
 			ERR("failed to open file: ", fn.generic_string());
 			exit(1);
@@ -1085,3 +1088,74 @@ void Readfeed::init_reading()
 	// vzlib_in
 	init_vzlib_in();
 } // ~Readfeed::init_reading
+
+int Readfeed::clean()
+{
+	std::ifstream ifs; // descriptor file
+	std::filesystem::path fn = basedir / "readfeed";
+	int n_del = 0; // count of deleted files
+	if (std::filesystem::exists(fn)) {
+		INFO("found descriptor ", fn.generic_string());
+		ifs.open(fn, std::ios_base::in | std::ios_base::binary);
+		if (!ifs.is_open()) {
+			ERR("failed to open: ", fn.generic_string());
+			exit(1);
+		}
+
+		int lidx = 0; // line index
+		int fcnt = 0; // count of file entries in the desctiptor
+		int fcnt_max = 0; // number of All file entries in the descriptor
+		int fidx = 0; // file index
+		int fpidx = 0; // index of file parameters: name, size, lines, zip, fastq/fasta
+		int n_orig = 0; // number of original files
+		int n_split = 0; // number of splits
+		unsigned n_tot = 0; // total of reads in orig files
+
+		for (std::string line; std::getline(ifs, line); ) {
+			if (!line.empty()) {
+				// trim
+				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+				if (line[0] != '#') { // skip comments
+					if (lidx == 0); // skip timestamp
+					else if (lidx == 1)
+						n_orig = std::stoi(line);
+					else if (lidx == 2)
+						n_split = std::stoi(line);
+					else if (lidx == 3) {
+						n_tot = std::stoi(line);
+						fcnt_max = (1 + n_split) * n_orig;
+					}
+					else {
+						if (fpidx == 0) { // file path
+							++fcnt;
+							if (fcnt > n_orig) {
+								// delete a split file
+								std::filesystem::path sf(line);
+								if (std::filesystem::exists(sf) && sf.parent_path() == basedir) {
+									INFO("removing split file: ", line);
+									std::filesystem::remove(sf);
+									++n_del;
+								}
+							}
+							if (fcnt == n_orig + 1)	fidx = 0; // switch file index orig -> split files
+							if (fcnt > fcnt_max) {
+								INFO("expected max file count: ", fcnt_max, " current file count in the descriptor: ", fcnt);
+								is_ready = false;
+								break;
+							}
+						}
+						else if (fpidx == 4) { // fastq/a
+							fpidx = 0;
+							++fidx;
+							++lidx;
+							continue;
+						}
+						++fpidx;
+					}
+					++lidx;
+				}
+			}
+		} // ~for lines in descriptor
+	}
+	return n_del;
+} // ~Readfeed::clean
