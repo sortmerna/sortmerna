@@ -147,8 +147,10 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("==== Starting summary of alignment statistics ====");
+	auto start = std::chrono::high_resolution_clock::now();
 	Refstats refstats(opts, readstats);
 	Summary summary;
 	summary.write(refstats, readstats, opts);
-	INFO("==== Done summary of alignment statistics ====\n\n");
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("==== Done summary in sec [", elapsed.count(), "] ====\n\n");
 } // ~writeSummary

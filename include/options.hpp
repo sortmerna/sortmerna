@@ -91,12 +91,12 @@ help_ref =
 help_reads = 
 	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n\n"
 	"       Use twice for files with paired reads.\n"
-	"       The file extensions are Not important. The program automatically recognizes the\n"
-	"                                           file format as flat/compressed, fasta/fastq\n\n",
+	"       The file extensions are Not important. The program automatically\n"
+	"       recognizes the file format as flat/compressed, fasta/fastq\n\n",
 help_aligned = 
 	"Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned\n\n"
-	"       Directory and file prefix for aligned output i.e. each output file goes into the\n"
-	"                                             specified directory with the given prefix.\n"
+	"       Directory and file prefix for aligned output i.e. each\n"
+	"       output file goes into the specified directory with the given prefix.\n"
 	"       The appropriate extension: (fasta|fastq|blast|sam|etc) is automatically added.\n"
 	"       Both 'dir' and 'pfx' are optional.\n"
 	"       The 'dir' can be a relative or an absolute path.\n"
@@ -110,10 +110,10 @@ help_aligned =
 	"       '-aligned  (no argument)'       -> WORKDIR/out/aligned.fasta\n\n",
 help_other = 
 	"Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other\n\n"
-	"       Must be used with '" + OPT_FASTX + "'.\n"
-	"       Directory and file prefix for non-aligned output i.e. each output file goes into the\n"
-	"                                                 specified directory with the given prefix.\n"
+	"       Directory and file prefix for non-aligned output i.e. each\n"
+	"       output file goes into the specified directory with the given prefix.\n"
 	"       The appropriate extension: (fasta|fastq|blast|sam|etc) is automatically added.\n"
+	"       Must be used with '" + OPT_FASTX + "'.\n"
 	"       Both 'dir' and 'pfx' are optional.\n"
 	"       The 'dir' can be a relative or an absolute path.\n"
 	"       If 'dir' is not specified, the output is created in the WORKDIR/out/\n"
@@ -124,8 +124,8 @@ help_other =
 	"       '-other dir_1/'               -> $PWD/dir_1/other.fasta\n"
 	"       '-other apfx'                 -> $PWD/apfx.fasta\n"
 	"       '-other  (no argument)'       -> aligned_out/other.fasta\n"
-	"                                        i.e. the same output directory as used for\n"
-	"                                                                    aligned output\n\n",
+	"                                        i.e. the same output directory\n"
+	"                                        as used for aligned output\n\n",
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
 help_workdir = 
@@ -155,7 +155,7 @@ help_blast =
 	"                      '1 cigar'              - tabular + column for CIGAR\n"
 	"                      '1 cigar qcov'         - tabular + columns for CIGAR and query coverage\n"
 	"                      '1 cigar qcov qstrand' - tabular + columns for CIGAR, query coverage,\n"
-	"                                                                                  and strand\n\n",
+	"                                               and strand\n\n",
 help_dbg_put_db = 
 	"",
 help_log = 
@@ -171,25 +171,24 @@ help_num_alignments =
 help_no_best = 
 	"Disable best alignments search                          1\n\n"
 	"       By default the exchaustive alignments search is performed\n"
-	"                             by searching '-" + OPT_MIN_LIS + " N' candidate alignments\n"
+	"       by searching '-" + OPT_MIN_LIS + " N' candidate alignments\n"
 	"       If N == 0: All candidate alignments are searched\n"
 	"       If N > 0:  N best alignments are searched.\n"
 	"       Naturally the larger is the N, the longer is the search time.\n"
 	"       Explanation:\n"
-	"       A read can potentially be aligned (reaching E-value threshold) to multiple\n"
-	"                                                                        reference sequences.\n"
-	"       The 'best' alignment is the highest scoring alignment out of All alignments\n"
-	"                                                                                  of a Read.\n"
+	"       A read can potentially be aligned (reaching E-value threshold)\n"
+	"       to multiple reference sequences.\n"
+	"       The 'best' alignment is the highest scoring alignment\n"
+	"       out of All alignments of a Read.\n"
 	"       To find the Best alignment - an exhaustive search over All references\n"
-	"                                                                        has to be performed.\n"
-	"       'best 1' and 'best 0' (all the bests) are Equally intensive processes requiring the\n"
-	"                                exhaustive search, although the size of reports will differ.\n\n",
+	"       has to be performed.\n"
+	"       'best 1' and 'best 0' (all the bests) are Equally intensive processes requiring\n"
+	"       the exhaustive search, although the size of reports will differ.\n\n",
 help_min_lis = 
 	"Search all alignments having the first INT              2\n"
-	"                                                                          longest LIS\n"
-	"                                            LIS stands for Longest Increasing Subsequence,\n"
-	"                                            it is computed using seeds' positions to expand hits\n"
-	"                                            into longer matches prior to Smith - Waterman alignment.\n",
+	"                                            longest LIS\n\n"
+	"       LIS stands for Longest Increasing Subsequence, it is computed using seeds'\n"
+	"       positions to expand hits into longer matches prior to Smith - Waterman alignment.\n",
 	//"                                            Requires option '"+ OPT_BEST +"'.\n"
 	//"                                            Mutually exclusive with option '"+ OPT_NUM_ALIGNMENTS +"'\n",
 help_print_all_reads = 
@@ -254,8 +253,8 @@ help_coverage =
 	"                                            still pass the E-value threshold)\n",
 help_denovo_otu = 
 	"Output FASTA file with 'de novo' reads                  False\n\n"
-	"       Read is 'de novo' if its alignment score passes E-value threshold, and\n"
-	"       the identity ('" + OPT_ID + "'), and the ('" + OPT_COVERAGE + "') options are below\n"
+	"       Read is 'de novo' if its alignment score passes E-value threshold,\n"
+	"       and the identity ('" + OPT_ID + "'), and the ('" + OPT_COVERAGE + "') options are below\n"
 	"       their corresponding thresholds i.e. ID < %%id and COV < %%cov\n\n",
 help_otu_map = 
 	"Output OTU map (input to QIIME's make_otu_table.py).    False\n"
@@ -322,8 +321,8 @@ help_reads_feed =
 	"Method of accessing the reads by the                    0\n"
 	"                                            reads processors\n\n"
 	"       0 - Split reads. Reads files are split into parts equal the number of processing threads\n"
-	"       1 - FUTURE: Lockless queue. Reads are put into a lockless queue to be popped by the\n"
-	"                                                                        processing threads\n"
+	"       1 - FUTURE: Lockless queue. Reads are put into a lockless queue\n"
+	"                   to be popped by the processing threads\n"
 	"       3 - FUTURE: Random access to the compresssed reads files\n"
 	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
 

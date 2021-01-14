@@ -33,6 +33,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 	unsigned num_hit = 0; // count of reads with read.hit = true found by a single thread - just for logging
 	std::string readstr;
 
+	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
 	auto idx = id * readfeed.num_orig_files;
 	for (auto incr = 1; readfeed.next(idx, readstr);)
@@ -99,8 +100,10 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 		}
 	} // ~while there are reads
 
-	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " done. Processed ", num_all,
-		" reads. Skipped already processed: ", num_skipped, " reads", " Aligned reads (passing E-value): ", num_hit);
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " done. Processed ",
+		num_all, " reads. Skipped already processed: ", num_skipped, " reads", 
+		" Aligned reads (passing E-value): ", num_hit, " Runtime sec: ", elapsed.count());
 } // ~align2
 
 // called from main
@@ -138,7 +141,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	int loopCount = 0; // counter of total number of processing iterations
 
 	// perform alignment
-	auto starts = std::chrono::high_resolution_clock::now();
+	auto start_a = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
 	// loop through every index passed to option '--ref'
@@ -149,20 +152,20 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 		{
 			// load index
 			INFO("Loading index: ", index_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[index_num], " Memory KB: ", (get_memory() >> 10), " ... ");
-			starts = std::chrono::high_resolution_clock::now();
+			auto start_i = std::chrono::high_resolution_clock::now();
 			index.load(index_num, idx_part, opts.indexfiles, refstats);
 			readstats.short_reads_num.store(0, std::memory_order_relaxed); // reset the short reads counter
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO_MEM("done [", elapsed.count(), "] sec");
+			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
+			INFO_MEM("done in [", elapsed.count(), "] sec");
 
 			// load references
 			INFO("Loading references ...");
-			starts = std::chrono::high_resolution_clock::now();
+			start_i = std::chrono::high_resolution_clock::now();
 			refs.load(index_num, idx_part, opts, refstats);
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO_MEM("done [", elapsed.count(), "] sec.");
+			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
+			INFO_MEM("done in [", elapsed.count(), "] sec.");
 
-			starts = std::chrono::high_resolution_clock::now();
+			start_i = std::chrono::high_resolution_clock::now();
 
 			// add Readfeed job if necessary
 			if (opts.feed_type == FEED_TYPE::LOCKLESS)
@@ -182,12 +185,15 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 
 			++loopCount;
 
-			elapsed = std::chrono::high_resolution_clock::now() - starts;
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
+			INFO_MEM("done index: ", index_num, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");
 			//INFO_MEM("Done index ", index_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
 
+			start_i = std::chrono::high_resolution_clock::now();
 			index.unload();
 			refs.unload();
-			INFO_MEM("Index and References unloaded.");
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
+			INFO_MEM("Index and References unloaded in ", elapsed.count(), " sec.");
 			tpool.clear();
 			// rewind for the next index
 			readfeed.rewind_in();
@@ -196,7 +202,8 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 		} // ~for(idx_part)
 	} // ~for(index_num)
 
-	INFO("==== Done alignment ====\n");
+	elapsed = std::chrono::high_resolution_clock::now() - start_a;
+	INFO("==== Done alignment in ", elapsed.count(), " sec ====\n");
 
 	// store readstats calculated in alignment
 	readstats.set_is_set_aligned_id_cov();

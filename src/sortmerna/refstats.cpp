@@ -39,7 +39,7 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 
 	elapsed = std::chrono::high_resolution_clock::now() - starts;
 	ss.str("");
-	ss << STAMP << "Done. Time elapsed: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
+	ss << STAMP << "Done in: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
 	std::cout << ss.str();
 }
 

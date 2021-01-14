@@ -119,6 +119,8 @@ t1:
     - -blast
     - '1'
     - -v
+    - -threads
+    - '1'
   validate: 
     func:
     num_reads: 1
@@ -175,6 +177,8 @@ t3:
     - -blast
     - '1 cigar qcov'
     - -v
+    - -threads
+    - '4'
     #- -task
     #- '2'
   validate: 
@@ -230,6 +234,8 @@ t5:
     - -fastx
     - -other
     - -v
+    - -threads
+    - '5'
     #- -pid
   validate:
     func:
@@ -240,7 +246,7 @@ t5:
 
 t6:
   name: test_mate_pairs - part 2 - paired_in
-  note: |
+  info: |
     -e      min_sw  hits
      1          49  6000
      0.001      59  6000
@@ -264,6 +270,8 @@ t6:
     - -v
     - -e
     - '0.01'
+    - -threads
+    - '4'
   validate:
     func:
     num_reads:   10000
@@ -1299,7 +1307,7 @@ t35:
       num_pass_id:    113
       num_pass_cov:    12
       num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
-    runtime:
+    time:
       win:
         - threads: 8
           sec: [1.07325, 0.337265, 0.650805] # align, log, reports
@@ -1333,26 +1341,38 @@ t37:
   name: Paired reads
   cmd:
   - -ref
-  - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta # 
+  - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
   - -ref
   - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
   - -reads 
   # SRR7721017_1.fastq | SRR7721017_1_100.fastq | SRR7721017_1_15.fastq
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_1.fastq.gz # 20 MB  639240 reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/paired_reads_test/SRR7721017_1.fastq.gz # 20 MB  639240 reads
   - -reads
   # SRR7721017_2.fastq | SRR7721017_2_100.fastq | SRR7721017_2_15.fastq
-  - {{ DATA_DIR if DATA_DIR }}/sortmerna/data/reads/paired_reads_test/SRR7721017_2.fastq.gz # 23 MB  639240 reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/paired_reads_test/SRR7721017_2.fastq.gz # 23 MB  639240 reads
   - -v
   - -fastx
   - -paired_in
   - -blast
   - '1 cigar qcov'
   - -sam
+  - -threads
+  - '8'
+  - -workdir
+  - {{ WRK_DIR }}
   validate:
-    func: t17
+    func:
     num_reads: 1278480
     num_hits:    66387
     num_fail:  1212093
+    read_len: [75, 75, 75] # min, max, avr
+  time:
+    win_8_16:
+      host: Windows 10 + 8 CPUs + 16 GiB RAM
+      total:
+        4-2-0: []
+        4-3-0: [24, 35, 1, 19] # ~80 sec
+      index_stats_calc:  # sec
 
 t38:
   name: Paired reads GZ 2 x 2 GB
@@ -1564,6 +1584,8 @@ t41:
     - -v
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '8'
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1574,7 +1596,10 @@ t41:
   time:
     win_8_16:
       host: Windows 10 + 8 CPUs + 16 GiB RAM
-      total: 224.7367 # sec - ~4min - no indexing
+      total: 
+        4-2-0: 225 # sec - ~4min - no indexing
+        #      [align, summary, report]
+        4-3-0: [ 95,    3,       50 ] # 1.5 times faster!
       #                 [file_1,  file_2,    both ] sec
       reads_stats_calc: [1.06534, 1.01161, 2.07695] # 1M reads
       index_stats_calc: 
@@ -1693,6 +1718,8 @@ t42:
     - -v
     - -workdir
     - {{ WRK_DIR }}
+    - -threads
+    - '8'
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1714,7 +1741,7 @@ t42:
       host: Windows 10 + 8 CPUs + 16 GiB RAM
       notes:
       ref:
-        - a01_data/logs/sortmerna/win10_8_16_smr_t42_20200811_0905.log
+        - {{DATA_DIR}}/logs/sortmerna/win10_8_16_smr_t42_20200811_0905.log
       cpu_load_align: [0, 0,    ] 
       total: 3167.055 # sec ~53min with indexing
       reads_stats_calc: [12.759, 11.2564]
@@ -1734,7 +1761,7 @@ t42:
     ubuntu18_8_16_32:
       host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
       notes: |
-        a01_data/logs/sortmerna/
+        {{DATA_DIR}}/logs/sortmerna/
           aws_ubuntu18_8_16_smr_t42_20200811_1319.log
           aws_ubuntu18_8_16_smr_t42_20200812_1224.log
       total: 2112.456 # sec ~35min - 1.5 times faster than Win due the higher memory usage
@@ -1775,7 +1802,7 @@ t42:
     ubuntu18_16_32_32:
       host: AWS c5.4xlarge + Ubuntu 18 + 16 cpu + 32 GB RAM + 32 GB HDD
       notes: |
-        a01_data/logs/sortmerna/
+        {{DATA_DIR}}/logs/sortmerna/
           aws_ubuntu18_16_32_smr_t42_20200812_1441.log
         Using 16 threads almost makes no sense. Compared to 8 threads the speed gain is minimal.
         The single reader is not fast enough to supply the reads, so the threads are idling.
@@ -1822,6 +1849,8 @@ t43:
     - -v
     - -workdir
     - {{ WRK_DIR }}
+    - threads
+    - '8'
   cwd: {{ SMR_SRC }}
   validate:
     func:

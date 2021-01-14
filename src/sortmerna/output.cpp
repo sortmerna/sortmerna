@@ -88,6 +88,7 @@ void report(int id,
 	std::vector<Read> reads; // two reads if paired, a single read otherwise
 
 	INFO_MEM("Report Processor: ", id, " thread: ", std::this_thread::get_id(), " started.");
+	//auto start = std::chrono::high_resolution_clock::now();
 
 	for (bool isDone = false; !isDone;)
 	{
@@ -135,6 +136,7 @@ void report(int id,
 		}
 	} // ~for
 
+	//std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start; // ~20 sec Debug/Win
 	INFO_MEM("Report processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
 } // ~report
 
@@ -142,7 +144,9 @@ void report(int id,
 // called from main. generateReports -> reportsJob
 void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
-	INFO("=== Report generation starts. Thread: ", std::this_thread::get_id(), " ===\n");
+	INFO("=== Report generation starts ===\n");
+	auto start = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed;
 
 	int nthreads = 0;
 	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
@@ -174,13 +178,13 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		{
 			INFO("Loading reference ", ref_idx, " part ", idx_part + 1, "/", refstats.num_index_parts[ref_idx], "  ... ");
 
-			auto starts = std::chrono::high_resolution_clock::now();
+			auto start_i = std::chrono::high_resolution_clock::now();
 
 			refs.load(ref_idx, idx_part, opts, refstats);
-			std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts; // ~20 sec Debug/Win
-			INFO("done. Elapsed sec [", elapsed.count(), "]");
+			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
+			INFO("done in sec [", elapsed.count(), "]");
 
-			starts = std::chrono::high_resolution_clock::now(); // index processing starts
+			start_i = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			// start processor
 			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
@@ -197,11 +201,13 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			refs.unload();
 			//read_queue.reset();
 
-			elapsed = std::chrono::high_resolution_clock::now() - starts; // index processing done
-			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " Elapsed sec: ", elapsed.count());
+			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
+			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " in sec: [", elapsed.count(), "].");
 
+			start_i = std::chrono::high_resolution_clock::now();
 			refs.unload();
-			INFO_MEM("References unloaded.");
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
+			INFO_MEM("References unloaded in sec: [", elapsed.count(), "].");
 			tpool.clear();
 			// rewind for the next index
 			readfeed.rewind_in();
@@ -236,5 +242,6 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.denovo.merge(readfeed.num_splits);
 	}
 
-	INFO("=== Done Reports ===\n");
+	elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("=== Done Reports in sec [", elapsed.count(), "] ===\n");
 } // ~writeReports

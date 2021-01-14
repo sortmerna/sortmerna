@@ -68,6 +68,9 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const un
 
 void Readfeed::init(std::vector<std::string>& readfiles)
 {
+	auto start = std::chrono::high_resolution_clock::now();
+	INFO("Readfeed init started");
+
 	// init read files
 	orig_files.resize(num_orig_files);
 	for (auto i = 0; i < num_orig_files; ++i) {
@@ -88,6 +91,9 @@ void Readfeed::init(std::vector<std::string>& readfiles)
 	else {
 		is_ready = true;
 	}
+
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("Readfeed init done in sec [", elapsed.count(), "]");
 }
 
 /* 
