@@ -222,16 +222,16 @@ void compute_lis_alignment
 			*   that is overlaid/anchored on the reference using the matching k-mer
 			*
 			* ref: |--------|k-mer anchor|-------|k-mer|--------------------|k-mer|-----|
-			*               ^_begin_ref e.g. 20
+			*               ^_begin_ref e.g. 20                             ^_end_ref
 			* read:    |----|k-mer anchor|----|k-mer|----------|k-mer|----|---|
 			*          |    ^_begin_read e.g 10                           |___|_ lnwin
 			*          ^_ read start pos                                  ^   ^-read end pos
-			*                                                             |_max possible k-mer start position
+			*                                                             |_max possible k-mer start position 'end_ref_max'
 			*/
-			auto end_ref = begin_ref - begin_read + read.sequence.length() - refstats.lnwin[index.index_num];
+			auto end_ref_max = begin_ref - begin_read + read.sequence.length() - refstats.lnwin[index.index_num];
 			//uint32_t end_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // original - wrong?
 			bool push = false;
-			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref )
+			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref_max )
 			{
 				match_set.push_back(*hits_on_ref_iter);
 				push = true;
