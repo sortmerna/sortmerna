@@ -51,9 +51,6 @@ uint32_t inline findMinIndex(std::vector<s_align2>& alignv);
 uint32_t inline findMaxIndex(std::vector<s_align2>& alignv);
 std::pair<bool,bool> is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts);
 
-/*
- * see alignment.hpp for documentation
- */
 void find_lis( deque<pair<uint32_t, uint32_t>>& a, vector<uint32_t>& b )
 {
 	vector<uint32_t> p(a.size());
@@ -96,15 +93,6 @@ void find_lis( deque<pair<uint32_t, uint32_t>>& a, vector<uint32_t>& b )
 		b[u] = static_cast<uint32_t>(v);
 } // ~find_lis
 
-/* 
- * called on each idx * part * read * strand * [1..max opts.skiplengths[index_num].size (3 by default)] 
- *
- * @param search OUT boolean
- *        return 'True' to indicate keep searching for more seed matches and better alignment. 
- *		  return 'False' - stop search, the alignment is found
- * @param max_SW_score  the maximum SW score attainable for this read i.e. perfect match
- * @param read_to_count
- */
 void compute_lis_alignment
 	(
 		Read& read, Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats,
@@ -127,7 +115,7 @@ void compute_lis_alignment
 
 	// 1. Find all candidate references by using Read's kmer hits information.
 	//    For every reference, compute the number of kmer hits belonging to it
-	for (auto hit : read.id_win_hits)
+	for (auto const& hit: read.id_win_hits)
 	{
 		seq_pos* positions_tbl_ptr = index.positions_tbl[hit.id].arr;
 		// loop all positions of id
@@ -143,7 +131,7 @@ void compute_lis_alignment
 
 	// copy frequency map to vector for sorting
 	// consider only candidate references that have enough seed hits
-	for (auto freq_pair: kmer_count_map)
+	for (auto const& freq_pair: kmer_count_map)
 	{
 		if (freq_pair.second >= (uint32_t)opts.hit_seeds)
 			kmer_count_vec.push_back(freq_pair);
@@ -152,12 +140,12 @@ void compute_lis_alignment
 	kmer_count_map.clear();
 
 	// sort sequences by frequency in descending order
-	std::sort(kmer_count_vec.begin(), kmer_count_vec.end(),
-		[](std::pair<uint32_t, uint32_t> e1, std::pair<uint32_t, uint32_t> e2) {
-		if (e1.second == e2.second) 
+	auto cmp = [](std::pair<uint32_t, uint32_t> e1, std::pair<uint32_t, uint32_t> e2) {
+		if (e1.second == e2.second)
 			return e1.first ASCENDING e2.first; // order references ascending for equal frequencies (originally - descending)
 		return e1.second DESCENDING e2.second; // order frequencies descending
-	});
+	}; // comparator
+	std::sort(kmer_count_vec.begin(), kmer_count_vec.end(), cmp);
 
 	// 2. loop reference candidates, starting from the one with the highest number of kmer hits.
 	bool is_search_candidates = true;
@@ -180,18 +168,17 @@ void compute_lis_alignment
 			if (read.best < 1) break;
 		}
 
-		// array of matching kmer pairs on a given reference: (read's k-mer position, ref's k-mer position)
-		//  [0] : (493, 0)
-		//	...
-		//	[3] : (674, 18)
-		//         |    |_k-mer position on the read
-		//         |_k-mer position on the reference
-		vector<uint32pair> hits_per_ref;
+		// list of matching kmer pairs on a given reference: 
+		//  [pair<1st:k-mer ref pos, 2nd:k-mer read pos>] e.g.
+		//  [ (493, 0), ..., (674, 18), ... ]
+		//      |   |_k-mer position on the read
+		//      |_k-mer position on the reference
+		vector<uint32pair> hits_on_ref;
 
 		//
-		// 3. populate 'hits_per_ref'
+		// 3. populate 'hits_on_ref'
 		//
-		for ( auto hit: read.id_win_hits )
+		for ( auto const& hit: read.id_win_hits )
 		{
 			uint32_t num_hits = index.positions_tbl[hit.id].size;
 			seq_pos* positions_tbl_ptr = index.positions_tbl[hit.id].arr;
@@ -200,44 +187,55 @@ void compute_lis_alignment
 			{
 				if (positions_tbl_ptr->seq == max_ref)
 				{
-					hits_per_ref.push_back(uint32pair(positions_tbl_ptr->pos, hit.win));
+					hits_on_ref.push_back(uint32pair(positions_tbl_ptr->pos, hit.win));
 				}
 				positions_tbl_ptr++;
 			}
 		}
 
 		// sort the positions in ascending order
-		std::sort(hits_per_ref.begin(), hits_per_ref.end(), [](uint32pair e1, uint32pair e2) {
+		std::sort(hits_on_ref.begin(), hits_on_ref.end(), [](uint32pair e1, uint32pair e2) {
 			if (e1.first == e2.first) 
 				return (e1.second ASCENDING e2.second); // order references ascending for equal reference positions
 			return (e1.first ASCENDING e2.first);
 		}); // smallest
 
-		// iterate over the set of hits, output windows of
-		// length == read which have at least ratio hits
-		vector<uint32pair>::iterator hits_per_ref_iter = hits_per_ref.begin();
-		deque<uint32pair> match_chain; // chain of matching k-mers fit along the read length
+		// iterate over the set of hits, searching for windows of
+		// win.len == read.len which have at least ratio hits
+		vector<uint32pair>::iterator hits_on_ref_iter = hits_on_ref.begin();
+		deque<uint32pair> match_set; // set of matching k-mers fit within the read length: [pair<1st:on ref pos, 2nd:on read pos>]
 
-		// 4. run a sliding window of read's length across the reference, 
+		// 4. run a sliding window of read's length along the reference, 
 		//    searching for windows with enough k-mer hits
 		uint32_t lcs_ref_start = 0; // match (LCS) start position on reference
 		uint32_t lcs_que_start = 0; // match (LCS) start position on read
-		uint32_t begin_ref = hits_per_ref_iter->first; // hit position on reference
-		uint32_t begin_read = hits_per_ref_iter->second; // hit position on read
+		uint32_t begin_ref = hits_on_ref_iter->first; // hit position on reference
+		uint32_t begin_read = hits_on_ref_iter->second; // hit position on read
                        
-		// TODO: Always does a single iteration because of the line '++hits_per_ref_iter'. 
+		// TODO: Always does a single iteration because of the line '++hits_on_ref_iter'. 
 		//       It has 3 'break' instructions though. Convoluted.
-		while (hits_per_ref_iter != hits_per_ref.end() && is_search_candidates)
+		while (hits_on_ref_iter != hits_on_ref.end() && is_search_candidates)
 		{
-			// TODO: should it be
-			auto stop_ref = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num] + 1; // position on reference
-			//uint32_t stop_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // wrong?
+			/*
+			* max possible k-mer start position: 
+			*   max start position on the reference of a matching k-mer for the read 
+			*   that is overlaid/anchored on the reference using the matching k-mer
+			*
+			* ref: |--------|k-mer anchor|-------|k-mer|--------------------|k-mer|-----|
+			*               ^_begin_ref e.g. 20
+			* read:    |----|k-mer anchor|----|k-mer|----------|k-mer|----|---|
+			*          |    ^_begin_read e.g 10                           |___|_ lnwin
+			*          ^_ read start pos                                  ^   ^-read end pos
+			*                                                             |_max possible k-mer start position
+			*/
+			auto end_ref = begin_ref - begin_read + read.sequence.length() - refstats.lnwin[index.index_num];
+			//uint32_t end_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // original - wrong?
 			bool push = false;
-			while ( hits_per_ref_iter != hits_per_ref.end() && hits_per_ref_iter->first <= stop_ref )
+			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref )
 			{
-				match_chain.push_back(*hits_per_ref_iter);
+				match_set.push_back(*hits_on_ref_iter);
 				push = true;
-				++hits_per_ref_iter;
+				++hits_on_ref_iter;
 			}
 			// heuristic 1: a new window hit was not pushed back, pop queue until new window can be pushed back
 			// this heuristic significantly speeds up the algorithm because we don't perform alignments for
@@ -251,10 +249,10 @@ void compute_lis_alignment
 			aligned = false;
 #endif                              
 			// enough windows at this position on genome to search for LIS
-			if (match_chain.size() >= (uint32_t)opts.hit_seeds)
+			if (match_set.size() >= (uint32_t)opts.hit_seeds)
 			{
-				vector<uint32_t> lis_arr; // array of Indices of matches from the match_chain comprising the LIS
-				find_lis(match_chain, lis_arr);
+				vector<uint32_t> lis_arr; // array of Indices of matches from the match_set comprising the LIS
+				find_lis(match_set, lis_arr);
 #ifdef HEURISTIC1_OFF
 				uint32_t list_n = 0;
 				do
@@ -264,12 +262,12 @@ void compute_lis_alignment
 					if (lis_arr.size() >= (size_t)opts.min_lis)
 					{
 #ifdef HEURISTIC1_OFF
-						lcs_ref_start = match_chain[lis_arr[list_n]].first;
-						lcs_que_start = match_chain[lis_arr[list_n]].second;
+						lcs_ref_start = match_set[lis_arr[list_n]].first;
+						lcs_que_start = match_set[lis_arr[list_n]].second;
 #endif
 #ifndef HEURISTIC1_OFF
-						lcs_ref_start = match_chain[lis_arr[0]].first;
-						lcs_que_start = match_chain[lis_arr[0]].second;
+						lcs_ref_start = match_set[lis_arr[0]].first;
+						lcs_que_start = match_set[lis_arr[0]].second;
 #endif                                    
 						// reference string
 						std::size_t head = 0;
@@ -423,13 +421,17 @@ void compute_lis_alignment
 								std::pair<bool,bool> is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
 								read.is_id = is_id_cov.first;
 								read.is_cov = is_id_cov.second;
-								read.is_denovo != is_id_cov.first && is_id_cov.second;
 
 								if (read.is_id && read.is_cov)
 									readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
-
-								if (read.is_denovo)
+								else if (read.is_id && !read.is_cov)
+									readstats.total_aligned_id.fetch_add(1, std::memory_order_relaxed);
+								else if (!read.is_id && read.is_cov)
+									readstats.total_aligned_cov.fetch_add(1, std::memory_order_relaxed);
+								else {
 									readstats.total_denovo.fetch_add(1, std::memory_order_relaxed);
+									read.is_denovo = true;
+								}
 							}
 
 							// if 'N == 0' or 'Not is_best' or 'is_best And read.alignments.size < N' => 
@@ -497,29 +499,29 @@ void compute_lis_alignment
 						}
 					}//~if LIS long enough                               
 #ifdef HEURISTIC1_OFF
-				} while ((hits_per_ref_iter == hits_per_ref.end()) && (++list_n < lis_arr.size()));
+				} while ((hits_on_ref_iter == hits_per_ref.end()) && (++list_n < lis_arr.size()));
 #endif                                              
 			}//~if enough window hits                                                
 		pop:
 			// get the next candidate reference position 
-			if (!match_chain.empty())
+			if (!match_set.empty())
 			{
-				match_chain.pop_front();
+				match_set.pop_front();
 			}
 
-			if (match_chain.empty())
+			if (match_set.empty())
 			{
-				if (hits_per_ref_iter != hits_per_ref.end()) // TODO: seems Always false
+				if (hits_on_ref_iter != hits_on_ref.end()) // TODO: seems Always false
 				{
-					begin_ref = hits_per_ref_iter->first; // TODO: seems never reached
-					begin_read = hits_per_ref_iter->second;
+					begin_ref = hits_on_ref_iter->first; // TODO: seems never reached
+					begin_read = hits_on_ref_iter->second;
 				}
 				else break;
 			}
 			else
 			{
-				begin_ref = (match_chain.front()).first;
-				begin_read = (match_chain.front()).second;
+				begin_ref = (match_set.front()).first;
+				begin_read = (match_set.front()).second;
 			}
 		}//~for all reference sequence length                   
 	}//~for all of the reference sequence candidates

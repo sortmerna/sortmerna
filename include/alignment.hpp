@@ -114,7 +114,15 @@ struct alignment_struct
                    uint32_t max,
                    s_align* p) : max_size(max_size), size(size), min_index(min), max_index(max), ptr(p) {}
 };
-
+/*
+ * called on each idx * part * read * strand * [1..max opts.skiplengths[index_num].size (3 by default)]
+ *
+ * @param search OUT boolean
+ *        return 'True' to indicate keep searching for more seed matches and better alignment.
+ *		  return 'False' - stop search, the alignment is found
+ * @param max_SW_score  the maximum SW score attainable for this read i.e. perfect match
+ * @param read_to_count
+ */
 void compute_lis_alignment(
 	Read & read, Runopts & opts, Index & index, References & refs, Readstats & readstats, Refstats & refstats,
 	bool & search,

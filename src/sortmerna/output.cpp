@@ -126,12 +126,14 @@ void report(int id,
 				if (opts.is_other) output.fx_other.append(id, reads, opts, isDone);
 			}
 
+			// only needs one loop through all reads, no reference file dependency
+			if (opts.is_denovo && refs.num == 0 && refs.part == 0) 
+				output.denovo.append(id, reads, opts, isDone);
+
 			for (int i = 0; i < reads.size(); ++i)
 			{
 				if (opts.is_blast) output.blast.append(id, reads[i], refs, refstats, opts);
 				if (opts.is_sam) output.sam.append(id, reads[i], refs, opts);
-				// only needs one loop through all reads, no reference file dependency
-				if (opts.is_denovo && refs.num == 0 && refs.part == 0) output.denovo.append(id, reads[i], opts);
 			} // ~for reads
 		}
 	} // ~for

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include "report.h"
+#include "report_fx_base.h"
 
 // forward
 class Read;
@@ -13,5 +13,9 @@ public:
 	ReportDenovo(Runopts& opts);
 	ReportDenovo(Readfeed& readfeed, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;
-	void append(int id, Read& read, Runopts& opts);
+	void merge(int num_splits) override;
+	void append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last = false);
+
+private:
+	ReportFxBase base;
 };

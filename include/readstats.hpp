@@ -35,16 +35,18 @@ struct Readstats
 	std::string dbkey; // Hashed concatenation of underscore separated basenames of the read files. Used as the key into the Key-value DB. 
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
-	std::atomic<uint64_t> total_aligned; // reads passing E-value threshold.
-	std::atomic<uint64_t> total_aligned_id_cov; // [2] reads passing E-value, %ID, %COV (query coverage) thresholds.
-	std::atomic<uint64_t> total_denovo; // [4] 'de novo' reads (SW + !ID + !COV).
-	std::atomic<uint64_t> short_reads_num; // reads shorter than a threshold of N nucleotides. Reset for each index.
-
+	uint64_t total_otu; // not to store in DB
 	uint64_t all_reads_count; // [1] total number of reads in file.
 	uint64_t all_reads_len; // total number of nucleotides in all reads i.e. sum of length of All read sequences
-	uint64_t total_otu;
-    uint32_t min_read_len; // shortest Read length. (read only)
-    uint32_t max_read_len; // longest Read length. (read only)
+	uint32_t min_read_len; // shortest Read length. (read only)
+	uint32_t max_read_len; // longest Read length. (read only)
+
+	std::atomic<uint64_t> total_aligned; // reads passing E-value threshold.
+	std::atomic<uint64_t> total_aligned_id; // SW + ID - COV i.e. aligned passing ID, failing COV
+	std::atomic<uint64_t> total_aligned_cov; // SW - ID + COV i.e. aligned failing ID, passing COV
+	std::atomic<uint64_t> total_aligned_id_cov; // [2] SW + ID + COV i.e. aligned passing ID, passing COV
+	std::atomic<uint64_t> total_denovo; // [4] SW - ID - COV i.e. 'de novo' reads, aligned failing ID, failing COV
+	std::atomic<uint64_t> num_short; // count of reads shorter than a threshold of N nucleotides. Reset for each index.
 
 	std::vector<uint64_t> reads_matched_per_db; // [3] reads matched per database.
     //              |_TODO: should be atomic std::atomic<uint64_t> 20201019

@@ -114,17 +114,9 @@ Read::Read()
 	format(BIO_FORMAT::FASTA)
 {}
 
-Read::Read(std::string& readstr)
-	:
-	Read()
-{
-	isEmpty = !from_string(readstr);
-}
+Read::Read(std::string& readstr) : Read() {	isEmpty = !from_string(readstr); }
 
-Read::Read(std::string id, std::string& read)
-	:
-	Read()
-	{ id = id; }
+Read::Read(std::string id, std::string& read) :	Read() { id = id; }
 
 Read::Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format)
 	:

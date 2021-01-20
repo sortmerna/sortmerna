@@ -77,7 +77,7 @@ public:
 	bool is_new_hit; // indicates a new hit was found so the read has to be stored. Init to False before each index search. NO DB store.
 	bool is_id; // true if at least one alignment passes %ID
 	bool is_cov; // true if at least one alignment passes %COV
-	bool is_denovo; // true if Not a single alignment passes %Cov + %ID i.e. 'is_denovo != (is_id && is_cov)'
+	bool is_denovo; // true if Not a single alignment passes %Cov + %ID i.e. 'is_denovo = (!is_id && !is_cov)'
 	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
 	unsigned num_hits; // number of matching references found so far for this read
 	uint16_t max_SW_count; // count of alignments that have Max possible Smith-Waterman score for this read

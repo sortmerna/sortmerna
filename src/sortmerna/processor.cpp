@@ -45,7 +45,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 
 			if (read.is_too_short) {
 				read.isValid = false;
-				readstats.short_reads_num.fetch_add(1, std::memory_order_relaxed);
+				readstats.num_short.fetch_add(1, std::memory_order_relaxed);
 			}
 
 			if (read.isValid) {
@@ -154,7 +154,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			INFO("Loading index: ", index_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[index_num], " Memory KB: ", (get_memory() >> 10), " ... ");
 			auto start_i = std::chrono::high_resolution_clock::now();
 			index.load(index_num, idx_part, opts.indexfiles, refstats);
-			readstats.short_reads_num.store(0, std::memory_order_relaxed); // reset the short reads counter
+			readstats.num_short.store(0, std::memory_order_relaxed); // reset the short reads counter
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
 			INFO_MEM("done in [", elapsed.count(), "] sec");
 
