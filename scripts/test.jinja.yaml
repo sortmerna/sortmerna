@@ -166,12 +166,12 @@ t3:
     - {{ SMR_SRC }}/data/set2_environmental_study_550_amplicon.fasta
     - -max_pos
     - '250'
+    - -otu_map
+    - -de_novo_otu
     - -id
     - '0.97'
     - -coverage
     - '0.97'
-    - -otu_map
-    - -de_novo_otu
     - -fastx
     - -other
     - -blast
@@ -179,6 +179,9 @@ t3:
     - -v
     - -threads
     - '4'
+    #- -no-best
+    #- -num_alignments
+    #- '2'
     #- -task
     #- '2'
   validate: 
@@ -565,6 +568,11 @@ t15:
 
 t16:
   name: test_relative_path
+  info: |
+    search for a single best alignment per read i.e.
+    ref  reads  best  N  min_lis
+    ---------------------------
+    1    1      true  1  2 
   note:
   cmd:
     - -ref
@@ -578,16 +586,152 @@ t16:
     - -num_alignments
     - '1'
     - -v
-    - -workdir
-    - run
     - -threads
-    - '8'
+    - '4'
   cwd: {{ SMR_SRC }}
   validate:
     func:
     num_reads: 10000
     num_hits:   6000
     num_fail:   4000
+
+t16_2:
+  name:
+  info: |
+    relative paths
+    search All alignments per read i.e.
+    ref  reads  best  N  min_lis
+    ---------------------------
+    2    2      true  0  2 
+  note:
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -blast
+    - '1 cigar qcov'
+    - -num_alignments
+    - '0'
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    6000
+    num_fail:    4000
+    num_blast: 128598 # ~21 alignments per read
+
+t16_3:
+  name:
+  info: |
+    relative paths
+    zip in - zip out
+    search 2 best alignment per read i.e.
+    ref  reads  best  N  min_lis
+    ---------------------------
+    2    2      true  2  2 
+  note:
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -num_alignments
+    - '2'
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    6000
+    num_fail:    4000
+    num_blast:  11389 # ~1.9 alignments per read
+
+t16_4:
+  name:
+  info: |
+    relative paths, 
+    zip in - zip out
+    search any single alignment per read i.e.
+    ref  reads  best   N  min_lis
+    ---------------------------
+    2    2      false  1  2 
+  note:
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -no-best
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    6000
+    num_fail:    4000
+    num_blast:   6000 # 1 alignment per read
+
+t16_5:
+  name:
+  info: |
+    relative paths, 
+    zip in - zip out
+    search for any 2 alignments per read i.e.
+    ref  reads  best   N  min_lis
+    ---------------------------
+    2    2      false  2  2 
+  note:
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - -reads
+    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -no-best
+    - -num_alignments
+    - '2'
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    6000
+    num_fail:    4000
+    num_blast:  11389 # ~1.9 alignments per read
 
 t17:
   name: test_indexing
