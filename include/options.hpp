@@ -462,8 +462,8 @@ public:
 	int zip_out = -1; // - 0 (false) | 1 (true) | -1 (not set)
 
 	int32_t num_alignments = 1; // [3] help_num_alignments
-	int32_t hit_seeds = 2; // OPT_NUM_SEEDS Min number of seeds on a read that have matches in DB prior calculating LIS
-	int32_t min_lis = 2; // OPT_MIN_LIS search all alignments having the first N longest LIS
+	int32_t num_seeds = 2; // min number of seeds on a read that have matches in DB prior calculating LIS
+	int32_t min_lis = 2; // search all alignments that have LIS >= min_lis
 	int32_t edges = -1; // OPT_EDGES
 
 	uint32_t minoccur = 0; // TODO: add to cmd options. Min number of k-mer occurrences in the DB to use for matching. See 'index.lookup_tbl[kmer_idx].count'

@@ -428,8 +428,8 @@ void Runopts::opt_num_seeds(const std::string& val)
 	}
 
 	char* end = 0;
-	hit_seeds = (int)strtol(val.data(), &end, 10); // convert to integer
-	if (hit_seeds <= 0)
+	num_seeds = (int)strtol(val.data(), &end, 10); // convert to integer
+	if (num_seeds <= 0)
 	{
 		ERR("--num_seeds [INT] requires a positive integer (>0) as input (ex. --num_seeds 6)");
 		exit(EXIT_FAILURE);
@@ -1585,11 +1585,11 @@ void Runopts::validate()
 		min_lis = 2;
 
 	// default number of seed hits before searching for candidate LIS
-	if (hit_seeds < 0)
-		hit_seeds = 2;
+	if (num_seeds < 0)
+		num_seeds = 2;
 
-	// default number of nucleotides to add to each edge of an alignment
-	// region before extension
+	// default number of nucleotides to add to each edge
+	// of an alignment region before extension
 	if (edges < 0) 
 		edges = 4;
 

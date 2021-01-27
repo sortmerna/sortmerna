@@ -43,9 +43,6 @@
 #include "options.hpp"
 
 
- // Universal Levenshtein table for k=1
-extern uint32_t table[4][16][14];
-
 /* 
  * for each 18-mer hit on the read, we store the
  * key to find the positions and the window number
@@ -53,8 +50,12 @@ extern uint32_t table[4][16][14];
  */
 struct id_win
 {
-	uint32_t id; // key to find index positions
-	uint32_t win; // the associated window number on the read 
+	// a numeric value obtained from a given k-mer by using the
+	// unique minimal hash function (CMPH) i.e. id = cmph(18-mer).
+	// Used as the index into 'positions_tbl' array generated
+	// during reference indexing.
+	uint32_t id;
+	uint32_t win; // the associated position of the k-mer (window) on the read 
 
 	id_win() : id(0), win(0) {}
 	id_win(uint32_t id, uint32_t win) : id(id), win(win) {}
@@ -84,6 +85,11 @@ struct id_win
 
 /*! @fn traversetrie_align()
 	@brief
+	given a k-mer (seed/window position - 'win_num') on the read, search for matching k-mers on references using the reference index.
+	i.e.
+	  IN  win_num
+	  OUT id_hits
+
 	@detail Exact matching of [p_1] in [s_1] is completed fully
 	in the trie nodes, continue parallel traversal of the trie
 	beginning at [s_2]:<br/>
@@ -92,26 +98,26 @@ struct id_win
 		pattern = |------ [p_1] ------|------ [p_2] --....--|<br/>
 				  |------ trie -------|----- tail ----....--|<br/>
 
-	@param  NodeElement*     trie_t             root node to mini burst trie
-	@param  uint32_t         lev_t              initial Levenshtein automaton state
-	@param  unsigned char    depth              trie node depth
-	@param  MYBITSET*        win_k1_ptr         pointer to start of forward L/2-mer bitvector
-	@param  MYBITSET*        win_k1_full        pointer to start of structure storing all bitvectors
-	@param  bool&            accept_zero_kmer   if true, if a match is found during forward subsearch, then skip reverse subsearch
-	@param  vector<id_win>&  id_hits            vector storing IDs of all candidate L-mers (matching in mini burst trie)
-	@param  uint32_t         win_num            sliding window (seed) number on read
+	@param  NodeElement*     trie_t                  root node to mini burst trie
+	@param  uint32_t         lev_t                   initial Levenshtein automaton state
+	@param  unsigned char    depth                   trie node depth
+	@param  MYBITSET*        win_k1_ptr              pointer to start of forward L/2-mer bitvector
+	@param  MYBITSET*        win_k1_full             pointer to start of structure storing all bitvectors
+	@param  bool&            accept_zero_kmer        if true, if a match is found during forward subsearch, then skip reverse subsearch
+	@param  vector<id_win>&  id_hits            OUT  vector storing IDs of all candidate L-mers (matching in mini burst trie)
+	@param  uint32_t         win_num            IN   k-mer (seed/window position) on the read
 	@param  uint32_t         partialwin
 	@return void
 */
 void traversetrie_align(
-	NodeElement * trie_t,
+	NodeElement* trie_t,
 	uint32_t lev_t,
 	unsigned char depth,
-	UCHAR * win_k1_ptr,
-	UCHAR * win_k1_full,
-	bool & accept_zero_kmer,
-	std::vector<id_win> & id_hits,
+	UCHAR* win_k1_ptr,
+	UCHAR* win_k1_full,
+	bool& accept_zero_kmer,
+	std::vector<id_win>& id_hits,
 	uint32_t win_num,
 	uint32_t partialwin,
-	Runopts & opts
+	Runopts& opts
 );

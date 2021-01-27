@@ -72,8 +72,8 @@ public:
 	unsigned int lastIndex; // last index number this read was aligned against. Set in Processor::callback
 	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
-	bool is_aligned; // all alignments have been found => stop searching
-	bool is_hit; // ture if at least one alignment 'SW_score >= min_SW_score' has been found
+	bool is_done; // all alignments have been found => stop searching
+	bool is_hit; // true if at least one alignment 'SW_score >= min_SW_score' has been found
 	bool is_new_hit; // indicates a new hit was found so the read has to be stored. Init to False before each index search. NO DB store.
 	bool is_id; // true if at least one alignment passes %ID
 	bool is_cov; // true if at least one alignment passes %COV

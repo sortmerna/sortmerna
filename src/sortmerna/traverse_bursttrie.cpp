@@ -93,7 +93,6 @@ uint32_t table[4][16][14] = {
 	{{10, 14, 14, 14, 14, 14, 14, 14, 14, 10, 14, 14, 14, 14},
 	{10, 10, 14, 10, 14, 10, 14, 10, 14, 10, 14, 14, 10, 14}} };
 
-/*! @fn traversetrie_align() */
 void traversetrie_align(
 	NodeElement* trie_t,
 	uint32_t lev_t,

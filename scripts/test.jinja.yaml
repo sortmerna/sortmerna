@@ -572,7 +572,7 @@ t16:
     search for a single best alignment per read i.e.
     ref  reads  best  N  min_lis
     ---------------------------
-    1    1      true  1  2 
+    2    2      true  1  2 
   note:
   cmd:
     - -ref

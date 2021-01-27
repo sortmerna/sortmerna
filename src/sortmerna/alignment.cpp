@@ -93,13 +93,10 @@ void find_lis( deque<pair<uint32_t, uint32_t>>& a, vector<uint32_t>& b )
 		b[u] = static_cast<uint32_t>(v);
 } // ~find_lis
 
-void compute_lis_alignment
-	(
-		Read& read, Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats,
-		bool& search,
-		uint32_t max_SW_score,
-		bool& read_to_count
-	)
+void compute_lis_alignment( Read& read, Runopts& opts,
+							Index& index, References& refs, 
+							Readstats& readstats, Refstats& refstats,
+							bool& search, uint32_t max_SW_score	)
 {
 	// true if SW alignment between the read and a candidate reference meets the threshold
 	bool is_aligned = false;
@@ -133,7 +130,7 @@ void compute_lis_alignment
 	// consider only candidate references that have enough seed hits
 	for (auto const& freq_pair: kmer_count_map)
 	{
-		if (freq_pair.second >= (uint32_t)opts.hit_seeds)
+		if (freq_pair.second >= (uint32_t)opts.num_seeds)
 			kmer_count_vec.push_back(freq_pair);
 	}
 
@@ -155,7 +152,7 @@ void compute_lis_alignment
 		max_occur = kmer_count_vec[k].second;
               
 		// not enough hits on the reference, try to collect more hits or next read
-		if (max_occur < (uint32_t)opts.hit_seeds) {
+		if (max_occur < (uint32_t)opts.num_seeds) {
 			break;
 		}
 
@@ -217,8 +214,8 @@ void compute_lis_alignment
 		while (hits_on_ref_iter != hits_on_ref.end() && is_search_candidates)
 		{
 			// max possible k-mer start position: 
-			//   max start position on the reference of a matching k-mer for the read 
-			//   that is overlaid/anchored on the reference using a matching k-mer
+			//   max start position on the reference of a matching k-mer for 
+			//   an overlaid read anchored on the reference using a matching k-mer
 			// 
 			// ref: |--------|k-mer anchor|-------|k-mer|--------------------|k-mer|-----|
 			//               ^begin_ref e.g. 20                              ^end_ref
@@ -248,7 +245,7 @@ void compute_lis_alignment
 			aligned = false;
 #endif                              
 			// enough windows at this position on genome to search for LIS
-			if (match_set.size() >= (uint32_t)opts.hit_seeds)
+			if (match_set.size() >= (uint32_t)opts.num_seeds)
 			{
 				vector<uint32_t> lis_arr; // array of Indices of matches from the match_set comprising the LIS
 				find_lis(match_set, lis_arr);
@@ -415,21 +412,14 @@ void compute_lis_alignment
 							}
 
 							// calculate %ID and %COV if OTU map or denovo were requested
-							if ((opts.is_otu_map || opts.is_denovo) && !read.is_id && !read.is_cov)
+							if ((opts.is_otu_map || opts.is_denovo) && !(read.is_id && read.is_cov))
 							{
 								std::pair<bool,bool> is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
-								read.is_id = is_id_cov.first;
-								read.is_cov = is_id_cov.second;
-
-								if (read.is_id && read.is_cov)
-									readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
-								else if (read.is_id && !read.is_cov)
-									readstats.total_aligned_id.fetch_add(1, std::memory_order_relaxed);
-								else if (!read.is_id && read.is_cov)
-									readstats.total_aligned_cov.fetch_add(1, std::memory_order_relaxed);
-								else {
-									readstats.total_denovo.fetch_add(1, std::memory_order_relaxed);
-									read.is_denovo = true;
+								if (!read.is_id && is_id_cov.first) {
+									read.is_id = true;
+								}
+								if (!read.is_cov && is_id_cov.second) {
+									read.is_cov = true;
 								}
 							}
 

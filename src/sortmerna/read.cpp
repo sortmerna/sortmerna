@@ -99,7 +99,7 @@ Read::Read()
 	lastIndex(0),
 	lastPart(0),
 	reversed(false),
-	is_aligned(false),
+	is_done(false),
 	is_hit(false),
 	is_new_hit(false),
 	is_id(false),
@@ -149,7 +149,7 @@ Read::Read(const Read & that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
-	is_aligned = that.is_aligned;
+	is_done = that.is_done;
 	is_hit = that.is_hit;
 	is_new_hit = that.is_new_hit;
 	is_id = that.is_id;
@@ -279,7 +279,7 @@ void Read::clear()
 	isRestored = false;
 	lastIndex = 0;
 	lastPart = 0;
-	is_aligned = false;
+	is_done = false;
 	is_hit = false;
 	is_new_hit = false;
 	is_denovo = true;
@@ -373,7 +373,7 @@ std::string Read::matchesToJson() {
 
 	writer.StartObject();
 	writer.Key("aligned");
-	writer.Bool(is_aligned);
+	writer.Bool(is_done);
 	writer.Key("hit");
 	writer.Bool(is_hit);
 	writer.Key("id_cov");
@@ -413,7 +413,7 @@ std::string Read::toBinString()
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_aligned)), sizeof(is_aligned), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&is_done)), sizeof(is_done), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_hit)), sizeof(is_hit), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_id)), sizeof(is_id), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_cov)), sizeof(is_cov), std::back_inserter(buf));
@@ -456,8 +456,8 @@ bool Read::load_db(KeyValueDatabase& kvdb)
 	std::memcpy(static_cast<void*>(&lastPart), bstr.data() + offset, sizeof(lastPart));
 	offset += sizeof(lastPart);
 
-	std::memcpy(static_cast<void*>(&is_aligned), bstr.data() + offset, sizeof(is_aligned));
-	offset += sizeof(is_aligned);
+	std::memcpy(static_cast<void*>(&is_done), bstr.data() + offset, sizeof(is_done));
+	offset += sizeof(is_done);
 
 	std::memcpy(static_cast<void*>(&is_hit), bstr.data() + offset, sizeof(is_hit));
 	offset += sizeof(is_hit);

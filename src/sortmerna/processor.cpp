@@ -23,10 +23,13 @@
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
 
 /*
-  runs in a thread.  align -> align2
-  @param  id
+* performs the alignment
+*  runs in a thread.  align -> align2
+*  @param id
+*  @param is_last_idx  flags the last index is being processed
 */
-void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
+void align2(int id, Readfeed& readfeed, Readstats& readstats, 
+			Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	unsigned num_all = 0; // all reads this processor sees
 	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
@@ -52,8 +55,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 				read.load_db(kvdb);
 			}
 
-			if (read.isEmpty || !read.isValid || read.is_aligned) {
-				if (read.is_aligned) {
+			if (read.isEmpty || !read.isValid || read.is_done) {
+				if (read.is_done) {
 					++num_skipped;
 				}
 				//INFO("Skpping read ID: ", read.id);
@@ -69,7 +72,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 				num_strands = 2; // search both strands. The default when neither -F or -R were specified
 
 			//                                                  |- stop if read was aligned on FWD strand
-			for (auto count = 0; count < num_strands && !read.is_aligned; ++count)
+			for (auto count = 0; count < num_strands && !read.is_done; ++count)
 			{
 				if ((search_single_strand && opts.is_reverse) || count == 1)
 				{
@@ -79,6 +82,27 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 				
 				traverse(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1); // 'paralleltraversal.cpp'
 				read.id_win_hits.clear(); // bug 46
+			}
+
+			auto is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
+			if (is_last_idx) // read.is_aligned && 
+			{
+				if (opts.is_otu_map || opts.is_denovo) 
+				{
+					if (read.is_id && read.is_cov) {
+						readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
+					}
+					else if (read.is_id && !read.is_cov) {
+						readstats.total_aligned_id.fetch_add(1, std::memory_order_relaxed);
+					}
+					else if (!read.is_id && read.is_cov) {
+						readstats.total_aligned_cov.fetch_add(1, std::memory_order_relaxed);
+					}
+					else {
+						readstats.total_denovo.fetch_add(1, std::memory_order_relaxed);
+						read.is_denovo = true;
+					}
+				}
 			}
 
 			// write to DB - thread safe
@@ -106,7 +130,9 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats, Index& index, Refe
 		" Aligned reads (passing E-value): ", num_hit, " Runtime sec: ", elapsed.count());
 } // ~align2
 
-// called from main
+/*
+* launches processing threads. called from main
+*/
 void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("==== Starting alignment ====");
@@ -145,15 +171,15 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	std::chrono::duration<double> elapsed;
 
 	// loop through every index passed to option '--ref'
-	for (size_t index_num = 0; index_num < opts.indexfiles.size(); ++index_num)
+	for (size_t idx_num = 0; idx_num < opts.indexfiles.size(); ++idx_num)
 	{
 		// iterate every part of an index
-		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[index_num]; ++idx_part)
+		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[idx_num]; ++idx_part)
 		{
 			// load index
-			INFO("Loading index: ", index_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[index_num], " Memory KB: ", (get_memory() >> 10), " ... ");
+			INFO("Loading index: ", idx_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[idx_num], " Memory KB: ", (get_memory() >> 10), " ... ");
 			auto start_i = std::chrono::high_resolution_clock::now();
-			index.load(index_num, idx_part, opts.indexfiles, refstats);
+			index.load(idx_num, idx_part, opts.indexfiles, refstats);
 			readstats.num_short.store(0, std::memory_order_relaxed); // reset the short reads counter
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
 			INFO_MEM("done in [", elapsed.count(), "] sec");
@@ -161,7 +187,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			// load references
 			INFO("Loading references ...");
 			start_i = std::chrono::high_resolution_clock::now();
-			refs.load(index_num, idx_part, opts, refstats);
+			refs.load(idx_num, idx_part, opts, refstats);
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
 			INFO_MEM("done in [", elapsed.count(), "] sec.");
 
@@ -186,8 +212,8 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			++loopCount;
 
 			elapsed = std::chrono::high_resolution_clock::now() - start_i;
-			INFO_MEM("done index: ", index_num, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");
-			//INFO_MEM("Done index ", index_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
+			INFO_MEM("done index: ", idx_num, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");
+			//INFO_MEM("Done index ", idx_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
 
 			start_i = std::chrono::high_resolution_clock::now();
 			index.unload();
@@ -200,7 +226,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			readfeed.init_vzlib_in();
 			//read_queue.reset();
 		} // ~for(idx_part)
-	} // ~for(index_num)
+	} // ~for(idx_num)
 
 	elapsed = std::chrono::high_resolution_clock::now() - start_a;
 	INFO("==== Done alignment in ", elapsed.count(), " sec ====\n");

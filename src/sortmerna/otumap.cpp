@@ -111,8 +111,8 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 				if (read.is_id && read.is_cov) {
 					for (int i = 0; i < read.alignment.alignv.size(); ++i) {
 						// process alignments that match currently loaded reference part
-						auto is_right_ref = read.alignment.alignv[i].index_num == refs.num && read.alignment.alignv[i].part == refs.part;
-						if (is_right_ref) {
+						auto is_my_ref = read.alignment.alignv[i].index_num == refs.num && read.alignment.alignv[i].part == refs.part;
+						if (is_my_ref) {
 							// reference sequence identifier for mapped read
 							std::string refhead = refs.buffer[read.alignment.alignv[i].ref_num].header;
 							std::string ref_seq_str = refhead.substr(0, refhead.find(' '));

@@ -92,8 +92,8 @@ void traverse
 	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
 
 	uint32_t win_shift = opts.skiplengths[index.index_num][0];
-	// keep track of windows (read positions) which have been already traversed in the burst trie
-	// initially all False
+	// keep track of windows (read positions) which have already been traversed
+	// in the burst trie using different shifts. Initially all False
 	vector<bool> read_pos_searched(read.sequence.size());
 
 	size_t pass_n = 0; // Pass number (possible value 0,1,2)
@@ -111,7 +111,7 @@ void traverse
 	for (bool search = true; search; )
 	{
 		// number of k-mer windows fit along the read given 
-		// the window size and a search step (windowshift)
+		// the window size and the search step (windowshift)
 		uint32_t numwin = ( 
 				read.sequence.size() - refstats.lnwin[index.index_num] + win_shift
 			) / win_shift;
@@ -125,7 +125,7 @@ void traverse
 			// skip position when the seed at this position has already been searched for in a previous Passes
 			if (!read_pos_searched[win_pos])
 			{
-				read_pos_searched[win_pos].flip(); // mark position as searched
+				read_pos_searched[win_pos] = true; // mark position as searched
 				// this flag it set to true if a match is found during
 				// subsearch 1(a), to skip subsearch 1(b)
 				bool accept_zero_kmer = false;
@@ -135,12 +135,10 @@ void traverse
 				bitvec.resize(bitvec_size);
 				std::fill(bitvec.begin(), bitvec.end(), 0);
 
-				init_win_f(&read.isequence[win_pos + refstats.partialwin[index.index_num]],
-					&bitvec[0],
-					&bitvec[4],
-					refstats.numbvs[index.index_num]);
+				auto ii = win_pos + refstats.partialwin[index.index_num];
+				init_win_f(&read.isequence[ii],	&bitvec[0],	&bitvec[4],	refstats.numbvs[index.index_num]);
 
-				// the hash of the first half of the kmer window
+				// the hash of the 'first half' of the kmer window
 				uint32_t keyf = read.hashKmer(win_pos, refstats.partialwin[index.index_num]);
 
 				// TODO: remove in production
@@ -183,17 +181,15 @@ void traverse
 					);
 				} //~if exact half window exists in the burst trie
 
-				// only search reversed kmer if an exact match has not been found for the forward
+				// only search rear kmer if an exact match has not been found for the forward
 				if (!accept_zero_kmer)
 				{
 					//bitvec.resize(bitvec_size);
 					std::fill(bitvec.begin(), bitvec.end(), 0);
 
 					// init the first bitvector window
-					init_win_r(&read.isequence[win_pos + refstats.partialwin[index.index_num] - 1],
-						&bitvec[0],
-						&bitvec[4],
-						refstats.numbvs[index.index_num]);
+					auto ii = win_pos + refstats.partialwin[index.index_num] - 1;
+					init_win_r(&read.isequence[ii],	&bitvec[0],	&bitvec[4],	refstats.numbvs[index.index_num]);
 
 					// the hash of the second (rear) half of the kmer window
 					uint32_t keyr = read.hashKmer(win_pos + refstats.partialwin[index.index_num], refstats.partialwin[index.index_num]);
@@ -239,12 +235,12 @@ void traverse
 					}//~if exact half window exists in the reverse burst trie                    
 				}//~if (!accept_zero_kmer)
 
-				// associate the ids with the read's window number
+				// store found seed hits in the read
 				if (!id_hits.empty())
 				{
-					for (uint32_t i = 0; i < id_hits.size(); i++)
+					for (auto const& hit: id_hits)
 					{
-						read.id_win_hits.push_back(id_hits[i]);
+						read.id_win_hits.push_back(hit);
 					}
 					++read.hit_seeds;
 				}
@@ -254,11 +250,8 @@ void traverse
 			if (win_num == numwin - 1)
 			{
 				// calculate LIS if the number of matching seeds on the read meets the threshold (default 2)
-				if (read.hit_seeds >= (uint32_t)opts.hit_seeds) {
-					compute_lis_alignment(
-						read, opts, index, refs, readstats, refstats,
-						search,	max_SW_score, read_to_count
-					);
+				if (read.hit_seeds >= (uint32_t)opts.num_seeds) {
+					compute_lis_alignment(read, opts, index, refs, readstats, refstats,	search,	max_SW_score);
 				}
 
 				// if the read was not accepted at the current shift,
@@ -289,19 +282,15 @@ void traverse
 	if (opts.num_alignments > 0) {
 		if (opts.is_best && opts.num_alignments == read.max_SW_count ||
 			(!opts.is_best && read.alignment.alignv.size() == opts.num_alignments)) {
-			read.is_aligned = true;
+			read.is_done = true;
 		}
 	}
 	// end of processing and read.alignments > 0
-	else if (isLastStrand && read.lastIndex == index.index_num && read.lastPart == index.part && read.alignment.alignv.size() > 0) {
-		read.is_aligned = true;
+	else {
+		auto is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
+		if (is_last_idx && isLastStrand && read.alignment.alignv.size() > 0)
+			read.is_done = true;
 	}
-
-	// the read didn't align => NOT is_denovo
-	//if (isLastStrand && !read.is_hit && opts.num_alignments > -1 && opts.is_denovo_otu && read.is_denovo)
-	//{
-	//	read.is_denovo = false;
-	//}
 } // ~traverse
 
 /**

@@ -89,7 +89,7 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 			<< "        Minimal SW score based on E-value = " << refstats.minimal_score[idx] << std::endl;
 		++idx;
 	}
-	ss << "    Number of seeds = " << opts.hit_seeds << std::endl
+	ss << "    Number of seeds = " << opts.num_seeds << std::endl
 		<< "    Edges = " << opts.edges << std::endl
 		<< "    SW match = " << opts.match << std::endl
 		<< "    SW mismatch = " << opts.mismatch << std::endl
