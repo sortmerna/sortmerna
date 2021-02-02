@@ -24,27 +24,33 @@ test.list:
   - t13:
   - t14:
   - t15:
-    #       best   N  min_lis refs  reads  zip
-  - t16:   [  1,   1,  2,  2,   2,     True]
-  - t16_2: [  1,   0,  2,  2,   2,     True]
-  - t16_3: [  1,   2,  2,  2,   2,     True]
-  - t16_4: [  0,   1,  2,  2,   2,     True]
-  - t16_5: [  0,   2,  2,  2,   2,     True]
+  #                         output type                                       |    alignment type
+  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  - t16:   [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   1,    2,     2 ]
+  - t16_2: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   0,    2,     2 ]
+  - t16_3: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   2,    2,     2 ]
+  - t16_4: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   1,    2,     2 ]
+  - t16_5: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   2,    2,     2 ]
+  - t16_6: [ 2,    2,    1,   1,     0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  - t16_7: [ 2,    2,    1,   1,     0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
+  - t16_8: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  #
   - t17:
   - t18:
-  #              output type                                                   |    alignment type
-  #        refs  reads  paired  paired_in  paired_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t19:   [ 2,    2,     1,      1,          0,         0,    0,    0,    1,      1,  1,    2,     2 ]
-  - t19_1: [ 2,    2,     1,      1,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
-  - t19_2: [ 2,    2,     1,      0,          1,         0,    0,    0,    1,      1,  1,    2,     2 ]
-  - t19_3: [ 2,    2,     1,      0,          1,         1,    0,    0,    1,      1,  1,    2,     2 ]
-  - t19_4: [ 2,    2,     1,      0,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  #                         output type                                       |    alignment type
+  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  - t19:   [ 2,    2,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  - t19_1: [ 2,    2,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  - t19_2: [ 2,    2,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  - t19_3: [ 2,    2,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  - t19_4: [ 2,    2,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
   #
-  - t20:   [ 2,    1,     1,      1,          0,         0,    0,    0,    1,      1,  1,    2,     2 ]
-  - t20_1: [ 2,    1,     1,      1,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
-  - t20_2: [ 2,    1,     1,      0,          1,         0,    0,    0,    1,      1,  1,    2,     2 ]
-  - t20_3: [ 2,    1,     1,      0,          1,         1,    0,    0,    1,      1,  1,    2,     2 ]
-  - t20_4: [ 2,    1,     1,      0,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  - t20:   [ 2,    1,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  - t20_1: [ 2,    1,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  - t20_2: [ 2,    1,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  - t20_3: [ 2,    1,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  - t20_4: [ 2,    1,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  #
   - t21:
   - t22:
   - t23:
@@ -605,12 +611,15 @@ t15:
     - {{ WRK_DIR }}
 
 t16:
-  name: test_relative_path
+  name: 2 read + zip + 1 best
   info: |
-    search a single best alignment per read
-    ref  reads  best  N  min_lis
-    ---------------------------
-    2    2      true  1  2 
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       -     -     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   1     2      2
   note:
   cmd:
     - -ref
@@ -634,13 +643,15 @@ t16:
     num_fail:   4000
 
 t16_2:
-  name:
+  name: 2 read + zip + all + relative paths
   info: |
-    relative paths
-    search All alignments per read
-    ref  reads  best  N  min_lis
-    ---------------------------
-    2    2      true  0  2 
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       -     -     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   0     2      2
   note:
   cmd:
     - -ref
@@ -667,14 +678,15 @@ t16_2:
     num_blast: 128598 # ~21 alignments per read
 
 t16_3:
-  name:
+  name: 2 reads + zip + 2 best + relative paths
   info: |
-    relative paths
-    zip in - zip out
-    search 2 best alignment per read
-    ref  reads  best  N  min_lis
-    ---------------------------
-    2    2      true  2  2 
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       -     -     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   2     2      2
   note:
   cmd:
     - -ref
@@ -702,14 +714,15 @@ t16_3:
     num_blast:  11389 # ~1.9 alignments per read
 
 t16_4:
-  name:
+  name: 2 reads + zip + 1 no best + relative paths
   info: |
-    relative paths, 
-    zip in - zip out
-    search any single alignment per read
-    ref  reads  best   N  min_lis
-    ---------------------------
-    2    2      false  1  2 
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       -     -     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      0   1     2      2
   note:
   cmd:
     - -ref
@@ -736,14 +749,15 @@ t16_4:
     num_blast:   6000 # 1 alignment per read
 
 t16_5:
-  name:
+  name: 2 reads + zip + 2 no best + relative paths
   info: |
-    relative paths, 
-    zip in - zip out
-    search for any 2 alignments per read
-    ref  reads  best   N  min_lis
-    ---------------------------
-    2    2      false  2  2 
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       -     -     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      0   2     2      2
   cmd:
     - -ref
     - data/silva-bac-16s-database-id85.fasta
@@ -769,6 +783,109 @@ t16_5:
     num_hits:    6000
     num_fail:    4000
     num_blast:  11389 # ~1.9 alignments per read
+
+t16_6:
+  name: 2 reads + zip + 1 best + out2 + relative paths
+  info: |
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       1     -     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    9833
+    num_fail:     167
+    num_blast:   9833
+
+t16_7:
+  name: 2 reads + zip + 1 best + sout + relative paths
+  info: |
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       -     1     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -sout
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    9833
+    num_fail:     167
+    num_blast:   9833
+
+t16_8:
+  name: 2 reads + zip + 1 best + sout + out2 + relative paths
+  info: |
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       1     1     -      -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -sout
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    9833
+    num_fail:     167
+    num_blast:   9833
 
 t17:
   name: test_indexing
