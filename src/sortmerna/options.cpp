@@ -1407,7 +1407,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 
 	INFO("=== Options processing done ===");
-	INFO("Running with best: ", is_best, " num_alignments: ", num_alignments, " min_lis: ", min_lis);
+	INFO("Alignment type: [best:", is_best, " num_alignments:", num_alignments, " min_lis:", min_lis, " seeds:", num_seeds,"]");
 
 	if (!is_help_opt)
 	{

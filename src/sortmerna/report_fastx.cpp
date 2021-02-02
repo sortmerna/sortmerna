@@ -40,11 +40,17 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 			return; // neiher is aligned - nothing to write
 
 		// caclulate the index of the output file to write to
-		for (int i = 0, idx = 0; i < reads.size(); ++i)
+		for (int i = 0, idx = 0; i < reads.size(); ++i, idx = 0)
 		{
 			// 1 output file a (aligned reads)
 			if (base.num_out == 1) {
-				if (reads[i].is_hit || opts.is_paired_in)
+				if (opts.is_paired_out) {
+					if (reads[0].is_hit && reads[1].is_hit)
+						idx = id;
+					else
+						continue; // to other 
+				}
+				else if (opts.is_paired_in || reads[i].is_hit)
 					idx = id;
 				else
 					continue;
@@ -52,10 +58,17 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 			// 2 output files ap,as (sout) | af,ar (out2)
 			else if (base.num_out == 2) {
 				if (opts.is_out2) {
-					if (opts.is_paired_out && !(reads[0].is_hit && reads[1].is_hit))
-						break; // if not both aligned -> non-aligned
+					if (opts.is_paired_out) {
+						if (reads[0].is_hit && reads[1].is_hit) {
+							idx = id * base.num_out + i;
+						}
+						else 
+							break; // if not both aligned -> non-aligned
+					}
 					else if (opts.is_paired_in || reads[i].is_hit)
 						idx = id * base.num_out + i;
+					else
+						continue; // ignore non-aligned
 				}
 				else if (opts.is_sout) {
 					if (reads[0].is_hit && reads[1].is_hit)

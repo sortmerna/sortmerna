@@ -28,7 +28,7 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 	// fasta/q output  WORKDIR/out/aligned_paired_fwd_0_PID.fq
 	//                              pfx + sfx1 + sfx2 + sfx3 + sfx4 + ext
 	for (int i = 0; i < readfeed.num_splits; ++i) {
-		for (int j = 0, idx = 0, orig_idx = 0; j < num_out; ++j) {
+		for (int j = 0, idx = 0, sense_i = 0, orig_i = 0; j < num_out; ++j) {
 			std::string sfx1 = "";
 			if (out_type == 0x44 || out_type == 0x46) { // apf, apr, asf, asr
 				if (j == 0 || j == 1) sfx1 = "_paired";
@@ -37,17 +37,18 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 			//(out_type == 0x5C || out_type == 0x5E) { // af, ar, of, or
 			std::string sfx2 = "";
 			if (opts.is_out2)
-				sfx2 = opts.is_out2 && orig_idx == 0 ? "_fwd" : "_rev"; // fwd and rev separation only happens when out2 is specified
+				sfx2 = opts.is_out2 && sense_i == 0 ? "_fwd" : "_rev"; // fwd and rev separation only happens when out2 is specified
 
 			std::string sfx3 = "_" + std::to_string(i);
 			std::string sfx4 = opts.is_pid ? "_" + pid_str : "";
-			std::string orig_ext = readfeed.orig_files[orig_idx].isFastq ? ".fq" : ".fa";
-			std::string gz = readfeed.orig_files[orig_idx].isZip ? ".gz" : "";
+			std::string orig_ext = readfeed.orig_files[orig_i].isFastq ? ".fq" : ".fa";
+			std::string gz = readfeed.orig_files[orig_i].isZip ? ".gz" : "";
 
 			// test the file(s)
 			idx = i * num_out + j;
 			fv[idx] = fpfx + sfx1 + sfx2 + sfx3 + orig_ext + gz; // e.g. aligned_paired_fwd_0_PID.fq
-			orig_idx = readfeed.is_two_files ? orig_idx ^= 1 : orig_idx; // flip
+			if (opts.is_paired) sense_i ^= 1; // flip sense
+			if (readfeed.is_two_files) orig_i ^= 1; // flip orig file index
 		}
 	}
 }
@@ -55,7 +56,7 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 void ReportFxBase::validate_out_type(Runopts& opts)
 {
 	std::stringstream ss;
-	//               8        9        8        11        12          6    6     7      5
+	// field len      8        9        8        11        12         6    6     7      5
 	std::string tl("1-file  2-files  paired  paired_in  paired_out  out2  sout  other  otype");
 	std::string setf[] = { "   +    ","   +     ","   +    ","   +       ","   +        ","   +  ","   +  ","   +   " };
 	std::string naf[] = { "        ","         ","        ","           ","            ","      ","      ","       " };
@@ -116,6 +117,7 @@ void ReportFxBase::set_num_out(Runopts& opts)
 	if (opts.is_out2 && opts.is_sout) num_out = 4; // apf, apr, asf, asr
 	else if (opts.is_out2 || opts.is_sout) num_out = 2; // ap, as | af, ar
 	else num_out = 1; // a
+	INFO("num_out: ", num_out);
 }
 
 /*

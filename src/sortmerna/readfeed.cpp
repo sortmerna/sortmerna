@@ -13,6 +13,7 @@
 #include <iomanip> // std::precision
 #include <locale> // std::isspace
 #include <thread>
+#include <regex>
 
 #include "readfeed.hpp"
 
@@ -28,15 +29,18 @@ std::streampos filesize(const std::string& file); //util.cpp
    - check the split was already done:
      - check readb directory for the descriptor and file
 */
-Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir)
+Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir, bool is_paired)
 	:
 	type(type),
 	is_done(false),
 	is_ready(false),
 	is_format_defined(false),
 	is_two_files(readfiles.size() > 1),
+	is_paired(is_paired),
 	num_orig_files(readfiles.size()),
 	num_splits(0),
+	num_split_files(0),
+	num_sense(0),
 	num_reads_tot(0),
 	length_all(0),
 	min_read_len(0),
@@ -46,15 +50,18 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::fil
 	init(readfiles);
 } // ~Readfeed::Readfeed 1
 
-Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir)
+Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir, bool is_paired)
 	:
 	type(type),
 	is_done(false),
 	is_ready(false),
 	is_format_defined(false),
 	is_two_files(readfiles.size() > 1),
+	is_paired(is_paired),
 	num_orig_files(readfiles.size()),
 	num_splits(num_parts),
+	num_split_files(0),
+	num_sense(0),
 	num_reads_tot(0),
 	length_all(0),
 	min_read_len(0),
@@ -70,6 +77,9 @@ void Readfeed::init(std::vector<std::string>& readfiles)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	INFO("Readfeed init started");
+
+	num_sense = is_paired ? 2 : 1;
+	num_split_files = num_sense * num_splits;
 
 	// init read files
 	orig_files.resize(num_orig_files);
@@ -234,14 +244,6 @@ bool Readfeed::loadReadById(Read& read)
 	return true;
 } // ~Readfeed::loadReadById
 
-/*
- * uses zlib if files are gzipped or reads flat files
- * 
- * @param inext   IN   index into the Readfeed::files vector
- * @param seqlen  OUT  length of the read sequence
- * @param read    OUT  read string
- * @param is_orig IN   flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
-*/
 bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig, std::vector<Readfile>& files) {
 	std::string line;
 	std::stringstream readss; // an empty read
@@ -364,15 +366,6 @@ bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig
 	return readss.str().size() > 0;
 } // ~Readfeed::next
 
-/**
-   get a next read string from a reads file
-   20201012: TODO: exactly the same as next(int, uint, str, bool) but doesn't count sequence length.
-                   Counting sequence length could be a very small overhead -> no need for this overload?
-
-   @param  inext    IN     index of the stream to read.
-   @param  readstr  OUT    read sequence
-   @return true if record exists, else false
- */
 bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<Readfile>& files)
 {
 	std::string line;
@@ -560,7 +553,6 @@ bool Readfeed::split()
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("start splitting. Using number of splits equals number of processing threads: ", num_splits);
 	auto retval = true;
-	auto num_split_files = num_splits * num_orig_files;
 
 	// remove existing split files
 	auto nf = clean();
@@ -596,7 +588,6 @@ bool Readfeed::split()
 			ofsv[i].open(split_files[i].path, std::ios::out | std::ios::binary | std::ios::trunc);
 		}
 		if (!ofsv[i].is_open()) {
-			auto idx = num_orig_files + i;
 			ERR("Failed to open file ", split_files[i].path.generic_string());
 			exit(1);
 		}
@@ -617,28 +608,30 @@ bool Readfeed::split()
 	std::string readstr;
 
 	// loop until EOF - get reads from input files - write into split files
-	for (auto inext = 0, iout = 0; inext < num_orig_files; ++inext, iout = inext) {
-		for (; next(inext, readstr, seqlen, true, orig_files);)
-		{
-			++vstate_out[iout].read_count;
-			if (orig_files[inext].isZip) {
-				auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
-				if (ret < Z_OK || ret > Z_STREAM_END) {
-					ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
-					retval = false;
-					break;
-				}
+	for (auto inext = 0, iout = 0; next(inext, readstr, seqlen, true, orig_files);)
+	{
+		++vstate_out[iout].read_count;
+		if (orig_files[inext].isZip) {
+			auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
+			if (ret < Z_OK || ret > Z_STREAM_END) {
+				ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
+				retval = false;
+				break;
 			}
-			else {
-				ofsv[iout] << readstr;
-				if (readstr.back() != '\n')
-					ofsv[iout] << '\n';
-			}
-			if (vstate_out[iout].read_count == split_files[iout].numreads) {
-				iout += num_orig_files; // switch to next split
-			}
-		} // ~for
-	}
+		}
+		else {
+			ofsv[iout] << readstr;
+			if (readstr.back() != '\n')
+				ofsv[iout] << '\n';
+		}
+
+		// switch files
+		if (is_two_files) inext ^= 1;
+		if (vstate_out[iout].read_count == split_files[iout].numreads 
+			&& (is_paired && iout & 1 == 1 || !is_paired)) 
+			iout += num_sense; // switch split if previous split if done
+		if (is_paired) iout ^= 1;
+	} // ~for
 
 	// close IN file streams
 	for (int i = 0; i < num_orig_files; ++i) {
@@ -707,7 +700,7 @@ bool Readfeed::is_split_ready() {
 
 		int lidx = 0; // line index
 		int fcnt = 0; // count of file entries in the desctiptor
-		int fcnt_max = (1 + num_splits) * num_orig_files;
+		int fcnt_max = num_splits * num_sense + num_orig_files;
 		int fidx = 0; // file index
 		int fpidx = 0; // index of file parameters: name, size, lines, zip, fastq/fasta
 		for (std::string line; std::getline(ifs, line); ) {
@@ -720,13 +713,15 @@ bool Readfeed::is_split_ready() {
 					else if (lidx == 1)
 						is_ready = is_ready && std::stoi(line) == num_orig_files;
 					else if (lidx == 2)
-						is_ready = is_ready && std::stoi(line) == num_splits;
+						is_ready = is_ready && std::stoi(line) == num_sense;
 					else if (lidx == 3)
+						is_ready = is_ready && std::stoi(line) == num_splits;
+					else if (lidx == 4)
 						is_ready = is_ready && std::stoi(line) == num_reads_tot;
 					else {
 						if (fpidx == 0) { // file path
 							++fcnt;
-							if (fcnt == num_orig_files+1)	fidx = 0; // switch file index orig -> split files
+							if (fcnt == num_orig_files+1) fidx = 0; // switch file index orig -> split files
 							if (fcnt > fcnt_max) {
 								INFO("expected max file count: ", fcnt_max, " current file count in the descriptor: ", fcnt);
 								is_ready = false;
@@ -798,34 +793,6 @@ bool Readfeed::is_split_ready() {
 	if (ifs.is_open()) ifs.close(); // close the descriptor
 
 	return is_ready;
-} // ~Readfeed::is_split_ready
-
-/*
-  20200924 Thu
-  verify the split is already performed and ready to use
-
-  Upon the split the following descriptor file is generated in the split files directory:
-    stamp:
-	  time: <timestamp>
-      source files count: 2
-      split files count:  6
-	  total reads:        10M
-	  source read files: []
-	  split files: []
-
-  @param  num_part   number of splits on each source reads file
-  @param  num_reads  total count of reads in all source files
-  @param  dbdir      directory where the split reads are located
-  @param  readfiles  source reads files paths
-*/
-bool Readfeed::is_split_done(
-	const unsigned num_parts, 
-	const unsigned num_reads, 
-	const std::string dbdir, 
-	const std::vector<std::string>& readfiles)
-{
-	INFO("TODO: implement");
-	return true;
 } // ~Readfeed::is_split_ready
 
 /*
@@ -946,7 +913,7 @@ void Readfeed::count_reads()
 		length_all += seqlen;
 		if (max_read_len < seqlen) max_read_len = seqlen;
 		if (min_read_len > seqlen || min_read_len == 0) min_read_len = seqlen;
-		inext = is_two_files ? inext ^ 1 : inext; // toggle the index of the input file
+		if (is_two_files) inext ^= 1; // toggle the index of the input file
 	} // ~for
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -959,15 +926,15 @@ void Readfeed::count_reads()
 */
 void Readfeed::init_split_files()
 {
-	auto n_split_files = num_orig_files * num_splits;
-	split_files.resize(n_split_files);
-
+	split_files.resize(num_split_files);
 	std::stringstream ss;
+
 	for (int i = 0, idx = 0; i < num_splits; ++i) {
-		for (int j = 0; j < num_orig_files; ++j, ++idx) {
+		for (int j = 0; j < num_sense; ++j, ++idx) {
 			std::string stem = j == 0 ? "fwd_" : "rev_";
-			std::string sfx_1 = orig_files[j].isFasta ? ".fa" : ".fq";
-			auto sfx = orig_files[j].isZip ? sfx_1 + ".gz" : sfx_1;
+			auto jj = is_two_files ? j : 0;
+			std::string sfx_1 = orig_files[jj].isFasta ? ".fa" : ".fq";
+			auto sfx = orig_files[jj].isZip ? sfx_1 + ".gz" : sfx_1;
 			ss << stem << i << sfx; // split file basename
 			//auto idx = i * num_orig_files + j;
 			split_files[idx].path = basedir / ss.str();
@@ -977,17 +944,17 @@ void Readfeed::init_split_files()
 	}
 
 	// calculate number of reads in each of the split files
-	auto nreads = num_orig_files == 2 ? num_reads_tot / 2 : num_reads_tot; // num reads in a single input file e.g. FWD
+	auto nreads = num_reads_tot / num_sense; // num reads of the same sense e.g. FWD
 	auto minr = nreads / num_splits; // quotient i.e. min number of reads in each output file
 	auto surplus = nreads - minr * num_splits; // remainder of reads to be distributed between the output files
 	for (auto i = 0, idx = 0; i < num_splits; ++i) {
 		auto maxr = i < surplus ? minr + 1 : minr; // distribute the surplus
-		for (auto j = 0; j < num_orig_files; ++j, ++idx) {
-			//auto idx = i * num_orig_files + num_orig_files + j;
+		for (auto j = 0; j < num_sense; ++j, ++idx) {
 			split_files[idx].numreads = maxr;
-			split_files[idx].isZip = orig_files[j].isZip;
-			split_files[idx].isFastq = orig_files[j].isFastq;
-			split_files[idx].isFasta = orig_files[j].isFasta;
+			auto jj = is_two_files ? j : 0;
+			split_files[idx].isZip = orig_files[jj].isZip;
+			split_files[idx].isFastq = orig_files[jj].isFastq;
+			split_files[idx].isFasta = orig_files[jj].isFasta;
 		}
 	}
 }
@@ -1009,6 +976,7 @@ void Readfeed::write_descriptor()
 		"# format of this file:\n"
 	    "#   time\n"
 		"#   num_orig_files\n"
+		"#   num_sense\n"
 		"#   num_splits\n"
 		"#   num_reads_tot\n"
         "#   [\n"
@@ -1031,8 +999,9 @@ void Readfeed::write_descriptor()
 		std::time_t tm = std::time(0);
 		ofs << std::ctime(&tm) << '\n'; // line 0: timestamp  <ctime> 'Tue Oct 20 08:39:35 2020'
 		ofs << num_orig_files << '\n';  // line 1:
-		ofs << num_splits << '\n';      // line 2:
-		ofs << num_reads_tot << '\n';   // line 3:
+		ofs << num_sense << '\n';       // line 2
+		ofs << num_splits << '\n';      // line 3:
+		ofs << num_reads_tot << '\n';   // line 4:
 		for (auto i = 0; i < orig_files.size(); ++i) {
 			ofs << orig_files[i].path.generic_string() << '\n';     // file path
 			ofs << orig_files[i].size << '\n';     // file size
@@ -1114,22 +1083,29 @@ int Readfeed::clean()
 		int fidx = 0; // file index
 		int fpidx = 0; // index of file parameters: name, size, lines, zip, fastq/fasta
 		int n_orig = 0; // number of original files
+		int n_sense = 0; // number of senses
 		int n_split = 0; // number of splits
 		unsigned n_tot = 0; // total of reads in orig files
+		std::regex rx_num("[0-9]+"); // (-|+)|][0-9]+
 
 		for (std::string line; std::getline(ifs, line); ) {
 			if (!line.empty()) {
 				// trim
 				line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 				if (line[0] != '#') { // skip comments
+					if (lidx == 1 || lidx == 2 || lidx == 3 || lidx == 4) {
+						if (!std::regex_match(line, rx_num)) {
+							ERR("not a number: '", line, "'");
+							exit(1);
+						}
+					}
 					if (lidx == 0); // skip timestamp
-					else if (lidx == 1)
-						n_orig = std::stoi(line);
-					else if (lidx == 2)
-						n_split = std::stoi(line);
-					else if (lidx == 3) {
+					else if (lidx == 1) n_orig = std::stoi(line);
+					else if (lidx == 2) n_sense = std::stoi(line);
+					else if (lidx == 3) n_split = std::stoi(line);
+					else if (lidx == 4) {
 						n_tot = std::stoi(line);
-						fcnt_max = (1 + n_split) * n_orig;
+						fcnt_max = n_split * n_sense + n_orig;
 					}
 					else {
 						if (fpidx == 0) { // file path

@@ -93,8 +93,8 @@ void report(int id,
 	for (bool isDone = false; !isDone;)
 	{
 		reads.clear();
-		auto idx = id * readfeed.num_orig_files;
-		for (std::size_t i = 0; i < num_reads; ++i)
+		auto idx = id * readfeed.num_sense; // index into split_files array
+		for (int i = 0; i < num_reads; ++i)
 		{
 			if (readfeed.next(idx, readstr))
 			{
@@ -105,15 +105,13 @@ void report(int id,
 				++countReads;
 			}
 			else {
-				// create empty reads to flush the deflation buffer downstream
-				//reads.emplace_back(Read());
-				//reads[i].is_hit = true;
 				isDone = true;
 			}
-			idx = i == 0 ? idx + 1 : idx - 1; // switch fwd-rev
+			if (opts.is_paired) idx ^= 1; // switch fwd-rev
 		}
 
-		if (!isDone) {
+		if (!isDone) 
+		{
 			if (reads.back().isEmpty || !reads.back().isValid) {
 				++num_invalid;
 				continue;

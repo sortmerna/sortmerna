@@ -48,9 +48,9 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 	all_reads_len = readstats.all_reads_len;
 
 	// stats by database
-	for (uint32_t index_num = 0; index_num < opts.indexfiles.size(); index_num++) {
-		auto pcn = (float)((float)readstats.reads_matched_per_db[index_num] / (float)readstats.all_reads_count) * 100;
-		db_matches.emplace_back(std::make_pair(opts.indexfiles[index_num].first, pcn));
+	for (int i = 0; i < opts.indexfiles.size(); ++i) {
+		auto pcn = (float)((float)readstats.reads_matched_per_db[i] / readstats.all_reads_count) * 100;
+		db_matches.emplace_back(std::make_pair(opts.indexfiles[i].first, pcn));
 	}
 
 	if (opts.is_otu_map) {
@@ -78,7 +78,7 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 
 		<< " Parameters summary: " << std::endl;
 
-	for (auto ref : opts.indexfiles) {
+	for (auto const& ref : opts.indexfiles) {
 		ss << "    Reference file: " << ref.first << std::endl
 			<< "        Seed length = " << opts.seed_win_len << std::endl
 			<< "        Pass 1 = " << opts.skiplengths[idx][0]
@@ -98,7 +98,7 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 		<< "    SW ambiguous nucleotide = " << opts.score_N << std::endl
 		<< "    SQ tags are " << (opts.is_SQ ? "" : "not ") << "output" << std::endl
 		<< "    Number of alignment processing threads = " << opts.num_proc_thread << std::endl;
-	for (auto readf : opts.readfiles) {
+	for (auto const& readf : opts.readfiles) {
 		ss << "    Reads file: " << readf << std::endl;
 	}
 	ss << "    Total reads = " << total_reads << std::endl << std::endl;
@@ -132,7 +132,7 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 	ss << " Coverage by database:" << std::endl;
 
 	// output stats by database
-	for (auto match : db_matches)
+	for (auto const& match : db_matches)
 	{
 		ss << "    " << match.first << "\t\t" << match.second << std::endl;
 	}

@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 	{
 		// init common objects
 		KeyValueDatabase kvdb(opts.kvdbdir.string());
-		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.num_proc_thread, opts.readb_dir);
+		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.num_proc_thread, opts.readb_dir, opts.is_paired);
 		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, readfeed.min_read_len, readfeed.max_read_len, kvdb, opts);
 		Index index(opts); // reference index DB
 

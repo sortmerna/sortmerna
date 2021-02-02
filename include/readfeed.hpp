@@ -25,8 +25,8 @@ struct Runopts;
  */
 class Readfeed {
 public:
-	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir);
-	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir, bool is_paired);
+	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir, bool is_paired);
 
 	void run();
 	bool next(int inext, std::string& readstr);
@@ -48,14 +48,34 @@ public:
 	* @return  count of deleted split files
 	*/
 	int clean();
-	static bool is_split_done(const unsigned num_parts, const unsigned num_reads, const std::string dbdir, const std::vector<std::string>& readfiles);
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
 	static bool loadReadById(Read& read);
 
 private:
+	/*
+     * get a next read string from a reads file
+     * 20201012: TODO: exactly the same as next(int, uint, str, bool) but doesn't count sequence length.
+	 *  			   Counting sequence length could be a very small overhead -> no need for this overload?
+     * 
+     * @param inext   IN  index of the stream to read.
+     * @param readstr IN  read sequence
+     * @param is_orig IN  flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
+     * @param files   IN  array of read files' descriptors
+     * @return            true if record exists, else false
+    */
 	bool next(int inext, std::string& readstr, bool is_orig, std::vector<Readfile>& files);
 	//bool next(int inext, std::string& readstr, unsigned& readlen, bool is_orig = false); // \n separated read data. FA - 2 lines, FQ - 4 lines
+	/*
+     * uses zlib if files are gzipped or reads flat files
+     *
+     * @param inext   IN  index into the Readfeed::files vector
+	 * @param readstr IN  read string
+     * @param readlen IN  length of the read sequence
+     * @param is_orig IN  flags to return the original read string. If false, then the read string has format: 'read_id \n header \n sequence [\n quality]'
+     * @param files   IN  array of read files' descriptors
+	 * @return            true if record exists, else false
+    */
 	bool next(int inext, std::string& readstr, unsigned& readlen, bool is_orig, std::vector<Readfile>& files);
 
 public:
@@ -64,8 +84,11 @@ public:
 	bool is_ready; // flags the read feed is ready i.e. no need to run split
 	bool is_format_defined; // flags the file format is defined i.e. 'define_format' was success
 	bool is_two_files; // flags two read files are processed (otherwise single file)
+	bool is_paired;
 	unsigned num_orig_files; // number of original reads files
 	unsigned num_splits;
+	unsigned num_split_files;
+	unsigned num_sense; // number of read's senses (fwd/rev)
 	unsigned num_reads_tot; // count of reads in all streams
 	unsigned length_all; // length of all reads from all files
 	unsigned min_read_len;

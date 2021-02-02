@@ -38,8 +38,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
-	auto idx = id * readfeed.num_orig_files;
-	for (auto incr = 1; readfeed.next(idx, readstr);)
+	auto idx = id * readfeed.num_sense; // index into split files array
+	for (; readfeed.next(idx, readstr);)
 	{
 		{
 			Read read(readstr);
@@ -72,7 +72,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 				num_strands = 2; // search both strands. The default when neither -F or -R were specified
 
 			//                                                  |- stop if read was aligned on FWD strand
-			for (auto count = 0; count < num_strands && !read.is_done; ++count)
+			for (int count = 0; count < num_strands && !read.is_done; ++count)
 			{
 				if ((search_single_strand && opts.is_reverse) || count == 1)
 				{
@@ -117,11 +117,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 			++num_all;
 		} // ~if & read destroyed
 
-		// switch FWD-REV if two files are processed
-		if (readfeed.is_two_files) {
-			idx += incr;
-			incr = incr > 0 ? -1 : 1;
-		}
+		if (opts.is_paired) idx ^= 1; // switch FWD-REV
 	} // ~while there are reads
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
@@ -205,7 +201,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), std::ref(readstats), std::ref(index),
 					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(opts)));
 			}
-			for (auto i = 0; i < tpool.size(); ++i) {
+			for (int i = 0; i < tpool.size(); ++i) {
 				tpool[i].join();
 			}
 
