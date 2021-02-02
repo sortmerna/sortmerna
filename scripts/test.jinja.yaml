@@ -24,11 +24,27 @@ test.list:
   - t13:
   - t14:
   - t15:
-  - t16:
+    #       best   N  min_lis refs  reads  zip
+  - t16:   [  1,   1,  2,  2,   2,     True]
+  - t16_2: [  1,   0,  2,  2,   2,     True]
+  - t16_3: [  1,   2,  2,  2,   2,     True]
+  - t16_4: [  0,   1,  2,  2,   2,     True]
+  - t16_5: [  0,   2,  2,  2,   2,     True]
   - t17:
   - t18:
-  - t19:
-  - t20:
+  #              output type                                                   |    alignment type
+  #        refs  reads  paired  paired_in  paired_out  out2  sout  zout  other | best  N  min_lis seeds
+  - t19:   [ 2,    2,     1,      1,          0,         0,    0,    0,    1,      1,  1,    2,     2 ]
+  - t19_1: [ 2,    2,     1,      1,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  - t19_2: [ 2,    2,     1,      0,          1,         0,    0,    0,    1,      1,  1,    2,     2 ]
+  - t19_3: [ 2,    2,     1,      0,          1,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  - t19_4: [ 2,    2,     1,      0,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  #
+  - t20:   [ 2,    1,     1,      1,          0,         0,    0,    0,    1,      1,  1,    2,     2 ]
+  - t20_1: [ 2,    1,     1,      1,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  - t20_2: [ 2,    1,     1,      0,          1,         0,    0,    0,    1,      1,  1,    2,     2 ]
+  - t20_3: [ 2,    1,     1,      0,          1,         1,    0,    0,    1,      1,  1,    2,     2 ]
+  - t20_4: [ 2,    1,     1,      0,          0,         1,    0,    0,    1,      1,  1,    2,     2 ]
   - t21:
   - t22:
   - t23:
@@ -58,6 +74,14 @@ t0:
   inf: |
     single reference + single read
     Compares expected alignment (see 't0.validate.files[0]' below) to the newly produced one
+
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     1      1      -        -           -         -     -     -    -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
@@ -83,6 +107,14 @@ t0:
 
 t0_other:
   name: test_blast_format_0_other
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout other
+    ------------------------------------------------------------------ output type
+     1      1      -        -           -         -     -     -    -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
@@ -156,9 +188,14 @@ t3:
   name: test_environmental_output
   info: |
     search for a single best alignment per read i.e.
-    ref  reads  best  N  min_lis
-    ---------------------------
-    1    1      true  1  2 
+
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     1      1      -        -           -         -     -     -    -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
@@ -548,7 +585,10 @@ t14:
 
 t15:
   name: test_threads
-  note:
+  info: |
+    ref  reads  best  N  min_lis zip
+    ---------------------------------
+    1    2      true  1  2       true
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
@@ -556,8 +596,6 @@ t15:
     - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
     - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
-    - -num_alignments
-    - '1'
     - -threads
     - '6:2:2' # can be any 6 | 6:2 | 6:2:2
     - '-a' # deprecated. Redirects to 'threads'
@@ -569,7 +607,7 @@ t15:
 t16:
   name: test_relative_path
   info: |
-    search for a single best alignment per read i.e.
+    search a single best alignment per read
     ref  reads  best  N  min_lis
     ---------------------------
     2    2      true  1  2 
@@ -599,7 +637,7 @@ t16_2:
   name:
   info: |
     relative paths
-    search All alignments per read i.e.
+    search All alignments per read
     ref  reads  best  N  min_lis
     ---------------------------
     2    2      true  0  2 
@@ -633,7 +671,7 @@ t16_3:
   info: |
     relative paths
     zip in - zip out
-    search 2 best alignment per read i.e.
+    search 2 best alignment per read
     ref  reads  best  N  min_lis
     ---------------------------
     2    2      true  2  2 
@@ -668,7 +706,7 @@ t16_4:
   info: |
     relative paths, 
     zip in - zip out
-    search any single alignment per read i.e.
+    search any single alignment per read
     ref  reads  best   N  min_lis
     ---------------------------
     2    2      false  1  2 
@@ -702,11 +740,10 @@ t16_5:
   info: |
     relative paths, 
     zip in - zip out
-    search for any 2 alignments per read i.e.
+    search for any 2 alignments per read
     ref  reads  best   N  min_lis
     ---------------------------
     2    2      false  2  2 
-  note:
   cmd:
     - -ref
     - data/silva-bac-16s-database-id85.fasta
@@ -735,7 +772,11 @@ t16_5:
 
 t17:
   name: test_indexing
-  note: test indexing, workdir
+  info: |
+    test indexing, workdir
+    ref  reads  best   N  min_lis zip
+    ----------------------------------
+    8    2      true   1  2       true
   cmd:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
@@ -757,8 +798,6 @@ t17:
     - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
     - -reads
     - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
-    - -num_alignments
-    - '1'
     - -v
     - -workdir
     - {{ WRK_DIR }}
@@ -773,7 +812,7 @@ t17:
 
 t18:
   name: 2 paired reads files + paired_in + joint FWD/REV output
-  note: |
+  info: |
     Test the new option '-out2' (issue 202)
     Test different E-values
     ...                               paired_in
@@ -818,8 +857,16 @@ t18:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
 
 t19:
-  name: 2 paired reads files + paired_in + separate FWD/REV output
-  note: |
+  name: 2 reads + paired_in
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2      1        1           -         -     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+
     Test the new option '-out2' (issue 202)
     ...                               paired_in
     -e      min_sw  hits  2*hits   aligned   other
@@ -829,6 +876,8 @@ t19:
      1e-12      95  6501    
      1e-15     106  5307    
   cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -843,9 +892,9 @@ t19:
     - -v
     #- -e
     #- '1e-15'
-    - -out2
-    - -workdir
-    - {{ WRK_DIR }}
+    #- -out2
+    - -threads
+    - '4'
   validate:
     func:
     num_reads:      10000
@@ -866,12 +915,208 @@ t19:
         - threads: 8
           sec: [1.24292, 0.322213, 0.566375] # align, log, reports
 
-t20:
-  name: single paired reads file + paired_in + joint FWD/REV output
-  note: |
-    Test the new option '-out2' (issue 202)
-    ...                               paired_in 
+t19_1:
+  name: 2 reads + paired_in + out2
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2      1        1           -         1     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2 
   cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    - -out2
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:     9188
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
+
+t19_2:
+  name: 2 reads + paired_out
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2      1        -           1         -     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2 
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_out
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:     9188
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
+
+t19_3:
+  name: 2 reads + paired_out + out2
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2      1        -           1         -     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_out
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_reads:      10000
+    num_hits:        9188
+    num_fail:         812
+    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
+    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
+    num_other_fwd:     74
+    num_other_rev:     74
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:     9188
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
+
+t19_4:
+  name: 2 reads + out2
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2      1        -           -         -     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    9833
+    num_fail:     167
+    num_ali_fwd: 4876 # count of reads in aligned_fwd.fastq
+    num_ali_rev: 4957 # count of reads in aligned_ref.fastq
+    num_oth_fwd:  124
+    num_oth_rev:   43
+    variant:         sanger # fastq quality variant
+    blast:
+      num_recs:  9833
+    runtime:
+      win:
+        - threads: 8
+          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
+
+t20:
+  name: 1 reads + paired_in
+  info: |
+    Test the new option '-out2' (issue 202)
+
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      1      1        1           -         -     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -882,7 +1127,6 @@ t20:
     - '1'
     - -paired_in
     - -v
-    #- -out2
     - -workdir
     - {{ WRK_DIR }}
     - -threads
@@ -899,6 +1143,160 @@ t20:
       num_pass_id:    16 
       num_pass_cov:
       num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+
+t20_1:
+  name: 1 reads + paired_in + out2
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     1      1      1        1           -         1     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9852
+    num_other:    148
+    variant:     sanger # fastq quality variant
+    blast:
+      num_recs:     9188
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+
+t20_2:
+  name: 1 reads + paired_out
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     1      1      1        -           1         -     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_out
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9852
+    num_other:    148
+    variant:     sanger # fastq quality variant
+    blast:
+      num_recs:     9188
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+
+t20_3:
+  name: 1 reads + paired_out + out2
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     1      1      1        -           1         1     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_out
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_hits:    9188
+    num_fail:     812
+    num_aligned: 9852
+    num_other:    148
+    variant:     sanger # fastq quality variant
+    blast:
+      num_recs:     9188
+      num_pass_id:    16 
+      num_pass_cov:
+      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+
+t20_4:
+  name: 1 reads + paired + out2
+  info: |
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     1      1      1        -           0         1     -     -    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired
+    - -out2
+    - -v
+    - -threads
+    - '4'
+  validate:
+    func:
+    num_hits:    9833
+    num_fail:     167
+    num_ali_fwd: 4876
+    num_ali_rev: 4957
+    num_oth_fwd:  124
+    num_oth_rev:   43
+    variant:     sanger # fastq quality variant
+    blast:
+      num_recs:     9833
 
 t21:
   name: single paired reads file + paired_in + separate FWD/REV output
@@ -1965,7 +2363,16 @@ t42:
         - [0.10, 0.007, 52.17]
 t43:
   name: issue 231 8x50M
-  note: stress test - 8 reference databases + 50M reads
+  info: |
+    stress test - 8 reference databases, 50M reads
+
+    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     8      2      -        -           -         -     -     y    -
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
   cmd:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
