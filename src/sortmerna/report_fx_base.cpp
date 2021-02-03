@@ -34,8 +34,10 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 			std::string sfx2 = "";
 
 			if (num_out == 4) { // apf, apr, asf, asr
-				if (j == 0 || j == 1) sfx1 = "_paired";
-				else if (j == 2 || j == 3) sfx1 = "_singleton";
+				if (j == 0) sfx1 = "_paired_fwd";
+				else if (j == 1) sfx1 = "_paired_rev";
+				else if (j == 2) sfx1 = "_singleton_fwd";
+				else if (j == 3) sfx1 = "_singleton_rev";
 			}
 			else if (num_out == 2) { // ap, as | af, ar
 				if (opts.is_out2) { // af, ar
@@ -151,6 +153,8 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstat
 		ss.str("");
 	else
 		ss << read.header << std::endl << read.sequence << std::endl;
+		if (read.format == BIO_FORMAT::FASTQ)
+			ss << '+' << std::endl << read.quality << std::endl;
 	auto ret = izlib.defstr(ss.str(), strm, is_last); // Z_STREAM_END | Z_OK - ok
 	if (ret < Z_OK || ret > Z_STREAM_END) {
 		ERR("Failed deflating readstring: ", ss.str(), " zlib status: ", ret);
