@@ -7,8 +7,10 @@
 #
 
 test.list:
-  - t0: test_blast_format_0 - single reference + single read
-  - t0_other: test_blast_format_0_other - single reference + single read
+  #                         output type                                       |    alignment type
+  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  - t0:    [ 1,    1,    0,   0,     0,        0,      0,    0,    0,    0,      1,   1,    2,     2 ]
+  - t0_1:  [ 1,    1,    0,   0,     0,        0,      0,    0,    0,    0,      1,   1,    2,     2 ]
   - t1: test_blast_format_1 - single reference + single read
   - t2: test_cigar_lcs_1
   - t3: test_environmental_output
@@ -34,6 +36,7 @@ test.list:
   - t16_6: [ 2,    2,    1,   1,     0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
   - t16_7: [ 2,    2,    1,   1,     0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
   - t16_8: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  - t16_9: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #
   - t17:
   - t18:
@@ -76,7 +79,7 @@ test.list:
   - t43: stress test - 8 reference databases + 50M reads
 
 t0:
-  name: test_blast_format_0
+  name: single ref + single read
   inf: |
     single reference + single read
     Compares expected alignment (see 't0.validate.files[0]' below) to the newly produced one
@@ -87,7 +90,7 @@ t0:
 
     best  N  min_lis seeds
     ----------------------  alignment type
-    true  1     2      2
+      1   1    2      2
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
@@ -111,7 +114,7 @@ t0:
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
-t0_other:
+t0_1:
   name: test_blast_format_0_other
   info: |
     refs  reads  paired  paired_in  paired_out  out2  sout  zout other
@@ -599,9 +602,9 @@ t15:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
-    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
     - -reads
-    - {{ SMR_SRC }}/data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
     - -threads
     - '6:2:2' # can be any 6 | 6:2 | 6:2:2
     - '-a' # deprecated. Redirects to 'threads'
@@ -627,10 +630,11 @@ t16:
     - -ref
     - data/silva-arc-16s-database-id95.fasta
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
-    - -num_alignments
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
     - '1'
     - -v
     - -threads
@@ -639,8 +643,8 @@ t16:
   validate:
     func:
     num_reads: 10000
-    num_hits:   6000
-    num_fail:   4000
+    num_hits:   9833
+    num_fail:    167
 
 t16_2:
   name: 2 read + zip + all + relative paths
@@ -659,9 +663,10 @@ t16_2:
     - -ref
     - data/silva-arc-16s-database-id95.fasta
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
+    - -fastx
     - -blast
     - '1 cigar qcov'
     - -num_alignments
@@ -673,9 +678,9 @@ t16_2:
   validate:
     func:
     num_reads:  10000
-    num_hits:    6000
-    num_fail:    4000
-    num_blast: 128598 # ~21 alignments per read
+    num_hits:    9833
+    num_fail:     167
+    num_blast: 213269 # ~22 alignments per read
 
 t16_3:
   name: 2 reads + zip + 2 best + relative paths
@@ -694,9 +699,9 @@ t16_3:
     - -ref
     - data/silva-arc-16s-database-id95.fasta
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -730,9 +735,9 @@ t16_4:
     - -ref
     - data/silva-arc-16s-database-id95.fasta
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -764,9 +769,9 @@ t16_5:
     - -ref
     - data/silva-arc-16s-database-id95.fasta
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_1.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
     - -reads
-    - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -847,13 +852,15 @@ t16_7:
   cwd: {{ SMR_SRC }}
   validate:
     func:
-    num_reads:  10000
-    num_hits:    9833
-    num_fail:     167
-    num_blast:   9833
+    num_reads:   10000
+    num_hits:     9833
+    num_fail:      167
+    num_ali_pair: 9870
+    num_ali_sing:  103
+    num_blast:    9833
 
 t16_8:
-  name: 2 reads + zip + 1 best + sout + out2 + relative paths
+  name: 2 reads + zip + 1 best + out2 + sout + relative paths
   info: |
     refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
     ------------------------------------------------------------------- output type
@@ -886,6 +893,55 @@ t16_8:
     num_hits:    9833
     num_fail:     167
     num_blast:   9833
+    num_ali_pf:  4865 # aligned paired fwd
+    num_ali_pr:  4865 # aligned paired rev
+    num_ali_sf:    11 # aligned singleton fwd
+    num_ali_sr:    92 # aligned singleton rev
+
+t16_9:
+  name: 2 reads + zip + 1 best + out2 + sout + other + relative paths
+  info: |
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     1    1       -        -       1     1     -      1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   1     2      2
+  cmd:
+    - -ref
+    - data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -sout
+    - -out2
+    - -other
+    - -v
+    - -threads
+    - '4'
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads:  10000
+    num_hits:    9833
+    num_fail:     167
+    num_blast:   9833
+    num_ali_pf:  4865 # aligned paired fwd
+    num_ali_pr:  4865 # aligned paired rev
+    num_ali_sf:    11 # aligned singleton fwd
+    num_ali_sr:    92 # aligned singleton rev
+    num_oth_pf:    32 # other paired fwd
+    num_oth_pr:    32 # other paired rev
+    num_oth_sf:    92 # other singleton fwd
+    num_oth_sr:    11 # other singleton rev
+
 
 t17:
   name: test_indexing
