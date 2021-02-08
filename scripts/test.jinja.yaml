@@ -40,7 +40,7 @@ test.list:
   - t1: test_blast_format_1 - single reference + single read
   - t2: test_cigar_lcs_1
   - t3: test_environmental_output
-  - t4: test_indexing_split_databases
+  - t4: test_indexing_split_databases. No alignment, just a multi-part index build
   - t5: test_mate_pairs - part 1
   - t6:
   - t7:
@@ -62,6 +62,7 @@ test.list:
   - t16_6: [ 2,    2,    1,   1,     0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
   - t16_7: [ 2,    2,    1,   1,     0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
   - t16_8: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  # TODO: zout not yet ready. 20210204 Thu
   - t16_9: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #
   - t17:
@@ -278,10 +279,10 @@ t3:
         - threads: 8
           sec: [12.5046, 0.714079, 4.0937] # align, log, reports
 
-# original test only performed indexing i.e. no alignment and not reads
-# TODO: add option '-i' 'index only'?
 t4:
   name: test_indexing_split_databases
+  info: |
+    No alignment is performed, just building a multi-part index
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta # 27,424 bytes (27KB) file
@@ -290,7 +291,7 @@ t4:
     - -m
     - '0.05'
     - -v
-    - -threads
+    - -index
     - '1'
   validate: 
     func: t4
