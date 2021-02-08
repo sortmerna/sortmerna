@@ -57,21 +57,17 @@
 // forward
 std::string string_hash(const std::string& val); // util.cpp
 
- /**
-  * Initilize the index.
-  * If index files do not exist or are empty build the index.
-  */
-Index::Index(Runopts & opts)
+Index::Index(Runopts & opts) : index_num(0), part(0), number_elements(0), is_ready(false)
 {
 	std::stringstream ss;
 	std::array<std::string, 4> sfxarr{ {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"} };
 
 	int count_indexed = 0;
 
-	if (!opts.is_index_built)
-	{
+	// check the index is ready
+	if (!is_ready) {
 		// init index files
-		for (std::size_t idx = 0; idx < opts.indexfiles.size(); ++idx)
+		for (int idx = 0; idx < opts.indexfiles.size(); ++idx)
 		{
 			// prepare index file prefix - derive from the reference file name
 			if (opts.indexfiles[idx].second.size() == 0) {
@@ -81,7 +77,7 @@ Index::Index(Runopts & opts)
 			}
 
 			// test index files
-			for (auto sfx : sfxarr)
+			for (auto const& sfx : sfxarr)
 			{
 				auto idxfile = opts.indexfiles[idx].second + sfx;
 				// verify file exists
@@ -94,34 +90,49 @@ Index::Index(Runopts & opts)
 
 				if (exists && !is_empty)
 				{
-					INFO("Index file [" , std::filesystem::absolute(idxfile) , "] already exists and is not empty.");
+					INFO("Index file [", std::filesystem::absolute(idxfile), "] already exists and is not empty.");
 					++count_indexed;
-				}
-				else
-				{
-					std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
-					if (!fstrm.good())
-					{
-						ERR("Failed to open file [" , idxfile , "] for writing: " , strerror(errno));
-						exit(EXIT_FAILURE);
-					}
-					if (fstrm.is_open())
-						fstrm.close();
 				}
 			}
 		}
+
 		if (count_indexed == opts.indexfiles.size() * sfxarr.size())
 		{
-			opts.is_index_built = true;
-			INFO("Found " , count_indexed , " non-empty index files. Skipping indexing.");
+			is_ready = true;
+			INFO("Found ", count_indexed, " non-empty index files. Skipping indexing.");
 			INFO("TODO: a better validation using an index descriptor to decide on indexing");
 		}
 		else
 		{
 			if (count_indexed > 0) {
 				INFO("Found ", count_indexed, " non-empty index files. Going to re-build. TODO: don't build what's already indexed.");
+				is_ready = false;
 			}
+		}
+	}
+
+	if (!is_ready) {
+		if (opts.findex == 1 || opts.findex == 2) {
+			// test index files writable
+			for (int idx = 0; idx < opts.indexfiles.size(); ++idx) {
+				for (auto const& sfx : sfxarr) {
+					auto idxfile = opts.indexfiles[idx].second + sfx;
+					std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
+					if (!fstrm.good())
+					{
+						ERR("Failed to open file [", idxfile, "] for writing: ", strerror(errno));
+						exit(EXIT_FAILURE);
+					}
+					if (fstrm.is_open())
+						fstrm.close();
+				}
+			}
+
 			build_index(opts);
+		}
+		else {
+			ERR("index is not ready. It has to be generated using option '", OPT_INDEX, "' prior running alignment");
+			exit(1);
 		}
 	}
 } // ~Index::Index

@@ -56,7 +56,10 @@
 
 // maximum number of bytes in a bucket prior to bursting, should be <= L1 cache size and a power of 2 for efficiency
 #define THRESHOLD 128
-
+/**
+ * parse each reference file (FASTA), and build the burst tries
+ * @return void
+ */
 int build_index(Runopts &opts);
 
 struct NodeElement

@@ -56,7 +56,7 @@ OPT_ALIGNED = "aligned",
 OPT_OTHER = "other",
 OPT_WORKDIR = "workdir",
 OPT_KVDB = "kvdb",
-OPT_IDX = "idx",
+OPT_IDXDIR = "idx-dir",
 OPT_READB = "readb",
 OPT_FASTX = "fastx",
 OPT_SAM = "sam",
@@ -106,7 +106,10 @@ OPT_TMPDIR = "tmpdir",
 OPT_INTERVAL = "interval",
 OPT_MAX_POS = "max_pos",
 OPT_READS_FEED = "reads_feed",
-OPT_ZIP_OUT = "zip-out";
+OPT_ZIP_OUT = "zip-out",
+OPT_INDEX = "index",
+OPT_ALIGN = "align",
+OPT_FILTER = "filter";
 
 // help strings
 const std::string \
@@ -168,7 +171,7 @@ help_workdir =
 help_kvdb =
 	"Directory for Key-value database            WORKDIR/kvdb\n\n"
 	"       KVDB is used for storing the alignment results.\n\n",
-help_idx =
+help_idxdir =
 	"Directory for storing Reference index.      WORKDIR/idx\n\n",
 help_readb = 
 	"Storage for pre-processed reads             WORKDIR/readb/\n\n"
@@ -365,7 +368,25 @@ help_zip_out =
 	"       The values are Not case sensitive i.e. 'Yes, YES, yEs, Y, y' are all OK\n"
 	"       Examples:\n"
 	"       '-" + OPT_READS + " freads.gz -" + OPT_ZIP_OUT + " n' : generate flat output when the input is compressed\n"
-	"       '-" + OPT_READS + " freads.flat -" + OPT_ZIP_OUT + "' : compress the output when the input files are flat\n\n"
+	"       '-" + OPT_READS + " freads.flat -" + OPT_ZIP_OUT + "' : compress the output when the input files are flat\n\n",
+
+help_index =
+    "Build reference database index                          2\n\n"
+	"       By default when this option is not used, the program checks the reference index and\n"
+	"       builds it if not already existing.\n"
+	"       This can be changed by using '-" + OPT_INDEX + "' as follows:\n"
+	"       '-" + OPT_INDEX + " 0' - skip indexing. If the index does not exist, the program will terminate\n"
+	"                                and warn to build the index prior performing the alignment\n"
+	"       '-" + OPT_INDEX + " 1' - only perform the indexing and terminate\n"
+	"       '-" + OPT_INDEX + " 2' - the default behaviour, the same as when not using this option at all\n\n"
+
+//help_align =
+//    "Perform the alignment                                   False\n\n"
+//	"       Search a single best alignment per read\n\n",
+//
+//help_filter =
+//    "Perform the filtering                                   False\n\n"
+//	"       Search for a single first found alignment per read\n\n"
 ;
 
 const std::string WORKDIR_DEF_SFX = "sortmerna/run";
@@ -451,6 +472,9 @@ public:
 	bool is_pid = false; // add pid to output file names
 	bool is_cmd = false; // start interactive session
 	bool is_dbg_put_kvdb = false; // if True - do Not put records into Key-value DB. Debugging Memory Consumption.
+	int  findex = 2; // 0 (don't build index) | 1 (only build index) | 2 (default - build index if not present)
+	bool is_align = false;
+	bool is_filter = false;
 
 	// Option derived Flags
 	bool is_as_percent = false; // derived from OPT_EDGES
@@ -518,7 +542,10 @@ public:
 
 	std::vector<std::string> blastops; // [1]
 	std::vector<std::string> readfiles; // '--reads'
-	std::vector<std::pair<std::string, std::string>> indexfiles; // '-ref' pairs 'Ref_file:Idx_file_pfx'
+	// list of pairs<ref_file, idx_file_pfx>
+	//                 |         |_populated during indexing
+	//                 |_populated during options processing
+	std::vector<std::pair<std::string, std::string>> indexfiles;
 	std::vector<std::vector<uint32_t>> skiplengths; // [2] OPT_PASSES K-mer window shift sizes. Refstats::load
 
 	const std::string dbkey = "run_options";
@@ -527,7 +554,7 @@ public:
 	const std::string OUT_DIR  = "out";
 	const std::string READB_DIR = "readb";
 
-	enum ALIGN_REPORT { align, summary, report, alnsum, all };
+	enum ALIGN_REPORT { align, summary, report, alnsum, all, index_only };
 	ALIGN_REPORT alirep = ALIGN_REPORT::all;
 	BlastFormat blastFormat = BlastFormat::TABULAR;
 
@@ -589,7 +616,7 @@ private:
 	void opt_N(const std::string& val); // opt_N_MatchAmbiguous
 	void opt_workdir(const std::string& path);
 	void opt_kvdb(const std::string& path);
-	void opt_idx(const std::string& path);
+	void opt_idxdir(const std::string& path); // see help_idxdir
 	void opt_readb(const std::string& path);
 
 	// ref tmpdir interval m L max_pos v h  // indexing options
@@ -600,6 +627,9 @@ private:
 	void opt_max_pos(const std::string &val);
 	void opt_reads_feed(const std::string& val);
 	void opt_zip_out(const std::string& val);
+	void opt_index(const std::string& val); // help_index
+	void opt_align(const std::string& val); // TODO: may be no need for this  20210207
+	void opt_filter(const std::string& val); // TODO: may be no need for this  20210207
 
 	void opt_default(const std::string& opt);
 	void opt_dbg_put_db(const std::string& opt);
@@ -626,12 +656,14 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 52> options = {
+	const std::array<opt_6_tuple, 53> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
+		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
+		//std::make_tuple(OPT_FILTER,         "BOOL",        COMMON,      true,  help_filter, &Runopts::opt_filter),
 		std::make_tuple(OPT_WORKDIR,        "PATH",        COMMON,      false, help_workdir, &Runopts::opt_workdir),
 		std::make_tuple(OPT_KVDB,           "PATH",        COMMON,      false, help_kvdb, &Runopts::opt_kvdb),
-		std::make_tuple(OPT_IDX,            "PATH",        COMMON,      false, help_idx, &Runopts::opt_idx),
+		std::make_tuple(OPT_IDXDIR,         "PATH",        COMMON,      false, help_idxdir, &Runopts::opt_idxdir),
 		std::make_tuple(OPT_READB,          "PATH",        COMMON,      false, help_readb, &Runopts::opt_readb),
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
@@ -669,6 +701,7 @@ private:
 		std::make_tuple(OPT_PID,            "BOOL",        ADVANCED,    false, help_pid, &Runopts::opt_pid),
 		std::make_tuple(OPT_A,              "INT",         ADVANCED,    false, help_a, &Runopts::opt_a),
 		std::make_tuple(OPT_THREADS,        "INT",         ADVANCED,    false, help_threads, &Runopts::opt_threads),
+		std::make_tuple(OPT_INDEX,          "INT",         INDEXING,    false, help_index, &Runopts::opt_index),
 		std::make_tuple(OPT_L,              "DOUBLE",      INDEXING,    false, help_L, &Runopts::opt_L),
 		std::make_tuple(OPT_M,              "DOUBLE",      INDEXING,    false, help_m, &Runopts::opt_m),
 		std::make_tuple(OPT_V,              "BOOL",        INDEXING,    false, help_v, &Runopts::opt_v),

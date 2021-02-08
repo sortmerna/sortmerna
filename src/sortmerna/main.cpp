@@ -67,14 +67,21 @@ int main(int argc, char** argv)
 	}
 	else
 	{
+		Index index(opts); // reference index DB
+		if (Runopts::ALIGN_REPORT::index_only == opts.alirep) {
+			INFO("Only performed indexing as '", OPT_INDEX, "' = 1 was specified");
+			return 0;
+		}
+
 		// init common objects
 		KeyValueDatabase kvdb(opts.kvdbdir.string());
 		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.num_proc_thread, opts.readb_dir, opts.is_paired);
 		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, readfeed.min_read_len, readfeed.max_read_len, kvdb, opts);
-		Index index(opts); // reference index DB
 
 		switch (opts.alirep)
 		{
+		case Runopts::ALIGN_REPORT::index_only:
+			break;
 		case Runopts::ALIGN_REPORT::align:
 			align(readfeed, readstats, index, kvdb, opts);
 			break;

@@ -1114,13 +1114,6 @@ void get_keys_str(std::string &keys_str)
 	keys_str = keys_str + "sortmerna_keys_" + pidStr + ".txt";
 } // ~get_keys_str
 
-/**
- *
- * parse each reference file (FASTA), and build the burst tries
- *
- * @return void
- *
- */
 int build_index(Runopts& opts)
 {
 	std::stringstream ss;

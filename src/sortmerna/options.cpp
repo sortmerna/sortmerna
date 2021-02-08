@@ -994,10 +994,10 @@ void Runopts::opt_kvdb(const std::string& path) {
 	}
 }
 
-void Runopts::opt_idx(const std::string& path) {
+void Runopts::opt_idxdir(const std::string& path) {
 	if (path.size() == 0)
 	{
-		ERR("'" , OPT_IDX, "' option takes an argument - a directory path. None was provided.\n" , help_kvdb);
+		ERR("'" , OPT_IDXDIR, "' option takes an argument - a directory path. None was provided.\n" , help_kvdb);
 		exit(EXIT_FAILURE);
 	}
 	else {
@@ -1135,6 +1135,35 @@ void Runopts::opt_zip_out(const std::string& val)
 			zip_out = ii;
 		}
 	}
+}
+
+void Runopts::opt_index(const std::string& val)
+{
+	if (val.size() > 0) {
+		auto ii = std::stoi(val);
+		if (!(ii == 0 || ii == 1 || ii == 2)) {
+			WARN("'", OPT_INDEX, "' can only take integer values: [", 0, ", ", 1, ", ", 2, "]. Provided value: ", val, " Using default: ", findex);
+		}
+		else {
+			INFO("using '", OPT_INDEX, "' with specified value ", ii);
+			findex = ii;
+			if (findex == 1)
+				alirep = ALIGN_REPORT::index_only;
+		}
+	}
+	else {
+		INFO("No value was provided with '", OPT_INDEX, "'. Using default: ", findex, " If no index exists it will be built");
+	}
+}
+
+void Runopts::opt_align(const std::string& val)
+{
+	is_align = true;
+}
+
+void Runopts::opt_filter(const std::string& val)
+{
+	is_filter = true;
 }
 
 /* 
@@ -1441,7 +1470,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	if (!is_help_opt)
 	{
 		validate();
-		about(); // if we are here, args are OK, welcome the user
+		//about(); // if we are here, args are OK, welcome the user
 	}
 } // ~Runopts::process
 

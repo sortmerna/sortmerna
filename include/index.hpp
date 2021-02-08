@@ -49,12 +49,10 @@ class Refstats;
  *    Each index file name follows a pattern <Name_Part> e.g. index1_0, index1_1 etc.
  */
 struct Index {
-	uint16_t index_num = 0; // currrently loaded index number (DB file) Set in Main thread
-	uint32_t part = 0; // currently loaded index part
-	uint32_t number_elements = 0; /* number of positions in (L+1)-mer positions table */
-
-	std::vector<kmer> lookup_tbl; /**< reference to L/2-mer look up table */
-	std::vector<kmer_origin> positions_tbl; /**< reference to (L+1)-mer positions table */
+	uint16_t index_num; // currrently loaded index number (DB file) Set in Main thread
+	uint32_t part; // currently loaded index part
+	uint32_t number_elements; /* number of positions in (L+1)-mer positions table */
+	bool is_ready; // flags the index is built and ready
 
 	// Index stats
 	//long _match = 0;    /* Smith-Waterman score for a match */
@@ -62,9 +60,15 @@ struct Index {
 	//long _gap_open = 0; /* Smith-Waterman score for gap opening */
 	//long _gap_extension = 0; /* Smith-Waterman score for gap extension */
 
+	std::vector<kmer> lookup_tbl; /**< reference to L/2-mer look up table */
+	std::vector<kmer_origin> positions_tbl; /**< reference to (L+1)-mer positions table */
+
+	/*
+	 * Initilize the index.
+	 * If index files do not exist or are empty - build the index.
+	 */
 	Index(Runopts & opts);
 	//~Index() {}
-
 	void load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std::string, std::string>>& indexfiles, Refstats & refstats);
 	void unload();
 }; // ~struct Index

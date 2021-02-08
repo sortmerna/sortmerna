@@ -157,7 +157,7 @@ void CmdSession::cmdIndex(Runopts & opts, std::string & cmd)
 	std::string refid;
 	bool isok = true;
 
-	isok = isok && getOpt(cmd, OPT_IDX, idxval);
+	isok = isok && getOpt(cmd, OPT_IDXDIR, idxval);
 	isok = isok && getOpt(cmd, OPT_PART, partval);
 	isok = isok && getOpt(cmd, OPT_READ, readid);
 	isok = isok && getOpt(cmd, OPT_POS, posval);
@@ -287,7 +287,7 @@ void CmdSession::cmd_max_ref_part(Runopts & opts, std::string & cmd)
 	std::string partval;
 	bool isok = true;
 
-	isok = isok && getOpt(cmd, OPT_IDX, idxval);
+	isok = isok && getOpt(cmd, OPT_IDXDIR, idxval);
 	isok = isok && getOpt(cmd, OPT_PART, partval);
 
 	if (!isok)
