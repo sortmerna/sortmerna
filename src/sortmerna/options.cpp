@@ -1534,12 +1534,10 @@ void Runopts::validate()
 	}
 
 	// An OTU map can only be constructed with the single best alignment per read
-	if (is_otu_map && is_num_alignments)
+	if (is_otu_map && !is_best)
 	{
-		ERR("'--otu_map' cannot be set together with --num_alignments [INT].\n"
-			"\tThe option --num_alignments [INT] doesn't keep track of"
-			"\tthe best alignment which is required for constructing an OTU map.\n"
-			"\tUse --otu_map with --best [INT] instead.");
+		ERR("'-", OPT_OTU_MAP, "' cannot be set together with '-", OPT_NO_BEST, "'.\n"
+			"\tThe best alignment is required for constructing an OTU map.");
 		exit(EXIT_FAILURE);
 	}
 

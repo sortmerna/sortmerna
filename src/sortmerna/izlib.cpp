@@ -260,7 +260,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 	return ret;// == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 } // ~Izlib::inflatez
 
-int Izlib::defstr(std::string& readstr, std::ostream& ofs, bool is_last)
+int Izlib::defstr(const std::string& readstr, std::ostream& ofs, bool is_last)
 {
 	std::stringstream ss(readstr);
 	int ret = Z_OK;

@@ -64,7 +64,7 @@ public:
     * @param   is_last  flags the last string passed -> Finish compressing
     * @return           execution status
     */
-	int defstr(std::string& readstr, std::ostream& ofs, bool is_last=false);
+	int defstr(const std::string& readstr, std::ostream& ofs, bool is_last=false);
 
 private:
 	char* line_start; // pointer to the start of a line within the 'z_out' buffer

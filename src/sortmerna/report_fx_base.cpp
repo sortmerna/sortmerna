@@ -50,7 +50,7 @@ void ReportFxBase::init(Runopts& opts)
 	set_num_out(opts);
 }
 
-void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, std::string& fpfx, std::string& pid_str)
+void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, const std::string& fpfx, const std::string& pid_str)
 {
 	auto num_split = readfeed.num_splits * num_out;
 	fsv.resize(num_split);

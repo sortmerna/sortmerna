@@ -36,6 +36,7 @@
  */
 
 #include <chrono>
+#include <thread> // std::this_thread
 
 #include "processor.hpp"
 #include "read.hpp"

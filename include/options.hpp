@@ -196,25 +196,22 @@ help_log =
 	"                                            TODO: remove\n",
 help_num_alignments = 
 	"Positive integer (INT >=0).\n\n"
-	"       Report first INT alignments per read reaching E-value threshold\n"
-	"       If INT = 0, all alignments will be output\n"
-	//"  Mutually exclusive with option '"+ OPT_BEST +"'\n"
-	//"  Mutually exclusive with option '" + OPT_OTU_MAP + "'\n"
-	"       This option allows to lower the CPU time and memory use.\n\n",
+	"       If used with '-" + OPT_NO_BEST + "' reports first INT alignments per read reaching\n"
+	"       E-value threshold, which allows to lower the CPU time and memory use.\n"
+	"       Otherwise outputs INT best alignments.\n"
+	"       If INT = 0, all alignments are output\n\n",
+
 help_no_best = 
 	"Disable best alignments search                          1\n\n"
-	"       By default the exchaustive alignments search is performed\n"
-	"       by searching '-" + OPT_MIN_LIS + " N' candidate alignments\n"
+	"       By default the exchaustive alignments search is performed by searching '-" + OPT_MIN_LIS + " N'\n"
+	"       candidate alignments\n"
 	"       If N == 0: All candidate alignments are searched\n"
 	"       If N > 0:  N best alignments are searched.\n"
 	"       Naturally the larger is the N, the longer is the search time.\n"
 	"       Explanation:\n"
-	"       A read can potentially be aligned (reaching E-value threshold)\n"
-	"       to multiple reference sequences.\n"
-	"       The 'best' alignment is the highest scoring alignment\n"
-	"       out of All alignments of a Read.\n"
-	"       To find the Best alignment - an exhaustive search over All references\n"
-	"       has to be performed.\n"
+	"       A read can potentially be aligned (reaching E-value threshold) to multiple reference sequences.\n"
+	"       The 'best' alignment is the highest scoring alignment out of All alignments of a Read.\n"
+	"       To find the Best alignment - an exhaustive search over All references has to be performed.\n"
 	"       'best 1' and 'best 0' (all the bests) are Equally intensive processes requiring\n"
 	"       the exhaustive search, although the size of reports will differ.\n\n",
 help_min_lis = 
@@ -276,22 +273,28 @@ help_e =
 	"       Defines the 'statistical significance' of a local alignment.\n"
 	"       Exponentially correllates with the Minimal Alignment score.\n"
 	"       Higher E-values (100, 1000, ...) cause More reads to Pass the alignment threshold\n\n",
+
 help_v = 
 	"Produce verbose output when building the index          True\n",
+
 help_id = 
 	"%%id similarity threshold (the alignment                0.97\n"
 	"                                            must still pass the E-value threshold).\n",
+
 help_coverage = 
 	"%%query coverage threshold (the alignment must          0.97\n"
 	"                                            still pass the E-value threshold)\n",
+
 help_denovo_otu = 
 	"Output FASTA file with 'de novo' reads                  False\n\n"
-	"       Read is 'de novo' if its alignment score passes E-value threshold,\n"
-	"       and the identity ('" + OPT_ID + "'), and the ('" + OPT_COVERAGE + "') options are below\n"
-	"       their corresponding thresholds i.e. ID < %%id and COV < %%cov\n\n",
+	"       Read is 'de novo' if its alignment score passes E-value threshold, but both the identity\n"
+	"       '-" + OPT_ID + "', and the '-" + OPT_COVERAGE + "' are below their corresponding thresholds\n"
+	"       i.e. ID < %%id and COV < %%cov\n\n",
+
 help_otu_map = 
 	"Output OTU map (input to QIIME's make_otu_table.py).    False\n"
-	"                                            Cannot be used with '" + OPT_NUM_ALIGNMENTS + "'\n",
+	"                                            Cannot be used with '" + OPT_NO_BEST + " because\n"
+	"                                            the grouping is done around the best alignment'\n",
 help_passes = 
 	"Three intervals at which to place the seed on           L,L/2,3\n"
 	"                                             the read (L is the seed length)\n",

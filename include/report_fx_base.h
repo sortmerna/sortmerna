@@ -51,7 +51,7 @@ public:
 	/*
 	* init output file names. It has a different semantics than init(opts) above.
 	*/
-	void init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, std::string& fpfx, std::string& pid_str);
+	void init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, const std::string& fpfx, const std::string& pid_str);
 	void write_a_read(std::ostream& strm, Read& read);
 	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last=false);
 

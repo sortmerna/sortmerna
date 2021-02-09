@@ -27,6 +27,7 @@
 			   Hélène Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
+#include <cmath> // std::log, std::exp
 
 #include "report_blast.h"
 #include "common.hpp"
