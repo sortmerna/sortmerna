@@ -47,8 +47,8 @@ test.list:
   - t8:
   - t9: test_output_all_alignments_f_rc
   - t10:
-  - t11:
-  - t12:
+  - t11: 
+  - t12:   [ 1,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   5,    2,     2 ]
   - t13:
   - t14:
   - t15:
@@ -522,35 +522,32 @@ t12:
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
     - {{ SMR_SRC }}/data/set5_simulated_amplicon_silva_bac_16s.fasta
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -otu_map
+    - -de_novo_otu
+    - -other
     - -id
     - '0.97'
     - -coverage
     - '0.97'
-    - -otu_map
-    - -de_novo_otu
-    - -blast
-    - '1 cigar qcov'
-    - -best
-    - '5'
-    - -fastx
-    - -other
     - -v
-    - -workdir
-    - {{ WRK_DIR }}
+    - -threads
+    - '7'
   validate:
     func: t12
-    num_reads: 30000
-    min_sw:       49
-    num_hits: 19995
-    num_fail: 10005
-    num_denovo: 9831
-    num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
-    num_cluster: [4400, 4401]
+    num_reads:  30000
+    min_sw:        49
+    num_hits:   19995
+    num_fail:   10005
+    num_denovo: 11406 # 9831 - 4.2.0 ?
+    num_pass_id_cov: 10312 #   10164 4.2.0 ?
+    num_cluster: [4429, 4429] # [4400, 4401] 4.2.0 ?
     blast:
-      num_recs:       28545
-      num_pass_id:    10467 
-      num_pass_cov:   16536 
-      num_pass_id_cov: 9849 # pass_SW + pass_ID + pass_Cov
+      num_recs:       19995
+      num_pass_id:       25 
+      num_pass_cov:    8527 
 
 t13:
   name: test_simulated_amplicon_6_part_map
@@ -559,22 +556,22 @@ t13:
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
     - {{ SMR_SRC }}/data/set5_simulated_amplicon_silva_bac_16s.fasta
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -otu_map
+    - -de_novo_otu
+    - -other
     - -id
     - '0.97'
     - -coverage
     - '0.97'
-    - -otu_map
-    - -de_novo_otu
-    - -blast
-    - '1 cigar qcov'
-    - -fastx
-    - -other
     # indexing options
     - -m
     - '20'
     - -v
-    - -workdir
-    - {{ WRK_DIR }}
+    - -threads
+    - '5'
   validate:
     func: t13
     num_reads: 30000
@@ -2450,7 +2447,7 @@ t42:
         reads_stats_calc: [12.759, 11.2564]
         index_stats_calc: [3.53]
         align:
-          # [ load idx, load refs, align   ] # sec
+          # [ load idx, load refs, align ] # sec
           - [1.605620, 0.1169340, 181.983]
           - [1.953170, 0.1422260, 230.752]
           - [1.786920, 0.1307010, 263.262]
@@ -2476,12 +2473,26 @@ t42:
         ref: {{DATA_DIR}}/logs/sortmerna/20210203_2025_win10_8_16_smr_t42.log
     ubuntu18_8_16_32:
       host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
-      notes: |
+      4-3-1:
+        tot:
+        #        readfeed, align, summary, report
+        tot_4: []
+        align:
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+          - []
+      4-2-0:
+      info: |
         {{DATA_DIR}}/logs/sortmerna/
           aws_ubuntu18_8_16_smr_t42_20200811_1319.log
           aws_ubuntu18_8_16_smr_t42_20200812_1224.log
       total: 2112.456 # sec ~35min - 1.5 times faster than Win due the higher memory usage
-      reads_stats_calc: [15.209, 15.2475]
+      reads_stats_calc: [15.21, 15.25]
       index_stats_calc: [4.13]
       align:
         # [ load idx, load refs, align   ] # sec
@@ -2517,11 +2528,11 @@ t42:
       reports: []
     ubuntu18_16_32_32:
       host: AWS c5.4xlarge + Ubuntu 18 + 16 cpu + 32 GB RAM + 32 GB HDD
-      notes: |
-        {{DATA_DIR}}/logs/sortmerna/
-          aws_ubuntu18_16_32_smr_t42_20200812_1441.log
+      info: |
         Using 16 threads almost makes no sense. Compared to 8 threads the speed gain is minimal.
         The single reader is not fast enough to supply the reads, so the threads are idling.
+      ref:
+        - {{DATA_DIR}}/logs/sortmerna/aws_ubuntu18_16_32_smr_t42_20200812_1441.log
       total:  # sec 
       reads_stats_calc: [15.25, 15.29]
       index_stats_calc: [4.42]
