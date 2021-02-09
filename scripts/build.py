@@ -519,7 +519,8 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     '''
     STAMP = '[smr_build]'
 
-    git_clone(URL_SMR, os.path.split(SMR_SRC)[0])
+    if not IS_WSL:
+        git_clone(URL_SMR, os.path.split(SMR_SRC)[0])
 
     if ver:
         cmd = ['git', 'checkout', ver]
@@ -539,8 +540,10 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
     ROCKSDB_STATIC = 1
     ZLIB_STATIC = 1
     # -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
+    ZLIB_LIBRARY_RELEASE = ''
+    ZLIB_LIBRARY_DEBUG = ''
 
-    if IS_LNX:
+    if IS_LNX or IS_WSL:
         ZLIB_LIBRARY_RELEASE = '{}/lib/libz.a'.format(ZLIB_DIST)
         ZLIB_LIBRARY_DEBUG = ZLIB_LIBRARY_RELEASE
         global SMR_BUILD
@@ -577,7 +580,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', cfg={}):
         '-DCMAKE_INSTALL_PREFIX={}'.format(SMR_DIST)
     ]
 
-    if IS_LNX:
+    if IS_LNX or IS_WSL:
         cmd.append('-DCMAKE_BUILD_TYPE={}'.format(btype))
         cmd.append('-DCPACK_BINARY_TGZ={}'.format(CPACK_BINARY_TGZ))
     elif IS_WIN:
@@ -667,14 +670,6 @@ if __name__ == "__main__":
         print('{} No environment config file found. Please, provide one using \'--env\' option'.format(STAMP))
         sys.exit(1)
 
-    # load properties from env.jinja.yaml
-    print('{} Using Environment configuration file: {}'.format(STAMP, envfile))
-    env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
-    env_template = env_jj.get_template(os.path.basename(envfile))
-    #   render jinja template
-    env_str = env_template.render({'UHOME': UHOME})
-    env = yaml.load(env_str, Loader=yaml.FullLoader)
-
     if not opts.envname:
         if IS_WIN or IS_WSL: 
             ENV = MY_OS
@@ -684,6 +679,14 @@ if __name__ == "__main__":
             is_opts_ok = False
     else:
         ENV = opts.envname
+
+    # load properties from env.jinja.yaml
+    print('{} Using Environment configuration file: {}'.format(STAMP, envfile))
+    env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
+    env_template = env_jj.get_template(os.path.basename(envfile))
+    #   render jinja template
+    env_str = env_template.render({'UHOME': UHOME, 'WINHOME': opts.winhome}) if IS_WSL else env_template.render({'UHOME': UHOME})
+    env = yaml.load(env_str, Loader=yaml.FullLoader)
 
     libdir = env.get('LIB_DIR', {}).get(ENV)
     LIB_DIR =  libdir if libdir else UHOME
