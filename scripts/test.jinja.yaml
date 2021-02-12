@@ -114,7 +114,7 @@ test.list:
   - t43:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
 
 t0:
-  name: single ref + single read
+  name: blast + single ref + single read
   inf: |
     single reference + single read
     Compares expected alignment (see 't0.validate.files[0]' below) to the newly produced one
@@ -141,11 +141,13 @@ t0:
     - {{WRK_DIR}}
   validate: 
     func: t0 # name of the validation function
-    num_reads: 1
-    num_hits: 1
-    num_fail: 0
-    min_len: 1487
-    max_len: 1487
+    num_reads:         1
+    num_hits:          1
+    num_fail:          0
+    min_len:        1487
+    max_len:        1487
+    blast_score:    2430
+    blast_bitscore: 2069
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
@@ -172,11 +174,13 @@ t0_1:
     - '1'
   validate: 
     func:
-    num_reads: 1
-    num_hits: 1
-    num_fail: 0
-    min_len: 1487
-    max_len: 1487
+    num_reads:         1
+    num_hits:          1
+    num_fail:          0
+    min_len:        1487
+    max_len:        1487
+    blast_score:    2430
+    blast_bitscore: 2069
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 

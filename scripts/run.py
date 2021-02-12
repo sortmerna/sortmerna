@@ -878,10 +878,10 @@ def t17(datad, ret={}, **kwarg):
 
 if __name__ == "__main__":
     '''
-    python scripts/run.py --name t0 [--capture] [--env scripts/env_non_git.yaml] [--validate-only]
+    python scripts/run.py --name t0 [--capture] [--validate-only]
     python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
-    python scripts/run.py --name t16 --env /home/xx/env.yaml
-    python /mnt/c/Users/XX/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/XX [--capture]
+    python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/biocodz [--capture]  
+                                                                              |_ on WSL
     '''
     STAMP = '[run.py:__main__]'
     #import pdb; pdb.set_trace()
@@ -923,7 +923,7 @@ if __name__ == "__main__":
         env_template = env_jj.get_template(os.path.basename(env_yaml))
     
         #   render jinja template
-        env_str = env_template.render({'UHOME': UHOME})
+        env_str = env_template.render({'UHOME': UHOME, 'WINHOME': opts.winhome}) if IS_WSL else env_template.render({'UHOME': UHOME})
         env = yaml.load(env_str, Loader=yaml.FullLoader)
 
     # check jinja.yaml

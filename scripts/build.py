@@ -636,7 +636,6 @@ if __name__ == "__main__":
     '''
     STAMP = '[build.py:__main__]'
     #import pdb; pdb.set_trace()
-
     is_opts_ok = True
 
     # options
@@ -657,6 +656,8 @@ if __name__ == "__main__":
     optpar.add_option('--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                   '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     optpar.add_option('--config', dest='config', help='Build configuration file.')
+    optpar.add_option('--build-dir', dest='build_dir', help='Build directory.')
+    optpar.add_option('--dist-dir', dest='dist_dir', help='Distro directory.')
     (opts, args) = optpar.parse_args()
 
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
@@ -701,12 +702,12 @@ if __name__ == "__main__":
     CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
 
     # SMR
-    val = env.get(SMR,{}).get('src',{}).get(ENV)
-    SMR_SRC   = val if val else '{}/sortmerna'.format(UHOME)
-    val = env.get(SMR,{}).get('build',{}).get(ENV)
-    SMR_BUILD = val if val else '{}/build'.format(SMR_SRC)
-    val = env.get(SMR,{}).get('dist',{}).get(ENV)
-    SMR_DIST  = val if val else '{}/dist'.format(SMR_SRC)
+    SMR_SRC   = env.get(SMR,{}).get('src',{}).get(ENV)
+    SMR_SRC   = '{}/sortmerna'.format(UHOME) if not SMR_SRC else SMR_SRC
+    SMR_BUILD = opts.build_dir if opts.build_dir else env.get(SMR,{}).get('build',{}).get(ENV)
+    SMR_BUILD = '{}/build'.format(SMR_SRC) if not SMR_BUILD else SMR_BUILD
+    SMR_DIST  = env.get(SMR,{}).get('dist',{}).get(ENV)
+    SMR_DIST  = '{}/dist'.format(SMR_SRC) if not SMR_DIST else SMR_DIST
     SMR_VER   = env.get(SMR,{}).get('ver')
 
     # ZLIB
