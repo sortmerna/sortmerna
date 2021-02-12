@@ -47,7 +47,7 @@ typedef struct s_align2 {
 	int32_t	read_begin1;
 	int32_t read_end1;
 	uint32_t readlen;
-	uint16_t score1;
+	uint16_t score1; // <- 'ssw.c::ssw_align'
 	uint16_t part;
 	uint16_t index_num;
 	bool strand; // flags whether this alignment was done on a forward (true) or reverse-complement (false) read.

@@ -215,19 +215,19 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 		//       It has 3 'break' instructions though. Convoluted.
 		while (hits_on_ref_iter != hits_on_ref.end() && is_search_candidates)
 		{
-			// max possible k-mer start position: 
+			// max possible k-mer start position on reference: 
 			//   max start position on the reference of a matching k-mer for 
 			//   an overlaid read anchored on the reference using a matching k-mer
 			// 
 			// ref: |--------|k-mer anchor|-------|k-mer|--------------------|k-mer|-----|
-			//               ^begin_ref e.g. 20                              ^end_ref
+			//               ^begin_ref e.g. 20                              ^end_ref_max
 			// read:    |----|k-mer anchor|----|k-mer|----------|k-mer|----|---|
 			//          |    ^begin_read e.g 10                 ^end_read  |___|_ lnwin
 			//          ^read start pos                                    ^   ^read end pos
 			//                                                             |_max possible k-mer start position 'end_ref_max'
 			// 
 			auto end_ref_max = begin_ref - begin_read + read.sequence.length() - refstats.lnwin[index.index_num];
-			//uint32_t end_ref = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // TODO: original - wrong?
+			//auto end_ref_max = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // TODO: original - wrong?
 			bool push = false;
 			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref_max )
 			{
