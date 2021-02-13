@@ -344,7 +344,7 @@ def process_smr_opts(args):
     LOGF    = os.path.join(os.path.dirname(ALIF), '{}.log'.format(ALI_BASE))
     BLASTF  = os.path.join(os.path.dirname(ALIF), '{}.blast'.format(ALI_BASE))
     OTUF    = os.path.join(os.path.dirname(ALIF), '{}_otus.txt'.format(ALI_BASE))
-    DENOVOF = os.path.join(os.path.dirname(ALIF), '{}_denovo.fasta'.format(ALI_BASE))
+    DENOVOF = os.path.join(os.path.dirname(ALIF), '{}_denovo.fa'.format(ALI_BASE))
     SAMF    = os.path.join(os.path.dirname(ALIF), '{}.sam'.format(ALI_BASE))
 #END process_smr_opts
 
@@ -442,7 +442,8 @@ def process_output(**kwarg):
         for seq in skbio.io.read(DENOVOF, format='fasta'):
             num_denovo_file += 1
 
-        assert logd['results']['num_denovo'][1] == num_denovo_file
+        assert logd['results']['num_denovo'][1] == num_denovo_file, \
+            '{} not equals {}'.format(logd['results']['num_denovo'][1], num_denovo_file)
     
     # Check number of reads mapped
     if vald.get('num_hits'):
