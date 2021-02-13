@@ -50,19 +50,6 @@ void ReportDenovo::init(Readfeed& readfeed, Runopts& opts)
 	openfw(); // open output files for writing
 	is_zip = readfeed.orig_files[0].isZip;
 	if (is_zip)	init_zip();
-
-	//fv.resize(readfeed.num_splits);
-	//fsv.resize(readfeed.num_splits);
-	//is_zip = readfeed.orig_files[0].isZip;
-	// WORKDIR/out/aligned_denovo_0_PID.fa
-	//for (int i = 0; i < readfeed.num_splits; ++i) {
-	//	std::string sfx1 = "_" + std::to_string(i);
-	//	std::string sfx2 = opts.is_pid ? "_" + pid_str : "";
-	//	std::string gz = is_zip ? ".gz" : "";
-	//	fv[i] = opts.aligned_pfx.string() + "_denovo" + sfx1 + sfx2 + ext + gz;
-	//	openfw(i);
-	//}
-	//if (is_zip) init_zip();
 }
 
 void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last)

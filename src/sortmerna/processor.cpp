@@ -67,7 +67,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
-	auto idx = id * readfeed.num_sense; // index into split files array
+	int idx = id * readfeed.num_sense; // index into split files array
 	for (; readfeed.next(idx, readstr);)
 	{
 		{
@@ -93,7 +93,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 			}
 
 			// search the forward and/or reverse strands depending on Run options
-			auto num_strands = 0;
+			int num_strands = 0;
 			bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
 			if (search_single_strand)
 				num_strands = 1; // only search the forward xor reverse strand
@@ -113,8 +113,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 				read.id_win_hits.clear(); // bug 46
 			}
 
-			auto is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
-			if (is_last_idx) // read.is_aligned && 
+			bool is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
+			if (is_last_idx) // read.is_aligned && last idx
 			{
 				if (opts.is_otu_map || opts.is_denovo) 
 				{

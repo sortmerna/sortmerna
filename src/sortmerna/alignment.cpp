@@ -226,7 +226,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 			//          ^read start pos                                    ^   ^read end pos
 			//                                                             |_max possible k-mer start position 'end_ref_max'
 			// 
-			auto end_ref_max = begin_ref - begin_read + read.sequence.length() - refstats.lnwin[index.index_num];
+			auto end_ref_max = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num];
 			//auto end_ref_max = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // TODO: original - wrong?
 			bool push = false;
 			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref_max )
@@ -276,9 +276,9 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 						auto reflen = refs.buffer[max_ref].sequence.length();
 						uint32_t edges = 0;
 						if (opts.is_as_percent)
-							edges = (((double)opts.edges / 100.0)*read.sequence.length());
+							edges = static_cast<decltype(edges)>((opts.edges / 100.0) * read.sequence.length());
 						else
-							edges = opts.edges;
+							edges = static_cast<decltype(edges)>(opts.edges);
 						// part of the read hangs off (or matches exactly) the beginning of the reference seq
 						//            ref |-----------------------------------|
 						// que |-------------------|
