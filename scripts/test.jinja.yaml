@@ -538,20 +538,24 @@ t12:
     - '0.97'
     - -v
     - -threads
-    - '7'
+    - '5'
   validate:
     func: t12
     num_reads:  30000
     min_sw:        49
     num_hits:   19995
     num_fail:   10005
-    num_denovo: 11406 # 9831 - 4.2.0 ?
-    num_pass_id_cov: 10312 #   10164 4.2.0 ?
+    num_denovo:  1463 # 9831 - 4.2.0 ?  num_denovo + num_pass_id_cov + num_pass_id = num_pass_cov = num_hits
+    num_pass_id_cov: 10299 #   10164 4.2.0 ?
     num_cluster: [4429, 4429] # [4400, 4401] 4.2.0 ?
     blast:
-      num_recs:       19995
-      num_pass_id:       25 
-      num_pass_cov:    8527 
+      num_recs:        19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995
+      num_pass_id_cov: 10164 # num_pass_id ⋂ num_pass_cov
+      num_denovo:       1698 # !ID + !COV 
+      num_y_id_n_cov:     11 # ID + !COV
+      num_n_id_y_cov:   8122 # !ID + COV
+      num_pass_id:     10175 # num_pass_id_cov + num_y_id_n_cov = 10164 + 11 = 10175
+      num_pass_cov:    18286 # num_pass_id_cov + num_n_id_y_cov = 10164 + 8122 = 18286
 
 t13:
   name: test_simulated_amplicon_6_part_map
@@ -586,7 +590,7 @@ t13:
     num_cluster: [4400, 4401]
     blast:
       num_recs:       19995
-      num_pass_id:    10175 
+      num_pass_id:    10175   
       num_pass_cov:   15054 
       num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
 

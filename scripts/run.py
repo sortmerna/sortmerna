@@ -348,6 +348,70 @@ def process_smr_opts(args):
     SAMF    = os.path.join(os.path.dirname(ALIF), '{}.sam'.format(ALI_BASE))
 #END process_smr_opts
 
+def process_blast(**kwarg):
+    '''
+    # Check count of reads passing %id and %coverage threshold
+    # as given in aligned.blast
+    '''
+    BLAST_ID_COL = 2
+    BLAST_COV_COL = 13
+    num_hits_file = 0
+    num_y_id_y_cov = 0
+    num_y_id_n_cov = 0
+    num_n_id_y_cov = 0
+    num_denovo = 0
+    has_cov = False
+    if os.path.exists(BLASTF):
+        print('processing Blast file: {}'.format(BLASTF))
+        with open(BLASTF) as f_blast:
+            for line in f_blast:
+                num_hits_file += 1
+                llist = line.strip().split('\t')
+                fid = float(llist[BLAST_ID_COL])
+                is_pass_id = fid >= 97.0
+                has_cov = len(llist) > 12
+                if has_cov:
+                    fcov = float(line.strip().split('\t')[BLAST_COV_COL])
+                    is_pass_cov = fcov >= 97.0
+                    if is_pass_id:
+                        if is_pass_cov: 
+                            num_y_id_y_cov += 1
+                        else:
+                            num_y_id_n_cov += 1
+                    elif is_pass_cov:
+                        num_n_id_y_cov += 1
+                    else:
+                        num_denovo += 1
+                is_pass_id = False
+                is_pass_cov = False
+    
+    BLAST_BASE = os.path.basename(BLASTF)
+    tmpl = 'from {}: num_hits= {} num_y_id_y_cov= {} num_y_id_n_cov= {} num_n_id_y_cov= {} num_denovo= {}'
+    print(tmpl.format(BLAST_BASE, num_hits_file, num_y_id_y_cov, num_y_id_n_cov, num_n_id_y_cov, num_denovo))
+    
+    #if vald['blast'].get('num_pass_id'):
+    #    tmpl = 'Testing reads passing ID threshold: {}: {} Expected: {}'
+    #    print(tmpl.format(BLAST_BASE, num_pass_id, vald['blast']['num_pass_id']))
+    #    assert num_pass_id == vald['blast']['num_pass_id'], \
+    #        '{} not equals {}'.format(vald['blast']['num_pass_id'], num_pass_id)
+    #
+    #tmpl = 'Testing num_hits: {}: {} Expected: {}'
+    #print(tmpl.format(BLAST_BASE, num_hits_file, vald['blast']['num_recs']))
+    #assert num_hits_file == vald['blast']['num_recs'], \
+    #    '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
+
+    #if has_cov:
+    #    assert vald['blast']['num_pass_id_cov'] == num_y_id_y_cov, \
+    #        '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], num_y_id_y_cov)
+    return {
+        'n_hits'    : num_hits_file, 
+        'y_id_y_cov': num_y_id_y_cov, 
+        'y_id_n_cov': num_y_id_n_cov, 
+        'n_id_y_cov': num_n_id_y_cov,
+        'n_denovo'  : num_denovo
+        }
+#END process_blast
+
 def process_output(**kwarg):
     '''
     Used by:
@@ -417,6 +481,7 @@ def process_output(**kwarg):
             assert num_fwd == vald['num_other_fwd'], \
                 '{} not equals {}'.format(num_fwd, vald['num_other_fwd'])
 
+    process_blast()
 
     # Check reads count in other_rev
     if vald.get('num_other_rev'):
@@ -506,32 +571,40 @@ def process_output(**kwarg):
     # Check count of reads passing %id and %coverage threshold
     # as given in aligned.blast
     if vald.get('blast'):
+        BLAST_ID_COL = 2
+        BLAST_COV_COL = 13
         num_hits_file = 0
-        num_pass_id = 0
-        num_pass_cov = 0
-        num_pass_id_cov_file = 0
-        is_has_cov = False
+        num_y_id_y_cov = 0
+        num_y_id_n_cov = 0
+        num_n_id_y_cov = 0
+        num_denovo = 0
+        has_cov = False
         if os.path.exists(BLASTF):
             with open(BLASTF) as f_blast:
                 for line in f_blast:
                     num_hits_file += 1
                     llist = line.strip().split('\t')
-                    f_id = float(llist[2])
-                    is_pass_id = f_id >= 97.0
-                    if is_pass_id: 
-                        num_pass_id += 1
-                    is_has_cov = len(llist) > 12
-                    if is_has_cov:
-                        f_cov = float(line.strip().split('\t')[13])
-                        is_pass_cov = f_cov >= 97.0
-                        if is_pass_cov: 
-                            num_pass_cov += 1
-                        if is_pass_id and is_pass_cov:
-                            num_pass_id_cov_file += 1
+                    fid = float(llist[BLAST_ID_COL])
+                    is_pass_id = fid >= 97.0
+                    has_cov = len(llist) > 12
+                    if has_cov:
+                        fcov = float(line.strip().split('\t')[BLAST_COV_COL])
+                        is_pass_cov = fcov >= 97.0
+                        if is_pass_id:
+                            if is_pass_cov: 
+                                num_y_id_y_cov += 1
+                            else:
+                                num_y_id_n_cov += 1
+                        elif is_pass_cov:
+                            num_n_id_y_cov += 1
+                        else:
+                            num_denovo += 1
+                    is_pass_id = False
+                    is_pass_cov = False
         
         BLAST_BASE = os.path.basename(BLASTF)
-        tmpl = 'from {}: num_pass_id= {} num_pass_cov= {} num_pass_id_cov= {}'
-        print(tmpl.format(BLAST_BASE, num_pass_id, num_pass_cov, num_pass_id_cov_file))
+        tmpl = 'from {}: num_y_id_y_cov= {} num_y_id_n_cov= {} num_n_id_y_cov= {} num_denovo= {}'
+        print(tmpl.format(BLAST_BASE, num_y_id_y_cov, num_y_id_n_cov, num_n_id_y_cov, num_denovo))
         
         if vald['blast'].get('num_pass_id'):
             tmpl = 'Testing reads passing ID threshold: {}: {} Expected: {}'
@@ -544,14 +617,15 @@ def process_output(**kwarg):
         assert num_hits_file == vald['blast']['num_recs'], \
             '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
 
-        if is_has_cov:
-            assert vald['blast']['num_pass_id_cov'] == num_pass_id_cov_file, \
-                '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], num_pass_id_cov_file)
+        if has_cov:
+            assert vald['blast']['num_pass_id_cov'] == num_y_id_y_cov, \
+                '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], num_y_id_y_cov)
     
     # Correct number of clusters recorded
     #self.assertEqual("4401", num_clusters_log) # 4400 before bug 52
     if logd.get('num_otus') and vald.get('num_cluster'):
-        assert logd['num_otus'][1] in vald['num_cluster']  # 4400 for amplicon_12_part
+        assert logd['num_otus'][1] in vald['num_cluster'], \
+            '{} not in {}'.format(logd['num_otus'][1], vald['num_cluster'])  # 4400 for amplicon_12_part
         num_clusters_file = 0
         num_reads_in_clusters_file = 0
         if os.path.exists(OTUF):
