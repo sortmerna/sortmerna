@@ -83,8 +83,9 @@ void report(int id,
 	Output& output,
 	Runopts& opts)
 {
-	unsigned countReads = 0;
-	unsigned num_invalid = 0; // empty or invalid reads count
+	size_t countReads = 0;
+	size_t num_invalid = 0; // empty or invalid reads count
+	//size_t denovo_n = 0; // count of denovo reads
 	std::size_t num_reads = opts.is_paired ? 2 : 1;
 	std::string readstr;
 	std::vector<Read> reads; // two reads if paired, a single read otherwise
@@ -120,18 +121,25 @@ void report(int id,
 			}
 
 			// only needs one loop through all reads - reference file is not used
-			if (opts.is_fastx && refs.num == 0 && refs.part == 0)
-			{
-				output.fastx.append(id, reads, opts, isDone);
-				if (opts.is_other) output.fx_other.append(id, reads, opts, isDone);
+			if (refs.num == 0 && refs.part == 0) {
+				if (opts.is_fastx)
+					output.fastx.append(id, reads, opts, isDone);
+
+				if (opts.is_other) 
+					output.fx_other.append(id, reads, opts, isDone);
+
+				if (opts.is_denovo) {
+					auto is_dn = opts.is_paired ? reads[0].is_denovo || reads[1].is_denovo : reads[0].is_denovo;
+					if (is_dn)
+						output.denovo.append(id, reads, opts, isDone);
+					//for (auto const& rd : reads) {
+					//	if (!rd.is_id && !rd.is_cov) ++denovo_n;
+						//if (rd.is_denovo) ++denovo_n;
+					//}
+				}
 			}
 
-			// only needs one loop through all reads, no reference file dependency
-			if (opts.is_denovo && refs.num == 0 && refs.part == 0) 
-				output.denovo.append(id, reads, opts, isDone);
-
-			for (int i = 0; i < reads.size(); ++i)
-			{
+			for (int i = 0; i < reads.size(); ++i) {
 				if (opts.is_blast) output.blast.append(id, reads[i], refs, refstats, opts);
 				if (opts.is_sam) output.sam.append(id, reads[i], refs, opts);
 			} // ~for reads
@@ -139,7 +147,8 @@ void report(int id,
 	} // ~for
 
 	//std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start; // ~20 sec Debug/Win
-	INFO_MEM("Report processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, " Invalid reads: ", num_invalid);
+	INFO_MEM("Report processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, 
+		" Invalid reads: ", num_invalid); // , " denovo count: ", denovo_n
 } // ~report
 
 

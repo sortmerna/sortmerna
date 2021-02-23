@@ -69,10 +69,6 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 	const char MATCH = '|';
 	const char MISMATCH = '*';
 	const char INDEL = '-';
-
-	uint32_t mid = 0; // matches id
-	uint32_t mismatches = 0;
-	uint32_t gaps = 0;
 	char strandmark = '+';
 	std::stringstream ss;
 
@@ -82,56 +78,48 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 	//       so each new part corresponds to an index range of alignment vector. It's enough to loop 
 	//       only that range.
 	// iterate all alignments of the read
-	for (int i = 0; i < read.alignment.alignv.size(); ++i)
+	for (auto const& align: read.alignment.alignv)
 	{
-		if (read.alignment.alignv[i].index_num == refs.num
-			&& read.alignment.alignv[i].part == refs.part)
+		if (align.index_num == refs.num
+			&& align.part == refs.part)
 		{
 			// (λ*S - ln(K))/ln(2)
 			uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
-				* (read.alignment.alignv[i].score1) - std::log(refstats.gumbel[refs.num].second)) / (float)std::log(2));
+				* (align.score1) - std::log(refstats.gumbel[refs.num].second)) / (float)std::log(2));
 
 			// E = Kmn*exp(-λS)
 			double evalue_score = (double)refstats.gumbel[refs.num].second
 				* refstats.full_ref[refs.num]
 				* refstats.full_read[refs.num]
-				* std::exp(-refstats.gumbel[refs.num].first * read.alignment.alignv[i].score1);
+				* std::exp(-refstats.gumbel[refs.num].first * align.score1);
 
-			std::string refseq = refs.buffer[read.alignment.alignv[i].ref_num].sequence;
-			std::string ref_id = refs.buffer[read.alignment.alignv[i].ref_num].id;
+			std::string refseq = refs.buffer[align.ref_num].sequence;
+			std::string ref_id = refs.buffer[align.ref_num].id;
 
-			if (read.alignment.alignv[i].strand)
-				strandmark = '+';
-			else
-				strandmark = '-';
+			strandmark = align.strand ? '+' : '-';
 
-			if (read.alignment.alignv[i].strand == read.reversed) // XNOR
+			if (align.strand == read.reversed) // XNOR
 				read.revIntStr(); // reverse if necessary
 
 			// Blast-like pairwise alignment (only for aligned reads)
 			if (opts.blastFormat == BlastFormat::REGULAR)
 			{
-				ss << "Sequence ID: ";
-				ss << ref_id; // print only start of the header till first space
-				ss << std::endl;
+				ss << "Sequence ID: " << ref_id << std::endl; // print only start of the header till first space
+				ss << "Query ID: " << read.getSeqId() << std::endl;
 
-				ss << "Query ID: ";
-				ss << read.getSeqId();
-				ss << std::endl;
-
-				ss << "Score: " << read.alignment.alignv[i].score1 << " bits (" << bitscore << ")\t";
+				ss << "Score: " << align.score1 << " bits (" << bitscore << ")\t";
 				ss.precision(3);
 				ss << "Expect: " << evalue_score << "\t";
 
 				ss << "strand: " << strandmark << std::endl << std::endl;
 
-				if (read.alignment.alignv[i].cigar.size() > 0)
+				if (align.cigar.size() > 0)
 				{
 					uint32_t j, c = 0, left = 0, e = 0,
-						qb = read.alignment.alignv[i].ref_begin1,
-						pb = read.alignment.alignv[i].read_begin1;
+						qb = align.ref_begin1,
+						pb = align.read_begin1;
 
-					while (e < read.alignment.alignv[i].cigar.size() || left > 0)
+					while (e < align.cigar.size() || left > 0)
 					{
 						int32_t count = 0;
 						int32_t q = qb;
@@ -140,12 +128,12 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 						ss.width(8);
 						ss << q + 1 << "    ";
 						// process CIGAR
-						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
+						for (c = e; c < align.cigar.size(); ++c)
 						{
 							// 4 Low bits encode a Letter: M | D | S
-							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
+							uint32_t letter = 0xf & align.cigar[c];
 							// 28 High bits encode the number of occurencies e.g. 34
-							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
+							uint32_t length = (0xfffffff0 & align.cigar[c]) >> 4;
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
@@ -165,11 +153,11 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 						ss << " ";
 						q = qb;
 						count = 0;
-						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
+						for (c = e; c < align.cigar.size(); ++c)
 						{
 							//uint32_t letter = 0xf & *(a->cigar + c);
-							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
-							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
+							uint32_t letter = 0xf & align.cigar[c];
+							uint32_t length = (0xfffffff0 & align.cigar[c]) >> 4;
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
@@ -200,10 +188,10 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 						ss.width(9);
 						ss << p + 1 << "    ";
 						count = 0;
-						for (c = e; c < read.alignment.alignv[i].cigar.size(); ++c)
+						for (c = e; c < align.cigar.size(); ++c)
 						{
-							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
-							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
+							uint32_t letter = 0xf & align.cigar[c];
+							uint32_t length = (0xfffffff0 & align.cigar[c]) >> 4;
 							uint32_t l = (count == 0 && left > 0) ? left : length;
 							for (j = 0; j < l; ++j)
 							{
@@ -253,73 +241,67 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 					return;
 				}
 
-				read.calcMismatchGapId(refs, i, mismatches, gaps, mid);
-				int32_t total_pos = mismatches + gaps + mid;
+				auto miss_gap_match = read.calc_miss_gap_match(refs, align);
 
 				ss << "\t";
 				// (2) Subject
 				ss << ref_id << "\t";
 				// (3) %id
 				ss.precision(3);
-				ss << (double)mid / total_pos * 100 << "\t";
+				ss << std::get<3>(miss_gap_match) * 100 << "\t";
 				// (4) alignment length
-				ss << (read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1) << "\t";
+				ss << (align.read_end1 - align.read_begin1 + 1) << "\t";
 				// (5) mismatches
-				ss << mismatches << "\t";
+				ss << std::get<0>(miss_gap_match) << "\t";
 				// (6) gap openings
-				ss << gaps << "\t";
+				ss << std::get<1>(miss_gap_match) << "\t";
 				// (7) q.start
-				ss << read.alignment.alignv[i].read_begin1 + 1 << "\t";
+				ss << align.read_begin1 + 1 << "\t";
 				// (8) q.end
-				ss << read.alignment.alignv[i].read_end1 + 1 << "\t";
+				ss << align.read_end1 + 1 << "\t";
 				// (9) s.start
-				ss << read.alignment.alignv[i].ref_begin1 + 1 << "\t";
+				ss << align.ref_begin1 + 1 << "\t";
 				// (10) s.end
-				ss << read.alignment.alignv[i].ref_end1 + 1 << "\t";
+				ss << align.ref_end1 + 1 << "\t";
 				// (11) e-value
 				ss << evalue_score << "\t";
 				// (12) bit score
 				ss << bitscore;
-				// OPTIONAL columns
+				// OPTIONAL columns: CIGAR, %COV, strand
 				for (uint32_t l = 0; l < opts.blastops.size(); l++)
 				{
-					// output CIGAR string
 					if (opts.blastops[l].compare("cigar") == 0)
 					{
+						// output CIGAR string
 						ss << "\t";
 						// masked region at beginning of alignment
-						if (read.alignment.alignv[i].read_begin1 != 0) ss << read.alignment.alignv[i].read_begin1 << "S";
-						for (int c = 0; c < read.alignment.alignv[i].cigar.size(); ++c)
+						if (align.read_begin1 != 0) ss << align.read_begin1 << "S";
+						for (int c = 0; c < align.cigar.size(); ++c)
 						{
-							uint32_t letter = 0xf & read.alignment.alignv[i].cigar[c];
-							uint32_t length = (0xfffffff0 & read.alignment.alignv[i].cigar[c]) >> 4;
+							uint32_t letter = 0xf & align.cigar[c];
+							uint32_t length = (0xfffffff0 & align.cigar[c]) >> 4;
 							ss << length;
 							if (letter == 0) ss << "M";
 							else if (letter == 1) ss << "I";
 							else ss << "D";
 						}
 
-						auto end_mask = read.sequence.length() - read.alignment.alignv[i].read_end1 - 1;
+						auto end_mask = read.sequence.length() - align.read_end1 - 1;
 						// output the masked region at end of alignment
 						if (end_mask > 0) ss << end_mask << "S";
 					}
-					// output % query coverage
 					else if (opts.blastops[l].compare("qcov") == 0)
 					{
-						double coverage = (double)abs(read.alignment.alignv[i].read_end1 - read.alignment.alignv[i].read_begin1 + 1)
-							/ read.alignment.alignv[i].readlen;
-
+						// output % query coverage
 						ss << "\t";
 						ss.precision(3);
-						ss << coverage * 100; // (double)align_len / readlen
+						ss << std::get<4>(miss_gap_match) * 100;
 					}
-					// output strand
 					else if (opts.blastops[l].compare("qstrand") == 0)
 					{
+						// output strand
 						ss << "\t";
 						ss << strandmark;
-						//if (read.alignment.alignv[i].strand) blastout << "+";
-						//else blastout << "-";
 					}
 				}
 				ss << std::endl;

@@ -103,17 +103,16 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 	// true if SW alignment between the read and a candidate reference meets the threshold
 	bool is_aligned = false;
 
-	map<uint32_t, uint32_t> kmer_count_map;
+	map<uint32_t, uint32_t> refs_kmer_count_map; // map of kmer hits on candidate references
 	//    |         |_number of k-mer hits on the reference
 	//    |_reference number/position in the ref file
 
-	vector<uint32pair> kmer_count_vec; // use to sort the 'kmer_count_map' (map cannot be sorted)
+	vector<uint32pair> refs_kmer_count_vec; // use to sort the 'refs_kmer_count_map' (map cannot be sorted)
 	map<uint32_t, uint32_t>::iterator map_it;
 	uint32_t max_ref = 0; // reference with max kmer occurrences
 	uint32_t max_occur = 0; // number of kmer occurrences on the 'max_ref'
 
-	// 1. Find all candidate references by using Read's kmer hits information.
-	//    For every reference, compute the number of kmer hits belonging to it
+	// 1. For each candidate reference compute the number of kmer hits belonging to it
 	for (auto const& hit: read.id_win_hits)
 	{
 		seq_pos* positions_tbl_ptr = index.positions_tbl[hit.id].arr;
@@ -121,22 +120,22 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 		for (uint32_t j = 0; j < index.positions_tbl[hit.id].size; j++)
 		{
 			uint32_t seq = positions_tbl_ptr++->seq;
-			if ((map_it = kmer_count_map.find(seq)) != kmer_count_map.end())
+			if ((map_it = refs_kmer_count_map.find(seq)) != refs_kmer_count_map.end())
 				map_it->second++; // sequence already in the map, increment its frequency value
 			else
-				kmer_count_map[seq] = 1; // sequence not in the map, add it
+				refs_kmer_count_map[seq] = 1; // sequence not in the map, add it
 		}
 	}
 
 	// copy frequency map to vector for sorting
 	// consider only candidate references that have enough seed hits
-	for (auto const& freq_pair: kmer_count_map)
+	for (auto const& freq_pair: refs_kmer_count_map)
 	{
 		if (freq_pair.second >= (uint32_t)opts.num_seeds)
-			kmer_count_vec.push_back(freq_pair);
+			refs_kmer_count_vec.push_back(freq_pair);
 	}
 
-	kmer_count_map.clear();
+	refs_kmer_count_map.clear();
 
 	// sort sequences by frequency in descending order
 	auto cmp = [](std::pair<uint32_t, uint32_t> e1, std::pair<uint32_t, uint32_t> e2) {
@@ -144,24 +143,24 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 			return e1.first ASCENDING e2.first; // order references ascending for equal frequencies (originally - descending)
 		return e1.second DESCENDING e2.second; // order frequencies descending
 	}; // comparator
-	std::sort(kmer_count_vec.begin(), kmer_count_vec.end(), cmp);
+	std::sort(refs_kmer_count_vec.begin(), refs_kmer_count_vec.end(), cmp);
 
 	// 2. loop reference candidates, starting from the one with the highest number of kmer hits.
-	bool is_search_candidates = true;
-	for (uint32_t k = 0; k < kmer_count_vec.size() && is_search_candidates; k++)
+	auto is_search_candidates = true;
+	for (uint32_t k = 0; k < refs_kmer_count_vec.size() && is_search_candidates; k++)
 	{
-		max_ref = kmer_count_vec[k].first;
-		max_occur = kmer_count_vec[k].second;
+		max_ref = refs_kmer_count_vec[k].first;
+		max_occur = refs_kmer_count_vec[k].second;
               
 		// not enough hits on the reference, try to collect more hits or next read
 		if (max_occur < (uint32_t)opts.num_seeds) {
-			break;
+			break; // 'search = true' here
 		}
 
 		// update number of reference sequences remaining to check
 		// only decrement read.best if the current ref sequence to check
 		// has a lower seed count than the previous one
-		if (is_aligned && opts.min_lis > 0 && k > 0 && max_occur < kmer_count_vec[k - 1].second )
+		if (is_aligned && opts.min_lis > 0 && k > 0 && max_occur < refs_kmer_count_vec[k - 1].second )
 		{
 			--read.best;
 			if (read.best < 1) break;
@@ -228,7 +227,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 			// 
 			auto end_ref_max = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num];
 			//auto end_ref_max = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // TODO: original - wrong?
-			bool push = false;
+			auto push = false;
 			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref_max )
 			{
 				match_set.push_back(*hits_on_ref_iter);
@@ -402,7 +401,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 							result->part = index.part;
 							result->strand = !read.reversed; // flag whether the alignment was done on a forward or reverse strand
 
-							s_align2 alignment = copyAlignment(result); // new alignment
+							auto alignment = copyAlignment(result); // new alignment
 
 							// read has not yet been mapped, set bit to true for this read
 							// (this is the Only place where read.is_hit can be modified)
@@ -411,18 +410,6 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 								read.is_hit = true;
 								readstats.total_aligned.fetch_add(1, std::memory_order_relaxed);
 								++readstats.reads_matched_per_db[index.index_num];
-							}
-
-							// calculate %ID and %COV if OTU map or denovo were requested
-							if ((opts.is_otu_map || opts.is_denovo) && !(read.is_id && read.is_cov))
-							{
-								std::pair<bool,bool> is_id_cov = is_id_cov_pass(read.isequence, alignment, refs, opts);
-								if (!read.is_id && is_id_cov.first) {
-									read.is_id = true;
-								}
-								if (!read.is_cov && is_id_cov.second) {
-									read.is_cov = true;
-								}
 							}
 
 							// if 'N == 0' or 'Not is_best' or 'is_best And read.alignments.size < N' => 
@@ -468,7 +455,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 								}
 							}//~if
 
-							// all alignments have been found - stop searching
+							// if all alignments have been found - stop searching
 							if (opts.num_alignments > 0) {
 								if (opts.is_best) {
 									if (opts.num_alignments == read.max_SW_count)
@@ -478,7 +465,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 									is_search_candidates = false;
 							}
 
-							// continue to next read (do not need to collect more seeds using another pass)
+							// continue to next read (no need to collect more seeds using another pass)
 							search = false;
 						}//~if aligned
 						
@@ -514,8 +501,8 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 				begin_ref = (match_set.front()).first;
 				begin_read = (match_set.front()).second;
 			}
-		}//~for all reference sequence length                   
-	}//~for all of the reference sequence candidates
+		}//~for all matching k-mers on a reference
+	}//~for all reference candidates
 } // ~compute_lis_alignment
 
 s_align2 copyAlignment(s_align* pAlign)
@@ -575,56 +562,57 @@ uint32_t inline findMaxIndex(std::vector<s_align2>& alignv)
  *
  * @param read_iseq  read sequence in integer alphabet, see 'read.isequence'
  * @param alignment to check
- * @return pair (is_ID, is_COV)  is_ID: true | false, is_COV: true | false
+ * @return pair<is_ID, is_COV>  is_ID: true | false, is_COV: true | false
  *
  */
 std::pair<bool,bool> inline is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts)
 {
 	// calculate id, mismatches, gaps for the given alignment
-	int id = 0; // count of mismatched characters
-	int mismatches = 0; // count of gaps
-	int gaps = 0; // count of matched characters
+	int id = 0; // count of matched nt
+	int mismatches = 0; // count of mismatched nt
+	int gaps = 0; // count of gaps
 
-	int32_t ridx = alignment.ref_begin1; // index of the first char in the reference matched part
-	int32_t qidx = alignment.read_begin1; // index of the first char in the read matched part
+	auto read_i = alignment.ref_begin1; // index of the first char in the reference matched part
+	auto query_i = alignment.read_begin1; // index of the first char in the read matched part
 
 	std::string refseq = refs.buffer[alignment.ref_num].sequence; // reference sequence
 	int32_t align_len = abs(alignment.read_end1 + 1 - alignment.read_begin1); // alignment length
 
-	for (uint32_t cidx = 0; cidx < alignment.cigar.size(); ++cidx)
+	for (uint32_t cigar_i = 0; cigar_i < alignment.cigar.size(); ++cigar_i)
 	{
-		uint32_t letter = 0xf & alignment.cigar[cidx]; // 4 low bits
-		uint32_t length = (0xfffffff0 & alignment.cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
+		uint32_t letter = 0xf & alignment.cigar[cigar_i]; // 4 low bits
+		uint32_t length = (0xfffffff0 & alignment.cigar[cigar_i]) >> 4; // high 28 bits i.e. 32-4=28
 		if (letter == 0)
 		{
-			for (uint32_t u = 0; u < length; ++u)
+			for (auto i = 0; i < length; ++i)
 			{
-				if (refseq[ridx] != read_iseq[qidx]) ++mismatches;
+				if (refseq[read_i] != read_iseq[query_i]) ++mismatches;
 				else ++id;
-				++ridx;
-				++qidx;
+				++read_i;
+				++query_i;
 			}
 		}
 		else if (letter == 1)
 		{
-			qidx += length;
+			query_i += length;
 			gaps += length;
 		}
 		else
 		{
-			ridx += length;
+			read_i += length;
 			gaps += length;
 		}
 	}
 
+	auto rid = (double)id / ((double)mismatches + gaps + id); // %ID
+	auto rcov = (double)align_len / read_iseq.length(); // %COV
 	// round to 3 decimal places
-	stringstream ss;
-	ss.precision(3);
-	ss << (double)id / ((double)mismatches + gaps + id) << ' ' << (double)align_len / read_iseq.length();
+	//stringstream ss;
+	//ss.precision(3);
+	//ss << (double)id / ((double)mismatches + gaps + id) << ' ' << (double)align_len / read_iseq.length();
+	//double align_id_round = 0.0;
+	//double align_cov_round = 0.0;
+	//ss >> align_id_round >> align_cov_round;
 
-	double align_id_round = 0.0;
-	double align_cov_round = 0.0;
-	ss >> align_id_round >> align_cov_round;
-
-	return { align_id_round >= opts.min_id, align_cov_round >= opts.min_cov };
+	return { rid >= opts.min_id, rcov >= opts.min_cov };
 } // ~is_id_cov_pass

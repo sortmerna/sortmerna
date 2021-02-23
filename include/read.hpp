@@ -40,6 +40,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm> // std::find_if
+#include <tuple>
 
 #include "kvdb.hpp"
 #include "traverse_bursttrie.hpp" // id_win
@@ -53,7 +54,7 @@ struct alignment_struct2
 	uint32_t max_size; // max size of alignv i.e. max number of alignments to store (see options '-N', '--best N') TODO: remove?
 	uint32_t min_index; // index into alignv for the reference with lowest SW alignment score (see 'compute_lis_alignment')
 	uint32_t max_index; // index into alignv for the reference with highest SW alignment score (see 'compute_lis_alignment')
-	std::vector<s_align2> alignv;
+	std::vector<s_align2> alignv; // read alignments i.e. passing SW threshold
 
 	// constructors
 	alignment_struct2();
@@ -113,7 +114,18 @@ public:
 	unsigned num_hits; // number of matching references found so far for this read
 	uint16_t max_SW_count; // count of alignments that have Max possible Smith-Waterman score for this read
 	int32_t num_alignments; // counter of alignments to keep for reporting
-	uint32_t hit_seeds; // count of read's seed k-mers that have DB matches.
+	/*
+	* count of read's k-mers that have DB matches. Used to filter the candidate references
+	* that have a minimum required number of matching seeds (see opts.num_seeds)
+	* 
+	* TODO: It is incremented each time matches for a k-mer are found without regards to 
+	* what references are involved. Whence it is possible for N k-mers to be matched each 
+	* to a different reference, so that the 'hit_seeds' is N, but in reality each reference 
+	* has only a single matching k-mer.
+	* Not a problem because the matches on the refs are always calculated prior alignment.
+	* This var is stil useful to ensure there are matches prior alignment.
+	*/
+	uint32_t hit_seeds;
 	int32_t best; // init with opts.min_lis, see 'this.init'. NO DB store/restore (bug 51).
 
 	std::vector<id_win> id_win_hits; // [1] positions of kmer hits on the reference sequence in given index/part. NO DB store.
@@ -136,15 +148,36 @@ public:
 	void validate();
 	void clear();
 	void init(Runopts& opts);
+	/* convert to Json string to store in DB */
 	std::string matchesToJson();
 	void unmarshallJson(KeyValueDatabase& kvdb);
-	std::string toBinString();
+	/* serialize to binary string to store in DB */
+	std::string toBinString(); 
 	bool load_db(KeyValueDatabase& kvdb);
 	void seqToIntStr();
 	void revIntStr();
+	/* convert isequence to alphabetic form i.e. to A,C,G,T,N */
 	std::string get04alphaSeq();
+	/* flip isequence between 03 - 04 alphabets */
 	void flip34();
-	void calcMismatchGapId(References& refs, int alignIdx, uint32_t &mismatches, uint32_t& gaps, uint32_t& id);
+
+	/*
+	* calculate %ID and %COV given an alignment
+	* 
+	* @param IN Refs   references
+	* @param IN aling  read alignment
+	* @return  pair<%ID, %COV>
+	*/
+	std::pair<double, double> calc_id_cov(const References& refs, const s_align2& align);
+
+	/*
+	* count mismatches, gaps, matches, and calculate %ID, %COV given an alignment
+	* @param  refs   references
+	* @param  align  alignment to evaluate
+	* @return tuple<mismatches, gaps, matches, %ID, %COV>
+	*/
+	std::tuple<uint32_t, uint32_t, uint32_t, double, double> calc_miss_gap_match(const References& refs, const s_align2& align);
+
 	std::string getSeqId();
 	uint32_t hashKmer(uint32_t pos, uint32_t len);
 	bool from_string(std::string& readstr);

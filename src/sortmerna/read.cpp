@@ -349,7 +349,6 @@ void Read::revIntStr()
 	reversed = !reversed;
 }
 
-// convert isequence to alphabetic form i.e. to A,C,G,T,N
 std::string Read::get04alphaSeq() {
 	//bool rev03 = false; // mark whether to revert back to 03
 	std::string seq;
@@ -370,7 +369,6 @@ std::string Read::getSeqId() {
 	return id;
 }
 
-// flip isequence between 03 - 04 alphabets
 void Read::flip34()
 {
 	if (ambiguous_nt.size() > 0)
@@ -395,7 +393,6 @@ void Read::flip34()
 	}
 } // ~flip34
 
-/* convert to Json string to store in DB */
 std::string Read::matchesToJson() {
 	rapidjson::StringBuffer sbuf;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
@@ -430,9 +427,6 @@ std::string Read::matchesToJson() {
 	return sbuf.GetString();
 } // ~Read::matchesToJsonString
 
-/* 
- * serialize to binary string to store in DB 
- */
 std::string Read::toBinString()
 {
 	if (alignment.alignv.size() == 0)
@@ -553,42 +547,27 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 	INFO("Read::unmarshallJson: Not yet Implemented");
 }
 
-
-
-/**
-* Prototype: paralleltraversal lines 1531..1555
-* Calculate Mismatches, Gaps, and ID
-*
-* @param IN Refs  references
-* @param IN Read
-* @param IN alignIdx index into Read.alignment.alignv
-* @param OUT mismatches  calculated here for the given Read Alignment
-* @param OUT gaps
-* @param OUT id   matched characters
-*/
-void Read::calcMismatchGapId(References& refs, int alignIdx, uint32_t& mismatches, uint32_t& gaps, uint32_t& id)
+std::pair<double, double> Read::calc_id_cov(const References& refs, const s_align2& align)
 {
-	if (alignIdx >= alignment.alignv.size()) return; // index exceeds the size of the alignment vector
+	uint32_t n_miss = 0; // count of mismatched characters
+	uint32_t n_gap = 0; // count of gaps
+	uint32_t n_match = 0; // count of matched characters
 
-	mismatches = 0; // count of mismatched characters
-	gaps = 0; // count of gaps
-	id = 0; // count of matched characters
+	int32_t qb = align.ref_begin1; // index of the first char in the reference matched part
+	int32_t pb = align.read_begin1; // index of the first char in the read matched part
 
-	int32_t qb = alignment.alignv[alignIdx].ref_begin1; // index of the first char in the reference matched part
-	int32_t pb = alignment.alignv[alignIdx].read_begin1; // index of the first char in the read matched part
+	std::string refseq = refs.buffer[align.ref_num].sequence;
 
-	std::string refseq = refs.buffer[alignment.alignv[alignIdx].ref_num].sequence;
-
-	for (uint32_t cidx = 0; cidx < alignment.alignv[alignIdx].cigar.size(); ++cidx)
+	for (uint32_t cidx = 0; cidx < align.cigar.size(); ++cidx)
 	{
-		uint32_t letter = 0xf & alignment.alignv[alignIdx].cigar[cidx]; // 4 low bits
-		uint32_t length = (0xfffffff0 & alignment.alignv[alignIdx].cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
+		uint32_t letter = 0xf & align.cigar[cidx]; // 4 low bits
+		uint32_t length = (0xfffffff0 & align.cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
 		if (letter == 0)
 		{
 			for (uint32_t u = 0; u < length; ++u)
 			{
-				if (refseq[qb] != isequence[pb]) ++mismatches;
-				else ++id;
+				if (refseq[qb] != isequence[pb]) ++n_miss;
+				else ++n_match;
 				++qb;
 				++pb;
 			}
@@ -596,15 +575,65 @@ void Read::calcMismatchGapId(References& refs, int alignIdx, uint32_t& mismatche
 		else if (letter == 1)
 		{
 			pb += length;
-			gaps += length;
+			n_gap += length;
 		}
 		else
 		{
 			qb += length;
-			gaps += length;
+			n_gap += length;
 		}
 	}
-} // ~Read::calcMismatchGapId
+
+	auto n_tot = n_miss + n_gap + n_match;
+	auto align_len = align.read_end1 - align.read_begin1 + 1;
+	auto id = (double)n_match / n_tot * 100;
+	auto cov = (double)abs(align.read_end1 - align.read_begin1 + 1) / align.readlen;
+	return { id, cov };
+} // ~Read::calc_id_cov
+
+std::tuple<uint32_t, uint32_t, uint32_t, double, double> Read::calc_miss_gap_match(const References& refs, const s_align2& align)
+{
+	uint32_t n_miss = 0; // count of mismatched characters
+	uint32_t n_gap = 0; // count of gaps
+	uint32_t n_match = 0; // count of matched characters
+
+	int32_t qb = align.ref_begin1; // index of the first char in the reference matched part
+	int32_t pb = align.read_begin1; // index of the first char in the read matched part
+
+	std::string refseq = refs.buffer[align.ref_num].sequence;
+
+	for (uint32_t cidx = 0; cidx < align.cigar.size(); ++cidx)
+	{
+		uint32_t letter = 0xf & align.cigar[cidx]; // 4 low bits
+		uint32_t length = (0xfffffff0 & align.cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
+		if (letter == 0)
+		{
+			for (uint32_t u = 0; u < length; ++u)
+			{
+				if (refseq[qb] != isequence[pb]) ++n_miss;
+				else ++n_match;
+				++qb;
+				++pb;
+			}
+		}
+		else if (letter == 1)
+		{
+			pb += length;
+			n_gap += length;
+		}
+		else
+		{
+			qb += length;
+			n_gap += length;
+		}
+	}
+
+	auto n_tot = n_miss + n_gap + n_match;
+	auto align_len = align.read_end1 - align.read_begin1 + 1;
+	auto id = (double)n_match / n_tot; // e.g. 0.98
+	auto cov = (double)abs(align.read_end1 - align.read_begin1 + 1) / align.readlen; // e.g. 0.86
+	return { n_miss,n_gap, n_match, id, cov };
+} // ~Read::calc_miss_gap_match
 
 /* 
  * Calculate the numerical value (hash) of a kmer given its position on the read and its length.

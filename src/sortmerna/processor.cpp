@@ -113,23 +113,26 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 				read.id_win_hits.clear(); // bug 46
 			}
 
-			bool is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
-			if (is_last_idx) // read.is_aligned && last idx
+			auto is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
+			if (is_last_idx && read.is_hit) // read.is_aligned && last idx
 			{
 				if (opts.is_otu_map || opts.is_denovo) 
 				{
-					if (read.is_id && read.is_cov) {
-						readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
-					}
-					else if (read.is_id && !read.is_cov) {
-						readstats.total_aligned_id.fetch_add(1, std::memory_order_relaxed);
-					}
-					else if (!read.is_id && read.is_cov) {
-						readstats.total_aligned_cov.fetch_add(1, std::memory_order_relaxed);
-					}
-					else {
-						readstats.total_denovo.fetch_add(1, std::memory_order_relaxed);
-						read.is_denovo = true;
+					for (auto const& align : read.alignment.alignv) {
+						auto id_cov = read.calc_id_cov(refs, align);
+						if (id_cov.first >= opts.min_id) {
+							if (id_cov.second >= opts.min_cov)
+								readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
+							else
+								readstats.total_aligned_id.fetch_add(1, std::memory_order_relaxed);
+						}
+						else if (id_cov.second >= opts.min_cov) {
+							readstats.total_aligned_cov.fetch_add(1, std::memory_order_relaxed);
+						}
+						else {
+							readstats.total_denovo.fetch_add(1, std::memory_order_relaxed); // neither ID nor COV
+							read.is_denovo = true;
+						}
 					}
 				}
 			}

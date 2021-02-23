@@ -247,7 +247,7 @@ void traverse
 				}
 			} // ~if not read_pos_searched[win_pos]
 
-			// all k-mers for a given shift-size were looked-up - proceed to LIS calculation
+			// all k-mers for a given shift-size are to be looked up prior proceeding to the LIS/SW calculation
 			if (win_num == numwin - 1)
 			{
 				// calculate LIS if the number of matching seeds on the read meets the threshold (default 2)
@@ -260,7 +260,7 @@ void traverse
 				if (search)
 				{
 					if (pass_n == 2) 
-						search = false; // if the last (3rd) Pass has been made
+						search = false; // the last (3rd) Pass has been made
 					else
 					{
 						// the next interval size equals to the current one, skip it
@@ -272,7 +272,7 @@ void traverse
 						else win_shift = opts.skiplengths[index.index_num][pass_n];
 					}
 				}
-				break; // go to the next skip length
+				break; // go to the next shift size
 			}//~( win_num == NUMWIN-1 )
 			win_pos += win_shift;
 		}//~for (each window)                

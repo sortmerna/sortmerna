@@ -55,15 +55,12 @@ void ReportDenovo::init(Readfeed& readfeed, Runopts& opts)
 void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last)
 {
 	if (opts.is_paired) {
-		if (!reads[0].is_denovo && !reads[1].is_denovo)
-			return; // neiher is denovo - nothing to write
-
 		// caclulate the index of the output file to write to
 		for (int i = 0, idx = 0; i < reads.size(); ++i)
 		{
 			// 1 output file a (aligned reads)
 			if (base.num_out == 1) {
-				if (reads[i].is_denovo || opts.is_paired_in)
+				if (opts.is_paired_in || reads[i].is_denovo)
 					idx = id;
 				else
 					continue;
@@ -71,13 +68,15 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 			// 2 output files dp,ds (sout) | df,dr (out2)
 			else if (base.num_out == 2) {
 				if (opts.is_out2) {
-					if (opts.is_paired_out && !(reads[0].is_denovo && reads[1].is_denovo))
-						break; // if not both aligned -> non-aligned
+					auto is_both_dn = reads[0].is_denovo && reads[1].is_denovo;
+					if (opts.is_paired_out && !is_both_dn)
+						break;
 					else if (opts.is_paired_in || reads[i].is_denovo)
 						idx = id * base.num_out + i;
 				}
 				else if (opts.is_sout) {
-					if (reads[0].is_denovo && reads[1].is_denovo)
+					auto is_both_dn = reads[0].is_denovo && reads[1].is_denovo;
+					if (is_both_dn)
 						idx = id * base.num_out; // both to 'dp' [0]
 					else if (reads[i].is_denovo)
 						idx = id * base.num_out + 1; // hit to 'ds' [1]
@@ -109,14 +108,10 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 	// non-paired
 	else
 	{
-		// the read was accepted - output
-		if (reads[0].is_denovo)
-		{
-			if (is_zip)
-				base.write_a_read(fsv[0], reads[0], vstate_out[0], vzlib_out[0], is_last);
-			else
-				base.write_a_read(fsv[0], reads[0]);
-		}
+		if (is_zip)
+			base.write_a_read(fsv[id], reads[0], vstate_out[id], vzlib_out[id], is_last);
+		else
+			base.write_a_read(fsv[id], reads[0]);
 	}
 }
 
