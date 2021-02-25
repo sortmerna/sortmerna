@@ -57,19 +57,11 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	numbvs(opts.indexfiles.size(), 0),
 	numseq(opts.indexfiles.size(), 0)
 {
-	std::stringstream ss;
-	ss << STAMP << "Index Statistics calculation Start ...";
-	std::cout << ss.str();
-
+	INFO_NE("Index Statistics calculation starts ...");
 	auto starts = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> elapsed;
-
 	load(opts, readstats);
-
-	elapsed = std::chrono::high_resolution_clock::now() - starts;
-	ss.str("");
-	ss << STAMP << "Done in: " << std::setprecision(2) << std::fixed << elapsed.count() << " sec" << std::endl;
-	std::cout << ss.str();
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	INFO_NS(" done in: ", elapsed.count()," sec\n");
 }
 
 /**
@@ -102,9 +94,7 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 		if (!stats.good())
 		{
 			// should never come here. Index is built and validated prior this call.
-			ss.str("");
-			ss << STAMP << "Cannot open the index file [" << opts.indexfiles[index_num].second << ".stats]";
-			ERR(ss.str());
+			ERR("Cannot open the index file [", opts.indexfiles[index_num].second, ".stats]");
 			exit(EXIT_FAILURE);
 		}
 

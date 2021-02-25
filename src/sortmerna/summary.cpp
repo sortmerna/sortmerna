@@ -70,7 +70,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 	total_reads = readstats.all_reads_count;
 	if (opts.is_denovo) {
 		is_de_novo = opts.is_denovo;
-		total_denovo = readstats.total_denovo;
+		total_denovo = readstats.num_denovo;
 	}
 	total_mapped = readstats.total_aligned.load(std::memory_order_relaxed);
 	min_read_len = readstats.min_read_len;
@@ -85,7 +85,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 
 	if (opts.is_otu_map) {
 		is_otumapout = opts.is_otu_map;
-		total_id_cov = readstats.total_aligned_id_cov.load(std::memory_order_relaxed);
+		total_id_cov = readstats.num_y_id_y_cov.load(std::memory_order_relaxed);
 		total_otu = readstats.total_otu;
 	}
 
@@ -182,5 +182,5 @@ void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	Summary summary;
 	summary.write(refstats, readstats, opts);
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
-	INFO("==== Done summary in sec [", elapsed.count(), "] ====\n\n");
+	INFO("==== Done summary in sec [", elapsed.count(), "] ====\n");
 } // ~writeSummary

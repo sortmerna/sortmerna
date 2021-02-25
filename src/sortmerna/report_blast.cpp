@@ -37,7 +37,7 @@
 #include "references.hpp"
 #include "refstats.hpp"
 
-ReportBlast::ReportBlast(Runopts& opts)	: Report(opts) {}
+ReportBlast::ReportBlast(Runopts& opts)	: n_aligned(0), n_yid_ncov(0), n_nid_ycov(0), n_yid_ycov(0), n_denovo(0), Report(opts) {}
 
 ReportBlast::ReportBlast(Readfeed& readfeed, Runopts& opts)	: ReportBlast(opts)
 {
@@ -80,8 +80,7 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 	// iterate all alignments of the read
 	for (auto const& align: read.alignment.alignv)
 	{
-		if (align.index_num == refs.num
-			&& align.part == refs.part)
+		if (align.index_num == refs.num	&& align.part == refs.part)
 		{
 			// (λ*S - ln(K))/ln(2)
 			uint32_t bitscore = (uint32_t)((float)((refstats.gumbel[refs.num].first)
@@ -242,6 +241,24 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 				}
 
 				auto miss_gap_match = read.calc_miss_gap_match(refs, align);
+				auto is_dbg = false;
+				if (is_dbg) {
+					auto idr = floor(std::get<3>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
+					auto covr = floor(std::get<4>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
+					auto is_id = idr >= opts.min_id;
+					auto is_cov = covr >= opts.min_cov;
+					//auto is_id = std::get<3>(miss_gap_match) >= opts.min_id;
+					//auto is_cov = std::get<4>(miss_gap_match) >= opts.min_cov;
+					if (is_id && is_cov)
+						n_yid_ycov.fetch_add(1, std::memory_order_relaxed);
+					else if (is_id)
+						n_yid_ncov.fetch_add(1, std::memory_order_relaxed);
+					else if (is_cov)
+						n_nid_ycov.fetch_add(1, std::memory_order_relaxed);
+					else {
+						n_denovo.fetch_add(1, std::memory_order_relaxed);
+					}
+				}
 
 				ss << "\t";
 				// (2) Subject

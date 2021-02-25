@@ -32,6 +32,7 @@
 
 #include <string>
 #include "report.h"
+#include <atomic>
 
 // forward
 class References;
@@ -41,7 +42,15 @@ class Read;
 class ReportBlast : public Report
 {
 	std::string ext = ".blast";
+
 public:
+	// debug
+	std::atomic<uint64_t> n_aligned; // reads passing E-value threshold.
+	std::atomic<uint64_t> n_yid_ncov; // SW + ID - COV i.e. aligned passing ID, failing COV
+	std::atomic<uint64_t> n_nid_ycov; // SW - ID + COV i.e. aligned failing ID, passing COV
+	std::atomic<uint64_t> n_yid_ycov; // [2] SW + ID + COV i.e. aligned passing ID, passing COV
+	std::atomic<uint64_t> n_denovo; // [4] SW - ID - COV i.e. 'de novo' reads, aligned failing ID, failing COV
+
 	ReportBlast(Runopts& opts);
 	ReportBlast(Readfeed& readfeed, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;

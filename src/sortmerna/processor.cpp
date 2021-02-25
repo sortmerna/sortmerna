@@ -113,30 +113,6 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 				read.id_win_hits.clear(); // bug 46
 			}
 
-			auto is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
-			if (is_last_idx && read.is_hit) // read.is_aligned && last idx
-			{
-				if (opts.is_otu_map || opts.is_denovo) 
-				{
-					for (auto const& align : read.alignment.alignv) {
-						auto id_cov = read.calc_id_cov(refs, align);
-						if (id_cov.first >= opts.min_id) {
-							if (id_cov.second >= opts.min_cov)
-								readstats.total_aligned_id_cov.fetch_add(1, std::memory_order_relaxed);
-							else
-								readstats.total_aligned_id.fetch_add(1, std::memory_order_relaxed);
-						}
-						else if (id_cov.second >= opts.min_cov) {
-							readstats.total_aligned_cov.fetch_add(1, std::memory_order_relaxed);
-						}
-						else {
-							readstats.total_denovo.fetch_add(1, std::memory_order_relaxed); // neither ID nor COV
-							read.is_denovo = true;
-						}
-					}
-				}
-			}
-
 			// write to DB - thread safe
 			if (read.isValid && !read.isEmpty)
 			{
@@ -263,3 +239,157 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	readstats.set_is_set_aligned_id_cov();
 	readstats.store_to_db(kvdb);
 } // ~align
+
+void denovo_stats_run(int id,
+	Readfeed& readfeed,
+	Readstats& readstats,
+	References& refs,
+	KeyValueDatabase& kvdb,
+	Runopts& opts)
+{
+	size_t countReads = 0;
+	size_t num_invalid = 0; // empty or invalid reads count
+	//size_t denovo_n = 0; // count of denovo reads
+	std::size_t num_reads = opts.is_paired ? 2 : 1;
+	std::string readstr;
+	std::vector<Read> reads; // two reads if paired, a single read otherwise
+
+	INFO_MEM("Denovo stats thread ", id, " : ", std::this_thread::get_id(), " started.");
+	//auto start = std::chrono::high_resolution_clock::now();
+
+	for (bool isDone = false; !isDone;)
+	{
+		reads.clear();
+		auto idx = id * readfeed.num_sense; // index into split_files array
+		for (int i = 0; i < num_reads; ++i)
+		{
+			if (readfeed.next(idx, readstr))
+			{
+				reads.emplace_back(Read(readstr));
+				reads[i].init(opts);
+				reads[i].load_db(kvdb);
+				readstr.resize(0);
+				++countReads;
+			}
+			else {
+				isDone = true;
+			}
+			if (opts.is_paired) idx ^= 1; // switch fwd-rev
+		}
+
+		if (!isDone) {
+			if (reads.back().isEmpty || !reads.back().isValid) {
+				++num_invalid;
+				continue;
+			}
+
+			for (auto &read: reads) {
+				if (read.is03) read.flip34();
+				for (auto const& align : read.alignment.alignv) {
+					if (align.index_num == refs.num	&& align.part == refs.part)	{
+						auto miss_gap_match = read.calc_miss_gap_match(refs, align);
+						auto idr = floor(std::get<3>(miss_gap_match) * 1000.0 + 0.5) / 1000.0; // round to 3 decimal
+						auto covr = floor(std::get<4>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
+						auto is_id = idr >= opts.min_id;
+						auto is_cov = covr >= opts.min_cov;
+						//auto is_id = std::get<3>(miss_gap_match) >= opts.min_id;
+						//auto is_cov = std::get<4>(miss_gap_match)>= opts.min_cov;
+						if (is_id && is_cov) {
+							++read.n_yid_ycov;
+							readstats.num_y_id_y_cov.fetch_add(1, std::memory_order_relaxed);
+						}
+						else if (is_id) {
+							++read.n_yid_ncov;
+							readstats.num_y_id_n_cov.fetch_add(1, std::memory_order_relaxed);
+						}
+						else if (is_cov) {
+							++read.n_nid_ycov;
+							readstats.num_n_id_y_cov.fetch_add(1, std::memory_order_relaxed);
+						}
+						else {
+							++read.n_denovo;
+							readstats.num_denovo.fetch_add(1, std::memory_order_relaxed); // neither ID nor COV
+						}
+					}
+				}
+				kvdb.put(read.id, read.toBinString()); // store to DB
+			} // ~for reads
+		} // ~ if !is_done
+	} // ~for
+
+	//std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start; // ~20 sec Debug/Win
+	INFO_MEM("Denovo stats thread ", id, " : ", std::this_thread::get_id(), " done. Processed reads: ", countReads,
+		" Invalid reads: ", num_invalid); // , " denovo count: ", denovo_n
+} // ~denovo_stats_run
+
+void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
+{
+	INFO("==== processing Denovo statistics ====");
+	auto start = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed;
+
+	int nthreads = 0;
+	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
+		nthreads = opts.num_proc_thread;
+		readfeed.init_reading(); // prepare readfeed
+	}
+
+	std::vector<std::thread> tpool;
+	tpool.reserve(nthreads);
+
+	bool indb = readstats.restoreFromDb(kvdb);
+	if (indb) {
+		INFO("Restored Readstats from DB: ", indb);
+	}
+
+	Refstats refstats(opts, readstats);
+	References refs;
+
+	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
+	for (auto ref_idx = 0; ref_idx < opts.indexfiles.size(); ++ref_idx)
+	{
+		// iterate all parts of the index
+		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[ref_idx]; ++idx_part)
+		{
+			INFO_NE("loading reference ", ref_idx, " part ", idx_part + 1, "/", refstats.num_index_parts[ref_idx]);
+			auto start_i = std::chrono::high_resolution_clock::now();
+			refs.load(ref_idx, idx_part, opts, refstats);
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
+			INFO_NS(" ... done in sec ", elapsed.count());
+
+			start_i = std::chrono::high_resolution_clock::now(); // index processing starts
+
+			// start threads
+			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
+				for (int i = 0; i < nthreads; ++i) {
+					tpool.emplace_back(std::thread(denovo_stats_run, i, std::ref(readfeed),
+						std::ref(readstats), std::ref(refs), std::ref(kvdb), std::ref(opts)));
+				}
+			}
+			// wait for all threads to finish
+			for (auto i = 0; i < tpool.size(); ++i) {
+				tpool[i].join();
+			}
+
+			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
+			INFO("done reference ", ref_idx, " part: ", idx_part + 1, " in sec: ", elapsed.count());
+
+			start_i = std::chrono::high_resolution_clock::now();
+			refs.unload();
+			//read_queue.reset();
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
+			INFO_MEM("references unloaded in sec: ", elapsed.count());
+			tpool.clear();
+			// rewind for the next index
+			readfeed.rewind_in();
+			readfeed.init_vzlib_in();
+		} // ~for(idx_part)
+	} // ~for(ref_idx)
+
+	elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("num y_id_y_cov: ", readstats.num_y_id_y_cov,
+		"\n\t\t   num y_id_n_cov: ", readstats.num_y_id_n_cov,
+		"\n\t\t   num n_id_y_cov: ", readstats.num_n_id_y_cov,
+		"\n\t\t   num denovo: ", readstats.num_denovo);
+	INFO("=== done Denovo stats in sec [", elapsed.count(), "] ===\n");
+} // ~denovo_stats

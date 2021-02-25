@@ -182,6 +182,14 @@ static inline size_t get_memory() {
 		std::cout << ss.str(); \
 	}
 
+// no end line
+#define INFO_NE(...) \
+	{\
+		std::stringstream ss; \
+		ss << STAMP << fold_to_string(__VA_ARGS__); \
+		std::cout << ss.str(); \
+	}
+
 // No Stamp, no endl
 #define INFO_NS(...) \
 	{\

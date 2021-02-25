@@ -384,7 +384,6 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 						is_aligned = (result != 0 && result->score1 > refstats.minimal_score[index.index_num]);
 						if (is_aligned)
 						{
-							++read.num_hits;
 							if (result->score1 == max_SW_score) 
 								++read.max_SW_count; // a max possible score has been found
 

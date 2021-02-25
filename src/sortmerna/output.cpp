@@ -129,13 +129,15 @@ void report(int id,
 					output.fx_other.append(id, reads, opts, isDone);
 
 				if (opts.is_denovo) {
-					auto is_dn = opts.is_paired ? reads[0].is_denovo || reads[1].is_denovo : reads[0].is_denovo;
+					auto is_dn = opts.is_paired 
+						? (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0
+							&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0) 
+						|| (reads[1].n_denovo > 0 && reads[1].n_yid_ycov == 0
+							&& reads[1].n_yid_ncov == 0 && reads[1].n_nid_ycov == 0) 
+						: (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0
+								&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0);
 					if (is_dn)
 						output.denovo.append(id, reads, opts, isDone);
-					//for (auto const& rd : reads) {
-					//	if (!rd.is_id && !rd.is_cov) ++denovo_n;
-						//if (rd.is_denovo) ++denovo_n;
-					//}
 				}
 			}
 
@@ -155,7 +157,7 @@ void report(int id,
 // called from main. generateReports -> reportsJob
 void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
-	INFO("=== Report generation starts ===\n");
+	INFO("=== Report generation starts ===");
 	auto start = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
@@ -169,10 +171,8 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	std::vector<std::thread> tpool;
 	tpool.reserve(nthreads);
 
-	bool indb = readstats.restoreFromDb(kvdb);
-	if (indb) {
-		INFO("Restored Readstats from DB: ", indb);
-	}
+	auto is_db = readstats.restoreFromDb(kvdb);
+	if (is_db) INFO("Restored Readstats from DB: ", is_db);
 
 	Refstats refstats(opts, readstats);
 	References refs;
@@ -187,17 +187,15 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[ref_idx]; ++idx_part)
 		{
-			INFO("Loading reference ", ref_idx, " part ", idx_part + 1, "/", refstats.num_index_parts[ref_idx], "  ... ");
-
+			INFO_NE("loading reference ", ref_idx, " part ", idx_part + 1, "/", refstats.num_index_parts[ref_idx]);
 			auto start_i = std::chrono::high_resolution_clock::now();
-
 			refs.load(ref_idx, idx_part, opts, refstats);
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
-			INFO("done in sec [", elapsed.count(), "]");
+			INFO_NS(" ... done in ", elapsed.count(), " sec\n");
 
 			start_i = std::chrono::high_resolution_clock::now(); // index processing starts
 
-			// start processor
+			// start processing threads
 			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
 				for (int i = 0; i < nthreads; ++i) {
 					tpool.emplace_back(std::thread(report, i, std::ref(readfeed),
@@ -209,23 +207,22 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 				tpool[i].join();
 			}
 
-			refs.unload();
-			//read_queue.reset();
-
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
-			INFO("Done reference ", ref_idx, " Part: ", idx_part + 1, " in sec: [", elapsed.count(), "].");
+			INFO("done reference ", ref_idx, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");
 
 			start_i = std::chrono::high_resolution_clock::now();
 			refs.unload();
+			//read_queue.reset();
 			elapsed = std::chrono::high_resolution_clock::now() - start_i;
-			INFO_MEM("References unloaded in sec: [", elapsed.count(), "].");
+			INFO_MEM("references unloaded in ", elapsed.count(), " sec");
 			tpool.clear();
 			// rewind for the next index
 			readfeed.rewind_in();
 			readfeed.init_vzlib_in();
 
-			if (!opts.is_blast && !opts.is_sam)	break;;
+			if (!opts.is_blast && !opts.is_sam)	break; // only a single pass necessary for fastx, other, denovo reports
 		} // ~for(idx_part)
+		if (!opts.is_blast && !opts.is_sam)	break;
 	} // ~for(ref_idx)
 
 	//output.closefiles();
@@ -243,6 +240,10 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.blast.finish_deflate();
 		output.blast.closef();
 		output.blast.merge(readfeed.num_splits);
+		INFO("yid_ycov: ", output.blast.n_yid_ycov, 
+			" yid_ncov: ", output.blast.n_yid_ncov, 
+			" nid_ycov: ", output.blast.n_nid_ycov, 
+			" denovo: ", output.blast.n_denovo);
 	}
 	if (opts.is_sam) {
 		output.sam.closef();
@@ -254,5 +255,5 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	}
 
 	elapsed = std::chrono::high_resolution_clock::now() - start;
-	INFO("=== Done Reports in sec [", elapsed.count(), "] ===\n");
+	INFO("=== done Reports in ", elapsed.count(), " sec ===\n");
 } // ~writeReports

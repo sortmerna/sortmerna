@@ -356,10 +356,10 @@ def process_blast(**kwarg):
     BLAST_ID_COL = 2
     BLAST_COV_COL = 13
     num_hits_file = 0
-    num_y_id_y_cov = 0
-    num_y_id_n_cov = 0
-    num_n_id_y_cov = 0
-    num_denovo = 0
+    n_yid_ycov = 0
+    n_yid_ncov = 0
+    n_nid_ycov = 0
+    n_denovo = 0
     has_cov = False
     if os.path.exists(BLASTF):
         print('processing Blast file: {}'.format(BLASTF))
@@ -375,19 +375,19 @@ def process_blast(**kwarg):
                     is_pass_cov = fcov >= 97.0
                     if is_pass_id:
                         if is_pass_cov: 
-                            num_y_id_y_cov += 1
+                            n_yid_ycov += 1
                         else:
-                            num_y_id_n_cov += 1
+                            n_yid_ncov += 1
                     elif is_pass_cov:
-                        num_n_id_y_cov += 1
+                        n_nid_ycov += 1
                     else:
-                        num_denovo += 1
+                        n_denovo += 1
                 is_pass_id = False
                 is_pass_cov = False
     
     BLAST_BASE = os.path.basename(BLASTF)
-    tmpl = 'from {}: num_hits= {} num_y_id_y_cov= {} num_y_id_n_cov= {} num_n_id_y_cov= {} num_denovo= {}'
-    print(tmpl.format(BLAST_BASE, num_hits_file, num_y_id_y_cov, num_y_id_n_cov, num_n_id_y_cov, num_denovo))
+    tmpl = 'from {}: num_hits= {} n_yid_ycov= {} n_yid_ncov= {} n_nid_ycov= {} n_denovo= {}'
+    print(tmpl.format(BLAST_BASE, num_hits_file, n_yid_ycov, n_yid_ncov, n_nid_ycov, n_denovo))
     
     #if vald['blast'].get('num_pass_id'):
     #    tmpl = 'Testing reads passing ID threshold: {}: {} Expected: {}'
@@ -401,14 +401,14 @@ def process_blast(**kwarg):
     #    '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
 
     #if has_cov:
-    #    assert vald['blast']['num_pass_id_cov'] == num_y_id_y_cov, \
-    #        '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], num_y_id_y_cov)
+    #    assert vald['blast']['num_pass_id_cov'] == n_yid_ycov, \
+    #        '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], n_yid_ycov)
     return {
-        'n_hits'    : num_hits_file, 
-        'y_id_y_cov': num_y_id_y_cov, 
-        'y_id_n_cov': num_y_id_n_cov, 
-        'n_id_y_cov': num_n_id_y_cov,
-        'n_denovo'  : num_denovo
+        'n_hits'  : num_hits_file, 
+        'yid_ycov': n_yid_ycov, 
+        'yid_ncov': n_yid_ncov, 
+        'nid_ycov': n_nid_ycov,
+        'n_denovo': n_denovo
         }
 #END process_blast
 
@@ -574,10 +574,10 @@ def process_output(**kwarg):
         BLAST_ID_COL = 2
         BLAST_COV_COL = 13
         num_hits_file = 0
-        num_y_id_y_cov = 0
-        num_y_id_n_cov = 0
-        num_n_id_y_cov = 0
-        num_denovo = 0
+        n_yid_ycov = 0
+        n_yid_ncov = 0
+        n_nid_ycov = 0
+        n_denovo = 0
         has_cov = False
         if os.path.exists(BLASTF):
             with open(BLASTF) as f_blast:
@@ -592,25 +592,25 @@ def process_output(**kwarg):
                         is_pass_cov = fcov >= 97.0
                         if is_pass_id:
                             if is_pass_cov: 
-                                num_y_id_y_cov += 1
+                                n_yid_ycov += 1
                             else:
-                                num_y_id_n_cov += 1
+                                n_yid_ncov += 1
                         elif is_pass_cov:
-                            num_n_id_y_cov += 1
+                            n_nid_ycov += 1
                         else:
-                            num_denovo += 1
+                            n_denovo += 1
                     is_pass_id = False
                     is_pass_cov = False
         
         BLAST_BASE = os.path.basename(BLASTF)
-        tmpl = 'from {}: num_y_id_y_cov= {} num_y_id_n_cov= {} num_n_id_y_cov= {} num_denovo= {}'
-        print(tmpl.format(BLAST_BASE, num_y_id_y_cov, num_y_id_n_cov, num_n_id_y_cov, num_denovo))
+        tmpl = 'from {}: n_yid_ycov= {} n_yid_ncov= {} n_nid_ycov= {} n_denovo= {}'
+        print(tmpl.format(BLAST_BASE, n_yid_ycov, n_yid_ncov, n_nid_ycov, n_denovo))
         
-        if vald['blast'].get('num_pass_id'):
-            tmpl = 'Testing reads passing ID threshold: {}: {} Expected: {}'
-            print(tmpl.format(BLAST_BASE, num_pass_id, vald['blast']['num_pass_id']))
-            assert num_pass_id == vald['blast']['num_pass_id'], \
-                '{} not equals {}'.format(vald['blast']['num_pass_id'], num_pass_id)
+        if vald['blast'].get('num_yid_ycov'):
+            tmpl = 'Testing reads passing both ID and COV thresholds: count in {}: {} Expected: {}'
+            print(tmpl.format(BLAST_BASE, n_yid_ycov, vald['blast']['num_yid_ycov']))
+            assert n_yid_ycov == vald['blast']['num_yid_ycov'], \
+                '{} not equals {}'.format(vald['blast']['num_pass_id'], n_yid_ycov)
         
         tmpl = 'Testing num_hits: {}: {} Expected: {}'
         print(tmpl.format(BLAST_BASE, num_hits_file, vald['blast']['num_recs']))
@@ -618,8 +618,8 @@ def process_output(**kwarg):
             '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
 
         if has_cov:
-            assert vald['blast']['num_pass_id_cov'] == num_y_id_y_cov, \
-                '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], num_y_id_y_cov)
+            assert vald['blast']['num_yid_ycov'] == n_yid_ycov, \
+                '{} not equals {}'.format(vald['blast']['num_yid_ycov'], n_yid_ycov)
     
     # Correct number of clusters recorded
     #self.assertEqual("4401", num_clusters_log) # 4400 before bug 52
@@ -739,13 +739,13 @@ def t3(datad, ret={}, **kwarg):
 
     # number of reads in aligned_denovo.fasta has to be equal the
     # 'Total reads for de novo clustering' in aligned.log
-    num_denovo_file = 0
+    n_denovo_file = 0
     for seq in skbio.io.read(DENOVOF, format='fasta'):
-        num_denovo_file += 1
+        n_denovo_file += 1
 
-    assert logd['results']['num_denovo'][1] == num_denovo_file, \
+    assert logd['results']['num_denovo'][1] == n_denovo_file, \
             'num_denovo = {} != {}:num_denovo = {}'.format(\
-                logd['results']['num_denovo'][1], DENOVO_BASE, num_denovo_file)
+                logd['results']['num_denovo'][1], DENOVO_BASE, n_denovo_file)
     
     print("{} Done".format(STAMP))
 #END t3

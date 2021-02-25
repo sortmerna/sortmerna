@@ -86,6 +86,7 @@ int main(int argc, char** argv)
 			align(readfeed, readstats, index, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::summary:
+			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
 			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			break;
@@ -94,12 +95,14 @@ int main(int argc, char** argv)
 			break;
 		case Runopts::ALIGN_REPORT::alnsum:
 			align(readfeed, readstats, index, kvdb, opts);
+			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
 			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			break;
 		case Runopts::ALIGN_REPORT::all:
 			align(readfeed, readstats, index, kvdb, opts);
 			// TODO: combine processing otu map and reports to avoid double run through reads and refs (in this case only) 20201126
+			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
 			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
 			writeSummary(readfeed, readstats, kvdb, opts);
 			writeReports(readfeed, readstats, kvdb, opts);

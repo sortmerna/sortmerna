@@ -50,7 +50,7 @@ void OtuMap::push(int idx, std::string& ref_seq_str, std::string& read_seq_str)
 
 void OtuMap::merge()
 {
-	INFO("=== Merging OTU map. Map vector size: ", mapv.size(), " ===");
+	INFO_NE("merging OTU map. Map vector size: ", mapv.size());
 	auto starts = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < mapv.size(); ++i) {
 		if (i > 0) {
@@ -59,7 +59,7 @@ void OtuMap::merge()
 		}
 	}
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
-	INFO("=== Merging OTU map done in [", elapsed.count(), "] sec ===\n");
+	INFO_NS(" ... done in [", elapsed.count(), "] sec\n");
 }
 
 void OtuMap::write()
@@ -72,7 +72,7 @@ void OtuMap::write()
 			exit(1);
 		}
 
-		INFO("Printing OTU Map ...");
+		INFO("printing OTU Map ...");
 		for (std::map<std::string, std::vector<std::string>>::iterator it = mapv[0].begin(); it != mapv[0].end(); ++it)
 		{
 			ofs << it->first << "\t";
@@ -103,7 +103,7 @@ void OtuMap::init(Runopts& opts)
 	std::string sfx = opts.is_pid ? "_" + std::to_string(getpid()) : "";
 	std::string ext = ".txt";
 	fmap = pdir / (bname + sfx + ext);
-	INFO("Using OTU map file: ", fmap.generic_string());
+	INFO("using OTU map file: ", fmap.generic_string());
 }
 
 uint64_t OtuMap::count_otu()
@@ -124,7 +124,7 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 	unsigned count_reads_aligned = 0;
 	std::string readstr;
 
-	INFO("OTU map processor: ", id, " thread: ", std::this_thread::get_id(), " started");
+	INFO("OTU map thread ", id, " : ", std::this_thread::get_id(), " started");
 
 	for (;readfeed.next(id, readstr);)
 	{
@@ -136,42 +136,41 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 			if (!read.isValid)
 				continue;
 
-			{
-				if (read.is03) read.flip34();
-				if (read.is_id && read.is_cov) {
-					for (int i = 0; i < read.alignment.alignv.size(); ++i) {
-						// process alignments that match currently loaded reference part
-						auto is_my_ref = read.alignment.alignv[i].index_num == refs.num && read.alignment.alignv[i].part == refs.part;
-						if (is_my_ref) {
-							// reference sequence identifier for mapped read
-							std::string refhead = refs.buffer[read.alignment.alignv[i].ref_num].header;
-							std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
-							// left trim '>' or '@'
-							ref_seq_str.erase(ref_seq_str.begin(),
-								std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
-									[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
+			if (read.is03) read.flip34();
+			if (read.n_yid_ycov > 0) {
+				for (auto const& align: read.alignment.alignv) {
+					// process alignments that match currently loaded reference part
+					auto is_my_ref = align.index_num == refs.num && align.part == refs.part;
+					if (is_my_ref) {
+						// reference sequence identifier for mapped read
+						std::string refhead = refs.buffer[align.ref_num].header;
+						std::string ref_seq_str = refhead.substr(0, refhead.find(' '));
+						// left trim '>' or '@'
+						ref_seq_str.erase(ref_seq_str.begin(),
+							std::find_if(ref_seq_str.begin(), ref_seq_str.end(),
+								[](auto ch) {return !(ch == FASTA_HEADER_START || ch == FASTQ_HEADER_START);}));
 
-							// read identifier
-							std::string read_seq_str = read.getSeqId();
-							otumap.push(id, ref_seq_str, read_seq_str); // thread safe
-						}
+						// read identifier
+						std::string read_seq_str = read.getSeqId();
+						otumap.push(id, ref_seq_str, read_seq_str); // thread safe
 					}
 				}
 			}
+
 			readstr.resize(0);
 			++countReads;
 			if (read.is_hit) ++count_reads_aligned;
-		}
-	}
+		} // ~ a read scope ends
+	} // ~for all reads
 
-	INFO("OTU map processor: ", id, " thread: ", std::this_thread::get_id(),
+	INFO("OTU map thread ", id, " : ", std::this_thread::get_id(),
 		" done. Processed reads: ", countReads, ". count_reads_aligned: ", count_reads_aligned);
 } // ~fill_otu_map2
 
 void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts, bool is_write)
 {
 	INFO("==== OTU groups processing started ====");
-	if (readstats.total_aligned_id_cov.load(std::memory_order_relaxed) > 0) {
+	if (readstats.num_y_id_y_cov.load(std::memory_order_relaxed) > 0) {
 		int numThreads = 0;
 		if (opts.feed_type == FEED_TYPE::LOCKLESS)
 		{

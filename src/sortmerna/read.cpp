@@ -127,15 +127,15 @@ Read::Read()
 	isRestored(false),
 	lastIndex(0),
 	lastPart(0),
+	n_yid_ycov(0),
+	n_yid_ncov(0),
+	n_nid_ycov(0),
+	n_denovo(0),
 	reversed(false),
 	is_done(false),
 	is_hit(false),
 	is_new_hit(false),
-	is_id(false),
-	is_cov(false),
-	is_denovo(false),
 	null_align_output(false),
-	num_hits(0),
 	max_SW_count(0),
 	num_alignments(0),
 	hit_seeds(0),
@@ -158,7 +158,7 @@ Read::Read(std::string id, std::string header, std::string sequence, std::string
 //Read::~Read() {}
 
 // copy constructor
-Read::Read(const Read & that)
+Read::Read(const Read& that)
 {
 	id = that.id;
 	read_num = that.read_num;
@@ -178,13 +178,13 @@ Read::Read(const Read & that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
+	n_yid_ycov = that.n_yid_ycov;
+	n_yid_ncov = that.n_yid_ncov;
+	n_nid_ycov = that.n_nid_ycov;
+	n_denovo = that.n_denovo;
 	is_done = that.is_done;
 	is_hit = that.is_hit;
 	is_new_hit = that.is_new_hit;
-	is_id = that.is_id;
-	is_cov = that.is_cov;
-	is_denovo = that.is_denovo;
-	num_hits = that.num_hits;
 	null_align_output = that.null_align_output;
 	max_SW_count = that.max_SW_count;
 	num_alignments = that.num_alignments;
@@ -219,12 +219,12 @@ Read & Read::operator=(const Read& that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
+	n_yid_ycov = that.n_yid_ycov;
+	n_yid_ncov = that.n_yid_ncov;
+	n_nid_ycov = that.n_nid_ycov;
+	n_denovo = that.n_denovo;
 	is_hit = that.is_hit;
 	is_new_hit = that.is_new_hit;
-	is_id = that.is_id;
-	is_cov = that.is_cov;
-	num_hits = that.num_hits;
-	is_denovo = that.is_denovo;
 	null_align_output = that.null_align_output;
 	max_SW_count = that.max_SW_count;
 	num_alignments = that.num_alignments;
@@ -233,7 +233,6 @@ Read & Read::operator=(const Read& that)
 	id_win_hits = that.id_win_hits;
 	alignment = that.alignment;
 	scoring_matrix = that.scoring_matrix;
-
 	return *this; // by convention always return *this
 } // ~Read::operator=
 
@@ -308,12 +307,14 @@ void Read::clear()
 	isRestored = false;
 	lastIndex = 0;
 	lastPart = 0;
+	n_yid_ycov = 0;
+	n_yid_ncov = 0;
+	n_nid_ycov = 0;
+	n_denovo = 0;
 	is_done = false;
 	is_hit = false;
 	is_new_hit = false;
-	is_denovo = true;
 	null_align_output = false;
-	num_hits = 0;
 	max_SW_count = 0;
 	num_alignments = 0;
 	hit_seeds = 0;
@@ -402,20 +403,12 @@ std::string Read::matchesToJson() {
 	writer.Bool(is_done);
 	writer.Key("hit");
 	writer.Bool(is_hit);
-	writer.Key("id_cov");
-	writer.Bool(is_id);
-	writer.Bool(is_cov);
-	writer.Key("is_denovo");
-	writer.Bool(is_denovo);
 	writer.Key("null_align_output");
 	writer.Bool(null_align_output);
-	writer.Key("num_hits");
-	writer.Uint(num_hits);
 	writer.Key("max_SW_count");
 	writer.Uint(max_SW_count);
 	writer.Key("num_alignments");
 	writer.Int(num_alignments);
-
 	writer.Key("alignment");
 	writer.StartObject();
 	writer.String("max_size");
@@ -436,17 +429,16 @@ std::string Read::toBinString()
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&n_yid_ycov)), sizeof(n_yid_ycov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&n_yid_ncov)), sizeof(n_yid_ncov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&n_nid_ycov)), sizeof(n_nid_ycov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&n_denovo)), sizeof(n_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_done)), sizeof(is_done), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&is_hit)), sizeof(is_hit), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_id)), sizeof(is_id), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_cov)), sizeof(is_cov), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&is_denovo)), sizeof(is_denovo), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&null_align_output)), sizeof(null_align_output), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&num_hits)), sizeof(num_hits), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_SW_count)), sizeof(max_SW_count), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&num_alignments)), sizeof(num_alignments), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&hit_seeds)), sizeof(hit_seeds), std::back_inserter(buf));
-	//std::copy_n(static_cast<char*>(static_cast<void*>(&best)), sizeof(best), std::back_inserter(buf));
 
 	// id_win_hits vector - TODO: remove?
 #if 0
@@ -479,26 +471,26 @@ bool Read::load_db(KeyValueDatabase& kvdb)
 	std::memcpy(static_cast<void*>(&lastPart), bstr.data() + offset, sizeof(lastPart));
 	offset += sizeof(lastPart);
 
+	std::memcpy(static_cast<void*>(&n_yid_ycov), bstr.data() + offset, sizeof(n_yid_ycov));
+	offset += sizeof(n_yid_ycov);
+
+	std::memcpy(static_cast<void*>(&n_yid_ncov), bstr.data() + offset, sizeof(n_yid_ncov));
+	offset += sizeof(n_yid_ncov);
+
+	std::memcpy(static_cast<void*>(&n_nid_ycov), bstr.data() + offset, sizeof(n_nid_ycov));
+	offset += sizeof(n_nid_ycov);
+
+	std::memcpy(static_cast<void*>(&n_denovo), bstr.data() + offset, sizeof(n_denovo));
+	offset += sizeof(n_denovo);
+
 	std::memcpy(static_cast<void*>(&is_done), bstr.data() + offset, sizeof(is_done));
 	offset += sizeof(is_done);
 
 	std::memcpy(static_cast<void*>(&is_hit), bstr.data() + offset, sizeof(is_hit));
 	offset += sizeof(is_hit);
 
-	std::memcpy(static_cast<void*>(&is_id), bstr.data() + offset, sizeof(is_id));
-	offset += sizeof(is_id);
-
-	std::memcpy(static_cast<void*>(&is_cov), bstr.data() + offset, sizeof(is_cov));
-	offset += sizeof(is_cov);
-
-	std::memcpy(static_cast<void*>(&is_denovo), bstr.data() + offset, sizeof(is_denovo));
-	offset += sizeof(is_denovo);
-
 	std::memcpy(static_cast<void*>(&null_align_output), bstr.data() + offset, sizeof(null_align_output));
 	offset += sizeof(null_align_output);
-
-	std::memcpy(static_cast<void*>(&num_hits), bstr.data() + offset, sizeof(num_hits));
-	offset += sizeof(num_hits);
 
 	std::memcpy(static_cast<void*>(&max_SW_count), bstr.data() + offset, sizeof(max_SW_count));
 	offset += sizeof(max_SW_count);
@@ -547,65 +539,21 @@ void Read::unmarshallJson(KeyValueDatabase & kvdb)
 	INFO("Read::unmarshallJson: Not yet Implemented");
 }
 
-std::pair<double, double> Read::calc_id_cov(const References& refs, const s_align2& align)
-{
-	uint32_t n_miss = 0; // count of mismatched characters
-	uint32_t n_gap = 0; // count of gaps
-	uint32_t n_match = 0; // count of matched characters
-
-	int32_t qb = align.ref_begin1; // index of the first char in the reference matched part
-	int32_t pb = align.read_begin1; // index of the first char in the read matched part
-
-	std::string refseq = refs.buffer[align.ref_num].sequence;
-
-	for (uint32_t cidx = 0; cidx < align.cigar.size(); ++cidx)
-	{
-		uint32_t letter = 0xf & align.cigar[cidx]; // 4 low bits
-		uint32_t length = (0xfffffff0 & align.cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
-		if (letter == 0)
-		{
-			for (uint32_t u = 0; u < length; ++u)
-			{
-				if (refseq[qb] != isequence[pb]) ++n_miss;
-				else ++n_match;
-				++qb;
-				++pb;
-			}
-		}
-		else if (letter == 1)
-		{
-			pb += length;
-			n_gap += length;
-		}
-		else
-		{
-			qb += length;
-			n_gap += length;
-		}
-	}
-
-	auto n_tot = n_miss + n_gap + n_match;
-	auto align_len = align.read_end1 - align.read_begin1 + 1;
-	auto id = (double)n_match / n_tot * 100;
-	auto cov = (double)abs(align.read_end1 - align.read_begin1 + 1) / align.readlen;
-	return { id, cov };
-} // ~Read::calc_id_cov
-
 std::tuple<uint32_t, uint32_t, uint32_t, double, double> Read::calc_miss_gap_match(const References& refs, const s_align2& align)
 {
 	uint32_t n_miss = 0; // count of mismatched characters
 	uint32_t n_gap = 0; // count of gaps
 	uint32_t n_match = 0; // count of matched characters
 
-	int32_t qb = align.ref_begin1; // index of the first char in the reference matched part
-	int32_t pb = align.read_begin1; // index of the first char in the read matched part
+	auto qb = align.ref_begin1; // index of the first char in the reference matched part
+	auto pb = align.read_begin1; // index of the first char in the read matched part
 
 	std::string refseq = refs.buffer[align.ref_num].sequence;
 
-	for (uint32_t cidx = 0; cidx < align.cigar.size(); ++cidx)
+	for (auto const& cie: align.cigar)
 	{
-		uint32_t letter = 0xf & align.cigar[cidx]; // 4 low bits
-		uint32_t length = (0xfffffff0 & align.cigar[cidx]) >> 4; // high 28 bits i.e. 32-4=28
+		uint32_t letter = 0xf & cie; // 4 low bits
+		uint32_t length = (0xfffffff0 & cie) >> 4; // high 28 bits i.e. 32-4=28
 		if (letter == 0)
 		{
 			for (uint32_t u = 0; u < length; ++u)
@@ -632,7 +580,7 @@ std::tuple<uint32_t, uint32_t, uint32_t, double, double> Read::calc_miss_gap_mat
 	auto align_len = align.read_end1 - align.read_begin1 + 1;
 	auto id = (double)n_match / n_tot; // e.g. 0.98
 	auto cov = (double)abs(align.read_end1 - align.read_begin1 + 1) / align.readlen; // e.g. 0.86
-	return { n_miss,n_gap, n_match, id, cov };
+	return { n_miss, n_gap, n_match, id, cov };
 } // ~Read::calc_miss_gap_match
 
 /* 

@@ -101,17 +101,17 @@ public:
 	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 
 	// store in database ------------>
-	unsigned int lastIndex; // last index number this read was aligned against. Set in Processor::callback
-	unsigned int lastPart; // last part number this read was aligned against.  Set in Processor::callback
+	unsigned lastIndex; // last index number this read was aligned against. Set in Processor::callback
+	unsigned lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
+	unsigned n_yid_ycov; // count of alignments passing both ID + COV
+	unsigned n_yid_ncov; // count of alignments ID + !COV
+	unsigned n_nid_ycov; // count of alignments !ID + COV
+	unsigned n_denovo; // count of alignment !ID + !COV
 	bool is_done; // all alignments have been found => stop searching
 	bool is_hit; // true if at least one alignment 'SW_score >= min_SW_score' has been found
 	bool is_new_hit; // indicates a new hit was found so the read has to be stored. Init to False before each index search. NO DB store.
-	bool is_id; // true if at least one alignment passes %ID
-	bool is_cov; // true if at least one alignment passes %COV
-	bool is_denovo; // true if Not a single alignment passes %Cov + %ID i.e. 'is_denovo = (!is_id && !is_cov)'
 	bool null_align_output; // flags NULL alignment was output to file (needs to be done once only)
-	unsigned num_hits; // number of matching references found so far for this read
 	uint16_t max_SW_count; // count of alignments that have Max possible Smith-Waterman score for this read
 	int32_t num_alignments; // counter of alignments to keep for reporting
 	/*
@@ -160,15 +160,6 @@ public:
 	std::string get04alphaSeq();
 	/* flip isequence between 03 - 04 alphabets */
 	void flip34();
-
-	/*
-	* calculate %ID and %COV given an alignment
-	* 
-	* @param IN Refs   references
-	* @param IN aling  read alignment
-	* @return  pair<%ID, %COV>
-	*/
-	std::pair<double, double> calc_id_cov(const References& refs, const s_align2& align);
 
 	/*
 	* count mismatches, gaps, matches, and calculate %ID, %COV given an alignment
