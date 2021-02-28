@@ -343,7 +343,7 @@ def process_smr_opts(args):
 
     LOGF    = os.path.join(os.path.dirname(ALIF), '{}.log'.format(ALI_BASE))
     BLASTF  = os.path.join(os.path.dirname(ALIF), '{}.blast'.format(ALI_BASE))
-    OTUF    = os.path.join(os.path.dirname(ALIF), '{}_otus.txt'.format(ALI_BASE))
+    OTUF    = os.path.join(os.path.dirname(ALIF), 'otu_map.txt')
     DENOVOF = os.path.join(os.path.dirname(ALIF), '{}_denovo.fa'.format(ALI_BASE))
     SAMF    = os.path.join(os.path.dirname(ALIF), '{}.sam'.format(ALI_BASE))
 #END process_smr_opts
@@ -369,9 +369,9 @@ def process_blast(**kwarg):
                 llist = line.strip().split('\t')
                 fid = float(llist[BLAST_ID_COL])
                 is_pass_id = fid >= 97.0
-                has_cov = len(llist) > 12
+                has_cov = len(llist) > BLAST_COV_COL
                 if has_cov:
-                    fcov = float(line.strip().split('\t')[BLAST_COV_COL])
+                    fcov = float(llist[BLAST_COV_COL])
                     is_pass_cov = fcov >= 97.0
                     if is_pass_id:
                         if is_pass_cov: 
@@ -610,7 +610,7 @@ def process_output(**kwarg):
             tmpl = 'Testing reads passing both ID and COV thresholds: count in {}: {} Expected: {}'
             print(tmpl.format(BLAST_BASE, n_yid_ycov, vald['blast']['num_yid_ycov']))
             assert n_yid_ycov == vald['blast']['num_yid_ycov'], \
-                '{} not equals {}'.format(vald['blast']['num_pass_id'], n_yid_ycov)
+                '{} not equals {}'.format(vald['blast']['num_yid_ycov'], n_yid_ycov)
         
         tmpl = 'Testing num_hits: {}: {} Expected: {}'
         print(tmpl.format(BLAST_BASE, num_hits_file, vald['blast']['num_recs']))
@@ -719,6 +719,8 @@ def t3(datad, ret={}, **kwarg):
     cmdd = kwarg.get('cmd')
 
     assert logd['results']['num_hits'][1] == vald['num_hits']
+
+    process_blast()
 
     # sort order (descending/ascending) of candidate references (alignment.cpp)
     is_refs_descending = False

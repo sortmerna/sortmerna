@@ -160,7 +160,7 @@ t0_1:
 
     best  N  min_lis seeds
     ----------------------  alignment type
-    true  1     2      2
+      1   1     2      2
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
@@ -168,7 +168,7 @@ t0_1:
     - {{ SMR_SRC }}/data/test_read.fasta
     - -sam
     - -blast
-    - '1 qstrand'
+    - '1 qstrand qcov'
     - -v
     - -threads
     - '1'
@@ -274,14 +274,34 @@ t3:
     num_reads:      100000
     num_hits:        99999
     num_fail:            1
-    num_denovo:      52018 # pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
-    num_pass_id_cov: 47981 # pass SW + %Cov + %ID
-    num_groups: [264, 264] # 264 lnx (sometimes), 265 win (bizarre behavior of Lnx VM on Win host)
+    num_denovo:       4441 # (52018 420) pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
+    num_yid_ycov:    47981 # pass SW + %Cov + %ID
+    num_groups: [265, 265] # [264, 264] lnx (sometimes)
     non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
+    blast:
+      num_recs:      99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      num_yid_ycov:  47981 # lin:43678  num_pass_id ⋂ num_pass_cov
+      num_yid_ncov:   1513 # lin:6571   ID + !COV
+      num_nid_ycov:  46064 # lin:38670  !ID + COV
+      num_denovo:     4441 # lin:11080  !ID + !COV 
+    log:
+      num_reads:    100000
+      num_denovo:     4441 # lin:11080
+      num_aligned:   99999
+      num_fail:          1
+      num_yid_ycov:  47981 # lin:43678
+      num_groups:      265 # LIN:257, WIN:4441
     runtime:
       win:
         - threads: 8
           sec: [12.5046, 0.714079, 4.0937] # align, log, reports
+    out:
+      - aligned.blast
+      - aligned.fa
+      - aligned.log
+      - aligned_denovo.fa
+      - other.fa
+      - otu_map.txt
 
 t4:
   name: test_indexing_split_databases
@@ -547,7 +567,7 @@ t12:
     num_fail:     10005
     num_yid_ycov: 10164
     num_denovo:    1698 # 9831 - 4.2.0
-    num_cluster: [4401, 4429] # [4400, 4401] 4.2.0 ?
+    num_cluster: [4401, 4401]
     blast:
       num_recs:        19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
       num_yid_ycov:    10164 # num_pass_id ⋂ num_pass_cov
@@ -583,14 +603,14 @@ t13:
     num_reads: 30000
     num_hits: 19995
     num_fail: 10005
-    num_denovo: 9831
-    num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
+    num_denovo: 1698
+    num_yid_ycov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
     num_cluster: [4400, 4401]
     blast:
       num_recs:       19995
+      num_yid_ycov:   10164 # pass_SW + pass_ID + pass_Cov
       num_pass_id:    10175   
       num_pass_cov:   15054 
-      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
 
 t14:
   name: test_simulated_amplicon_12_part_map
@@ -621,14 +641,14 @@ t14:
     num_reads: 30000
     num_hits: 19995
     num_fail: 10005
-    num_denovo: 9831
+    num_denovo: 1698
     num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_ID + pass_Cov, not necessarily pass_SW
     num_cluster: [4400, 4401] # 4400 before bug 52
     blast:
-      num_recs:       19995
-      num_pass_id:    10175 
-      num_pass_cov:   15054 
-      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
+      num_recs:     19995
+      num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+      num_pass_id:  10175 
+      num_pass_cov: 15054 
 
 t15:
   name: test_threads
@@ -1020,6 +1040,13 @@ t17:
     num_reads: 10000
     num_hits:   5944
     num_fail:   4056
+    blast:
+      num_recs: 5944
+      num_yid: 
+      num_nid:  
+    out:
+      - aligned.blast.gz
+      - aligned.log
 
 t18:
   name: 2 paired reads files + paired_in + joint FWD/REV output
