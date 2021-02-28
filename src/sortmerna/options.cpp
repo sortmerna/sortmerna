@@ -962,6 +962,15 @@ void Runopts::opt_task(const std::string &val)
 	}
 } // ~Runopts::opt_task
 
+void Runopts::opt_dbg_level(const std::string& val)
+{
+	dbg_level = std::stoi(val);
+	if (dbg_level > 2) {
+		INFO("provided value: ", dbg_level, " for '", OPT_DBG_LEVEL, "' is too high. Using the currently highest execution trace verbosity of 2");
+		dbg_level = 2;
+	}
+}
+
 // interactive session '--cmd'
 void Runopts::opt_cmd(const std::string &val)
 {

@@ -109,7 +109,8 @@ OPT_READS_FEED = "reads_feed",
 OPT_ZIP_OUT = "zip-out",
 OPT_INDEX = "index",
 OPT_ALIGN = "align",
-OPT_FILTER = "filter";
+OPT_FILTER = "filter",
+OPT_DBG_LEVEL = "dbg-level";
 
 // help strings
 const std::string \
@@ -381,7 +382,13 @@ help_index =
 	"       '-" + OPT_INDEX + " 0' - skip indexing. If the index does not exist, the program will terminate\n"
 	"                                and warn to build the index prior performing the alignment\n"
 	"       '-" + OPT_INDEX + " 1' - only perform the indexing and terminate\n"
-	"       '-" + OPT_INDEX + " 2' - the default behaviour, the same as when not using this option at all\n\n"
+	"       '-" + OPT_INDEX + " 2' - the default behaviour, the same as when not using this option at all\n\n",
+
+help_dbg_level =
+	"Debug level                                             0\n\n"
+	"      Controls verbosity of the execution trace. Default value of 0 corresponds to\n"
+	"      the least verbose output.\n"
+	"      The highest value currently is 2.\n\n"
 
 //help_align =
 //    "Perform the alignment                                   False\n\n"
@@ -504,6 +511,7 @@ public:
 	int num_proc_thread_pp = 1;  // number of post-processing processor threads
 	int num_read_thread_rep = 1; // number of report reader threads
 	int num_proc_thread_rep = 1; // number of report processor threads
+	int dbg_level = 0; // lowest debug level - minimal info.
 
 	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
 	/*
@@ -621,6 +629,7 @@ private:
 	void opt_kvdb(const std::string& path);
 	void opt_idxdir(const std::string& path); // see help_idxdir
 	void opt_readb(const std::string& path);
+	void opt_dbg_level(const std::string& val);
 
 	// ref tmpdir interval m L max_pos v h  // indexing options
 	void opt_tmpdir(const std::string &val);
@@ -659,7 +668,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 53> options = {
+	const std::array<opt_6_tuple, 54> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
@@ -714,7 +723,8 @@ private:
 		std::make_tuple(OPT_VERSION,        "BOOL",        HELP,        false, help_version, &Runopts::opt_version),
 		std::make_tuple(OPT_DBG_PUT_DB,     "BOOL",        DEVELOPER,   false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
 		std::make_tuple(OPT_CMD,            "BOOL",        DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
-		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task)
+		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task),
+		std::make_tuple(OPT_DBG_LEVEL,      "INT",         DEVELOPER,   false, help_dbg_level, &Runopts::opt_dbg_level)
 		//std::make_tuple(OPT_THREP,          "INT:INT",     DEVELOPER,   false, help_threp, &Runopts::opt_threp)
 	};
 	// ~map options
