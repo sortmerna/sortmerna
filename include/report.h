@@ -62,9 +62,9 @@ public:
 	virtual void init_zip();
 
 	void openfr(int idx); // open a single file for reading
-	void openfw(int idx);
+	void openfw(int idx, const int&& dbg=0);
 	void openfw(); // open report files for writing
-	void closef(int idx); // close a file
+	void closef(int idx, const int&& dbg=0); // close a file
 	void closef(); // close report files
 	int finish_deflate();
 	/*

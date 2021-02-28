@@ -260,7 +260,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 	return ret;// == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 } // ~Izlib::inflatez
 
-int Izlib::defstr(const std::string& readstr, std::ostream& ofs, bool is_last)
+int Izlib::defstr(const std::string& readstr, std::ostream& ofs, bool is_last, const int&& dbg)
 {
 	std::stringstream ss(readstr);
 	int ret = Z_OK;
@@ -335,7 +335,8 @@ int Izlib::defstr(const std::string& readstr, std::ostream& ofs, bool is_last)
 		assert(ret == Z_STREAM_END);
 		deflateEnd(&strm);
 		ofs.flush();
-		INFO("deflateEnd called");
+		if (dbg > 1)
+			INFO("deflateEnd called");
 	}
 	return ret;
 } // ~Izlib::defstr
@@ -343,7 +344,7 @@ int Izlib::defstr(const std::string& readstr, std::ostream& ofs, bool is_last)
 /*
 * flush the stream and reset deflate
 */
-int Izlib::finish_deflate(std::ostream& ofs)
+int Izlib::finish_deflate(std::ostream& ofs, const int&& dbg)
 {
 	int ret = Z_OK;
 	// run deflate() until OUT is full i.e. no free space in OUT buffer
@@ -367,6 +368,7 @@ int Izlib::finish_deflate(std::ostream& ofs)
 		if (ret == Z_STREAM_END) break;
 	} // ~for
 	ofs.flush();
-	INFO("deflateEnd called");
+	if (dbg > 1)
+		INFO("deflateEnd called");
 	return deflateEnd(&strm);
 }

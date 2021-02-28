@@ -79,7 +79,7 @@ void Report::merge(int num_splits)
 	strip_path_sfx(fv[0]);
 }
 
-void Report::openfw(int idx)
+void Report::openfw(int idx, const int&& dbg)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
@@ -89,7 +89,8 @@ void Report::openfw(int idx)
 		exit(EXIT_FAILURE);
 	}
 	else {
-		INFO("Opened output file ", fv[idx], " for writing.");
+		if (dbg > 0)
+			INFO("Opened output file ", fv[idx], " for writing.");
 	}
 }
 
@@ -114,12 +115,13 @@ void Report::openfr(int idx)
 	}
 }
 
-void Report::closef(int idx)
+void Report::closef(int idx, const int&& dbg)
 {
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
 		fsv[idx].close();
-		INFO("Closed output file: ", fv[idx]);
+		if (dbg > 1)
+			INFO("Closed output file: ", fv[idx]);
 	}
 }
 

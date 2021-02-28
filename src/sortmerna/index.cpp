@@ -57,7 +57,7 @@
 // forward
 std::string string_hash(const std::string& val); // util.cpp
 
-Index::Index(Runopts & opts) : index_num(0), part(0), number_elements(0), is_ready(false)
+Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_ready(false)
 {
 	std::stringstream ss;
 	std::array<std::string, 4> sfxarr{ {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"} };
@@ -90,7 +90,8 @@ Index::Index(Runopts & opts) : index_num(0), part(0), number_elements(0), is_rea
 
 				if (exists && !is_empty)
 				{
-					INFO("Index file [", std::filesystem::absolute(idxfile), "] already exists and is not empty.");
+					if (opts.dbg_level == 2)
+						INFO("Index file [", std::filesystem::absolute(idxfile), "] already exists and is not empty.");
 					++count_indexed;
 				}
 			}
@@ -100,7 +101,8 @@ Index::Index(Runopts & opts) : index_num(0), part(0), number_elements(0), is_rea
 		{
 			is_ready = true;
 			INFO("Found ", count_indexed, " non-empty index files. Skipping indexing.");
-			INFO("TODO: a better validation using an index descriptor to decide on indexing");
+			if (opts.dbg_level == 2)
+				INFO("TODO: a better validation using an index descriptor to decide on indexing");
 		}
 		else
 		{
