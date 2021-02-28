@@ -407,7 +407,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 							if (!read.is_hit)
 							{
 								read.is_hit = true;
-								readstats.total_aligned.fetch_add(1, std::memory_order_relaxed);
+								readstats.num_aligned.fetch_add(1, std::memory_order_relaxed);
 								++readstats.reads_matched_per_db[index.index_num];
 							}
 

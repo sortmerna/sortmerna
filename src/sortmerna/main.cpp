@@ -52,8 +52,8 @@
 
 
 /*
-  main entry of the sortmerna application
- */
+*  main entry of the sortmerna application
+*/
 int main(int argc, char** argv)
 {
 	bool dryrun = false;

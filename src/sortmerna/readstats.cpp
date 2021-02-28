@@ -64,10 +64,10 @@ Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t 
 	:
 	min_read_len(max_read_len),
 	max_read_len(min_read_len),
-	total_aligned(0),
-	num_y_id_n_cov(0),
-	num_n_id_y_cov(0),
-	num_y_id_y_cov(0),
+	num_aligned(0),
+	n_yid_ncov(0),
+	n_nid_ycov(0),
+	n_yid_ycov(0),
 	num_short(0),
 	all_reads_count(all_reads_count),
 	all_reads_len(all_reads_len),
@@ -140,16 +140,16 @@ std::string Readstats::toBstring()
 	// 4
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_read_len)), sizeof(max_read_len), std::back_inserter(buf));
 	// 5
-	auto val = total_aligned.load(std::memory_order_relaxed);
+	auto val = num_aligned.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// 6
-	val = num_y_id_n_cov.load(std::memory_order_relaxed);
+	val = n_yid_ncov.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// 7
-	val = num_n_id_y_cov.load(std::memory_order_relaxed);
+	val = n_nid_ycov.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// 8
-	val = num_y_id_y_cov.load(std::memory_order_relaxed);
+	val = n_yid_ycov.load(std::memory_order_relaxed);
 	std::copy_n(static_cast<char*>(static_cast<void*>(&val)), sizeof(val), std::back_inserter(buf));
 	// 9
 	val = num_denovo.load(std::memory_order_relaxed);
@@ -181,10 +181,10 @@ std::string Readstats::toString()
 		<< " all_reads_len= " << all_reads_len 
 		<< " min_read_len= " << min_read_len
 		<< " max_read_len= " << max_read_len
-		<< " total_aligned= " << total_aligned
-		<< " total_aligned_id= " << num_y_id_n_cov
-		<< " total_aligned_cov= " << num_n_id_y_cov
-		<< " total_aligned_id_cov= " << num_y_id_y_cov
+		<< " total_aligned= " << num_aligned
+		<< " total_aligned_id= " << n_yid_ncov
+		<< " total_aligned_cov= " << n_nid_ycov
+		<< " total_aligned_id_cov= " << n_yid_ycov
 		<< " total_denovo= " << num_denovo
 		<< " num_short= " << num_short
 		<< " reads_matched_per_db= " << "TODO"
@@ -196,7 +196,7 @@ std::string Readstats::toString()
 
 void Readstats::set_is_set_aligned_id_cov()
 {
-	if (!is_set_aligned_id_cov && num_y_id_y_cov > 0)
+	if (!is_set_aligned_id_cov && n_yid_ycov > 0)
 		is_set_aligned_id_cov = true;
 }
 
@@ -227,22 +227,22 @@ bool Readstats::restoreFromDb(KeyValueDatabase & kvdb)
 		// 5
 		uint64_t val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		total_aligned = val;
+		num_aligned = val;
 		offset += sizeof(val);
 		// 6
 		val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		num_y_id_n_cov = val;
+		n_yid_ncov = val;
 		offset += sizeof(val);
 		// 7
 		val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		num_n_id_y_cov = val;
+		n_nid_ycov = val;
 		offset += sizeof(val);
 		// 8
 		val = 0;
 		std::memcpy(static_cast<void*>(&val), bstr.data() + offset, sizeof(val));
-		num_y_id_y_cov = val;
+		n_yid_ycov = val;
 		offset += sizeof(val);
 		// 9
 		val = 0;

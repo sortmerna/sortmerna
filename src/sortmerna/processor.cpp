@@ -37,6 +37,7 @@
 
 #include <chrono>
 #include <thread> // std::this_thread
+#include <cmath> // std::floor
 
 #include "processor.hpp"
 #include "read.hpp"
@@ -288,23 +289,23 @@ void denovo_stats_run(int id,
 				for (auto const& align : read.alignment.alignv) {
 					if (align.index_num == refs.num	&& align.part == refs.part)	{
 						auto miss_gap_match = read.calc_miss_gap_match(refs, align);
-						auto idr = floor(std::get<3>(miss_gap_match) * 1000.0 + 0.5) / 1000.0; // round to 3 decimal
-						auto covr = floor(std::get<4>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
+						auto idr = std::floor(std::get<3>(miss_gap_match) * 1000.0 + 0.5) / 1000.0; // round to 3 decimal
+						auto covr = std::floor(std::get<4>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
 						auto is_id = idr >= opts.min_id;
 						auto is_cov = covr >= opts.min_cov;
 						//auto is_id = std::get<3>(miss_gap_match) >= opts.min_id;
 						//auto is_cov = std::get<4>(miss_gap_match)>= opts.min_cov;
 						if (is_id && is_cov) {
 							++read.n_yid_ycov;
-							readstats.num_y_id_y_cov.fetch_add(1, std::memory_order_relaxed);
+							readstats.n_yid_ycov.fetch_add(1, std::memory_order_relaxed);
 						}
 						else if (is_id) {
 							++read.n_yid_ncov;
-							readstats.num_y_id_n_cov.fetch_add(1, std::memory_order_relaxed);
+							readstats.n_yid_ncov.fetch_add(1, std::memory_order_relaxed);
 						}
 						else if (is_cov) {
 							++read.n_nid_ycov;
-							readstats.num_n_id_y_cov.fetch_add(1, std::memory_order_relaxed);
+							readstats.n_nid_ycov.fetch_add(1, std::memory_order_relaxed);
 						}
 						else {
 							++read.n_denovo;
@@ -387,9 +388,9 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	} // ~for(ref_idx)
 
 	elapsed = std::chrono::high_resolution_clock::now() - start;
-	INFO("num y_id_y_cov: ", readstats.num_y_id_y_cov,
-		"\n\t\t   num y_id_n_cov: ", readstats.num_y_id_n_cov,
-		"\n\t\t   num n_id_y_cov: ", readstats.num_n_id_y_cov,
-		"\n\t\t   num denovo: ", readstats.num_denovo);
+	INFO("num_yid_ycov: ", readstats.n_yid_ycov,
+		"\n\t\t   num_yid_ncov: ", readstats.n_yid_ncov,
+		"\n\t\t   num_nid_ycov: ", readstats.n_nid_ycov,
+		"\n\t\t   num_denovo: ", readstats.num_denovo);
 	INFO("=== done Denovo stats in sec [", elapsed.count(), "] ===\n");
 } // ~denovo_stats

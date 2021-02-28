@@ -72,10 +72,10 @@ struct Readstats
 	uint32_t min_read_len; // shortest Read length. (read only)
 	uint32_t max_read_len; // longest Read length. (read only)
 
-	std::atomic<uint64_t> total_aligned; // reads passing E-value threshold.
-	std::atomic<uint64_t> num_y_id_n_cov; // SW + ID - COV i.e. aligned passing ID, failing COV
-	std::atomic<uint64_t> num_n_id_y_cov; // SW - ID + COV i.e. aligned failing ID, passing COV
-	std::atomic<uint64_t> num_y_id_y_cov; // [2] SW + ID + COV i.e. aligned passing ID, passing COV
+	std::atomic<uint64_t> num_aligned; // reads passing E-value threshold.
+	std::atomic<uint64_t> n_yid_ncov; // SW + ID - COV i.e. aligned passing ID, failing COV
+	std::atomic<uint64_t> n_nid_ycov; // SW - ID + COV i.e. aligned failing ID, passing COV
+	std::atomic<uint64_t> n_yid_ycov; // [2] SW + ID + COV i.e. aligned passing ID, passing COV
 	std::atomic<uint64_t> num_denovo; // [4] SW - ID - COV i.e. 'de novo' reads, aligned failing ID, failing COV
 	std::atomic<uint64_t> num_short; // count of reads shorter than a threshold of N nucleotides. Reset for each index.
 

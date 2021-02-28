@@ -170,16 +170,18 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts, bool is_write)
 {
 	INFO("==== OTU groups processing started ====");
-	if (readstats.num_y_id_y_cov.load(std::memory_order_relaxed) > 0) {
+	if (readstats.n_yid_ycov.load(std::memory_order_relaxed) > 0) {
 		int numThreads = 0;
 		if (opts.feed_type == FEED_TYPE::LOCKLESS)
 		{
 			numThreads = opts.num_read_thread_pp + opts.num_proc_thread_pp;
-			INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread_pp, " Processor threads: ", opts.num_proc_thread_pp);
+			INFO("using total threads: ", numThreads, 
+				" including Read threads: ", opts.num_read_thread_pp, 
+				" Processor threads: ", opts.num_proc_thread_pp);
 		}
 		else {
 			numThreads = opts.num_proc_thread;
-			INFO("Using total threads: ", numThreads);
+			INFO("using total threads: ", numThreads);
 			readfeed.init_reading(); // prepare readfeed
 		}
 

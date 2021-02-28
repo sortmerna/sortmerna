@@ -72,7 +72,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 		is_de_novo = opts.is_denovo;
 		total_denovo = readstats.num_denovo;
 	}
-	total_mapped = readstats.total_aligned.load(std::memory_order_relaxed);
+	total_mapped = readstats.num_aligned.load(std::memory_order_relaxed);
 	min_read_len = readstats.min_read_len;
 	max_read_len = readstats.max_read_len;
 	all_reads_len = readstats.all_reads_len;
@@ -85,7 +85,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 
 	if (opts.is_otu_map) {
 		is_otumapout = opts.is_otu_map;
-		total_id_cov = readstats.num_y_id_y_cov.load(std::memory_order_relaxed);
+		total_id_cov = readstats.n_yid_ycov.load(std::memory_order_relaxed);
 		total_otu = readstats.total_otu;
 	}
 
