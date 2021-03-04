@@ -558,7 +558,7 @@ t12:
     - '0.97'
     - -v
     - -threads
-    - '5'
+    - {{THREADS or '5'}}
   validate:
     func: t12
     num_reads:    30000
@@ -2295,7 +2295,7 @@ t41:
     - -sout
     - -v
     - -threads
-    - '8'
+    - {{THREADS or '8'}}
     - -workdir
     - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
@@ -2450,7 +2450,7 @@ t42:
     - -sout
     - -v
     - -threads
-    - '8'
+    - {{THREADS or '8'}}
     - -workdir
     - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
@@ -2619,7 +2619,7 @@ t43:
     - -workdir
     - {{ WRK_DIR }}
     - threads
-    - '8'
+    - {{THREADS or '8'}}
   cwd: {{ SMR_SRC }}
   validate:
     func:

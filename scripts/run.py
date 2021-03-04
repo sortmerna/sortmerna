@@ -979,6 +979,7 @@ if __name__ == "__main__":
     optpar.add_option('--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                   '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     optpar.add_option('--workdir', dest='workdir', help='Environment variables')
+    optpar.add_option('--threads', dest='threads', help='Number of threads to use')
 
     (opts, args) = optpar.parse_args()
 
@@ -1034,13 +1035,15 @@ if __name__ == "__main__":
 
     # render 'test.jinja.yaml' template
     val = env.get(SMR,{}).get('src',{}).get(ENV)
-    SMR_SRC  = val if val else '{}/sortmerna'.format(UHOME)
+    SMR_SRC  = val or '{}/sortmerna'.format(UHOME)
     if not os.path.exists(SMR_SRC):
         print(('{} Sortmerna source directory {} not found. '
             'Either specify location in env.jinja.yaml or '
             'make sure the sources exist at {}'.format(STAMP, SMR_SRC, SMR_SRC)))
     DATA_DIR = env['DATA_DIR'][ENV]
-    cfg_str = template.render({'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR})
+    vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
+    if opts.threads: vars['THREADS'] = opts.threads
+    cfg_str = template.render(vars)
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     
