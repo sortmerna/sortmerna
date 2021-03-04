@@ -558,7 +558,7 @@ t12:
     - '0.97'
     - -v
     - -threads
-    - {{THREADS or '5'}}
+    - {{THREADS or '\'5\''}}
   validate:
     func: t12
     num_reads:    30000
@@ -597,7 +597,7 @@ t13:
     - '20'
     - -v
     - -threads
-    - '5'
+    - {{THREADS or '\'5\''}}
   validate:
     func: t13
     num_reads: 30000
@@ -696,7 +696,7 @@ t16:
     - '1'
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -731,7 +731,7 @@ t16_2:
     - '0'
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -767,7 +767,7 @@ t16_3:
     - '2'
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -802,7 +802,7 @@ t16_4:
     - -no-best
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -838,7 +838,7 @@ t16_5:
     - '2'
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -872,7 +872,7 @@ t16_6:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -906,7 +906,7 @@ t16_7:
     - -sout
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -943,7 +943,7 @@ t16_8:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -983,7 +983,7 @@ t16_9:
     - -other
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1033,7 +1033,7 @@ t17:
     - -workdir
     - {{ WRK_DIR }}
     - -threads
-    - '8'
+    - {{THREADS or '\'8\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func: t17
@@ -1079,7 +1079,7 @@ t18:
     - -workdir
     - {{ WRK_DIR }}
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:  10000
@@ -1132,7 +1132,7 @@ t19:
     #- '1e-15'
     #- -out2
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:      10000
@@ -1180,7 +1180,7 @@ t19_1:
     - -v
     - -out2
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:      10000
@@ -1227,7 +1227,7 @@ t19_2:
     - -paired_out
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:      10000
@@ -1275,7 +1275,7 @@ t19_3:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:      10000
@@ -1322,7 +1322,7 @@ t19_4:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:  10000
@@ -1367,7 +1367,7 @@ t19_5:
     - '1'
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_reads:  10000
@@ -1413,7 +1413,7 @@ t20:
     - -workdir
     - {{ WRK_DIR }}
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_hits:    9188
@@ -1452,7 +1452,7 @@ t20_1:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_hits:    9188
@@ -1490,7 +1490,7 @@ t20_2:
     - -paired_out
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_hits:    9188
@@ -1529,7 +1529,7 @@ t20_3:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_hits:    9188
@@ -1568,7 +1568,7 @@ t20_4:
     - -out2
     - -v
     - -threads
-    - '4'
+    - {{THREADS or '\'4\''}}
   validate:
     func:
     num_hits:    9833
@@ -2295,7 +2295,7 @@ t41:
     - -sout
     - -v
     - -threads
-    - {{THREADS or '8'}}
+    - {{THREADS or '\'8\''}}
     - -workdir
     - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
@@ -2450,7 +2450,7 @@ t42:
     - -sout
     - -v
     - -threads
-    - {{THREADS or '8'}}
+    - {{THREADS or '\'8\''}}
     - -workdir
     - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
@@ -2619,7 +2619,7 @@ t43:
     - -workdir
     - {{ WRK_DIR }}
     - threads
-    - {{THREADS or '8'}}
+    - {{THREADS or '\'8\''}}
   cwd: {{ SMR_SRC }}
   validate:
     func:

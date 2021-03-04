@@ -1044,9 +1044,10 @@ if __name__ == "__main__":
             'make sure the sources exist at {}'.format(STAMP, SMR_SRC, SMR_SRC)))
     DATA_DIR = env['DATA_DIR'][ENV]
     vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
-    # prevent the renderer from interpreting the threads as int
-    thr_tmpl = '{}' if opts.threads[0] in ['\'','\"'] and opts.threads[-1] in ['\'','\"'] else '\'{}\''
-    if opts.threads: vars['THREADS'] = thr_tmpl.format(opts.threads)
+    if opts.threads: 
+        # prevent the renderer from interpreting the threads as int
+        thr_tmpl = '{}' if opts.threads[0] in ['\'','\"'] and opts.threads[-1] in ['\'','\"'] else '\'{}\''
+        vars['THREADS'] = thr_tmpl.format(opts.threads)
     cfg_str = template.render(vars)
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
