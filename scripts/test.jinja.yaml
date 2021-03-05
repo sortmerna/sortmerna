@@ -2296,6 +2296,8 @@ t41:
     - -v
     - -threads
     - {{THREADS or '\'8\''}}
+    - -index
+    - {{INDEX or '\'2\''}}  # 2 is the default
     - -workdir
     - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
@@ -2313,44 +2315,66 @@ t41:
         #      read count, split, idx stats
         init: [ 2.07695,                  ]
         align:
-          # [ load idx, load refs, align   ] # sec
-          - [1.609760, 0.1460960, 13.8608]
-          - [1.569410, 0.0944589, 13.7952]
-          - [1.435490, 0.0912657, 17.2376]
-          - [1.895420, 0.1422490, 19.3190]
-          - [0.284600, 0.0065129, 10.7379]
-          - [0.640762, 0.0723266, 11.4848]
-          - [0.788337, 0.1347490, 11.5609]
-          - [0.292100, 0.0274563, 10.7468]
+          # load idx, load refs, align # sec
+          - [ 1.6, 0.1, 14 ]
+          - [ 1.6, 0.1, 14 ]
+          - [ 1.4, 0.1, 17 ]
+          - [ 1.9, 0.1, 19 ]
+          - [ 0.3, 0.0, 11 ]
+          - [ 0.6, 0.1, 12 ]
+          - [ 0.8, 0.1, 12 ]
+          - [ 0.3, 0.0, 11 ]
       4-3-0: 
-        #      align, summary, report
-        tot: [ 88,      3,       47  ] # 1.5 times faster!
-        #      read count, split, idx stats
-        init: [   3.21,      31,     2.94  ]
+        total:
+        # indexing, read count, split, idx stats, align, summary, report
+        totals: [ 216, 3, 31, 3, 88, 3, 47 ]
         align:
           #   idx load, ref load, align
-          -  [  1.47,     0.10,   10.42 ]
-          -  [  1.52,     0.10,   10.37 ]
-          -  [  1.31,     0.09,   13.88 ]
-          -  [  1.68,     0.14,   16.11 ]
-          -  [  0.33,     0.01,    6.17 ]
-          -  [  0.59,     0.03,    7.34 ]
-          -  [  0.74,     0.11,    8.05 ]
-          -  [  0.29,     0.02,    6.03 ]
-
+          -  [  1.47,  0.10,  10 ]
+          -  [  1.52,  0.10,  10 ]
+          -  [  1.31,  0.09,  14 ]
+          -  [  1.68,  0.14,  16 ]
+          -  [  0.33,  0.01,   6 ]
+          -  [  0.59,  0.03,   7 ]
+          -  [  0.74,  0.11,   8 ]
+          -  [  0.29,  0.02,   6 ]
+    ubuntu18_vbox:
+      host: Windows 10 + 8 CPUs + 16 GiB RAM
+      4-3-1:
+        threads: 4
+        total:
+        totals: [ 0, 5, 0, 4, 127, 4, 25]
+        align:
     ubuntu18_4_16_32:
       host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HD
-      total: 315.02 # sec - python trace from command sent to response received
-      align:
-        # [ load idx, load refs, align   ] # sec
-        - [0.760232, 0.02598330, 28.7143]
-        - [0.561553, 0.01946190, 28.5440]
-        - [0.526224, 0.01802220, 31.6420]
-        - [0.800176, 0.03483680, 35.0931]
-        - [0.109194, 0.00113233, 15.5079]
-        - [0.228446, 0.00601414, 19.1100]
-        - [0.304582, 0.03343890, 23.4172]
-        - [0.115192, 0.00771964, 15.7117]
+      4-2-0:
+        total: 315.02 # sec - python trace from command sent to response received
+        align:
+          # [ load idx, load refs, align   ] # sec
+          - [0.760232, 0.02598330, 28.7143]
+          - [0.561553, 0.01946190, 28.5440]
+          - [0.526224, 0.01802220, 31.6420]
+          - [0.800176, 0.03483680, 35.0931]
+          - [0.109194, 0.00113233, 15.5079]
+          - [0.228446, 0.00601414, 19.1100]
+          - [0.304582, 0.03343890, 23.4172]
+          - [0.115192, 0.00771964, 15.7117]
+      4-3-1:
+        total:
+          - 501.66 # with indexing [aws.py:__main__] SSM commands executed in 501.66 sec. sortmerna.data.load:t41,sortmerna.test.run
+          - 277.14 # test.run only, split ready, no indexing, no data load
+        #      indexing, read count, split, idx stats, align, summary, report
+        init: [ 3.99, 60.20, 4.87, 201.8, 4.62, 36.3 ]
+        align:
+          # [ load idx, load refs, align, ref unload ] # sec
+          - [ 0.69, 0.03, 21.8, 0.13 ]
+          - [ 0.56, 0.03, 29.7, 0.15 ]
+          - [ 0.89, 0.06, 34.0, 0.13 ]
+          - [ 1.39, 0.09, 38.7, 0.19 ]
+          - [ 0.13, 0.00, 12.9, 0.02 ]
+          - [ 0.34, 0.02, 16.7, 0.06 ]
+          - [ 0.49, 0.05, 19.6, 0.05 ]
+          - [ 0.15, 0.01, 12.2, 0.02 ]
     ubuntu18_8_32_32:
       host: AWS t3.2xlarge + Ubuntu 18 + 8 cpu + 32 GB RAM + 32 GB HD
       # alignment cpu load: [ max,   min,  avr]

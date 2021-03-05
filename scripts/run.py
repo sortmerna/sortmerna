@@ -982,6 +982,7 @@ if __name__ == "__main__":
                                                   '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     optpar.add_option('--workdir', dest='workdir', help='Environment variables')
     optpar.add_option('--threads', dest='threads', help='Number of threads to use')
+    optpar.add_option('--index', dest='index', help='Index option 0 | 1 | 2')
 
     (opts, args) = optpar.parse_args()
 
@@ -1046,8 +1047,11 @@ if __name__ == "__main__":
     vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
     if opts.threads: 
         # prevent the renderer from interpreting the threads as int
-        thr_tmpl = '{}' if opts.threads[0] in ['\'','\"'] and opts.threads[-1] in ['\'','\"'] else '\'{}\''
-        vars['THREADS'] = thr_tmpl.format(opts.threads)
+        tmpl = '{}' if opts.threads[0] in ['\'','\"'] and opts.threads[-1] in ['\'','\"'] else '\'{}\''
+        vars['THREADS'] = tmpl.format(opts.threads)
+    if opts.index:
+        tmpl = '{}' if opts.index[0] in ['\'','\"'] and opts.index[-1] in ['\'','\"'] else '\'{}\''
+        vars['INDEX'] = tmpl.format(opts.index)
     cfg_str = template.render(vars)
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
