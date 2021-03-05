@@ -47,6 +47,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <filesystem>
+#include <chrono>
 
 #include <sys/stat.h> //for creating tmp dir
 
@@ -1118,8 +1119,12 @@ int build_index(Runopts& opts)
 {
 	std::stringstream ss;
 	timeval t;
-	double start = 0.0;
-	double end = 0.0;
+	//double start = 0.0;
+	//double end = 0.0;
+	auto stt = std::chrono::high_resolution_clock::now();
+	auto st = stt;
+	std::chrono::duration<double> elapsed;
+	INFO("==== Index building started ====");
 
 	// memory of index
 	bool mem_is_set = false;
@@ -1206,7 +1211,8 @@ int build_index(Runopts& opts)
 		if (opts.is_verbose)
 			INFO_NS("\n  Collecting nucleotide distribution statistics ..");
 
-		TIME(start);
+		//TIME(start);
+		st = std::chrono::high_resolution_clock::now();
 		do
 		{
 			nt = fgetc(fp);
@@ -1265,10 +1271,11 @@ int build_index(Runopts& opts)
 			len > maxlen ? maxlen = len : maxlen;
 		} while (nt != EOF); // read until end of file
 
-		TIME(end); // End collecting the nucleotide distribution statistics
+		//TIME(end);
+		elapsed = std::chrono::high_resolution_clock::now() - st; // end collecting the nucleotide distribution statistics
 
 		if (opts.is_verbose)
-			INFO_NS("  done  [", (end - start), " sec]\n");
+			INFO_NS("  done  [", elapsed.count(), " sec]\n");
 
 		// set file pointer back to the beginning of file
 		rewind(fp);
@@ -1334,7 +1341,8 @@ int build_index(Runopts& opts)
 				INFO_NS("    (1/3) building burst tries ..");
 			}
 
-			TIME(start);
+			//TIME(start);
+			st = std::chrono::high_resolution_clock::now();
 
 			// for the number of sequences for which the index is less than maximum (set by -m)
 			// indexing the 19-mers will be done in the following manner:
@@ -1544,8 +1552,6 @@ int build_index(Runopts& opts)
 
 			} while (nt != EOF); // end of reads file
 
-			TIME(end);
-
 			// no index can be created, all reference sequences are too large to fit alone into maximum memory
 			if (index_size == 0)
 			{
@@ -1559,14 +1565,18 @@ int build_index(Runopts& opts)
 
 			rewind(keys);
 
+			//TIME(end);
+			elapsed = std::chrono::high_resolution_clock::now() - st;
+
 			if (opts.is_verbose)
-				INFO_NS(" done  [", (end - start), " sec]\n");
+				INFO_NS(" done  [", elapsed.count(), " sec]\n");
 
 			// 4. build MPHF on the unique 18-mers
 			if (opts.is_verbose)
 				INFO_NS("    (2/3) building CMPH hash ..");
 
-			TIME(start);
+			//TIME(start);
+			st = std::chrono::high_resolution_clock::now();
 			cmph_t *hash = NULL;
 
 			FILE * keys_fd = keys;
@@ -1586,10 +1596,10 @@ int build_index(Runopts& opts)
 			cmph_io_nlfile_adapter_destroy(source);
 			fclose(keys_fd);
 
-			TIME(end);
-
-			if (opts.is_verbose)
-				INFO_NS(" done  [", (end - start), " sec]\n");
+			if (opts.is_verbose) {
+				elapsed = std::chrono::high_resolution_clock::now() - st;
+				INFO_NS(" done  [", elapsed.count(), " sec]\n");
+			}
 
 			int ret = remove(keys_file.c_str());
 			if (ret != 0)
@@ -1622,7 +1632,8 @@ int build_index(Runopts& opts)
 			// reset the file pointer to the beginning of the current part
 			fseek(fp, start_part, SEEK_SET);
 
-			TIME(start);
+			//TIME(start);
+			st = std::chrono::high_resolution_clock::now();
 			do
 			{
 				long int start_seq = ftell(fp);
@@ -1748,10 +1759,9 @@ int build_index(Runopts& opts)
 
 			} while (nt != EOF); // for all file     
 
-			TIME(end);
-
 			if (opts.is_verbose) {
-				INFO_NS(" done [", (end - start), " sec]\n");
+				elapsed = std::chrono::high_resolution_clock::now() - st;
+				INFO_NS(" done [", elapsed.count(), " sec]\n");
 				INFO_NS("    total number of sequences in this part = ", i, "\n");
 			}
 
@@ -2094,5 +2104,7 @@ int build_index(Runopts& opts)
 	} // for every FASTA file, index name pair listed after --ref option
 
 	opts.is_index_built = true;
+	elapsed = std::chrono::high_resolution_clock::now() - stt;
+	INFO("==== Done index building in ", elapsed.count(), " sec ====\n");
 	return 0;
 }//~build_index
