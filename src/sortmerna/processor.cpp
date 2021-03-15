@@ -250,13 +250,12 @@ void denovo_stats_run(int id,
 {
 	size_t countReads = 0;
 	size_t num_invalid = 0; // empty or invalid reads count
-	//size_t denovo_n = 0; // count of denovo reads
 	std::size_t num_reads = opts.is_paired ? 2 : 1;
 	std::string readstr;
 	std::vector<Read> reads; // two reads if paired, a single read otherwise
 
-	INFO_MEM("Denovo stats thread ", id, " : ", std::this_thread::get_id(), " started.");
-	//auto start = std::chrono::high_resolution_clock::now();
+	if (opts.dbg_level == 2)
+		INFO_MEM("Denovo stats thread ", id, " : ", std::this_thread::get_id(), " started.");
 
 	for (bool isDone = false; !isDone;)
 	{
@@ -296,7 +295,7 @@ void denovo_stats_run(int id,
 						//auto is_id = std::get<3>(miss_gap_match) >= opts.min_id;
 						//auto is_cov = std::get<4>(miss_gap_match)>= opts.min_cov;
 						if (is_id && is_cov) {
-							++read.n_yid_ycov;
+							++read.c_yid_ycov;
 							readstats.n_yid_ycov.fetch_add(1, std::memory_order_relaxed);
 						}
 						else if (is_id) {
@@ -356,7 +355,7 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			auto start_i = std::chrono::high_resolution_clock::now();
 			refs.load(ref_idx, idx_part, opts, refstats);
 			elapsed = std::chrono::high_resolution_clock::now() - start_i;
-			INFO_NS(" ... done in sec ", elapsed.count());
+			INFO_NS(" ... done in sec ", elapsed.count(), "\n");
 
 			start_i = std::chrono::high_resolution_clock::now(); // index processing starts
 
@@ -373,13 +372,13 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			}
 
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
-			INFO("done reference ", ref_idx, " part: ", idx_part + 1, " in sec: ", elapsed.count());
+			INFO("done reference ", ref_idx, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");
 
 			start_i = std::chrono::high_resolution_clock::now();
 			refs.unload();
 			//read_queue.reset();
 			elapsed = std::chrono::high_resolution_clock::now() - start_i;
-			INFO_MEM("references unloaded in sec: ", elapsed.count());
+			INFO_MEM("references unloaded in ", elapsed.count(), " sec");
 			tpool.clear();
 			// rewind for the next index
 			readfeed.rewind_in();
@@ -392,5 +391,5 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		"\n\t\t   num_yid_ncov: ", readstats.n_yid_ncov,
 		"\n\t\t   num_nid_ycov: ", readstats.n_nid_ycov,
 		"\n\t\t   num_denovo: ", readstats.num_denovo);
-	INFO("=== done Denovo stats in sec [", elapsed.count(), "] ===\n");
+	INFO("=== done Denovo stats in ", elapsed.count(), " sec ===\n");
 } // ~denovo_stats

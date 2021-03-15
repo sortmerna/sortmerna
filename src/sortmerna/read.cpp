@@ -127,7 +127,7 @@ Read::Read()
 	isRestored(false),
 	lastIndex(0),
 	lastPart(0),
-	n_yid_ycov(0),
+	c_yid_ycov(0),
 	n_yid_ncov(0),
 	n_nid_ycov(0),
 	n_denovo(0),
@@ -178,7 +178,7 @@ Read::Read(const Read& that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
-	n_yid_ycov = that.n_yid_ycov;
+	c_yid_ycov = that.c_yid_ycov;
 	n_yid_ncov = that.n_yid_ncov;
 	n_nid_ycov = that.n_nid_ycov;
 	n_denovo = that.n_denovo;
@@ -219,7 +219,7 @@ Read & Read::operator=(const Read& that)
 	ambiguous_nt = that.ambiguous_nt;
 	lastIndex = that.lastIndex;
 	lastPart = that.lastPart;
-	n_yid_ycov = that.n_yid_ycov;
+	c_yid_ycov = that.c_yid_ycov;
 	n_yid_ncov = that.n_yid_ncov;
 	n_nid_ycov = that.n_nid_ycov;
 	n_denovo = that.n_denovo;
@@ -307,7 +307,7 @@ void Read::clear()
 	isRestored = false;
 	lastIndex = 0;
 	lastPart = 0;
-	n_yid_ycov = 0;
+	c_yid_ycov = 0;
 	n_yid_ncov = 0;
 	n_nid_ycov = 0;
 	n_denovo = 0;
@@ -429,7 +429,7 @@ std::string Read::toBinString()
 	std::string buf;
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastIndex)), sizeof(lastIndex), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&lastPart)), sizeof(lastPart), std::back_inserter(buf));
-	std::copy_n(static_cast<char*>(static_cast<void*>(&n_yid_ycov)), sizeof(n_yid_ycov), std::back_inserter(buf));
+	std::copy_n(static_cast<char*>(static_cast<void*>(&c_yid_ycov)), sizeof(c_yid_ycov), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&n_yid_ncov)), sizeof(n_yid_ncov), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&n_nid_ycov)), sizeof(n_nid_ycov), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&n_denovo)), sizeof(n_denovo), std::back_inserter(buf));
@@ -471,8 +471,8 @@ bool Read::load_db(KeyValueDatabase& kvdb)
 	std::memcpy(static_cast<void*>(&lastPart), bstr.data() + offset, sizeof(lastPart));
 	offset += sizeof(lastPart);
 
-	std::memcpy(static_cast<void*>(&n_yid_ycov), bstr.data() + offset, sizeof(n_yid_ycov));
-	offset += sizeof(n_yid_ycov);
+	std::memcpy(static_cast<void*>(&c_yid_ycov), bstr.data() + offset, sizeof(c_yid_ycov));
+	offset += sizeof(c_yid_ycov);
 
 	std::memcpy(static_cast<void*>(&n_yid_ncov), bstr.data() + offset, sizeof(n_yid_ncov));
 	offset += sizeof(n_yid_ncov);

@@ -104,7 +104,7 @@ public:
 	unsigned lastIndex; // last index number this read was aligned against. Set in Processor::callback
 	unsigned lastPart; // last part number this read was aligned against.  Set in Processor::callback
 	// matching results
-	unsigned n_yid_ycov; // count of alignments passing both ID + COV
+	unsigned c_yid_ycov; // count of alignments passing both ID + COV
 	unsigned n_yid_ncov; // count of alignments ID + !COV
 	unsigned n_nid_ycov; // count of alignments !ID + COV
 	unsigned n_denovo; // count of alignment !ID + !COV

@@ -241,14 +241,11 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 				}
 
 				auto miss_gap_match = read.calc_miss_gap_match(refs, align);
-				auto is_dbg = false;
-				if (is_dbg) {
+				if (opts.dbg_level == 2) {
 					auto idr = floor(std::get<3>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
 					auto covr = floor(std::get<4>(miss_gap_match) * 1000.0 + 0.5) / 1000.0;
 					auto is_id = idr >= opts.min_id;
 					auto is_cov = covr >= opts.min_cov;
-					//auto is_id = std::get<3>(miss_gap_match) >= opts.min_id;
-					//auto is_cov = std::get<4>(miss_gap_match) >= opts.min_cov;
 					if (is_id && is_cov)
 						n_yid_ycov.fetch_add(1, std::memory_order_relaxed);
 					else if (is_id)

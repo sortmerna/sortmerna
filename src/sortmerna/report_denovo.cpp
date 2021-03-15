@@ -61,7 +61,7 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 			// 1 output file a (aligned reads)
 			if (base.num_out == 1) {
 				if (opts.is_paired_in || 
-					(reads[i].n_denovo > 0 && reads[i].n_yid_ycov == 0 
+					(reads[i].n_denovo > 0 && reads[i].c_yid_ycov == 0
 						&& reads[i].n_yid_ncov == 0 && reads[i].n_nid_ycov == 0))
 					idx = id;
 				else
@@ -70,25 +70,25 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 			// 2 output files dp,ds (sout) | df,dr (out2)
 			else if (base.num_out == 2) {
 				if (opts.is_out2) {
-					auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0 
+					auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
 										&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0) 
-									&& (reads[1].n_denovo > 0 && reads[1].n_yid_ycov == 0 
+									&& (reads[1].n_denovo > 0 && reads[1].c_yid_ycov == 0
 										&& reads[1].n_yid_ncov == 0 && reads[1].n_nid_ycov == 0);
 					if (opts.is_paired_out && !is_both_dn)
 						break;
 					else if (opts.is_paired_in ||
-								(reads[i].n_denovo > 0 && reads[i].n_yid_ycov == 0
+								(reads[i].n_denovo > 0 && reads[i].c_yid_ycov == 0
 									&& reads[i].n_yid_ncov == 0 && reads[i].n_nid_ycov == 0))
 						idx = id * base.num_out + i;
 				}
 				else if (opts.is_sout) {
-					auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0
+					auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
 										&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0)
-									&& (reads[1].n_denovo > 0 && reads[1].n_yid_ycov == 0
+									&& (reads[1].n_denovo > 0 && reads[1].c_yid_ycov == 0
 										&& reads[1].n_yid_ncov == 0 && reads[1].n_nid_ycov == 0);
 					if (is_both_dn)
 						idx = id * base.num_out; // both to 'dp' [0]
-					else if (reads[i].n_denovo > 0 && reads[i].n_yid_ycov == 0
+					else if (reads[i].n_denovo > 0 && reads[i].c_yid_ycov == 0
 								&& reads[i].n_yid_ncov == 0 && reads[i].n_nid_ycov == 0)
 						idx = id * base.num_out + 1; // hit to 'ds' [1]
 					else
@@ -98,13 +98,13 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 			// 4 output files: dpf, dpr, dsf, dsr
 			// being here means both is_out2 & is_sout were set => No paired_in/out
 			else if (base.num_out == 4) {
-				auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0
+				auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
 					&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0)
-					&& (reads[1].n_denovo > 0 && reads[1].n_yid_ycov == 0
+					&& (reads[1].n_denovo > 0 && reads[1].c_yid_ycov == 0
 						&& reads[1].n_yid_ncov == 0 && reads[1].n_nid_ycov == 0);
 				if (is_both_dn)
 					idx = id * base.num_out + i; // 0 -> apf, 1 -> apr
-				else if (reads[i].n_denovo > 0 && reads[i].n_yid_ycov == 0
+				else if (reads[i].n_denovo > 0 && reads[i].c_yid_ycov == 0
 							&& reads[i].n_yid_ncov == 0 && reads[i].n_nid_ycov == 0)
 					idx = id * base.num_out + i + 2; // 0 -> asf, 1 -> asr
 				else

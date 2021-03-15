@@ -130,11 +130,11 @@ void report(int id,
 
 				if (opts.is_denovo) {
 					auto is_dn = opts.is_paired 
-						? (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0
+						? (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
 							&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0) 
-						|| (reads[1].n_denovo > 0 && reads[1].n_yid_ycov == 0
+						|| (reads[1].n_denovo > 0 && reads[1].c_yid_ycov == 0
 							&& reads[1].n_yid_ncov == 0 && reads[1].n_nid_ycov == 0) 
-						: (reads[0].n_denovo > 0 && reads[0].n_yid_ycov == 0
+						: (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
 								&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0);
 					if (is_dn)
 						output.denovo.append(id, reads, opts, isDone);
@@ -240,10 +240,11 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.blast.finish_deflate();
 		output.blast.closef();
 		output.blast.merge(readfeed.num_splits);
-		INFO("yid_ycov: ", output.blast.n_yid_ycov, 
-			" yid_ncov: ", output.blast.n_yid_ncov, 
-			" nid_ycov: ", output.blast.n_nid_ycov, 
-			" denovo: ", output.blast.n_denovo);
+		if (opts.dbg_level == 2)
+			INFO("yid_ycov: ", output.blast.n_yid_ycov, 
+				" yid_ncov: ", output.blast.n_yid_ncov, 
+				" nid_ycov: ", output.blast.n_nid_ycov, 
+				" denovo: ", output.blast.n_denovo);
 	}
 	if (opts.is_sam) {
 		output.sam.closef();

@@ -58,7 +58,7 @@ public:
 	void merge();
 	void write();
 	void init(Runopts& opts);
-	uint64_t count_otu();
+	size_t count_otu();
 };
 
 void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts, bool is_write=true);
