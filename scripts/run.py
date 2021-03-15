@@ -207,7 +207,7 @@ def parse_log(fpath):
     '''
     logd = {
         'cmd': ['Command', None],
-        'pid': ['Porcess pid', None],
+        'pid': ['Process pid', None],
         'params': {'refs': []},
         'num_reads': ['Total reads =', 0],
         'results': {
@@ -361,9 +361,12 @@ def process_blast(**kwarg):
     n_nid_ycov = 0
     n_denovo = 0
     has_cov = False
+    BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
+    is_dbg_pid_pcov = True
     if os.path.exists(BLASTF):
         print('processing Blast file: {}'.format(BLASTF))
-        with open(BLASTF) as f_blast:
+       # with open(BLASTF) as f_blast:
+        with open(BLASTF) as f_blast, open(BLAST_PID_PCOV, 'w') as f_pid_pcov:
             for line in f_blast:
                 num_hits_file += 1
                 llist = line.strip().split('\t')
@@ -376,6 +379,8 @@ def process_blast(**kwarg):
                     if is_pass_id:
                         if is_pass_cov: 
                             n_yid_ycov += 1
+                            if is_dbg_pid_pcov:
+                                f_pid_pcov.write(line)
                         else:
                             n_yid_ncov += 1
                     elif is_pass_cov:
@@ -385,7 +390,7 @@ def process_blast(**kwarg):
                 is_pass_id = False
                 is_pass_cov = False
     
-    BLAST_BASE = os.path.basename(BLASTF)
+    #BLAST_BASE = os.path.basename(BLASTF)
     tmpl = 'from {}: num_hits= {} n_yid_ycov= {} n_yid_ncov= {} n_nid_ycov= {} n_denovo= {}'
     print(tmpl.format(BLAST_BASE, num_hits_file, n_yid_ycov, n_yid_ncov, n_nid_ycov, n_denovo))
     
@@ -412,14 +417,89 @@ def process_blast(**kwarg):
         }
 #END process_blast
 
+def dbg_otu(**kwarg):
+    '''
+    '''
+    STAMP = '[{}]'.format('process_otu')
+    OTU_READSF = os.path.join(os.path.dirname(ALIF), 'otu_reads.txt')
+    BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
+    READS_DIFF = os.path.join(os.path.dirname(ALIF), 'reads_diff.txt')
+    reads = []  # list of all reads from all groups
+    blast_reads = []
+
+    if os.path.exists(BLAST_PID_PCOV):
+        with open(BLAST_PID_PCOV) as blastf:
+            for line in blastf:
+                lls = line.strip().split('\t')
+                blast_reads.append(lls[0]) # collect reads
+
+    # parse otu groups file
+    if os.path.exists(OTUF):
+        num_clusters_file = 0
+        num_reads_in_clusters_file = 0
+        with open(OTUF) as f_otus:
+            for line in f_otus:
+                num_clusters_file += 1
+                greads = line.strip().split('\t')[1:]  # reads in a group
+                reads.extend(greads)
+                num_reads_in_clusters_file += len(greads)
+
+        # genreate list of reads
+        with open(OTU_READSF, 'w') as readsf:
+            reads.sort(key=lambda rr: int(rr.split('_')[-1]))
+            reads.sort(key=lambda rr: int(rr.split('_')[0][:-1]))
+            for read in reads:
+                readsf.write('{}\n'.format(read))
+
+        with open(READS_DIFF, 'w') as diff:
+            rds = set(blast_reads) - set(reads)
+            rdsl = list(rds)
+            rdsl.sort(key=lambda rr: int(rr.split('_')[-1]))
+            rdsl.sort(key=lambda rr: int(rr.split('_')[0][:-1]))
+            for rd in rdsl:
+                diff.write('{}\n'.format(rd))
+#END dbg_otu
+
+def validate_otu(**kwarg):
+    '''
+    :param dict kwarg         test configuration see 'test.jinja.yaml'
+    :param dict kwarg[logd]   parsed aligned.log data see 'parse_log(LOGF)'
+    '''
+    STAMP = '[{}]'.format('validate_otu')
+    vald = kwarg.get('validate')
+    logd = kwarg.get('logd') or parse_log(LOGF)
+
+    # parse otu groups file
+    if os.path.exists(OTUF):
+        num_clusters_file = 0
+        num_reads_in_clusters_file = 0
+        with open(OTUF) as f_otus:
+            for line in f_otus:
+                num_clusters_file += 1
+                num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
+        print('{} num groups in OTU file {} , expected {}'.format(STAMP, num_clusters_file, logd['num_otus'][1]))
+        assert logd['num_otus'][1] == num_clusters_file, \
+            '{} not equals {}'.format(logd['num_otus'][1], num_clusters_file)
+        print('{} count of reads in OTU file {} , expected {}'.format(STAMP, num_reads_in_clusters_file, logd['num_id_cov'][1]))
+        assert logd['num_id_cov'][1] == num_reads_in_clusters_file, \
+            '{} not equals {}'.format(logd['num_id_cov'][1], num_reads_in_clusters_file)
+
+    # verify count of groups in the aligned.log is the same as specified in configuration validate data
+    if logd.get('num_otus') and vald.get('num_cluster'):
+        assert logd['num_otus'][1] in vald['num_cluster'], \
+            '{} not in {}'.format(logd['num_otus'][1], vald['num_cluster'])
+#END validate_otu
+
 def process_output(**kwarg):
     '''
+    :param dict  test configuration see 'test.jinja.yaml'
+
     Used by:
         test_simulated_amplicon_1_part_map
         test_simulated_amplicon_generic_buffer
         test_simulated_amplicon_12_part_index
     '''
-    STAMP = '[{}]'.format(process_output)
+    STAMP = '[{}]'.format('process_output')
 
     logd = parse_log(LOGF)
     vald = kwarg.get('validate')
@@ -622,21 +702,8 @@ def process_output(**kwarg):
                 '{} not equals {}'.format(vald['blast']['num_yid_ycov'], n_yid_ycov)
     
     # Correct number of clusters recorded
-    #self.assertEqual("4401", num_clusters_log) # 4400 before bug 52
-    if logd.get('num_otus') and vald.get('num_cluster'):
-        assert logd['num_otus'][1] in vald['num_cluster'], \
-            '{} not in {}'.format(logd['num_otus'][1], vald['num_cluster'])  # 4400 for amplicon_12_part
-        num_clusters_file = 0
-        num_reads_in_clusters_file = 0
-        if os.path.exists(OTUF):
-            with open(OTUF) as f_otus:
-                for line in f_otus:
-                    num_clusters_file += 1
-                    num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
-            assert logd['num_otus'][1] == num_clusters_file, \
-                '{} not equals {}'.format(logd['num_otus'][1], num_clusters_file)
-            assert logd['num_id_cov'][1] == num_reads_in_clusters_file, \
-                '{} not equals {}'.format(logd['num_id_cov'][1], num_reads_in_clusters_file)
+    kwarg['logd'] = logd
+    validate_otu(**kwarg)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
@@ -958,6 +1025,7 @@ def t17(datad, ret={}, **kwarg):
 if __name__ == "__main__":
     '''
     python scripts/run.py --name t0 [--capture] [--validate-only]
+    python scripts/run.py --name t12 -f process_otu --validate-only
     python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
     python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/biocodz [--capture]  
                                                                               |_ on WSL
@@ -969,6 +1037,7 @@ if __name__ == "__main__":
     # process options
     optpar = OptionParser()
     optpar.add_option('-n', '--name', dest='name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf')
+    optpar.add_option('-f', '--func', dest='func', help='function to run: process_otu | ')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
     optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
@@ -1076,7 +1145,7 @@ if __name__ == "__main__":
         print('{} sortmerna executable {} does not exist or not set'.format(STAMP, SMR_EXE))
         sys.exit(1)
 
-    TEST_DATA = os.path.join(SMR_SRC, 'data')
+    TEST_DATA = os.path.join(SMR_SRC, 'data')  # data directory
 
     process_smr_opts(cfg[opts.name]['cmd'])
 
@@ -1091,7 +1160,7 @@ if __name__ == "__main__":
             shutil.rmtree(IDX_DIR)
 
     # clean previous alignments (KVDB)
-    if os.path.exists(KVDB_DIR):
+    if os.path.exists(KVDB_DIR) and not opts.validate_only:
         print('{} Removing KVDB dir: {}'.format(STAMP, KVDB_DIR))
         shutil.rmtree(KVDB_DIR)
 
@@ -1116,12 +1185,16 @@ if __name__ == "__main__":
         ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)
 
     # validate alignment results
-    fn = cfg[opts.name].get('validate', {}).get('func')
-    if fn:
+    if opts.func:
+        gdict = globals().copy()
+        gdict.update(locals())
+        func = gdict.get(opts.func)
+        func(**cfg[opts.name])
+    elif cfg[opts.name].get('validate', {}).get('func'):
+        fn = cfg[opts.name].get('validate', {}).get('func')
         gdict = globals().copy()
         gdict.update(locals())
         func = gdict.get(fn)
-
         if func:
             func(TEST_DATA, ret, **cfg[opts.name])
     else:

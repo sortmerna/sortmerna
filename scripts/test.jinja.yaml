@@ -276,7 +276,7 @@ t3:
     num_fail:            1
     num_denovo:       4441 # (52018 420) pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
     num_yid_ycov:    47981 # pass SW + %Cov + %ID
-    num_groups: [265, 265] # [264, 264] lnx (sometimes)
+    num_groups: [264, 264] # [264, 264] lnx (sometimes)
     non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
     blast:
       num_recs:      99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
@@ -290,7 +290,7 @@ t3:
       num_aligned:   99999
       num_fail:          1
       num_yid_ycov:  47981 # lin:43678
-      num_groups:      265 # LIN:257, WIN:4441
+      num_groups:      264 # LIN:257, WIN:4441
     runtime:
       win:
         - threads: 8
@@ -529,7 +529,7 @@ t11:
     num_reads: 30000
     num_hits:  19995
     num_fail:  10005
-    num_denovo: 9831
+    num_denovo: 1698 # 9831
     num_pass_id_cov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
     num_cluster: [4400, 4401]
     blast:
@@ -566,14 +566,14 @@ t12:
     num_hits:     19995
     num_fail:     10005
     num_yid_ycov: 10164
-    num_denovo:    1698 # 9831 - 4.2.0
+    num_denovo:    1698
     num_cluster: [4401, 4401]
     blast:
-      num_recs:        19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      num_yid_ycov:    10164 # num_pass_id ⋂ num_pass_cov
-      num_yid_ncov:       11 # ID + !COV
-      num_nid_ycov:     8122 # !ID + COV
-      num_denovo:       1698 # !ID + !COV 
+      num_recs:     19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      num_yid_ycov: 10164 # num_pass_id ⋂ num_pass_cov
+      num_yid_ncov:    11 # ID + !COV
+      num_nid_ycov:  8122 # !ID + COV
+      num_denovo:    1698 # !ID + !COV 
 
 t13:
   name: test_simulated_amplicon_6_part_map
