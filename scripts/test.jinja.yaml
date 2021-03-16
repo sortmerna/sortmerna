@@ -559,6 +559,8 @@ t12:
     - -v
     - -threads
     - {{THREADS or '\'5\''}}
+    - -workdir
+    - {{ WRK_DIR }} # have to use on AWS SSM where HOME is not set
   validate:
     func: t12
     num_reads:    30000

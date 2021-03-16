@@ -278,6 +278,7 @@ def process_smr_opts(args):
     global IS_FASTQ
     global IS_PAIRED_IN 
     global IS_PAIRED_OUT
+    global WRK_DIR
 
     READS_EXT = os.path.splitext(args[args.index('-reads')+1])[1]
     if READS_EXT in ['.gz']:
