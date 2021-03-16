@@ -208,18 +208,20 @@ def conda_install(cfg, dir=None, force=False, clean=False):
 
 def cmake_install(cfg, dir=None, force=False):
     '''
-    @param cfg configuration dict
-    @param dir installation directory. Default User Home
+    :param dict cfg configuration dict
+    :param str dir installation directory. Default User Home
 
     Download and extract CMake release archive
-    python build.py --name cmake --clone
+    python build.py --name cmake
     '''
     STAMP = '[cmake_install]'
     is_installed = False
-    url = cfg[CMAKE]['url'][MY_OS]
+    cmake_cfg = cfg.get(CMAKE)
+    url = cmake_cfg['url'][MY_OS]
     zipped = url.split('/')[-1] # tar.gz or zip
-    val = cfg.get(CMAKE,{}).get('home',{}).get(MY_OS)
-    cmake_home = val if val else os.path.join(UHOME, 'cmake-{}-win64-x64'.format(cfg.get('CMAKE_VER')))
+    env = cfg.get('env')
+    cmake_home = cmake_cfg.get('home',{}).get(env)
+    #cmake_home = val if val else os.path.join(UHOME, 'cmake-{}-win64-x64'.format(cmake_cfg.get('ver')))
     #                                          |_ default         
     # check already installed
     cmake_bin = '{}/bin/cmake'.format(cmake_home)
@@ -686,7 +688,8 @@ if __name__ == "__main__":
     env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
     env_template = env_jj.get_template(os.path.basename(envfile))
     #   render jinja template
-    env_str = env_template.render({'UHOME': UHOME, 'WINHOME': opts.winhome}) if IS_WSL else env_template.render({'UHOME': UHOME})
+    vars = {'UHOME': UHOME, 'WINHOME': opts.winhome, 'ENV': ENV} if IS_WSL else {'UHOME': UHOME, 'ENV': ENV}
+    env_str = env_template.render(vars)
     env = yaml.load(env_str, Loader=yaml.FullLoader)
 
     libdir = env.get('LIB_DIR', {}).get(ENV)
@@ -782,7 +785,7 @@ if __name__ == "__main__":
                 git_clone(URL_DIRENT, LIB_DIR) 
         elif opts.name == CMAKE: 
             if opts.clone:
-                git_clone(cfg[CMAKE]['url'], LIB_DIR)
+                git_clone(env[CMAKE]['url'], LIB_DIR)
             cmake_install(env) 
         elif opts.name == CONDA: 
             conda_install(env) 
