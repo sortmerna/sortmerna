@@ -1072,11 +1072,13 @@ if __name__ == "__main__":
         env_jj = Environment(loader=FileSystemLoader(os.path.dirname(env_yaml)), trim_blocks=True, lstrip_blocks=True)
         env_template = env_jj.get_template(os.path.basename(env_yaml))
     
-        #   render jinja template
-        env_str = env_template.render({'UHOME': UHOME, 'WINHOME': opts.winhome}) if IS_WSL else env_template.render({'UHOME': UHOME})
+        # render jinja template env.jinja.yaml
+        vars = {'UHOME': UHOME}
+        if IS_WSL: vars['WINHOME'] = opts.winhome
+        env_str = env_template.render(vars)
         env = yaml.load(env_str, Loader=yaml.FullLoader)
 
-    # check jinja.yaml
+    # check test.jinja.yaml
     cfgfile = os.path.join(cur_dir, 'test.jinja.yaml') if not opts.config else opts.config
     if not os.path.exists(cfgfile):
         print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(STAMP))
