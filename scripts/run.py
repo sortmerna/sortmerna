@@ -58,7 +58,7 @@ else:
     print('Unable to define the platform: {}'.format(pf))
     sys.exit(1)
 
-UHOME = os.environ.get('USERPROFILE') if IS_WIN else os.environ.get('HOME')
+UHOME = os.environ.get('USERPROFILE') if IS_WIN else os.environ.get('HOME') # not defined for AWS SSM
 
 SMR = 'sortmerna'
 SMR_SRC  = None # source root dir
@@ -298,8 +298,12 @@ def process_smr_opts(args):
         wdir = args[args.index(WDIR) + 1]
         print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(STAMP, os.path.realpath(wdir)))
         ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
-    else:
+    elif WRK_DIR:
+        ALIF = os.path.join(WRK_DIR, 'out', ALI_BASE + READS_EXT)
+    elif UHOME:
         ALIF = os.path.join(UHOME, 'sortmerna', 'run', 'out', ALI_BASE + READS_EXT)
+    else:
+        print('{} cannot define alignment file'.format(STAMP))
 
     if OUT2 in args:
         ALI_FWD = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_fwd' + READS_EXT)
