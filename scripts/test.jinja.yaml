@@ -2402,7 +2402,7 @@ t41:
         reads_stats_calc: [1.65, 1.64, ]
         index_stats_calc: [4.66, ]
         # alignment cpu load: [ max,   min,  avr]
-        cpu_load_align:       [768.3, 534.2,    ] # all cores working
+        cpu_load_align:       [768, 534,    ] # all cores working
         align:
           # [ load idx, load refs, align   ] # sec
           - [ 0.8, 0.03, 18 ]
@@ -2642,11 +2642,14 @@ t42:
           The single reader is not fast enough to supply the reads, so the threads are idling.
       4-3-1:
         - threads: 16
-          total: 951 # sec  no indexing
+          #total: 951 # sec  no indexing  20210307
+          total: 1267 # sec ~21min with indexing  20210317
           # indexing, read count, split, idx stats, align, summary, report
           totals: [ 170, 35, 535, 4.1, 308, 4.1, 72 ]
           aws.cmd.id: 1aff1ea6-655a-46a2-8916-d4e295f9d397
-          aws.trace: {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_16_32_32_t42_th16_20210307_1253.stdout
+          aws.trace:
+            - {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_16_32_32_t42_th16_20210307_1253.stdout
+            - {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_16_32_32_t42_th16_20210317_0943.stdout  # bit slower
           aws.yaml: sortmerna.data.load:t42,sortmerna.test.run
     ubuntu18_32_128_32:
       host: m5.8xlarge   cpu:32 ram:128  Intel Xeon Platinum 8000  general purpose  1.536
@@ -2654,7 +2657,7 @@ t42:
         - threads: 16
           total: 1103 # sec with indexing
           # indexing, read count, split, idx stats, align, summary, report
-          totals: [ 186, 39, 606, 4.6, 239, 4.6, 48 ]
+          totals: [ 186, 39, 606, 4.6, 239, 4.6, 48 ]  # sec
           aws.cmd.id: eb230865-ceb1-4250-8b52-40efc742b736
           aws.trace: {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_32_128_32_t42_th16_20210307_1345.stdout
           aws.yaml: sortmerna.data.load:t42,sortmerna.test.run
@@ -2702,11 +2705,15 @@ t43:
     - -fastx
     - -blast
     - '1 cigar qcov'
+    - -out2
+    - -sout
     - -v
     - -workdir
     - {{ WRK_DIR }}
-    - threads
+    - -threads
     - {{THREADS or '\'8\''}}
+    - -index
+    - {{INDEX or '\'2\''}}  # 2 is the default
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2730,71 +2737,56 @@ t43:
           Win apparently limits the amount of memory available to the process, 
           which seems to slow it down because less memory is available to RocksDB. 
           On Ubuntu the memory used by the process is much higher, and the process runs faster.
-        cpu_load_align: [0, 0,    ] 
-        total: 17587.01 # sec ~5hrs
-        reads_stats_calc: [48.9792, 51.3097]
-        index_stats_calc: [3.28]
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - [1.524470, 0.1747970, 997.416]
-          - [1.493490, 0.1027610, 1088.52]
-          - [1.743100, 0.1538530, 1225.69]
-          - [2.095270, 0.1605110, 1403.62]
-          - [0.578855, 0.0110253, 759.637]
-          - [0.622625, 0.0311962, 884.362]
-          - [1.437610, 0.1885500, 1061.30]
-          - [0.815040, 0.0601514, 888.134]
-        stats:   []
-        reports: []
+        4-2-1:
+          - threads: 8
+            total: 17587 # sec ~5hrs
+            reads_stats_calc: [49, 51]
+            index_stats_calc: [3.28]
+            align:
+              # [ load idx, load refs, align ] # sec
+              - [1.5, 0.2,  997]
+              - [1.5, 0.1, 1089]
+              - [1.7, 0.2, 1226]
+              - [2.1, 0.2, 1404]
+              - [0.6, 0.0,  760]
+              - [0.6, 0.0,  884]
+              - [1.4, 0.2, 1061]
+              - [0.8, 0.1,  888]
+        4-3-1:
+          - threads: 32
+            # indexing, read count, split, idx stats, align, summary, report
+            totals: [ 0, 177, 1870, 0, 0, 0, 0] # sec  600/10M=~60  1900/50M=~40
       ubuntu18_4_16_32:
         host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HDD
       ubuntu18_8_16_32:
         host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
-        total:
-        reads_stats_calc: [75.4094, 75.6198]
-        index_stats_calc: [4.05]
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - [0.626602, 0.0234840, 634.723]
-          - [0.505618, 0.0173236, 652.722]
-          - [0.474568, 0.0158996, 729.239]
-          - [0.715952, 0.0316894, ]
-          - [] # ExecutionTimedOut bug
+        4-2-1:
+          - threads: 8
+            total:
+            reads_stats_calc: [75, 76]
+            index_stats_calc: [4]
+            align:
+              # [ load idx, load refs, align ] # sec
+              - [0.6, 0.0, 635]
+              - [0.5, 0.0, 653]
+              - [0.5, 0.0, 729]
+              - [0.7, 0.0,   0] # ExecutionTimedOut bug
       ubuntu18_16_64_32:
         host: AWS m5.4xlarge + Ubuntu 18 + 16 cpu + 64 GB RAM + 32 GB HD
-        # alignment cpu load: [ max,   min,  avr]
-        cpu_load_align:       [] 
         total:  # sec - python trace from command sent to response received - with indexing
-        reads_stats_calc: [81.6487, 81.9596]
-        index_stats_calc: [ ]
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - []
-          - []
-          - []
-          - []
-          - []
-          - []
-          - []
-          - []
+        reads_stats_calc: [82, 82]
       ubuntu18_32_128_32:
         # ~10 min to setup the instance and run the test: 1.536 / 6 = 0.256 per test
         host: AWS m5.8xlarge + Ubuntu 18 + 32 cpu + 128 GB RAM + 32 GB HD
-        # alignment cpu load: [ max,   min,  avr]
-        cpu_load_align:       [] 
-        total:  # sec - python trace from command sent to response received - with indexing
-        reads_stats_calc: []
-        index_stats_calc: [ ]
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - []
-          - []
-          - []
-          - []
-          - []
-          - []
-          - []
-          - []
+        4-3-1:
+          - threads: 32
+            total:  # sec - python trace from command sent to response received - with indexing
+            # indexing, read count, split, idx stats, align, summary, report
+            totals: [ 186, 39, 606, 4.6, 239, 4.6, 48 ]
+            aws.cmd.id: eb230865-ceb1-4250-8b52-40efc742b736
+            aws.trace: {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_32_128_32_t42_th16_20210307_1345.stdout
+            aws.yaml: sortmerna.data.load:t42,sortmerna.test.run
+            aligned.log: 
     memory:
       prior_idx_load: [  5100, ]
       idx_load:       [378400, ]
