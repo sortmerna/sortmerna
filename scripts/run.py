@@ -427,8 +427,8 @@ def process_blast(**kwarg):
                 '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
         
             if has_cov:
-                assert vald['blast']['num_pass_id_cov'] == n_yid_ycov, \
-                    '{} not equals {}'.format(vald['blast']['num_pass_id_cov'], n_yid_ycov)
+                assert vald['blast']['num_yid_ycov'] == n_yid_ycov, \
+                    '{} not equals {}'.format(vald['blast']['num_yid_ycov'], n_yid_ycov)
 
     return {
         'n_hits'  : num_hits_file, 
@@ -439,10 +439,40 @@ def process_blast(**kwarg):
         }
 #END process_blast
 
+def dbg_blast(**kwarg):
+    '''
+    added 20210323
+    compare unique read IDs in two blast reports produced using different program versions
+    cmd: python scripts/run.py --name t0 -f dbg_blast --validate-only
+    '''
+    STAMP = '[{}]'.format('dbg_blast')
+    rdiff = None
+    bl_421 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-2-1/20210322/aligned.blast')
+    bl_431 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-3-1/20210322/aligned.blast')
+    srt421 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-2-1/20210322/sorted.blast')
+    srt431 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-3-1/20210322/sorted.blast')
+    if os.path.exists(bl_421) and os.path.exists(bl_431):
+        with open(bl_421) as f421, open(bl_431) as f431:
+            l421 = [ line.strip().split('\t')[:2] for line in f421 ]
+            l431 = [ line.strip().split('\t')[:2] for line in f431 ]
+            l421.sort(key=lambda rr: int(rr[0].split('.')[-1]))  # SRR1635864.8745 -> [SRR1635864, 8745] -> 8745
+            l431.sort(key=lambda rr: int(rr[0].split('.')[-1]))
+            with open(srt421, 'w') as sr421, open(srt431, 'w') as sr431:
+                sr421.write('\n'.join('{}\t{}'.format(x[0], x[1]) for x in l421))
+                sr431.write('\n'.join('{}\t{}'.format(x[0], x[1]) for x in l431))
+            #l421 = [ '  '.join(line.strip().split('\t')[:2]) for line in f421 ]
+            #l431 = [ '  '.join(line.strip().split('\t')[:2]) for line in f431 ]
+            doset = False
+            if doset:
+                rdiff = set(l421) - set(l431)
+                print('{} rdiff.len= {}'.format(STAMP, len(rdiff))) # 0
+                [print(x) for x in list(rdiff)]
+#END dbg_blast
+
 def dbg_otu(**kwarg):
     '''
     '''
-    STAMP = '[{}]'.format('process_otu')
+    STAMP = '[{}]'.format('dbg_otu')
     OTU_READSF = os.path.join(os.path.dirname(ALIF), 'otu_reads.txt')
     BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
     READS_DIFF = os.path.join(os.path.dirname(ALIF), 'reads_diff.txt')
@@ -995,6 +1025,7 @@ if __name__ == "__main__":
     '''
     python scripts/run.py --name t0 [--capture] [--validate-only]
     python scripts/run.py --name t12 -f process_otu --validate-only
+    python scripts/run.py --name t0 -f dbg_blast --validate-only
     python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
     python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/biocodz [--capture]  
                                                                               |_ on WSL

@@ -225,8 +225,8 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 			//          ^read start pos                                    ^   ^read end pos
 			//                                                             |_max possible k-mer start position 'end_ref_max'
 			// 
-			auto end_ref_max = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num];
-			//auto end_ref_max = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // TODO: original - wrong?
+			//auto end_ref_max = begin_ref + read.sequence.length() - refstats.lnwin[index.index_num] + 1; // TODO: original - remove
+			auto end_ref_max = begin_ref + read.sequence.length() - begin_read - refstats.lnwin[index.index_num] + 1;
 			auto push = false;
 			while ( hits_on_ref_iter != hits_on_ref.end() && hits_on_ref_iter->first <= end_ref_max )
 			{

@@ -105,7 +105,7 @@ test.list:
   - t39:
   #                         output type                                       |    alignment type
   #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t40: vacant
+  - t40:   [ 2,    2,    0,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       stress test: 8 refs + 1M reads
   - t41:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       stress test: 8 refs + 10M reads
@@ -530,7 +530,7 @@ t11:
     num_hits:  19995
     num_fail:  10005
     num_denovo: 1698 # 9831
-    num_pass_id_cov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
+    num_yid_ycov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
     num_cluster: [4400, 4401]
     blast:
       num_recs:       19995
@@ -540,7 +540,7 @@ t11:
       num_denovo:      1698
       num_pass_id:    10175 
       num_pass_cov:   15054 
-      num_pass_id_cov: 9733 # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: 9733 # pass_SW + pass_ID + pass_Cov
 
 t12:
   name: test_simulated_amplicon_1_part_map
@@ -648,7 +648,7 @@ t14:
     num_hits: 19995
     num_fail: 10005
     num_denovo: 1698
-    num_pass_id_cov: 10164 #   10164 + 9831 = 19995, pass_ID + pass_Cov, not necessarily pass_SW
+    num_yid_ycov: 10164 #   10164 + 9831 = 19995, pass_ID + pass_Cov, not necessarily pass_SW
     num_cluster: [4400, 4401] # 4400 before bug 52
     blast:
       num_recs:     19995
@@ -1151,7 +1151,7 @@ t19:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -1199,7 +1199,7 @@ t19_1:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -1246,7 +1246,7 @@ t19_2:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -1294,7 +1294,7 @@ t19_3:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -1429,7 +1429,7 @@ t20:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t20_1:
   name: 1 reads + paired_in + out2
@@ -1468,7 +1468,7 @@ t20_1:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t20_2:
   name: 1 reads + paired_out
@@ -1506,7 +1506,7 @@ t20_2:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t20_3:
   name: 1 reads + paired_out + out2
@@ -1545,7 +1545,7 @@ t20_3:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t20_4:
   name: 1 reads + paired + out2
@@ -1614,7 +1614,7 @@ t21:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t22:
   name: single paired reads file + joint FWD/REV output
@@ -1643,7 +1643,7 @@ t22:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass SW + ID + Cov
+      num_yid_ycov: # pass SW + ID + Cov
 
 t23:
   name: single paired reads file + separate FWD/REV output
@@ -1674,7 +1674,7 @@ t23:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t24:
   name: 1 paired reads file + joint FWD/REV output
@@ -1702,7 +1702,7 @@ t24:
       num_recs:     9188
       num_pass_id:    16 
       num_pass_cov:
-      num_pass_id_cov: # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t25:
   name: test_aligned_opt
@@ -1985,7 +1985,7 @@ t32:
       num_recs:      9188
       num_pass_id:     21
       num_pass_cov:    11
-      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov:  0 # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -2035,7 +2035,7 @@ t33:
       num_recs:      9188
       num_pass_id:     16
       num_pass_cov:     0
-      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov:  0 # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -2085,7 +2085,7 @@ t34:
       num_recs:     16701
       num_pass_id:     30 
       num_pass_cov:    12
-      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov:  0 # pass_SW + pass_ID + pass_Cov
     runtime:
       win:
         - threads: 8
@@ -2135,7 +2135,7 @@ t35:
       num_recs:     47552
       num_pass_id:    113
       num_pass_cov:    12
-      num_pass_id_cov:  0 # pass_SW + pass_ID + pass_Cov
+      num_yid_ycov:  0 # pass_SW + pass_ID + pass_Cov
     time:
       win:
         - threads: 8
@@ -2257,7 +2257,60 @@ t39:
     cpus:             8
 
 t40:
-  name: vacant
+  name: 5 selected reads on 8 refs
+  info: |
+    8 reference databases + 5 reads
+
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other
+    ------------------------------------------------------------------- output type
+     2      2     0    1       -        -       1     1     1      0
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+      1   1     2      2
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5.fastq # 5 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5.fastq # 5 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -out2
+    - -sout
+    - -v
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -index
+    - {{INDEX or '\'2\''}}  # 2 is the default
+    - -workdir
+    - {{ WRK_DIR }}
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 10
+    num_hits:  10
+    num_fail:   0
+    variant:    sanger # fastq quality variant
+    blast:
+      num_recs:     10
+      num_yid_ycov:  0
 
 t41:
   name: issue 231 8x1M
@@ -2530,7 +2583,7 @@ t42:
   time:
     win_8_16:
       host: Windows 10 + 8 CPUs + 16 GiB RAM
-      4-2-0:
+      4-2-1:
         threads: 8
         total: 3167.055 # sec ~53min with indexing
         #  indexing, read count, idx stats, align, summary, report
