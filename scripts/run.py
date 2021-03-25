@@ -788,7 +788,7 @@ def t3(datad, ret={}, **kwarg):
 
     assert logd['results']['num_hits'][1] == vald['num_hits']
 
-    process_blast()
+    process_blast(**kwarg)
 
     # sort order (descending/ascending) of candidate references (alignment.cpp)
     is_refs_descending = False

@@ -181,6 +181,9 @@ t0_1:
     max_len:        1487
     blast_score:    2430
     blast_bitscore: 2069
+    blast:
+      num_recs: 1
+      num_yid_ycov: 0
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
@@ -208,6 +211,9 @@ t1:
     num_fail: 0
     min_len: 1487
     max_len: 1487
+    blast:
+      num_recs: 1
+      num_yid_ycov: 0
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
@@ -388,6 +394,9 @@ t6:
     num_aligned: 10000 # number of reads in aligned.fastx
     num_other:       0 # number of reads in other.fastx. Empty file: WARN: skbio\io\registry.py:548: does not look like a fastq file
     variant:    sanger # fastq quality variant
+    blast:
+      num_recs:     6000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      num_yid_ycov: 5623 # lin:43678  num_pass_id ⋂ num_pass_cov
 
 t7:
   name: test_mate_pairs - part 3 - paired_out
@@ -529,18 +538,17 @@ t11:
     num_reads: 30000
     num_hits:  19995
     num_fail:  10005
-    num_denovo: 1698 # 9831
+    num_denovo: 1691 # 9831
     num_yid_ycov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
     num_cluster: [4400, 4401]
     blast:
-      num_recs:       19995
-      num_yid_ycov:   10164
-      num_nid_ycov:    8122
-      num_yid_ncov:      11
-      num_denovo:      1698
-      num_pass_id:    10175 
-      num_pass_cov:   15054 
-      num_yid_ycov: 9733 # pass_SW + pass_ID + pass_Cov
+      num_recs:     19995
+      num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+      num_nid_ycov:  8122
+      num_yid_ncov:    11
+      num_denovo:    1691
+      num_pass_id:  10175 # yid_ycov + yid_ncov
+      num_pass_cov: 15054
 
 t12:
   name: test_simulated_amplicon_1_part_map
@@ -572,14 +580,14 @@ t12:
     num_hits:     19995
     num_fail:     10005
     num_yid_ycov: 10164
-    num_denovo:    1698
+    num_denovo:    1691
     num_cluster: [4401, 4401]
     blast:
       num_recs:     19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
       num_yid_ycov: 10164 # num_pass_id ⋂ num_pass_cov
       num_yid_ncov:    11 # ID + !COV
       num_nid_ycov:  8122 # !ID + COV
-      num_denovo:    1698 # !ID + !COV 
+      num_denovo:    1691 # !ID + !COV 
 
 t13:
   name: test_simulated_amplicon_6_part_map
@@ -606,17 +614,20 @@ t13:
     - {{THREADS or '\'5\''}}
   validate:
     func: t13
-    num_reads: 30000
-    num_hits: 19995
-    num_fail: 10005
-    num_denovo: 1698
-    num_yid_ycov: 10164 #   10164 + 9831 = 19995, pass_SW + pass_ID, not necessarily pass_Cov
+    num_reads:    30000
+    num_hits:     19995
+    num_fail:     10005
+    num_denovo:    1691
+    num_yid_ycov: 10164
     num_cluster: [4400, 4401]
     blast:
-      num_recs:       19995
-      num_yid_ycov:   10164 # pass_SW + pass_ID + pass_Cov
-      num_pass_id:    10175   
-      num_pass_cov:   15054 
+      num_recs:     19995
+      num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+      num_yid_ncov:    11
+      num_nid_ycov:  8122
+      num_denovo:    1691
+      num_yid:      10175   
+      num_ycov:     15054 
 
 t14:
   name: test_simulated_amplicon_12_part_map
@@ -644,10 +655,10 @@ t14:
     - {{ WRK_DIR }}
   validate:
     func: t14
-    num_reads: 30000
-    num_hits: 19995
-    num_fail: 10005
-    num_denovo: 1698
+    num_reads:    30000
+    num_hits:     19995
+    num_fail:     10005
+    num_denovo:    1691
     num_yid_ycov: 10164 #   10164 + 9831 = 19995, pass_ID + pass_Cov, not necessarily pass_SW
     num_cluster: [4400, 4401] # 4400 before bug 52
     blast:
@@ -655,6 +666,7 @@ t14:
       num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
       num_pass_id:  10175 
       num_pass_cov: 15054 
+      num_denovo:    1691
 
 t15:
   name: test_threads
