@@ -43,6 +43,8 @@ conda search sortmerna
   sortmerna                       2.1b               0  bioconda
   ...
   sortmerna                      4.2.0               0  bioconda
+  ...
+  sortmerna                      4.3.1               0  bioconda
 
 conda install sortmerna
 which sortmerna
@@ -50,7 +52,7 @@ which sortmerna
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.2.0
+  SortMeRNA version 4.3.1
   Build Date: Mar 12 2020
   sortmerna_build_git_sha:@e307e3a248c21ef70b9495f029cd86f61c33b7fd@
   sortmerna_build_git_date:@2020/03/12 12:34:30@
@@ -71,21 +73,21 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/biocore/sortmerna/releases/download/v4.2.0/sortmerna-4.2.0-Linux.sh
+wget https://github.com/biocore/sortmerna/releases/download/v4.3.1/sortmerna-4.3.1-Linux.sh
 
 # view the installer usage
-bash sortmerna-4.2.0-Linux.sh --help
+bash sortmerna-4.3.1-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-4.2.0-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-4.2.0-Linux subdirectory
+      --include-subdir  include the sortmerna-4.3.1-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-4.3.1-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
-bash sortmerna-4.2.0-Linux.sh --skip-license
-  sortmerna Installer Version: 4.2.0, Copyright (c) Clarity Genomics
+bash sortmerna-4.3.1-Linux.sh --skip-license
+  sortmerna Installer Version: 4.3.1, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
   The archive will be extracted to: $HOME/sortmerna
   
@@ -103,7 +105,7 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.2.0
+  SortMeRNA version 4.3.1
   Build Date: Mar 12 2020
   sortmerna_build_git_sha:@e307e3a248c21ef70b9495f029cd86f61c33b7fd@
   sortmerna_build_git_date:@2020/03/12 12:34:30@
@@ -117,6 +119,7 @@ sortmerna -h
 * The only required options are `--ref` and `--reads`
 * Options (any) can be specified usig a single dash e.g. `-ref` and `-reads`
 * Both plain `fasta/fastq` and archived `fasta.gz/fastq.gz` files are accepted
+* file extensions `.fastq, .fastq.gz, .fq, .fq.gz, .fasta, ...` are optional. The format and compression are automatically recognized
 * Relative paths are accepted
 
 for example
