@@ -105,11 +105,11 @@ OPT_DBG_PUT_DB = "dbg_put_db",
 OPT_TMPDIR = "tmpdir",
 OPT_INTERVAL = "interval",
 OPT_MAX_POS = "max_pos",
-OPT_READS_FEED = "reads_feed",
+OPT_READS_FEED = "reads_feed",  // TODO: on hold
 OPT_ZIP_OUT = "zip-out",
 OPT_INDEX = "index",
-OPT_ALIGN = "align",
-OPT_FILTER = "filter",
+OPT_ALIGN = "align",  // TODO: on hold
+OPT_FILTER = "filter",  // TODO: on hold
 OPT_DBG_LEVEL = "dbg-level";
 
 // help strings
@@ -176,8 +176,8 @@ help_idxdir =
 	"Directory for storing Reference index.      WORKDIR/idx\n\n",
 help_readb = 
 	"Storage for pre-processed reads             WORKDIR/readb/\n\n"
-	"       Directory storing the split reads, or the random access index of compressed reads\n"
-	"       Use with '" + OPT_READS_FEED + "'\n\n",
+	"       Directory storing the split reads, or the random access index of compressed reads\n\n",
+	//"       Use with '" + OPT_READS_FEED + "'\n\n",
 help_sam = 
 	"Output SAM alignment for aligned reads.\n\n",
 help_SQ = 
@@ -354,14 +354,14 @@ help_max_pos =
 	"                                            store for each unique L-mer.\n"
 	"                                            If 0 - all positions are stored.\n",
 
-help_reads_feed = 
-	"Method of accessing the reads by the                    0\n"
-	"                                            reads processors\n\n"
-	"       0 - Split reads. Reads files are split into parts equal the number of processing threads\n"
-	"       1 - FUTURE: Lockless queue. Reads are put into a lockless queue\n"
-	"                   to be popped by the processing threads\n"
-	"       3 - FUTURE: Random access to the compresssed reads files\n"
-	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
+//help_reads_feed = 
+//	"Method of accessing the reads by the                    0\n"
+//	"                                            reads processors\n\n"
+//	"       0 - Split reads. Reads files are split into parts equal the number of processing threads\n"
+//	"       1 - FUTURE: Lockless queue. Reads are put into a lockless queue\n"
+//	"                   to be popped by the processing threads\n"
+//	"       3 - FUTURE: Random access to the compresssed reads files\n"
+//	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
 
 help_zip_out =
 	"Controls the output compression                         Yes/True\n\n"
@@ -668,7 +668,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 54> options = {
+	const std::array<opt_6_tuple, 53> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
@@ -701,7 +701,7 @@ private:
 		std::make_tuple(OPT_F,              "BOOL",        COMMON,      false, help_F, &Runopts::opt_F),
 		std::make_tuple(OPT_N,              "BOOL",        COMMON,      false, help_N, &Runopts::opt_N),
 		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
-		std::make_tuple(OPT_READS_FEED,     "INT",         COMMON,      false, help_reads_feed, &Runopts::opt_reads_feed),
+		//std::make_tuple(OPT_READS_FEED,     "INT",         COMMON,      false, help_reads_feed, &Runopts::opt_reads_feed),
 		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
 		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),
 		std::make_tuple(OPT_DENOVO_OTU,     "BOOL",        OTU_PICKING, false, help_denovo_otu, &Runopts::opt_denovo_otu),
