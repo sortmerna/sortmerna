@@ -2354,9 +2354,9 @@ t41:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_2M.fastq.gz # 40MB, 500,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_2M.fq.gz # 40MB, 500,000 reads
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_2M.fastq.gz # 40MB, 500,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_2M.fq.gz # 40MB, 500,000 reads
     - -fastx
     - -blast
     - '1 cigar qcov'
@@ -2383,13 +2383,10 @@ t41:
       4-2-0:
         threads: 8
         tot: 225 # sec - ~4min - no indexing
-        #      read count, split, idx stats
-        init: [ 2.07695, ]
-        align:
-          - [ 15, 16, 18, 21, 11, 13, 13, 11 ]
+        align: [ 15, 16, 18, 21, 11, 13, 13, 11 ]
       4-3-1: 
         threads: 8
-        total:
+        total: 391 # sec  ~7min
         # indexing, read count, split, idx stats, align, summary, report
         totals: [ 216, 3, 31, 3, 88, 3, 47 ]
         align:  [ 11, 12, 16, 18, 6, 8, 9, 6 ] # sec
@@ -2752,7 +2749,7 @@ t43:
       idx_ref_unloaded:
 
 t44:
-  name: test concatenated gzip - issue 272, 283
+  name: test concatenated gzip - issue 221,272,283
   info:
   cmd:
     - -ref
@@ -2778,3 +2775,55 @@ t44:
     blast:
       num_recs:     448 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
       num_yid_ycov: 134 # lin:43678  num_pass_id ⋂ num_pass_cov
+
+t44_2:
+  name: test concatenated gzip 1M reads - issue 221,272,283
+  info: |
+    The same reads as used for test 41
+    5 files (430K,370K,450K,350K,400K) catenated into a single one:
+      cat SRR1635864_1_2M_1.fq.gz SRR1635864_1_2M_2.fq.gz SRR1635864_1_2M_3.fq.gz 
+          SRR1635864_1_2M_4.fq.gz SRR1635864_1_2M_5.fq.gz > SRR1635864_1_2M_cat.fq.gz  # second file is similar
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_2M_cat.fq.gz # 40MB, 500,000 reads  5 aprts
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_2M_cat.fq.gz # 40MB, 500,000 reads  5 parts
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -out2
+    - -sout
+    - -other
+    - -v
+    - -threads
+    - {{THREADS or '\'8\''}}
+    - -index
+    - {{INDEX or '\'2\''}}  # 2 is the default
+    - -workdir
+    - {{ WRK_DIR }}
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    num_reads: 1000000
+    num_hits:    49909
+    num_fail:   950091
+    variant:    sanger # fastq quality variant
+    blast:
+      num_recs:     1000000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      num_yid_ycov:       0 # lin:43678  num_pass_id ⋂ num_pass_cov
