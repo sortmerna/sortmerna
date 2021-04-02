@@ -2403,31 +2403,13 @@ t41:
     ubuntu18_4_16_32:
       host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HD
       4-2-0:
-        total: 315.02 # sec - python trace from command sent to response received
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - [ 0.8, 0.03, 29 ]
-          - [ 0.6, 0.02, 29 ]
-          - [ 0.5, 0.02, 32 ]
-          - [ 0.8, 0.03, 35 ]
-          - [ 0.1, 0.00, 16 ]
-          - [ 0.2, 0.00, 19 ]
-          - [ 0.3, 0.03, 23 ]
-          - [ 0.1, 0.01, 16 ]
+        total: 315 # sec - python trace from command sent to response received
+        align: [  29, 29, 32, 35, 16, 19, 23, 16 ] # sec
       4-3-1:
         total: 502 # as returned by aws.py
         # indexing, read count, split, idx stats, align, summary, report
         totals: [ 221, 4, 58, 5, 141, 5, 29 ]
-        align:
-          # [ load idx, load refs, align, ref unload ] # sec
-          - [ 0.8, 0.03, 22, 0.13 ]
-          - [ 0.6, 0.03, 21, 0.12 ]
-          - [ 0.8, 0.04, 24, 0.11 ]
-          - [ 0.1, 0.00, 27, 0.17 ]
-          - [ 0.2, 0.00,  9, 0.02 ]
-          - [ 0.3, 0.04, 11, 0.04 ]
-          - [ 0.3, 0.04, 13, 0.04 ]
-          - [ 0.1, 0.00,  8, 0.01 ]
+        align:  [ 23, 22,25, 27, 9, 11, 1, 8 ] # sec
     ubuntu18_8_16_32: #  c5.2xlarge 
       host: c5.2xlarge  cpu:8 ram:16  Intel Xeon Platinum 8000 compute optimized  AWS
       instance.create: 24 # sec
@@ -2455,17 +2437,8 @@ t41:
         reads_stats_calc: [1.65, 1.64, ]
         index_stats_calc: [4.66, ]
         # alignment cpu load: [ max,   min,  avr]
-        cpu_load_align:       [768, 534,    ] # all cores working
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - [ 0.8, 0.03, 18 ]
-          - [ 0.6, 0.02, 19 ]
-          - [ 0.5, 0.02, 17 ]
-          - [ 0.8, 0.03, 19 ]
-          - [ 0.1, 0.00, 11 ]
-          - [ 0.2, 0.01, 13 ]
-          - [ 0.3, 0.03, 15 ]
-          - [ 0.1, 0.01, 11 ]
+        cpu_load_align: [768, 534,    ] # all cores working
+        align: [  18, 19, 17, 19, 11, 13, 15, 11 ] # sec
       4-3-1:
         threads: 8
         total:
@@ -2497,16 +2470,7 @@ t41:
         total: 507.63 # sec - python trace from command sent to response received - with indexing
         reads_stats_calc: [1.63729, 1.63938, ]
         index_stats_calc: [4.62, ]
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - [ 0.7, 0.03, 12 ]
-          - [ 0.5, 0.02, 12 ]
-          - [ 0.5, 0.02, 13 ]
-          - [ 0.8, 0.04, 13 ]
-          - [ 0.1, 0.00,  7 ]
-          - [ 0.2, 0.01,  8 ]
-          - [ 0.3, 0.03,  8 ]
-          - [ 0.1, 0.01,  7 ]
+        align: [ 12, 12, 13, 13, 7, 8, 8, 7 ] # sec per index part
     ubuntu18_32_128_32:
       # ~10 min to setup the instance and run the test: 1.536 / 6 = 0.256 per test
       host: AWS m5.8xlarge + Ubuntu 18 + 32 cpu + 128 GB RAM + 32 GB HD
@@ -2515,16 +2479,7 @@ t41:
       total: 485.936 # sec - python trace from command sent to response received - with indexing
       reads_stats_calc: [4.51]
       index_stats_calc: [ ]
-      align:
-        # [ load idx, load refs, align   ] # sec
-        - [0.648937, 0.02581660, 7.42657]
-        - [0.541040, 0.01928010, 7.36926]
-        - [0.506856, 0.01764540, 7.54293]
-        - [0.762611, 0.03471340, 7.83780]
-        - [0.105484, 0.00107155, 5.39101]
-        - [0.220171, 0.00586116, 5.68825]
-        - [0.293652, 0.03250720, 5.88965]
-        - [0.106713, 0.00752926, 5.59118]
+      align: [ 8, 8, 8, 9, 5, 6, 6, 6] # sec
   memory:
     prior_idx_load: []
     idx_load:       []
@@ -2628,36 +2583,13 @@ t42:
       reads_stats_calc: [15.21, 15.25]
       index_stats_calc: [4.13]
       align:
-        # [ load idx, load refs, align   ] # sec
-        - [ 0.6, 0.02, 128 ] # slow because All reads were stored to DB. See results after the fix below.
-        - [ 0.5, 0.02, 129 ]
-        - [ 0.5, 0.02, 145 ]
-        - [ 0.7, 0.03, 156 ]
-        - [ 0.1, 0.00,  85 ] # ExecutionTimedOut bug
-        - [ 0.2, 0.01,  96 ]
-        - [ 0.3, 0.03, 108 ]
-        - [ 0.1, 0.01,  80 ]
-        - [ 3.0, 0.10, 927 ] # Total: 15.51min
+        # slow because All reads were stored to DB. See results after the fix below.
+        # AWS ExecutionTimedOut bug
+        - [ 128, 129, 145, 156, 85, 96, 108, 80, 927 ] # sec Total: ~16min
         # aws_ubuntu18_8_16_smr_t42_20200812_1224.log  storing only reads with new alignments  20200812
-        - [0.6039, 0.0288, 94.5576] # 25% better
-        - [0.4850, 0.0220, 90.1960] # 30%
-        - [0.4534, 0.0205, 104.777] # 28%
-        - [0.6907, 0.0380, 120.065] # 23%
-        - [0.0942, 0.0012, 50.7922] # 41%
-        - [0.1971, 0.0066, 52.7791] # 45%
-        - [0.2634, 0.0325, 59.6349] # 47%
-        - [0.0965, 0.0074, 50.4277] # 38%
-        - [2.885,  0.157,  623.230] # Total: 10.4min 33% better
-      stats:
-        - [0.0236, 38.732]
-        - [0.0262, 38.744]
-        - [0.0206, 38.770]
-        - [0.0327, 38.729]
-        - [0.0012, 38.701]
-        - [0.0067, 38.771]
-        - [0.0313, 38.736]
-        - [0.0075, 38.724]
-        - [0.1498, 309.907] # Total: 5.2min
+        #   25% 30% 28%  23%  41% 45% 47% 38% better
+        - [ 95, 91, 105, 121, 51, 53, 60, 50 ]  # sec Total: ~10min 33% better
+      stats: [39,39,39,39,39,39,39,39] # sec Total: 312 = ~5min
       reports: []
     ubuntu18_16_32_32:
       host: AWS c5.4xlarge + Ubuntu 18 + 16 cpu + 32 GB RAM + 32 GB HDD
@@ -2665,16 +2597,7 @@ t42:
         total:  # sec 
         reads_stats_calc: [15.25, 15.29]
         index_stats_calc: [4.42]
-        align:
-          # [ load idx, load refs, align   ] # sec
-          - [ 0.64, 0.030, 56 ]
-          - [ 0.51, 0.023, 56 ]
-          - [ 0.48, 0.022, 61 ]
-          - [ 0.73, 0.040, 70 ]
-          - [ 0.10, 0.001, 53 ]
-          - [ 0.21, 0.007, 53 ]
-          - [ 0.28, 0.033, 54 ]
-          - [ 0.10, 0.007, 52 ]
+        align: [ 56, 56, 61, 70, 53, 53, 54, 52 ]
         trace: {{DATA_DIR}}/logs/sortmerna/aws_ubuntu18_16_32_smr_t42_20200812_1441.log
         info: |
           Using 16 threads almost makes no sense. Compared to 8 threads the speed gain is minimal.
@@ -2827,3 +2750,31 @@ t43:
       ref_load:       [395924]
       align_done:     [608508, 568984, 1185272, 1897344, 1702888, 1793292, ?, ?]
       idx_ref_unloaded:
+
+t44:
+  name: test concatenated gzip - issue 272, 283
+  info:
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_283/1.concat.fq.gz # 224 reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_283/2.concat.fq.gz # 224 reads
+    - -fastx
+    - -blast
+    - '1 cigar qcov'
+    - -v
+    - -out2
+    - -dbg-level
+    - '2'
+  validate:
+    func:
+    num_reads:   448
+    num_hits:    134
+    num_fail:    314
+    num_aligned: 448 # number of reads in aligned.fastx
+    variant:    sanger # fastq quality variant
+    blast:
+      num_recs:     448 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      num_yid_ycov: 134 # lin:43678  num_pass_id ⋂ num_pass_cov

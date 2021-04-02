@@ -123,21 +123,21 @@ int Izlib::reset_inflate()
 		strm.next_out = &z_out[0];
 		ret = inflate(&strm, Z_NO_FLUSH); // Z_FINISH -> Z_BUF_ERROR, Z_NO_FLUSH -> Z_OK
 		assert(ret == Z_OK || ret == Z_STREAM_END);
+
+		if (ret == Z_STREAM_END) {
+			ret = inflateReset(&strm);
+			assert(ret == Z_OK);
+		}
+		else if (ret != Z_OK) {
+			assert(ret == Z_DATA_ERROR);
+			break;
+		}
 	}
 	ret = inflateEnd(&strm); // ret is Z_OK, not Z_STREAM_END
 	assert(ret == Z_OK || ret == Z_STREAM_END);
 	return ret;
 }
 
-/* 
-  get a line from the compressed stream
- 
-  TODO: Make sure the stream is OK before calling this function.
-        std::getline doesn't return error if the stream is not 
-        readable/closed. It returns the same input it was passed.
-
-  return values: RL_OK (0) | RL_END (1)  | RL_ERR (-1)
- */
 int Izlib::getline(std::ifstream& ifs, std::string& line)
 {
 	char* line_end = 0;
@@ -196,15 +196,13 @@ int Izlib::getline(std::ifstream& ifs, std::string& line)
 	return RL_OK;
 } // ~Izlib::getline
 
-/*
- * Called from getline
- */
-int Izlib::inflatez(std::ifstream & ifs)
+int Izlib::inflatez(std::ifstream& ifs)
 {
 	int ret;
 
 	for (;;)
 	{
+		// IN buffer empty - fill up with more data
 		if (strm.avail_in == 0 && !ifs.eof()) // in buffer empty
 		{
 			std::fill(z_in.begin(), z_in.end(), 0); // reset IN buffer to 0
@@ -219,15 +217,17 @@ int Izlib::inflatez(std::ifstream & ifs)
 			strm.next_in = z_in.data();
 		}
 
+		// EOF reached - return
 		if (strm.avail_in == 0 && ifs.eof())
 		{
 			if (strm.avail_out < buf_out_size) strm.avail_out = buf_out_size;
-			ret = inflateEnd(&strm); // free up the resources
-			assert(ret == Z_OK || ret == Z_STREAM_END); // seems always Z_OK, never Z_STREAM_END - why?
+			ret = inflateEnd(&strm);
+			assert(ret == Z_OK); // free up the resources
 			return Z_STREAM_END;
 		}
 
-		if (strm.avail_out == 0) // out buffer is full - reset
+		// OUT buffer is full - reset
+		if (strm.avail_out == 0)
 		{
 			std::fill(z_out.begin(), z_out.end(), 0); // reset buffer to 0
 			strm.avail_out = buf_out_size;
@@ -236,6 +236,7 @@ int Izlib::inflatez(std::ifstream & ifs)
 
 		ret = inflate(&strm, Z_NO_FLUSH); //  Z_NO_FLUSH Z_SYNC_FLUSH Z_BLOCK
 		assert(ret != Z_STREAM_ERROR);
+
 		switch (ret)
 		{
 		case Z_NEED_DICT:
@@ -245,6 +246,8 @@ int Izlib::inflatez(std::ifstream & ifs)
 			inflateEnd(&strm);
 			return ret;
 		case Z_STREAM_END:
+			ret = inflateReset(&strm);
+			assert(ret == Z_OK);
 			break;
 		}
 

@@ -54,6 +54,16 @@ public:
 	int reset_deflate(); // clean up z_stream
 	int finish_deflate(std::ostream& ofs, const int&& dbg=0);
 	int reset_inflate();
+	/*
+    * get a line from the compressed stream
+    * 
+    * TODO: Make sure the stream is OK before calling this function.
+	*   	std::getline doesn't return error if the stream is not
+	*   	readable/closed. It returns the same input it was passed.
+    * @param ifs  IN      stream to get data from
+	* @param line IN/OUT  line to populate
+    * @return             RL_OK (0) | RL_END (1)  | RL_ERR (-1)
+	*/
 	int getline(std::ifstream& ifs, std::string& line);
 	/*
     * deflate passed string and append it to the file stream. Finish processing when the string has 0 size
@@ -76,5 +86,8 @@ private:
 	std::vector<unsigned char> z_out; // OUT buffer
 
 private:
+	/*
+	* inflate data until EOF or (OUT buffer is full) or (OUT buffer not full + IN buffer empty)
+	*/
 	int inflatez(std::ifstream& ifs); // 'z' in the name to distinguish from zlib.inflate
 };
