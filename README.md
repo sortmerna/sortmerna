@@ -44,7 +44,9 @@ conda search sortmerna
   ...
   sortmerna                      4.2.0               0  bioconda
   ...
-  sortmerna                      4.3.1               0  bioconda
+  sortmerna                      4.3.2               0  bioconda
+  ...
+  sortmerna                      4.3.2               0  bioconda
 
 conda install sortmerna
 which sortmerna
@@ -52,10 +54,10 @@ which sortmerna
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.3.1
-  Build Date: Mar 28 2021
-  sortmerna_build_git_sha:@b15b226d1a3866429217f955c16b8de3b606a626@
-  sortmerna_build_git_date:@2021/03/28 17:20:49@
+  SortMeRNA version 4.3.2
+  Build Date: Apr  2 2021
+  sortmerna_build_git_sha:@4bb8b074d1322c6bd51163bd7a9eaa25f8a38faf@
+  sortmerna_build_git_date:@2021/04/02 17:36:15@
 
 # view help
 sortmerna -h
@@ -73,21 +75,21 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/biocore/sortmerna/releases/download/v4.3.1/sortmerna-4.3.1-Linux.sh
+wget https://github.com/biocore/sortmerna/releases/download/v4.3.2/sortmerna-4.3.2-Linux.sh
 
 # view the installer usage
-bash sortmerna-4.3.1-Linux.sh --help
+bash sortmerna-4.3.2-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-4.3.1-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-4.3.1-Linux subdirectory
+      --include-subdir  include the sortmerna-4.3.2-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-4.3.2-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
-bash sortmerna-4.3.1-Linux.sh --skip-license
-  sortmerna Installer Version: 4.3.1, Copyright (c) Clarity Genomics
+bash sortmerna-4.3.2-Linux.sh --skip-license
+  sortmerna Installer Version: 4.3.2, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
   The archive will be extracted to: $HOME/sortmerna
   
@@ -105,10 +107,10 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.3.1
-  Build Date: Mar 12 2020
-  sortmerna_build_git_sha:@e307e3a248c21ef70b9495f029cd86f61c33b7fd@
-  sortmerna_build_git_date:@2020/03/12 12:34:30@
+  SortMeRNA version 4.3.2
+  Build Date: Apr  2 2021
+  sortmerna_build_git_sha:@4bb8b074d1322c6bd51163bd7a9eaa25f8a38faf@
+  sortmerna_build_git_date:@2021/04/02 17:36:15@
 
 # view help
 sortmerna -h
