@@ -144,7 +144,7 @@ Refer to the [Manual](https://github.com/biocore/sortmerna/wiki/2.-User-manual-(
 
 ### Execution trace
 
-Here is a [sample execution trace](https://github.com/biocore/sortmerna/wiki/Sample-execution-trace).  
+Here is a [sample execution trace](https://github.com/biocore/sortmerna/wiki/sample-execution-trace-v4.3.2).  
 
 `IMPORTANT`
 - Progressing execution trace showing the number of reads processed so far indicates a normally running program. 

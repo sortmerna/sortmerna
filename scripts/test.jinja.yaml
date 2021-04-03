@@ -2777,7 +2777,7 @@ t44:
       num_yid_ycov: 134 # lin:43678  num_pass_id ⋂ num_pass_cov
 
 t44_2:
-  name: test concatenated gzip 1M reads - issue 221,272,283
+  name: test concatenated gzip 1M reads - issue 221,263,272,283
   info: |
     The same reads as used for test 41
     5 files (430K,370K,450K,350K,400K) catenated into a single one:
