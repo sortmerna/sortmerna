@@ -203,25 +203,21 @@ help_num_alignments =
 	"       If INT = 0, all alignments are output\n\n",
 
 help_no_best = 
-	"Disable best alignments search                          1\n\n"
-	"       By default the exchaustive alignments search is performed by searching '-" + OPT_MIN_LIS + " N'\n"
-	"       candidate alignments\n"
-	"       If N == 0: All candidate alignments are searched\n"
-	"       If N > 0:  N best alignments are searched.\n"
-	"       Naturally the larger is the N, the longer is the search time.\n"
-	"       Explanation:\n"
-	"       A read can potentially be aligned (reaching E-value threshold) to multiple reference sequences.\n"
-	"       The 'best' alignment is the highest scoring alignment out of All alignments of a Read.\n"
-	"       To find the Best alignment - an exhaustive search over All references has to be performed.\n"
-	"       'best 1' and 'best 0' (all the bests) are Equally intensive processes requiring\n"
-	"       the exhaustive search, although the size of reports will differ.\n\n",
+	"Disable best alignments search                          False\n\n"
+	"       The 'best' alignment is the highest scoring alignment out of All alignments of a read,\n"
+	"       and the read can potentially be aligned (reaching E-value threshold) to multiple reference\n"
+	"       sequences.\n"
+	"       By default the program searches for best alignments i.e. performs an exhaustive search\n"
+	"       over all references. Using '-" + OPT_NO_BEST + "' will make the program to search just\n"
+	"       the first N alignments, where N is set using '-"+ OPT_NUM_ALIGNMENTS + "' i.e. 1 by default.\n\n",
+
 help_min_lis = 
-	"Search all alignments having the first INT              2\n"
-	"                                            longest LIS\n\n"
-	"       LIS stands for Longest Increasing Subsequence, it is computed using seeds'\n"
-	"       positions to expand hits into longer matches prior to Smith - Waterman alignment.\n",
-	//"                                            Requires option '"+ OPT_BEST +"'.\n"
-	//"                                            Mutually exclusive with option '"+ OPT_NUM_ALIGNMENTS +"'\n",
+	"Search only alignments that have the LIS                2\n"
+	"                                            of at least N seeds long\n\n"
+	"       LIS stands for Longest Increasing Subsequence. It is computed using seeds, which\n"
+	"       are k-mers common to the read and the reference sequence. Sorted sequences of such seeds\n"
+	"       are used to filter the candidate references prior performing the Smith-Waterman alignment.\n\n",
+
 help_print_all_reads = 
 	"Output null alignment strings for non-aligned reads     False\n"
 	"                                            to SAM and/or BLAST tabular files\n",
@@ -236,12 +232,14 @@ help_paired_in =
 	"        With this option both reads are output into Aligned FASTA/Q file\n"
 	"        Must be used with '" + OPT_FASTX + "'.\n"
 	"        Mutually exclusive with '" + OPT_PAIRED_OUT + "'.\n\n",
+
 help_paired_out = 
 	"Flags the paired-end reads as Non-aligned,              False\n"
 	"                                            when either of them is non-aligned.\n\n"
 	"        With this option both reads are output into Non-Aligned FASTA/Q file\n"
 	"        Must be used with '" + OPT_FASTX + "'.\n"
 	"        Mutually exclusive with '" + OPT_PAIRED_IN + "'.\n\n",
+
 help_out2 =
 	"Output paired reads into separate files.                False\n\n"
 	"       Must be used with '" + OPT_FASTX + "'.\n"
@@ -249,11 +247,13 @@ help_out2 =
 	"       When used with '"+ OPT_SOUT + "', four (4) output files for aligned reads will be generated:\n"
 	"       'aligned-paired-fwd, aligned-paired-rev, aligned-singleton-fwd, aligned-singleton-rev'.\n"
 	"       If '" + OPT_OTHER + "' option is also used, eight (8) output files will be generated.\n\n",
+
 help_sout =
 	"Separate paired and singleton aligned reads.            False\n\n"
 	"       To be used with '" + OPT_FASTX + "'.\n"
 	"       If a single reads file is provided, this options implies interleaved paired reads\n"
 	"       Cannot be used with '" + OPT_PAIRED_IN + "' | '" + OPT_PAIRED_OUT + "'\n\n",
+
 help_match = 
 	"SW score (positive integer) for a match.                2\n",
 help_mismatch = 
@@ -364,7 +364,7 @@ help_max_pos =
 //	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
 
 help_zip_out =
-	"Controls the output compression                         Yes/True\n\n"
+	"Controls the output compression                       Yes/True\n\n"
 	"       By default the report files are produced in the same format as the input i.e.\n"
 	"       if the reads files are compressed (gz), the output is also compressed.\n"
 	"       The default behaviour can be overriden by using '-" + OPT_ZIP_OUT + "'.\n"
@@ -526,7 +526,7 @@ public:
 	*/
 	int zip_out = -1; // - 0 (false) | 1 (true) | -1 (not set)
 
-	int32_t num_alignments = 1; // [3] help_num_alignments
+	uint32_t num_alignments = 1; // [3] help_num_alignments
 	int32_t num_seeds = 2; // min number of seeds on a read that have matches in DB prior calculating LIS
 	int32_t min_lis = 2; // search all alignments that have LIS >= min_lis
 	int32_t edges = -1; // OPT_EDGES
