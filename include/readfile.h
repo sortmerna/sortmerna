@@ -33,7 +33,7 @@
 #include <filesystem>
 
 struct Readfile {
-	Readfile() : isFastq(false), isFasta(false), isZip(false), size(0), numreads(0) {}
+	Readfile() : isFastq(false), isFasta(false), isZip(false), numreads(0), size(0) {}
 	bool isFastq; // file is FASTQ
 	bool isFasta; // file is FASTA
 	bool isZip;   // true (compressed) | false (flat)

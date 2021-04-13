@@ -530,7 +530,7 @@ uint32_t inline findMinIndex(std::vector<s_align2>& alignv)
 {
 	uint32_t min_score = alignv[0].score1;
 	uint32_t min_idx = 0;
-	for (int i = 0; i < alignv.size(); ++i)
+	for (unsigned i = 0; i < alignv.size(); ++i)
 	{
 		if (alignv[i].score1 < min_score)
 		{
@@ -545,7 +545,7 @@ uint32_t inline findMaxIndex(std::vector<s_align2>& alignv)
 {
 	uint32_t max_idx = 0;
 	uint32_t max_score = alignv[0].score1;
-	for (int i = 0; i < alignv.size(); ++i)
+	for (unsigned i = 0; i < alignv.size(); ++i)
 	{
 		if (alignv[i].score1 > max_score)
 		{
@@ -583,7 +583,7 @@ std::pair<bool,bool> inline is_id_cov_pass(std::string& read_iseq, s_align2& ali
 		uint32_t length = (0xfffffff0 & alignment.cigar[cigar_i]) >> 4; // high 28 bits i.e. 32-4=28
 		if (letter == 0)
 		{
-			for (auto i = 0; i < length; ++i)
+			for (decltype(length) i = 0; i < length; ++i)
 			{
 				if (refseq[read_i] != read_iseq[query_i]) ++mismatches;
 				else ++id;

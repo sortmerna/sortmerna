@@ -610,12 +610,16 @@ void Runopts::opt_num_alignments(const std::string &val)
 	}
 
 	// set number of alignments to output reaching the E-value
-	num_alignments = std::stoi(val);
-	if (num_alignments < 0)
+	auto ii = std::stoi(val);
+	if (ii < 0)
 	{
-		ERR("'", OPT_NUM_ALIGNMENTS, "' requires a posistive integer as input e.g. 2. If 0, all alignments are output.");
+		ERR("'", OPT_NUM_ALIGNMENTS, "' requires a positive integer as input e.g. 2. If 0, all alignments are output.");
 		exit(EXIT_FAILURE);
 	}
+	else {
+		num_alignments = ii;
+	}
+
 	is_num_alignments = true;
 } // ~Runopts::opt_num_alignments
 
