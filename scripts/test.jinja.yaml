@@ -112,6 +112,10 @@ test.list:
   - t42:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       stress test: 8 refs + 50M reads
   - t43:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  #       test catenated gzip - issue 221,263,272,283: 1 ref + 2 files (224) reads
+  - t44:   [ 2,    2,    1,   1,      0,       0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  #       test catenated gzip - issue 221,263,272,283: 8 refs + 2 files (1M) reads
+  - t44_2: [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
 
 t0:
   name: blast + single ref + single read
