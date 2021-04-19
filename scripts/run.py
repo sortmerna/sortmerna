@@ -1052,6 +1052,7 @@ if __name__ == "__main__":
     optpar.add_option('--workdir', dest='workdir', help='Environment variables')
     optpar.add_option('--threads', dest='threads', help='Number of threads to use')
     optpar.add_option('--index', dest='index', help='Index option 0 | 1 | 2')
+    optpar.add_option('--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
 
     (opts, args) = optpar.parse_args()
 
@@ -1123,6 +1124,9 @@ if __name__ == "__main__":
     if opts.index:
         tmpl = '{}' if opts.index[0] in ['\'','\"'] and opts.index[-1] in ['\'','\"'] else '\'{}\''
         vars['INDEX'] = tmpl.format(opts.index)
+    if opts.task:
+        tmpl = '{}' if opts.task[0] in ['\'','\"'] and opts.task[-1] in ['\'','\"'] else '\'{}\''
+        vars['TASK'] = tmpl.format(opts.task)
     cfg_str = template.render(vars)
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
