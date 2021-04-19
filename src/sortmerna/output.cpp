@@ -97,7 +97,7 @@ void report(int id,
 	{
 		reads.clear();
 		auto idx = id * readfeed.num_sense; // index into split_files array
-		for (int i = 0; i < num_reads; ++i)
+		for (decltype(num_reads) i = 0; i < num_reads; ++i)
 		{
 			if (readfeed.next(idx, readstr))
 			{
@@ -141,7 +141,7 @@ void report(int id,
 				}
 			}
 
-			for (int i = 0; i < reads.size(); ++i) {
+			for (std::size_t i = 0; i < reads.size(); ++i) {
 				if (opts.is_blast) output.blast.append(id, reads[i], refs, refstats, opts);
 				if (opts.is_sam) output.sam.append(id, reads[i], refs, opts);
 			} // ~for reads
@@ -197,13 +197,13 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 			// start processing threads
 			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-				for (int i = 0; i < nthreads; ++i) {
+				for (decltype(nthreads) i = 0; i < nthreads; ++i) {
 					tpool.emplace_back(std::thread(report, i, std::ref(readfeed),
 						std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(output), std::ref(opts)));
 				}
 			}
 			// wait till processing is done
-			for (auto i = 0; i < tpool.size(); ++i) {
+			for (std::size_t i = 0; i < tpool.size(); ++i) {
 				tpool[i].join();
 			}
 
