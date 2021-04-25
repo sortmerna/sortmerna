@@ -1047,7 +1047,7 @@ if __name__ == "__main__":
     optpar.add_option('--ddir', dest='ddir', help = 'Data directory')
     optpar.add_option('--config', dest='config', help='Tests configuration file.')
     optpar.add_option('--env', dest='envfile', help='Environment variables')
-    optpar.add_option('--envn', dest='envname', help=('Name of environment: WIN | WSL '
+    optpar.add_option('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                   '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     optpar.add_option('--workdir', dest='workdir', help='Environment variables')
     optpar.add_option('--threads', dest='threads', help='Number of threads to use')

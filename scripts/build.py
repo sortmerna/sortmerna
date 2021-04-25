@@ -112,8 +112,8 @@ def test():
 
 def git_clone(url, pdir, force=False):
     '''
-    @param url  url to clone
-    @param pdir Parent directory where to clone
+    :param str url    url to clone
+    :param str pdir   parent directory where to clone
     '''
     STAMP = '[git_clone]'
 
@@ -132,8 +132,8 @@ def git_clone(url, pdir, force=False):
 
 def conda_install(cfg, dir=None, force=False, clean=False):
     '''
-    @param cfg   Config dictionary
-    @dir         installation root dir. Default: User Home
+    :param cfg   Config dictionary
+    :param dir   installation root dir. Default: User Home
 
     pip install -U pyyaml
     pip install -U Jinja2
@@ -195,6 +195,10 @@ def conda_install(cfg, dir=None, force=False, clean=False):
 
         print('{} Installing Jinja2 package'.format(STAMP))
         cmd = [bin_pip, 'install', 'jinja2']
+        proc_run(cmd, bin_conda)
+
+        print('{} Installing NumPy package'.format(STAMP))
+        cmd = [bin_pip, 'install', 'numpy']
         proc_run(cmd, bin_conda)
 
         print('{} Installing scikit-bio package'.format(STAMP))
@@ -450,8 +454,8 @@ def rocksdb_fix_3party(ptype='t3'):
     
 def rocksdb_build(ver=None, btype='Release', ptype='t3'):
     '''
-    @param btype  Build type Release | Debug
-    @param ptype  Linkage type on Windows t1 | t2 | t3
+    :param str btype  build type Release | Debug
+    :param str ptype  Linkage type on Windows t1 | t2 | t3
 
     NOTE: on Windows 'thridparty.inc' file has to be modified.
     '''
@@ -631,32 +635,37 @@ def concurrentqueue_build(cfg={}):
 
 if __name__ == "__main__":
     '''
+    python /media/sf_a01_code/sortmerna/scripts/build.py -n conda -e LNX_VBox_Ubuntu_1804       install conda
+    python /media/sf_a01_code/sortmerna/scripts/build.py -n cmake -e LNX_VBox_Ubuntu_1804       install cmake
+    python /media/sf_a01_code/sortmerna/scripts/build.py -n rocksdb -e LNX_VBox_Centos_77 -c    build rocksdb
+    python /media/sf_a01_code/sortmerna/scripts/build.py -n sortmerna -e LNX_VBox_Ubuntu_1804   build smr
     python scripts/build.py --name sortmerna [--envn WIN]
-    python scripts/build.py --name sortmerna --envn LNX_VBox_Ubuntu_1804
     python scripts/build.py --name cmake --envn WIN [--env scripts/env_non_git.yaml]
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
     STAMP = '[build.py:__main__]'
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # options
     optpar = OptionParser()
-    optpar.add_option('-n', '--name', dest='name', help='Module to build e.g. sortmerna | zlib | rocksdb | all')
+    optpar.add_option('-n', '--name', dest='name', 
+        help='Module to build/process e.g. sortmerna | zlib | rocksdb | rapidjson | conda | all')
+    optpar.add_option('-e', '--envn', dest='envname', 
+        help=('Name of environment: WIN | WSL | LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | LNX_VBox_Centos_77 ..'))
     optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory for the given name')
-    optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
+    optpar.add_option('-b', '--btype', dest='btype', default='release', help = 'Build type: release | debug')
     optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--pt_zlib', dest='pt_zlib', help = 'Zlib Linkage type t1 | t2 | t3')
     optpar.add_option('--pt_rocks', dest='pt_rocks', help = 'Rocksdb Linkage type t1 | t2 | t3')
     optpar.add_option('--rocks3p', dest='rocks3p', help='Fix thirdparty.inc when building Rocksb')
-    optpar.add_option('--winhome', dest='winhome', help='When building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
+    optpar.add_option('--winhome', dest='winhome', 
+                help='when building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     optpar.add_option('--trace', action="store_true", help='Run cmake with --trace')
     optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
     optpar.add_option('--vb', action="store_true", help='Export compile commands')
     optpar.add_option('--env', dest='envfile', help='Env configuration file.')
-    optpar.add_option('--envn', dest='envname', help=('Name of environment: WIN | WSL '
-                                                  '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     optpar.add_option('--config', dest='config', help='Build configuration file.')
     optpar.add_option('--build-dir', dest='build_dir', help='Build directory.')
     optpar.add_option('--dist-dir', dest='dist_dir', help='Distro directory.')
@@ -792,3 +801,5 @@ if __name__ == "__main__":
         elif opts.name == CCQUEUE: 
             concurrentqueue_build(env) 
         else: test()
+#END main
+#END END

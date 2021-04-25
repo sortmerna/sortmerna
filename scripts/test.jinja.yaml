@@ -2883,3 +2883,18 @@ t45:
     blast:
       num_recs:     1000000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
       num_yid_ycov:       0 # lin:43678  num_pass_id ⋂ num_pass_cov
+  time:
+    win_8_16:
+      host: Windows 10 + 8 CPUs + 16GB RAM
+      4-3-2:
+      - threads: 8
+        total: 203 # sec no indexing
+        # indexing, read count, readfeed, align, summary, report
+        totals: [ 0, 13, 26, 76, 1, 18]
+    lnx_vbox_centos_77:
+      host: Centos 77 on VBox + 8 CPU + 4GB RAM
+      4-3-2:
+      - threads: 8
+        total: 1826 # sec - too little RAM
+        # indexing, read count, readfeed, align, summary, report
+        totals: [ 1038, 3, 5, 765, 1, 14]
