@@ -40,7 +40,7 @@ void ReportFxOther::init(Readfeed& readfeed, Runopts& opts)
 {
 	base.init(opts);
 	base.init(readfeed, opts, fv, fsv, opts.other_pfx.string(), pid_str);
-	openfw(); // open output files for writing
+	openfw(opts.dbg_level); // open output files for writing
 	is_zip = readfeed.orig_files[0].isZip;
 	if (is_zip)	init_zip();
 } // ~ReportFxOther::init
@@ -100,9 +100,9 @@ void ReportFxOther::append(int id, std::vector<Read>& reads, Runopts& opts, bool
 			}
 
 			if (is_zip)
-				base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last);
+				base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last, opts.dbg_level);
 			else
-				base.write_a_read(fsv[idx], reads[i]);
+				base.write_a_read(fsv[idx], reads[i], opts.dbg_level);
 		}
 	}//~if paired
 	// non-paired
@@ -111,9 +111,9 @@ void ReportFxOther::append(int id, std::vector<Read>& reads, Runopts& opts, bool
 		if (!reads[0].is_hit)
 		{
 			if (is_zip)
-				base.write_a_read(fsv[0], reads[0], vstate_out[0], vzlib_out[0], is_last);
+				base.write_a_read(fsv[0], reads[0], vstate_out[0], vzlib_out[0], is_last, opts.dbg_level);
 			else
-				base.write_a_read(fsv[0], reads[0]);
+				base.write_a_read(fsv[0], reads[0], opts.dbg_level);
 		}
 	}
 } // ~ReportFxOther::append

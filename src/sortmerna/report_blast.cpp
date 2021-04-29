@@ -42,7 +42,7 @@ ReportBlast::ReportBlast(Runopts& opts)	: n_aligned(0), n_yid_ncov(0), n_nid_yco
 ReportBlast::ReportBlast(Readfeed& readfeed, Runopts& opts)	: ReportBlast(opts)
 {
 	init(readfeed, opts);
-	openfw();
+	openfw(opts.dbg_level);
 }
 
 void ReportBlast::init(Readfeed& readfeed, Runopts& opts) 

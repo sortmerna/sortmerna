@@ -79,7 +79,7 @@ void Report::merge(int num_splits)
 	strip_path_sfx(fv[0]);
 }
 
-void Report::openfw(int idx, const int&& dbg)
+void Report::openfw(unsigned idx, const int& dbg)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
@@ -94,14 +94,14 @@ void Report::openfw(int idx, const int&& dbg)
 	}
 }
 
-void Report::openfw()
+void Report::openfw(const int& dbg)
 {
-	for (size_t i = 0; i < fv.size(); ++i) {
-		openfw(i);
+	for (unsigned i = 0; i < fv.size(); ++i) {
+		openfw(i, dbg);
 	}
 }
 
-void Report::openfr(int idx)
+void Report::openfr(unsigned idx)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::in);
@@ -115,7 +115,7 @@ void Report::openfr(int idx)
 	}
 }
 
-void Report::closef(int idx, const int&& dbg)
+void Report::closef(unsigned idx, const int& dbg)
 {
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
@@ -125,10 +125,10 @@ void Report::closef(int idx, const int&& dbg)
 	}
 }
 
-void Report::closef()
+void Report::closef(const int& dbg)
 {
 	for (int i = 0; i < fsv.size(); ++i) {
-		closef(i);
+		closef(i, dbg);
 	}
 }
 

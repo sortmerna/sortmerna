@@ -37,7 +37,7 @@
 #include "readfeed.hpp"
 #include "izlib.hpp"
 
-ReportFxBase::ReportFxBase(): num_out(0), out_type(0) {}
+ReportFxBase::ReportFxBase(): num_out(0), out_type(0), num_reads(0) {}
 
 ReportFxBase::ReportFxBase(Runopts& opts): ReportFxBase()
 {
@@ -165,17 +165,29 @@ void ReportFxBase::set_num_out(Runopts& opts)
 /*
 * write a fasta/q read
 */
-void ReportFxBase::write_a_read(std::ostream& strm, Read& read)
+void ReportFxBase::write_a_read(std::ostream& strm, Read& read, const int& dbg)
 {
 	std::stringstream ss;
 	ss << read.header << std::endl << read.sequence << std::endl;
 	if (read.format == BIO_FORMAT::FASTQ)
 		ss << '+' << std::endl << read.quality << std::endl;
-	strm << ss.str();
+	if (dbg > 0) {
+		try {
+			strm << ss.str();
+			++num_reads;
+		}
+		catch (const std::exception& e) {
+			ERR("failed writing to stream. Num reads processed so far: ", num_reads, " Current read id: ", read.id, " - ", e.what());
+			exit(1);
+		}
+	}
+	else {
+		strm << ss.str();
+	}
 }
 
 
-void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last)
+void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last, const int& dbg)
 {
 	++rstate.read_count;
 	std::stringstream ss;

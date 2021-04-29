@@ -47,7 +47,7 @@ void ReportDenovo::init(Readfeed& readfeed, Runopts& opts)
 {
 	base.init(opts);
 	base.init(readfeed, opts, fv, fsv, opts.aligned_pfx.string() + "_denovo", pid_str);
-	openfw(); // open output files for writing
+	openfw(opts.dbg_level); // open output files for writing
 	is_zip = readfeed.orig_files[0].isZip;
 	if (is_zip)	init_zip();
 }
@@ -116,18 +116,18 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 			}
 
 			if (is_zip)
-				base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last);
+				base.write_a_read(fsv[idx], reads[i], vstate_out[idx], vzlib_out[idx], is_last, opts.dbg_level);
 			else
-				base.write_a_read(fsv[idx], reads[i]);
+				base.write_a_read(fsv[idx], reads[i], opts.dbg_level);
 		}
 	}//~if paired
 	// non-paired
 	else
 	{
 		if (is_zip)
-			base.write_a_read(fsv[id], reads[0], vstate_out[id], vzlib_out[id], is_last);
+			base.write_a_read(fsv[id], reads[0], vstate_out[id], vzlib_out[id], is_last, opts.dbg_level);
 		else
-			base.write_a_read(fsv[id], reads[0]);
+			base.write_a_read(fsv[id], reads[0], opts.dbg_level);
 	}
 }
 

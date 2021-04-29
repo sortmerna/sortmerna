@@ -52,8 +52,8 @@ public:
 	* init output file names. It has a different semantics than init(opts) above.
 	*/
 	void init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, const std::string& fpfx, const std::string& pid_str);
-	void write_a_read(std::ostream& strm, Read& read);
-	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last=false);
+	void write_a_read(std::ostream& strm, Read& read, const int& dbg=0);
+	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last=false, const int& dbg = 0);
 
 	int num_out; // number of aligned output files (1 | 2 | 4) depending on the output type below
 	/*
@@ -62,6 +62,7 @@ public:
 	* out_type = mask | mask | mask ... where 'mask' depends on the specified option
 	*/
 	int out_type;
+	unsigned long num_reads; // count of reads processed so far. Use For debugging.
 
 private:
 	/*
@@ -77,6 +78,12 @@ private:
 	const int mask_sout = 0x40;
 	const int mask_other = 0x80;
 
+	/*
+	* validate the output type
+	*/
 	void validate_out_type(Runopts& opts);
+	/*
+	* set number of output files: 1 | 2 | 4 - calculated depending on the selected options
+	*/
 	void set_num_out(Runopts& opts);
 };

@@ -61,11 +61,15 @@ public:
 	*/
 	virtual void init_zip();
 
-	void openfr(int idx); // open a single file for reading
-	void openfw(int idx, const int&& dbg=0);
-	void openfw(); // open report files for writing
-	void closef(int idx, const int&& dbg=0); // close a file
-	void closef(); // close report files
+	void openfr(unsigned idx); // open a single file for reading
+	/*
+	* open report files for writing
+	* @param dbg  debug level, see 'Runopts.dbg_level'
+	*/
+	void openfw(const int& dbg=0);
+	void openfw(unsigned idx, const int& dbg=0);
+	void closef(const int& dbg=0); // close report files
+	void closef(unsigned idx, const int& dbg=0); // close a file
 	int finish_deflate();
 	/*
 	* strip the split suffix from the output file name 
