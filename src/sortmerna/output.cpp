@@ -151,10 +151,17 @@ void report(int id,
 	//std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start; // ~20 sec Debug/Win
 	INFO_MEM("Report processor: ", id, " thread: ", std::this_thread::get_id(), " done. Processed reads: ", countReads, 
 		" Invalid reads: ", num_invalid); // , " denovo count: ", denovo_n
+
+	if (opts.is_fastx && opts.dbg_level > 1)
+		INFO("Aligned reads: good: ", output.fastx.getBase().num_reads, 
+			" bad: ", output.fastx.getBase().num_io_bad, " fail: ", output.fastx.getBase().num_io_fail);
+	if (opts.is_other && opts.dbg_level > 1)
+		INFO("Other reads: good: ", output.fx_other.getBase().num_reads, 
+			" bad: ", output.fx_other.getBase().num_io_bad, " fail: ", output.fx_other.getBase().num_io_fail);
 } // ~report
 
 
-// called from main. generateReports -> reportsJob
+// called from main.
 void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("=== Report generation starts ===");
@@ -229,17 +236,17 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	if (opts.is_fastx) {
 		output.fastx.finish_deflate();
 		output.fastx.closef();
-		output.fastx.merge(readfeed.num_splits);
+		output.fastx.merge(readfeed.num_splits, output.fastx.getBase().num_out, opts.dbg_level);
 	}
 	if (opts.is_other) {
 		output.fx_other.finish_deflate();
 		output.fx_other.closef();
-		output.fx_other.merge(readfeed.num_splits);
+		output.fx_other.merge(readfeed.num_splits, output.fx_other.getBase().num_out, opts.dbg_level);
 	}
 	if (opts.is_blast) {
 		output.blast.finish_deflate();
 		output.blast.closef();
-		output.blast.merge(readfeed.num_splits);
+		output.blast.merge(readfeed.num_splits, 1, opts.dbg_level);
 		if (opts.dbg_level == 2)
 			INFO("yid_ycov: ", output.blast.n_yid_ycov, 
 				" yid_ncov: ", output.blast.n_yid_ncov, 
@@ -248,11 +255,11 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	}
 	if (opts.is_sam) {
 		output.sam.closef();
-		output.sam.merge(readfeed.num_splits);
+		output.sam.merge(readfeed.num_splits, 1, opts.dbg_level);
 	}
 	if (opts.is_denovo) {
 		output.denovo.closef();
-		output.denovo.merge(readfeed.num_splits);
+		output.denovo.merge(readfeed.num_splits, output.denovo.getBase().num_out, opts.dbg_level);
 	}
 
 	elapsed = std::chrono::high_resolution_clock::now() - start;
