@@ -32,6 +32,7 @@
 
 #include <fstream>
 #include <vector>
+#include <atomic>
 
 // forward
 class Read;
@@ -62,7 +63,9 @@ public:
 	* out_type = mask | mask | mask ... where 'mask' depends on the specified option
 	*/
 	int out_type;
-	unsigned long num_reads; // count of reads processed so far. Use For debugging.
+	std::atomic<unsigned long> num_reads; // count of reads processed so far. Use For debugging.
+	std::atomic<unsigned long> num_io_bad;
+	std::atomic<unsigned long> num_io_fail;
 
 private:
 	/*
