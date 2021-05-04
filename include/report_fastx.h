@@ -42,7 +42,6 @@ public:
 	ReportFastx(Runopts& opts);
 	ReportFastx(Readfeed& readfeed, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;
-	void merge(int num_splits) override;
 	/*
     * called on each read or each pair of reads (if paired)
     * writes to aliged.fasta

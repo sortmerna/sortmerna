@@ -131,20 +131,7 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 	}
 }
 
-void ReportDenovo::merge(int num_splits)
+ReportFxBase& ReportDenovo::getBase()
 {
-	for (int i = 0; i < base.num_out; ++i) {
-		openfw(i);
-		for (int j = 1; j < num_splits; ++j) {
-			auto idx = i + j * base.num_out;
-			openfr(idx);
-			fsv[i] << fsv[idx].rdbuf();
-			INFO("merged ", fv[idx], " -> ", fv[i]);
-			closef(idx);
-			std::filesystem::remove(fv[idx]);
-			INFO("deleted ", fv[idx]);
-		}
-		closef(i);
-		strip_path_sfx(fv[i]);
-	}
+	return base;
 }

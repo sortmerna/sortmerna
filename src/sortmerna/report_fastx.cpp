@@ -144,24 +144,6 @@ void ReportFastx::append(int id, std::vector<Read>& reads, Runopts& opts, bool i
 	}
 } // ~ReportFasta::append
 
-void ReportFastx::merge(int num_splits)
-{
-	for (int i = 0; i < base.num_out; ++i) {
-		openfw(i);
-		for (int j = 1; j < num_splits; ++j) {
-			auto idx = i + j * base.num_out;
-			openfr(idx);
-			fsv[i] << fsv[idx].rdbuf();
-			INFO("merged ", fv[idx], " -> ", fv[i]);
-			closef(idx);
-			std::filesystem::remove(fv[idx]);
-			INFO("deleted ", fv[idx]);
-		}
-		closef(i);
-		strip_path_sfx(fv[i]);
-	}
-}
-
 ReportFxBase& ReportFastx::getBase()
 {
 	return base;
