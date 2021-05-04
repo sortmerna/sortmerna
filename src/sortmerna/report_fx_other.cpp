@@ -56,7 +56,12 @@ void ReportFxOther::append(int id, std::vector<Read>& reads, Runopts& opts, bool
 		{
 			// 1 output file (non-aligned reads)
 			if (base.num_out == 1) {
-				if (!reads[i].is_hit || opts.is_paired_out)
+				if (opts.is_paired_in)
+					if (reads[0].is_hit || reads[1].is_hit)
+						continue; // both go to aligned
+					else
+						idx = id; // none hit -> other
+				else if (opts.is_paired_out || !reads[i].is_hit)
 					idx = id;
 				else
 					continue;
@@ -117,25 +122,6 @@ void ReportFxOther::append(int id, std::vector<Read>& reads, Runopts& opts, bool
 		}
 	}
 } // ~ReportFxOther::append
-
-// TODO: same as aligned - move to base?
-void ReportFxOther::merge(int num_splits)
-{
-	for (int i = 0; i < base.num_out; ++i) {
-		openfw(i);
-		for (int j = 1; j < num_splits; ++j) {
-			auto idx = i + j * base.num_out;
-			openfr(idx);
-			fsv[i] << fsv[idx].rdbuf();
-			INFO("merged ", fv[idx], " -> ", fv[i]);
-			closef(idx);
-			std::filesystem::remove(fv[idx]);
-			INFO("deleted ", fv[idx]);
-		}
-		closef(i);
-		strip_path_sfx(fv[i]);
-	}
-}
 
 ReportFxBase& ReportFxOther::getBase()
 {
