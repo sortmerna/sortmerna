@@ -1104,12 +1104,18 @@ t18:
     - {{ WRK_DIR }}
     - -threads
     - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - {{DBG_LEVEL or '\'0\''}}
+    - -task
+    - {{TASK or '\'4\''}}
   validate:
     func:
     num_reads:  10000
     num_hits:    9188
     num_fail:     812
     variant:    sanger # fastq quality variant
+    n_ali:       9852  # paired_in
+    n_oth:        148
     blast:
       num_recs:     9188
       num_pass_id:    16 
@@ -1157,14 +1163,14 @@ t19:
     - {{THREADS or '\'4\''}}
   validate:
     func:
-    num_reads:      10000
-    num_hits:        9188
-    num_fail:         812
-    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
-    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
-    num_other_fwd:     74
-    num_other_rev:     74
-    variant:         sanger # fastq quality variant
+    num_reads:     10000
+    num_hits:       9188
+    num_fail:        812
+    n_ali_fwd:      4926 # count of reads in aligned_fwd.fastq
+    n_ali_rev:      4926 # count of reads in aligned_ref.fastq
+    n_oth_fwd:        74
+    n_oth_rev:        74
+    variant:        sanger # fastq quality variant
     blast:
       num_recs:     9188
       num_pass_id:    16 
@@ -1303,11 +1309,11 @@ t19_3:
     num_reads:      10000
     num_hits:        9188
     num_fail:         812
-    num_aligned_fwd: 4926 # count of reads in aligned_fwd.fastq
-    num_aligned_rev: 4926 # count of reads in aligned_ref.fastq
-    num_other_fwd:     74
-    num_other_rev:     74
-    variant:         sanger # fastq quality variant
+    n_ali_fwd:       4926 # count of reads in aligned_fwd.fastq
+    n_ali_rev:       4926 # count of reads in aligned_ref.fastq
+    n_oth_fwd:         74
+    n_oth_rev:         74
+    variant:       sanger # fastq quality variant
     blast:
       num_recs:     9188
       num_pass_id:    16 
@@ -1350,11 +1356,11 @@ t19_4:
     num_reads:  10000
     num_hits:    9833
     num_fail:     167
-    num_ali_fwd: 4876 # count of reads in aligned_fwd.fastq
-    num_ali_rev: 4957 # count of reads in aligned_ref.fastq
-    num_oth_fwd:  124
-    num_oth_rev:   43
-    variant:         sanger # fastq quality variant
+    n_ali_fwd:   4876 # count of reads in aligned_fwd.fastq
+    n_ali_rev:   4957 # count of reads in aligned_ref.fastq
+    n_oth_fwd:    124
+    n_oth_rev:     43
+    variant:   sanger # fastq quality variant
     blast:
       num_recs:  9833
     runtime:
@@ -1395,11 +1401,11 @@ t19_5:
     num_reads:  10000
     num_hits:    9833
     num_fail:     167
-    num_ali_fwd: 4876 # count of reads in aligned_fwd.fastq
-    num_ali_rev: 4957 # count of reads in aligned_ref.fastq
-    num_oth_fwd:  124
-    num_oth_rev:   43
-    variant:         sanger # fastq quality variant
+    n_ali_fwd:   4876 # count of reads in aligned_fwd.fastq
+    n_ali_rev:   4957 # count of reads in aligned_ref.fastq
+    n_oth_fwd:    124
+    n_oth_rev:     43
+    variant:   sanger # fastq quality variant
     blast:
       num_recs:  9833
     runtime:
@@ -2875,7 +2881,7 @@ t45:
     num_reads: 1000000
     num_hits:   103270
     num_fail:   896730
-    n_ali_fwd:   52385
+    n_ali_fwd:   52382
     n_ali_rev:   50888
     n_oth_fwd:  447618
     n_oth_rev:  449112
@@ -2895,6 +2901,6 @@ t45:
       host: Centos 77 on VBox + 8 CPU + 4GB RAM
       4-3-2:
       - threads: 8
-        total: 1826 # sec - too little RAM
+        total: 1826 # sec - indexing slow - too little RAM
         # indexing, read count, readfeed, align, summary, report
         totals: [ 1038, 3, 5, 765, 1, 14]

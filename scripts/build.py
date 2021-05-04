@@ -639,12 +639,12 @@ if __name__ == "__main__":
     python /media/sf_a01_code/sortmerna/scripts/build.py -n cmake -e LNX_VBox_Ubuntu_1804       install cmake
     python /media/sf_a01_code/sortmerna/scripts/build.py -n rocksdb -e LNX_VBox_Centos_77 -c    build rocksdb
     python /media/sf_a01_code/sortmerna/scripts/build.py -n sortmerna -e LNX_VBox_Ubuntu_1804   build smr
-    python scripts/build.py --name sortmerna [--envn WIN]
+    python scripts/build.py -n sortmerna [--envn WIN]
     python scripts/build.py --name cmake --envn WIN [--env scripts/env_non_git.yaml]
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
     STAMP = '[build.py:__main__]'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # options

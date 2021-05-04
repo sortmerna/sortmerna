@@ -1010,10 +1010,10 @@ def t14(datad, ret={}, **kwarg):
 
 def t17(datad, ret={}, **kwarg):
     '''
-    @param name  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-    @param capture Capture output
+    :param name  sortmerna.exe path
+    :param datad   Data directory
+    :param outd    results output directory
+    :param capture Capture output
     '''
     STAMP = '[t17:{}]'.format(kwarg.get('name'))
     print('{} TODO: implement'.format(STAMP))
@@ -1024,7 +1024,7 @@ def t17(datad, ret={}, **kwarg):
 if __name__ == "__main__":
     '''
     python scripts/run.py --name t0 [--capture] [--validate-only]
-    python scripts/run.py --name t12 -f process_otu --validate-only
+    python scripts/run.py --name t12 -f process_otu --validate-only -d 2
     python scripts/run.py --name t0 -f dbg_blast --validate-only
     python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
     python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/biocodz [--capture]  
@@ -1039,6 +1039,7 @@ if __name__ == "__main__":
     optpar.add_option('-n', '--name', dest='name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf')
     optpar.add_option('-f', '--func', dest='func', help='function to run: process_otu | ')
     optpar.add_option('-c', '--clean', action="store_true", help='clean build directory')
+    optpar.add_option('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
     optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
@@ -1052,7 +1053,7 @@ if __name__ == "__main__":
     optpar.add_option('--workdir', dest='workdir', help='Environment variables')
     optpar.add_option('--threads', dest='threads', help='Number of threads to use')
     optpar.add_option('--index', dest='index', help='Index option 0 | 1 | 2')
-    optpar.add_option('--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
+    optpar.add_option('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
 
     (opts, args) = optpar.parse_args()
 
@@ -1127,6 +1128,9 @@ if __name__ == "__main__":
     if opts.task:
         tmpl = '{}' if opts.task[0] in ['\'','\"'] and opts.task[-1] in ['\'','\"'] else '\'{}\''
         vars['TASK'] = tmpl.format(opts.task)
+    if opts.dbg_level:
+        tmpl = '{}' if opts.dbg_level[0] in ['\'','\"'] and opts.index[-1] in ['\'','\"'] else '\'{}\''
+        vars['DBG_LEVEL'] = tmpl.format(opts.dbg_level)
     cfg_str = template.render(vars)
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
