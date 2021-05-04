@@ -52,10 +52,10 @@ public:
 	virtual void init(Readfeed& readfeed, Runopts& opts) = 0;
 	/*
 	* merge split report files
-	* blast, sam, denovo - use base implementation
-	* fastx - override
+	* override if necessary
 	*/
-	virtual void merge(int num_splits);
+	//virtual void merge(int num_splits, const int& dbg=0);
+	virtual void merge(int num_splits, const int& num_out, const int& dbg = 0);
 	/*
 	* init zip interface. So far common to all the reports.
 	*/
@@ -67,9 +67,9 @@ public:
 	* @param dbg  debug level, see 'Runopts.dbg_level'
 	*/
 	void openfw(const int& dbg=0);
-	void openfw(unsigned idx, const int& dbg=0);
+	void openfw(size_t idx, const int& dbg=0);
 	void closef(const int& dbg=0); // close report files
-	void closef(unsigned idx, const int& dbg=0); // close a file
+	void closef(size_t idx, const int& dbg=0); // close a file
 	int finish_deflate();
 	/*
 	* strip the split suffix from the output file name 
