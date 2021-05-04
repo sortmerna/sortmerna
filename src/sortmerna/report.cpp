@@ -51,41 +51,70 @@ void Report::init_zip()
 	vstate_out.resize(fv.size());
 }
 
-void Report::merge(int num_splits)
+//void Report::merge(int num_splits, const int& dbg)
+//{
+//	// merge if there is more than one split
+//	if (fv.size() > 1) {
+//		std::ofstream ofs(fv[0], std::ios_base::app | std::ios_base::binary);
+//		if (!ofs.is_open()) {
+//			ERR("failed to open for writing: ", fv[0]);
+//			exit(1);
+//		}
+//		for (int i = 1; i < num_splits; ++i) {
+//			std::ifstream ifs(fv[i], std::ios_base::out | std::ios_base::binary);
+//			if (ifs.is_open()) {
+//				ofs << ifs.rdbuf();
+//				INFO("merged ", fv[i], " -> ", fv[0]);
+//				ifs.close();
+//				std::filesystem::remove(fv[i]);
+//				INFO("deleted ", fv[i]);
+//			}
+//			else {
+//				ERR("failed to open for reading: ", fv[i]);
+//				exit(1);
+//			}
+//		}
+//	}
+//
+//	strip_path_sfx(fv[0]);
+//}
+
+void Report::merge(int num_splits, const int& num_out, const int& dbg)
 {
-	// merge if there is more than one split
-	if (fv.size() > 1) {
-		std::ofstream ofs(fv[0], std::ios_base::app | std::ios_base::binary);
+	for (int i = 0; i < num_out; ++i) {
+		std::ofstream ofs(fv[i], std::ios_base::app | std::ios_base::binary);
 		if (!ofs.is_open()) {
-			ERR("failed to open for writing: ", fv[0]);
+			ERR("failed to open for writing: ", fv[i]);
 			exit(1);
 		}
-		for (int i = 1; i < num_splits; ++i) {
-			std::ifstream ifs(fv[i], std::ios_base::out | std::ios_base::binary);
+
+		for (int j = 1; j < num_splits; ++j) {
+			auto idx = i + j * num_out;
+			std::ifstream ifs(fv[idx], std::ios_base::out | std::ios_base::binary);
 			if (ifs.is_open()) {
 				ofs << ifs.rdbuf();
-				INFO("merged ", fv[i], " -> ", fv[0]);
+				INFO("merged ", fv[idx], " -> ", fv[i]);
 				ifs.close();
-				std::filesystem::remove(fv[i]);
-				INFO("deleted ", fv[i]);
+				std::filesystem::remove(fv[idx]);
+				INFO("deleted ", fv[idx]);
 			}
 			else {
 				ERR("failed to open for reading: ", fv[i]);
 				exit(1);
 			}
 		}
+		ofs.close();
+		strip_path_sfx(fv[i]);
 	}
-
-	strip_path_sfx(fv[0]);
 }
 
-void Report::openfw(unsigned idx, const int& dbg)
+void Report::openfw(size_t idx, const int& dbg)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
 	}
 	if (!fsv[idx].good()) {
-		ERR("Could not open output file [", fv[idx], "] for writing.");
+		ERR("Could not open output file number [", idx, "] : [", fv[idx], "] for writing.");
 		exit(EXIT_FAILURE);
 	}
 	else {
@@ -96,7 +125,7 @@ void Report::openfw(unsigned idx, const int& dbg)
 
 void Report::openfw(const int& dbg)
 {
-	for (unsigned i = 0; i < fv.size(); ++i) {
+	for (size_t i = 0; i < fv.size(); ++i) {
 		openfw(i, dbg);
 	}
 }
@@ -115,7 +144,7 @@ void Report::openfr(unsigned idx)
 	}
 }
 
-void Report::closef(unsigned idx, const int& dbg)
+void Report::closef(size_t idx, const int& dbg)
 {
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
