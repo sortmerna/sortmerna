@@ -274,13 +274,15 @@ t3:
     - -blast
     - '1 cigar qcov'
     - -v
-    - -threads
-    - '4'
     #- -no-best
     #- -num_alignments
     #- '2'
-    #- -task
-    #- '2'
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - {{DBG_LEVEL or '\'0\''}}
+    - -task
+    - {{TASK or '\'4\''}}
   validate: 
     func: t3
     num_reads:      100000
