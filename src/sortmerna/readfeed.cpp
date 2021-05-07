@@ -641,7 +641,7 @@ bool Readfeed::split()
 	{
 		++vstate_out[iout].read_count;
 		if (orig_files[inext].isZip) {
-			auto ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
+			unsigned ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
 			if (ret < Z_OK || ret > Z_STREAM_END) {
 				ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
 				retval = false;
@@ -663,27 +663,27 @@ bool Readfeed::split()
 	} // ~for
 
 	// close IN file streams
-	for (decltype(num_orig_files) i = 0; i < num_orig_files; ++i) {
+	for (unsigned i = 0; i < num_orig_files; ++i) {
 		if (ifsv[i].is_open()) {
 			ifsv[i].close();
 		}
 	}
 
 	// close Out streams
-	for (std::size_t i = 0; i < ofsv.size(); ++i) {
+	for (unsigned i = 0; i < ofsv.size(); ++i) {
 		if (ofsv[i].is_open())
 			ofsv[i].close();
 	}
 
 	// reset Readstates. No need for izlib - already cleaned
-	for (decltype(num_orig_files) i = 0; i < num_orig_files; ++i) {
+	for (unsigned i = 0; i < num_orig_files; ++i) {
 		vstate_in[i].reset();
 	}
 
 	// zlib deflate streams already cleaned by now
 
 	// calculate split file sizes
-	for (std::size_t i = 0; i < split_files.size(); ++i) {
+	for (unsigned i = 0; i < split_files.size(); ++i) {
 		split_files[i].size = filesize(split_files[i].path.generic_string());
 	}
 
@@ -728,8 +728,8 @@ bool Readfeed::is_split_ready() {
 		}
 
 		unsigned lidx = 0; // line index
-		decltype(num_orig_files) fcnt = 0; // count of file entries in the descriptor
-		auto fcnt_max = num_splits * num_sense + num_orig_files;
+		unsigned fcnt = 0; // count of file entries in the descriptor
+		unsigned fcnt_max = num_splits * num_sense + num_orig_files;
 		unsigned fidx = 0; // file index
 		unsigned fpidx = 0; // index of file parameters: name, size, lines, zip, fastq/fasta
 		for (std::string line; std::getline(ifs, line); ) {
@@ -774,15 +774,15 @@ bool Readfeed::is_split_ready() {
 								is_ready = is_ready && std::stoul(line) == split_files[fidx].numreads;
 						}
 						else if (fpidx == 3) { // is zip
-							auto isZip = std::stoi(line) == 1;
+							bool isZip = std::stoi(line) == 1;
 							if (fcnt <= num_orig_files)
 								is_ready = is_ready && orig_files[fidx].isZip == isZip;
 							else
 								is_ready = is_ready && split_files[fidx].isZip == isZip;
 						}
 						else if (fpidx == 4) { // fastq/a
-							auto isFastq = line == "fastq";
-							auto isFasta = line == "fasta";
+							bool isFastq = line == "fastq";
+							bool isFasta = line == "fasta";
 							if (fcnt <= num_orig_files) {
 								is_ready = is_ready && orig_files[fidx].isFastq == isFastq;
 								is_ready = is_ready && orig_files[fidx].isFasta == isFasta;

@@ -119,11 +119,11 @@ public:
 	unsigned num_orig_files; // number of original reads files
 	unsigned num_splits;
 	unsigned num_split_files;
-	unsigned num_sense; // number of read's senses (fwd/rev)
-	unsigned num_reads_tot; // count of reads in all streams
-	unsigned length_all; // length of all reads from all files
-	unsigned min_read_len;
-	unsigned max_read_len;
+	uint32_t num_sense; // number of read's senses (fwd/rev) i.e. max 2
+	uint64_t num_reads_tot; // count of reads in all streams
+	uint64_t length_all; // length of all reads from all files
+	uint32_t min_read_len;
+	uint32_t max_read_len;
 	std::filesystem::path& basedir; // root directory for split files (opts.readb)
 	std::vector<Readfile> orig_files;
 private:
