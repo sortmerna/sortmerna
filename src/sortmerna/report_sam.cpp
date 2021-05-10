@@ -49,7 +49,7 @@ void ReportSam::init(Readfeed& readfeed, Runopts& opts)
 	fsv.resize(readfeed.num_splits);
 	is_zip = readfeed.orig_files[0].isZip;
 	// WORKDIR/out/aligned_0_PID.sam
-	for (int i = 0; i < readfeed.num_splits; ++i) {
+	for (uint32_t i = 0; i < readfeed.num_splits; ++i) {
 		std::string sfx1 = "_" + std::to_string(i);
 		std::string sfx2 = opts.is_pid ? "_" + pid_str : "";
 		std::string gz = is_zip ? ".gz" : "";
@@ -59,7 +59,7 @@ void ReportSam::init(Readfeed& readfeed, Runopts& opts)
 	if (is_zip) init_zip();
 }
 
-void ReportSam::append(int id, Read& read, References& refs, Runopts& opts)
+void ReportSam::append(const uint32_t& id, Read& read, References& refs, Runopts& opts)
 {
 	std::stringstream ss;
 	if (read.is03) read.flip34();
@@ -96,7 +96,7 @@ void ReportSam::append(int id, Read& read, References& refs, Runopts& opts)
 			if (align.read_begin1 != 0)
 				ss << align.read_begin1 << "S";
 
-			for (int c = 0; c < align.cigar.size(); ++c)
+			for (uint32_t c = 0; c < align.cigar.size(); ++c)
 			{
 				uint32_t letter = 0xf & align.cigar[c];
 				uint32_t length = (0xfffffff0 & align.cigar[c]) >> 4;

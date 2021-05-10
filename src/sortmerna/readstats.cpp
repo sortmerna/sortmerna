@@ -62,18 +62,18 @@ std::string to_lower(std::string& val); // util.cpp
 
 Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t min_read_len, uint32_t max_read_len, KeyValueDatabase& kvdb, Runopts& opts)
 	:
+	all_reads_count(all_reads_count),
+	all_reads_len(all_reads_len),
 	min_read_len(max_read_len),
 	max_read_len(min_read_len),
+	total_otu(),
 	num_aligned(0),
 	n_yid_ncov(0),
 	n_nid_ycov(0),
 	n_yid_ycov(0),
-	num_short(0),
-	all_reads_count(all_reads_count),
-	all_reads_len(all_reads_len),
-	reads_matched_per_db(opts.indexfiles.size(), 0),
 	num_denovo(0),
-	total_otu(),
+	num_short(0),
+	reads_matched_per_db(opts.indexfiles.size(), 0),
 	is_stats_calc(false),
 	is_set_aligned_id_cov(false)
 {

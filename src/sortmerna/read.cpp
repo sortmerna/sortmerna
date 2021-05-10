@@ -63,7 +63,7 @@ alignment_struct2::alignment_struct2(std::string bstr)
 	std::memcpy(static_cast<void*>(&alignv_size), bstr.data() + offset, sizeof(alignv_size));
 	offset += sizeof(alignv_size);
 
-	for (int i = 0; i < alignv_size; i++)
+	for (unsigned i = 0; i < alignv_size; i++)
 	{
 		size_t s_align_size = 0; // size of a_align struct
 		std::memcpy(static_cast<void*>(&s_align_size), bstr.data() + offset, sizeof(s_align_size));
@@ -77,7 +77,6 @@ alignment_struct2::alignment_struct2(std::string bstr)
 std::string alignment_struct2::toString()
 {
 	std::string buf;
-	size_t offset = 0;
 
 	std::copy_n(static_cast<char*>(static_cast<void*>(&min_index)), sizeof(min_index), std::back_inserter(buf));
 	std::copy_n(static_cast<char*>(static_cast<void*>(&max_index)), sizeof(max_index), std::back_inserter(buf));
@@ -125,6 +124,7 @@ Read::Read()
 	is03(false),
 	is04(false),
 	isRestored(false),
+	format(BIO_FORMAT::FASTA),
 	lastIndex(0),
 	lastPart(0),
 	c_yid_ycov(0),
@@ -139,8 +139,7 @@ Read::Read()
 	max_SW_count(0),
 	num_alignments(0),
 	hit_seeds(0),
-	best(0),
-	format(BIO_FORMAT::FASTA)
+	best(0)
 {}
 
 Read::Read(std::string& readstr) : Read() {	isEmpty = !from_string(readstr); }

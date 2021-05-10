@@ -44,6 +44,6 @@ public:
 	ReportSam(Runopts& opts);
 	ReportSam(Readfeed& readfeed, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;
-	void append(int id, Read& read, References& refs, Runopts& opts);
+	void append(const uint32_t& id, Read& read, References& refs, Runopts& opts);
 	void write_header(Runopts& opts);
 };

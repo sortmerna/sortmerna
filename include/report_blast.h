@@ -54,5 +54,5 @@ public:
 	ReportBlast(Runopts& opts);
 	ReportBlast(Readfeed& readfeed, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;
-	void append(int id, Read& read, References& refs, Refstats& refstats, Runopts& opts);
+	void append(const uint32_t& id, Read& read, References& refs, Refstats& refstats, Runopts& opts);
 };

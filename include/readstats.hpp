@@ -66,11 +66,11 @@ struct Readstats
 	std::string dbkey; // Hashed concatenation of underscore separated basenames of the read files. Used as the key into the Key-value DB. 
 	std::string suffix; // 'fasta' | 'fastq' TODO: remove?
 
-	uint64_t total_otu; // not to store in DB
 	uint64_t all_reads_count; // [1] total number of reads in file.
 	uint64_t all_reads_len; // total number of nucleotides in all reads i.e. sum of length of All read sequences
 	uint32_t min_read_len; // shortest Read length. (read only)
 	uint32_t max_read_len; // longest Read length. (read only)
+	uint64_t total_otu; // not to store in DB
 
 	std::atomic<uint64_t> num_aligned; // reads passing E-value threshold.
 	std::atomic<uint64_t> n_yid_ncov; // SW + ID - COV i.e. aligned passing ID, failing COV

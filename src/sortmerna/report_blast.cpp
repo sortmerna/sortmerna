@@ -37,7 +37,7 @@
 #include "references.hpp"
 #include "refstats.hpp"
 
-ReportBlast::ReportBlast(Runopts& opts)	: n_aligned(0), n_yid_ncov(0), n_nid_ycov(0), n_yid_ycov(0), n_denovo(0), Report(opts) {}
+ReportBlast::ReportBlast(Runopts& opts)	: Report(opts), n_aligned(0), n_yid_ncov(0), n_nid_ycov(0), n_yid_ycov(0), n_denovo(0) {}
 
 ReportBlast::ReportBlast(Readfeed& readfeed, Runopts& opts)	: ReportBlast(opts)
 {
@@ -51,7 +51,7 @@ void ReportBlast::init(Readfeed& readfeed, Runopts& opts)
 	fsv.resize(readfeed.num_splits);
 	is_zip = readfeed.orig_files[0].isZip;
 	// WORKDIR/out/aligned_0_PID.blast
-	for (int i = 0; i < readfeed.num_splits; ++i) {
+	for (uint32_t i = 0; i < readfeed.num_splits; ++i) {
 		std::string sfx1 = "_" + std::to_string(i);
 		std::string sfx2 = opts.is_pid ? "_" + pid_str : "";
 		std::string gz = is_zip ? ".gz" : "";
@@ -64,7 +64,7 @@ void ReportBlast::init(Readfeed& readfeed, Runopts& opts)
 /**
  * called on each read => keep stream handle between calls
  */
-void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstats, Runopts& opts)
+void ReportBlast::append(const uint32_t& id, Read& read, References& refs, Refstats& refstats, Runopts& opts)
 {
 	const char MATCH = '|';
 	const char MISMATCH = '*';
@@ -290,7 +290,7 @@ void ReportBlast::append(int id, Read& read, References& refs, Refstats& refstat
 						ss << "\t";
 						// masked region at beginning of alignment
 						if (align.read_begin1 != 0) ss << align.read_begin1 << "S";
-						for (int c = 0; c < align.cigar.size(); ++c)
+						for (uint32_t c = 0; c < align.cigar.size(); ++c)
 						{
 							uint32_t letter = 0xf & align.cigar[c];
 							uint32_t length = (0xfffffff0 & align.cigar[c]) >> 4;
