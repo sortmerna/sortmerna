@@ -37,7 +37,7 @@
 #include "readfeed.hpp"
 #include "izlib.hpp"
 
-ReportFxBase::ReportFxBase(): num_out(0), out_type(0), num_reads(0), num_io_bad(0), num_io_fail(0) {}
+ReportFxBase::ReportFxBase(): num_out(0), out_type(0), num_reads(0), num_hits(0), num_miss(0), num_io_bad(0), num_io_fail(0) {}
 
 ReportFxBase::ReportFxBase(Runopts& opts): ReportFxBase()
 {
@@ -52,14 +52,14 @@ void ReportFxBase::init(Runopts& opts)
 
 void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::string>& fv, std::vector<std::fstream>& fsv, const std::string& fpfx, const std::string& pid_str)
 {
-	auto num_split = readfeed.num_splits * num_out;
+	unsigned num_split = readfeed.num_splits * num_out;
 	fsv.resize(num_split);
 	fv.resize(num_split);
 	// fasta/q output  WORKDIR/out/aligned_paired_fwd_0_PID.fq
 	//                              pfx + sfx1 + sfx2 + sfx3 + sfx4 + ext
 	INFO("num_out: ", num_out);
-	for (int i = 0; i < readfeed.num_splits; ++i) {
-		for (int j = 0, idx = 0, sense_i = 0, orig_i = 0; j < num_out; ++j) {
+	for (unsigned i = 0; i < readfeed.num_splits; ++i) {
+		for (unsigned j = 0, idx = 0, sense_i = 0, orig_i = 0; j < num_out; ++j) {
 			std::string sfx1 = "";
 			std::string sfx2 = "";
 
@@ -180,6 +180,11 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read, const int& dbg)
 				num_io_fail.fetch_add(1, std::memory_order_relaxed);
 			else if (strm.good())
 				num_reads.fetch_add(1, std::memory_order_relaxed);
+
+			if (read.is_hit)
+				num_hits.fetch_add(1, std::memory_order_relaxed);
+			else
+				num_miss.fetch_add(1, std::memory_order_relaxed);
 		}
 		catch (const std::exception& e) {
 			ERR("failed writing to stream. Num reads processed so far: ", num_reads, " Current read id: ", read.id, " - ", e.what());
@@ -196,12 +201,14 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstat
 {
 	++rstate.read_count;
 	std::stringstream ss;
-	if (is_last && read.sequence.empty())
+	if (is_last && read.sequence.empty()) {
 		ss.str("");
-	else
+	}
+	else {
 		ss << read.header << std::endl << read.sequence << std::endl;
 		if (read.format == BIO_FORMAT::FASTQ)
 			ss << '+' << std::endl << read.quality << std::endl;
+	}
 	auto ret = izlib.defstr(ss.str(), strm, is_last); // Z_STREAM_END | Z_OK - ok
 	if (ret < Z_OK || ret > Z_STREAM_END) {
 		ERR("Failed deflating readstring: ", ss.str(), " zlib status: ", ret);

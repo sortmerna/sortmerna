@@ -641,7 +641,7 @@ bool Readfeed::split()
 	{
 		++vstate_out[iout].read_count;
 		if (orig_files[inext].isZip) {
-			unsigned ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
+			int ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
 			if (ret < Z_OK || ret > Z_STREAM_END) {
 				ERR("Failed deflating readstring: ", readstr, " Output file idx: ", iout, " zlib status: ", ret);
 				retval = false;
@@ -858,6 +858,7 @@ bool Readfeed::define_format()
 		ifsv[i].read(&str[0], 100); // get 100 bytes from the stream
 		for (std::size_t i = 0; i < str.size(); ++i) {
 			// 20201008 TODO: this is quite adhoc - need a better validation like evaluating the gz, zlib header
+			// warning: comparison is always false due to limited range of data type [-Wtype-limits]
 			if (str[i] > 127 || str[i] < 0) {
 				is_ascii = false; // if any of the char is not ascii -> file is not ascii
 				break;

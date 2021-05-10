@@ -56,7 +56,7 @@ public:
 	void write_a_read(std::ostream& strm, Read& read, const int& dbg=0);
 	void write_a_read(std::ostream& strm, Read& read, Readstate& rstate, Izlib& izlib, bool is_last=false, const int& dbg = 0);
 
-	int num_out; // number of aligned output files (1 | 2 | 4) depending on the output type below
+	unsigned num_out; // number of aligned output files (1 | 2 | 4) depending on the output type below
 	/*
 	* output type: 255/2 -> ~120 possible types
 	* defines the number of the files to output
@@ -64,6 +64,8 @@ public:
 	*/
 	int out_type;
 	std::atomic<unsigned long> num_reads; // count of reads processed so far. Use For debugging.
+	std::atomic<unsigned long> num_hits; // count of hits
+	std::atomic<unsigned long> num_miss; // count of misses (other)
 	std::atomic<unsigned long> num_io_bad;
 	std::atomic<unsigned long> num_io_fail;
 
