@@ -42,7 +42,7 @@ public:
 	ReportFxOther(Runopts& opts);
 	ReportFxOther(Readfeed& readfeed, Runopts& opts);
 	void init(Readfeed& readfeed, Runopts& opts) override;
-	void append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last=false);
+	void append(const uint32_t& id, std::vector<Read>& reads, const Runopts& opts, bool is_last=false);
 	ReportFxBase& getBase();
 
 private:

@@ -45,14 +45,14 @@ void ReportFxOther::init(Readfeed& readfeed, Runopts& opts)
 	if (is_zip)	init_zip();
 } // ~ReportFxOther::init
 
-void ReportFxOther::append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last)
+void ReportFxOther::append(const uint32_t& id, std::vector<Read>& reads, const Runopts& opts, bool is_last)
 {
 	if (opts.is_paired) {
 		if (reads[0].is_hit && reads[1].is_hit)
 			return; // both aligned - nothing to write
 
 		// caclulate the index of the output file to write to
-		for (int i = 0, idx = 0; i < reads.size(); ++i, idx = 0)
+		for (uint32_t i = 0, idx = 0; i < reads.size(); ++i, idx = 0)
 		{
 			// 1 output file (non-aligned reads)
 			if (base.num_out == 1) {
@@ -116,9 +116,9 @@ void ReportFxOther::append(int id, std::vector<Read>& reads, Runopts& opts, bool
 		if (!reads[0].is_hit)
 		{
 			if (is_zip)
-				base.write_a_read(fsv[0], reads[0], vstate_out[0], vzlib_out[0], is_last, opts.dbg_level);
+				base.write_a_read(fsv[id], reads[0], vstate_out[id], vzlib_out[id], is_last, opts.dbg_level);
 			else
-				base.write_a_read(fsv[0], reads[0], opts.dbg_level);
+				base.write_a_read(fsv[id], reads[0], opts.dbg_level);
 		}
 	}
 } // ~ReportFxOther::append
