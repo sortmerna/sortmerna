@@ -415,11 +415,11 @@ def process_blast(**kwarg):
             tmpl = '{} from {}: num_hits= {} n_yid_ycov= {} n_yid_ncov= {} n_nid_ycov= {} n_denovo= {}'
             print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, n_yid_ycov, n_yid_ncov, n_nid_ycov, n_denovo))
             
-            if vald['blast'].get('num_yid_ycov'):
+            if vald['blast'].get('n_yid_ycov'):
                 tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
-                print(tmpl.format(STAMP, os.path.basename(BLASTF), n_yid_ycov, vald['blast']['num_yid_ycov']))
-                assert n_yid_ycov == vald['blast']['num_yid_ycov'], \
-                    '{} not equals {}'.format(vald['blast']['num_yid_ycov'], n_yid_ycov)
+                print(tmpl.format(STAMP, os.path.basename(BLASTF), n_yid_ycov, vald['blast']['n_yid_ycov']))
+                assert n_yid_ycov == vald['blast']['n_yid_ycov'], \
+                    '{} not equals {}'.format(vald['blast']['n_yid_ycov'], n_yid_ycov)
             
             tmpl = '{} Testing num_hits: {}: {} Expected: {}'
             print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, vald['blast']['num_recs']))
@@ -427,8 +427,8 @@ def process_blast(**kwarg):
                 '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
         
             if has_cov:
-                assert vald['blast']['num_yid_ycov'] == n_yid_ycov, \
-                    '{} not equals {}'.format(vald['blast']['num_yid_ycov'], n_yid_ycov)
+                assert vald['blast']['n_yid_ycov'] == n_yid_ycov, \
+                    '{} not equals {}'.format(vald['blast']['n_yid_ycov'], n_yid_ycov)
 
     return {
         'n_hits'  : num_hits_file, 

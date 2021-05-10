@@ -289,26 +289,26 @@ t3:
     num_hits:        99999
     num_fail:            1
     num_denovo:       4441 # (52018 420) pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
-    num_yid_ycov:    47981 # pass SW + %Cov + %ID
+    n_yid_ycov:      47981 # pass SW + %Cov + %ID
     num_groups: [265, 265] # [264, 264] lnx (sometimes)
     non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
-    blast:
-      num_recs:      99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      num_yid_ycov:  47981 # lin:43678  num_pass_id ⋂ num_pass_cov
-      num_yid_ncov:   1513 # lin:6571   ID + !COV
-      num_nid_ycov:  46064 # lin:38670  !ID + COV
-      num_denovo:     4441 # lin:11080  !ID + !COV 
     log:
       num_reads:    100000
-      num_denovo:     4441 # lin:11080
       num_aligned:   99999
       num_fail:          1
-      num_yid_ycov:  47981 # lin:43678
+      n_yid_ycov:    47981 # lin:43678
+      n_denovo:       4441 # lin:11080
       num_groups:      264 # LIN:257, WIN:4441
+    blast:
+      num_recs:      99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      n_yid_ycov:    47981 # lin:43678  num_pass_id ⋂ num_pass_cov
+      n_yid_ncov:     1513 # lin:6571   ID + !COV
+      n_nid_ycov:    46064 # lin:38670  !ID + COV
+      n_denovo:       4441 # lin:11080  !ID + !COV 
     runtime:
       win:
         - threads: 8
-          sec: [12.5046, 0.714079, 4.0937] # align, log, reports
+          sec: [13, 0.7, 4] # align, log, reports
     out:
       - aligned.blast
       - aligned.fa
