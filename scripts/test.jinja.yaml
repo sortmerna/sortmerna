@@ -189,7 +189,7 @@ t0_1:
     blast_bitscore: 2069
     blast:
       num_recs: 1
-      num_yid_ycov: 0
+      n_yid_ycov: 0
     files:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
@@ -404,7 +404,7 @@ t6:
     variant:    sanger # fastq quality variant
     blast:
       num_recs:     6000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      num_yid_ycov: 5623 # lin:43678  num_pass_id ⋂ num_pass_cov
+      n_yid_ycov: 5623 # lin:43678  num_pass_id ⋂ num_pass_cov
 
 t7:
   name: test_mate_pairs - part 3 - paired_out
@@ -550,13 +550,13 @@ t11:
     num_yid_ycov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
     num_cluster: [4400, 4401]
     blast:
-      num_recs:     19995
-      num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
-      num_nid_ycov:  8122
-      num_yid_ncov:    11
-      num_denovo:    1691
-      num_pass_id:  10175 # yid_ycov + yid_ncov
-      num_pass_cov: 15054
+      num_recs:   19995
+      n_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+      n_nid_ycov:  8122
+      n_yid_ncov:    11
+      n_denovo:    1691
+      n_pass_id:  10175 # yid_ycov + yid_ncov
+      n_pass_cov: 15054
 
 t12:
   name: test_simulated_amplicon_1_part_map
@@ -592,10 +592,10 @@ t12:
     num_cluster: [4401, 4401]
     blast:
       num_recs:     19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      num_yid_ycov: 10164 # num_pass_id ⋂ num_pass_cov
-      num_yid_ncov:    11 # ID + !COV
-      num_nid_ycov:  8122 # !ID + COV
-      num_denovo:    1691 # !ID + !COV 
+      n_yid_ycov: 10164 # num_pass_id ⋂ num_pass_cov
+      n_yid_ncov:    11 # ID + !COV
+      n_nid_ycov:  8122 # !ID + COV
+      n_denovo:    1691 # !ID + !COV 
 
 t13:
   name: test_simulated_amplicon_6_part_map
@@ -630,12 +630,12 @@ t13:
     num_cluster: [4400, 4401]
     blast:
       num_recs:     19995
-      num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
-      num_yid_ncov:    11
-      num_nid_ycov:  8122
-      num_denovo:    1691
-      num_yid:      10175   
-      num_ycov:     15054 
+      n_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+      n_yid_ncov:    11
+      n_nid_ycov:  8122
+      n_denovo:    1691
+      n_yid:      10175   
+      n_ycov:     15054 
 
 t14:
   name: test_simulated_amplicon_12_part_map
@@ -671,10 +671,10 @@ t14:
     num_cluster: [4400, 4401] # 4400 before bug 52
     blast:
       num_recs:     19995
-      num_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
-      num_pass_id:  10175 
-      num_pass_cov: 15054 
-      num_denovo:    1691
+      n_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+      n_pass_id:  10175 
+      n_pass_cov: 15054 
+      n_denovo:    1691
 
 t15:
   name: test_threads
@@ -2888,9 +2888,14 @@ t45:
     n_oth_fwd:  447618
     n_oth_rev:  449112
     variant:    sanger # fastq quality variant
+    files:
+      aligned_fwd.fq: 52382
+      aligned_rev.fq: 50888
+      other_fwd.fq: 447618
+      other_rev.fq: 449112
     blast:
       num_recs:     1000000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      num_yid_ycov:       0 # lin:43678  num_pass_id ⋂ num_pass_cov
+      n_yid_ycov:       0 # lin:43678  num_pass_id ⋂ num_pass_cov
   time:
     win_8_16:
       host: Windows 10 + 8 CPUs + 16GB RAM
