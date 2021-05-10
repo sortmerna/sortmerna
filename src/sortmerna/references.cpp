@@ -180,14 +180,10 @@ std::string References::convertChar(int idx)
 	return chstr;
 }
 
-/* 
- * For debugging needs.
- * Find a reference index given a header.
- */
-int References::findref(std::string id)
+int References::findref(const std::string& id)
 {
 	int retpos = -1;
-	for (int i = 0; i < buffer.size(); ++i)
+	for (unsigned i = 0; i < buffer.size(); ++i)
 	{
 		if (std::string::npos != buffer[i].header.find(id)) {
 			retpos = i;

@@ -81,7 +81,11 @@ public:
 	void load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats); // load references into the buffer given index number and index part
 	void convert_fix(std::string & seq); // convert sequence to numberical form and fix ambiguous chars
 	std::string convertChar(int idx); // convert numerical form to char string
-	int findref(std::string id);
+	/*
+	* For debugging needs.
+	* find a reference index given a header.
+	*/
+	int findref(const std::string& id);
 	void unload();
 
 public:
