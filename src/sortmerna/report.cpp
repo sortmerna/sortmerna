@@ -43,72 +43,58 @@ void Report::init_zip()
 {
 	// prepare zlib interface for writing split files
 	vzlib_out.resize(fv.size(), Izlib(true, true));
-	for (auto i = 0; i < vzlib_out.size(); ++i) {
-		vzlib_out[i].init(true);
+	for (auto& zlibm: vzlib_out) {
+		zlibm.init(true);
 	}
 
 	// prepare Readstates OUT
 	vstate_out.resize(fv.size());
 }
 
-//void Report::merge(int num_splits, const int& dbg)
-//{
-//	// merge if there is more than one split
-//	if (fv.size() > 1) {
-//		std::ofstream ofs(fv[0], std::ios_base::app | std::ios_base::binary);
-//		if (!ofs.is_open()) {
-//			ERR("failed to open for writing: ", fv[0]);
-//			exit(1);
-//		}
-//		for (int i = 1; i < num_splits; ++i) {
-//			std::ifstream ifs(fv[i], std::ios_base::out | std::ios_base::binary);
-//			if (ifs.is_open()) {
-//				ofs << ifs.rdbuf();
-//				INFO("merged ", fv[i], " -> ", fv[0]);
-//				ifs.close();
-//				std::filesystem::remove(fv[i]);
-//				INFO("deleted ", fv[i]);
-//			}
-//			else {
-//				ERR("failed to open for reading: ", fv[i]);
-//				exit(1);
-//			}
-//		}
-//	}
-//
-//	strip_path_sfx(fv[0]);
-//}
-
-void Report::merge(int num_splits, const int& num_out, const int& dbg)
+void Report::merge(const uint32_t& num_splits, const uint32_t& num_out, const int& dbg)
 {
-	for (int i = 0; i < num_out; ++i) {
-		std::ofstream ofs(fv[i], std::ios_base::app | std::ios_base::binary);
-		if (!ofs.is_open()) {
-			ERR("failed to open for writing: ", fv[i]);
-			exit(1);
+	for (uint32_t i = 0; i < num_out; ++i) {
+		if (!fsv[i].is_open()) { 
+			openfw(i, dbg);
+		}
+		else {
+			fsv[i].seekp(0); //rewind
 		}
 
-		for (int j = 1; j < num_splits; ++j) {
-			auto idx = i + j * num_out;
-			std::ifstream ifs(fv[idx], std::ios_base::out | std::ios_base::binary);
-			if (ifs.is_open()) {
-				ofs << ifs.rdbuf();
+		for (uint32_t j = 1; j < num_splits; ++j) {
+			uint32_t idx = i + j * num_out;
+			auto fsz = std::filesystem::file_size(fv[idx]);
+			if (dbg > 1) {
+				INFO("input file idx: ", idx, " size: ", fsz);
+				if (fsz == 0)
+					INFO("skipping empty file at idx: ", idx);
+			}
+			if (fsz > 0) {
+				if (!fsv[idx].is_open()) {
+					openfr(idx);
+				}
+				else {
+					fsv[idx].seekg(0);
+				}
+				if (dbg > 1) {
+					INFO("merging ifs@idx: ", idx);
+				}
+				fsv[i] << fsv[idx].rdbuf();
 				INFO("merged ", fv[idx], " -> ", fv[i]);
-				ifs.close();
-				std::filesystem::remove(fv[idx]);
-				INFO("deleted ", fv[idx]);
+				if (dbg > 1) {
+					INFO("merged ifs@idx: ", idx, " ifs bad: ", fsv[idx].bad(), " end ifs pos: ", fsv[idx].tellg(), " to ofs@idx: ", i, " ofs bad: ", fsv[i].bad());
+				}
+				fsv[idx].close();
 			}
-			else {
-				ERR("failed to open for reading: ", fv[i]);
-				exit(1);
-			}
+			std::filesystem::remove(fv[idx]);
+			INFO("deleted ", fv[idx]);
 		}
-		ofs.close();
+		fsv[i].close();
 		strip_path_sfx(fv[i]);
 	}
-}
+} // ~Report::merge
 
-void Report::openfw(size_t idx, const int& dbg)
+void Report::openfw(const uint32_t& idx, const int& dbg)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
@@ -144,7 +130,7 @@ void Report::openfr(unsigned idx)
 	}
 }
 
-void Report::closef(size_t idx, const int& dbg)
+void Report::closef(const uint32_t& idx, const int& dbg)
 {
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
@@ -156,7 +142,7 @@ void Report::closef(size_t idx, const int& dbg)
 
 void Report::closef(const int& dbg)
 {
-	for (int i = 0; i < fsv.size(); ++i) {
+	for (uint32_t i = 0; i < fsv.size(); ++i) {
 		closef(i, dbg);
 	}
 }
@@ -165,7 +151,7 @@ int Report::finish_deflate()
 {
 	int ret = 0;
 	if (is_zip) {
-		for (int i = 0; i < vzlib_out.size(); ++i) {
+		for (unsigned i = 0; i < vzlib_out.size(); ++i) {
 			ret += vzlib_out[i].finish_deflate(fsv[i]);
 		}
 	}

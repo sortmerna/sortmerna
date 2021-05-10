@@ -51,11 +51,10 @@ public:
 	virtual ~Report() = 0;
 	virtual void init(Readfeed& readfeed, Runopts& opts) = 0;
 	/*
-	* merge split report files
+	* merge split report files.
 	* override if necessary
 	*/
-	//virtual void merge(int num_splits, const int& dbg=0);
-	virtual void merge(int num_splits, const int& num_out, const int& dbg = 0);
+	virtual void merge(const uint32_t& num_splits, const uint32_t& num_out, const int& dbg = 0);
 	/*
 	* init zip interface. So far common to all the reports.
 	*/
@@ -67,9 +66,14 @@ public:
 	* @param dbg  debug level, see 'Runopts.dbg_level'
 	*/
 	void openfw(const int& dbg=0);
-	void openfw(size_t idx, const int& dbg=0);
+	/*
+	* open selected report file for writing
+	* @param idx  index into the array of report files
+	* @param dbg  debug level as in 'Runopts.dbg_level'
+	*/
+	void openfw(const uint32_t& idx, const int& dbg=0); // close selected report file
 	void closef(const int& dbg=0); // close report files
-	void closef(size_t idx, const int& dbg=0); // close a file
+	void closef(const uint32_t& idx, const int& dbg=0); // close a file
 	int finish_deflate();
 	/*
 	* strip the split suffix from the output file name 
