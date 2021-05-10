@@ -78,7 +78,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 	all_reads_len = readstats.all_reads_len;
 
 	// stats by database
-	for (int i = 0; i < opts.indexfiles.size(); ++i) {
+	for (uint32_t i = 0; i < opts.indexfiles.size(); ++i) {
 		auto pcn = (float)((float)readstats.reads_matched_per_db[i] / readstats.all_reads_count) * 100;
 		db_matches.emplace_back(std::make_pair(opts.indexfiles[i].first, pcn));
 	}
@@ -174,7 +174,7 @@ std::string Summary::to_string(Refstats& refstats, Runopts& opts)
 
 
 // called from main
-void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
+void writeSummary(Readstats& readstats, Runopts& opts)
 {
 	INFO("==== Starting summary of alignment statistics ====");
 	auto start = std::chrono::high_resolution_clock::now();

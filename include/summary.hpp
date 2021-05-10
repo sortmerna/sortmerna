@@ -47,7 +47,7 @@ class Readfeed;
 class References;
 class KeyValueDatabase;
 
-void writeSummary(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
+void writeSummary(Readstats& readstats, Runopts& opts);
 
 /**
  * Summary report (log) data structure

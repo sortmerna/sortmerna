@@ -53,7 +53,7 @@ void OtuMap::merge()
 {
 	INFO_NE("merging OTU map. Map vector size: ", mapv.size());
 	auto starts = std::chrono::high_resolution_clock::now();
-	for (int i = 1; i < mapv.size(); ++i) {
+	for (unsigned i = 1; i < mapv.size(); ++i) {
 		for (auto it = mapv[i].begin(); it != mapv[i].end(); ++it) {
 			auto el = mapv[0].find(it->first);
 			if (el == mapv[0].end())
@@ -82,7 +82,7 @@ void OtuMap::write()
 		for (auto const& amap : mapv) {
 			for (auto const& apair : amap) {
 				ofs << apair.first << "\t"; // ref
-				auto i = 0;
+				unsigned i = 0;
 				for (auto const& aread : apair.second) {
 					ofs << aread;
 					if (i < apair.second.size() - 1)
@@ -126,7 +126,7 @@ size_t OtuMap::count_otu()
 /*
   runs in a thread
 */
-void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
+void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	unsigned c_reads = 0;  // all reads count
 	unsigned c_aligned = 0; // aligned reads
@@ -232,15 +232,15 @@ void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 				}
 				else if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
 					for (int i = 0; i < numThreads; ++i) {
-						tpool.emplace_back(std::thread(fill_otu_map2, i, std::ref(otumap), std::ref(readfeed), std::ref(refs),
-							std::ref(refstats), std::ref(kvdb), std::ref(opts)));
+						tpool.emplace_back(std::thread(fill_otu_map2, i, std::ref(otumap), 
+							std::ref(readfeed), std::ref(refs),	std::ref(kvdb), std::ref(opts)));
 					}
 				}
 
 				// wait till processing is done on one index part
 				//tpool.waitAll(); 
-				for (auto i = 0; i < tpool.size(); ++i) {
-					tpool[i].join();
+				for (auto& thr: tpool) {
+					thr.join();
 				}
 
 				refs.unload();
