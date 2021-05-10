@@ -52,11 +52,11 @@ void ReportDenovo::init(Readfeed& readfeed, Runopts& opts)
 	if (is_zip)	init_zip();
 }
 
-void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool is_last)
+void ReportDenovo::append(const uint32_t& id, std::vector<Read>& reads, Runopts& opts, bool is_last)
 {
 	if (opts.is_paired) {
 		// caclulate the index of the output file to write to
-		for (int i = 0, idx = 0; i < reads.size(); ++i)
+		for (uint32_t i = 0, idx = 0; i < reads.size(); ++i)
 		{
 			// 1 output file a (aligned reads)
 			if (base.num_out == 1) {
@@ -98,7 +98,7 @@ void ReportDenovo::append(int id, std::vector<Read>& reads, Runopts& opts, bool 
 			// 4 output files: dpf, dpr, dsf, dsr
 			// being here means both is_out2 & is_sout were set => No paired_in/out
 			else if (base.num_out == 4) {
-				auto is_both_dn = (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
+				bool is_both_dn = (reads[0].n_denovo > 0 && reads[0].c_yid_ycov == 0
 					&& reads[0].n_yid_ncov == 0 && reads[0].n_nid_ycov == 0)
 					&& (reads[1].n_denovo > 0 && reads[1].c_yid_ycov == 0
 						&& reads[1].n_yid_ncov == 0 && reads[1].n_nid_ycov == 0);
