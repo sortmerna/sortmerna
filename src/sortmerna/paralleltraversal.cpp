@@ -281,14 +281,14 @@ void traverse
 
 	// all_N_best_max_SW Or all_N hits found - stop further processing of this read
 	if (opts.num_alignments > 0) {
-		if (opts.is_best && opts.num_alignments == read.max_SW_count ||
+		if ((opts.is_best && opts.num_alignments == read.max_SW_count) ||
 			(!opts.is_best && read.alignment.alignv.size() == opts.num_alignments)) {
 			read.is_done = true;
 		}
 	}
 	// end of processing and read.alignments > 0
 	else {
-		auto is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
+		bool is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
 		if (is_last_idx && isLastStrand && read.alignment.alignv.size() > 0)
 			read.is_done = true;
 	}
