@@ -141,9 +141,9 @@ void report(const uint32_t& id,
 				}
 			}
 
-			for (uint16_t i = 0; i < reads.size(); ++i) {
-				if (opts.is_blast) output.blast.append(id, reads[i], refs, refstats, opts);
-				if (opts.is_sam) output.sam.append(id, reads[i], refs, opts);
+			for (auto& read: reads) {
+				if (opts.is_blast) output.blast.append(id, read, refs, refstats, opts);
+				if (opts.is_sam) output.sam.append(id, read, refs, opts);
 			} // ~for reads
 		}
 	} // ~for
@@ -157,7 +157,9 @@ void report(const uint32_t& id,
 			" bad: ", output.fastx.getBase().num_io_bad, " fail: ", output.fastx.getBase().num_io_fail);
 	if (opts.is_other && opts.dbg_level > 1)
 		INFO("Other reads: good: ", output.fx_other.getBase().num_reads, 
-			" bad: ", output.fx_other.getBase().num_io_bad, " fail: ", output.fx_other.getBase().num_io_fail);
+			" bad: ", output.fx_other.getBase().num_io_bad, 
+			" fail: ", output.fx_other.getBase().num_io_fail, 
+			" count other: ", output.fx_other.getBase().num_miss);
 } // ~report
 
 

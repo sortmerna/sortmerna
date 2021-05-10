@@ -210,8 +210,8 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), std::ref(readstats), std::ref(index),
 					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(opts)));
 			}
-			for (int i = 0; i < tpool.size(); ++i) {
-				tpool[i].join();
+			for (auto& thr: tpool) {
+				thr.join();
 			}
 
 			++loopCount;
@@ -241,16 +241,16 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	readstats.store_to_db(kvdb);
 } // ~align
 
-void denovo_stats_run(int id,
+void denovo_stats_run(const uint32_t& id,
 	Readfeed& readfeed,
 	Readstats& readstats,
 	References& refs,
 	KeyValueDatabase& kvdb,
 	Runopts& opts)
 {
-	size_t countReads = 0;
-	size_t num_invalid = 0; // empty or invalid reads count
-	std::size_t num_reads = opts.is_paired ? 2 : 1;
+	uint64_t countReads = 0;
+	uint64_t num_invalid = 0; // empty or invalid reads count
+	uint16_t num_reads = opts.is_paired ? 2 : 1;
 	std::string readstr;
 	std::vector<Read> reads; // two reads if paired, a single read otherwise
 
@@ -260,8 +260,8 @@ void denovo_stats_run(int id,
 	for (bool isDone = false; !isDone;)
 	{
 		reads.clear();
-		auto idx = id * readfeed.num_sense; // index into split_files array
-		for (int i = 0; i < num_reads; ++i)
+		uint32_t idx = id * readfeed.num_sense; // index into split_files array
+		for (uint16_t i = 0; i < num_reads; ++i)
 		{
 			if (readfeed.next(idx, readstr))
 			{
@@ -346,7 +346,7 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	References refs;
 
 	// loop through every reference file passed to option --ref (ex. SSU 16S and SSU 18S)
-	for (auto ref_idx = 0; ref_idx < opts.indexfiles.size(); ++ref_idx)
+	for (uint16_t ref_idx = 0; ref_idx < opts.indexfiles.size(); ++ref_idx)
 	{
 		// iterate all parts of the index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[ref_idx]; ++idx_part)
@@ -367,8 +367,8 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 				}
 			}
 			// wait for all threads to finish
-			for (auto i = 0; i < tpool.size(); ++i) {
-				tpool[i].join();
+			for (auto& thr: tpool) {
+				thr.join();
 			}
 
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
