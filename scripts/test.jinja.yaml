@@ -1120,9 +1120,9 @@ t18:
     n_oth:        148
     blast:
       num_recs:     9188
-      num_pass_id:    16 
-      num_pass_cov:
-      num_yid_ycov: # pass_SW + pass_ID + pass_Cov
+      n_pass_id:      16 
+      n_pass_cov:
+      n_yid_ycov: # pass_SW + pass_ID + pass_Cov
 
 t19:
   name: 2 reads + paired_in
