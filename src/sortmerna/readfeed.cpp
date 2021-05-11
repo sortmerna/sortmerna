@@ -102,7 +102,7 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const un
 
 //Readfeed::~Readfeed() {}
 
-void Readfeed::init(std::vector<std::string>& readfiles)
+void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	INFO("Readfeed init started");
@@ -837,7 +837,7 @@ bool Readfeed::is_split_ready() {
 	flat:
 	  first 100 bytes are ascii (<=127 x7F), first char is '@' (x40), and can infer fasta or fastq
 */
-bool Readfeed::define_format()
+bool Readfeed::define_format(const int& dbg)
 {
 	bool is_ascii = true;
 	is_format_defined = true;
@@ -855,7 +855,13 @@ bool Readfeed::define_format()
 			ERR("Failed to open file ", orig_files[i].path);
 			exit(1);
 		}
-		ifsv[i].read(&str[0], 100); // get 100 bytes from the stream
+		auto fsz = std::filesystem::file_size(orig_files[i].path);
+		auto blen = fsz > 100 ? 100 : fsz; // num bytes to read: max 100 - issue 290  20210511
+		ifsv[i].read(&str[0], blen); // get blen bytes from the stream
+		if (dbg > 1) {
+			auto st = ifsv[i].rdstate();
+			INFO("rdstate: ", st); // 3 - some undefined state. Defined ones are 0,1,2,4
+		}
 		for (std::size_t i = 0; i < str.size(); ++i) {
 			// 20201008 TODO: this is quite adhoc - need a better validation like evaluating the gz, zlib header
 			// warning: comparison is always false due to limited range of data type [-Wtype-limits]

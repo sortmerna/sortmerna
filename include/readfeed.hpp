@@ -64,13 +64,13 @@ public:
 	void reset();
 	void rewind();
 	void rewind_in();
-	void init(std::vector<std::string>& readfiles);
+	void init(std::vector<std::string>& readfiles, const int& dbg = 0);
 	void init_split_files();
 	void init_reading();
 	void init_vzlib_in();
 	//void init_vstate_in();
 	bool split();
-	bool define_format();
+	bool define_format(const int& dbg = 0);
 	void count_reads();
 	void write_descriptor();
 	bool is_split_ready();
