@@ -180,17 +180,20 @@ t0_1:
     - '1'
   validate: 
     func:
-    num_reads:         1
-    num_hits:          1
-    num_fail:          0
-    min_len:        1487
-    max_len:        1487
+    files:
+      aligned.log:
+        num_reads:     1
+        num_hits:      1
+        num_fail:      0
+        min_len:    1487
+        max_len:    1487
+      aligned.blast:
+        num_recs: 1
+        n_yid_ycov: 0
+      aligned.sam:
     blast_score:    2430
     blast_bitscore: 2069
-    blast:
-      num_recs: 1
-      n_yid_ycov: 0
-    files:
+    ref:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
 t1:
@@ -212,15 +215,19 @@ t1:
     - '1'
   validate: 
     func:
-    num_reads: 1
-    num_hits: 1
-    num_fail: 0
-    min_len: 1487
-    max_len: 1487
-    blast:
-      num_recs: 1
-      num_yid_ycov: 0
     files:
+      aligned.log:
+        num_reads:  1
+        num_hits:   1
+        num_fail:   0
+        min_len: 1487
+        max_len: 1487
+      aligned.blast:
+        num_recs: 1
+        n_yid_ycov: 0
+      aligned.sam:
+      pid_pcov.blast:
+    ref:
       - {{ SMR_SRC }}/data/t0_expected_alignment.blast
 
 t2:
@@ -284,38 +291,30 @@ t3:
     - -task
     - {{TASK or '\'4\''}}
   validate: 
-    func: t3
-    num_reads:      100000
-    num_hits:        99999
-    num_fail:            1
-    num_denovo:       4441 # (52018 420) pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
-    n_yid_ycov:      47981 # pass SW + %Cov + %ID
-    num_groups: [265, 265] # [264, 264] lnx (sometimes)
+    func:
     non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
-    log:
-      num_reads:    100000
-      num_aligned:   99999
-      num_fail:          1
-      n_yid_ycov:    47981 # lin:43678
-      n_denovo:       4441 # lin:11080
-      num_groups:      264 # LIN:257, WIN:4441
-    blast:
-      num_recs:      99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      n_yid_ycov:    47981 # lin:43678  num_pass_id ⋂ num_pass_cov
-      n_yid_ncov:     1513 # lin:6571   ID + !COV
-      n_nid_ycov:    46064 # lin:38670  !ID + COV
-      n_denovo:       4441 # lin:11080  !ID + !COV 
+    files:
+      aligned.log:
+        num_reads:     100000
+        num_hits:       99999
+        num_fail:           1
+        n_yid_ycov:     47981 # lin:43678  pass SW + %Cov + %ID
+        n_denovo:        4441 # lin:11080  (52018 420) pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
+        num_groups:       265 # LIN:257, WIN:4441
+      aligned.fa:       99999
+      other.fa:             1
+      aligned_denovo.fa: 4441
+      otu_map.txt:        265
+      aligned.blast:
+        num_recs:       99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+        n_yid_ycov:     47981 # lin:43678  num_pass_id ⋂ num_pass_cov
+        n_yid_ncov:      1513 # lin:6571   ID + !COV
+        n_nid_ycov:     46064 # lin:38670  !ID + COV
+        n_denovo:        4441 # lin:11080  !ID + !COV 
     runtime:
       win:
         - threads: 8
           sec: [13, 0.7, 4] # align, log, reports
-    out:
-      - aligned.blast
-      - aligned.fa
-      - aligned.log
-      - aligned_denovo.fa
-      - other.fa
-      - otu_map.txt
 
 t4:
   name: test_indexing_split_databases
@@ -333,11 +332,13 @@ t4:
     - '1'
   validate: 
     func: t4
-    num_reads: 1
-    num_hits: 1
-    num_fail: 0
-    min_len: 1487
-    max_len: 1487
+    files:
+      aligned.log:
+        num_reads: 1
+        num_hits: 1
+        num_fail: 0
+        min_len: 1487
+        max_len: 1487
     idx_sfx_win: 7828442710921335713
     idx_sfx_lin: 12011197668640222139
     num_idx: 7 # 7 index files of each kind is generated
@@ -361,9 +362,13 @@ t5:
     #- -pid
   validate:
     func:
-    num_reads: 10000
-    num_hits:   6000
-    num_fail:   4000
+    files:
+      aligned.log:
+        num_reads:  10000
+        num_hits:    6000
+        num_fail:    4000
+      aligned.fq.gz: 6000
+      other.fq.gz:   4000
     variant:    sanger # fastq quality variant
 
 t6:
@@ -396,15 +401,21 @@ t6:
     - '4'
   validate:
     func:
-    num_reads:   10000
-    num_hits:     6000
-    num_fail:     4000
-    num_aligned: 10000 # number of reads in aligned.fastx
-    num_other:       0 # number of reads in other.fastx. Empty file: WARN: skbio\io\registry.py:548: does not look like a fastq file
-    variant:    sanger # fastq quality variant
-    blast:
-      num_recs:     6000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      n_yid_ycov: 5623 # lin:43678  num_pass_id ⋂ num_pass_cov
+    files:
+      aligned.log:
+        num_reads: 10000
+        num_hits:   6000
+        num_fail:   4000
+      aligned.blast:
+        num_recs:   6000
+        n_yid_ycov: 5623
+        n_yid_ncov:
+        n_nid_ycov:
+        n_denovo:    # num_pass_id ⋂ num_pass_cov
+      aligned.fq:  10000  # paired_in
+      other.fq:         0
+      pid_pcov.blast:   # n_yid_ycov 5623  debug file
+    variant: sanger # fastq quality variant
 
 t7:
   name: test_mate_pairs - part 3 - paired_out
@@ -423,12 +434,14 @@ t7:
     - -v
   validate:
     func:
-    num_reads:   10000
-    num_hits:    6000
-    num_fail:    4000
-    num_aligned: 2000 # number of paired reads in aligned.fastx
-    num_other:   8000 # number paired reads in other.fastx
-    variant:    sanger # fastq quality variant
+    files:
+      aligned.log:
+        num_reads: 10000
+        num_hits:   6000
+        num_fail:   4000
+      aligned.fq:   2000  # paired_out
+      other.fq:     8000
+    variant: sanger # fastq quality variant
 
 t8:
   name: test_multiple_databases_search
@@ -443,9 +456,12 @@ t8:
     - -v
   validate:
     func:
-    num_reads: 6
-    num_hits: 4
-    num_fail: 2
+    files:
+      aligned.log:
+        num_reads: 6
+        num_hits:  4
+        num_fail:  2
+      aligned.fa:  4
 
 t9:
   name: test_output_all_alignments_f_rc
@@ -542,21 +558,27 @@ t11:
     - -threads
     - '3'
   validate:
-    func: t11
-    num_reads: 30000
-    num_hits:  19995
-    num_fail:  10005
-    num_denovo: 1691 # 9831
-    num_yid_ycov: 10164 #   10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
-    num_cluster: [4400, 4401]
-    blast:
-      num_recs:   19995
-      n_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
-      n_nid_ycov:  8122
-      n_yid_ncov:    11
-      n_denovo:    1691
-      n_pass_id:  10175 # yid_ycov + yid_ncov
-      n_pass_cov: 15054
+    func:
+    files:
+      aligned.log:
+        num_reads:  30000
+        num_hits:   19995
+        num_fail:   10005
+        n_denovo:    1691  # 9831
+        n_yid_ycov: 10164 # 10164 + 9831 = 19995  pass_SW + pass_ID, not necessarily pass_Cov
+        num_groups:  4401
+      aligned.blast:
+        num_recs:   19995
+        n_yid_ycov: 10164 # pass_SW + pass_ID + pass_Cov
+        n_nid_ycov:  8122
+        n_yid_ncov:    11
+        n_denovo:    1691
+        n_pass_id:  10175 # yid_ycov + yid_ncov
+        n_pass_cov: 15054
+      aligned.fa:   19995
+      other.fa:     10005
+      aligned_denovo.fa:
+      otu_map.txt:   4401
 
 t12:
   name: test_simulated_amplicon_1_part_map
@@ -582,20 +604,27 @@ t12:
     - -workdir
     - {{ WRK_DIR }} # have to use on AWS SSM where HOME is not set
   validate:
-    func: t12
-    num_reads:    30000
-    min_sw:          49
-    num_hits:     19995
-    num_fail:     10005
-    num_yid_ycov: 10164
-    num_denovo:    1691
-    num_cluster: [4401, 4401]
-    blast:
-      num_recs:     19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      n_yid_ycov: 10164 # num_pass_id ⋂ num_pass_cov
-      n_yid_ncov:    11 # ID + !COV
-      n_nid_ycov:  8122 # !ID + COV
-      n_denovo:    1691 # !ID + !COV 
+    func:
+    files:
+      aligned.log:
+        num_reads:  30000
+        num_hits:   19995
+        num_fail:   10005
+        n_yid_ycov: 10164
+        n_denovo:    1691
+        num_groups : 4401
+        min_sw:        49
+      aligned.blast:
+        num_recs:   19995 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+        n_yid_ycov: 10164 # num_pass_id ⋂ num_pass_cov
+        n_yid_ncov:    11 # ID + !COV
+        n_nid_ycov:  8122 # !ID + COV
+        n_denovo:    1691 # !ID + !COV 
+      aligned.fa:   19995
+      other.fa:     10005
+      otu_map.txt:   4401
+      aligned_denovo.fa:  # debug
+      pid_pcov.blast:     # debug
 
 t13:
   name: test_simulated_amplicon_6_part_map
@@ -972,15 +1001,27 @@ t16_8:
   cwd: {{ SMR_SRC }}
   validate:
     func:
-    num_reads:  10000
-    num_hits:    9833
-    num_fail:     167
-    num_blast:   9833
-    num_ali_pf:  4865 # aligned paired fwd
-    num_ali_pr:  4865 # aligned paired rev
-    num_ali_sf:    11 # aligned singleton fwd
-    num_ali_sr:    92 # aligned singleton rev
-    blast:
+    zip: True  # output is gzipped
+    variant: sanger # fastq quality variant
+    files:
+      aligned.log:
+        num_reads:   10000
+        num_hits:     9833
+        num_fail:      167
+        #n_yid_ycov:      0
+        #n_denovo:        0
+        #num_groups:      0
+      aligned_paired_fwd.fq.gz:    4865 # aligned paired fwd
+      aligned_paired_rev.fq.gz:    4865 # aligned paired rev
+      aligned_singleton_fwd.fq.gz:   11 # aligned singleton fwd
+      aligned_singleton_rev.fq.gz:   92 # aligned singleton rev
+      aligned.blast.gz:
+        num_recs:    9833
+        #n_yid_ycov:     0
+        #n_yid_ncov:     0
+        #n_nid_ycov:     0
+        #n_denovo:       0
+
 
 t16_9:
   name: 2 reads + zip + 1 best + out2 + sout + other + relative paths
@@ -1013,19 +1054,21 @@ t16_9:
   cwd: {{ SMR_SRC }}
   validate:
     func:
-    num_reads:  10000
-    num_hits:    9833
-    num_fail:     167
-    num_blast:   9833
-    num_ali_pf:  4865 # aligned paired fwd
-    num_ali_pr:  4865 # aligned paired rev
-    num_ali_sf:    11 # aligned singleton fwd
-    num_ali_sr:    92 # aligned singleton rev
-    num_oth_pf:    32 # other paired fwd
-    num_oth_pr:    32 # other paired rev
-    num_oth_sf:    92 # other singleton fwd
-    num_oth_sr:    11 # other singleton rev
-
+    files:
+      aligned.log:
+        num_reads:              10000
+        num_hits:                9833
+        num_fail:                 167
+      aligned.blast.gz:          
+        num_recs:                9833
+      aligned_paired_fwd.fq.gz:  4865 # aligned paired fwd
+      aligned_paired_rev.fq.gz:  4865 # aligned paired rev
+      aligned_singleton_fwd.fq.gz: 11 # aligned singleton fwd
+      aligned_singleton_rev.fq.gz: 92 # aligned singleton rev
+      other_paired_fwd.fq.gz:      32 # other paired fwd
+      other_paired_rev.fq.gz:      32 # other paired rev
+      other_singleton_fwd.fq.gz:   92 # other singleton fwd
+      other_singleton_rev.fq.gz:   11 # other singleton rev
 
 t17:
   name: test_indexing
@@ -2880,22 +2923,19 @@ t45:
   cwd: {{ SMR_SRC }}
   validate:
     func:
-    num_reads: 1000000
-    num_hits:   103270
-    num_fail:   896730
-    n_ali_fwd:   52382
-    n_ali_rev:   50888
-    n_oth_fwd:  447618
-    n_oth_rev:  449112
     variant:    sanger # fastq quality variant
     files:
+      aligned.log:
+        num_reads:  1000000
+        num_hits:    103270
+        num_fail:    896730
       aligned_fwd.fq: 52382
       aligned_rev.fq: 50888
-      other_fwd.fq: 447618
-      other_rev.fq: 449112
-    blast:
-      num_recs:     1000000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
-      n_yid_ycov:       0 # lin:43678  num_pass_id ⋂ num_pass_cov
+      other_fwd.fq:  447618
+      other_rev.fq:  449112
+      aligned.blast:
+        num_recs:   1000000 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+        n_yid_ycov:       0 # lin:43678  num_pass_id ⋂ num_pass_cov
   time:
     win_8_16:
       host: Windows 10 + 8 CPUs + 16GB RAM
@@ -2911,3 +2951,33 @@ t45:
         total: 1826 # sec - indexing slow - too little RAM
         # indexing, read count, readfeed, align, summary, report
         totals: [ 1038, 3, 5, 765, 1, 14]
+
+# aligned.log file structure
+aligned.log:
+  cmd: ['Command', None]
+  pid: ['Process pid', None]
+  params:
+    refs: []
+  num_reads: ['Total reads =', 0]
+  results:
+    num_hits:   ['Total reads passing E-value threshold', 0]
+    num_fail:   ['Total reads failing E-value threshold', 0]
+    num_denovo: ['Total reads for de novo clustering', 0]
+    min_len:    ['Minimum read length', 0]
+    max_len:    ['Maximum read length', 0]
+    mean_len:   ['Mean read length', 0]
+  coverage:     []
+  num_id_cov:   ['Total reads passing %%id and %%coverage thresholds', 0]
+  num_otus:     ['Total OTUs', 0]
+  date: None
+
+# all possible file base names for aligned output
+# fa/fq, gz/non-gz  (7 x 4 = 28)
+aligned.names:
+  - aligned
+  - aligned_fwd
+  - aligned_rev
+  - aligned_paired_fwd
+  - aligned_paired_rev
+  - aligned_singleton_fwd
+  - aligned_singleton_rev

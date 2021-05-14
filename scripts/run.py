@@ -81,6 +81,8 @@ OUT_DIR  = None
 TEST_DATA = None
 
 # base names of the report files
+ALI_NAMES     = []  # get from test.jinja.yaml + fa/fa + gz/non-gz -> 7 x 4 = 28 names
+OTH_NAMES     = []  
 ALI_BASE      = 'aligned'
 OTH_BASE      = 'other'
 ALI_FWD_BASE  = None # '{}_fwd'.format(ALI_BASE)
@@ -199,30 +201,31 @@ def to_lf(ddir):
     print('to_lf Done')
 #END to_lf
 
-def parse_log(fpath):
+def parse_log(fpath, logd={}):
     '''
     parse 'aligned.log' to dictionary
 
-    @param fpath  'aligned.log' file
+    :param str fpath  'aligned.log' file
+    :param dict logd  log file structure (test.jinja.yaml:aligned.log)
     '''
-    logd = {
-        'cmd': ['Command', None],
-        'pid': ['Process pid', None],
-        'params': {'refs': []},
-        'num_reads': ['Total reads =', 0],
-        'results': {
-            'num_hits': ['Total reads passing E-value threshold', 0],
-            'num_fail': ['Total reads failing E-value threshold', 0],
-            'num_denovo': ['Total reads for de novo clustering', 0],
-            'min_len': ['Minimum read length', 0],
-            'max_len': ['Maximum read length', 0],
-            'mean_len': ['Mean read length', 0]
-        },
-        'coverage': [],
-        'num_id_cov': ['Total reads passing %%id and %%coverage thresholds', 0],
-        'num_otus': ['Total OTUs', 0],
-        'date': None
-    }
+    #logd = {
+    #    'cmd': ['Command', None],
+    #    'pid': ['Process pid', None],
+    #    'params': {'refs': []},
+    #    'num_reads': ['Total reads =', 0],
+    #    'results': {
+    #        'num_hits': ['Total reads passing E-value threshold', 0],
+    #        'num_fail': ['Total reads failing E-value threshold', 0],
+    #        'num_denovo': ['Total reads for de novo clustering', 0],
+    #        'min_len': ['Minimum read length', 0],
+    #        'max_len': ['Maximum read length', 0],
+    #        'mean_len': ['Mean read length', 0]
+    #    },
+    #    'coverage': [],
+    #    'num_id_cov': ['Total reads passing %%id and %%coverage thresholds', 0],
+    #    'num_otus': ['Total OTUs', 0],
+    #    'date': None
+    #}
 
     with open(fpath) as f_log:    
         for line in f_log:
@@ -247,7 +250,7 @@ def parse_log(fpath):
 
 def process_smr_opts(args):
     '''
-    args  list of parameters passed to sortmerna
+    :param args  list of parameters passed to sortmerna
     '''
     STAMP = '[process_smr_opts]'
     WDIR = '-workdir'
@@ -376,10 +379,14 @@ def process_blast(**kwarg):
     is_dbg_pid_pcov = True
     
     if os.path.exists(BLASTF):
-        print('processing Blast file: {}'.format(BLASTF))
+        print('{} processing : {}'.format(STAMP, BLASTF))
         gzs = os.path.basename(BLASTF).split(os.extsep)[-1]
-        # with open(BLASTF) as f_blast:
-        if gzs == 'gz':
+        is_gz = gzs == 'gz'
+        with open(BLASTF, 'rb') as f_blast:
+            is_gz = is_gz and (f_blast.read(2) == b'\x1f\x8b')
+        if is_gz:
+            # seq = skbio.io.read("seqs.fna.bz2", format='fasta', compression='bz2', into=skbio.DNA)
+            # skbio.Sequence.read("seqs.fna.bz2")
             fh = skbio.io.util.open(BLASTF, compression='gzip')
             print('{} TODO: implement gz processing'.format(STAMP))
             # Exception has occurred: UnrecognizedFormatError
@@ -415,20 +422,20 @@ def process_blast(**kwarg):
             tmpl = '{} from {}: num_hits= {} n_yid_ycov= {} n_yid_ncov= {} n_nid_ycov= {} n_denovo= {}'
             print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, n_yid_ycov, n_yid_ncov, n_nid_ycov, n_denovo))
             
-            if vald['blast'].get('n_yid_ycov'):
-                tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
-                print(tmpl.format(STAMP, os.path.basename(BLASTF), n_yid_ycov, vald['blast']['n_yid_ycov']))
-                assert n_yid_ycov == vald['blast']['n_yid_ycov'], \
-                    '{} not equals {}'.format(vald['blast']['n_yid_ycov'], n_yid_ycov)
-            
-            tmpl = '{} Testing num_hits: {}: {} Expected: {}'
-            print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, vald['blast']['num_recs']))
-            assert num_hits_file == vald['blast']['num_recs'], \
-                '{} not equals {}'.format(num_hits_file, vald['blast']['num_recs'])
-        
-            if has_cov:
-                assert vald['blast']['n_yid_ycov'] == n_yid_ycov, \
-                    '{} not equals {}'.format(vald['blast']['n_yid_ycov'], n_yid_ycov)
+            blastd = vald.get('files', {}).get('aligned.blast')
+            if blastd:
+                if blastd.get('n_yid_ycov'):
+                    tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
+                    print(tmpl.format(STAMP, os.path.basename(BLASTF), n_yid_ycov, blastd['n_yid_ycov']))
+                    assert n_yid_ycov == blastd['n_yid_ycov'], \
+                        '{} not equals {}'.format(blastd['n_yid_ycov'], n_yid_ycov)
+                
+                num_recs = blastd.get('num_recs')
+                if num_recs:
+                    tmpl = '{} Testing num_hits: {}: {} Expected: {}'
+                    print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, num_recs))
+                    assert num_hits_file == num_recs, \
+                        '{} not equals {}'.format(num_hits_file, num_recs)
 
     return {
         'n_hits'  : num_hits_file, 
@@ -542,173 +549,104 @@ def validate_otu(**kwarg):
             '{} not in {}'.format(logd['num_otus'][1], vald['num_cluster'])
 #END validate_otu
 
-def process_output(**kwarg):
+def validate_log(logd, ffd):
     '''
-    :param dict  test configuration see 'test.jinja.yaml'
-
-    Used by:
-        test_simulated_amplicon_1_part_map
-        test_simulated_amplicon_generic_buffer
-        test_simulated_amplicon_12_part_index
+    :param dict logd
+    :param dict ffd   files data as in test.jinja.yaml:<test_name>:validate:files
     '''
-    STAMP = '[{}]'.format('process_output')
+    STAMP = '[validate_log]'
+    # aligned.log : 
+    #   verify the total number of reads in aligned.log vs the number in the validation spec
+    n_vald = ffd.get('aligned.log', {}).get('num_reads')
+    n_logd = logd['num_reads'][1]
+    if n_vald:
+        print('{} testing num_reads: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+    #   verify number of hits
+    n_vald = ffd.get('aligned.log', {}).get('num_hits')
+    n_logd = logd['results']['num_hits'][1]
+    if n_vald:
+        print('{} testing num_hits: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+    #   verify number of misses
+    n_vald = ffd.get('aligned.log', {}).get('num_fail')
+    n_logd = logd['results']['num_fail'][1]
+    if n_vald:
+        print('{} testing num_fail: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+    #   verify count of COV+ID
+    n_vald = ffd.get('aligned.log', {}).get('n_yid_ycov')
+    n_logd = logd['num_id_cov'][1]
+    if n_vald:
+        print('{} testing n_yid_ycov: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+    #   verify count of OUT groups
+    n_vald = ffd.get('aligned.log', {}).get('num_groups')
+    n_logd = logd['num_otus'][1]
+    if n_vald:
+        print('{} testing num_groups: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+    #   verify count of de-novo reads
+    n_vald = ffd.get('aligned.log', {}).get('n_denovo')
+    n_logd = logd['results']['num_denovo'][1]
+    if n_vald:
+        print('{} testing n_denovo: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+#END validate_log
 
-    logd = parse_log(LOGF)
-    vald = kwarg.get('validate')
-    cmdd = kwarg.get('cmd')
+def process_output(name, **kwarg):
+    '''
+    :param str name    test name e.g. t0
+    :param dict        test configuration see 'test.jinja.yaml'
+    '''
+    STAMP = '[process_output]'
+
+    log_struct = kwarg.get('aligned.log')
+    logd = parse_log(LOGF, log_struct)
+    vald = kwarg.get(name, {}).get('validate')
+    #cmdd = kwarg.get('cmd')
     
     if not vald:
         print('{} Validation info not provided'.format(STAMP))
         return
 
-    # Check number of reads in aligned.log vs the number in the validation spec
-    if vald.get('num_reads'):
-        tmpl = 'Testing num_reads: {} Expected: {}'
-        print(tmpl.format(logd['num_reads'][1], vald['num_reads']))
-        assert vald['num_reads'] == logd['num_reads'][1], \
-                '{} not equals {}'.format(vald['num_reads'], logd['num_reads'][1])
+    ffd = vald.get('files')
+    if ffd and isinstance(ffd, dict):
 
-    # Check reads count in aligned_fwd
-    if vald.get('num_aligned_fwd'):
-        num_fwd = 0
-        if os.path.exists(ALI_FWD):
-            if IS_FASTQ:
-                for seq in skbio.io.read(ALI_FWD, format=READS_EXT[1:], variant=vald.get('variant')):
-                    num_fwd += 1
-            else:
-                for seq in skbio.io.read(ALI_FWD, format=READS_EXT[1:]):
-                    num_fwd += 1
-            tmpl = 'Testing count of FWD aligned reads: {}: {} Expected: {}'
-            print(tmpl.format('{}{}'.format(ALI_FWD_BASE, READS_EXT), num_fwd, vald['num_aligned_fwd']))
-            assert num_fwd == vald['num_aligned_fwd'], \
-                '{} not equals {}'.format(num_fwd, vald['num_aligned_fwd'])
-
-    # Check reads count in aligned_rev
-    if vald.get('num_aligned_rev'):
-        num_rev = 0
-        if os.path.exists(ALI_REV):
-            if IS_FASTQ:
-                for seq in skbio.io.read(ALI_REV, format=READS_EXT[1:], variant=vald.get('variant')):
-                    num_rev += 1
-            else:
-                for seq in skbio.io.read(ALI_REV, format=READS_EXT[1:]):
-                    num_rev += 1
-            tmpl = 'Testing count of REV aligned reads: {}: {} Expected: {}'
-            print(tmpl.format('{}{}'.format(ALI_REV_BASE, READS_EXT), num_rev, vald['num_aligned_rev']))
-            assert num_rev == vald['num_aligned_rev'], \
-                '{} not equals {}'.format(num_rev, vald['num_aligned_rev'])
-
-    # Check reads count in other_fwd
-    if vald.get('num_other_fwd'):
-        num_fwd = 0
-        if os.path.exists(OTH_FWD):
-            if IS_FASTQ:
-                for seq in skbio.io.read(OTH_FWD, format=READS_EXT[1:], variant=vald.get('variant')):
-                    num_fwd += 1
-            else:
-                for seq in skbio.io.read(OTH_FWD, format=READS_EXT[1:]):
-                    num_fwd += 1
-            tmpl = 'Testing count of FWD non-aligned reads: {}: {} Expected: {}'
-            print(tmpl.format('{}{}'.format(OTH_FWD_BASE, READS_EXT), num_fwd, vald['num_other_fwd']))
-            assert num_fwd == vald['num_other_fwd'], \
-                '{} not equals {}'.format(num_fwd, vald['num_other_fwd'])
-
-    # Check reads count in other_rev
-    if vald.get('num_other_rev'):
-        num_rev = 0
-        if os.path.exists(OTH_REV):
-            if IS_FASTQ:
-                for seq in skbio.io.read(OTH_REV, format=READS_EXT[1:], variant=vald.get('variant')):
-                    num_rev += 1
-            else:
-                for seq in skbio.io.read(OTH_REV, format=READS_EXT[1:]):
-                    num_rev += 1
-            tmpl = 'Testing count REV non-aligned reads: {}: {} Expected: {}'
-            print(tmpl.format('{}{}'.format(OTH_REV_BASE, READS_EXT), num_rev, vald['num_other_rev']))
-            assert num_rev == vald['num_other_rev'], \
-                '{} not equals {}'.format(num_rev, vald['num_other_rev'])
-
-    # Correct number of de novo reads
-    if vald.get('num_denovo'):
-        assert vald['num_denovo'] == logd['results']['num_denovo'][1], \
-            '{} not equals {}'.format(vald.get('num_denovo'), logd['results']['num_denovo'][1])
-
-        num_denovo_file = 0
-        for seq in skbio.io.read(DENOVOF, format='fasta'):
-            num_denovo_file += 1
-
-        assert logd['results']['num_denovo'][1] == num_denovo_file, \
-            '{} not equals {}'.format(logd['results']['num_denovo'][1], num_denovo_file)
-    
-    # Check number of reads mapped
-    if vald.get('num_hits'):
-        tmpl = 'Testing num_hits: {} Expected: {}'
-        print(tmpl.format(logd['results']['num_hits'][1], vald['num_hits']))
-        assert vald['num_hits'] == logd['results']['num_hits'][1], \
-            '{} not equals {}'.format(vald['num_hits'], logd['results']['num_hits'][1])
-        num_hits_file = 0
-        if os.path.exists(ALIF):
-            if IS_FASTQ:
-                for seq in skbio.io.read(ALIF, format=READS_EXT[1:], variant=vald.get('variant')):
-                    num_hits_file += 1
-            else:
-                for seq in skbio.io.read(ALIF, format=READS_EXT[1:]):
-                    num_hits_file += 1
-
-            if not IS_PAIRED_IN and not IS_PAIRED_OUT:
-                tmpl = 'Testing num_hits: {}{}: {} Expected: {}'
-                print(tmpl.format(ALI_BASE, READS_EXT, num_hits_file, vald['num_hits']))
-                assert logd['results']['num_hits'][1] == num_hits_file
-            else:
-                tmpl = 'Testing count of aligned reads: {}{}: {} Expected: {}'
-                print(tmpl.format(ALI_BASE, READS_EXT, num_hits_file, vald['num_aligned']))
-                assert num_hits_file == vald['num_aligned']
-
-    # Check number of reads not mapped
-    if vald.get('num_fail'):
-        tmpl = 'Testing num_fail: {} Expected: {}'
-        print(tmpl.format(logd['results']['num_fail'][1], vald['num_fail']))
-        assert vald['num_fail'] == logd['results']['num_fail'][1], \
-            '{} not equals {}'.format(vald['num_fail'], logd['results']['num_fail'][1])
-        num_fails_file = 0
-        if OTHF and os.path.exists(OTHF):
-            if os.stat(OTHF).st_size > 0:
+        for ff, vv in ffd.items():
+            print('{} {}'.format(STAMP, ff))
+            # Check aligned/other reads count
+            # aligned/other files only specify read count in the test validation data
+            if isinstance(vv, int):
+                ffp = os.path.join(os.path.dirname(ALIF), ff) # file path
+                count = 0
+                assert os.path.exists(ffp), '{} does not exists: {}'.format(STAMP, ffp)
+                if ff == 'otu_map.txt':
+                    with open(ffp) as ffs:
+                        for line in ffs:
+                            count += 1
+                    print('{} testing count of groups in {}: {} Expected: {}'.format(STAMP, ff, count, vv))
+                    assert count == vv, '{} not equals {}'.format(count, vv)
+                    continue
                 if IS_FASTQ:
-                    for seq in skbio.io.read(OTHF, format=READS_EXT[1:], variant=vald.get('variant')):
-                        num_fails_file += 1
+                    for seq in skbio.io.read(ffp, format=READS_EXT[1:], variant=vald.get('variant')):
+                        count += 1
                 else:
-                    for seq in skbio.io.read(OTHF, format=READS_EXT[1:]):
-                        num_fails_file += 1
-
-            if not IS_PAIRED_IN and not IS_PAIRED_OUT:
-                tmpl = 'Testing num_fail: {}{}: {} Expected: {}'
-                print(tmpl.format(OTH_BASE, READS_EXT, num_fails_file, vald['num_fail']))
-                assert logd['results']['num_fail'][1] == num_fails_file
-            else:
-                tmpl = 'Testing count of non-aligned reads: {}{}: {} Expected: {}'
-                print(tmpl.format(OTH_BASE, READS_EXT, num_fails_file, vald['num_other']))
-                assert num_fails_file == vald['num_other']
-
-    
-    # Check count of reads passing %id and %coverage threshold
-    # as given in alinged.log
-    if vald.get('num_pass_id_cov'):
-        tmpl = '{} Testing reads passing ID_COV: {} Expected: {}'
-        print(tmpl.format(STAMP, logd['num_id_cov'][1], vald['num_pass_id_cov']))
-        assert vald['num_pass_id_cov'] == logd['num_id_cov'][1], \
-            '{} not equals {}'.format(vald['num_pass_id_cov'], logd['num_id_cov'][1])
-
-    process_blast(**kwarg)
-    
-    # Correct number of clusters recorded
-    kwarg['logd'] = logd
-    validate_otu(**kwarg)
+                    for seq in skbio.io.read(ffp, format=READS_EXT[1:]):
+                        count += 1
+                print('{} Testing count of reads in {}: {} Expected: {}'.format(STAMP, ff, count, vv))
+                assert count == vv, '{} not equals {}'.format(count, vv)
+            elif ff == 'aligned.log':
+                validate_log(logd, ffd)
+            elif ff == 'aligned.blast':
+                test_cfg = kwarg.get(name, {})
+                process_blast(**test_cfg)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
     '''
-    @param datad   Data directory
-    @param outd    results output directory
+    :param datad   Data directory
+    :param outd    results output directory
     '''
     STAMP = '[t0:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(STAMP))   
@@ -767,9 +705,9 @@ def t2(datad, ret={}, **kwarg):
 
 def t3(datad, ret={}, **kwarg):
     '''
-    @param datad   Data directory
-    @param outd    results output directory
-    @param kwargs  validation args
+    :param datad   Data directory
+    :param outd    results output directory
+    :param kwargs  validation args
 
     test_environmental_output
 
@@ -1021,9 +959,17 @@ def t17(datad, ret={}, **kwarg):
     print("{} Done".format(STAMP))
 #END t17
 
+def set_file_names(basenames, is_other=False):
+    '''
+    :param list basenames   list of basenames as in test.jinja,yaml:aligned.names
+    :param bool is_other    flag aligned (default) | other files
+    '''
+    global ALI_NAMES
+
+
 if __name__ == "__main__":
     '''
-    python scripts/run.py --name t0 [--capture] [--validate-only]
+    python scripts/run.py --n t0 -v [--capture] [--validate-only]
     python scripts/run.py --name t12 -f process_otu --validate-only -d 2
     python scripts/run.py --name t0 -f dbg_blast --validate-only
     python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
@@ -1044,7 +990,7 @@ if __name__ == "__main__":
     optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     optpar.add_option('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     optpar.add_option('--capture', action="store_true", help='Capture output. By default prints to stdout')
-    optpar.add_option('--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
+    optpar.add_option('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
     optpar.add_option('--ddir', dest='ddir', help = 'Data directory')
     optpar.add_option('--config', dest='config', help='Tests configuration file.')
     optpar.add_option('--env', dest='envfile', help='Environment variables')
@@ -1156,6 +1102,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     TEST_DATA = os.path.join(SMR_SRC, 'data')  # data directory
+    ALI_NAMES = cfg.get('aligned.names')
 
     process_smr_opts(cfg[opts.name]['cmd'])
 
@@ -1208,15 +1155,6 @@ if __name__ == "__main__":
         if func:
             func(TEST_DATA, ret, **cfg[opts.name])
     else:
-        process_output(**cfg[opts.name])
-
-    # tests
-    #if funcs.get(opts.name):
-        # validate alignment results
-    #    if cfg[opts.name].get('validate'):
-    #        nm = cfg[opts.name]['name']
-    #        fn = cfg[opts.name]['validate']['func']
-    #        funcs[fn](nm, TEST_DATA, OUT_DIR, ret, **cfg[opts.name]['validate'])
-    # other funcs
-    #elif opts.name == 'to_lf':
-    #    to_lf(DATA_DIR)
+        process_output(opts.name, **cfg)
+#END main
+#END END run.py
