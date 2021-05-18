@@ -40,6 +40,8 @@ import difflib
 import shutil
 import yaml
 from jinja2 import Environment, FileSystemLoader
+import pandas
+import gzip
 
 # globals
 OS = None
@@ -377,27 +379,26 @@ def process_blast(**kwarg):
     has_cov = False
     BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
     is_dbg_pid_pcov = True
+
+    cols = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 
+            'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sseq', 'qcovs']
     
-    if os.path.exists(BLASTF):
+    if os.path.exists(BLASTF): 
         print('{} processing : {}'.format(STAMP, BLASTF))
         gzs = os.path.basename(BLASTF).split(os.extsep)[-1]
         is_gz = gzs == 'gz'
+        is_use_skbio = False
         with open(BLASTF, 'rb') as f_blast:
             is_gz = is_gz and (f_blast.read(2) == b'\x1f\x8b')
-        if is_gz:
-            # seq = skbio.io.read("seqs.fna.bz2", format='fasta', compression='bz2', into=skbio.DNA)
-            # skbio.Sequence.read("seqs.fna.bz2")
-            fh = skbio.io.util.open(BLASTF, compression='gzip')
-            print('{} TODO: implement gz processing'.format(STAMP))
-            # Exception has occurred: UnrecognizedFormatError
-            # Cannot read 'blast+6'
-            #if IS_FASTQ:
-            #    for seq in skbio.io.read(BLASTF, format='blast+6'):
-            #        pass
+        if is_use_skbio:
+            # just returns column names - not at all what's expected
+            for seq in skbio.io.read(BLASTF, format='blast+6', columns=cols, compression='gzip', into=pandas.DataFrame):
+                num_hits_file += 1
         else:
-            with open(BLASTF) as f_blast, open(BLAST_PID_PCOV, 'w') as f_pid_pcov:
-                for line in f_blast:
+            with gzip.open(BLASTF, 'rb') if is_gz else open(BLASTF, 'rb') as f_blast, open(BLAST_PID_PCOV, 'w') as f_pid_pcov:
+                for lineb in f_blast:
                     num_hits_file += 1
+                    line = lineb.decode('utf-8')
                     llist = line.strip().split('\t')
                     fid = float(llist[BLAST_ID_COL])
                     is_pass_id = fid >= 97.0
@@ -638,7 +639,7 @@ def process_output(name, **kwarg):
                 assert count == vv, '{} not equals {}'.format(count, vv)
             elif ff == 'aligned.log':
                 validate_log(logd, ffd)
-            elif ff == 'aligned.blast':
+            elif 'aligned.blast' in ff:
                 test_cfg = kwarg.get(name, {})
                 process_blast(**test_cfg)
 #END process_output
@@ -883,68 +884,6 @@ def t12(datad, ret={}, **kwarg):
    
     print("{} Done".format(STAMP))
 #END t12
-
-def t13(datad, ret={}, **kwarg):
-    '''
-    @param smrexe  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-    @param capture Capture output
-    
-    Test sortmerna on simulated data,
-        10000 reads with 1% error (--aligned),
-        10000 reads with 10% error (de novo),
-        10000 reads random (--other)
-
-        Conditions: reference index processed
-        as one unit and input query FASTA file
-        in 6 sections.
-    '''
-    STAMP = '[t13:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    if ret and ret.get('retcode'):
-        print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
-        print(ret['stdout'])
-        print(ret['stderr'])
-        sys.exit(1)
-    else:
-        process_output(**kwarg)
-   
-    print("{} Done".format(STAMP))
-#END t13
-
-def t14(datad, ret={}, **kwarg):
-    '''
-    @param name
-    @param datad   Data directory
-    @param outd    results output directory
-    @param ret   Dict
-
-    identical to t13 except using 12-part index instead of 6-part
-    
-    Test sortmerna on simulated data,
-        10000 reads with 1% error (--aligned),
-        10000 reads with 10% error (de novo),
-        10000 reads random (--other)
-
-        Conditions: reference index processed
-        as 12 parts and input query FASTA file
-        in 1 section.
-    '''
-    STAMP = '[t14:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
-
-    if ret and ret.get('retcode'):
-        print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
-        print(ret['stdout'])
-        print(ret['stderr'])
-        sys.exit(1)
-    else:
-        process_output(**kwarg)
-   
-    print("{} Done".format(STAMP))
-#END t14
 
 def t17(datad, ret={}, **kwarg):
     '''
