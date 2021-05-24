@@ -286,11 +286,13 @@ def process_smr_opts(args):
     global WRK_DIR
     
     is_gz = False
-    READS_EXT = os.path.splitext(args[args.index('-reads')+1])[1]
+    psplit = os.path.splitext(args[args.index('-reads')+1]) # 1.concat.fq.gz -> [1.concat.fq, .gz]
+    READS_EXT = psplit[1]
     if READS_EXT in ['.gz']:
-        READS_EXT = os.extsep + args[args.index('-reads')+1].split(os.extsep)[1]
+        #READS_EXT = os.extsep + args[args.index('-reads')+1].split(os.extsep)[1]
+        READS_EXT = os.path.splitext(psplit[0])[1]
         is_gz = True
-    IS_FASTQ = 'fastq' == READS_EXT[1:]
+    IS_FASTQ =  READS_EXT[1:] in ['fq', 'fastq']
     IS_PAIRED_IN = '-paired_in' in args
     IS_PAIRED_OUT = '-paired_out' in args
 
@@ -630,7 +632,7 @@ def process_output(name, **kwarg):
                     assert count == vv, '{} not equals {}'.format(count, vv)
                     continue
                 if IS_FASTQ:
-                    for seq in skbio.io.read(ffp, format=READS_EXT[1:], variant=vald.get('variant')):
+                    for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
                         count += 1
                 else:
                     for seq in skbio.io.read(ffp, format=READS_EXT[1:]):
@@ -908,7 +910,7 @@ def set_file_names(basenames, is_other=False):
 
 if __name__ == "__main__":
     '''
-    python scripts/run.py --n t0 -v [--capture] [--validate-only]
+    python scripts/run.py -n t0 -v [--capture] [--validate-only]
     python scripts/run.py --name t12 -f process_otu --validate-only -d 2
     python scripts/run.py --name t0 -f dbg_blast --validate-only
     python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
