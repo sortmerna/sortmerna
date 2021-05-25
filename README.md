@@ -46,7 +46,7 @@ conda search sortmerna
   ...
   sortmerna                      4.3.2               0  bioconda
   ...
-  sortmerna                      4.3.2               0  bioconda
+  sortmerna                      4.3.3               0  bioconda
 
 conda install sortmerna
 which sortmerna
