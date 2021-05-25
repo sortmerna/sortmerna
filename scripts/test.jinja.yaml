@@ -3200,7 +3200,7 @@ t45:
   cwd: {{ SMR_SRC }}
   validate:
     func:
-    variant:    sanger # fastq quality variant
+    variant: sanger # fastq quality variant
     files:
       aligned.log:
         num_reads:  1000000
