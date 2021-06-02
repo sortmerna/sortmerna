@@ -937,7 +937,7 @@ if __name__ == "__main__":
     optpar.add_option('--env', dest='envfile', help='Environment variables')
     optpar.add_option('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                   '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
-    optpar.add_option('--workdir', dest='workdir', help='Environment variables')
+    optpar.add_option('-w', '--workdir', dest='workdir', help='Environment variables')
     optpar.add_option('--threads', dest='threads', help='Number of threads to use')
     optpar.add_option('--index', dest='index', help='Index option 0 | 1 | 2')
     optpar.add_option('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
