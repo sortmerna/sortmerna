@@ -1258,6 +1258,202 @@ t18:
       aligned.fq:   9852  # paired_in
       other.fq:      148
 
+t18_1:
+  name: 2 paired reads files + paired_in + joint FWD/REV output
+  info: |
+    the same as t18 but using plain Fasta instead of Fastq
+    Test the new option '-out2' (issue 202)
+    Test different E-values
+    ...                               paired_in
+    -e      min_sw  hits  2*hits   aligned   other
+     1          48  9188
+     0.001      60  8956
+     1e-7       75  7919    
+     1e-12      95  6501    
+     1e-15     106  5307    
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fa # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fa # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    #- -out2
+    - -workdir
+    - {{ WRK_DIR }}
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - {{DBG_LEVEL or '\'0\''}}
+    - -task
+    - {{TASK or '\'4\''}}
+  validate:
+    func:
+    files:
+      aligned.log:
+        num_reads: 10000
+        num_hits:   9188
+        num_fail:    812
+      aligned.blast:
+        num_recs:   9188
+      aligned.fa:   9852  # paired_in
+      other.fa:      148
+
+t18_2:
+  name: 2 paired reads files + paired_in + joint FWD/REV output
+  info: |
+    the same as t18_1 but using plain Fasta with NO NL at the end
+    Test the new option '-out2' (issue 202)
+    Test different E-values
+    ...                               paired_in
+    -e      min_sw  hits  2*hits   aligned   other
+     1          48  9188
+     0.001      60  8956
+     1e-7       75  7919    
+     1e-12      95  6501    
+     1e-15     106  5307    
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k_nnl.fa # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k_nnl.fa # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    #- -out2
+    - -workdir
+    - {{ WRK_DIR }}
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - {{DBG_LEVEL or '\'0\''}}
+    - -task
+    - {{TASK or '\'4\''}}
+  validate:
+    func:
+    files:
+      aligned.log:
+        num_reads: 10000
+        num_hits:   9188
+        num_fail:    812
+      aligned.blast:
+        num_recs:   9188
+      aligned.fa:   9852  # paired_in
+      other.fa:      148
+
+t18_3:
+  name: 2 paired reads files + paired_in + joint FWD/REV output
+  info: |
+    the same as t18_1 but using gzipped Fasta with NL at the end
+    Test the new option '-out2' (issue 202)
+    Test different E-values
+    ...                               paired_in
+    -e      min_sw  hits  2*hits   aligned   other
+     1          48  9188
+     0.001      60  8956
+     1e-7       75  7919    
+     1e-12      95  6501    
+     1e-15     106  5307    
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fa.gz # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fa.gz # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    #- -out2
+    - -workdir
+    - {{ WRK_DIR }}
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - {{DBG_LEVEL or '\'0\''}}
+    - -task
+    - {{TASK or '\'4\''}}
+  validate:
+    func:
+    files:
+      aligned.log:
+        num_reads: 10000
+        num_hits:   9188
+        num_fail:    812
+      aligned.blast.gz:
+        num_recs:   9188
+      aligned.fa.gz:   9852  # paired_in
+      other.fa.gz:      148
+
+t18_4:
+  name: 2 paired reads files + paired_in + joint FWD/REV output
+  info: |
+    the same as t18_1 but using gzipped Fasta with No NL at the end
+    Test the new option '-out2' (issue 202)
+    Test different E-values
+    ...                               paired_in
+    -e      min_sw  hits  2*hits   aligned   other
+     1          48  9188
+     0.001      60  8956
+     1e-7       75  7919    
+     1e-12      95  6501    
+     1e-15     106  5307    
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k_nnl.fa.gz # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k_nnl.fa.gz # 5,000 reads: Mouse gut metagenome of 16S rRNA
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -paired_in
+    - -v
+    #- -e
+    #- '1e-15'
+    #- -out2
+    - -workdir
+    - {{ WRK_DIR }}
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - {{DBG_LEVEL or '\'0\''}}
+    - -task
+    - {{TASK or '\'4\''}}
+  validate:
+    func:
+    files:
+      aligned.log:
+        num_reads: 10000
+        num_hits:   9188
+        num_fail:    812
+      aligned.blast.gz:
+        num_recs:   9188
+      aligned.fa.gz:   9852  # paired_in
+      other.fa.gz:      148
+
 t19:
   name: 2 reads + paired_in
   info: |
