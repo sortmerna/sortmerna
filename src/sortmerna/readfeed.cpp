@@ -291,21 +291,32 @@ bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig
 		}
 
 		// read a line
+		line = "";
 		if (!vstate_in[inext].is_done) {
 			if (files[inext].isZip) {
-				stat = vzlib_in[inext].getline(ifsv[inext], line);
+				stat = vzlib_in[inext].getline(ifsv[inext], line); // zipped
 			}
 			else {
 				if (ifsv[inext].eof())
 					stat = RL_END;
 				else 
-					std::getline(ifsv[inext], line);
+					std::getline(ifsv[inext], line);  // non-zipped
 			}
+		}
+
+		// right-trim whitespace in place (removes '\r' too)
+		if (!line.empty()) {
+			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 		}
 
 		// EOF reached - return last read
 		if (stat == RL_END)
 		{
+			// 20210714 - issue 294 - add last line (FQ quality or FA sequence)
+			//         for cases where there is no NL at the end of reads file
+			if (!line.empty()) {
+				readss << line;
+			}
 			vstate_in[inext].is_done = true;
 			auto FR = (inext & 1) == 0 ? FWD : REV;
 			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[inext].read_count);
@@ -327,10 +338,7 @@ bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig
 
 		++vstate_in[inext].line_count;
 
-		// right-trim whitespace in place (removes '\r' too)
-		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
-
-		// the first line in file
+		// define fasta/q on the first line in file
 		if (vstate_in[inext].line_count == 1)
 		{
 			files[inext].isFastq = (line[0] == FASTQ_HEADER_START);
@@ -356,6 +364,9 @@ bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig
 			else
 			{
 				// read is ready - return
+				// 20210714 - issue 294 - add NL to fasta. Cannot do earlier due possible multiline fasta sequence
+				if (files[inext].isFasta)
+					readss << '\n';
 				vstate_in[inext].last_header = line;
 				vstate_in[inext].last_count = 1;
 				vstate_in[inext].last_stat = stat;
@@ -640,6 +651,7 @@ bool Readfeed::split()
 	for (auto inext = 0, iout = 0; next(inext, readstr, seqlen, true, orig_files);)
 	{
 		++vstate_out[iout].read_count;
+		// if original files zipped, zip the splits too
 		if (orig_files[inext].isZip) {
 			int ret = vzlib_out[iout].defstr(readstr, ofsv[iout], vstate_out[iout].read_count == split_files[iout].numreads); // Z_STREAM_END | Z_OK - ok
 			if (ret < Z_OK || ret > Z_STREAM_END) {
