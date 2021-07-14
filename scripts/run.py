@@ -635,7 +635,8 @@ def process_output(name, **kwarg):
                     for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
                         count += 1
                 else:
-                    for seq in skbio.io.read(ffp, format=READS_EXT[1:]):
+                    fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
+                    for seq in skbio.io.read(ffp, format=fmt):
                         count += 1
                 print('{} Testing count of reads in {}: {} Expected: {}'.format(STAMP, ff, count, vv))
                 assert count == vv, '{} not equals {}'.format(count, vv)
