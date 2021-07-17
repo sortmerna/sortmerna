@@ -424,6 +424,7 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<R
 		}
 
 		// read a line
+		line = "";
 		if (!vstate_in[inext].is_done) {
 			if (files[inext].isZip) {
 				stat = vzlib_in[inext].getline(ifsv[inext], line);
@@ -436,9 +437,19 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<R
 			}
 		}
 
+		if (!line.empty()) {
+			// right-trim whitespace in place (removes '\r' too)
+			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+		}
+
 		// EOF reached - return last read
 		if (stat == RL_END)
 		{
+			// 20210714 - issue 294 - add last line (FQ quality or FA sequence)
+			//         for cases where there is no NL at the end of reads file
+			if (!line.empty()) {
+				readss << line;
+			}
 			vstate_in[inext].is_done = true;
 			auto FR = (inext & 1) == 0 ? FWD : REV; // if index is even -> FWD
 			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[inext].read_count);
@@ -459,9 +470,6 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<R
 		}
 
 		++vstate_in[inext].line_count;
-
-		// right-trim whitespace in place (removes '\r' too)
-		line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 
 		// the first line in file
 		if (vstate_in[inext].line_count == 1)
@@ -489,6 +497,9 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<R
 			else
 			{
 				// read is ready - return
+				// 20210714 - issue 294 - add NL to fasta. Cannot do earlier due possible multiline fasta sequence
+				if (files[inext].isFasta)
+					readss << '\n';
 				vstate_in[inext].last_header = line;
 				vstate_in[inext].last_count = 1;
 				vstate_in[inext].last_stat = stat;
