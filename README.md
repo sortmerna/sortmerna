@@ -40,13 +40,9 @@ conda search sortmerna
   # Name                       Version           Build  Channel
   sortmerna                        2.0               0  bioconda
   ...
-  sortmerna                       2.1b               0  bioconda
-  ...
   sortmerna                      4.2.0               0  bioconda
   ...
-  sortmerna                      4.3.2               0  bioconda
-  ...
-  sortmerna                      4.3.3               0  bioconda
+  sortmerna                      4.3.4               0  bioconda
 
 conda install sortmerna
 which sortmerna
@@ -54,10 +50,10 @@ which sortmerna
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.3.2
-  Build Date: Apr  2 2021
-  sortmerna_build_git_sha:@4bb8b074d1322c6bd51163bd7a9eaa25f8a38faf@
-  sortmerna_build_git_date:@2021/04/02 17:36:15@
+  SortMeRNA version 4.3.4
+  Build Date: Jul 17 2021
+  sortmerna_build_git_sha:@a50b58613e9d1f7efcb314f39ac4916c6e936ed9@
+  sortmerna_build_git_date:@2021/07/17 14:43:30@
 
 # view help
 sortmerna -h
@@ -75,21 +71,21 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/biocore/sortmerna/releases/download/v4.3.2/sortmerna-4.3.2-Linux.sh
+wget https://github.com/biocore/sortmerna/releases/download/v4.3.4/sortmerna-4.3.4-Linux.sh
 
 # view the installer usage
-bash sortmerna-4.3.2-Linux.sh --help
+bash sortmerna-4.3.4-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-4.3.2-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-4.3.2-Linux subdirectory
+      --include-subdir  include the sortmerna-4.3.4-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-4.3.4-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
-bash sortmerna-4.3.2-Linux.sh --skip-license
-  sortmerna Installer Version: 4.3.2, Copyright (c) Clarity Genomics
+bash sortmerna-4.3.4-Linux.sh --skip-license
+  sortmerna Installer Version: 4.3.4, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
   The archive will be extracted to: $HOME/sortmerna
   
@@ -107,10 +103,10 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.3.2
-  Build Date: Apr  2 2021
-  sortmerna_build_git_sha:@4bb8b074d1322c6bd51163bd7a9eaa25f8a38faf@
-  sortmerna_build_git_date:@2021/04/02 17:36:15@
+  SortMeRNA version 4.3.4
+  Build Date: Jul 17 2021
+  sortmerna_build_git_sha:@a50b58613e9d1f7efcb314f39ac4916c6e936ed9@
+  sortmerna_build_git_date:@2021/07/17 14:43:30@
 
 # view help
 sortmerna -h
