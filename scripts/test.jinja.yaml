@@ -3419,7 +3419,11 @@ t44_2:
 t45:
   name: issue 288 - segfault on '-other'
   info: |
-    xxx
+    1 reference databases, 1M reads
+
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+    -------------------------------------------------------------------------------------------
+      1     1     1     1      0        0        1     1     1     1       1   1     2      2
   cmd:
     - -ref
     - {{ SMR_SRC }}/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
@@ -3503,3 +3507,44 @@ aligned.names:
   - aligned_paired_rev
   - aligned_singleton_fwd
   - aligned_singleton_rev
+
+t46:
+  name: segfault - iss 288-2
+  info: |
+    1 reference databases, 10000 reads
+
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+    -------------------------------------------------------------------------------------------
+      1     1     1     0      0        0        0     0     0     1       1   1     2      2
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq.gz # 10000 reads
+    - -fastx
+    - -other
+    #- -paired_out  # runs OK with this too
+    - -num_alignments 
+    - '1'
+    - -v
+    - -dbg-level
+    - '2'
+    - -threads
+    - {{THREADS or '\'8\''}}
+    - -index
+    - {{INDEX or '\'2\''}}  # 2 is the default
+    - -task
+    - {{TASK or '\'4\''}}  # 4 is default
+    - -workdir
+    - {{ WRK_DIR }}
+  cwd: {{ SMR_SRC }}
+  validate:
+    func:
+    variant: sanger # fastq quality variant
+    files:
+      aligned.log:
+        num_reads:  10000
+        num_hits:    9847
+        num_fail:     153
+      aligned.fq.gz: 9847
+      other.fq.gz:    153
