@@ -155,33 +155,48 @@ void ReportSam::write_header(Runopts& opts)
 	ss << "@HD\tVN:1.0\tSO:unsorted\n";
 
 	// TODO: this line is taken from "Index::load_stats". To be finished (20171215).
-#if 0
 	for (uint16_t index_num = 0; index_num < (uint16_t)opts.indexfiles.size(); index_num++)
 	{
-		//@SQ header
-		if (opts.yes_SQ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
-		// number of nucleotide sequences in the reference file
+		std::ifstream stats(opts.indexfiles[index_num].second + ".stats", std::ios::in | std::ios::binary);
+
+		// Note: This is simply seeking forward a variable number of bytes
+		// I did multiple seeks just to make this code legible, the compiler
+		// should consolidate this into a few big ::seekg() calls
+		stats.seekg(sizeof(size_t), stats.cur); // filesize
+		uint32_t fasta_len;
+		stats.read(reinterpret_cast<char*>(&fasta_len), sizeof(uint32_t));
+		stats.seekg(sizeof(char)*fasta_len, stats.cur); //variable fasta file name
+		stats.seekg(sizeof(double)*4, stats.cur); //background_freq
+		stats.seekg(sizeof(uint64_t), stats.cur); //full_len
+		stats.seekg(sizeof(uint32_t), stats.cur); //seed_win_len
+		stats.seekg(sizeof(uint64_t), stats.cur); //num_seq
+		int16_t part_num=0;
+		stats.read(reinterpret_cast<char*>(&part_num), sizeof(uint16_t)); //part_num
+		stats.seekg(sizeof(index_parts_stats)*part_num, stats.cur); //part_num*index_parts_stats
+
+
+		// Ok, now that we're done seeking to where we need to be in index stats,
+		// we can begin reading the info necessary for our SQ lines:
 		uint32_t num_sq = 0;
 		stats.read(reinterpret_cast<char*>(&num_sq), sizeof(uint32_t));
 
-		// loop through each @SQ
 		for (uint32_t j = 0; j < num_sq; j++)
 		{
-			// length of the sequence id
+			// get the length of the sequence id
 			uint32_t len_id = 0;
 			stats.read(reinterpret_cast<char*>(&len_id), sizeof(uint32_t));
-			// the sequence id string
-			std::string s(len_id + 1, 0); // AK
-			std::vector<char> vs(s.begin(), s.end());
-			stats.read(reinterpret_cast<char*>(&vs[0]), sizeof(char) * len_id);
-			// the length of the sequence itself
+			// get the sequence id string
+			std::string s(len_id, 0);
+			stats.read(reinterpret_cast<char*>(&s[0]), sizeof(char)*len_id);
+			// get the length of the sequence itself
 			uint32_t len_seq = 0;
 			stats.read(reinterpret_cast<char*>(&len_seq), sizeof(uint32_t));
-			//		 @SQ header
-			if (opts.yes_SQ) acceptedsam << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
-		} // ~for
-	} // ~for
-#endif
+
+			// print to the SAM file:
+			if (opts.is_SQ) ss << "@SQ\tSN:" << s << "\tLN:" << len_seq << "\n";
+		}
+
+	}
 	ss << "@PG\tID:sortmerna\tVN:1.0\tCL:" << opts.cmdline << std::endl;
 	if (is_zip) {
 		auto ret = vzlib_out[0].defstr(ss.str(), fsv[0]); // Z_STREAM_END | Z_OK - ok
