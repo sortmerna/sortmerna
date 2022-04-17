@@ -118,6 +118,10 @@ test.list:
   - t44_2: [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #       issue 288 8 refs + 1 files (1M) reads
   - t45:   [ 2,    1,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
+  #       issue 288-2 segfault: 1 refs, 1 files (10K) reads,
+  - t46:   [ 1,    1,    1,   0,      0,       0,      0,    0,    0,    0,      1,   1,    2,     2 ]
+  #       2 refs, 1 files (1M) reads, no zip
+  - t47:   [ 2,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
 
 t0:
   name: blast + single ref + single read
@@ -1655,7 +1659,7 @@ t19_3:
   info: |
     refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
     ------------------------------------------------------------------- output type
-     2      2      1        -           1         -     -     -    1
+     2      2      1        -           1         1     -     -    1
 
     best  N  min_lis seeds
     ----------------------  alignment type
@@ -3548,3 +3552,90 @@ t46:
         num_fail:     153
       aligned.fq.gz: 9847
       other.fq.gz:    153
+
+t47:
+  name: 1 reads, no zip, no paired
+  info: |
+    Added 202111212 Sun
+    Investigating output corruption reported in 'sortmerna/bugs/20211210_Luisa_Nielsen/'
+
+    refs  reads  zip  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------------ output type
+     2      1     0     0        0           0         0     0     0    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+
+    python /media/sf_a01_code/sortmerna/scripts/run.py -e LNX_VBox_Ubuntu_1604 -n t47 --threads 2 --validate-only
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2x5M_merged.fastq # 2.5M reads
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -v
+    - -workdir
+    - {{ WRK_DIR }}
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - '2'
+    - -task
+    - {{TASK or '\'4\''}}  # 4 is default
+  validate:
+    func:
+    variant: sanger # fastq quality variant
+    files:
+      aligned.log:
+        num_reads: 2500000
+        num_hits:    35252
+        num_fail:  2464748
+      aligned.blast:
+        num_recs:   35252
+      aligned.fq:   35252
+      other.fq:   2464748
+
+t48:
+  name: issue 318
+  info: |
+    Added 20220323 Wed
+    Investigating input split failure reported in https://github.com/biocore/sortmerna/issues/318
+    Failure was due space limits on the workdir. Chnaging the workdir location fixed the problem.
+
+    refs  reads  zip  paired  paired_in  paired_out  out2  sout  zout  other
+    ------------------------------------------------------------------------ output type
+     2      2     1     1        0           0         0     0     0    1
+
+    best  N  min_lis seeds
+    ----------------------  alignment type
+    true  1     2      2
+
+    python /media/sf_a01_code/sortmerna/scripts/run.py -e LNX_VBox_Ubuntu_1604 -n t48 --threads 8
+  cmd:
+    - -ref
+    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+    - -ref
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_318_gzip_fails/SRR12660679_R1.fastq.gz # 19M reads
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_318_gzip_fails/SRR12660679_R2.fastq.gz # 19M reads
+    - -fastx
+    - -other
+    - -blast
+    - '1'
+    - -v
+    - -workdir
+    - {{ WRK_DIR }}
+    - -threads
+    - {{THREADS or '\'4\''}}
+    - -dbg-level
+    - '2'
+    - -task
+    - {{TASK or '\'4\''}}
