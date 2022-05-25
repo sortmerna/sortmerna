@@ -76,7 +76,7 @@ Runopts::Runopts(int argc, char** argv, bool dryrun)
 	process(argc, argv, dryrun);
 	if (skiplengths.empty())
 	{
-		for (int i = 0; i < indexfiles.size(); ++i)
+		for (std::size_t i = 0; i < indexfiles.size(); ++i)
 		{
 			skiplengths.push_back({ 0,0,0 });
 		}
@@ -379,7 +379,7 @@ void Runopts::opt_mismatch(const std::string &val)
 	// set mismatch
 	if (!mismatch_set)
 	{
-		mismatch = atoi(val.data());
+		mismatch = std::stoi(val);
 		if (mismatch > 0)
 		{
 			ERR("--mismatch [INT] takes a negative integer (ex. --mismatch -2)");
@@ -1387,8 +1387,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// parse cmd options and store into 'mopt' multimap
 	for (auto i = argc - argc, flag_count = 0; i != argc; ++i)
 	{
-		// if arg starts with dash it is flag
-		bool is_flag = '-' == **(argv + i); // first character is dash '-'
+		bool is_flag = is_option(*(argv + i));
 		if (is_flag && flag_count == 0) {
 			std::cout << "Found flag: " << *(argv + i) << std::endl;
 			if (i == argc - 1) {
@@ -1478,7 +1477,9 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 
 	INFO("=== Options processing done ===");
-	INFO("Alignment type: [best:", is_best, " num_alignments:", num_alignments, " min_lis:", min_lis, " seeds:", num_seeds,"]");
+	INFO("Alignment type: [best:", is_best, 
+			" num_alignments:", num_alignments, 
+			" min_lis:", min_lis, " seeds:", num_seeds,"]");
 
 	if (!is_help_opt)
 	{
@@ -1729,9 +1730,9 @@ void Runopts::print_help()
 	//  20   12     10     47     20
 	int name_w  = 18;
 	int type_w  = 12;
-	int req_w   = 9;
-	int descr_w = 47; // description width
-	int def_w = 20;
+	//int req_w   = 9;
+	//int descr_w = 47; // description width
+	//int def_w = 20;
 	ss << help_header << std::endl;
 	for (auto opt : options)
 	{
@@ -1802,6 +1803,22 @@ void Runopts::print_help()
 		ss << space_0 << pfx << std::get<0>(opt) << space_1 << std::get<1>(opt) << space_2 << req << "  " << std::get<4>(opt) << std::endl;
 	}
 	std::cout << ss.str();
+}
+
+bool Runopts::is_option(const std::string& opt)
+{
+	bool is_opt = false;
+	if (opt.size() > 0 and opt[0] == '-') {
+		auto pos = opt.find_first_not_of('-');
+		auto opt_no_dash = std::string::npos != pos ? opt.substr(pos) : opt; // i.e. '--opt' -> 'opt'
+		for (auto& optt: options) {
+			if (opt_no_dash == std::get<0>(optt)) {
+				is_opt = true;
+				break;
+			}
+	}
+	}
+	return is_opt;
 }
 
   /*! @fn welcome()

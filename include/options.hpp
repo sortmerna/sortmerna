@@ -452,6 +452,10 @@ public:
 	};
 
 	void print_help();
+	/*
+	 * verify the string is a valid option
+	*/
+	bool is_option(const std::string & opt);
 
 	// variables
 public:
@@ -638,6 +642,9 @@ private:
 	void opt_L(const std::string &val);
 	void opt_max_pos(const std::string &val);
 	void opt_reads_feed(const std::string& val);
+	/*
+	 * 
+	*/
 	void opt_zip_out(const std::string& val);
 	void opt_index(const std::string& val); // help_index
 	void opt_align(const std::string& val); // TODO: may be no need for this  20210207
