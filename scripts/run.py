@@ -27,6 +27,9 @@
 '''
 file: run.py
 created: Aug 12, 2019 Mon
+
+conda install -c conda-forge scikit-bio
+
 '''
 import os
 import sys
@@ -950,7 +953,7 @@ if __name__ == "__main__":
     print('Current dir: {}'.format(cur_dir))
 
     # check env.yaml. If no env file specified, try the current directory
-    env_yaml = os.path.join(cur_dir, 'env.jinja.yaml') if not opts.envfile else opts.envfile
+    env_yaml = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
     if not os.path.exists(env_yaml):
         print('{} No environment config file found. Please, provide one using \'--env\' option'.format(STAMP))
         sys.exit(1)
@@ -969,7 +972,7 @@ if __name__ == "__main__":
         env = yaml.load(env_str, Loader=yaml.FullLoader)
 
     # check test.jinja.yaml
-    cfgfile = os.path.join(cur_dir, 'test.jinja.yaml') if not opts.config else opts.config
+    cfgfile = os.path.join(cur_dir, 'test.jinja') if not opts.config else opts.config
     if not os.path.exists(cfgfile):
         print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(STAMP))
         sys.exit(1)
@@ -1002,7 +1005,7 @@ if __name__ == "__main__":
     SMR_SRC  = val or '{}/sortmerna'.format(UHOME)
     if not os.path.exists(SMR_SRC):
         print(('{} Sortmerna source directory {} not found. '
-            'Either specify location in env.jinja.yaml or '
+            'Either specify location in env.jinja or '
             'make sure the sources exist at {}'.format(STAMP, SMR_SRC, SMR_SRC)))
     DATA_DIR = env['DATA_DIR'][ENV]
     vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
