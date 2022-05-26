@@ -54,15 +54,15 @@ class Read;
 struct Index;
 class KeyValueDatabase;
 
-Output::Output(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
+Output::Output(Readfeed& readfeed, Runopts& opts)
 	: fastx(opts), fx_other(opts), blast(opts), denovo(opts), sam(opts), biom(opts)
 {
-	init(readfeed, opts, readstats);
+	init(readfeed, opts);
 }
 
 //Output::~Output() {}
 
-void Output::init(Readfeed& readfeed, Runopts& opts, Readstats& readstats)
+void Output::init(Readfeed& readfeed, Runopts& opts)
 {
 	if (opts.is_fastx) fastx.init(readfeed, opts);
 	if (opts.is_other) fx_other.init(readfeed, opts);
@@ -186,7 +186,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	Refstats refstats(opts, readstats);
 	References refs;
 	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
-	Output output(readfeed, opts, readstats);
+	Output output(readfeed, opts);
 
 	if (opts.is_sam) output.sam.write_header(opts);
 

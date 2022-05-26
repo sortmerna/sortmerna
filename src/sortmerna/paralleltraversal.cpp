@@ -90,8 +90,6 @@ void traverse
 	read.lastIndex = index.index_num;
 	read.lastPart = index.part;
 
-	bool read_to_count = true; // passed directly to compute_lis_alignment. TODO: What's the point?
-
 	uint32_t win_shift = opts.skiplengths[index.index_num][0];
 	// keep track of windows (read positions) which have already been traversed
 	// in the burst trie using different shifts. Initially all False
@@ -293,26 +291,3 @@ void traverse
 			read.is_done = true;
 	}
 } // ~traverse
-
-/**
- * verify the alignment was already performed by querying the KVDB
- * Alignment descriptor:
- *   List all index files: hash, size
- *   List read files: hash, size
- *   List reference files: hash, size
- *   List number of aligned reads
- *   Store options and compare to the current. Add '==' operator.
- *   Store the list of DBKeys of all aligned reads (?)
- *
- * Alignment IS Done IF
- *  - reads files are the same
- *  - references are the same
- *  - index is present and the names/hashes are the same as stored in DB
- *  - alignment results are stored
- *  - read statistics are stored and is_done = True
- */
-bool is_aligned(Runopts& opts, Readstats& readstats, Output& output, Index& index, KeyValueDatabase& kvdb)
-{
-	INFO("TODO");
-	return false;
-}

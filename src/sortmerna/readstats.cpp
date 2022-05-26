@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -64,8 +64,8 @@ Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t 
 	:
 	all_reads_count(all_reads_count),
 	all_reads_len(all_reads_len),
-	min_read_len(max_read_len),
-	max_read_len(min_read_len),
+	min_read_len(min_read_len),
+	max_read_len(max_read_len),
 	total_otu(),
 	num_aligned(0),
 	n_yid_ncov(0),

@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -70,9 +70,41 @@ public:
 	void init_vzlib_in();
 	//void init_vstate_in();
 	bool split();
+	/*
+     * - define input files format (FASTA, FASTQ) and compression (gz, non-gz)
+     * - test reading by getting one read
+     *
+     * logic:
+     *   gz:
+   	 *    1F 8B 08 08 61 78 C5 5E 00 03 53 52 52 31 36 33 35 38 36 34 5F 31 5F 35 4B 2E 66 61 73 74 71 00
+   	 *     0 byte at 8th position_|  |  |_file name starts in ASCII                   file name end_|  |_ 0 byte
+   	 *                      ETX byte_|
+   	 * flat:
+   	 *   first 100 bytes are ascii (<=127 x7F), first char is '@' (x40), and can infer fasta or fastq
+    */
 	bool define_format(const int& dbg = 0);
 	void count_reads();
 	void write_descriptor();
+	/*
+     * verify the split was already performed and the feed is ready
+     * logic:
+	 *   Read feed descriptor and verify:
+	 *     - original files have the same name, size and line count
+	 *     - num splits are the same
+	 *     - split files names, count, and line count are the same
+     * Split readfeed descriptor:
+	 *   timestamp: xxx
+	 *   num_input: 2  # number of input files
+	 *   num_parts: 3  # number of split parts. split[].size = num_input * num_parts
+	 *   input:
+	 *     - file_1: name, sha
+	 *     - file_2: name, sha
+	 * split:
+	 *  - file_1: name, sha
+	 *  - file_2: name, sha
+	 *  ...
+	 *  - file_n: name, sha
+    */
 	bool is_split_ready();
 	/*
 	* delete the readfeed i.e. delete Split files (Not original reads files) described in the readfeed descriptor

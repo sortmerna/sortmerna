@@ -61,12 +61,12 @@ Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_read
 	std::stringstream ss;
 	std::array<std::string, 4> sfxarr{ {".bursttrie_0.dat", ".pos_0.dat", ".kmer_0.dat", ".stats"} };
 
-	int count_indexed = 0;
+	std::size_t count_indexed = 0;
 
 	// check the index is ready
 	if (!is_ready) {
 		// init index files
-		for (int idx = 0; idx < opts.indexfiles.size(); ++idx)
+		for (std::size_t idx = 0; idx < opts.indexfiles.size(); ++idx)
 		{
 			// prepare index file prefix - derive from the reference file name
 			if (opts.indexfiles[idx].second.size() == 0) {
@@ -115,7 +115,7 @@ Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_read
 	if (!is_ready) {
 		if (opts.findex == 1 || opts.findex == 2) {
 			// test index files writable
-			for (int idx = 0; idx < opts.indexfiles.size(); ++idx) {
+			for (std::size_t idx = 0; idx < opts.indexfiles.size(); ++idx) {
 				for (auto const& sfx : sfxarr) {
 					auto idxfile = opts.indexfiles[idx].second + sfx;
 					std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
@@ -357,7 +357,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 void Index::unload()
 {
 	// lookup_tbl
-	for (int i = 0; i < lookup_tbl.size(); i++)
+	for (std::size_t i = 0; i < lookup_tbl.size(); i++)
 	{
 		if (lookup_tbl[i].trie_F != NULL)
 		{
@@ -374,7 +374,7 @@ void Index::unload()
 	lookup_tbl.clear();
 
 	// positions_tbl
-	for (int i = 0; i < positions_tbl.size(); i++)
+	for (std::size_t i = 0; i < positions_tbl.size(); i++)
 	{
 		if (positions_tbl[i].arr != NULL)
 		{

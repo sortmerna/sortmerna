@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -89,17 +89,7 @@ public:
 	bool is03; // indicates Read::isequence is in 0..3 alphabet
 	bool is04; // indicates Read:iseqeunce is in 0..4 alphabet. Seed search cannot proceed on 0-4 alphabet
 	bool isRestored; // flags the read is restored from Database. See 'Read::restoreFromDb'
-
-	std::string header;
-	std::string sequence;
-	std::string quality; // "" (fasta) | "xxx..." (fastq)
 	BIO_FORMAT format; // fasta | fastq
-
-	// calculated
-	std::string isequence; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
-	bool reversed; // indicates the read is reverse-complement i.e. 'revIntStr' was applied
-	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
-
 	// store in database ------------>
 	unsigned lastIndex; // last index number this read was aligned against. Set in Processor::callback
 	unsigned lastPart; // last part number this read was aligned against.  Set in Processor::callback
@@ -108,6 +98,7 @@ public:
 	unsigned n_yid_ncov; // count of alignments ID + !COV
 	unsigned n_nid_ycov; // count of alignments !ID + COV
 	unsigned n_denovo; // count of alignment !ID + !COV
+	bool reversed; // indicates the read is reverse-complement i.e. 'revIntStr' was applied
 	bool is_done; // all alignments have been found => stop searching
 	bool is_hit; // true if at least one alignment 'SW_score >= min_SW_score' has been found
 	bool is_new_hit; // indicates a new hit was found so the read has to be stored. Init to False before each index search. NO DB store.
@@ -127,7 +118,12 @@ public:
 	*/
 	uint32_t hit_seeds;
 	int32_t best; // init with opts.min_lis, see 'this.init'. NO DB store/restore (bug 51).
-
+	std::string header;
+	std::string sequence;
+	std::string quality; // "" (fasta) | "xxx..." (fastq)
+	// calculated
+	std::string isequence; // sequence in Integer alphabet: [A,C,G,T] -> [0,1,2,3]
+	std::vector<int> ambiguous_nt; // positions of ambiguous nucleotides in the sequence (as defined in nt_table/load_index.cpp)
 	std::vector<id_win> id_win_hits; // [1] positions of kmer hits on the reference sequence in given index/part. NO DB store.
 	alignment_struct2 alignment; // store in DB
 	std::vector<int8_t> scoring_matrix; // initScoringMatrix   orig: int8_t* scoring_matrix  No DB store
@@ -136,7 +132,7 @@ public:
 public:
 	Read();
 	Read(std::string& readstr);
-	Read(std::string id, std::string& read);
+	Read(std::string id, std::size_t read_num);
 	Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format);
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment

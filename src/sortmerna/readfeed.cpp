@@ -718,26 +718,6 @@ bool Readfeed::split()
 	return retval;
 } // ~Readfeed::split
 
-/*
-  verify the split was already performed and the feed is ready
-  logic:
-	Read feed descriptor and verify:
-	  - original files have the same name, size and line count
-	  - num splits are the same
-	  - split files names, count, and line count are the same
-  Split readfeed descriptor:
-	timestamp: xxx
-	num_input: 2  # number of input files
-	num_parts: 3  # number of split parts. split[].size = num_input * num_parts
-	input:
-	  - file_1: name, sha
-	  - file_2: name, sha
-	split:
-	 - file_1: name, sha
-	 - file_2: name, sha
-	 ...
-	 - file_n: name, sha
-*/
 bool Readfeed::is_split_ready() {
 	// compare with data in descriptor
 	std::ifstream ifs; // descriptor file
@@ -847,19 +827,6 @@ bool Readfeed::is_split_ready() {
 	return is_ready;
 } // ~Readfeed::is_split_ready
 
-/*
-  - define input files format (FASTA, FASTQ) and compression (gz, non-gz)
-  - Count reads
-  - Count length of all reads
-
-  logic:
-    gz:
-	  1F 8B 08 08 61 78 C5 5E 00 03 53 52 52 31 36 33 35 38 36 34 5F 31 5F 35 4B 2E 66 61 73 74 71 00
-	   0 byte at 8th position_|  |  |_file name starts in ASCII                   file name end_|  |_ 0 byte
-	                    ETX byte_|
-	flat:
-	  first 100 bytes are ascii (<=127 x7F), first char is '@' (x40), and can infer fasta or fastq
-*/
 bool Readfeed::define_format(const int& dbg)
 {
 	bool is_ascii = true;
@@ -903,8 +870,8 @@ bool Readfeed::define_format(const int& dbg)
 		}
 		
 		ifsv[i].seekg(0); // rewind stream to the start
-		// get a read
-		if (next(i, str, seqlen, orig_files)) {
+		// get a read to test ability to read
+		if (next(i, str, true, orig_files)) {
 			std::string fmt = orig_files[i].isZip ? "gzipped" : "flat ASCII";
 			if (orig_files[i].isFasta) {
 				//biof = BIO_FORMAT::FASTA;
@@ -951,16 +918,16 @@ void Readfeed::count_reads()
 	if (!is_format_defined) {
 		define_format(); // exits if cannot define
 	}
-
+    
 	rewind_in();
-
+    
 	// init zlib
 	for (std::size_t i = 0; i < orig_files.size(); ++i) {
 		if (orig_files[i].isZip) {
 			vzlib_in[i].init();
 		}
 	}
-
+    
 	std::string readstr;
 	unsigned seqlen = 0;
 

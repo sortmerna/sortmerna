@@ -1118,7 +1118,7 @@ void get_keys_str(std::string &keys_str)
 int build_index(Runopts& opts)
 {
 	std::stringstream ss;
-	timeval t;
+	//timeval t;
 	//double start = 0.0;
 	//double end = 0.0;
 	auto stt = std::chrono::high_resolution_clock::now();
@@ -1127,10 +1127,10 @@ int build_index(Runopts& opts)
 	INFO("==== Index building started ====");
 
 	// memory of index
-	bool mem_is_set = false;
-	bool lnwin_set = false;
-	bool interval_set = false;
-	bool max_pos_set = false;
+	//bool mem_is_set = false;
+	//bool lnwin_set = false;
+	//bool interval_set = false;
+	//bool max_pos_set = false;
 
 	pread_gv = opts.seed_win_len + 1;
 	partialwin_gv = opts.seed_win_len / 2;

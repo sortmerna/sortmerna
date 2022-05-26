@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -144,13 +144,18 @@ Read::Read()
 
 Read::Read(std::string& readstr) : Read() {	isEmpty = !from_string(readstr); }
 
-Read::Read(std::string id, std::string& read) :	Read() { id = id; }
+Read::Read(std::string id, std::size_t read_num) : Read() { id = id; read_num = read_num; }
 
 Read::Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format)
 	:
-	id(id), header(std::move(header)), sequence(sequence),
-	quality(quality), format(format), isEmpty(false)
+	Read()
 {
+	id = id;
+	isEmpty = false;
+	format = format;
+	header = header; // std::move(header)
+	sequence = sequence;
+	quality = quality;
 	validate();
 }
 
@@ -343,7 +348,7 @@ void Read::seqToIntStr()
 void Read::revIntStr() 
 {
 	std::reverse(isequence.begin(), isequence.end());
-	for (int i = 0; i < isequence.length(); i++) {
+	for (std::size_t i = 0; i < isequence.length(); i++) {
 		isequence[i] = complement[(int)isequence[i]];
 	}
 	reversed = !reversed;
@@ -354,7 +359,7 @@ std::string Read::get04alphaSeq() {
 	std::string seq;
 	if (is03) flip34();
 	// convert to alphabetic
-	for (int i = 0; i < isequence.size(); ++i)
+	for (std::size_t i = 0; i < isequence.size(); ++i)
 		seq += nt_map[(int)isequence[i]];
 
 	//if (rev03) flip34();
@@ -459,7 +464,6 @@ std::string Read::toBinString()
  */
 bool Read::load_db(KeyValueDatabase& kvdb)
 {
-	int id_win_hits_len = 0;
 	std::string bstr = kvdb.get(id);
 	if (bstr.size() == 0) { isRestored = false; return isRestored; }
 	size_t offset = 0;
@@ -576,7 +580,7 @@ std::tuple<uint32_t, uint32_t, uint32_t, double, double> Read::calc_miss_gap_mat
 	}
 
 	auto n_tot = n_miss + n_gap + n_match;
-	auto align_len = align.read_end1 - align.read_begin1 + 1;
+	//auto align_len = align.read_end1 - align.read_begin1 + 1;
 	auto id = (double)n_match / n_tot; // e.g. 0.98
 	auto cov = (double)abs(align.read_end1 - align.read_begin1 + 1) / align.readlen; // e.g. 0.86
 	return { n_miss, n_gap, n_match, id, cov };
