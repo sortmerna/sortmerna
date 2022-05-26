@@ -56,6 +56,7 @@
 #include <fcntl.h>
 #include <functional> // std::invoke
 #include <filesystem>
+#include <algorithm>
 
 
 #ifdef __APPLE__
@@ -1138,14 +1139,34 @@ void Runopts::opt_reads_feed(const std::string& val)
 
 void Runopts::opt_zip_out(const std::string& val)
 {
+	const std::array<std::string, 5> yesvals = {"1", "y", "yes", "t", "true"};
+	const std::array<std::string, 5> novals = {"0", "n", "no", "f", "false"};
 	if (val.size() > 0) {
-		auto ii = std::stoi(val);
-		if (!(ii == -1 || ii == 0 || ii == 2)) {
-			WARN("'", OPT_ZIP_OUT, "' can only take integer values: [", -1, ", ", 0, ", ", 1, "]. Provided value: ", val, " Using default: ", zip_out);
+		if (val != "-1") {
+			// to lowercase
+			std::string valc(val);
+			std::transform(valc.begin(), valc.end(), valc.begin(),
+							[](unsigned char c) -> unsigned char { return std::tolower(c); });
+			auto *pval = std::find(std::begin(yesvals), std::end(yesvals), valc);
+			if (pval != std::end(yesvals)) {
+				zip_out = 1;
+			}
+			else {
+				auto *pval = std::find(std::begin(novals), std::end(novals), valc);
+				if (pval != std::end(novals)) {
+					zip_out = 0;
+				}
+			}
+
+			if (zip_out != 0 && zip_out != 1) {
+				WARN("'", OPT_ZIP_OUT, "' was provided with an unrecognized value: ", val, " Using default: ", zip_out);
+			}
+			else {
+				INFO("using '", OPT_ZIP_OUT, "' with specified value ", val, "(", zip_out, ")");
+			}
 		}
 		else {
-			INFO("using '", OPT_ZIP_OUT, "' with specified value ", ii);
-			zip_out = ii;
+			INFO("using '", OPT_ZIP_OUT, "' with default value ", val);
 		}
 	}
 }

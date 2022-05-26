@@ -364,11 +364,13 @@ help_max_pos =
 //	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
 
 help_zip_out =
-	"Controls the output compression                       Yes/True\n\n"
+	"Controls the output compression                        '-1'\n\n"
 	"       By default the report files are produced in the same format as the input i.e.\n"
 	"       if the reads files are compressed (gz), the output is also compressed.\n"
 	"       The default behaviour can be overriden by using '-" + OPT_ZIP_OUT + "'.\n"
-	"       The possible values: Y(es), N(o), T(rue), F(alse). No value means 'True'.\n"
+	"       The possible values: '1/true/t/yes/y'\n"
+	"                            '0/false/f/no/n'\n"
+	"                            '-1' (the same format as input - default)\n"
 	"       The values are Not case sensitive i.e. 'Yes, YES, yEs, Y, y' are all OK\n"
 	"       Examples:\n"
 	"       '-" + OPT_READS + " freads.gz -" + OPT_ZIP_OUT + " n' : generate flat output when the input is compressed\n"
@@ -519,6 +521,7 @@ public:
 
 	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
 	/*
+	* 0 (false) | 1 (true) | -1 (not set)
 	* read.is_zip  zip_out  out_zip
 	* -----------------------------
 	*      1         -1       1    zip
@@ -528,7 +531,7 @@ public:
 	*      0          0       0    flat
 	*      0          1       1    zip
 	*/
-	int zip_out = -1; // - 0 (false) | 1 (true) | -1 (not set)
+	int zip_out = -1;
 
 	uint32_t num_alignments = 1; // [3] help_num_alignments
 	int32_t num_seeds = 2; // min number of seeds on a read that have matches in DB prior calculating LIS
@@ -643,7 +646,7 @@ private:
 	void opt_max_pos(const std::string &val);
 	void opt_reads_feed(const std::string& val);
 	/*
-	 * 
+	 * true: 1,yes,Yes,Y,y,T,t, false: 0,No,NO,no,N,n,F,f
 	*/
 	void opt_zip_out(const std::string& val);
 	void opt_index(const std::string& val); // help_index
