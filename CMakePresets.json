@@ -1,0 +1,70 @@
+{
+    "version": 4,
+    "configurePresets": [
+        {
+            "name": "LIN_Debug",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ROCKSDB_HOME": "$env{HOME}/a1/code/rocksdb/dist",
+                "WITH_TESTS": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "ZLIB_STATIC": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "ZLIB_ROOT": {
+                    "type": "PATH",
+                    "value": "$env{HOME}/a1/code/zlib/dist"
+                },
+                "PORTABE": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "WITH_RUNTIME_DEBUG": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "ROCKSDB_STATIC": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "ZLIB_LIBRARY_RELEASE": {
+                    "type": "FILEPATH",
+                    "value": "$env{HOME}/a1/code/zlib/dist/lib/libz.a"
+                },
+                "ZLIB_LIBRARY_DEBUG": {
+                    "type": "FILEPATH",
+                    "value": "$env{HOME}/a1/code/zlib/dist/lib/libz.a"
+                },
+                "RAPIDJSON_HOME": {
+                    "type": "PATH",
+                    "value": "${env:HOME}/a1/code/rapidjson/dist"
+                },
+                "CONCURRENTQUEUE_HOME": {
+                    "type": "PATH",
+                    "value": "$env{HOME}/a1/code/concurrentqueue"
+                },
+                "DCMAKE_INSTALL_PREFIX": {
+                    "type": "BOOL",
+                    "value": "ON"
+                }
+            }
+        },
+        {
+            "name": "LIN_Release",
+            "description": "",
+            "displayName": "",
+            "binaryDir": "${sourceDir}/build/Release",
+            "inherits": [
+                "LIN_Debug"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ]
+}
