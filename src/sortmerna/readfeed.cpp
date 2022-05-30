@@ -835,8 +835,6 @@ bool Readfeed::define_format(const int& dbg)
 	ifsv.resize(num_orig_files);
 	vstate_in.resize(num_orig_files);
 
-	std::string str(100, '\0');
-	unsigned seqlen = 0;
 	for (decltype(num_orig_files) i = 0; i < num_orig_files; ++i) {
 		if (!ifsv[i].is_open()) {
 			ifsv[i].open(orig_files[i].path, std::ios_base::in | std::ios_base::binary);
@@ -847,6 +845,7 @@ bool Readfeed::define_format(const int& dbg)
 		}
 		auto fsz = std::filesystem::file_size(orig_files[i].path);
 		auto blen = fsz > 100 ? 100 : fsz; // num bytes to read: max 100 - issue 290  20210511
+		std::string str(100, '\0');
 		ifsv[i].read(&str[0], blen); // get blen bytes from the stream
 		if (dbg > 1) {
 			auto st = ifsv[i].rdstate();
