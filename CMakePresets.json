@@ -42,7 +42,7 @@
                 },
                 "RAPIDJSON_HOME": {
                     "type": "PATH",
-                    "value": "${env:HOME}/a1/code/rapidjson/dist"
+                    "value": "$env{HOME}/a1/code/rapidjson/dist"
                 },
                 "CONCURRENTQUEUE_HOME": {
                     "type": "PATH",

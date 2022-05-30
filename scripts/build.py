@@ -633,10 +633,10 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
         cmd.append('--loglevel={}'.format(opts.loglevel.upper()))
     elif opts.trace:
         cmd.append('--trace')
-    cmd.append(SMR_SRC)
+    cmd.extend(['-S', SMR_SRC, '-B', SMR_BUILD])
 
     # generate CMake configuration
-    proc_run(cmd, SMR_BUILD)
+    proc_run(cmd, SMR_SRC)
 
     # build and install
     cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'install' ]
@@ -652,7 +652,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
 
     # CMAKE_INSTALL_PREFIX\bin\sortmerna -h
     cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '-h' ]
-    proc_run(cmd, SMR_BUILD)
+    proc_run(cmd, SMR_SRC)
 #END smr_build
 
 def concurrentqueue_build(**cfg):
@@ -697,7 +697,7 @@ if __name__ == "__main__":
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
     STAMP = '[build.py:__main__]'
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # options
