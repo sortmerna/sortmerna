@@ -25,7 +25,7 @@
 #			          Rob Knight       robknight@ucsd.edu
 
 #
-# file: test.jinja.yaml
+# file: test.jinja
 # created: Oct 27, 2019 Sun
 #
 # Tests configuration
@@ -1528,7 +1528,7 @@ t19:
      1e-15     106  5307    
   cmd:
     - -ref
-    - data/silva-bac-16s-database-id85.fasta
+    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -3641,7 +3641,7 @@ t48:
     - {{TASK or '\'4\''}}
 
 t49:
-  name: issue 321 - core dumped on short read
+  name: issue 321 - core dumped on short fastq record (heap corruption)
   info: |
     https://github.com/biocore/sortmerna/issues/321
 
@@ -3660,9 +3660,9 @@ t49:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5-iss_321.fastq # 5 reads - first read is 12nt
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5-iss_321.fastq # 6 reads - first rcord 72 bytes
     - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5-iss_321.fastq # 5 reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5-iss_321.fastq # 6 reads
     - -fastx
     - -other
     - -out2

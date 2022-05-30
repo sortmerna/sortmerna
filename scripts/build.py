@@ -635,7 +635,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
         cmd.append('--trace')
     cmd.append(SMR_SRC)
 
-    # Run the build command
+    # generate CMake configuration
     proc_run(cmd, SMR_BUILD)
 
     # build and install

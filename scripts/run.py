@@ -979,7 +979,7 @@ if __name__ == "__main__":
     else:
         print('{} Using Build configuration template: {}'.format(STAMP, cfgfile))
 
-    # load 'env.jinja.yaml' template
+    # load 'test.jinja' template
     jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
     template = jjenv.get_template(os.path.basename(cfgfile))
 
@@ -1087,19 +1087,20 @@ if __name__ == "__main__":
         ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)
 
     # validate alignment results
-    if opts.func:
-        gdict = globals().copy()
-        gdict.update(locals())
-        func = gdict.get(opts.func)
-        func(**cfg[opts.name])
-    elif cfg[opts.name].get('validate', {}).get('func'):
-        fn = cfg[opts.name].get('validate', {}).get('func')
-        gdict = globals().copy()
-        gdict.update(locals())
-        func = gdict.get(fn)
-        if func:
-            func(TEST_DATA, ret, **cfg[opts.name])
-    else:
-        process_output(opts.name, **cfg)
+    if ret.get('retcode', 0) == 0:
+        if opts.func:
+            gdict = globals().copy()
+            gdict.update(locals())
+            func = gdict.get(opts.func)
+            func(**cfg[opts.name])
+        elif cfg[opts.name].get('validate', {}).get('func'):
+            fn = cfg[opts.name].get('validate', {}).get('func')
+            gdict = globals().copy()
+            gdict.update(locals())
+            func = gdict.get(fn)
+            if func:
+                func(TEST_DATA, ret, **cfg[opts.name])
+        else:
+            process_output(opts.name, **cfg)
 #END main
 #END END run.py
