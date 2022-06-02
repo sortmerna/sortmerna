@@ -47,7 +47,7 @@ void ReportFastx::init(Readfeed& readfeed, Runopts& opts)
 	base.init(opts);
 	base.init(readfeed, opts, fv, fsv, opts.aligned_pfx.string(), pid_str);
 	openfw(opts.dbg_level); // open output files for writing
-	is_zip = readfeed.orig_files[0].isZip;
+	is_zip = (opts.zip_out == 1) || (readfeed.orig_files[0].isZip && opts.zip_out == -1);
 	if (is_zip)	init_zip();
 } // ~ReportFastx::init
 

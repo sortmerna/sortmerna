@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -85,7 +85,8 @@ void ReportFxBase::init(Readfeed& readfeed, Runopts& opts, std::vector<std::stri
 			std::string sfx3 = "_" + std::to_string(i);
 			std::string sfx4 = opts.is_pid ? "_" + pid_str : "";
 			std::string orig_ext = readfeed.orig_files[orig_i].isFastq ? ".fq" : ".fa";
-			std::string gz = readfeed.orig_files[orig_i].isZip ? ".gz" : "";
+			bool is_zip = (opts.zip_out == 1) || (readfeed.orig_files[0].isZip && opts.zip_out == -1);
+			std::string gz = is_zip ? ".gz" : "";
 
 			idx = i * num_out + j;
 			fv[idx] = fpfx + sfx1 + sfx2 + sfx3 + orig_ext + gz; // e.g. aligned_paired_fwd_0_PID.fq
