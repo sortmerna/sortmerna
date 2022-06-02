@@ -1775,6 +1775,8 @@ t19_5:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{ WRK_DIR }}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1785,8 +1787,8 @@ t19_5:
         num_fail:      167
       aligned.blast:
         num_recs:     9833
-      aligned_fwd.fq: 4876
-      aligned_rev.fq: 4957
+      aligned_fwd.fq.gz: 4876
+      aligned_rev.fq.gz: 4957
     runtime:
       win:
         - threads: 8
@@ -3680,20 +3682,10 @@ t49:
     variant: sanger # fastq quality variant
     files:
       aligned.log:
-        num_reads:  10
-        num_hits:   10
-        num_fail:    0
-      aligned.blast:
-        num_recs:   10
-        n_yid_ycov:  0
-        n_yid_ncov:  0
-        n_nid_ycov:  0
-        n_denovo:   10
-      aligned_paired_fwd.fq:    5
-      aligned_paired_rev.fq:    5
-      #aligned_singleton_fwd.fq: 0
-      #aligned_singleton_rev.fq: 0
-      #other_paired_fwd.fq:      0
-      #other_paired_rev.fq:      0
-      #other_singleton_fwd.fq:   0
-      #other_singleton_rev.fq:   0
+        num_reads: 12
+        num_hits:   9
+        num_fail:   3
+      aligned_fwd.fq: 5
+      aligned_rev.fq: 5
+      other_fwd.fq:   1
+      other_rev.fq:   1
