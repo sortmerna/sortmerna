@@ -922,14 +922,14 @@ if __name__ == "__main__":
                                                                               |_ on WSL
     '''
     STAMP = '[run.py:__main__]'
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # process options
     optpar = OptionParser()
-    optpar.add_option('-n', '--name', dest='name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf')
+    optpar.add_option('-n', '--name', dest='name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
     optpar.add_option('-f', '--func', dest='func', help='function to run: process_otu | ')
-    optpar.add_option('-c', '--clean', action="store_true", help='clean build directory')
+    optpar.add_option('-c', '--clean', action="store_true", help='clean Work directory and exit. Requires \'--name\'')
     optpar.add_option('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
     optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
     optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
@@ -1000,7 +1000,7 @@ if __name__ == "__main__":
         val = env.get('WRK_DIR',{}).get(ENV)
         WRK_DIR = val if val else os.path.join(UHOME, 'sortmerna', 'run')
 
-    # render 'test.jinja.yaml' template
+    # render 'test.jinja' template
     val = env.get(SMR,{}).get('src',{}).get(ENV)
     SMR_SRC  = val or '{}/sortmerna'.format(UHOME)
     if not os.path.exists(SMR_SRC):
@@ -1041,66 +1041,74 @@ if __name__ == "__main__":
             SMR_EXE = '{}.exe'.format(SMR_EXE)
 
     if SMR_EXE and os.path.exists(SMR_EXE):
-        print('{} using {}'.format(STAMP, SMR_EXE))
+        print(f'{STAMP} using {SMR_EXE}')
     else:
-        print('{} sortmerna executable {} does not exist or not set'.format(STAMP, SMR_EXE))
+        print('{STAMP} sortmerna executable {SMR_EXE} does not exist or not set')
         sys.exit(1)
 
     TEST_DATA = os.path.join(SMR_SRC, 'data')  # data directory
     ALI_NAMES = cfg.get('aligned.names')
 
-    process_smr_opts(cfg[opts.name]['cmd'])
-
-    # clean-up the KVDB, IDX directories, and the output. 
-    # May Fail if any file in the directory is open. Close the files and re-run.
-    if opts.clean:
-        if os.path.exists(KVDB_DIR):
-            print('Removing KVDB dir: {}'.format(KVDB_DIR))
-            shutil.rmtree(KVDB_DIR)
-        if os.path.exists(IDX_DIR):
-            print('Removing KVDB dir: {}'.format(IDX_DIR))
-            shutil.rmtree(IDX_DIR)
-
-    # clean previous alignments (KVDB)
-    if os.path.exists(KVDB_DIR) and not opts.validate_only:
-        print('{} Removing KVDB dir: {}'.format(STAMP, KVDB_DIR))
-        shutil.rmtree(KVDB_DIR)
-
-    # clean output
-    ali_dir = os.path.dirname(ALIF)
-    if ali_dir and os.path.exists(ali_dir) and not opts.validate_only:
-        print('{} Removing Aligned Output: {}'.format(STAMP, ali_dir))
-        shutil.rmtree(ali_dir)
-
-    if OTHF:
-        oth_dir = os.path.dirname(OTHF)
-        if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not opts.validate_only:
-            print('{} Removing Non-Aligned Output: {}'.format(STAMP, oth_dir))
-            shutil.rmtree(oth_dir)
-
-    # run alignment
+    # run test
     ret = {}
-    if not opts.validate_only:
-        print('{} Running {}: {}'.format(STAMP, opts.name, cfg[opts.name]['name']))
-        cfg[opts.name]['cmd'].insert(0, SMR_EXE)
-        is_capture = cfg[opts.name].get('capture', False)
-        ret = run(cfg[opts.name]['cmd'], cwd=cfg[opts.name].get('cwd'), capture=is_capture)
+    tlist = cfg.get('tests').keys() if opts.name == 'all' else [opts.name]
+    print(f'{STAMP} number of tests: {len(tlist)}')
+    for test in tlist:
+        tn = cfg[test]['name']
+        print('\n')
+        print(f'{STAMP} running {test}: {tn}')
+        process_smr_opts(cfg[test]['cmd'])
 
-    # validate alignment results
-    if ret.get('retcode', 0) == 0:
-        if opts.func:
-            gdict = globals().copy()
-            gdict.update(locals())
-            func = gdict.get(opts.func)
-            func(**cfg[opts.name])
-        elif cfg[opts.name].get('validate', {}).get('func'):
-            fn = cfg[opts.name].get('validate', {}).get('func')
-            gdict = globals().copy()
-            gdict.update(locals())
-            func = gdict.get(fn)
-            if func:
-                func(TEST_DATA, ret, **cfg[opts.name])
+        # clean-up the KVDB, IDX directories, and the output. 
+        # May Fail if any file in the directory is open. Close the files and re-run.
+        if opts.clean:
+            if os.path.exists(KVDB_DIR):
+                print(f'{STAMP} removing KVDB: {KVDB_DIR}')
+                shutil.rmtree(KVDB_DIR)
+            if os.path.exists(IDX_DIR):
+                print(f'{STAMP} removing Index: {IDX_DIR}')
+                shutil.rmtree(IDX_DIR)
+            break
+
+        # clean previous alignments (KVDB)
+        if os.path.exists(KVDB_DIR) and not opts.validate_only:
+            print(f'{STAMP} Removing KVDB dir: {KVDB_DIR}')
+            shutil.rmtree(KVDB_DIR)
+
+        # clean output
+        ali_dir = os.path.dirname(ALIF)
+        if ali_dir and os.path.exists(ali_dir) and not opts.validate_only:
+            print(f'{STAMP} Removing Aligned Output: {ali_dir}')
+            shutil.rmtree(ali_dir)
+
+        if OTHF:
+            oth_dir = os.path.dirname(OTHF)
+            if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not opts.validate_only:
+                print(f'{STAMP} removing Non-Aligned Output: {oth_dir}')
+                shutil.rmtree(oth_dir)
+
+        if not opts.validate_only:
+            cfg[test]['cmd'].insert(0, SMR_EXE)
+            is_capture = cfg[test].get('capture', False)
+            ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
+
+        # validate alignment results
+        if ret.get('retcode', 0) == 0:
+            if opts.func:
+                gdict = globals().copy()
+                gdict.update(locals())
+                func = gdict.get(opts.func)
+                func(**cfg[test])
+            elif cfg[test].get('validate', {}).get('func'):
+                fn = cfg[test].get('validate', {}).get('func')
+                gdict = globals().copy()
+                gdict.update(locals())
+                func = gdict.get(fn)
+                if func:
+                    func(TEST_DATA, ret, **cfg[test])
+            else:
+                process_output(test, **cfg)
         else:
-            process_output(opts.name, **cfg)
+            break
 #END main
 #END END run.py

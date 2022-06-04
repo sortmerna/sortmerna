@@ -31,97 +31,98 @@
 # Tests configuration
 # Rendered using Jinja
 #
-
-test.list:
-  #                         output type                                       |    alignment type
-  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t0:    [ 1,    1,    0,   0,     0,        0,      0,    0,    0,    0,      1,   1,    2,     2 ]
-  - t0_1:  [ 1,    1,    0,   0,     0,        0,      0,    0,    0,    0,      1,   1,    2,     2 ]
-  - t1: test_blast_format_1 - single reference + single read
-  - t2: test_cigar_lcs_1
-  - t3: test_environmental_output
-  - t4: test_indexing_split_databases. No alignment, just a multi-part index build
-  - t5: test_mate_pairs - part 1
-  - t6:
-  - t7:
-  - t8:
-  - t9: test_output_all_alignments_f_rc
-  - t10:
-  - t11: 
-  - t12:   [ 1,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   5,    2,     2 ]
-  - t13:
-  - t14:
-  - t15:
-  #                         output type                                       |    alignment type
-  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t16:   [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   1,    2,     2 ]
-  - t16_2: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   0,    2,     2 ]
-  - t16_3: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   2,    2,     2 ]
-  - t16_4: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   1,    2,     2 ]
-  - t16_5: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   2,    2,     2 ]
-  - t16_6: [ 2,    2,    1,   1,     0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
-  - t16_7: [ 2,    2,    1,   1,     0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
-  - t16_8: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
-  # TODO: zout not yet ready. 20210204 Thu
-  - t16_9: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
+exlude.list: ['t0','t0_1','t1','t2','t3']
+tests:
+  #                       output type                                       |    alignment type
+  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t0:    [ 1,    1,    0,   0,     0,        0,      0,    0,    0,    0,      1,   1,    2,     2 ]
+  t0_1:  [ 1,    1,    0,   0,     0,        0,      0,    0,    0,    0,      1,   1,    2,     2 ]
+  t1: test_blast_format_1 - single reference + single read
+  t2: test_cigar_lcs_1
+  t3: test_environmental_output
+  t4: test_indexing_split_databases. No alignment, just a multi-part index build
+  t5: test_mate_pairs - part 1
+  t6:   []
+  t7:   []
+  t8:   []
+  t9: test_output_all_alignments_f_rc
+  t10: []
+  t11: [] 
+  t12:   [ 1,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   5,    2,     2 ]
+  t13: []
+  t14: []
+  t15: []
+  #                       output type                                       |    alignment type
+  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t16:   [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   1,    2,     2 ]
+  t16_2: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   0,    2,     2 ]
+  t16_3: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   2,    2,     2 ]
+  t16_4: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   1,    2,     2 ]
+  t16_5: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   2,    2,     2 ]
+  t16_6: [ 2,    2,    1,   1,     0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  t16_7: [ 2,    2,    1,   1,     0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
+  t16_8: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  t16_9: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #
-  - t17:
-  - t18:
-  #                         output type                                       |    alignment type
-  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t19:   [ 2,    2,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  - t19_1: [ 2,    2,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  - t19_2: [ 2,    2,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  - t19_3: [ 2,    2,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  - t19_4: [ 2,    2,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  - t19_5: [ 2,    2,    0,   1,      0,       0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  t17: []
+  t18: []
+  #                       output type                                       |    alignment type
+  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t19:   [ 2,    2,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_1: [ 2,    2,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_2: [ 2,    2,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_3: [ 2,    2,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_4: [ 2,    2,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_5: [ 2,    2,    0,   1,      0,       0,      1,    0,    1,    0,      1,   1,    2,     2 ]
   #
-  - t20:   [ 2,    1,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  - t20_1: [ 2,    1,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  - t20_2: [ 2,    1,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  - t20_3: [ 2,    1,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  - t20_4: [ 2,    1,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20:   [ 2,    1,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_1: [ 2,    1,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_2: [ 2,    1,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_3: [ 2,    1,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_4: [ 2,    1,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
   #
-  - t21:
-  - t22:
-  - t23:
-  - t24:
-  - t25:
-  - t26:
-  - t27:
-  - t28:
-  - t29:
-  - t30:
-  #                         output type                                       |    alignment type
-  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t31:
-  - t32:
-  - t33:
-  - t34:
-  - t35:
-  - t36:
-  - t37:
-  - t38:
-  - t39:
-  #                         output type                                       |    alignment type
-  #        refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  - t40:   [ 2,    2,    0,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  t21: []
+  t22: []
+  t23: []
+  t24: []
+  t25: []
+  t26: []
+  t27: []
+  t28: []
+  t29: []
+  t30: []
+  #                       output type                                       |    alignment type
+  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t31: []
+  t32: []
+  t33: []
+  t34: []
+  t35: []
+  t36: []
+  t37: []
+  t38: []
+  t39: []
+  #                       output type                                       |    alignment type
+  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t40:   [ 2,    2,    0,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       stress test: 8 refs + 1M reads
-  - t41:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  t41:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       stress test: 8 refs + 10M reads
-  - t42:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  t42:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       stress test: 8 refs + 50M reads
-  - t43:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  t43:   [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    0,      1,   1,    2,     2 ]
   #       test catenated gzip - issue 221,263,272,283: 1 ref + 2 files (224) reads
-  - t44:   [ 2,    2,    1,   1,      0,       0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  t44:   [ 2,    2,    1,   1,      0,       0,      1,    0,    1,    0,      1,   1,    2,     2 ]
   #       test catenated gzip - issue 221,263,272,283: 8 refs + 2 files (1M) reads
-  - t44_2: [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
+  t44_2: [ 2,    2,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #       issue 288 8 refs + 1 files (1M) reads
-  - t45:   [ 2,    1,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
+  t45:   [ 2,    1,    1,   1,      0,       0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #       issue 288-2 segfault: 1 refs, 1 files (10K) reads,
-  - t46:   [ 1,    1,    1,   0,      0,       0,      0,    0,    0,    0,      1,   1,    2,     2 ]
+  t46:   [ 1,    1,    1,   0,      0,       0,      0,    0,    0,    0,      1,   1,    2,     2 ]
   #       2 refs, 1 files (1M) reads, no zip
-  - t47:   [ 2,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t47:   [ 2,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t48:   []
+  t49:   []
 
 t0:
   name: blast + single ref + single read
@@ -182,6 +183,8 @@ t0_1:
     - -v
     - -threads
     - '1'
+    - -workdir
+    - {{WRK_DIR}}
   validate: 
     func:
     files:
@@ -217,6 +220,8 @@ t1:
     - -v
     - -threads
     - '1'
+    - -workdir
+    - {{WRK_DIR}}
   validate: 
     func:
     files:
@@ -247,8 +252,8 @@ t2:
     - -v
     - -threads
     - '1'
-    #- -workdir
-    #- {{ SMR_SRC }}/run
+    - -workdir
+    - {{WRK_DIR}}
   validate: 
     func: t2
     # expected alignment
@@ -294,6 +299,8 @@ t3:
     - {{DBG_LEVEL or '\'0\''}}
     - -task
     - {{TASK or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate: 
     func:
     non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
@@ -334,6 +341,8 @@ t4:
     - -v
     - -index
     - '1'
+    - -workdir
+    - {{WRK_DIR}}
   validate: 
     func: t4
     files:
@@ -363,6 +372,8 @@ t5:
     - -v
     - -threads
     - '5'
+    - -workdir
+    - {{WRK_DIR}}
     #- -pid
   validate:
     func:
@@ -403,6 +414,8 @@ t6:
     - '0.01'
     - -threads
     - '4'
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     files:
@@ -436,6 +449,8 @@ t7:
     - -other
     - -paired_out
     - -v
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     files:
@@ -458,6 +473,8 @@ t8:
     - {{ SMR_SRC }}/data/set7_arc_bac_16S_database_match.fasta # 6 reads
     - -fastx
     - -v
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     files:
@@ -653,6 +670,8 @@ t13:
     - -v
     - -threads
     - {{THREADS or '\'5\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     files:
@@ -777,6 +796,8 @@ t16:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -824,6 +845,8 @@ t16_2:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -868,6 +891,8 @@ t16_3:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -913,6 +938,8 @@ t16_4:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -958,6 +985,8 @@ t16_5:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1001,6 +1030,8 @@ t16_6:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1046,6 +1077,8 @@ t16_7:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1091,6 +1124,8 @@ t16_8:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1140,6 +1175,8 @@ t16_9:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1197,6 +1234,8 @@ t17:
     - {{ WRK_DIR }}
     - -threads
     - {{THREADS or '\'8\''}}
+    - -workdir
+    - {{WRK_DIR}}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -1249,6 +1288,8 @@ t18:
     - {{DBG_LEVEL or '\'0\''}}
     - -task
     - {{TASK or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1298,6 +1339,8 @@ t18_1:
     - {{DBG_LEVEL or '\'0\''}}
     - -task
     - {{TASK or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1348,6 +1391,8 @@ t18_2:
     - {{DBG_LEVEL or '\'0\''}}
     - -task
     - {{TASK or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     files:
@@ -1546,6 +1591,8 @@ t19:
     #- -out2
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant:        sanger # fastq quality variant
@@ -1591,6 +1638,8 @@ t19_1:
     - -out2
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1637,6 +1686,8 @@ t19_2:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1682,6 +1733,8 @@ t19_3:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1728,6 +1781,8 @@ t19_4:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1862,6 +1917,8 @@ t20_1:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1902,6 +1959,8 @@ t20_2:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1941,6 +2000,8 @@ t20_3:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -1982,6 +2043,8 @@ t20_4:
     - -v
     - -threads
     - {{THREADS or '\'4\''}}
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -2013,6 +2076,8 @@ t21:
     - -paired_in
     - -v
     - -out2
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -2044,6 +2109,8 @@ t22:
     - '1'
     - -v
     - -out2
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -2073,6 +2140,8 @@ t23:
     - -v
     - -paired
     - -out2
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant: sanger # fastq quality variant
@@ -2103,6 +2172,8 @@ t24:
     - '1'
     - -v
     - -paired
+    - -workdir
+    - {{WRK_DIR}}
   validate:
     func:
     variant:     sanger # fastq quality variant
@@ -2134,12 +2205,12 @@ t25:
     - -reads
     - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
     - -v
-    - -workdir
-    - {{ WRK_DIR }}
     - -fastx
     - -aligned
     - out1/out2/set4
     - -other
+    - -workdir
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2175,8 +2246,6 @@ t26:
     - -reads
     - data/set4_mate_pairs_metatranscriptomics_2.fastq.gz # 5,000 reads
     - -v
-    - -workdir
-    - {{ WRK_DIR }}
     - -kvdb
     - run/kvdb_1
     - -idx-dir
@@ -2186,6 +2255,8 @@ t26:
     - run/out_1/set4_aligned
     - -other
     - run/out_1/set4_other
+    - -workdir
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2228,9 +2299,9 @@ t27:
     - -aligned
     - run/out_1/set4_aligned
     - -other
+    - -v
     - -workdir
     - {{ WRK_DIR }}
-    - -v
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2314,6 +2385,8 @@ t29:
     - -aligned
     - run/out_1/
     - -other
+    - -workdir
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2352,6 +2425,8 @@ t30:
     - -aligned
     - run/out/
     - -other
+    - -workdir
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2392,6 +2467,8 @@ t31:
     - -aligned
     - run/out/
     - -other
+    - -workdir
+    - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
   validate:
     func:
@@ -2632,6 +2709,8 @@ t36:
   - '1'
   - -fastx
   - -v
+    - -workdir
+    - {{ WRK_DIR }}
   validate:
     func:
     variant: illumina1.8 # fastq quality variant
@@ -2761,6 +2840,8 @@ t39:
   - '1'
   - -threads
   - {{THREADS or '\'8\''}}
+  - -workdir
+  - {{ WRK_DIR }}
   validate:
     func:
     variant: sanger
@@ -3331,6 +3412,8 @@ t44:
     - -out2
     - -dbg-level
     - '2'
+    - -workdir
+    - {{ WRK_DIR }}
   validate:
     func:
     variant: sanger # fastq quality variant
