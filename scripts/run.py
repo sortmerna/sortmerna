@@ -60,7 +60,7 @@ if   IS_WIN: OS = 'WIN'
 elif IS_WSL: OS = 'WSL'
 elif IS_LNX: OS = 'LNX'
 else:
-    print('Unable to define the platform: {}'.format(pf))
+    print(f'Unable to define the platform: {pf}')
     sys.exit(1)
 
 UHOME = os.environ.get('USERPROFILE') if IS_WIN else os.environ.get('HOME') # not defined for AWS SSM
@@ -118,21 +118,20 @@ OTUF    = None
 BLASTF  = None
 SAMF    = None
 
+# KVDB and index dirs
 KVDB_DIR = None
 IDX_DIR  = None
-
 
 def run(cmd, cwd=None, capture=False):
     '''
     '''
-    STAMP = '[run]'
+    ST = '[run]'
     ret = {'retcode':0, 'stdout':None, 'stderr':None}
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
-    if cwd:
-        print('{} Running: {} in {}'.format(STAMP, ' '.join(cmd), cwd))
-    else:
-        print('{} Running: {}'.format(STAMP, ' '.join(cmd)))
+    cmds = ' '.join(cmd)
+    msg = f'{ST} Running: {cmds} in {cwd}' if cwd else f'{ST} Running: {cmds}'
+    print(msg)
 
     start = time.time()
     #print('Running {} in {}'.format(' '.join('{}'.format(xx) for xx in cmd), cwd))
@@ -158,7 +157,8 @@ def run(cmd, cwd=None, capture=False):
         ret['retcode'] = 1
         ret['stderr'] = sys.exc_info()
 
-    print("{} Run time: {}".format(STAMP, time.time() - start))
+    rt = time.time() - start
+    print(f"{ST} run time: {rt}")
     return ret
 #END cmake_run
 
@@ -189,7 +189,7 @@ def to_lf(ddir):
     NOTE: 'find . -type f -name "*.fasta" -o -name "*.fastq" | xargs dos2unix'
           using 'subprocess.run' is problematic because of the pipe. 
     '''
-    STAMP = '[to_lf]'
+    ST = '[to_lf]'
     CRLF = b'\r\n'
     LF = b'\n'
 
@@ -197,7 +197,7 @@ def to_lf(ddir):
         for fname in fnames:
             if fname.endswith('.fasta') or fname.endswith('.fastq'):
                 fpath = os.path.join(dpath, fname)
-                print('{} Converting {}'.format(STAMP, fpath))
+                print(f'{ST} converting {fpath}')
                 with open(fpath, 'rb') as infile:
                     content = infile.read()
                 content = content.replace(CRLF, LF)
@@ -257,7 +257,7 @@ def process_smr_opts(args):
     '''
     :param args  list of parameters passed to sortmerna
     '''
-    STAMP = '[process_smr_opts]'
+    ST = '[process_smr_opts]'
     WDIR = '-workdir'
     KVD = '-kvdb'
     IDX = '-idx'
@@ -308,14 +308,14 @@ def process_smr_opts(args):
             ALIF = os.path.abspath(aln_pfx + READS_EXT)
     elif WDIR in args:
         wdir = args[args.index(WDIR) + 1]
-        print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(STAMP, os.path.realpath(wdir)))
+        print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(ST, os.path.realpath(wdir)))
         ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
     elif WRK_DIR:
         ALIF = os.path.join(WRK_DIR, 'out', ALI_BASE + READS_EXT)
     elif UHOME:
         ALIF = os.path.join(UHOME, 'sortmerna', 'run', 'out', ALI_BASE + READS_EXT)
     else:
-        print('{} cannot define alignment file'.format(STAMP))
+        print(f'{ST} cannot define alignment file')
 
     if OUT2 in args:
         ALI_FWD = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_fwd' + READS_EXT)
@@ -335,7 +335,7 @@ def process_smr_opts(args):
             OTHF = os.path.join(os.path.dirname(ALIF), OTH_BASE + READS_EXT) # use the same out dir as ALN
         elif WDIR in args:
             wdir = args[args.index(WDIR) + 1]
-            print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(STAMP, os.path.realpath(wdir)))
+            print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(ST, os.path.realpath(wdir)))
             ALIF = os.path.join(wdir, 'out', OTH_BASE + READS_EXT)
         else:
             OTHF = os.path.join(UHOME, 'sortmerna', 'run', 'out', OTH_BASE + READS_EXT)
@@ -371,7 +371,7 @@ def process_blast(**kwarg):
     # Check count of reads passing %id and %coverage threshold
     # as given in aligned.blast
     '''
-    STAMP = '[{}]'.format('process_blast')
+    ST = '[{}]'.format('process_blast')
     vald = kwarg.get('validate')
 
     BLAST_ID_COL = 2
@@ -389,7 +389,7 @@ def process_blast(**kwarg):
             'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sseq', 'qcovs']
     
     if os.path.exists(BLASTF): 
-        print('{} processing : {}'.format(STAMP, BLASTF))
+        print(f'{ST} processing : {BLASTF}')
         gzs = os.path.basename(BLASTF).split(os.extsep)[-1]
         is_gz = gzs == 'gz'
         is_use_skbio = False
@@ -425,21 +425,22 @@ def process_blast(**kwarg):
                     is_pass_id = False
                     is_pass_cov = False
     
-            tmpl = '{} from {}: num_hits= {} n_yid_ycov= {} n_yid_ncov= {} n_nid_ycov= {} n_denovo= {}'
-            print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, n_yid_ycov, n_yid_ncov, n_nid_ycov, n_denovo))
+            bn = os.path.basename(BLASTF)
+            print(f'{ST} from {bn}: num_hits= {num_hits_file} n_yid_ycov= {n_yid_ycov}'
+                ' n_yid_ncov= {n_yid_ncov} n_nid_ycov= {n_nid_ycov} n_denovo= {n_denovo}')
             
             blastd = vald.get('files', {}).get('aligned.blast')
             if blastd:
                 if blastd.get('n_yid_ycov'):
                     tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
-                    print(tmpl.format(STAMP, os.path.basename(BLASTF), n_yid_ycov, blastd['n_yid_ycov']))
+                    print(tmpl.format(ST, os.path.basename(BLASTF), n_yid_ycov, blastd['n_yid_ycov']))
                     assert n_yid_ycov == blastd['n_yid_ycov'], \
                         '{} not equals {}'.format(blastd['n_yid_ycov'], n_yid_ycov)
                 
                 num_recs = blastd.get('num_recs')
                 if num_recs:
                     tmpl = '{} Testing num_hits: {}: {} Expected: {}'
-                    print(tmpl.format(STAMP, os.path.basename(BLASTF), num_hits_file, num_recs))
+                    print(tmpl.format(ST, os.path.basename(BLASTF), num_hits_file, num_recs))
                     assert num_hits_file == num_recs, \
                         '{} not equals {}'.format(num_hits_file, num_recs)
 
@@ -458,7 +459,7 @@ def dbg_blast(**kwarg):
     compare unique read IDs in two blast reports produced using different program versions
     cmd: python scripts/run.py --name t0 -f dbg_blast --validate-only
     '''
-    STAMP = '[{}]'.format('dbg_blast')
+    ST = '[{}]'.format('dbg_blast')
     rdiff = None
     bl_421 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-2-1/20210322/aligned.blast')
     bl_431 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-3-1/20210322/aligned.blast')
@@ -478,14 +479,14 @@ def dbg_blast(**kwarg):
             doset = False
             if doset:
                 rdiff = set(l421) - set(l431)
-                print('{} rdiff.len= {}'.format(STAMP, len(rdiff))) # 0
+                print('{} rdiff.len= {}'.format(ST, len(rdiff))) # 0
                 [print(x) for x in list(rdiff)]
 #END dbg_blast
 
 def dbg_otu(**kwarg):
     '''
     '''
-    STAMP = '[{}]'.format('dbg_otu')
+    ST = '[{}]'.format('dbg_otu')
     OTU_READSF = os.path.join(os.path.dirname(ALIF), 'otu_reads.txt')
     BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
     READS_DIFF = os.path.join(os.path.dirname(ALIF), 'reads_diff.txt')
@@ -530,7 +531,7 @@ def validate_otu(**kwarg):
     :param dict kwarg         test configuration see 'test.jinja.yaml'
     :param dict kwarg[logd]   parsed aligned.log data see 'parse_log(LOGF)'
     '''
-    STAMP = '[{}]'.format('validate_otu')
+    ST = '[{}]'.format('validate_otu')
     vald = kwarg.get('validate')
     logd = kwarg.get('logd') or parse_log(LOGF)
 
@@ -542,10 +543,10 @@ def validate_otu(**kwarg):
             for line in f_otus:
                 num_clusters_file += 1
                 num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
-        print('{} num groups in OTU file {} , expected {}'.format(STAMP, num_clusters_file, logd['num_otus'][1]))
+        print('{} num groups in OTU file {} , expected {}'.format(ST, num_clusters_file, logd['num_otus'][1]))
         assert logd['num_otus'][1] == num_clusters_file, \
             '{} not equals {}'.format(logd['num_otus'][1], num_clusters_file)
-        print('{} count of reads in OTU file {} , expected {}'.format(STAMP, num_reads_in_clusters_file, logd['num_id_cov'][1]))
+        print('{} count of reads in OTU file {} , expected {}'.format(ST, num_reads_in_clusters_file, logd['num_id_cov'][1]))
         assert logd['num_id_cov'][1] == num_reads_in_clusters_file, \
             '{} not equals {}'.format(logd['num_id_cov'][1], num_reads_in_clusters_file)
 
@@ -560,43 +561,43 @@ def validate_log(logd, ffd):
     :param dict logd
     :param dict ffd   files data as in test.jinja.yaml:<test_name>:validate:files
     '''
-    STAMP = '[validate_log]'
+    ST = '[validate_log]'
     # aligned.log : 
     #   verify the total number of reads in aligned.log vs the number in the validation spec
     n_vald = ffd.get('aligned.log', {}).get('num_reads')
     n_logd = logd['num_reads'][1]
     if n_vald:
-        print('{} testing num_reads: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        print('{} testing num_reads: {} Expected: {}'.format(ST, n_logd, n_vald))
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
     #   verify number of hits
     n_vald = ffd.get('aligned.log', {}).get('num_hits')
     n_logd = logd['results']['num_hits'][1]
     if n_vald:
-        print('{} testing num_hits: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        print('{} testing num_hits: {} Expected: {}'.format(ST, n_logd, n_vald))
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
     #   verify number of misses
     n_vald = ffd.get('aligned.log', {}).get('num_fail')
     n_logd = logd['results']['num_fail'][1]
     if n_vald:
-        print('{} testing num_fail: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        print('{} testing num_fail: {} Expected: {}'.format(ST, n_logd, n_vald))
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
     #   verify count of COV+ID
     n_vald = ffd.get('aligned.log', {}).get('n_yid_ycov')
     n_logd = logd['num_id_cov'][1]
     if n_vald:
-        print('{} testing n_yid_ycov: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        print('{} testing n_yid_ycov: {} Expected: {}'.format(ST, n_logd, n_vald))
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
     #   verify count of OUT groups
     n_vald = ffd.get('aligned.log', {}).get('num_groups')
     n_logd = logd['num_otus'][1]
     if n_vald:
-        print('{} testing num_groups: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        print(f'{ST} testing num_groups: {n_logd} Expected: {n_vald}')
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
     #   verify count of de-novo reads
     n_vald = ffd.get('aligned.log', {}).get('n_denovo')
     n_logd = logd['results']['num_denovo'][1]
     if n_vald:
-        print('{} testing n_denovo: {} Expected: {}'.format(STAMP, n_logd, n_vald))
+        print(f'{ST} testing n_denovo: {n_logd} Expected: {n_vald}')
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
 #END validate_log
 
@@ -605,7 +606,7 @@ def process_output(name, **kwarg):
     :param str name    test name e.g. t0
     :param dict        test configuration see 'test.jinja.yaml'
     '''
-    STAMP = '[process_output]'
+    ST = '[process_output]'
 
     log_struct = kwarg.get('aligned.log')
     logd = parse_log(LOGF, log_struct)
@@ -613,25 +614,25 @@ def process_output(name, **kwarg):
     #cmdd = kwarg.get('cmd')
     
     if not vald:
-        print('{} Validation info not provided'.format(STAMP))
+        print('{} Validation info not provided'.format(ST))
         return
 
     ffd = vald.get('files')
     if ffd and isinstance(ffd, dict):
 
         for ff, vv in ffd.items():
-            print('{} {}'.format(STAMP, ff))
+            print('{} {}'.format(ST, ff))
             # Check aligned/other reads count
             # aligned/other files only specify read count in the test validation data
             if isinstance(vv, int):
                 ffp = os.path.join(os.path.dirname(ALIF), ff) # file path
                 count = 0
-                assert os.path.exists(ffp), '{} does not exists: {}'.format(STAMP, ffp)
+                assert os.path.exists(ffp), '{} does not exists: {}'.format(ST, ffp)
                 if ff == 'otu_map.txt':
                     with open(ffp) as ffs:
                         for line in ffs:
                             count += 1
-                    print('{} testing count of groups in {}: {} Expected: {}'.format(STAMP, ff, count, vv))
+                    print('{} testing count of groups in {}: {} Expected: {}'.format(ST, ff, count, vv))
                     assert count == vv, '{} not equals {}'.format(count, vv)
                     continue
                 if IS_FASTQ:
@@ -641,7 +642,7 @@ def process_output(name, **kwarg):
                     fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
                     for seq in skbio.io.read(ffp, format=fmt):
                         count += 1
-                print('{} Testing count of reads in {}: {} Expected: {}'.format(STAMP, ff, count, vv))
+                print('{} Testing count of reads in {}: {} Expected: {}'.format(ST, ff, count, vv))
                 assert count == vv, '{} not equals {}'.format(count, vv)
             elif ff == 'aligned.log':
                 validate_log(logd, ffd)
@@ -655,8 +656,8 @@ def t0(datad, ret={}, **kwarg):
     :param datad   Data directory
     :param outd    results output directory
     '''
-    STAMP = '[t0:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))   
+    ST = '[t0:{}]'.format(kwarg.get('name'))
+    print('{} Validating ...'.format(ST))   
 
     BLAST_EXPECTED = os.path.join(datad, 't0_expected_alignment.blast')
 
@@ -676,14 +677,13 @@ def t0(datad, ret={}, **kwarg):
                     print(line, end='')
 
     assert len(dlist) == 0
-    print("{} Done".format(STAMP))
+    print("{} Done".format(ST))
 #END t0
 
 def t2(datad, ret={}, **kwarg):
     '''
-    @param datad   Data directory
-    @param outd    results output directory
-    @param kwargs  validation args
+    :param datad   Data directory
+    :param kwargs  validation args
 
     Test the following case for alignment:
     beginning from align_ref_start = 0 and align_que_start = X, the read finishes
@@ -694,8 +694,8 @@ def t2(datad, ret={}, **kwarg):
                   ^
                   align_que_start
     '''
-    STAMP = '[t2:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    ST = '[t2:{}]'.format(kwarg.get('name'))
+    print('{} Validating ...'.format(ST))
 
     vald = kwarg['validate']
 
@@ -707,7 +707,7 @@ def t2(datad, ret={}, **kwarg):
     assert len(vald['expected']) == len(actual_alignment)
     assert sorted(vald['expected']) == sorted(actual_alignment)
     #a = set(expected_alignment) & set(actual_alignment)
-    print("{} Done".format(STAMP))
+    print("{} Done".format(ST))
 #END t2
 
 def t3(datad, ret={}, **kwarg):
@@ -724,8 +724,8 @@ def t3(datad, ret={}, **kwarg):
     Conditions: input FASTA file is processed in
                 one mapped section.
     '''
-    STAMP = '[t3:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    ST = '[t3:{}]'.format(kwarg.get('name'))
+    print('{} Validating ...'.format(ST))
 
     logd = parse_log(LOGF)
     vald = kwarg.get('validate')
@@ -762,14 +762,14 @@ def t3(datad, ret={}, **kwarg):
             'num_denovo = {} != {}:num_denovo = {}'.format(\
                 logd['results']['num_denovo'][1], DENOVO_BASE, n_denovo_file)
     
-    print("{} Done".format(STAMP))
+    print("{} Done".format(ST))
 #END t3
 
 def t4(datad, ret={}, **kwarg ):
     '''
     count idx files
     '''
-    STAMP = '[t4:{}]'.format(kwarg.get('name'))
+    ST = '[t4:{}]'.format(kwarg.get('name'))
     vald = kwarg.get('validate')
     if IS_WIN:
         sfx = vald.get('idx_sfx_win')
@@ -780,22 +780,20 @@ def t4(datad, ret={}, **kwarg ):
     if os.path.exists(IDX_DIR):
         idx_count = len([fn for fn in os.listdir(IDX_DIR) if str(sfx) in fn])
 
-    print('{} Expected number of index files: {} Actual number: {}'.format(STAMP, idx_count_expect, idx_count))
+    print('{} Expected number of index files: {} Actual number: {}'.format(ST, idx_count_expect, idx_count))
     assert idx_count_expect == idx_count
 #END t4
 
 def t9(datad, ret={}, **kwarg):
     '''
-    @param smrexe  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
+    :param datad    data directory
+    :param dict ret results of the aignment
 
     test_output_all_alignments_f_rc
     '''
-    STAMP = '[t9:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    ST = '[t9:{}]'.format(kwarg.get('name'))
+    print(f'{ST} Validating ...')
     vald = kwarg.get('validate')
-
     sam_alignments = []
     with open(SAMF) as aligned_f:
         for line in aligned_f:
@@ -809,20 +807,18 @@ def t9(datad, ret={}, **kwarg):
     for alignment in vald['sam_alignments_expected']:
         assert alignment in sam_alignments
     
-    print("{} Done".format(STAMP))
+    print(f"{ST} done")
 #END t9
 
 def t10(datad, ret={}, **kwarg):
     '''
-    @param smrexe  sortmerna.exe path
-    @param datad   Data directory
-    @param outd    results output directory
-    @param ret  dict  Results of the aignment run output
+    :param str  datad  data directory
+    :param dict ret    results of the aignment
 
     test_ref_shorter_than_seed
     '''
-    STAMP = '[t10:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    ST = '[t10:{}]'.format(kwarg.get('name'))
+    print(f'{ST} validating ...'.format)
 
     vald = kwarg.get('validate')
 
@@ -830,7 +826,7 @@ def t10(datad, ret={}, **kwarg):
         assert ret['retcode'] == 1
         assert vald['err_msg'] in ret['stderr'].decode("utf-8")
    
-    print("{} Done".format(STAMP))
+    print("{ST} done")
 #END t10
 
 def t11(datad, ret={}, **kwarg):
@@ -848,8 +844,8 @@ def t11(datad, ret={}, **kwarg):
         query FASTA file both processed as one
         section.
     '''
-    STAMP = '[t11:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    ST = '[t11:{}]'.format(kwarg.get('name'))
+    print('{} Validating ...'.format(ST))
 
     if ret and ret.get('retcode'):
         print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
@@ -859,7 +855,7 @@ def t11(datad, ret={}, **kwarg):
     else:
         process_output(**kwarg)
    
-    print("{} Done".format(STAMP))
+    print("{} Done".format(ST))
 #END t11
 
 def t12(datad, ret={}, **kwarg):
@@ -877,8 +873,8 @@ def t12(datad, ret={}, **kwarg):
         query FASTA file both processed as one
         section.
     '''
-    STAMP = '[t12:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(STAMP))
+    ST = '[t12:{}]'.format(kwarg.get('name'))
+    print('{} Validating ...'.format(ST))
 
     if ret and ret.get('retcode'):
         print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
@@ -888,7 +884,7 @@ def t12(datad, ret={}, **kwarg):
     else:
         process_output(**kwarg)
    
-    print("{} Done".format(STAMP))
+    print("{} Done".format(ST))
 #END t12
 
 def t17(datad, ret={}, **kwarg):
@@ -898,10 +894,10 @@ def t17(datad, ret={}, **kwarg):
     :param outd    results output directory
     :param capture Capture output
     '''
-    STAMP = '[t17:{}]'.format(kwarg.get('name'))
-    print('{} TODO: implement'.format(STAMP))
+    ST = '[t17:{}]'.format(kwarg.get('name'))
+    print(f'{ST} TODO: implement')
     logd = parse_log(LOGF)
-    print("{} Done".format(STAMP))
+    print("{ST} done")
 #END t17
 
 def set_file_names(basenames, is_other=False):
@@ -921,7 +917,7 @@ if __name__ == "__main__":
     python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/biocodz [--capture]  
                                                                               |_ on WSL
     '''
-    STAMP = '[run.py:__main__]'
+    ST = '[run.py:__main__]'
     import pdb; pdb.set_trace()
     is_opts_ok = True
 
@@ -955,11 +951,11 @@ if __name__ == "__main__":
     # check env.yaml. If no env file specified, try the current directory
     env_yaml = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
     if not os.path.exists(env_yaml):
-        print('{} No environment config file found. Please, provide one using \'--env\' option'.format(STAMP))
+        print('{} No environment config file found. Please, provide one using \'--env\' option'.format(ST))
         sys.exit(1)
     else:
         # load properties from env.yaml
-        print('{} Using Environment configuration file: {}'.format(STAMP, env_yaml))
+        print('{} Using Environment configuration file: {}'.format(ST, env_yaml))
         #with open(env_yaml, 'r') as envh:
         #    env = yaml.load(envh, Loader=yaml.FullLoader)
         env_jj = Environment(loader=FileSystemLoader(os.path.dirname(env_yaml)), trim_blocks=True, lstrip_blocks=True)
@@ -974,10 +970,10 @@ if __name__ == "__main__":
     # check test.jinja.yaml
     cfgfile = os.path.join(cur_dir, 'test.jinja') if not opts.config else opts.config
     if not os.path.exists(cfgfile):
-        print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(STAMP))
+        print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(ST))
         sys.exit(1)
     else:
-        print('{} Using Build configuration template: {}'.format(STAMP, cfgfile))
+        print('{} Using Build configuration template: {}'.format(ST, cfgfile))
 
     # load 'test.jinja' template
     jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
@@ -987,9 +983,9 @@ if __name__ == "__main__":
         ENV = opts.envname
     elif IS_WIN or IS_WSL: 
         ENV = OS
-        print('{} --envn was not specified - using {}'.format(STAMP, ENV))
+        print('{} --envn was not specified - using {}'.format(ST, ENV))
     else:
-        print('{} --envn is required on OS {}'.format(STAMP, OS))
+        print('{} --envn is required on OS {}'.format(ST, OS))
         is_opts_ok = False
 
     # WRK_DIR priority:
@@ -1006,7 +1002,7 @@ if __name__ == "__main__":
     if not os.path.exists(SMR_SRC):
         print(('{} Sortmerna source directory {} not found. '
             'Either specify location in env.jinja or '
-            'make sure the sources exist at {}'.format(STAMP, SMR_SRC, SMR_SRC)))
+            'make sure the sources exist at {}'.format(ST, SMR_SRC, SMR_SRC)))
     DATA_DIR = env['DATA_DIR'][ENV]
     vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
     if opts.threads: 
@@ -1041,9 +1037,9 @@ if __name__ == "__main__":
             SMR_EXE = '{}.exe'.format(SMR_EXE)
 
     if SMR_EXE and os.path.exists(SMR_EXE):
-        print(f'{STAMP} using {SMR_EXE}')
+        print(f'{ST} using {SMR_EXE}')
     else:
-        print('{STAMP} sortmerna executable {SMR_EXE} does not exist or not set')
+        print('{ST} sortmerna executable {SMR_EXE} does not exist or not set')
         sys.exit(1)
 
     TEST_DATA = os.path.join(SMR_SRC, 'data')  # data directory
@@ -1052,39 +1048,39 @@ if __name__ == "__main__":
     # run test
     ret = {}
     tlist = cfg.get('tests').keys() if opts.name == 'all' else [opts.name]
-    print(f'{STAMP} number of tests: {len(tlist)}')
+    print(f'{ST} number of tests: {len(tlist)}')
     for test in tlist:
         tn = cfg[test]['name']
         print('\n')
-        print(f'{STAMP} running {test}: {tn}')
+        print(f'{ST} running {test}: {tn}')
         process_smr_opts(cfg[test]['cmd'])
 
         # clean-up the KVDB, IDX directories, and the output. 
         # May Fail if any file in the directory is open. Close the files and re-run.
         if opts.clean:
             if os.path.exists(KVDB_DIR):
-                print(f'{STAMP} removing KVDB: {KVDB_DIR}')
+                print(f'{ST} removing KVDB: {KVDB_DIR}')
                 shutil.rmtree(KVDB_DIR)
             if os.path.exists(IDX_DIR):
-                print(f'{STAMP} removing Index: {IDX_DIR}')
+                print(f'{ST} removing Index: {IDX_DIR}')
                 shutil.rmtree(IDX_DIR)
             break
 
         # clean previous alignments (KVDB)
         if os.path.exists(KVDB_DIR) and not opts.validate_only:
-            print(f'{STAMP} Removing KVDB dir: {KVDB_DIR}')
+            print(f'{ST} Removing KVDB dir: {KVDB_DIR}')
             shutil.rmtree(KVDB_DIR)
 
         # clean output
         ali_dir = os.path.dirname(ALIF)
         if ali_dir and os.path.exists(ali_dir) and not opts.validate_only:
-            print(f'{STAMP} Removing Aligned Output: {ali_dir}')
+            print(f'{ST} Removing Aligned Output: {ali_dir}')
             shutil.rmtree(ali_dir)
 
         if OTHF:
             oth_dir = os.path.dirname(OTHF)
             if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not opts.validate_only:
-                print(f'{STAMP} removing Non-Aligned Output: {oth_dir}')
+                print(f'{ST} removing Non-Aligned Output: {oth_dir}')
                 shutil.rmtree(oth_dir)
 
         if not opts.validate_only:
@@ -1093,7 +1089,7 @@ if __name__ == "__main__":
             ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
 
         # validate alignment results
-        if ret.get('retcode', 0) == 0:
+        if ret.get('retcode', 0) == 0 or not cfg[test].get('failonerror', True):
             if opts.func:
                 gdict = globals().copy()
                 gdict.update(locals())
