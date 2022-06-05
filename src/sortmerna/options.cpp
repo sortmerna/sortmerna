@@ -1365,10 +1365,6 @@ void Runopts::validate_other_pfx() {
 	}
 }
 
-/** 
- * main method of this class. 
- * Parses the command line options, validates, and sets the class member variables 
- */
 void Runopts::process(int argc, char**argv, bool dryrun)
 {
 #if defined(__APPLE__)

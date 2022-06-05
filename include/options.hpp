@@ -578,6 +578,10 @@ public:
 
 	// methods
 private:
+	/*
+	 * main method of this class. 
+	 * Parses the command line options, validates, and sets the class member variables 
+	 */
 	void process(int argc, char**argv, bool dryrun);
 	void validate();
 	void validate_idxdir(); // called from validate
