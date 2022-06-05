@@ -697,7 +697,7 @@ if __name__ == "__main__":
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
     STAMP = '[build.py:__main__]'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # options
@@ -768,11 +768,11 @@ if __name__ == "__main__":
 
     # SMR
     SMR_SRC   = env.get(SMR,{}).get('src',{}).get(ENV)
-    SMR_SRC   = '{}/sortmerna'.format(UHOME) if not SMR_SRC else SMR_SRC
+    SMR_SRC   = f'{UHOME}/sortmerna' if not SMR_SRC else SMR_SRC
     SMR_BUILD = opts.build_dir if opts.build_dir else env.get(SMR,{}).get('build',{}).get(ENV)
-    SMR_BUILD = '{}/build'.format(SMR_SRC) if not SMR_BUILD else SMR_BUILD
+    SMR_BUILD = f'{SMR_SRC}/build' if not SMR_BUILD else SMR_BUILD
     SMR_DIST  = env.get(SMR,{}).get('dist',{}).get(ENV)
-    SMR_DIST  = '{}/dist'.format(SMR_SRC) if not SMR_DIST else SMR_DIST
+    SMR_DIST  = f'{SMR_SRC}/dist' if not SMR_DIST else SMR_DIST
     SMR_VER   = env.get(SMR,{}).get('ver')
 
     # ZLIB
@@ -785,25 +785,25 @@ if __name__ == "__main__":
 
     # ROCKSDB
     val = env.get(ROCKS,{}).get('src',{}).get(ENV)
-    ROCKS_SRC = val or '{LIB_DIR}/{ROCKS}'
+    ROCKS_SRC = val or f'{LIB_DIR}/{ROCKS}'
     val = env.get(ROCKS,{}).get('build',{}).get(ENV)
-    ROCKS_BUILD = val or '{ROCKS_SRC}/build'
+    ROCKS_BUILD = val or f'{ROCKS_SRC}/build'
     val = env.get(ROCKS,{}).get('dist',{}).get(ENV)
-    ROCKS_DIST = val or '{ROCKS_SRC}/dist'
+    ROCKS_DIST = val or f'{ROCKS_SRC}/dist'
     ROCKS_VER = env.get(ROCKS, {}).get('ver')
 
     # RAPIDJSON
     # no binaries, so always build Release only
     val = env.get(RAPID,{}).get('src',{}).get(ENV)
-    RAPID_SRC   = val if val else '{}/{}'.format(LIB_DIR, RAPID)
+    RAPID_SRC = val if val else f'{LIB_DIR}/{RAPID}'
     val = env.get(RAPID,{}).get('build',{}).get(ENV)
-    RAPID_BUILD = val if val else '{}/build'.format(RAPID_SRC)
+    RAPID_BUILD = val if val else f'{RAPID_SRC}/build'
     val = env.get(RAPID,{}).get('dist',{}).get(ENV)
-    RAPID_DIST  = val if val else '{}/dist'.format(RAPID_SRC)
+    RAPID_DIST = val if val else f'{RAPID_SRC}/dist'
 
     # CONCURRENTQUEUE
     val = env.get(CCQUEUE,{}).get('src',{}).get(ENV)
-    CCQUEUE_SRC = val if val else '{}/{}'.format(LIB_DIR, CCQUEUE)
+    CCQUEUE_SRC = val if val else f'{LIB_DIR}/{CCQUEUE}'
 
     if 'WIN' == ENV:
         SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
@@ -816,7 +816,7 @@ if __name__ == "__main__":
         ROCKS_DIST  = ROCKS_DIST + '/{}/{}'.format(opts.pt_rocks, opts.btype)
 
         val = env.get(DIRENT, {}).get('src', {}).get(ENV)
-        DIRENT_SRC = val if val else '{}/{}'.format(LIB_DIR, DIRENT)
+        DIRENT_SRC = val if val else f'{LIB_DIR}/{DIRENT}'
         val = env.get(DIRENT, {}).get('dist')
         DIRENT_DIST = val.get(ENV) if val and isinstance(val, dict) else DIRENT_SRC
 

@@ -37,7 +37,6 @@ import subprocess
 import platform
 from optparse import OptionParser
 import re
-import skbio.io
 import time
 import difflib
 import shutil
@@ -45,6 +44,13 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 import pandas
 import gzip
+
+is_skbio = True
+try:
+    import skbio.io
+except (ImportError, OSError) as ex:
+    print(f'\'import skbio.io\' failed: {ex}')
+    is_skbio = False
 
 # globals
 OS = None
@@ -607,7 +613,7 @@ def process_output(name, **kwarg):
     :param dict        test configuration see 'test.jinja.yaml'
     '''
     ST = '[process_output]'
-
+    global is_skbio
     log_struct = kwarg.get('aligned.log')
     logd = parse_log(LOGF, log_struct)
     vald = kwarg.get(name, {}).get('validate')
@@ -635,15 +641,16 @@ def process_output(name, **kwarg):
                     print('{} testing count of groups in {}: {} Expected: {}'.format(ST, ff, count, vv))
                     assert count == vv, '{} not equals {}'.format(count, vv)
                     continue
-                if IS_FASTQ:
-                    for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
-                        count += 1
-                else:
-                    fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
-                    for seq in skbio.io.read(ffp, format=fmt):
-                        count += 1
-                print('{} Testing count of reads in {}: {} Expected: {}'.format(ST, ff, count, vv))
-                assert count == vv, '{} not equals {}'.format(count, vv)
+                if is_skbio:
+                    if IS_FASTQ:
+                        for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
+                            count += 1
+                    else:
+                        fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
+                        for seq in skbio.io.read(ffp, format=fmt):
+                            count += 1
+                    print('{} Testing count of reads in {}: {} Expected: {}'.format(ST, ff, count, vv))
+                    assert count == vv, '{} not equals {}'.format(count, vv)
             elif ff == 'aligned.log':
                 validate_log(logd, ffd)
             elif 'aligned.blast' in ff:
@@ -726,7 +733,7 @@ def t3(datad, ret={}, **kwarg):
     '''
     ST = '[t3:{}]'.format(kwarg.get('name'))
     print('{} Validating ...'.format(ST))
-
+    global is_skbio
     logd = parse_log(LOGF)
     vald = kwarg.get('validate')
     cmdd = kwarg.get('cmd')
@@ -755,12 +762,13 @@ def t3(datad, ret={}, **kwarg):
     # number of reads in aligned_denovo.fasta has to be equal the
     # 'Total reads for de novo clustering' in aligned.log
     n_denovo_file = 0
-    for seq in skbio.io.read(DENOVOF, format='fasta'):
-        n_denovo_file += 1
+    if is_skbio:
+        for seq in skbio.io.read(DENOVOF, format='fasta'):
+            n_denovo_file += 1
 
-    assert logd['results']['num_denovo'][1] == n_denovo_file, \
-            'num_denovo = {} != {}:num_denovo = {}'.format(\
-                logd['results']['num_denovo'][1], DENOVO_BASE, n_denovo_file)
+        assert logd['results']['num_denovo'][1] == n_denovo_file, \
+                'num_denovo = {} != {}:num_denovo = {}'.format(\
+                    logd['results']['num_denovo'][1], DENOVO_BASE, n_denovo_file)
     
     print("{} Done".format(ST))
 #END t3
@@ -1047,7 +1055,17 @@ if __name__ == "__main__":
 
     # run test
     ret = {}
-    tlist = cfg.get('tests').keys() if opts.name == 'all' else [opts.name]
+    tlist = []
+    if opts.name == 'all':
+        excl = cfg.get('exclude.list', [])
+        tlist = list(cfg.get('tests').keys())
+        if excl:
+            nexcl = len(excl)
+            print(f'{ST} excluding {nexcl} tests from the list as specified in \'exclude.list\'')
+        for tt in excl:
+            tlist.remove(tt)
+    else:
+        tlist = [opts.name]
     print(f'{ST} number of tests: {len(tlist)}')
     for test in tlist:
         tn = cfg[test]['name']

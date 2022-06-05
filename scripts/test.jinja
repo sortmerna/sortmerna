@@ -31,7 +31,7 @@
 # Tests configuration
 # Rendered using Jinja
 #
-exlude.list: ['t0','t0_1','t1','t2','t3']
+exclude.list: ['t42','t43'] # tests to skip in bulk runs
 tests:
   #                       output type                                       |    alignment type
   #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
@@ -493,6 +493,8 @@ t9:
     - {{ SMR_SRC }}/data/illumina_GQ099317.fasta # 1 read
     - -num_alignments
     - '0'
+    - -mismatch
+    - '-3'
     - -sam
     - -v
     - -workdir
