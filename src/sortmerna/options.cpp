@@ -1147,12 +1147,12 @@ void Runopts::opt_zip_out(const std::string& val)
 			std::string valc(val);
 			std::transform(valc.begin(), valc.end(), valc.begin(),
 							[](unsigned char c) -> unsigned char { return std::tolower(c); });
-			auto *pval = std::find(std::begin(yesvals), std::end(yesvals), valc);
+			auto pval = std::find(std::begin(yesvals), std::end(yesvals), valc);
 			if (pval != std::end(yesvals)) {
 				zip_out = 1;
 			}
 			else {
-				auto *pval = std::find(std::begin(novals), std::end(novals), valc);
+				auto pval = std::find(std::begin(novals), std::end(novals), valc);
 				if (pval != std::end(novals)) {
 					zip_out = 0;
 				}
@@ -1825,7 +1825,7 @@ void Runopts::print_help()
 bool Runopts::is_option(const std::string& opt)
 {
 	bool is_opt = false;
-	if (opt.size() > 0 and opt[0] == '-') {
+	if (opt.size() > 0 && opt[0] == '-') {
 		auto pos = opt.find_first_not_of('-');
 		auto opt_no_dash = std::string::npos != pos ? opt.substr(pos) : opt; // i.e. '--opt' -> 'opt'
 		for (auto& optt: options) {
@@ -1833,7 +1833,7 @@ bool Runopts::is_option(const std::string& opt)
 				is_opt = true;
 				break;
 			}
-	}
+		}
 	}
 	return is_opt;
 }
