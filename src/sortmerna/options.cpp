@@ -1427,8 +1427,15 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			continue;
 		}
 
+		// value without a preceeding flag
 		if (!is_flag && flag_count == 0) {
 			std::cout << "Found value: " << *(argv + i) << std::endl;
+			if (i != 0) {
+				ERR("the value provided without a flag/option. Note that e.g. '-", 
+				OPT_REF, "' or '-", OPT_READS,
+				"' have to be used with Each file. See 'sortmerna -h'");
+				exit(EXIT_FAILURE);
+			}
 			continue;
 		}
 
