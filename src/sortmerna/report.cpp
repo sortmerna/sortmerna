@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -162,7 +162,7 @@ void Report::strip_path_sfx(std::string& path, std::string sfx)
 {
 	auto fnb = std::filesystem::path(path).filename().string();
 	auto dir = std::filesystem::path(path).parent_path();
-	auto pos = fnb.find(sfx);
+	auto pos = fnb.rfind(sfx); // last occurence - iss 312
 	if (pos != std::string::npos) {
 		fnb.replace(pos, sfx.size(), "");
 		auto fout = dir / fnb;
