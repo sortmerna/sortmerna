@@ -123,6 +123,7 @@ tests:
   t47:   [ 2,    1,    0,   0,      0,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
   t48:   []
   t49:   []
+  t50:   []
 
 t0:
   name: blast + single ref + single read
@@ -2712,8 +2713,8 @@ t36:
   - '1'
   - -fastx
   - -v
-    - -workdir
-    - {{ WRK_DIR }}
+  - -workdir
+  - {{ WRK_DIR }}
   validate:
     func:
     variant: illumina1.8 # fastq quality variant
@@ -3775,3 +3776,56 @@ t49:
       aligned_rev.fq: 5
       other_fwd.fq:   1
       other_rev.fq:   1
+
+t50:
+  name: issue 312 - wrong suffix removed in output file name
+  cmd:
+  - -ref
+  - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
+  - -reads
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/ecoli100.1.head1000.fq
+  - -aligned
+  - {{ WRK_DIR }}/out/aligned_0h_r1_1.fq
+  - -other
+  - {{ WRK_DIR }}/out/unaligned_0h_r1_1.fq
+  - -num_alignments
+  - '1'
+  - -fastx
+  - -v
+  - -workdir
+  - {{ WRK_DIR }}
+  - -dbg-level
+  - {{DBG_LEVEL or '\'0\''}}
+  validate:
+    func:
+    variant: illumina1.8 # fastq quality variant
+    files:
+      aligned_0h_r1_1.fq.fq:
+        num_reads: 250
+        num_hits:   23
+        num_fail:  227
+      aligned_0h_r1_1.fq.fq:   23
+
+t51:
+  name: issue 328 - segfault on missed '-reads' option
+  info: correct behaviour is to warn user on the wrong usage and exit
+  cmd:
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
+    - -ref
+    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1_5.fastq
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2_5.fastq
+    - -fastx
+    - -other
+    - -out2
+    - -paired_in
+    - -v
+    - -threads
+    - '2'
+    - -workdir
+    - {{ WRK_DIR }}
+  cwd: {{ SMR_SRC }}
+  failonerror: False # don't crash - let the tests to continue
+

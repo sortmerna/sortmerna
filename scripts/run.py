@@ -610,19 +610,19 @@ def validate_log(logd, ffd):
 def process_output(name, **kwarg):
     '''
     :param str name    test name e.g. t0
-    :param dict        test configuration see 'test.jinja.yaml'
+    :param dict        test configuration see 'test.jinja'
     '''
     ST = '[process_output]'
     global is_skbio
     log_struct = kwarg.get('aligned.log')
-    logd = parse_log(LOGF, log_struct)
     vald = kwarg.get(name, {}).get('validate')
     #cmdd = kwarg.get('cmd')
     
     if not vald:
-        print('{} Validation info not provided'.format(ST))
+        print('{} validation info not provided'.format(ST))
         return
 
+    logd = parse_log(LOGF, log_struct)
     ffd = vald.get('files')
     if ffd and isinstance(ffd, dict):
 
