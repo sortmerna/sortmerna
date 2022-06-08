@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -79,7 +79,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 
 	// stats by database
 	for (uint32_t i = 0; i < opts.indexfiles.size(); ++i) {
-		auto pcn = (float)((float)readstats.reads_matched_per_db[i] / readstats.all_reads_count) * 100;
+		float pcn = (float)((float)readstats.reads_matched_per_db[i] / readstats.all_reads_count) * 100;
 		db_matches.emplace_back(std::make_pair(opts.indexfiles[i].first, pcn));
 	}
 
