@@ -80,14 +80,14 @@
                 "WITH_TESTS": {"type": "BOOL", "value": "ON"},
                 "ZLIB_STATIC": {"type": "BOOL", "value": "ON"},
                 "ROCKSDB_STATIC": {"type": "BOOL", "value": "ON"},
-                "ZLIB_ROOT": "$env{USERPROFILE}/a01_libs/zlib/dist/t1",
-                "ZLIB_LIBRARY_RELEASE": "$env{USERPROFILE}/a01_libs/zlib/dist/t1/lib/zlibstatic.lib",
-                "ZLIB_LIBRARY_DEBUG" : "$env{USERPROFILE}/a01_libs/zlib/dist/t1/lib/zlibstaticd.lib",
-                "ROCKSDB_HOME": "$env{USERPROFILE}/a01_libs/rocksdb/dist/t3/release",
-                "RAPIDJSON_HOME": "$env{USERPROFILE}/a01_libs/rapidjson/dist",
-                "CONCURRENTQUEUE_HOME": "$env{USERPROFILE}/a01_libs/concurrentqueue",
-                "DIRENTWIN_HOME": "$env{USERPROFILE}/a01_libs/dirent",
-                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a01_code/sortmerna/dist/t1/release",
+                "ZLIB_ROOT": "$env{USERPROFILE}/a1/libs/zlib/dist/t1",
+                "ZLIB_LIBRARY_RELEASE": "$env{USERPROFILE}/a1/libs/zlib/dist/t1/lib/zlibstatic.lib",
+                "ZLIB_LIBRARY_DEBUG" : "$env{USERPROFILE}/a1/libs/zlib/dist/t1/lib/zlibstaticd.lib",
+                "ROCKSDB_HOME": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/release",
+                "RAPIDJSON_HOME": "$env{USERPROFILE}/a1/libs/rapidjson/dist",
+                "CONCURRENTQUEUE_HOME": "$env{USERPROFILE}/a1/libs/concurrentqueue",
+                "DIRENTWIN_HOME": "$env{USERPROFILE}/a1/libs/dirent",
+                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/release",
                 "WITH_MD_LIBRARY": {"type": "BOOL", "value": "ON"},
                 "CPACK_BINARY_NSIS": {"type": "BOOL", "value": "OFF"},
                 "CPACK_BINARY_7Z": {"type": "BOOL", "value": "ON"},
@@ -101,8 +101,8 @@
             "inherits": "WIN_Release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "ROCKSDB_HOME": "$env{USERPROFILE}/a01_libs/rocksdb/dist/t3/debug",
-                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a01_code/sortmerna/dist/t1/debug"
+                "ROCKSDB_HOME": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/debug",
+                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/debug"
             }
         }
     ]
