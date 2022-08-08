@@ -3829,3 +3829,23 @@ t51:
   cwd: {{ SMR_SRC }}
   failonerror: False # don't crash - let the tests to continue
 
+t52:
+  name: issue 338 - suboptimal alignment when matching the end of the reference (in blast output)
+  cmd:
+    - -ref
+    -  {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_338_subopt_align/aref.fa
+    - -reads
+    - {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_338_subopt_align/aread.fa
+    - -fastx
+    - -blast
+    - '0'
+    - -no-best
+    - -num_alignments
+    - '0'
+    - -v
+    - -threads
+    - '1'
+    - -workdir
+    - {{ WRK_DIR }}
+  cwd: {{ SMR_SRC }}
+
