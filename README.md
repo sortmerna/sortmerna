@@ -134,7 +134,7 @@ sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_
 
 ```
 
-More examples can be found in [test.jinja.yaml](https://github.com/biocore/sortmerna/blob/master/scripts/test.jinja.yaml) and [run.py](https://github.com/biocore/sortmerna/blob/master/scripts/run.py)
+More examples can be found in [test.jinja](https://github.com/biocore/sortmerna/blob/master/scripts/test.jinja) and [run.py](https://github.com/biocore/sortmerna/blob/master/scripts/run.py)
 
 Refer to the [Manual](https://github.com/biocore/sortmerna/wiki/2.-User-manual-(todo)) for usage details
 
