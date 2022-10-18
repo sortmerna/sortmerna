@@ -44,9 +44,12 @@ conda search sortmerna
   ...
   sortmerna                      4.3.6               0  bioconda
 
+# create a new environment and install SortMeRNA in it
+conda create --name sortmerna_env
+conda activate sortmerna_env
 conda install sortmerna
 which sortmerna
-  /home/biocodz/miniconda3/bin/conda
+  /home/biocodz/miniconda3/envs/sortmerna_env/bin/sortmerna
 
 # test the installation
 sortmerna --version
