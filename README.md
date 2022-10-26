@@ -7,9 +7,11 @@ SortMeRNA is a local sequence alignment tool for filtering, mapping and clusteri
 The core algorithm is based on approximate seeds and allows for sensitive analysis of NGS reads.
 The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
 SortMeRNA takes as input files of reads (fasta, fastq, fasta.gz, fastq.gz) and one or multiple
-rRNA database file(s), and sorts apart aligned and rejected reads into two files.
-Additional applications include clustering and taxonomy assignation available through [QIIME v1.9.1](http://qiime.org). SortMeRNA works with Illumina, Ion Torrent and PacBio data, and can produce SAM and
-BLAST-like alignments.
+rRNA database file(s), and sorts apart aligned and rejected reads into two files. SortMeRNA works
+with Illumina, Ion Torrent and PacBio data, and can produce SAM and BLAST-like alignments.
+
+SortMeRNA is also available through [QIIME v1.9.1](http://qiime.org) and
+the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 # Table of Contents
 
