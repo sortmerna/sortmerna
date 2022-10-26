@@ -31,3 +31,7 @@ Download test reads file::
 Run with single reads file::
 
    sortmerna --ref rRNA_databases_v4.3.4/smr_v4.3_default_db.fasta --reads test_read.fasta
+
+.. note::
+   
+   Index file for ``rRNA_databases_v4.3.4/smr_v4.3_default_db.fasta`` created.
