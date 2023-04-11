@@ -53,9 +53,9 @@ which sortmerna
 # test the installation
 sortmerna --version
   SortMeRNA version 4.3.6
-  Build Date: Aug 16 2021
-  sortmerna_build_git_sha:@921fa40256760ea2d44c49b21eb326afda748d5e@
-  sortmerna_build_git_date:@2022/08/16 10:59:31@
+  Build Date: Aug 16 2022
+  sortmerna_build_git_sha:@db8c1983765f61986b46ee686734749eda235dcc@
+  sortmerna_build_git_date:@2022/08/16 11:42:59@
 
 # view help
 sortmerna -h
