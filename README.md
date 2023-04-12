@@ -15,17 +15,19 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 # Table of Contents
 
-* [Getting Started](#getting-started)
-	* [Using Conda package on Linux](#using-conda-package)
-	* [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
-	* [Running](#running)
-      * [Execution trace](#execution-trace)
-* [Building from sources](#building-from-sources)
-* [User Manual](#user-manual)
-* [Taxonomies](#taxonomies)
-* [Citation](#citation)
-* [Contributors](#contributors)
-* [Support](#support)
+- [sortmerna](#sortmerna)
+- [Table of Contents](#table-of-contents)
+- [Getting Started](#getting-started)
+  - [Using Conda package](#using-conda-package)
+  - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
+  - [Running](#running)
+    - [Execution trace](#execution-trace)
+- [Building from sources](#building-from-sources)
+- [User Manual](#user-manual)
+- [Taxonomies](#taxonomies)
+- [Citation](#citation)
+- [Contributors](#contributors)
+- [Support](#support)
 
 
 # Getting Started
@@ -46,6 +48,9 @@ conda search sortmerna
   ...
   sortmerna                      4.3.6               0  bioconda
 
+# create a new environment and install SortMeRNA in it
+conda create --name sortmerna_env
+conda activate sortmerna_env
 conda install sortmerna
 which sortmerna
   /home/biocodz/miniconda3/bin/conda
