@@ -36,8 +36,18 @@ SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMak
 
 ## Using Conda package
 
+[Install conda]:(https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 ```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+Then, as per the [Bioconda guidelines](https://bioconda.github.io), add the following conda channels:
+```
+conda config --add channels defaults
 conda config --add channels bioconda
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+
 
 conda search sortmerna
   Loading channels: done
@@ -53,7 +63,7 @@ conda create --name sortmerna_env
 conda activate sortmerna_env
 conda install sortmerna
 which sortmerna
-  /home/biocodz/miniconda3/bin/conda
+  /home/biocodz/miniconda3/envs/sortmerna_env/bin/sortmerna
 
 # test the installation
 sortmerna --version
