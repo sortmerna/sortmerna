@@ -4,66 +4,110 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [[v3.0.0](https://github.com/sortmerna/sortmerna/releases/tag/v3.0.0)] - 2018-02-28
-- Modify architecture to use C++ threads instead of OpenMP
-- OpenMP - remove
-- Modify architecture to use a concurrent queue for holding Reads. The reads are pushed to the queue by the Reads file Reader, and processed in multiple Processor threads. This allows for using Const memory, only for the Reads being currently processed(aligned). At any time the number of Reads im memory is not more than the number of processing threads. 
-- Memory mapping is not necessary any longer - remove.
-- Modify architecture to store alignment results in a key-value database (RocksDB).
-- Separate Reads processing into independent stages: Alignment, Post-Processing, Report generation
+
+### Changed
+- Modified architecture to use C++ threads instead of OpenMP
+- Modified architecture to use a concurrent queue for holding Reads. The reads are pushed to the queue by the Reads file Reader, and processed in multiple Processor threads. This allows for using Const memory, only for the Reads being currently processed(aligned). At any time the number of Reads im memory is not more than the number of processing threads. 
+- Modified architecture to store alignment results in a key-value database (RocksDB).
+- Separated Reads processing into independent stages: Alignment, Post-Processing, Report generation
+
+### Removed 
+
+- OpenMP
+- Memory mapping
+
 ## [[]()] - 2017-07-14
-- Transfer build system to CMake
-- Port software to Windows
-- Change directory structure to better organise the code, and separate into projects suited for using CMake
-- Modify python code to comply with version 3.5
+
+### Changed 
+
+- Transfered build system to CMake
+- Ported software to Windows
+- Changed directory structure to better organise the code, and separated into projects suited for using CMake
+- Modified python code to comply with version 3.5
 
 ## [[]()] - 2017-05-18
-- update README to include info on SortMeRNA forum
-- update python tests to use Python 3 & scikit-bio version 0.5.0.dev0
+
+### Changed
+
+- updated README to include info on SortMeRNA forum
+- updated python tests to use Python 3 & scikit-bio version 0.5.0.dev0
 
 ## [[]()] - 2016-02-17
-- update ALP library to version 1.95
-- add [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml) library, allow compressed reads input
-- support both mmap and generic buffer input
+
+### Added
+
+- [KSEQ](http://lh3lh3.users.sourceforge.net/parsefastq.shtml) library, allow compressed reads input
+- support for both mmap and geneic buffer input
+
+### Changed
+
 - clean up compiler warnings
 
 ## [[v2.1b](https://github.com/sortmerna/sortmerna/releases/tag/2.1b)] - 2016-03-03
+
+### Fixed 
+
 - fix issue regarding duplications in include_HEADERS for Galaxy (see pull request 105)
 
 ## [[v2.1](https://github.com/sortmerna/sortmerna/releases/tag/2.1)] - 2016-02-01
-- update to issue 70 for FASTQ reads
-- fix issue 70 (-m parameter for sortmerna not working for values greater than 4096); problem was related to large file support (-D_FILE_OFFSET_BITS=64 flag added to compilation)
-- SILVA associated taxonomy string to representative databases added
-- fixed bug that causes incorrect CIGAR string when reference length < read length and based on the LCS, read hangs off end reference (alignment length should be computed based on this setup)
+
+### Added
+
+- SILVA associated taxonomy string to representative databases
+
+### Changed
+
 - modified option --blast INT to --blast STRING to support more fields in BLAST-like tabular output (ex. --blast '1 cigar qstrand')
 
+### Fixed
+
+- update to issue 70 for FASTQ reads
+- fix issue #70 (-m parameter for sortmerna not working for values greater than 4096); problem was related to large file support (-D_FILE_OFFSET_BITS=64 flag added to compilation)
+- fixed bug that causes incorrect CIGAR string when reference length < read length and based on the LCS, read hangs off end reference (alignment length should be computed based on this setup)
+
 ## [[v2.0](https://github.com/sortmerna/sortmerna/releases/tag/2.0)] - 2014-08-30 30 October 2014
+
+### Added
+
+- [affects Installation] added script `build.sh` to call configure, touch commands and make in order to avoid timestamp issues when cloning this repository
+
+### Changed
+
 - representative SILVA databases updated to version 119 (for filtering rRNA from metatranscriptomic data)
 - [affects FASTQ paired reads] edited code for splitting FASTQ file
-- [affects FASTQ paired reads] fixed the bug regarding --paired_in and --paired_out output, tests added
-- [affects Installation] added script `build.sh` to call configure, touch commands and make in order to avoid timestamp issues when cloning this repository
 - [affects OTU-picking using "--otu_map --best INT" where INT > 1] changed the read_hits_align_info structure from map<uint32_t,pair<uint16_t,s_align*> > to map<uint32_t, triple_s > where the structure triple_s holds two uint16_t variables and an s_align* variable. This allows to store an additional integer for giving the index in s_align array of the highest scoring alignment. This is necessary if —otu_map and —best [INT] options are used where INT > 1 since different OTU ids can be used in the OTU-map when multiple alignments score equally as well. To illustrate an example,
 	- (a) —best 1, the s_align array is size 1 and only the single best alignment is stored, being the first encountered alignment if multiple alignments of equal score are found.
 	- (b) —best 4, the s_align array is size 4. Assume the first 2 alignments score 144 (occupying the first 2 slots on s_align array) and the next 3 alignments score 197 (2 of these alignments will occupy the final 2 slots, where the 3rd alignment will overwrite the first slot holding 144). We will have a situation like: 197, 144, 197, 197. In order to follow the same principle of (a) where the first encountered alignment of the highest score is output, we need to know that this alignment was in slot 3 (not slot 1).
 - [affects multiple split databases] moved the declaration + initialization/deletion of int32_t *best_x from outside of "for each index_num loop" to inside the "for each index_part loop". This is required to maintain similar results when using 1 index part (all database indexed as one part) vs. multiple index parts. The difference occurs because of the following situation:
-	- (a) Database indexed as 1 part:
 
-		part 1:
-		candidate sequence	#seed hits
-		ref1				10
-		ref3				9           [correct reference]
-		ref2				8
-		ref4				8
+(a) Database indexed as 1 part:
 
-	- (b) Database indexed as 2 parts:
+| candidate sequence | #seed hits |
+| --------------------- | ------------- |
+| ref1 | 10 |
+| ref3 [correct reference] | 9 | 
+| ref2 | 8 |
+| ref4 | 8 |
 
-		part 1:
-		candidate sequence	#seed hits
-		ref1				10
-		ref2				8
+(b) Database indexed as 2 parts:
 
-		part 2:
-		candidate sequence	#seed hits
-		ref3				9           [correct reference]
-		ref4				8
+part 1:
+		
+| candidate sequence | #seed hits |
+| -------------- | ------------ |
+|ref1 | 10 |
+|ref2 | 8 |
 
+part 2:
+		
+| candidate sequence | #seed hits |
+| ------------------- | --------------- |
+| ref3 [correct reference] | 9 | 
+| ref4 | 8 |
+ 
 If min_lis_gv = 2 (best_x[readn] = 2), then ref1 and ref3 will be analyzed in (a) before best_x[readn] = 0 and we stop analysis. However, in (b), if min_lis_gv = 2 outside of "for each index_num loop", only ref1 and ref2 will be analyzed in part 1 at which point best_x[readn] = 0 and sequences in part 2 will not be analyzed. By initializing best_x[readn] = 2 at the start of each index_part, then ref1/ref2 in part1 will be analyzed and ref3/ref4 in part 2, where the correct reference sequence ref3 will be analyzed.
+
+### Fixed
+
+- [affects FASTQ paired reads] fixed the bug regarding --paired_in and --paired_out output, tests added
+
