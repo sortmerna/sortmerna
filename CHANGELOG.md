@@ -1,4 +1,4 @@
-# sortmerna/sortmerna: Changelog
+# SortMeRNA: Changelog
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -61,15 +61,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- update to issue 70 for FASTQ reads
-- fix issue #70 (-m parameter for sortmerna not working for values greater than 4096); problem was related to large file support (-D_FILE_OFFSET_BITS=64 flag added to compilation)
+- [[#70](https://github.com/sortmerna/sortmerna/issues/70)] - update for FASTQ reads
+- [[#70](https://github.com/sortmerna/sortmerna/issues/70)] - fixed issue (-m parameter for sortmerna not working for values greater than 4096); problem was related to large file support (-D_FILE_OFFSET_BITS=64 flag added to compilation)
 - fixed bug that causes incorrect CIGAR string when reference length < read length and based on the LCS, read hangs off end reference (alignment length should be computed based on this setup)
+- [[#48](https://github.com/sortmerna/sortmerna/issues/48)] - resolved issue
+- [[#72](https://github.com/sortmerna/sortmerna/issues/72)] - resolved issue
 
 ## [[v2.0](https://github.com/sortmerna/sortmerna/releases/tag/2.0)] - 2014-08-30 30 October 2014
 
 ### Added
 
 - [affects Installation] added script `build.sh` to call configure, touch commands and make in order to avoid timestamp issues when cloning this repository
+- OTU-picking extensions added for closed-reference clustering compatible with QIIME’s v1.9 pick_otus.py, pick_closed_reference_otus.py and pick_open_reference_otus.py scripts
 
 ### Changed
 
@@ -111,3 +114,113 @@ If min_lis_gv = 2 (best_x[readn] = 2), then ref1 and ref3 will be analyzed in (a
 
 - [affects FASTQ paired reads] fixed the bug regarding --paired_in and --paired_out output, tests added
 
+## [v1.99] - 2014-03-11
+
+### Added 
+
+- SortMeRNA can now perform alignments and output SAM and Blast-like formats (using the SSW Library, see [Zhao M. et al., "SSW Library: An SIMD Smith-Waterman C/C++ Library for Use in Genomic Applications", PLOS ONE, 2013](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138))
+
+### Changed
+
+- Indexing data structures re-written and more optimized for space, requiring considerably less memory than previous versions (integration of the C Minimal Perfect Hashing (CMPH) library, see [http://cmph.sourceforge.net](http://cmph.sourceforge.net))
+- Multiple indexes can now be constructed in one command (now indexdb_rna rather than buildtrie)
+
+### Fixed 
+
+- Issues with FASTA/Q output files resolved (thanks to Ali May)
+
+### Removed 
+
+- The $SORTMERNADIR environmental variable no longer used
+
+## [v1.9] - 2013-08-30
+
+### Changed 
+
+- updated merge-paired-reads.sh to work on a cluster (thanks to Nicolas Delhomme)
+
+### Fixed
+
+- fixed a bug for naming output log file (thanks to Shaman Narayanasamy)
+- the paths for binaries sortmerna and buildtrie have been corrected to work with `make install` for installation directories other than the default /usr/local
+
+## [v1.8] - 2013-05-13
+
+### Fixed
+
+- fixed a bug to detect last (rRNA) read in fastq files, modified merge/unmerge-paired-reads.sh 
+
+## [v1.7] - 2013-04-05
+
+### Added
+
+- added `merge_paired_reads.sh` for forward-reverse paired-end reads (see the user manual v-1.7, section 4.2.4)
+
+### Changed
+
+- changed to the usual 'configure, make, make install' (see the user manual v-1.7)
+
+### Fixed
+
+- fixed an integer overflow for mmap calculation for 32-bit systems 
+
+## [v1.6] - 2013-02-26
+
+### Changed
+
+- for taxonomical analysis, the sequence tags in the rRNA databases now follow the format: `>[accession] [taxonomy] [length]`
+- changed sysconf library to sysctl for Mac OS 
+
+## [v1.5] - 2013-02-15
+
+### Added 
+
+- opion -m for specifyinf the amount of memory for loading reads
+- local timestamp added to --log statistics file
+
+### Changed
+
+- reads of length <L (default L=18) are automatically considered as non-rRNA
+- SortMeRNA User Manual updated
+
+### Fixed
+
+- error for output of paired reads >1GB resolved
+
+## [v1.4] - 2013-02-06
+
+### Added
+
+- support for Illumina or 454 reads up to 5000 nucleotides
+- AUTHORS file added to SortMeRNA directory
+
+## [v1.3] - 2013-01-24
+
+### Added
+
+- support for paired-end reads
+
+### Changed
+
+- I/O file checks modified
+- Makefile updated
+
+### Fixed
+
+- L=20 error messages resolved
+
+## [v1.2] - 2013-01-07
+
+### Added
+
+- support for input directory without suggested path (assumes current)
+
+## [v1.1] - 2012-12-20
+
+### Added
+
+- support for input files wthout extensions
+
+## [v1.0] - 2012-08-15
+
+SortMeRNA v1.0 released
