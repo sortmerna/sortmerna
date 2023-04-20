@@ -15,17 +15,17 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 # Table of Contents
 
-* [Getting Started](#getting-started)
-	* [Using Conda package on Linux](#using-conda-package)
-	* [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
-	* [Running](#running)
-      * [Execution trace](#execution-trace)
-* [Building from sources](#building-from-sources)
-* [User Manual](#user-manual)
-* [Taxonomies](#taxonomies)
-* [Citation](#citation)
-* [Contributors](#contributors)
-* [Support](#support)
+- [Getting Started](#getting-started)
+  - [Using Conda package](#using-conda-package)
+  - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
+  - [Running](#running)
+    - [Execution trace](#execution-trace)
+- [Building from sources](#building-from-sources)
+- [User Manual](#user-manual)
+- [Taxonomies](#taxonomies)
+- [Citation](#citation)
+- [Contributors](#contributors)
+- [Support](#support)
 
 
 # Getting Started
@@ -34,8 +34,18 @@ SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMak
 
 ## Using Conda package
 
+[Install conda]:(https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 ```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+Then, as per the [Bioconda guidelines](https://bioconda.github.io), add the following conda channels:
+```
+conda config --add channels defaults
 conda config --add channels bioconda
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+
 
 conda search sortmerna
   Loading channels: done
@@ -46,9 +56,12 @@ conda search sortmerna
   ...
   sortmerna                      4.3.6               0  bioconda
 
+# create a new environment and install SortMeRNA in it
+conda create --name sortmerna_env
+conda activate sortmerna_env
 conda install sortmerna
 which sortmerna
-  /home/biocodz/miniconda3/bin/conda
+  /home/biocodz/miniconda3/envs/sortmerna_env/bin/sortmerna
 
 # test the installation
 sortmerna --version
