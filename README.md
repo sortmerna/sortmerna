@@ -15,8 +15,6 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 # Table of Contents
 
-- [sortmerna](#sortmerna)
-- [Table of Contents](#table-of-contents)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
