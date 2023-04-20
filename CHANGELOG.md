@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- [[#365](https://github.com/sortmerna/sortmerna/issues/365))] - updated CHANGELOG so it now follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) standards
+- [[#365](https://github.com/sortmerna/sortmerna/issues/365)] - updated CHANGELOG so it now follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) standards
 
 ### Fixed
 
-- [[#361](https://github.com/sortmerna/sortmerna/issues/361))] - updated README `--version` output
+- [[#363](https://github.com/sortmerna/sortmerna/issues/363)], [[#364](https://github.com/sortmerna/sortmerna/issues/364)] - updated README so it now follows bioconda setup guidelines
+- [[#361](https://github.com/sortmerna/sortmerna/issues/361)] - updated README `--version` output
 
 ## [[v4.3.6](https://github.com/sortmerna/sortmerna/releases/tag/v4.3.6)] - 2021-07-21
 
