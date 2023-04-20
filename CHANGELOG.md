@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [[v4.3.7]] 
+## [v4.3.7]
 
 ### Changed
 
@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [[#361](https://github.com/sortmerna/sortmerna/issues/361))] - updated README ``--version` output
+- [[#361](https://github.com/sortmerna/sortmerna/issues/361))] - updated README `--version` output
 
 ## [[v4.3.6](https://github.com/sortmerna/sortmerna/releases/tag/v4.3.6)] - 2021-07-21
 
@@ -90,7 +90,7 @@ The new folder `readb` is added to the working directory for holding the split r
 
 ### Removed
 
-- `-best` option - `best` is now the default stategy, added the`--no-best` option to change search staretgy
+- `-best` option - best is now the default stategy, added the`--no-best` option to change search strategy
 
 ## [[v4.2.0](https://github.com/sortmerna/sortmerna/releases/tag/v4.2.0)] - 2020-03-09
 
