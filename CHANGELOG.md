@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[#363](https://github.com/sortmerna/sortmerna/issues/363)], [[#364](https://github.com/sortmerna/sortmerna/issues/364)] - updated README so it now follows bioconda setup guidelines
 - [[#361](https://github.com/sortmerna/sortmerna/issues/361)] - updated README `--version` output
 
+### Removed 
+
+- [[#370](https://github.com/sortmerna/sortmerna/issues/370)] - building SortMeRNA no longer requires RapidJSON library
+
 ## [[v4.3.6](https://github.com/sortmerna/sortmerna/releases/tag/v4.3.6)] - 2021-07-21
 
 ### Fixed
