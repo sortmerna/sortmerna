@@ -40,10 +40,6 @@
                     "type": "FILEPATH",
                     "value": "$env{HOME}/a1/code/zlib/dist/lib/libz.a"
                 },
-                "RAPIDJSON_HOME": {
-                    "type": "PATH",
-                    "value": "$env{HOME}/a1/code/rapidjson/dist"
-                },
                 "CONCURRENTQUEUE_HOME": {
                     "type": "PATH",
                     "value": "$env{HOME}/a1/code/concurrentqueue"
@@ -84,7 +80,6 @@
                 "ZLIB_LIBRARY_RELEASE": "$env{USERPROFILE}/a1/libs/zlib/dist/t1/lib/zlibstatic.lib",
                 "ZLIB_LIBRARY_DEBUG" : "$env{USERPROFILE}/a1/libs/zlib/dist/t1/lib/zlibstaticd.lib",
                 "ROCKSDB_HOME": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/release",
-                "RAPIDJSON_HOME": "$env{USERPROFILE}/a1/libs/rapidjson/dist",
                 "CONCURRENTQUEUE_HOME": "$env{USERPROFILE}/a1/libs/concurrentqueue",
                 "DIRENTWIN_HOME": "$env{USERPROFILE}/a1/libs/dirent",
                 "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/release",

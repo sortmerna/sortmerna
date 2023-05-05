@@ -54,7 +54,7 @@ modfunc = {} # holds refs to functions in this module
 SMR     = 'sortmerna'
 ZLIB    = 'zlib'
 ROCKS   = 'rocksdb'
-RAPID   = 'rapidjson'
+#RAPID   = 'rapidjson'
 DIRENT  = 'dirent'
 CMAKE   = 'cmake'
 CONDA   = 'conda'
@@ -64,7 +64,7 @@ CCQUEUE = 'concurrentqueue'
 URL_ZLIB   = None
 URL_ROCKS  = None
 URL_DIRENT = None
-URL_RAPID  = None
+#URL_RAPID  = None
 URL_SMR    = None
 URL_CONCURRENTQUEUE = None
 
@@ -101,9 +101,9 @@ ROCKS_BUILD = None
 ROCKS_DIST  = None
 
 # no binaries, so always build Release only
-RAPID_SRC   = None
-RAPID_BUILD = None
-RAPID_DIST  = None
+#RAPID_SRC   = None
+#RAPID_BUILD = None
+#RAPID_DIST  = None
 
 # Concurrentqueue
 CCQUEUE_SRC = None
@@ -410,7 +410,7 @@ def zlib_build(btype='Release'):
         proc_run(cmd, ZLIB_BUILD)
 #END zlib_build
 
-def rapidjson_build(btype='Release'):
+"""def rapidjson_build(btype='Release'):
     '''
     '''
     BUILD_EXAMPLES = 0
@@ -430,6 +430,7 @@ def rapidjson_build(btype='Release'):
     cmd = [ 'cmake', '--build', '.', '--config', btype, '--target', 'install' ]
     proc_run(cmd, RAPID_BUILD)
 #END rapidjson_build
+"""
 
 def rocksdb_fix_3party(ptype='t3', cfg={}):
     '''
@@ -610,7 +611,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
         '-DZLIB_LIBRARY_DEBUG={}'.format(ZLIB_LIBRARY_DEBUG),
         #'-DROCKSDB_SRC={}'.format(ROCKSDB_SRC),
         '-DROCKSDB_HOME={}'.format(ROCKS_DIST),
-        '-DRAPIDJSON_HOME={}'.format(RAPID_DIST),
+        #'-DRAPIDJSON_HOME={}'.format(RAPID_DIST),
         '-DCONCURRENTQUEUE_HOME={}'.format(CCQUEUE_SRC),
         '-DCMAKE_INSTALL_PREFIX={}'.format(SMR_DIST)
     ]
@@ -760,7 +761,7 @@ if __name__ == "__main__":
     URL_ZLIB   = env[ZLIB]['url']
     URL_ROCKS  = env[ROCKS]['url']
     URL_DIRENT = env[DIRENT]['url']
-    URL_RAPID  = env[RAPID]['url']
+    #URL_RAPID  = env[RAPID]['url']
     URL_SMR    = env[SMR]['url']
     URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
 
@@ -794,12 +795,13 @@ if __name__ == "__main__":
 
     # RAPIDJSON
     # no binaries, so always build Release only
-    val = env.get(RAPID,{}).get('src',{}).get(ENV)
+    """val = env.get(RAPID,{}).get('src',{}).get(ENV)
     RAPID_SRC = val if val else f'{LIB_DIR}/{RAPID}'
     val = env.get(RAPID,{}).get('build',{}).get(ENV)
     RAPID_BUILD = val if val else f'{RAPID_SRC}/build'
     val = env.get(RAPID,{}).get('dist',{}).get(ENV)
     RAPID_DIST = val if val else f'{RAPID_SRC}/dist'
+    """
 
     # CONCURRENTQUEUE
     val = env.get(CCQUEUE,{}).get('src',{}).get(ENV)
@@ -824,13 +826,13 @@ if __name__ == "__main__":
     if opts.name:
         if opts.name == ALL:
             if opts.clean:
-                clean(RAPID_BUILD)
+                #clean(RAPID_BUILD)
                 clean(ZLIB_BUILD)
                 clean(ROCKS_BUILD)
                 clean(SMR_BUILD)
             else:
                 concurrentqueue_build(cfg=env) 
-                rapidjson_build()
+                #rapidjson_build()
                 zlib_build()
                 rocksdb_build(ROCKS_VER, cfg=env)
                 smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=env)
@@ -842,8 +844,8 @@ if __name__ == "__main__":
                 smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, **env)
         elif opts.name == ZLIB: 
             zlib_build()
-        elif opts.name == RAPID: 
-            rapidjson_build()
+        #elif opts.name == RAPID: 
+            #rapidjson_build()
         elif opts.name == ROCKS: 
             if opts.clean:
                 clean(ROCKS_BUILD)
