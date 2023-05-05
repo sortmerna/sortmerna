@@ -826,6 +826,8 @@ if __name__ == "__main__":
     else:
         cur_wdir = os.getcwd()
 
+        LIB_DIR = cur_wdir
+
         URL_ZLIB   = 'https://github.com/madler/zlib.git'
         URL_ROCKS  = 'https://github.com/facebook/rocksdb.git'
         URL_DIRENT = 'https://github.com/tronkko/dirent'
