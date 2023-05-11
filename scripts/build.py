@@ -723,6 +723,7 @@ if __name__ == "__main__":
     optpar.add_option('--config', dest='config', help='Build configuration file.')
     optpar.add_option('--build-dir', dest='build_dir', help='Build directory.')
     optpar.add_option('--dist-dir', dest='dist_dir', help='Distro directory.')
+    optpar.add_option('--local-linux', dest='local_linux', action='store_true', help='Perform the build on local source files in the current working directory.')
     (opts, args) = optpar.parse_args()
 
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
@@ -730,98 +731,144 @@ if __name__ == "__main__":
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
     print(f'{STAMP} Current dir: {cur_dir}')
 
-    # check env.yaml. If no env file specified, try the current directory
-    envfile = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
-    if not os.path.exists(envfile):
-        print(f'{STAMP} No environment config file found. Please, provide one using \'--env\' option')
-        sys.exit(1)
+    if opts.local_linux:
+        cur_wdir = os.getcwd()
 
-    if not opts.envname:
-        ENV = MY_OS
-        print(f'{STAMP} --envn was not specified - using {ENV}')
+        LIB_DIR = cur_wdir
+
+        URL_ZLIB   = 'https://github.com/madler/zlib.git'
+        URL_ROCKS  = 'https://github.com/facebook/rocksdb.git'
+        URL_DIRENT = 'https://github.com/tronkko/dirent'
+        #URL_RAPID  = https://github.com/Tencent/rapidjson
+        URL_SMR    = 'https://github.com/biocore/sortmerna.git'
+        URL_CONCURRENTQUEUE = 'https://github.com/cameron314/concurrentqueue'
+
+        CMAKE_GEN = 'Unix Makefiles'
+
+        # SMR
+        SMR_SRC   = cur_wdir
+        SMR_BUILD = f'{cur_wdir}/build'
+        SMR_DIST  = f'{cur_wdir}/dist'
+        SMR_VER = None
+
+        # ZLIB
+        ZLIB_SRC = f'{cur_wdir}/{ZLIB}'
+        ZLIB_BUILD = f'{ZLIB_SRC}/build'
+        ZLIB_DIST = f'{ZLIB_SRC}/dist'
+
+        # ROCKSDB
+        ROCKS_SRC = f'{cur_wdir}/{ROCKS}'
+        ROCKS_BUILD = f'{ROCKS_SRC}/build'
+        ROCKS_DIST = f'{ROCKS_SRC}/dist'
+        ROCKS_VER = None
+
+        # RAPIDJSON
+        # no binaries, so always build Release only
+        """
+        RAPID_SRC = f'{cur_wdir}/{RAPID}'
+        RAPID_BUILD = f'{RAPID_SRC}/build'
+        RAPID_DIST = f'{RAPID_SRC}/dist'
+        """
+
+        # CONCURRENTQUEUE
+        CCQUEUE_SRC = f'{cur_wdir}/{CCQUEUE}'
+
+        env = {}
+
     else:
-        ENV = opts.envname
+        # check env.yaml. If no env file specified, try the current directory
+        envfile = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
+        if not os.path.exists(envfile):
+            print(f'{STAMP} No environment config file found. Please, provide one using \'--env\' option')
+            sys.exit(1)
 
-    # load properties from env.jinja.yaml
-    print(f'{STAMP} Using Environment configuration file: {envfile}')
-    env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
-    env_template = env_jj.get_template(os.path.basename(envfile))
-    #   render env.jinja template
-    vars = {'UHOME': UHOME, 'WINHOME': opts.winhome, 'ENV': ENV} if IS_WSL else {'UHOME': UHOME, 'ENV': ENV}
-    env_str = env_template.render(vars)
-    env = yaml.load(env_str, Loader=yaml.FullLoader)
+        if not opts.envname:
+            ENV = MY_OS
+            print(f'{STAMP} --envn was not specified - using {ENV}')
+        else:
+            ENV = opts.envname
 
-    if not opts.envname:
-        envl = env.get('env.list')
-        print(f'{STAMP} available environments: {envl}')
+        # load properties from env.jinja.yaml
+        print(f'{STAMP} Using Environment configuration file: {envfile}')
+        env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
+        env_template = env_jj.get_template(os.path.basename(envfile))
+        #   render env.jinja template
+        vars = {'UHOME': UHOME, 'WINHOME': opts.winhome, 'ENV': ENV} if IS_WSL else {'UHOME': UHOME, 'ENV': ENV}
+        env_str = env_template.render(vars)
+        env = yaml.load(env_str, Loader=yaml.FullLoader)
 
-    libdir = env.get('LIB_DIR', {}).get(ENV)
-    LIB_DIR =  libdir if libdir else UHOME
+        if not opts.envname:
+            envl = env.get('env.list')
+            print(f'{STAMP} available environments: {envl}')
 
-    URL_ZLIB   = env[ZLIB]['url']
-    URL_ROCKS  = env[ROCKS]['url']
-    URL_DIRENT = env[DIRENT]['url']
-    #URL_RAPID  = env[RAPID]['url']
-    URL_SMR    = env[SMR]['url']
-    URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
+        libdir = env.get('LIB_DIR', {}).get(ENV)
+        LIB_DIR =  libdir if libdir else UHOME
 
-    CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
+        URL_ZLIB   = env[ZLIB]['url']
+        URL_ROCKS  = env[ROCKS]['url']
+        URL_DIRENT = env[DIRENT]['url']
+        #URL_RAPID  = env[RAPID]['url']
+        URL_SMR    = env[SMR]['url']
+        URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
 
-    # SMR
-    SMR_SRC   = env.get(SMR,{}).get('src',{}).get(ENV)
-    SMR_SRC   = f'{UHOME}/sortmerna' if not SMR_SRC else SMR_SRC
-    SMR_BUILD = opts.build_dir if opts.build_dir else env.get(SMR,{}).get('build',{}).get(ENV)
-    SMR_BUILD = f'{SMR_SRC}/build' if not SMR_BUILD else SMR_BUILD
-    SMR_DIST  = env.get(SMR,{}).get('dist',{}).get(ENV)
-    SMR_DIST  = f'{SMR_SRC}/dist' if not SMR_DIST else SMR_DIST
-    SMR_VER   = env.get(SMR,{}).get('ver')
+        CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
 
-    # ZLIB
-    val = env.get(ZLIB,{}).get('src',{}).get(ENV)
-    ZLIB_SRC = val if val else f'{LIB_DIR}/{ZLIB}'
-    val = env.get(ZLIB,{}).get('build',{}).get(ENV)
-    ZLIB_BUILD = val if val else f'{ZLIB_SRC}/build'
-    val = env.get(ZLIB,{}).get('dist',{}).get(ENV)
-    ZLIB_DIST = val if val else f'{ZLIB_SRC}/dist'
+        # SMR
+        SMR_SRC   = env.get(SMR,{}).get('src',{}).get(ENV)
+        SMR_SRC   = f'{UHOME}/sortmerna' if not SMR_SRC else SMR_SRC
+        SMR_BUILD = opts.build_dir if opts.build_dir else env.get(SMR,{}).get('build',{}).get(ENV)
+        SMR_BUILD = f'{SMR_SRC}/build' if not SMR_BUILD else SMR_BUILD
+        SMR_DIST  = env.get(SMR,{}).get('dist',{}).get(ENV)
+        SMR_DIST  = f'{SMR_SRC}/dist' if not SMR_DIST else SMR_DIST
+        SMR_VER   = env.get(SMR,{}).get('ver')
 
-    # ROCKSDB
-    val = env.get(ROCKS,{}).get('src',{}).get(ENV)
-    ROCKS_SRC = val or f'{LIB_DIR}/{ROCKS}'
-    val = env.get(ROCKS,{}).get('build',{}).get(ENV)
-    ROCKS_BUILD = val or f'{ROCKS_SRC}/build'
-    val = env.get(ROCKS,{}).get('dist',{}).get(ENV)
-    ROCKS_DIST = val or f'{ROCKS_SRC}/dist'
-    ROCKS_VER = env.get(ROCKS, {}).get('ver')
+        # ZLIB
+        val = env.get(ZLIB,{}).get('src',{}).get(ENV)
+        ZLIB_SRC = val if val else f'{LIB_DIR}/{ZLIB}'
+        val = env.get(ZLIB,{}).get('build',{}).get(ENV)
+        ZLIB_BUILD = val if val else f'{ZLIB_SRC}/build'
+        val = env.get(ZLIB,{}).get('dist',{}).get(ENV)
+        ZLIB_DIST = val if val else f'{ZLIB_SRC}/dist'
 
-    # RAPIDJSON
-    # no binaries, so always build Release only
-    """val = env.get(RAPID,{}).get('src',{}).get(ENV)
-    RAPID_SRC = val if val else f'{LIB_DIR}/{RAPID}'
-    val = env.get(RAPID,{}).get('build',{}).get(ENV)
-    RAPID_BUILD = val if val else f'{RAPID_SRC}/build'
-    val = env.get(RAPID,{}).get('dist',{}).get(ENV)
-    RAPID_DIST = val if val else f'{RAPID_SRC}/dist'
-    """
+        # ROCKSDB
+        val = env.get(ROCKS,{}).get('src',{}).get(ENV)
+        ROCKS_SRC = val or f'{LIB_DIR}/{ROCKS}'
+        val = env.get(ROCKS,{}).get('build',{}).get(ENV)
+        ROCKS_BUILD = val or f'{ROCKS_SRC}/build'
+        val = env.get(ROCKS,{}).get('dist',{}).get(ENV)
+        ROCKS_DIST = val or f'{ROCKS_SRC}/dist'
+        ROCKS_VER = env.get(ROCKS, {}).get('ver')
 
-    # CONCURRENTQUEUE
-    val = env.get(CCQUEUE,{}).get('src',{}).get(ENV)
-    CCQUEUE_SRC = val if val else f'{LIB_DIR}/{CCQUEUE}'
+        # RAPIDJSON
+        # no binaries, so always build Release only
+        """val = env.get(RAPID,{}).get('src',{}).get(ENV)
+        RAPID_SRC = val if val else f'{LIB_DIR}/{RAPID}'
+        val = env.get(RAPID,{}).get('build',{}).get(ENV)
+        RAPID_BUILD = val if val else f'{RAPID_SRC}/build'
+        val = env.get(RAPID,{}).get('dist',{}).get(ENV)
+        RAPID_DIST = val if val else f'{RAPID_SRC}/dist'
+        """
 
-    if 'WIN' == ENV:
-        SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
+        # CONCURRENTQUEUE
+        val = env.get(CCQUEUE,{}).get('src',{}).get(ENV)
+        CCQUEUE_SRC = val if val else f'{LIB_DIR}/{CCQUEUE}'
 
-        # zlib puts both Debug and Release at the same location => no btype
-        opts.pt_zlib = 't1' if not opts.pt_zlib else opts.pt_zlib
-        ZLIB_DIST  = ZLIB_DIST + '/{}'.format(opts.pt_zlib) 
+        if 'WIN' == ENV:
+            SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
 
-        opts.pt_rocks = 't3' if not opts.pt_rocks else opts.pt_rocks
-        ROCKS_DIST  = ROCKS_DIST + '/{}/{}'.format(opts.pt_rocks, opts.btype)
+            # zlib puts both Debug and Release at the same location => no btype
+            opts.pt_zlib = 't1' if not opts.pt_zlib else opts.pt_zlib
+            ZLIB_DIST  = ZLIB_DIST + '/{}'.format(opts.pt_zlib) 
 
-        val = env.get(DIRENT, {}).get('src', {}).get(ENV)
-        DIRENT_SRC = val if val else f'{LIB_DIR}/{DIRENT}'
-        val = env.get(DIRENT, {}).get('dist')
-        DIRENT_DIST = val.get(ENV) if val and isinstance(val, dict) else DIRENT_SRC
+            opts.pt_rocks = 't3' if not opts.pt_rocks else opts.pt_rocks
+            ROCKS_DIST  = ROCKS_DIST + '/{}/{}'.format(opts.pt_rocks, opts.btype)
 
+            val = env.get(DIRENT, {}).get('src', {}).get(ENV)
+            DIRENT_SRC = val if val else f'{LIB_DIR}/{DIRENT}'
+            val = env.get(DIRENT, {}).get('dist')
+            DIRENT_DIST = val.get(ENV) if val and isinstance(val, dict) else DIRENT_SRC
+
+    
     # call functions
     if opts.name:
         if opts.name == ALL:

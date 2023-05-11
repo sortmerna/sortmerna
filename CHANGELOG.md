@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v4.3.7]
 
+### Added 
+
+- [[#374](https://github.com/sortmerna/sortmerna/issues/374)] - added `--local-linux` flag to the `build.py` script to allow for a straightforward build of local sources in the current working directory
+
 ### Changed
 
 - [[#365](https://github.com/sortmerna/sortmerna/issues/365)] - updated CHANGELOG so it now follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) standards

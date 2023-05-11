@@ -2,23 +2,21 @@
 
 # Contents
 
-- [Building from source code](#building-from-source-code)
-- [Contents](#contents)
-	- [General notes](#general-notes)
-	- [Building on Linux](#building-on-linux)
-		- [Install GCC 9](#install-gcc-9)
-		- [Install Devtoolset 9](#install-devtoolset-9)
-		- [get Sortmerna sources](#get-sortmerna-sources)
-		- [Install Conda](#install-conda)
-		- [Install CMake](#install-cmake)
-		- [build](#build)
-	- [Building on Windows](#building-on-windows)
-		- [Install Visual Studio](#install-visual-studio)
-		- [Install Conda](#install-conda-1)
-		- [get Sortmerna sources](#get-sortmerna-sources-1)
-		- [build](#build-1)
-	- [Building on Mac](#building-on-mac)
-	- [Third-party libraries](#third-party-libraries)
+- [General notes](#general-notes)
+- [Building on Linux](#building-on-linux)
+	- [Install GCC 9](#install-gcc-9)
+	- [Install Devtoolset 9](#install-devtoolset-9)
+	- [get Sortmerna sources](#get-sortmerna-sources)
+	- [Install Conda](#install-conda)
+	- [Install CMake](#install-cmake)
+	- [build](#build)
+- [Building on Windows](#building-on-windows)
+	- [Install Visual Studio](#install-visual-studio)
+	- [Install Conda](#install-conda-1)
+	- [get Sortmerna sources](#get-sortmerna-sources-1)
+	- [build](#build-1)
+- [Building on Mac](#building-on-mac)
+- [Third-party libraries](#third-party-libraries)
 
 ## General notes
 
@@ -128,6 +126,14 @@ vi $SMR_HOME/scripts/env.yaml
 
 # run the build
 python $SMR_HOME/scripts/build.py --name all [--env $SMR_HOME/script/my_env.yaml]
+```
+
+### Quick build
+
+The following command will compile SortMeRNA local sources in the current working directory on a linux machine:
+
+```
+python scripts/build.py --name all --local-linux
 ```
 
 ## Building on Windows
