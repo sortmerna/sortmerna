@@ -723,6 +723,7 @@ if __name__ == "__main__":
     optpar.add_option('--config', dest='config', help='Build configuration file.')
     optpar.add_option('--build-dir', dest='build_dir', help='Build directory.')
     optpar.add_option('--dist-dir', dest='dist_dir', help='Distro directory.')
+    optpar.add_option('--local-linux', dest='local_linux', action='store_true', help='Perform the build on local source files in the current working directory.')
     (opts, args) = optpar.parse_args()
 
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
@@ -730,9 +731,53 @@ if __name__ == "__main__":
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
     print(f'{STAMP} Current dir: {cur_dir}')
 
-    if opts.envfile:
+    if opts.local_linux:
+        cur_wdir = os.getcwd()
+
+        LIB_DIR = cur_wdir
+
+        URL_ZLIB   = 'https://github.com/madler/zlib.git'
+        URL_ROCKS  = 'https://github.com/facebook/rocksdb.git'
+        URL_DIRENT = 'https://github.com/tronkko/dirent'
+        #URL_RAPID  = https://github.com/Tencent/rapidjson
+        URL_SMR    = 'https://github.com/biocore/sortmerna.git'
+        URL_CONCURRENTQUEUE = 'https://github.com/cameron314/concurrentqueue'
+
+        CMAKE_GEN = 'Unix Makefiles'
+
+        # SMR
+        SMR_SRC   = cur_wdir
+        SMR_BUILD = f'{cur_wdir}/build'
+        SMR_DIST  = f'{cur_wdir}/dist'
+        SMR_VER = None
+
+        # ZLIB
+        ZLIB_SRC = f'{cur_wdir}/{ZLIB}'
+        ZLIB_BUILD = f'{ZLIB_SRC}/build'
+        ZLIB_DIST = f'{ZLIB_SRC}/dist'
+
+        # ROCKSDB
+        ROCKS_SRC = f'{cur_wdir}/{ROCKS}'
+        ROCKS_BUILD = f'{ROCKS_SRC}/build'
+        ROCKS_DIST = f'{ROCKS_SRC}/dist'
+        ROCKS_VER = None
+
+        # RAPIDJSON
+        # no binaries, so always build Release only
+        """
+        RAPID_SRC = f'{cur_wdir}/{RAPID}'
+        RAPID_BUILD = f'{RAPID_SRC}/build'
+        RAPID_DIST = f'{RAPID_SRC}/dist'
+        """
+
+        # CONCURRENTQUEUE
+        CCQUEUE_SRC = f'{cur_wdir}/{CCQUEUE}'
+
+        env = {}
+
+    else:
         # check env.yaml. If no env file specified, try the current directory
-        envfile = opts.envfile
+        envfile = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
         if not os.path.exists(envfile):
             print(f'{STAMP} No environment config file found. Please, provide one using \'--env\' option')
             sys.exit(1)
@@ -823,50 +868,7 @@ if __name__ == "__main__":
             val = env.get(DIRENT, {}).get('dist')
             DIRENT_DIST = val.get(ENV) if val and isinstance(val, dict) else DIRENT_SRC
 
-    else:
-        cur_wdir = os.getcwd()
-
-        LIB_DIR = cur_wdir
-
-        URL_ZLIB   = 'https://github.com/madler/zlib.git'
-        URL_ROCKS  = 'https://github.com/facebook/rocksdb.git'
-        URL_DIRENT = 'https://github.com/tronkko/dirent'
-        #URL_RAPID  = https://github.com/Tencent/rapidjson
-        URL_SMR    = 'https://github.com/biocore/sortmerna.git'
-        URL_CONCURRENTQUEUE = 'https://github.com/cameron314/concurrentqueue'
-
-        CMAKE_GEN = 'Unix Makefiles'
-
-        # SMR
-        SMR_SRC   = cur_wdir
-        SMR_BUILD = f'{cur_wdir}/build'
-        SMR_DIST  = f'{cur_wdir}/dist'
-        SMR_VER = None
-
-        # ZLIB
-        ZLIB_SRC = f'{cur_wdir}/{ZLIB}'
-        ZLIB_BUILD = f'{ZLIB_SRC}/build'
-        ZLIB_DIST = f'{ZLIB_SRC}/dist'
-
-        # ROCKSDB
-        ROCKS_SRC = f'{cur_wdir}/{ROCKS}'
-        ROCKS_BUILD = f'{ROCKS_SRC}/build'
-        ROCKS_DIST = f'{ROCKS_SRC}/dist'
-        ROCKS_VER = None
-
-        # RAPIDJSON
-        # no binaries, so always build Release only
-        """
-        RAPID_SRC = f'{cur_wdir}/{RAPID}'
-        RAPID_BUILD = f'{RAPID_SRC}/build'
-        RAPID_DIST = f'{RAPID_SRC}/dist'
-        """
-
-        # CONCURRENTQUEUE
-        CCQUEUE_SRC = f'{cur_wdir}/{CCQUEUE}'
-
-        env = {}
-
+    
     # call functions
     if opts.name:
         if opts.name == ALL:
