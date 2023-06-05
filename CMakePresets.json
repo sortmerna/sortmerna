@@ -72,7 +72,6 @@
                 "ZLIB_USE_STATIC_LIBS": {"type": "BOOL", "value": "ON"},
                 "ROCKSDB_USE_STATIC_LIBS": {"type": "BOOL", "value": "ON"},
                 "ROCKSDB_DIST": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/release",
-                "RAPIDJSON_HOME": "$env{USERPROFILE}/a1/libs/rapidjson/dist",
                 "CONCURRENTQUEUE_HOME": "$env{USERPROFILE}/a1/libs/concurrentqueue",
                 "DIRENTWIN_HOME": "$env{USERPROFILE}/a1/libs/dirent",
                 "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/release",
