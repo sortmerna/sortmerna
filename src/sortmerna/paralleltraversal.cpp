@@ -101,9 +101,11 @@ void traverse
 	std::vector<UCHAR> bitvec; // window (prefix/suffix) bitvector
 
 	// TODO: below 2 values are unique per index part. Move to index?
-	uint32_t bitvec_size = (refstats.partialwin[index.index_num] - 2) << 2; // e.g. 9 - 2 = 0000 0111 << 2 = 0001 1100 = 28
+	//   e.g. 9 - 2 = 0000 0111 << 2 = 0001 1100 = 28
+	uint32_t bitvec_size = (refstats.partialwin[index.index_num] - 2) << 2;
 	// Does this mark where in 32-bit the bitvector starts?
-	uint32_t offset = (refstats.partialwin[index.index_num] - 3) << 2; // e.g. 9 - 3 = 0000 0110 << 2 = 0001 1000 = 24
+	//   e.g. 9 - 3 = 0000 0110 << 2 = 0001 1000 = 24
+	uint32_t offset = (refstats.partialwin[index.index_num] - 3) << 2;
 
 	// loop search positions on the read in multiple passes
 	// changing the step (skip length/windowshift) when necessary
@@ -263,7 +265,8 @@ void traverse
 					{
 						// the next interval size equals to the current one, skip it
 						while (pass_n < 3
-							&& opts.skiplengths[index.index_num][pass_n] == opts.skiplengths[index.index_num][pass_n + 1])
+							&& opts.skiplengths[index.index_num][pass_n] == 
+								opts.skiplengths[index.index_num][pass_n + 1])
 							++pass_n;
 						if (++pass_n > 2) search = false;
 						// set interval skip length for next Pass

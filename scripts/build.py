@@ -572,7 +572,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
     CPACK_SOURCE_7Z = 1 # Win
     CPACK_SOURCE_ZIP = 1 # Win
     CPACK_BINARY_TGZ = 1 # Lin
-    ROCKSDB_STATIC = 1
+    ROCKSDB_USE_STATIC_LIBS = 1
     ZLIB_STATIC = 1
     # -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
     ZLIB_LIBRARY_RELEASE = ''
@@ -604,12 +604,12 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
         '-DWITH_RUNTIME_DEBUG={}'.format(WITH_RUNTIME_DEBUG),
         '-DWITH_TESTS={}'.format(WITH_TESTS),
         '-DZLIB_STATIC={}'.format(ZLIB_STATIC),
-        '-DROCKSDB_STATIC={}'.format(ROCKSDB_STATIC),
+        '-DROCKSDB_USE_STATIC_LIBS={}'.format(ROCKSDB_USE_STATIC_LIBS),
         '-DZLIB_ROOT={}'.format(ZLIB_DIST),
         '-DZLIB_LIBRARY_RELEASE={}'.format(ZLIB_LIBRARY_RELEASE),
         '-DZLIB_LIBRARY_DEBUG={}'.format(ZLIB_LIBRARY_DEBUG),
         #'-DROCKSDB_SRC={}'.format(ROCKSDB_SRC),
-        '-DROCKSDB_HOME={}'.format(ROCKS_DIST),
+        '-DROCKSDB_DIST={}'.format(ROCKS_DIST),
         '-DRAPIDJSON_HOME={}'.format(RAPID_DIST),
         '-DCONCURRENTQUEUE_HOME={}'.format(CCQUEUE_SRC),
         '-DCMAKE_INSTALL_PREFIX={}'.format(SMR_DIST)

@@ -107,7 +107,6 @@ const char map_nt[122] = {
 	2,   1 };
 
 /* length of the sliding window parameters */
-//uint32_t lnwin_gv = 0;
 uint32_t pread_gv = 0; // lnwin_gv + 1
 uint32_t partialwin_gv = 0; // lnwin_gv / 2
 
@@ -1118,19 +1117,10 @@ void get_keys_str(std::string &keys_str)
 int build_index(Runopts& opts)
 {
 	std::stringstream ss;
-	//timeval t;
-	//double start = 0.0;
-	//double end = 0.0;
 	auto stt = std::chrono::high_resolution_clock::now();
 	auto st = stt;
 	std::chrono::duration<double> elapsed;
 	INFO("==== Index building started ====");
-
-	// memory of index
-	//bool mem_is_set = false;
-	//bool lnwin_set = false;
-	//bool interval_set = false;
-	//bool max_pos_set = false;
 
 	pread_gv = opts.seed_win_len + 1;
 	partialwin_gv = opts.seed_win_len / 2;
@@ -1177,7 +1167,7 @@ int build_index(Runopts& opts)
 			exit(EXIT_FAILURE);
 		}
 
-		// get the size of the reads file
+		// get the size of the refs file
 		fseek(fp, 0L, SEEK_END);
 		size_t filesize = ftell(fp);
 		fseek(fp, 0L, SEEK_SET);
@@ -1187,7 +1177,8 @@ int build_index(Runopts& opts)
 			exit(EXIT_FAILURE);
 		}
 		else {
-			INFO("Begin indexing file ", idxpair.first, " of size: ", filesize, " under index name ", idxpair.second);
+			INFO("Begin indexing file ", idxpair.first, 
+				" of size: ", filesize, " under index name ", idxpair.second);
 		}
 
 		// STEP 1 ************************************************************
@@ -1211,14 +1202,11 @@ int build_index(Runopts& opts)
 		if (opts.is_verbose)
 			INFO_NS("\n  Collecting nucleotide distribution statistics ..");
 
-		//TIME(start);
 		st = std::chrono::high_resolution_clock::now();
 		do
 		{
 			nt = fgetc(fp);
-
-			// name of sequence for SAM format @SQ
-			char read_header[2000];
+			char read_header[2000]; // name of sequence for SAM format @SQ
 			char *p_header = read_header;
 
 			// start of read header
@@ -1263,22 +1251,21 @@ int build_index(Runopts& opts)
 			full_len += len;
 			if (len < pread_gv)
 			{
-				ERR("At least one of your sequences is shorter than the seed length " , pread_gv, 
-					", please filter out all sequences shorter than " , pread_gv, " to continue index construction.");
+				ERR("At least one of your sequences is shorter than the seed length ",
+					pread_gv, ", please filter out all sequences shorter than ",
+					pread_gv, " to continue index construction.");
 				exit(EXIT_FAILURE);
 			}
 			// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
 			len > maxlen ? maxlen = len : maxlen;
 		} while (nt != EOF); // read until end of file
-
-		//TIME(end);
-		elapsed = std::chrono::high_resolution_clock::now() - st; // end collecting the nucleotide distribution statistics
+		// end collecting the nucleotide distribution statistics
+		elapsed = std::chrono::high_resolution_clock::now() - st;
 
 		if (opts.is_verbose)
 			INFO_NS("  done  [", elapsed.count(), " sec]\n");
 
-		// set file pointer back to the beginning of file
-		rewind(fp);
+		rewind(fp); // set file pointer back to the beginning of file
 
 		/* END STEP 1 ***************************************************************************/
 
@@ -1321,6 +1308,8 @@ int build_index(Runopts& opts)
 
 			// table storing occurrence of each 9-mer and pointers to
 			// the forward and reverse burst tries
+			// to store 9-mer using 2 bits per nt, 9x2=18 bits are required
+			// giving the total number of all possible 9-mers as 2^18 (1<<18) = 262144
 			kmer *lookup_table = (kmer*)malloc((1 << opts.seed_win_len) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
@@ -1329,8 +1318,8 @@ int build_index(Runopts& opts)
 			}
 
 			memset(lookup_table, 0, (1 << opts.seed_win_len) * sizeof(kmer));
-
-			// bool vector to keep track which L/2-mers have been counted for by the forward sliding L/2-mer window
+			// bool vector to keep track which L/2-mers have been counted for
+			// by the forward sliding L/2-mer window
 			std::vector<bool> incremented_by_forward((1 << opts.seed_win_len));
 
 			// total size of index so far in bytes
@@ -1341,7 +1330,6 @@ int build_index(Runopts& opts)
 				INFO_NS("    (1/3) building burst tries ..");
 			}
 
-			//TIME(start);
 			st = std::chrono::high_resolution_clock::now();
 
 			// for the number of sequences for which the index is less than maximum (set by -m)
@@ -1352,14 +1340,14 @@ int build_index(Runopts& opts)
 			//  ACTACTATCTAGTGTGCTAGCTAGTCATCGCTAGCTAGCTAGTCG
 			//
 			//  --------- ---------
-			// we store all unique 18-mer positions (not 19-mer) because if an 18-mer on a read matches exactly to the prefix
-			// or suffix of a 19-mer in the mini-burst trie, we need to recover all of the 18-mer occurrences in the database
+			// we store all unique 18-mer positions (not 19-mer) because if an 18-mer
+			// on a read matches exactly to the prefix or suffix of a 19-mer in the
+			// mini-burst trie, we need to recover all of the 18-mer occurrences in the database
 			//
 			// read the reads file char by char
 			do
 			{
-				// start of current sequence in file
-				long int start_seq = ftell(fp);
+				long int start_seq = ftell(fp); // start of current sequence in file
 				nt = fgetc(fp);
 
 				// scan to end of header name
@@ -1391,7 +1379,7 @@ int build_index(Runopts& opts)
 
 				// check the addition of this sequence will not overflow the
 				// maximum memory (estimated memory 10 bytes per L-mer)
-				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6;
+				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6; // MB
 
 				// the sequence alone is too large, it will not fit into maximum
 				// memory, skip it
@@ -1437,11 +1425,13 @@ int build_index(Runopts& opts)
 
 				// create a reverse sequence using the forward
 				unsigned char* ptr = &myseq[len - 1];
-
-				for (_j = 0; _j < len; _j++) myseqr[_j] = *ptr--;
+				for (_j = 0; _j < len; _j++) {
+					myseqr[_j] = *ptr--;
+				}
+				
 				// 9-mer prefix of 19-mer
 				uint32_t kmer_key_short_f = 0;
-				// 9-mer suffix of 19-mer
+				// 9-mer suffix of 19-mer i.e. prefix of the reversed seq
 				uint32_t kmer_key_short_r = 0;
 				// pointer to next letter to add to 9-mer prefix
 				unsigned char* kmer_key_short_f_p = &myseq[0];
@@ -1475,7 +1465,9 @@ int build_index(Runopts& opts)
 					incremented_by_forward[kmer_key_short_f] = true;
 					// increment 9-mer count only if it wasn't already
 					// incremented by kmer_key_short_f before
-					if (!incremented_by_forward[kmer_key_short_r]) lookup_table[kmer_key_short_r].count++;
+					if (!incremented_by_forward[kmer_key_short_r]) {
+						lookup_table[kmer_key_short_r].count++;
+					}
 
 					// ****** add the forward 19-mer
 
@@ -1564,8 +1556,6 @@ int build_index(Runopts& opts)
 			else index_size = 0;
 
 			rewind(keys);
-
-			//TIME(end);
 			elapsed = std::chrono::high_resolution_clock::now() - st;
 
 			if (opts.is_verbose)
@@ -1575,7 +1565,6 @@ int build_index(Runopts& opts)
 			if (opts.is_verbose)
 				INFO_NS("    (2/3) building CMPH hash ..");
 
-			//TIME(start);
 			st = std::chrono::high_resolution_clock::now();
 			cmph_t *hash = NULL;
 
@@ -1632,20 +1621,16 @@ int build_index(Runopts& opts)
 			// reset the file pointer to the beginning of the current part
 			fseek(fp, start_part, SEEK_SET);
 
-			//TIME(start);
 			st = std::chrono::high_resolution_clock::now();
 			do
 			{
 				long int start_seq = ftell(fp);
 				nt = fgetc(fp);
 
-				//cout << ">"; //TESTING2
-
 				// scan to end of header name
 				while (nt != '\n')
 				{
 					nt = fgetc(fp);
-					// if ( nt != '\n' ) cout << (char)nt; //TESTING
 				}
 
 				unsigned char* myseq = new unsigned char[maxlen];
@@ -1661,14 +1646,12 @@ int build_index(Runopts& opts)
 					if (nt != '\n' && nt != ' ')
 					{
 						len++;
-						// exact character
-						myseq[_j++] = map_nt[nt];
+						myseq[_j++] = map_nt[nt]; // exact character
 					}
 					nt = fgetc(fp);
 				}
 
-				// put back the >
-				if (nt != EOF) ungetc(nt, fp);
+				if (nt != EOF) ungetc(nt, fp); // put back the '>'
 
 				// check the addition of this sequence will not overflow the maximum memory
 				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6;
@@ -2101,7 +2084,7 @@ int build_index(Runopts& opts)
 		// Free map'd memory
 		fclose(fp);
 
-	} // for every FASTA file, index name pair listed after --ref option
+	} // for every FASTA file listed after '--ref' option
 
 	opts.is_index_built = true;
 	elapsed = std::chrono::high_resolution_clock::now() - stt;

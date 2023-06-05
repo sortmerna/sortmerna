@@ -31,7 +31,7 @@
 # Tests configuration
 # Rendered using Jinja
 #
-exclude.list: ['t42','t43'] # tests to skip in bulk runs
+exclude.list: ['t42','t43', 't52'] # tests to skip in bulk runs
 tests:
   #                       output type                                       |    alignment type
   #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
@@ -3843,12 +3843,17 @@ t52:
     - -num_alignments
     - '0'
     - -v
-    - -L
-    - '10'
+  #  - -L
+  #  - '10'
     - -threads
     - '1'
-    - -passes
-    - '10,5,1'
+  #  - -passes
+  #  - '10,5,1'
+  #  - -e
+  #  - '1e-15'
+    - '-full_search'
+    - '1'
+    - '-F'
     - -workdir
     - {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}

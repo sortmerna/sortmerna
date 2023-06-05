@@ -5,7 +5,7 @@
 # CMake file for sortmerna/src/sortmerna
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 project(sortmerna CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(Threads REQUIRED)
 
 find_package(RocksDB CONFIG REQUIRED
-  PATHS ${ROCKSDB_HOME}
+  PATHS ${ROCKSDB_DIST}
   NO_DEFAULT_PATH
 )
 
@@ -38,7 +38,7 @@ message("RocksDB::rocksdb-shared IMPORTED_IMPLIB: ${lib}")
 get_target_property(lib RocksDB::rocksdb LIBRARY_OUTPUT_NAME)
 message("RocksDB::rocksdb LIBRARY_OUTPUT_NAME: ${lib}")
 
- if(ROCKSDB_STATIC)
+ if(ROCKSDB_USE_STATIC_LIBS)
 	message("Using Static RocksDB lib")
     set(ROCKSDB_LIB RocksDB::rocksdb)
  else()
@@ -46,7 +46,7 @@ message("RocksDB::rocksdb LIBRARY_OUTPUT_NAME: ${lib}")
     set(ROCKSDB_LIB RocksDB::rocksdb-shared)
 	#if(WIN32 AND MSVC)
 	#	set_target_properties(RocksDB::rocksdb-shared PROPERTIES
-	#		IMPORTED_IMPLIB "${ROCKSDB_HOME}/lib/rocksdb-shared.lib"
+	#		IMPORTED_IMPLIB "${ROCKSDB_DIST}/lib/rocksdb-shared.lib"
 	#	)
 	#endif()
 endif()

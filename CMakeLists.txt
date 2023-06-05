@@ -5,7 +5,7 @@
 # Top level CMake file for sortmerna
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 project(sortmerna CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -60,7 +60,7 @@ set(ZLIB_URL https://github.com/madler/zlib.git CACHE STRING "ZLib GitHub URL")
 set(ZLIB_ROOT ${EXTERNAL_DEPS}/zlib CACHE PATH "ZLIB installation directory")
 set(ROCKSDB_URL https://github.com/facebook/rocksdb.git CACHE STRING "RocksDB GitHub URL")
 set(ROCKSDB_SRC ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RocksDB source root directory")
-set(ROCKSDB_HOME ${EXTERNAL_DEPS}/rocksdb/dist CACHE PATH "RocksDB installation directory")
+set(ROCKSDB_DIST ${EXTERNAL_DEPS}/rocksdb/dist CACHE PATH "RocksDB installation directory")
 set(RAPIDJSON_URL https://github.com/Tencent/rapidjson CACHE STRING "RapidJSON GitHub URL")
 set(RAPIDJSON_HOME ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RapidJSON installation directory")
 set(DIRENTWIN_URL https://github.com/tronkko/dirent CACHE STRING "Dirent-Windows interface GitHub URL")
@@ -69,7 +69,7 @@ set(CONCURRENTQUEUE_URL https://github.com/cameron314/concurrentqueue CACHE STRI
 set(CONCURRENTQUEUE_HOME ${EXTERNAL_DEPS}/concurrentqueue CACHE PATH "Concurrent queue library installation directory")
 #set(gflags_DIR  ${EXTERNAL_DEPS}/gflags/dist/lib/cmake/gflags CACHE PATH "GFlags library configuration")
 
-option(ROCKSDB_STATIC "Use static RocksDB library" ON)
+option(ROCKSDB_USE_STATIC_LIBS "Use static RocksDB library" ON)
 option(ZLIB_STATIC "Use static ZLib library" ON)
 
 option(PORTABLE "Build portable/statically linked executable" ON)

@@ -552,8 +552,8 @@ public:
 	double min_cov = -1.0; // [4] OTU-picking option: minimum Coverage (%COV)
 
 	// indexing options
-	double max_file_size = 3072; // max size of an index file (or a part of the file). When exceeded, the index is split into parts.
-	uint32_t seed_win_len = 18; // OPT_L seed kmer length
+	double max_file_size = 3072; // max size of an index file in MB (or a part of the file). When exceeded, the index is split into parts.
+	uint32_t seed_win_len = 18; // OPT_L seed lmer length
 	uint32_t interval = 1; // size of k-mer window shift. Default 1 is the min possible to generate max number of k-mers.
 	uint32_t max_pos = 10000;
 	// ~ END indexing options
