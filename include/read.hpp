@@ -145,7 +145,7 @@ public:
 	void clear();
 	void init(Runopts& opts);
 	/* convert to Json string to store in DB */
-	std::string matchesToJson();
+	// std::string matchesToJson();
 	void unmarshallJson(KeyValueDatabase& kvdb);
 	/* serialize to binary string to store in DB */
 	std::string toBinString(); 

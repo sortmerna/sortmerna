@@ -71,9 +71,9 @@ include(FindZLIB)
 # prevent CONFIG search mode
 find_package(ZLIB MODULE REQUIRED)
 
-include(FindRapidJson)
+#include(FindRapidJson)
  # prevent CONFIG search mode
-find_package(RapidJson MODULE REQUIRED)
+#find_package(RapidJson MODULE REQUIRED)
 
 # set additional compile flags
 if(MSVC)
@@ -137,7 +137,7 @@ target_link_libraries(smr_objs
 	PUBLIC
 		alp
 		${ROCKSDB_LIB}
-		RapidJSON::RapidJSON
+		#RapidJSON::RapidJSON
 		ZLIB::ZLIB
 )
 if(WIN32)
@@ -182,7 +182,7 @@ if(WIN32)
 		$<TARGET_OBJECTS:cmph>
 		ZLIB::ZLIB
 		${ROCKSDB_LIB}
-		RapidJSON::RapidJSON
+		#RapidJSON::RapidJSON
 		Rpcrt4.lib
 		Cabinet.lib # rocksdb:XPRESS::CreateCompressor,Compress,CloseCompressor,CreateDecompressor,Decompress,CloseDecompressor
 	)

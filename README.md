@@ -7,23 +7,25 @@ SortMeRNA is a local sequence alignment tool for filtering, mapping and clusteri
 The core algorithm is based on approximate seeds and allows for sensitive analysis of NGS reads.
 The main application of SortMeRNA is filtering rRNA from metatranscriptomic data.
 SortMeRNA takes as input files of reads (fasta, fastq, fasta.gz, fastq.gz) and one or multiple
-rRNA database file(s), and sorts apart aligned and rejected reads into two files.
-Additional applications include clustering and taxonomy assignation available through [QIIME v1.9.1](http://qiime.org). SortMeRNA works with Illumina, Ion Torrent and PacBio data, and can produce SAM and
-BLAST-like alignments.
+rRNA database file(s), and sorts apart aligned and rejected reads into two files. SortMeRNA works
+with Illumina, Ion Torrent and PacBio data, and can produce SAM and BLAST-like alignments.
+
+SortMeRNA is also available through [QIIME v1.9.1](http://qiime.org) and
+the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 # Table of Contents
 
-* [Getting Started](#getting-started)
-	* [Using Conda package on Linux](#using-conda-package)
-	* [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
-	* [Running](#running)
-      * [Execution trace](#execution-trace)
-* [Building from sources](#building-from-sources)
-* [User Manual](#user-manual)
-* [Taxonomies](#taxonomies)
-* [Citation](#citation)
-* [Contributors](#contributors)
-* [Support](#support)
+- [Getting Started](#getting-started)
+  - [Using Conda package](#using-conda-package)
+  - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
+  - [Running](#running)
+    - [Execution trace](#execution-trace)
+- [Building from sources](#building-from-sources)
+- [User Manual](#user-manual)
+- [Taxonomies](#taxonomies)
+- [Citation](#citation)
+- [Contributors](#contributors)
+- [Support](#support)
 
 
 # Getting Started
@@ -32,8 +34,18 @@ SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMak
 
 ## Using Conda package
 
+[Install conda]:(https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 ```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+Then, as per the [Bioconda guidelines](https://bioconda.github.io), add the following conda channels:
+```
+conda config --add channels defaults
 conda config --add channels bioconda
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+
 
 conda search sortmerna
   Loading channels: done
@@ -44,16 +56,19 @@ conda search sortmerna
   ...
   sortmerna                      4.3.6               0  bioconda
 
+# create a new environment and install SortMeRNA in it
+conda create --name sortmerna_env
+conda activate sortmerna_env
 conda install sortmerna
 which sortmerna
-  /home/biocodz/miniconda3/bin/conda
+  /home/biocodz/miniconda3/envs/sortmerna_env/bin/sortmerna
 
 # test the installation
 sortmerna --version
   SortMeRNA version 4.3.6
-  Build Date: Aug 16 2021
-  sortmerna_build_git_sha:@921fa40256760ea2d44c49b21eb326afda748d5e@
-  sortmerna_build_git_date:@2022/08/16 10:59:31@
+  Build Date: Aug 16 2022
+  sortmerna_build_git_sha:@db8c1983765f61986b46ee686734749eda235dcc@
+  sortmerna_build_git_date:@2022/08/16 11:42:59@
 
 # view help
 sortmerna -h
@@ -134,9 +149,9 @@ sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_
 
 ```
 
-More examples can be found in [test.jinja.yaml](https://github.com/biocore/sortmerna/blob/master/scripts/test.jinja.yaml) and [run.py](https://github.com/biocore/sortmerna/blob/master/scripts/run.py)
+More examples can be found in [test.jinja](https://github.com/biocore/sortmerna/blob/master/scripts/test.jinja) and [run.py](https://github.com/biocore/sortmerna/blob/master/scripts/run.py)
 
-Refer to the [Manual](https://github.com/biocore/sortmerna/wiki/2.-User-manual-(todo)) for usage details
+Refer to the [Manual](https://sortmerna.readthedocs.io/en/latest/) for usage details
 
 ### Execution trace
 

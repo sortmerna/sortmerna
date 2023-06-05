@@ -40,10 +40,6 @@
                     "type": "FILEPATH",
                     "value": "$env{HOME}/a1/code/zlib/dist/lib/libz.a"
                 },
-                "RAPIDJSON_HOME": {
-                    "type": "PATH",
-                    "value": "$env{HOME}/a1/code/rapidjson/dist"
-                },
                 "CONCURRENTQUEUE_HOME": {
                     "type": "PATH",
                     "value": "$env{HOME}/a1/code/concurrentqueue"

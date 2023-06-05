@@ -35,8 +35,8 @@
 #include <filesystem>
 
 // 3rd party
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
+// #include "rapidjson/writer.h"
+// #include "rapidjson/stringbuffer.h"
 
 // SMR
 #include "read.hpp"
@@ -398,7 +398,7 @@ void Read::flip34()
 	}
 } // ~flip34
 
-std::string Read::matchesToJson() {
+/* std::string Read::matchesToJson() {
 	rapidjson::StringBuffer sbuf;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(sbuf);
 
@@ -421,8 +421,8 @@ std::string Read::matchesToJson() {
 
 	writer.EndObject();
 
-	return sbuf.GetString();
-} // ~Read::matchesToJsonString
+	return sbuf.GetString(); 
+} // ~Read::matchesToJsonString */
 
 std::string Read::toBinString()
 {
