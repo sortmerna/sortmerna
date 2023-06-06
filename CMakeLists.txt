@@ -57,7 +57,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
 
 set(EXTERNAL_DEPS ${CMAKE_SOURCE_DIR}/3rdparty CACHE PATH "Installation directory for 3rd party dependencies")
 set(ZLIB_URL https://github.com/madler/zlib.git CACHE STRING "ZLib GitHub URL")
-set(ZLIB_ROOT ${EXTERNAL_DEPS}/zlib CACHE PATH "ZLIB installation directory")
+#set(ZLIB_ROOT ${EXTERNAL_DEPS}/zlib CACHE PATH "ZLIB installation directory")
 set(ROCKSDB_URL https://github.com/facebook/rocksdb.git CACHE STRING "RocksDB GitHub URL")
 set(ROCKSDB_SRC ${EXTERNAL_DEPS}/rocksdb CACHE PATH "RocksDB source root directory")
 set(ROCKSDB_DIST ${EXTERNAL_DEPS}/rocksdb/dist CACHE PATH "RocksDB installation directory")

@@ -12,6 +12,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
+# cmake has no FindRocksDB module, but RocksDB build provides cmake config,
+# whence using CONFIG search.
+# defines RocksDB::rocksdb (static) and RocksDB::rocksdb-shared targets. Note that
+# these names can only be found by reading the package configuration files.
 find_package(RocksDB CONFIG REQUIRED
   PATHS ${ROCKSDB_DIST}
   NO_DEFAULT_PATH
@@ -38,10 +42,11 @@ message("RocksDB::rocksdb-shared IMPORTED_IMPLIB: ${lib}")
 get_target_property(lib RocksDB::rocksdb LIBRARY_OUTPUT_NAME)
 message("RocksDB::rocksdb LIBRARY_OUTPUT_NAME: ${lib}")
 
- if(ROCKSDB_USE_STATIC_LIBS)
+# use ROCKSDB_LIB variable for potential switching between rocksdb and rocksb-shared
+if(ROCKSDB_USE_STATIC_LIBS)
 	message("Using Static RocksDB lib")
-    set(ROCKSDB_LIB RocksDB::rocksdb)
- else()
+	set(ROCKSDB_LIB RocksDB::rocksdb)
+else()
 	message("Using Shared RocksDB lib")
     set(ROCKSDB_LIB RocksDB::rocksdb-shared)
 	#if(WIN32 AND MSVC)
@@ -53,6 +58,13 @@ endif()
 
 get_property(trans_deps TARGET ${ROCKSDB_LIB} PROPERTY INTERFACE_LINK_LIBRARIES)
 message("${ROCKSDB_LIB} transitive link dependencies: ${trans_deps}")
+
+# use cmake standard FindZLIB module to search the target
+# cmake --help-module-list | grep -i zlib
+# defines ZLIB::ZLIB target
+include(FindZLIB)
+# prevent CONFIG search mode
+find_package(ZLIB MODULE REQUIRED)
 
 # fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
@@ -66,10 +78,6 @@ endif()
 
 get_property(trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
 message("rocksdb transitive link dependencies AFTER modification: ${trans_deps}")
-
-include(FindZLIB)
-# prevent CONFIG search mode
-find_package(ZLIB MODULE REQUIRED)
 
 #include(FindRapidJson)
  # prevent CONFIG search mode
