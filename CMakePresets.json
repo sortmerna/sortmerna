@@ -1,19 +1,20 @@
 {
-    "version": 4,
+    "version": 6,
+    "cmakeMinimumRequired": {
+      "major": 3,
+      "minor": 21,
+      "patch": 0
+    },
     "configurePresets": [
         {
-            "name": "LIN_Release",
+            "name": "LIN_release",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/Release",
+            "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "WITH_TESTS": {
                     "type": "BOOL",
                     "value": "ON"
-                },
-                "WITH_RUNTIME_DEBUG": {
-                    "type": "BOOL",
-                    "value": "OFF"
                 },
                 "ROCKSDB_DIST": "$env{HOME}/a1/code/rocksdb/dist",
                 "ROCKSDB_USE_STATIC_LIBS": {
@@ -32,53 +33,39 @@
             }
         },
         {
-            "name": "LIN_Release_zlib_custom",
-            "generator": "Unix Makefiles",
-            "inherits": "LIN_Release",
-            "binaryDir": "${sourceDir}/build/Release",
-            "cacheVariables": {
-                "ZLIB_ROOT": {
-                    "type": "PATH",
-                    "value": "$env{HOME}/a1/code/zlib/dist"
-                },
-                "ZLIB_LIBRARY_RELEASE": {
-                    "type": "FILEPATH",
-                    "value": "$env{HOME}/a1/code/zlib/dist/lib/libz.a"
-                },
-                "ZLIB_LIBRARY_DEBUG": {
-                    "type": "FILEPATH",
-                    "value": "$env{HOME}/a1/code/zlib/dist/lib/libz.a"
-                }
-            }
-        },
-        {
-            "name": "LIN_Debug",
-            "binaryDir": "${sourceDir}/build/Release",
-            "inherits": "LIN_Release",
+            "name": "LIN_debug",
+            "inherits": "LIN_release",
+            "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
-            "name": "WIN_Release",
-            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture)",
+            "name": "WIN_release",
             "generator": "Visual Studio 17 2022",
-            "toolset": "host=x64",
-            "architecture": "x64",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "PORTABLE": {"type": "BOOL", "value": "OFF"},
-                "WITH_RUNTIME_DEBUG": {"type": "BOOL", "value": "OFF"},
-                "WITH_TESTS": {"type": "BOOL", "value": "ON"},
+                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/release",
                 "ZLIB_ROOT": "$env{USERPROFILE}/a1/libs/zlib/dist/t1",
-                "ZLIB_USE_STATIC_LIBS": {"type": "BOOL", "value": "ON"},
+                "ZLIB_USE_STATIC_LIBS":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
                 "ROCKSDB_DIST": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/release",
-                "ROCKSDB_USE_STATIC_LIBS": {"type": "BOOL", "value": "ON"},
+                "ROCKSDB_USE_STATIC_LIBS":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
                 "CONCURRENTQUEUE_HOME": "$env{USERPROFILE}/a1/libs/concurrentqueue",
                 "DIRENTWIN_HOME": "$env{USERPROFILE}/a1/libs/dirent",
-                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/release",
-                "WITH_MD_LIBRARY": {"type": "BOOL", "value": "ON"},
+                "WITH_TESTS":
+                {
+                    "type": "BOOL", 
+                    "value": "ON"
+                },
                 "CPACK_BINARY_NSIS": {"type": "BOOL", "value": "OFF"},
                 "CPACK_BINARY_7Z": {"type": "BOOL", "value": "ON"},
                 "CPACK_BINARY_ZIP": {"type": "BOOL", "value": "OFF"},
@@ -87,21 +74,34 @@
             }
         },
         {
-            "name": "win-release-zlib-cust",
-            "inherits": "WIN_Release",
+            "name": "WIN_debug",
+            "inherits": "WIN_release",
             "cacheVariables": {
-                "ZLIB_LIBRARY_RELEASE": "$env{USERPROFILE}/a1/libs/zlib/dist/t1/lib/zlibstatic.lib",
-                "ZLIB_LIBRARY_DEBUG" : "$env{USERPROFILE}/a1/libs/zlib/dist/t1/lib/zlibstaticd.lib"
-            }
-        },
-        {
-            "name": "WIN_Debug",
-            "inherits": "WIN_Release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
                 "ROCKSDB_DIST": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/debug",
                 "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/debug"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "LIN_release",
+            "configuration": "Release",
+            "configurePreset": "LIN_release"
+        },
+        {
+            "name": "LIN_debug",
+            "configuration": "Debug",
+            "configurePreset": "LIN_debug"
+        },
+        {
+            "name": "WIN_release",
+            "configuration": "Release",
+            "configurePreset": "WIN_release"
+        },
+        {
+            "name": "WIN_debug",
+            "configuration": "Debug",
+            "configurePreset": "WIN_debug"
         }
     ]
 }

@@ -117,16 +117,18 @@ def test():
 
 def git_clone(url, pdir, force=False):
     '''
+    clone a git repo if not already existing
+
     :param str url    url to clone
     :param str pdir   parent directory where to clone
     '''
-    STAMP = '[git_clone]'
+    ST = '[git_clone]'
 
     # check clone already exists
     repo = os.path.basename(url).split('.')[0] # e.g. sortmerna
     gitdir = '{}/{}/.git'.format(pdir, repo)
     if os.path.exists(gitdir):
-        print('{} Git clone already exists: {}'.format(STAMP, gitdir))
+        print('{} Git clone already exists: {}'.format(ST, gitdir))
         cmd = ['git', 'status']
         proc_run(cmd, '{}/{}'.format(pdir, repo))
     
@@ -143,7 +145,7 @@ def conda_install(dir=None, force=False, clean=False, **cfg):
     pip install -U pyyaml
     pip install -U Jinja2
     '''
-    STAMP = '[conda_install]'
+    ST = '[conda_install]'
     dir = UHOME if not dir else dir
     fsh = 'miniconda.sh'
     is_install_ok = False
@@ -154,9 +156,9 @@ def conda_install(dir=None, force=False, clean=False, **cfg):
         cmd = ['python', '--version']
         ret = proc_run(cmd, bin_conda, True)
         if not ret['retcode']:
-            print('{} Conda already installed: {} : {}'.format(STAMP, bin_conda, ret['stdout']))
+            print('{} Conda already installed: {} : {}'.format(ST, bin_conda, ret['stdout']))
             if force:
-                print('{} TODO: Force specified - removing the existing installation: {}'.format(STAMP, bin_conda))
+                print('{} TODO: Force specified - removing the existing installation: {}'.format(ST, bin_conda))
             return
 
     # download the installer if not already present
@@ -169,14 +171,14 @@ def conda_install(dir=None, force=False, clean=False, **cfg):
             # this works with conda but not standard python3
         #    req = url_conda
 
-        print('{} Loading Conda from url: {}'.format(STAMP, url_conda))
+        print('{} Loading Conda from url: {}'.format(ST, url_conda))
         try:
             req = requests.get(url_conda, allow_redirects=True)
             #with urllib.request.urlopen(req) as surl:
             with open(fsh, 'wb') as fp:
                 fp.write(req.content) # loads the file into memory before writing to disk. No good for very big files.
         except:
-            print('{} Exception getting Conda distro: {} {}'.format(STAMP, sys.exc_info()[1], sys.exc_info()[0]))
+            print('{} Exception getting Conda distro: {} {}'.format(ST, sys.exc_info()[1], sys.exc_info()[0]))
             sys.exit(1)
 
     # run the installer
@@ -187,32 +189,32 @@ def conda_install(dir=None, force=False, clean=False, **cfg):
 
         # delete the installer
         if clean:
-            print('{} Deleting the installer {}'.format(STAMP, os.path.join(dir, fsh)))
+            print('{} Deleting the installer {}'.format(ST, os.path.join(dir, fsh)))
             os.remove(os.path.join(dir, fsh))
 
-        print('{} Installed conda in {}'.format(STAMP, os.path.join(dir, 'miniconda3')))
+        print('{} Installed conda in {}'.format(ST, os.path.join(dir, 'miniconda3')))
 
         # install packages required to use sortmerna's build.py
-        print('{} Installing PyYaml package'.format(STAMP))
+        print('{} Installing PyYaml package'.format(ST))
         bin_pip = os.path.join(bin_conda, 'pip')
         cmd = [bin_pip, 'install', 'pyyaml']
         proc_run(cmd, bin_conda)
 
-        print('{} Installing Jinja2 package'.format(STAMP))
+        print('{} Installing Jinja2 package'.format(ST))
         cmd = [bin_pip, 'install', 'jinja2']
         proc_run(cmd, bin_conda)
 
-        print('{} Installing NumPy package'.format(STAMP))
+        print('{} Installing NumPy package'.format(ST))
         cmd = [bin_pip, 'install', 'numpy']
         proc_run(cmd, bin_conda)
 
-        print('{} Installing scikit-bio package'.format(STAMP))
+        print('{} Installing scikit-bio package'.format(ST))
         cmd = [bin_pip, 'install', 'scikit-bio']
         proc_run(cmd, bin_conda)
     else:
-        print('{} Conda installer not found - likely failed to download'.format(STAMP))
+        print('{} Conda installer not found - likely failed to download'.format(ST))
 
-    print('{} Done'.format(STAMP))
+    print('{} Done'.format(ST))
 #END conda_install
 
 def cmake_install(dir=None, force=False, **cfg):
@@ -223,7 +225,7 @@ def cmake_install(dir=None, force=False, **cfg):
     Download and extract CMake release archive
     python build.py --name cmake
     '''
-    STAMP = '[cmake_install]'
+    ST = '[cmake_install]'
     is_installed = False
     cmake_cfg = cfg.get(CMAKE)
     url = cmake_cfg['url'][MY_OS]
@@ -236,12 +238,12 @@ def cmake_install(dir=None, force=False, **cfg):
     cmake_bin = '{}/bin/cmake'.format(cmake_home)
     if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
     if os.path.exists(cmake_bin):
-        print('{} Cmake is already installed: {}'.format(STAMP, cmake_bin))
+        print('{} Cmake is already installed: {}'.format(ST, cmake_bin))
         if not force:
             is_installed = True
 
     if not is_installed:
-        print('{} CMake not found at: {} - installing'.format(STAMP, cmake_bin))
+        print('{} CMake not found at: {} - installing'.format(ST, cmake_bin))
         os.chdir(Path(cmake_home).parent.as_posix()) # navigate to the parent dir e.g. installation root (pathlib)
         # download the installer if not already present
         if not os.path.exists(zipped):
@@ -252,7 +254,7 @@ def cmake_install(dir=None, force=False, **cfg):
                 with open(zipped, 'wb') as fp:
                     fp.write(req.content) # loads all file into memory first before writing to disk. No good for very big files.
             except:
-                print('{} Exception getting CMake distro: {} {}'.format(STAMP, sys.exc_info()[1], sys.exc_info()[0]))
+                print('{} Exception getting CMake distro: {} {}'.format(ST, sys.exc_info()[1], sys.exc_info()[0]))
                 sys.exit(1)
 
         # extract archive
@@ -270,9 +272,9 @@ def cmake_install(dir=None, force=False, **cfg):
 
         # Verify installation
         if os.path.exists(cmake_bin):
-            print('{} Installed CMake {}'.format(STAMP, cmake_bin))
+            print('{} Installed CMake {}'.format(ST, cmake_bin))
         else:
-            print('{} Failed to install CMake {}'.format(STAMP, cmake_bin))
+            print('{} Failed to install CMake {}'.format(ST, cmake_bin))
 
         # copy binarties to HOME/bin to avoid setting the PATH
         #if IS_LNX:
@@ -292,7 +294,7 @@ def gcc_install(**cfg):
                                            |_link
     sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-9 60
     '''
-    STAMP = '[gcc_install]'
+    ST = '[gcc_install]'
     GCC_MINVER = 9
     is_gcc = False
     if sh_which('gcc'):
@@ -301,10 +303,10 @@ def gcc_install(**cfg):
         if ret['retcode'] == 0:
             gccver = ret['stdout'].decode('utf-8').split('\n')[0].split()[3].split('.')[0]
             if int(gccver) >= GCC_MINVER:
-                print(f'{STAMP} gcc version {gccver} found - OK')
+                print(f'{ST} gcc version {gccver} found - OK')
                 is_gcc = True
     if not is_gcc:
-        print(f'{STAMP} gcc is not found. Please, install prior using this script')
+        print(f'{ST} gcc is not found. Please, install prior using this script')
 #END gcc_install
 
 def make_install(**cfg):
@@ -331,15 +333,18 @@ def clean(dir):
 
 def proc_run(cmd, cwd=None, capture=False):
     '''
+    :param list cmd      command to execute
+    :param str cwd       CWD
+    :param bool capture  capture the output
     '''
-    STAMP = '[proc_run]'
+    ST = '[proc_run]'
     ret = {'retcode':0, 'stdout':None, 'stderr':None}
     spr = '==========================================================='
 
     if cwd:
-        print('{} Running command:\n{}\n{} in {}\n{}'.format(STAMP, spr, ' '.join(cmd), cwd, spr))
+        print('{} Running command:\n{}\n{} in {}\n{}'.format(ST, spr, ' '.join(cmd), cwd, spr))
     else:
-        print('{} Running command:\n{}\n{}\n{}'.format(STAMP, spr, ' '.join(cmd), spr))
+        print('{} Running command:\n{}\n{}\n{}'.format(ST, spr, ' '.join(cmd), spr))
 
     start = time.time()
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
@@ -375,9 +380,9 @@ def proc_run(cmd, cwd=None, capture=False):
             ret['retcode'] = 1
             ret['stderr'] = sys.exc_info()
 
-        print("{} Run time: {}".format(STAMP, time.time() - start))
+        print("{} Run time: {}".format(ST, time.time() - start))
     else:
-        msg = '{} Executable {} not found'.format(STAMP, cmd[0])
+        msg = '{} Executable {} not found'.format(ST, cmd[0])
         ret['retcode'] = 1
         ret['stderr'] = msg
         print(msg)
@@ -389,7 +394,6 @@ def zlib_build(btype='Release'):
     :param str btype  Build type Relase | Debug | ..
     :param ptype  Linkage type like statuc, dynamic, mixed
     '''
-    STAMP = '[zlib_build]'    
     git_clone(URL_ZLIB, LIB_DIR)
 
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
@@ -444,12 +448,12 @@ def rocksdb_fix_3party(ptype='t3', cfg={}):
     set(ZLIB_LIB_DEBUG ${ZLIB_HOME}/lib/native/debug/amd64/zlib.lib)
     set(ZLIB_LIB_RELEASE ${ZLIB_HOME}/lib/native/retail/amd64/zlib.lib)
     '''
-    STAMP = '[rocksdb_fix_3party]'
+    ST = '[rocksdb_fix_3party]'
     if not IS_WIN:
-        print('{} not used on Non-Windows'.format(STAMP))
+        print('{} not used on Non-Windows'.format(ST))
         return
 
-    print('{} Fixing \'thirdparty.inc\' for linkage type [{}] on Windows'.format(STAMP, ptype))
+    print('{} Fixing \'thirdparty.inc\' for linkage type [{}] on Windows'.format(ST, ptype))
 
     lib_rel = cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_RELEASE']
     lib_dbg = cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_DEBUG']
@@ -481,7 +485,7 @@ def rocksdb_build(ver=None, btype='Release', ptype='t3', **cfg):
 
     NOTE: on Windows 'thridparty.inc' file has to be modified.
     '''
-    STAMP = '[rocksdb_build]'
+    ST = '[rocksdb_build]'
     OPTDBG = 0
     WITH_RUNTIME_DEBUG = 0
     WITH_ZLIB = 1
@@ -504,7 +508,7 @@ def rocksdb_build(ver=None, btype='Release', ptype='t3', **cfg):
     cmd = ['git', 'rev-parse', 'HEAD']
     ret = proc_run(cmd, ROCKS_SRC, capture=True)
     chash = ret.get('stdout')
-    print(f'{STAMP} building commit: {chash}')
+    print(f'{ST} building commit: {chash}')
 
     if IS_WIN:
         if ptype == "t3": print("Type 3 linkage: /MD + static ZLib")
@@ -543,8 +547,11 @@ def rocksdb_build(ver=None, btype='Release', ptype='t3', **cfg):
         proc_run(cmd, ROCKS_BUILD)
 #END rocksdb_build
 
-def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
+def smr_build(ver=None, btype='release', ptype='t1', **cfg):
     '''
+    build sortmerna using CMake with CMakePresets.json
+    CMake flags mostly specified in presets - no need here
+
     :param str ver
     :param str btype Build type Release | Debug
     :param str ptype Linking type: t1 | t2 | t3
@@ -553,7 +560,7 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
                      t3 all dynamic
     :param dict cfg
     '''
-    STAMP = '[smr_build]'
+    ST = '[smr_build]'
 
     if not IS_WSL:
         git_clone(URL_SMR, os.path.split(SMR_SRC)[0])
@@ -562,94 +569,48 @@ def smr_build(ver=None, btype='Release', ptype='t1', **cfg):
         cmd = ['git', 'checkout', ver]
         proc_run(cmd, SMR_SRC)
 
-    # CMake flags
-    PORTABLE = 0
-    WITH_MD_LIBRARY = 0 # only Windows
-    WITH_RUNTIME_DEBUG = 0
-    WITH_TESTS = 1
-    CPACK_BINARY_NSIS = 0 # Win
-    CPACK_BINARY_7Z = 1 # Win
-    CPACK_BINARY_ZIP = 1 # Win
-    CPACK_SOURCE_7Z = 1 # Win
-    CPACK_SOURCE_ZIP = 1 # Win
-    CPACK_BINARY_TGZ = 1 # Lin
-    ROCKSDB_USE_STATIC_LIBS = 1
-    ZLIB_STATIC = 1
-    # -DEXTRA_CXX_FLAGS_RELEASE="-lrt" (had to use this on Centos 6.6 + GCC 7.3.0)
-    ZLIB_LIBRARY_RELEASE = ''
-    ZLIB_LIBRARY_DEBUG = ''
+    # list available presets
+    cmd = ['cmake', '--list-presets']
+    ret = proc_run(cmd, SMR_SRC, True)
+    if bool(ret.get('retcode')):
+        print(ret)
+        return
 
-    if IS_LNX or IS_WSL:
-        ZLIB_LIBRARY_RELEASE = '{}/lib/libz.a'.format(ZLIB_DIST)
-        ZLIB_LIBRARY_DEBUG = ZLIB_LIBRARY_RELEASE
-        global SMR_BUILD
-        SMR_BUILD = os.path.join(SMR_BUILD, btype.title()) # sortmerna/build/Release/ sortmerna/build/Debug/
-        if 't1' == ptype:
-            PORTABLE = 1 # sets '-static' flag
-    elif IS_WIN:
-        # ZLIB
-        zlib_link_type   = cfg[SMR]['link'][MY_OS][ptype][ZLIB] # ZLIB linkage type used for SMR given linkage type
-        zlib_lib_release = cfg[ZLIB]['link'][MY_OS][zlib_link_type]['release']
-        zlib_lib_debug   = cfg[ZLIB]['link'][MY_OS][zlib_link_type]['debug']
-        ZLIB_LIBRARY_RELEASE = '{}/lib/{}'.format(ZLIB_DIST, zlib_lib_release)
-        ZLIB_LIBRARY_DEBUG = '{}/lib/{}'.format(ZLIB_DIST, zlib_lib_debug)
-        #ROCKSDB_SRC = os.path.join(LIBDIR, 'rocksdb')
-        WITH_MD_LIBRARY = 1
+    presets = []
+    if ret.get('stdout'):
+        ol = ret.get('stdout').decode('utf8').replace('"','').split('\n')
+        presets = [l.strip() for l in ol if l.strip()][1:]
 
-    #:: print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
-    #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
-
-    cmd = [
-        'cmake', '-G', CMAKE_GEN,
-        '-DPORTABLE={}'.format(PORTABLE),
-        '-DWITH_RUNTIME_DEBUG={}'.format(WITH_RUNTIME_DEBUG),
-        '-DWITH_TESTS={}'.format(WITH_TESTS),
-        '-DZLIB_STATIC={}'.format(ZLIB_STATIC),
-        '-DROCKSDB_USE_STATIC_LIBS={}'.format(ROCKSDB_USE_STATIC_LIBS),
-        '-DZLIB_ROOT={}'.format(ZLIB_DIST),
-        '-DZLIB_LIBRARY_RELEASE={}'.format(ZLIB_LIBRARY_RELEASE),
-        '-DZLIB_LIBRARY_DEBUG={}'.format(ZLIB_LIBRARY_DEBUG),
-        #'-DROCKSDB_SRC={}'.format(ROCKSDB_SRC),
-        '-DROCKSDB_DIST={}'.format(ROCKS_DIST),
-        '-DCONCURRENTQUEUE_HOME={}'.format(CCQUEUE_SRC),
-        '-DCMAKE_INSTALL_PREFIX={}'.format(SMR_DIST)
-    ]
-
-    if IS_LNX or IS_WSL:
-        cmd.append('-DCMAKE_BUILD_TYPE={}'.format(btype))
-        cmd.append('-DCPACK_BINARY_TGZ={}'.format(CPACK_BINARY_TGZ))
-    elif IS_WIN:
-        cmd.append('-DDIRENTWIN_HOME={}'.format(DIRENT_DIST))
-        cmd.append('-DWITH_MD_LIBRARY={}'.format(WITH_MD_LIBRARY))
-        cmd.append('-DCPACK_BINARY_NSIS={}'.format(CPACK_BINARY_NSIS))
-        cmd.append('-DCPACK_BINARY_7Z={}'.format(CPACK_BINARY_7Z))
-        cmd.append('-DCPACK_BINARY_ZIP={}'.format(CPACK_BINARY_ZIP))
-        cmd.append('-DCPACK_SOURCE_7Z={}'.format(CPACK_SOURCE_7Z))
-        cmd.append('-DCPACK_SOURCE_ZIP={}'.format(CPACK_SOURCE_ZIP))
-
+    # cmake preset e.g. LIN_release | WIN_release
+    preset = f'LIN_{btype}' if IS_LNX or IS_WSL else f'WIN_{btype}'
+    if preset not in presets:
+        print('{} wrong preset {}. Available presets: {}'.format(ST, preset, presets))
+        return
+    
+    # generate CMake configuration
+    # cmake -S . --preset LIN_Release
+    cmd = ['cmake', '-S', '.', '--preset', preset]
     if opts.vb:
         cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
     if opts.loglevel:
         cmd.append('--loglevel={}'.format(opts.loglevel.upper()))
     elif opts.trace:
         cmd.append('--trace')
-    cmd.extend(['-S', SMR_SRC, '-B', SMR_BUILD])
-
-    # generate CMake configuration
     proc_run(cmd, SMR_SRC)
 
     # build and install
-    cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'install' ]
-    proc_run(cmd, SMR_BUILD)
-    # generate installation package
-    cmd = [ 'cmake', '--build', '.', '--config', btype.title(), '--target', 'package' ]
-    proc_run(cmd, SMR_BUILD)
+    # cmake --build build/release/
+    # cmake --install build/release/
+    cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'install' ] # btype.title()
+    proc_run(cmd, SMR_SRC)
 
+    # generate installation package
+    cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'package' ] # btype.title()
+    proc_run(cmd, SMR_SRC)
     # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
     SMR_EXE = 'sortmerna.exe' if IS_WIN else 'sortmerna'
     cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '--version' ]
     proc_run(cmd, SMR_BUILD)
-
     # CMAKE_INSTALL_PREFIX\bin\sortmerna -h
     cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '-h' ]
     proc_run(cmd, SMR_SRC)
@@ -696,7 +657,7 @@ if __name__ == "__main__":
     python scripts/build.py --name cmake --envn WIN [--env scripts/env_non_git.yaml]
         --winhome /mnt/c/Users/biocodz --btype debug
     '''
-    STAMP = '[build.py:__main__]'
+    ST = '[build.py:__main__]'
     #import pdb; pdb.set_trace()
     is_opts_ok = True
 
@@ -728,7 +689,7 @@ if __name__ == "__main__":
     UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
 
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
-    print(f'{STAMP} Current dir: {cur_dir}')
+    print(f'{ST} Current dir: {cur_dir}')
 
     if opts.local_linux:
         cur_wdir = os.getcwd()
@@ -778,17 +739,17 @@ if __name__ == "__main__":
         # check env.yaml. If no env file specified, try the current directory
         envfile = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
         if not os.path.exists(envfile):
-            print(f'{STAMP} No environment config file found. Please, provide one using \'--env\' option')
+            print(f'{ST} No environment config file found. Please, provide one using \'--env\' option')
             sys.exit(1)
 
         if not opts.envname:
             ENV = MY_OS
-            print(f'{STAMP} --envn was not specified - using {ENV}')
+            print(f'{ST} --envn was not specified - using {ENV}')
         else:
             ENV = opts.envname
 
         # load properties from env.jinja.yaml
-        print(f'{STAMP} Using Environment configuration file: {envfile}')
+        print(f'{ST} Using Environment configuration file: {envfile}')
         env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
         env_template = env_jj.get_template(os.path.basename(envfile))
         #   render env.jinja template
@@ -798,7 +759,7 @@ if __name__ == "__main__":
 
         if not opts.envname:
             envl = env.get('env.list')
-            print(f'{STAMP} available environments: {envl}')
+            print(f'{ST} available environments: {envl}')
 
         libdir = env.get('LIB_DIR', {}).get(ENV)
         LIB_DIR =  libdir if libdir else UHOME

@@ -1,6 +1,6 @@
 #===============================================================================
-# FILE: CMakeLists.txt
-# Created: Jun 08, 2017
+# file: CMakeLists.txt
+# created: Jun 08, 2017
 #
 # CMake file for sortmerna/src/sortmerna
 #===============================================================================
@@ -27,20 +27,14 @@ else()
 	message("RocksDB package NOK")
 endif()
 
-# 
+get_target_property(lib RocksDB::rocksdb LOCATION)
+message("RocksDB::rocksdb LOCATION: ${lib}")
+get_target_property(lib RocksDB::rocksdb LOCATION_DEBUG)
+message("RocksDB::rocksdb LOCATION_DEBUG: ${lib}")
 get_target_property(lib RocksDB::rocksdb-shared LOCATION)
 message("RocksDB::rocksdb-shared LOCATION: ${lib}")
 get_target_property(lib RocksDB::rocksdb-shared LOCATION_DEBUG)
 message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
-get_target_property(lib RocksDB::rocksdb-shared IMPORTED_LOCATION_DEBUG)
-message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
-get_target_property(cfg RocksDB::rocksdb-shared IMPORTED_CONFIGURATIONS)
-message("RocksDB::rocksdb-shared IMPORTED_CONFIGURATIONS: ${cfg}")
-get_target_property(lib RocksDB::rocksdb-shared IMPORTED_IMPLIB)
-message("RocksDB::rocksdb-shared IMPORTED_IMPLIB: ${lib}")
-
-get_target_property(lib RocksDB::rocksdb LIBRARY_OUTPUT_NAME)
-message("RocksDB::rocksdb LIBRARY_OUTPUT_NAME: ${lib}")
 
 # use ROCKSDB_LIB variable for potential switching between rocksdb and rocksb-shared
 if(ROCKSDB_USE_STATIC_LIBS)
@@ -65,6 +59,15 @@ message("${ROCKSDB_LIB} transitive link dependencies: ${trans_deps}")
 include(FindZLIB)
 # prevent CONFIG search mode
 find_package(ZLIB MODULE REQUIRED)
+
+get_target_property(lib ZLIB::ZLIB LOCATION)
+message("ZLIB::ZLIB LOCATION: ${lib}")
+get_target_property(lib ZLIB::ZLIB LOCATION_DEBUG)
+message("ZLIB::ZLIB LOCATION_DEBUG: ${lib}")
+#get_target_property(lib RocksDB::rocksdb-shared LOCATION)
+#message("RocksDB::rocksdb-shared LOCATION: ${lib}")
+#get_target_property(lib RocksDB::rocksdb-shared LOCATION_DEBUG)
+#message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
 
 # fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)
