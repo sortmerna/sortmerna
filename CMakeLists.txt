@@ -72,45 +72,6 @@ set(CONCURRENTQUEUE_HOME ${EXTERNAL_DEPS}/concurrentqueue CACHE PATH "Concurrent
 option(ROCKSDB_USE_STATIC_LIBS "Use static RocksDB library" ON)
 option(ZLIB_STATIC "Use static ZLib library" ON)
 
-option(PORTABLE "Build portable/statically linked executable" ON)
-
-option(WITH_MD_LIBRARY "build with MD" ON)
-if(WIN32 AND MSVC)
-  if(NOT WITH_MD_LIBRARY)
-	foreach(flag_var
-		CMAKE_CXX_FLAGS 
-		CMAKE_CXX_FLAGS_DEBUG 
-		CMAKE_CXX_FLAGS_RELEASE
-		CMAKE_CXX_FLAGS_MINSIZEREL 
-		CMAKE_CXX_FLAGS_RELWITHDEBINFO
-		CMAKE_C_FLAGS 
-		CMAKE_C_FLAGS_DEBUG 
-		CMAKE_C_FLAGS_RELEASE
-		CMAKE_C_FLAGS_MINSIZEREL 
-		CMAKE_C_FLAGS_RELWITHDEBINFO)
-	   if(${flag_var} MATCHES "/MD")
-		  string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	   endif()
-	endforeach(flag_var)
-  endif()
-endif()
-
-option(WITH_RUNTIME_DEBUG "Build with MDd/MTd on Windows. Ignored on non-Windows" OFF)
-if(WIN32 AND MSVC)
-  if(NOT WITH_RUNTIME_DEBUG)
-	foreach(flag_var
-		CMAKE_CXX_FLAGS_DEBUG 
-		CMAKE_C_FLAGS_DEBUG
-		)
-	   if(${flag_var} MATCHES "/MDd")
-		  string(REGEX REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
-		elseif(${flag_var} MATCHES "/MTd")
-		  string(REGEX REPLACE "/MTd" "/MT" ${flag_var} "${${flag_var}}")
-	   endif()
-	endforeach(flag_var)
-  endif()
-endif()
-
 message("CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
 message("CMAKE_C_FLAGS_DEBUG: ${CMAKE_C_FLAGS_DEBUG}")
 
