@@ -59,12 +59,28 @@ Then install SortMeRNA::
 Basic usage
 ===========
 
+The only required options are :code:`--ref` and :code:`--reads`. Options (any) can be specified usig a single dash e.g. :code:`-ref` and :code:`-reads`. Both plain :code:`fasta/fastq` and archived :code:`fasta.gz/fastq.gz` files are accepted. File extensions :code:`.fastq`, :code:`.fastq.gz`, :code:`.fq`, :code:`.fq.gz`, :code:`.fasta`, ... are optional. The format and compression are automatically recognized. Relative paths are accepted.
+
 Example 1
 ---------
 
 Single reference and single reads file::
 
    sortmerna --ref REF_PATH --reads READS_PATH
+
+Example 2
+---------
+
+For multiple references use multiple :code:`--ref`::
+
+   sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH
+
+Example 3
+---------
+
+For Paired reads use :code:`--reads` twice::
+
+   sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_1 --reads READS_PATH_2
 
 Download latest SortMeRNA databases (v4.3.6)::
 
