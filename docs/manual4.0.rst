@@ -10,7 +10,7 @@ SortMeRNA is a local sequence alignment tool for filtering, mapping and OTU clus
 
 ::
 
-    Figure 1. Processing smr-3-processing_pipeline
+    Figure 1. Processing pipeline
 
 Databases
 ---------
@@ -105,7 +105,8 @@ Options
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-SQ]              |Boolean |Add SQ tags to the :code:`SAM` file                                                                                      |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-blast]           |String  |output alignments in various Blast-like formats::                                                                        |                     |
+|[-blast]           |String  |.. code::                                                                                                                |                     |
+|                   |        |                                                                                                                         |                     |   
 |                   |        |  '0'                    - pairwise                                                                                      |                     |
 |                   |        |  '1'                    - tabular(Blast - m 8 format)                                                                   |                     |
 |                   |        |  '1 cigar'              - tabular + column for CIGAR                                                                    |                     |
@@ -237,7 +238,7 @@ The table 3 shows the output generated depending on selected options.
 
 +------+--------------------------------+-------------------------------------------------+
 |case #|options selected                |Number of reads per pair written into output file|
-+======+================================+=================================================+
++======+=====+=====+=========+==========+=============+===================================+
 |      |fastx|other|paired_in|paired_out|aligned.fasta|other.fasta                        |
 +------+-----+-----+---------+----------+-------------+-----------------------------------+
 |1     |true |false|false    |false     |1            |0                                  |
