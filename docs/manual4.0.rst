@@ -1,9 +1,12 @@
+User manual v4.0
+^^^^^^^^^^^^^^^^
+
 Introduction
 ============
 
 SortMeRNA is a local sequence alignment tool for filtering, mapping and OTU clustering. The core algorithm is based on approximate seeds and allows for fast and sensitive analyses of NGS reads. The main application of SortMeRNA is filtering rRNA from metatranscriptomic data. Additional applications include OTU-picking and taxonomy assignation available through QIIME v1.9+ http://qiime.org. SortMeRNA takes as input one or two (paired) reads file(s) (fasta/fasta.gz/fastq/fastq.gz), and one or multiple rRNA database file(s), and sorts apart aligned and rejected reads into two files. SortMeRNA works with Illumina, 454, Ion Torrent and PacBio data, and can produce SAM and BLAST-like alignments.
 
-.. image:: img/smr-3-processing_pipeline.svg
+.. image:: img/smr_3_processing_pipeline.svg
 
 ::
 
@@ -44,18 +47,18 @@ Usage
 -----
 
 Highlights:
-- 4.0 has a single executable :code:`sortmerna` (no more :code:`indexdb`). Indexing is controlled using the :code:`sortmerna indexing options.
-- The only required options are :code:`-ref` and :code:`-reads`
-- Multiple :code:`ref` accepted
-- Two :code:`-reads` options accepted for paired reads files
-- Options (any) can be specified using a double or single dasg e.g :code:`-ref`/:code:`--ref` and :code:`-reads`/:code:`--reads`
-- Both plain :code:`fasta`/:code:`fastq` anc archived :code:`fasta.gz`/:code:`fastq.gz` files are accepted
-- Relative paths are accepted
-- Work Directory:
-    - Sortmerna uses a :code:`work directory` to store
-        - Reference index Database
-        - Key-value Database for alignment results
-        - Output
+    - 4.0 has a single executable :code:`sortmerna` (no more :code:`indexdb`). Indexing is controlled using the :code:`sortmerna` indexing options.
+    - The only required options are :code:`-ref` and :code:`-reads`
+    - Multiple :code:`ref` accepted
+    - Two :code:`-reads` options accepted for paired reads files
+    - Options (any) can be specified using a double or single dasg e.g :code:`-ref`/:code:`--ref` and :code:`-reads`/:code:`--reads`
+    - Both plain :code:`fasta`/:code:`fastq` anc archived :code:`fasta.gz`/:code:`fastq.gz` files are accepted
+    - Relative paths are accepted
+    - Work Directory:
+        - Sortmerna uses a :code:`work directory` to store
+            - Reference index Database
+            - Key-value Database for alignment results
+            - Output
 
 Overview
 --------
@@ -92,28 +95,28 @@ Options
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |Option             |argument|description                                                                                                              |default              |
 +===================+========+=========================================================================================================================+=====================+
-|-ref               |PATH    |Reference file (FASTA) absolute or relative path. Use mutliple times, once per a reference file                          |                     |
+|-ref               |PATH    |Reference file (:code:`FASTA`) absolute or relative path. Use mutliple times, once per a reference file                  |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|-reads             |PATH    |Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ). Use twice for files with paired reads                                    |                     |
+|-reads             |PATH    |Raw reads file (:code:`FASTA`/:code:`FASTQ`/:code:`FASTA.GZ`/:code:`FASTQ.GZ`). Use twice for files with paired reads    |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-workdir]         |PATH    |Working directory for storing the Reference index, Key-value database, Output                                            |USRDIR/sortmerna/run/| 
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-fastx]           |Boolean |Output aligned reads into FASTA/FASTQ file                                                                               |                     |
+|[-fastx]           |Boolean |Output aligned reads into :code:`FASTA`/:code:`FASTQ` file                                                               |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-SQ]              |Boolean |Add SQ tags to the SAM file                                                                                              |                     |
+|[-SQ]              |Boolean |Add SQ tags to the :code:`SAM` file                                                                                      |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-blast]           |String  |output alignments in various Blast-like formats::                                                                        |                     |
-|                   |        |   '0'                    - pairwise                                                                                     |                     |
-|                   |        |   '1'                    - tabular(Blast - m 8 format)                                                                  |                     |
-|                   |        |   '1 cigar'              - tabular + column for CIGAR                                                                   |                     |
-|                   |        |   '1 cigar qcov'         - tabular + columns for CIGAR                                                                  |                     |
-|                   |        |                            and query coverage                                                                           |                     |
-|                   |        |   '1 cigar qcov qstrand' - tabular + columns for CIGAR,                                                                 |                     |
-|                   |        |                            query coverage and strand                                                                    |                     |
+|                   |        |  '0'                    - pairwise                                                                                      |                     |
+|                   |        |  '1'                    - tabular(Blast - m 8 format)                                                                   |                     |
+|                   |        |  '1 cigar'              - tabular + column for CIGAR                                                                    |                     |
+|                   |        |  '1 cigar qcov'         - tabular + columns for CIGAR                                                                   |                     |
+|                   |        |                           and query coverage                                                                            |                     |
+|                   |        |  '1 cigar qcov qstrand' - tabular + columns for CIGAR,                                                                  |                     |
+|                   |        |                           query coverage and strand                                                                     |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-other]           |Boolean |Create Non-aligned reads output file. Must be used with :code:`fastx`                                                    |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-num_alignments]  |        | Positive integer (>=0). Report first INT alignments per read reaching E-value. If Int = 0, all alignments will be output|False                |  
+|[-num_alignments]  |        |Positive integer (>=0). Report first INT alignments per read reaching E-value. If Int = 0, all alignments will be output |False                |  
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-best]            |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
@@ -235,7 +238,7 @@ The table 3 shows the output generated depending on selected options.
 +------+--------------------------------+-------------------------------------------------+
 |case #|options selected                |Number of reads per pair written into output file|
 +======+================================+=================================================+
-|-     |fastx|other|paired_in|paired_out|aligned.fasta|other.fasta                        |
+|      |fastx|other|paired_in|paired_out|aligned.fasta|other.fasta                        |
 +------+-----+-----+---------+----------+-------------+-----------------------------------+
 |1     |true |false|false    |false     |1            |0                                  |
 +------+-----+-----+---------+----------+-------------+-----------------------------------+
@@ -261,6 +264,7 @@ The option 'paired_out' is optimal for users who want only rRNA reads in the :co
 If neither of these two options is used, then aligned and non-aligned reads will be properly output to the :code:`aligned.fasta` and :code:`other.fasta` files, possibly breaking the order for a set of paired reads between two output files.
 
 It's important to note that regardless of the options used, the :code:`aligned.log` file will always report the true number of reads classified as rRNA (not the number of reads in the :code:`aligned.fasta` file). 
+
 Mapping reads for classification
 ################################
 
