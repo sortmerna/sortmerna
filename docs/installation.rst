@@ -1,9 +1,8 @@
-===========
 Installation
 ============
 
 Using Conda
-===========
+-----------
 
 Install Conda::
 
