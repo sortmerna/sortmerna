@@ -34,39 +34,6 @@ For Paired reads use :code:`--reads` twice::
 
    sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_1 --reads READS_PATH_2
 
-Choosing parameters for filtering and read mapping
-==================================================
-   
-Users have the option to output sequence alignments for their matching rRNA reads in the SAM or BLAST-like formats. Depending on the desired quality of alignments, different parameters must be set. Table 1 presents a guide to setting parameters for most use cases. In all cases, output alignments are always guaranteed to reach the threshold E-value score (default E-value=1). An E-value of 1 signifies that one random alignment is expected for aligning all reads against the reference database. The E-value is computed for the entire search space, not per read. 
-  
-+------------------+--------------------+-----------------------------------------------------------------------------------------------+
-| Option           | Speed              | Description                                                                                   |
-+==================+====================+===============================================================================================+
-|                  | Very fast for INT=1| Output the first alignment passing E-value threshold (best choice if only filtering is needed)|
-|                  |                    |                                                                                               |
-|                  +--------------------+-----------------------------------------------------------------------------------------------+
-| --num-alignment  | Speed decreases    |                                                                                               |
-| INT              | for higher value   | Higher INT signifies more alignments will be made & output                                    |
-|                  | INT                |                                                                                               |
-|                  +--------------------+-----------------------------------------------------------------------------------------------+
-|                  | Very slow for INT=0| All alignments reaching the E-value threshold are reported (this option is not suggested for  |
-|                  |                    | high similarity rRNA databases, due to many possible alignments per read causing a very       |
-|                  |                    | large file output)                                                                            |
-+------------------+--------------------+-----------------------------------------------------------------------------------------------+
-|                  | Fast for INT=1     | Only one high-candidate reference sequence will be searched for alignments (determined        |
-|                  |                    | heuristically using a Longest Increasing Sub-sequence of seed matches). The single best       |
-|                  |                    | alignment of those will be reported                                                           | 
-|                  |                    |                                                                                               |
-|                  +--------------------+-----------------------------------------------------------------------------------------------+
-| --best INT       | Speed decreases    |                                                                                               |
-|                  | for higher value   | Higher INT signies more alignments will be made, though only the best one will be reported    |
-|                  | INT                |                                                                                               |
-|                  +--------------------+-----------------------------------------------------------------------------------------------+
-|                  | Very slow for INT=0| All high-candidate reference sequences will be searched for alignments, though only the best  | 
-|                  |                    | one will be reported                                                                          |
-|                  |                    |                                                                                               |
-|                  |                    |                                                                                               |
-+------------------+--------------------+-----------------------------------------------------------------------------------------------+
 
 Contents
 --------
@@ -74,3 +41,9 @@ Contents
 .. toctree::
 
    installation
+   building
+   databases
+   statistics
+   manual4.0.rst 
+   trace4.0.1.rst
+   trace4.3.2.rst
