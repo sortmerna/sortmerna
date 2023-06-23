@@ -2026,3 +2026,9 @@ Users have the option to output sequence alignments for their matching rRNA read
 |                  |                    |                                                                                               |
 +------------------+--------------------+-----------------------------------------------------------------------------------------------+
 
+Contents
+--------
+
+.. toctree::
+
+   installation
