@@ -1,5 +1,5 @@
-Sample execution trace v4.3.2
-=============================
+Execution trace
+===============
 
 ::
 

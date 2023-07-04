@@ -44,6 +44,5 @@ Contents
    building
    usage
    databases
-   statistics
    trace4.3.2.rst
    contributors
