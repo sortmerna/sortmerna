@@ -42,8 +42,8 @@ Contents
 
    installation
    building
+   usage
    databases
    statistics
-   manual4.0.rst 
    trace4.0.1.rst
    trace4.3.2.rst
