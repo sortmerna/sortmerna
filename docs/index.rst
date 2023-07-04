@@ -47,3 +47,4 @@ Contents
    statistics
    trace4.0.1.rst
    trace4.3.2.rst
+   contributors
