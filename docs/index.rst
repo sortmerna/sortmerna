@@ -34,6 +34,23 @@ For Paired reads use :code:`--reads` twice::
 
    sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_1 --reads READS_PATH_2
 
+Help
+----
+
+Any issues or bug reports should be reported to https://github.com/biocore/sortmerna/issues. Comments and suggestions are also always appreciated!
+
+Citation
+--------
+
+If you use SortMeRNA please cite,
+
+Kopylova E., Noe L. and Touzet H., “SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data”, Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.
+
+Copyright (C) 2016-2019 Clarity Genomics BVBA Turnhoutseweg 30, 2340 Beerse, Belgium http://www.clarity-genomics.com
+
+Copyright (C) 2014-2016 Knight Lab Department of Pediatrics, UCSD School of Medicine, La Jolla, California, USA https://knightlab.colorado.edu
+
+Copyright (C) 2012-2014 Bonsai Bioinformatics Research Group (LIFL - Université Lille 1), CNRS UMR 8022, INRIA Nord-Europe, France http://bioinfo.lifl.fr/RNA/sortmerna/
 
 Contents
 --------
@@ -46,3 +63,4 @@ Contents
    databases
    trace4.3.2.rst
    contributors
+   citation
