@@ -7,34 +7,29 @@
     },
     "configurePresets": [
         {
+            "name": "common",
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "ROCKSDB_USE_STATIC_LIBS": true,
+                "ZLIB_USE_STATIC_LIBS": true,
+                "WITH_TESTS": true,
+                "ZLIB_ROOT": "${sourceDir}/build/3rdparty/zlib/dist",
+                "ROCKSDB_DIST": "${sourceDir}/build/3rdparty/rocksdb/dist",
+                "CONCURRENTQUEUE_HOME": "${sourceDir}/3rdparty/concurrentqueue",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist"
+            }
+        },
+        {
             "name": "LIN_release",
-            "generator": "Unix Makefiles",
+            "inherits": "common",
             "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "WITH_TESTS": {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
-                "ROCKSDB_DIST": "$env{HOME}/a1/code/rocksdb/dist",
-                "ROCKSDB_USE_STATIC_LIBS": {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
-                "CONCURRENTQUEUE_HOME": {
-                    "type": "PATH",
-                    "value": "$env{HOME}/a1/code/concurrentqueue"
-                },
-                "ZLIB_USE_STATIC_LIBS": {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
-                "CMAKE_INSTALL_PREFIX": "$env{HOME}/a1/code/sortmerna/dist"
+                "CMAKE_BUILD_TYPE": "Release"
             }
         },
         {
             "name": "LIN_debug",
-            "inherits": "LIN_release",
+            "inherits": "common",
             "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
@@ -42,44 +37,22 @@
         },
         {
             "name": "WIN_release",
-            "generator": "Visual Studio 17 2022",
+            "inherits": "common",
             "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
+                "DIRENTWIN_HOME": "${sourceDir}/3rdparty/dirent",
                 "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
-                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/release",
-                "ZLIB_ROOT": "$env{USERPROFILE}/a1/libs/zlib/dist/t1",
-                "ZLIB_USE_STATIC_LIBS":
-                {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
-                "ROCKSDB_DIST": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/release",
-                "ROCKSDB_USE_STATIC_LIBS":
-                {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
-                "CONCURRENTQUEUE_HOME": "$env{USERPROFILE}/a1/libs/concurrentqueue",
-                "DIRENTWIN_HOME": "$env{USERPROFILE}/a1/libs/dirent",
-                "WITH_TESTS":
-                {
-                    "type": "BOOL", 
-                    "value": "ON"
-                },
-                "CPACK_BINARY_NSIS": {"type": "BOOL", "value": "OFF"},
-                "CPACK_BINARY_7Z": {"type": "BOOL", "value": "ON"},
-                "CPACK_BINARY_ZIP": {"type": "BOOL", "value": "OFF"},
-                "CPACK_SOURCE_7Z": {"type": "BOOL", "value": "ON"},
-                "CPACK_SOURCE_ZIP": {"type": "BOOL", "value": "OFF"}
+                "CPACK_BINARY_NSIS": false,
+                "CPACK_BINARY_7Z": true,
+                "CPACK_BINARY_ZIP": false,
+                "CPACK_SOURCE_7Z": true,
+                "CPACK_SOURCE_ZIP": false
             }
         },
         {
             "name": "WIN_debug",
             "inherits": "WIN_release",
-            "cacheVariables": {
-                "ROCKSDB_DIST": "$env{USERPROFILE}/a1/libs/rocksdb/dist/t3/debug",
-                "CMAKE_INSTALL_PREFIX": "$env{USERPROFILE}/a1/code/sortmerna/dist/t1/debug"
-            }
+            "binaryDir": "${sourceDir}/build/debug"
         }
     ],
     "buildPresets": [

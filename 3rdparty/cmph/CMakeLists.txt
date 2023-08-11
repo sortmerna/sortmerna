@@ -5,15 +5,14 @@
 # CMake file for sortmerna/cmph
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 project(cmph CXX)
 
 #AUX_SOURCE_DIRECTORY(${CMAKE_SOURCE_DIR}/cmph CMPH_SRCS)
 #include_directories(${CMAKE_SOURCE_DIR}/cmph)              # not recommended practice. 
 #file(GLOB CMPH_HDRS ${CMAKE_SOURCE_DIR}/cmph "*.h" )       # not recommended practice. List files explicitly
 
-# find C:/a03_libs/sortmerna/cmph -name '*.h' -printf "%f\n"
-# OpenCV only uses fraction of these files
+# find sortmerna/cmph -name '*.h' -printf "%f\n"
 set(CMPH_HDRS
     bdz.h
 	bdz_ph.h
@@ -55,8 +54,7 @@ set(CMPH_HDRS
 	vstack.h
 )
 
-# find C:/a03_libs/sortmerna/cmph -name '*.c' -printf "%f\n"
-# OpenCV only uses fraction of these files
+# find sortmerna/cmph -name '*.c' -printf "%f\n"
 set(CMPH_SRCS
 	bdz.c
 	bdz_ph.c
