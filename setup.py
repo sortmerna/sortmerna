@@ -412,6 +412,7 @@ def zlib_build(**kwargs):
     if ret['retcode'] == 0:
         cmd = [ 'cmake', '--build', f'build/{path}', '--target', 'install', '--config', btype]
         proc_run(cmd)
+    return ret
 #END zlib_build
 
 """def rapidjson_build(btype='Release'):
