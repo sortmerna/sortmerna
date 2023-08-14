@@ -1,4 +1,4 @@
-# @copyright 2016-2021  Clarity Genomics BVBA
+# @copyright 2016-2023  Clarity Genomics BVBA
 # @copyright 2012-2016  Bonsai Bioinformatics Research Group
 # @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
 #
@@ -25,7 +25,7 @@
 #			          Rob Knight       robknight@ucsd.edu
 
 '''
-file: build.py
+file: setup.py
 created: Jul 31, 2019 Wed
 
 Dependencies:
@@ -56,7 +56,7 @@ IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
 IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
 MY_OS = 'WIN' if IS_WIN else 'LIN' if IS_LNX else 'WSL' if IS_WSL else None
 if not MY_OS:
-    print('Unexpected platform: {pf}')
+    print(f'Unexpected platform: {pf}')
     sys.exit(1)
 
 modfunc = {} # holds refs to functions in this module
