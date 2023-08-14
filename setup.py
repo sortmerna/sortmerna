@@ -74,18 +74,11 @@ CONDA   = 'conda'
 ALL     = 'all'
 CCQUEUE = 'concurrentqueue'
 
-URL_ZLIB   = None
-URL_ROCKS  = None
-URL_DIRENT = None
-#URL_RAPID  = None
-URL_SMR    = None
-URL_CONCURRENTQUEUE = None
-
 MY_OS = None
 ENV = None # WIN | WSL | LNX_AWS | LNX_TRAVIS
 
 UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-CMAKE_GEN   = None
+#CMAKE_GEN   = None
 LIB_DIR     = None
 DIRENT_DIST = None
 
@@ -458,11 +451,10 @@ def rocksdb_modify_3party_zlib(link_type='t1', **kwargs):
         return
 
     print('{} fixing \'thirdparty.inc\' for linkage type [{}] on Windows'.format(ST, link_type))
-    pkg = 'rocksdb'
-    link_type = kwargs.get(pkg,{}).get('link.type', {}).get('windows',{}).get(link_type,{})
+    link_type = kwargs.get(ROCKS,{}).get('link.type', {}).get('windows',{}).get(link_type,{})
     zlib_rel = link_type.get('zlib.release')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_RELEASE']
     zlib_dbg = link_type.get('zlib.debug')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_DEBUG']
-    file3p = os.path.join(kwargs.get(pkg).get('path'), 'thirdparty.inc')
+    file3p = os.path.join(kwargs.get(ROCKS).get('path'), 'thirdparty.inc')
     zlib_dist = kwargs.get('zlib',{}).get('dist')
 
     for line in fileinput.FileInput(file3p, inplace=True):
@@ -491,12 +483,12 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
     NOTE: on Windows 'thridparty.inc' file has to be modified.
     '''
     ST = '[rocksdb_build]'
-    pkg = 'rocksdb'
-    url = kwargs.get(pkg).get('url')
-    path = kwargs.get(pkg).get('path')
-    commit = kwargs.get(pkg).get('commit')
-    shallow = kwargs.get(pkg).get('shallow')
-    btype = kwargs.get(pkg).get('cmake_build_type', 'Release')
+    print(f'{ST} started')
+    url = kwargs.get(ROCKS).get('url')
+    path = kwargs.get(ROCKS).get('path')
+    commit = kwargs.get(ROCKS).get('commit')
+    shallow = kwargs.get(ROCKS).get('shallow')
+    btype = kwargs.get(ROCKS).get('cmake_build_type', 'Release')
     ret = git_clone(url, path, commit=commit)
 
     cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
@@ -524,13 +516,14 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
         f'-DZLIB_ROOT=build/3rdparty/zlib/{btype}/dist',
         '--fresh'
     ]
-
     ret = proc_run(cmd)
+
     if ret['retcode'] == 0:
         cmd = [ 'cmake', '--build', f'build/{path}', '--config', btype, '--target', 'install' ]
-        proc_run(cmd, ROCKS_BUILD)
+        ret = proc_run(cmd, ROCKS_BUILD)
     else:
         print(f'{ST} failed to build')
+    return ret
 #END rocksdb_build
 
 def smr_build(ver=None, btype='release', link_type='t1', **kwargs):
@@ -538,12 +531,12 @@ def smr_build(ver=None, btype='release', link_type='t1', **kwargs):
     build sortmerna using CMake with CMakePresets.json
     CMake flags mostly specified in presets - no need here
 
-    :param str ver
-    :param str btype Build type Release | Debug
-    :param str ptype Linking type: t1 | t2 | t3
-                     t1 all static
-                     t2 static 3rd party + dynamic runtime
-                     t3 all dynamic
+    :param str ver        git commit/tag - default master
+    :param str btype      Build type Release | Debug
+    :param str link_type  Linking type: t1 | t2 | t3
+                            t1 all static
+                            t2 static 3rd party + dynamic runtime
+                            t3 all dynamic
     '''
     ST = '[smr_build]'
 
@@ -581,21 +574,23 @@ def smr_build(ver=None, btype='release', link_type='t1', **kwargs):
     ret = proc_run(cmd)
 
     # build and install
-    # cmake --build build/release/
-    # cmake --install build/release/
-    cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'install' ] # btype.title()
+    cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'install' ]
     ret = proc_run(cmd)
 
     # generate installation package
-    cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'package' ] # btype.title()
-    proc_run(cmd)
+    if ret['retcode'] == 0:
+        cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'package' ]
+        ret = proc_run(cmd)
     # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
-    SMR_EXE = 'sortmerna.exe' if IS_WIN else 'sortmerna'
-    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '--version' ]
-    proc_run(cmd, SMR_BUILD)
+    #if ret['retcode'] == 0:
+    #    SMR_EXE = 'sortmerna.exe' if IS_WIN else 'sortmerna'
+    #    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '--version' ]
+    #    ret = proc_run(cmd, SMR_BUILD)
     # CMAKE_INSTALL_PREFIX\bin\sortmerna -h
-    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '-h' ]
-    proc_run(cmd, SMR_SRC)
+    #if ret['retcode'] == 0:
+    #    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '-h' ]
+    #    ret = proc_run(cmd, SMR_SRC)
+    return ret
 #END smr_build
 
 def concurrentqueue_build(**kwargs):
@@ -651,7 +646,7 @@ if __name__ == "__main__":
     # options
     optpar = OptionParser()
     optpar.add_option('-n', '--name', dest='name', 
-        help='Module to build/process e.g. sortmerna | zlib | rocksdb | rapidjson | conda | all')
+        help='Package to build/process e.g. sortmerna | zlib | rocksdb | rapidjson | conda | all')
     optpar.add_option('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
     optpar.add_option('--rocksdb-dist', dest='rocksdb_dist', help='ROcksDB installation directory')
     optpar.add_option('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
@@ -688,14 +683,7 @@ if __name__ == "__main__":
 
         LIB_DIR = cur_wdir
 
-        URL_ZLIB   = 'https://github.com/madler/zlib.git'
-        URL_ROCKS  = 'https://github.com/facebook/rocksdb.git'
-        URL_DIRENT = 'https://github.com/tronkko/dirent'
-        #URL_RAPID  = https://github.com/Tencent/rapidjson
-        URL_SMR    = 'https://github.com/biocore/sortmerna.git'
-        URL_CONCURRENTQUEUE = 'https://github.com/cameron314/concurrentqueue'
-
-        CMAKE_GEN = 'Unix Makefiles'
+        #CMAKE_GEN = 'Unix Makefiles'
 
         # SMR
         SMR_SRC   = cur_wdir
@@ -747,14 +735,14 @@ if __name__ == "__main__":
         libdir = env.get('LIB_DIR', {}).get(ENV)
         LIB_DIR =  libdir if libdir else UHOME
 
-        URL_ZLIB   = env[ZLIB]['url']
-        URL_ROCKS  = env[ROCKS]['url']
-        URL_DIRENT = env[DIRENT]['url']
+        #URL_ZLIB   = env[ZLIB]['url']
+        #URL_ROCKS  = env[ROCKS]['url']
+        #URL_DIRENT = env[DIRENT]['url']
         #URL_RAPID  = env[RAPID]['url']
-        URL_SMR    = env[SMR]['url']
-        URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
+        #URL_SMR    = env[SMR]['url']
+        #URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
 
-        CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
+        #CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
 
         # SMR
         SMR_SRC   = env.get(SMR,{}).get('src',{}).get(ENV)
@@ -836,49 +824,53 @@ if __name__ == "__main__":
         pp = third_party_data['concurrentqueue']['path']
         third_party_data['concurrentqueue']['dist'] = os.path.abspath(f'{pp}').replace('\\', '/')
     
-    # call functions
-    if opts.name:
-        if opts.name in [ALL]:
-            if opts.clean:
-                #clean(RAPID_BUILD)
-                clean(ZLIB_BUILD)
-                clean(ROCKS_BUILD)
-                clean(SMR_BUILD)
-            else:
-                if not opts.cmake_preset:
-                    opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
-                kw = third_party_data.get(ZLIB,{})
-                zlib_build(**kw)
-                rocksdb_build(**third_party_data) # ROCKS_VER, cfg=env
-                concurrentqueue_build(**third_party_data)
-                smr_build(SMR_VER, btype=opts.btype, ptype=opts.pt_smr, cfg=env)
-        elif opts.name == ZLIB:
+    opts.name = opts.name or ALL
+    if opts.name in [ALL]:
+        if opts.clean:
+            clean(ZLIB_BUILD)
+            clean(ROCKS_BUILD)
+            clean(SMR_BUILD)
+        else:
+            if not opts.cmake_preset:
+                opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
             kw = third_party_data.get(ZLIB,{})
-            zlib_build(**kw)
-        elif opts.name == ROCKS:
-            if opts.clean:
-                clean(ROCKS_BUILD)
-            else:
-                rocksdb_build(**third_party_data)
-        elif opts.name in [SMR]:
-            if opts.clean:
-                clean(SMR_BUILD)
-            else:
-                smr_build(**third_party_data)
-        elif opts.name == DIRENT: 
-            if opts.clone:
-                git_clone(URL_DIRENT, LIB_DIR) 
-        elif opts.name == CMAKE: 
-            if opts.clone:
-                git_clone(env[CMAKE]['url'], LIB_DIR)
-            cmake_install(**env) 
-        elif opts.name == CONDA: 
-            conda_install(**env) 
-        elif opts.name == CCQUEUE: 
-            concurrentqueue_build(**third_party_data)
-        #elif opts.name == RAPID: 
-            #rapidjson_build()
-        else: test()
+            ret = zlib_build(**kw)
+            if ret['retcode'] == 0:
+                ret = rocksdb_build(**third_party_data) # ROCKS_VER, cfg=env
+            if ret['retcode'] == 0:
+                ret = concurrentqueue_build(**third_party_data)
+            if ret['retcode'] == 0:
+                ret = smr_build(**third_party_data)
+    elif opts.name == ZLIB:
+        kw = third_party_data.get(ZLIB,{})
+        zlib_build(**kw)
+    elif opts.name == ROCKS:
+        if opts.clean:
+            clean(ROCKS_BUILD)
+        else:
+            rocksdb_build(**third_party_data)
+    elif opts.name in [SMR]:
+        if opts.clean:
+            clean(SMR_BUILD)
+        else:
+            smr_build(**third_party_data)
+    elif opts.name == CCQUEUE: 
+        concurrentqueue_build(**third_party_data)
+    elif opts.name == DIRENT: 
+        url = third_party_data[DIRENT].get('url')
+        path = third_party_data[DIRENT].get('path')
+        commit = third_party_data[DIRENT].get('commit')
+        shallow = third_party_data[DIRENT].get('shallow')
+        git_clone(url, path, commit=commit, shallow=shallow) 
+    elif opts.name == CMAKE: 
+        if opts.clone:
+            git_clone(env[CMAKE]['url'], LIB_DIR)
+        cmake_install(**env) 
+    elif opts.name == CONDA: 
+        conda_install(**env) 
+    #elif opts.name == RAPID: 
+        #rapidjson_build()
+    else: test()
 #END main
 
 #END END
