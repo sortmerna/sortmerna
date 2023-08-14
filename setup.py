@@ -54,11 +54,9 @@ pf = platform.platform()
 IS_WIN = 'Windows' in pf
 IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
 IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
-if   IS_WIN: MY_OS = 'WIN'
-elif IS_WSL: MY_OS = 'WSL'
-elif IS_LNX: MY_OS = 'LIN'
-else:
-    print('Unable to define the platform: {}'.format(pf))
+MY_OS = 'WIN' if IS_WIN else 'LIN' if IS_LNX else 'WSL' if IS_WSL else None
+if not MY_OS:
+    print('Unexpected platform: {pf}')
     sys.exit(1)
 
 modfunc = {} # holds refs to functions in this module
@@ -74,7 +72,6 @@ CONDA   = 'conda'
 ALL     = 'all'
 CCQUEUE = 'concurrentqueue'
 
-MY_OS = None
 ENV = None # WIN | WSL | LNX_AWS | LNX_TRAVIS
 
 UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
@@ -510,9 +507,10 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
     ret = shutil.copyfile('cmake/presets/CMakePresets_rocksdb.json', f'{path}/CMakePresets.json')
 
     dist_path = os.path.abspath(f'build/{path}/dist').replace('\\','/')
+    bt = btype.lower()
     cmd = [
         'cmake', '-S', path, '-B', f'build/{path}',
-        '--preset', 'WIN_release',
+        '--preset', f'{MY_OS}_{bt}',
         f'-DCMAKE_INSTALL_PREFIX={dist_path}',
         f'-DZLIB_ROOT=build/3rdparty/zlib/{btype}/dist',
         '--fresh'
