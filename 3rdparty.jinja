@@ -13,6 +13,7 @@ rocksdb:
   commit: v7.1.1
   shallow: true
   path: 3rdparty/rocksdb # relative to sortmerna root dir
+  preset: cmake/presets/CMakePresets_rocksdb.json # copy to RocksDB source dir -> 3rdparty/rocksdb/ (default)
   dist: {{rocksdb_dist}} # '--rocksdb-dist' or default 'build/3rdparty/rocksdb/dist' (setup.py)
   link.type:
     windows:

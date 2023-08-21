@@ -1,4 +1,4 @@
-# @copyright 2016-2021  Clarity Genomics BVBA
+# @copyright 2016-2023  Clarity Genomics BVBA
 # @copyright 2012-2016  Bonsai Bioinformatics Research Group
 # @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
 #
@@ -28,8 +28,7 @@
 file: run.py
 created: Aug 12, 2019 Mon
 
-conda install -c conda-forge scikit-bio
-
+conda install scikit-bio -c conda-forge  <- pre-requisites
 '''
 import os
 import sys
@@ -42,8 +41,20 @@ import difflib
 import shutil
 import yaml
 from jinja2 import Environment, FileSystemLoader
-import pandas
 import gzip
+
+def mock_missing(name):
+    def init(self, *args, **kwargs):
+        raise ImportError(
+            f'The class {name} is not importable; '
+            f'likely due to it not being installed. '
+            f'Supposed to be used on a minion running a k8s control node.')
+    return type(name, (), {'__init__': init})
+
+try:
+    import pandas
+except ImportError:
+    pandas = mock_missing('pandas')
 
 is_skbio = True
 try:
@@ -62,11 +73,9 @@ pf = platform.platform()
 IS_WIN = 'Windows' in pf
 IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
 IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
-if   IS_WIN: OS = 'WIN'
-elif IS_WSL: OS = 'WSL'
-elif IS_LNX: OS = 'LNX'
-else:
-    print(f'Unable to define the platform: {pf}')
+OS = 'WIN' if IS_WIN else 'WSL' if IS_WSL else 'LNX' if IS_LNX else None
+if not OS:
+    print(f'Unexpected platform: {pf}')
     sys.exit(1)
 
 UHOME = os.environ.get('USERPROFILE') if IS_WIN else os.environ.get('HOME') # not defined for AWS SSM
@@ -142,6 +151,7 @@ def run(cmd, cwd=None, capture=False):
     start = time.time()
     #print('Running {} in {}'.format(' '.join('{}'.format(xx) for xx in cmd), cwd))
     # cmake configure and generate
+    #kw = {'stdout':subprocess.PIPE, 'stderr':subprocess.PIPE} if capture else {}
     try:
         if cwd and not os.path.exists(cwd):
             os.makedirs(cwd)
@@ -918,6 +928,10 @@ def set_file_names(basenames, is_other=False):
 
 if __name__ == "__main__":
     '''
+    $env:path="$env:userprofile/a1/code/sortmerna/dist/bin;$env:path"; &python scripts/run.py -n t1
+    python scripts/run.py -n t1 --smr-exe=dist/bin/sortmerna.exe
+    python scripts/run.py -n t15 --smr-exe=dist/bin/sortmerna.exe --data-dir=../../data
+
     python scripts/run.py -n t0 -v [--capture] [--validate-only]
     python scripts/run.py --name t12 -f process_otu --validate-only -d 2
     python scripts/run.py --name t0 -f dbg_blast --validate-only
@@ -926,7 +940,7 @@ if __name__ == "__main__":
                                                                               |_ on WSL
     '''
     ST = '[run.py:__main__]'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # process options
@@ -940,7 +954,6 @@ if __name__ == "__main__":
     optpar.add_option('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     optpar.add_option('--capture', action="store_true", help='Capture output. By default prints to stdout')
     optpar.add_option('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
-    optpar.add_option('--ddir', dest='ddir', help = 'Data directory')
     optpar.add_option('--config', dest='config', help='Tests configuration file.')
     optpar.add_option('--env', dest='envfile', help='Environment variables')
     optpar.add_option('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
@@ -949,15 +962,19 @@ if __name__ == "__main__":
     optpar.add_option('--threads', dest='threads', help='Number of threads to use')
     optpar.add_option('--index', dest='index', help='Index option 0 | 1 | 2')
     optpar.add_option('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
+    optpar.add_option('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
+    optpar.add_option('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
 
     (opts, args) = optpar.parse_args()
 
     # process configuration
-    cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
-    print('Current dir: {}'.format(cur_dir))
+    script_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
+    SMR_SRC = os.path.dirname(script_dir)
+    DATA_DIR = opts.data_dir
+    print(f'{ST} smr source dir: {SMR_SRC} script dir: {script_dir}')
 
     # check env.yaml. If no env file specified, try the current directory
-    env_yaml = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
+    env_yaml = os.path.join(script_dir, 'env.jinja') if not opts.envfile else opts.envfile
     if not os.path.exists(env_yaml):
         print('{} No environment config file found. Please, provide one using \'--env\' option'.format(ST))
         sys.exit(1)
@@ -975,43 +992,29 @@ if __name__ == "__main__":
         env_str = env_template.render(vars)
         env = yaml.load(env_str, Loader=yaml.FullLoader)
 
-    # check test.jinja.yaml
-    cfgfile = os.path.join(cur_dir, 'test.jinja') if not opts.config else opts.config
+    # check test.jinja
+    cfgfile = os.path.join(script_dir, 'test.jinja') if not opts.config else opts.config
     if not os.path.exists(cfgfile):
         print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(ST))
         sys.exit(1)
-    else:
-        print('{} Using Build configuration template: {}'.format(ST, cfgfile))
+
+    print('{} using tests configuration template: {}'.format(ST, cfgfile))
 
     # load 'test.jinja' template
     jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
     template = jjenv.get_template(os.path.basename(cfgfile))
 
-    if opts.envname:
-        ENV = opts.envname
-    elif IS_WIN or IS_WSL: 
-        ENV = OS
-        print('{} --envn was not specified - using {}'.format(ST, ENV))
+    ENV = opts.envname or OS if IS_WIN or IS_WSL else None
+    if ENV:
+        print('{} using ENV {}'.format(ST, ENV))
     else:
         print('{} --envn is required on OS {}'.format(ST, OS))
         is_opts_ok = False
 
-    # WRK_DIR priority:
-    #   (1. opts.workdir, 2. env.jinja.yaml:WRK_DIR, 3. UHOME/sortmerna/run)
-    if opts.workdir:
-        WRK_DIR = opts.workdir
-    else:
-        val = env.get('WRK_DIR',{}).get(ENV)
-        WRK_DIR = val if val else os.path.join(UHOME, 'sortmerna', 'run')
+    WRK_DIR = opts.workdir or f'{SMR_SRC}/run'
 
     # render 'test.jinja' template
     val = env.get(SMR,{}).get('src',{}).get(ENV)
-    SMR_SRC  = val or '{}/sortmerna'.format(UHOME)
-    if not os.path.exists(SMR_SRC):
-        print(('{} Sortmerna source directory {} not found. '
-            'Either specify location in env.jinja or '
-            'make sure the sources exist at {}'.format(ST, SMR_SRC, SMR_SRC)))
-    DATA_DIR = env['DATA_DIR'][ENV]
     vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
     if opts.threads: 
         # prevent the renderer from interpreting the threads as int
@@ -1030,25 +1033,13 @@ if __name__ == "__main__":
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     
-    val = env.get(SMR,{}).get('bin', {}).get(ENV)
-    if val:
-      SMR_EXE = os.path.join(val, 'sortmerna')
-    else:
-      val = env.get(SMR,{}).get('dist', {}).get(ENV)
-      SMR_DIST = val if val else '{}/dist'.format(SMR_SRC)
-      SMR_DIST = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype) if IS_WIN else SMR_DIST
-      SMR_EXE  = os.path.join(SMR_DIST, 'bin', 'sortmerna')
-
-    if IS_WIN:
-        file, ext = os.path.splitext(SMR_EXE)
-        if not ext:
-            SMR_EXE = '{}.exe'.format(SMR_EXE)
-
-    if SMR_EXE and os.path.exists(SMR_EXE):
-        print(f'{ST} using {SMR_EXE}')
-    else:
-        print('{ST} sortmerna executable {SMR_EXE} does not exist or not set')
+    SMR_EXE = opts.smr_exe or shutil.which('sortmerna')
+    if not SMR_EXE or not os.path.exists(SMR_EXE):
+        print('{ST} sortmerna executable {SMR_EXE} not found.'
+              ' Use \'--smr-exe\' option or ensure the PATH is set')
         sys.exit(1)
+    
+    print(f'{ST} using {SMR_EXE}')
 
     TEST_DATA = os.path.join(SMR_SRC, 'data')  # data directory
     ALI_NAMES = cfg.get('aligned.names')
@@ -1077,10 +1068,10 @@ if __name__ == "__main__":
         # May Fail if any file in the directory is open. Close the files and re-run.
         if opts.clean:
             if os.path.exists(KVDB_DIR):
-                print(f'{ST} removing KVDB: {KVDB_DIR}')
+                print(f'{ST} removing dir: {KVDB_DIR}')
                 shutil.rmtree(KVDB_DIR)
             if os.path.exists(IDX_DIR):
-                print(f'{ST} removing Index: {IDX_DIR}')
+                print(f'{ST} removing dir: {IDX_DIR}')
                 shutil.rmtree(IDX_DIR)
             break
 
@@ -1103,7 +1094,7 @@ if __name__ == "__main__":
 
         if not opts.validate_only:
             cfg[test]['cmd'].insert(0, SMR_EXE)
-            is_capture = cfg[test].get('capture', False)
+            is_capture = cfg[test].get('capture', False) or opts.capture
             ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
 
         # validate alignment results

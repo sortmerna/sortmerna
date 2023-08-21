@@ -40,7 +40,7 @@ import requests
 import tarfile
 import re
 import fileinput
-import json
+#import json
 import yaml
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
@@ -73,31 +73,7 @@ ALL     = 'all'
 CCQUEUE = 'concurrentqueue'
 
 ENV = None # WIN | WSL | LNX_AWS | LNX_TRAVIS
-
 UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-#CMAKE_GEN   = None
-LIB_DIR     = None
-DIRENT_DIST = None
-
-SMR_SRC   = None # source root dir
-SMR_BUILD = None # build root dir
-SMR_DIST  = None # dist root dir
-
-ZLIB_SRC   = None
-ZLIB_BUILD = None
-ZLIB_DIST  = None
-
-ROCKS_SRC   = None
-ROCKS_BUILD = None
-ROCKS_DIST  = None
-
-# no binaries, so always build Release only
-#RAPID_SRC   = None
-#RAPID_BUILD = None
-#RAPID_DIST  = None
-
-# Concurrentqueue
-CCQUEUE_SRC = None
 
 def test():
     '''
@@ -125,7 +101,6 @@ def git_clone(url, repo_dir, commit='master', shallow=False, force=False):
         cmd = ['git', 'status']
         ret = proc_run(cmd, repo_dir)
     else: # do clone
-        repo = os.path.basename(repo_dir) # e.g. sortmerna
         cmd = [ 'git', 'clone', url, repo_dir]
         ret = proc_run(cmd)
     return ret
@@ -140,7 +115,7 @@ def conda_install(dir=None, force=False, clean=False, **cfg):
     pip install -U Jinja2
     '''
     ST = '[conda_install]'
-    dir = UHOME if not dir else dir
+    dir = dir or UHOME
     fsh = 'miniconda.sh'
     is_install_ok = False
     #os.chdir(dir)
@@ -305,14 +280,16 @@ def gcc_install(**cfg):
 
 def make_install(**cfg):
     '''
+    TODO
     sudo apt install make
     '''
+    ...
 #END make_install
 
 def git_install(**cfg):
     '''
     '''
-    cmd = ['apt-cache', 'policy', 'git']
+    cmd = ['apt', 'policy', 'git']
     proc_run(cmd)
 
 def clean(dir):
@@ -322,7 +299,8 @@ def clean(dir):
     remove content of the given directory.
     '''
     cmd = ['rm', '-rf', './*']
-    proc_run(cmd, dir)
+    ret = proc_run(cmd, dir)
+    return ret
 #END clean
 
 def proc_run(cmd, cwd=None, capture=False):
@@ -487,6 +465,7 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
     commit = kwargs.get(ROCKS).get('commit')
     shallow = kwargs.get(ROCKS).get('shallow')
     btype = kwargs.get(ROCKS).get('cmake_build_type', 'Release')
+    presets_file = kwargs.get(ROCKS).get('preset')
     ret = git_clone(url, path, commit=commit)
 
     cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
@@ -501,10 +480,10 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
         rocksdb_modify_3party_zlib(link_type, **kwargs)
 
     # copy presets file
-    src = os.path.abspath('cmake/presets/CMakePresets_rocksdb.json')
+    src = os.path.abspath(presets_file)
     dst = os.path.abspath(f'{path}/CMakePresets.json')
     print(f'{ST} copying {src} -> {dst}')
-    ret = shutil.copyfile('cmake/presets/CMakePresets_rocksdb.json', f'{path}/CMakePresets.json')
+    ret = shutil.copyfile(presets_file, f'{path}/CMakePresets.json')
 
     dist_path = os.path.abspath(f'build/{path}/dist').replace('\\','/')
     bt = btype.lower()
@@ -519,7 +498,7 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
 
     if ret['retcode'] == 0:
         cmd = [ 'cmake', '--build', f'build/{path}', '--config', btype, '--target', 'install' ]
-        ret = proc_run(cmd, ROCKS_BUILD)
+        ret = proc_run(cmd)
     else:
         print(f'{ST} failed to build')
     return ret
@@ -580,15 +559,15 @@ def smr_build(ver=None, btype='release', link_type='t1', **kwargs):
     if ret['retcode'] == 0:
         cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'package' ]
         ret = proc_run(cmd)
-    # test  CMAKE_INSTALL_PREFIX\bin\sortmerna --version
-    #if ret['retcode'] == 0:
-    #    SMR_EXE = 'sortmerna.exe' if IS_WIN else 'sortmerna'
-    #    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '--version' ]
-    #    ret = proc_run(cmd, SMR_BUILD)
-    # CMAKE_INSTALL_PREFIX\bin\sortmerna -h
-    #if ret['retcode'] == 0:
-    #    cmd = [ os.path.join(SMR_DIST, 'bin', SMR_EXE), '-h' ]
-    #    ret = proc_run(cmd, SMR_SRC)
+
+    # test  CMAKE_INSTALL_PREFIX/bin/sortmerna --version
+    exe = 'sortmerna.exe' if IS_WIN else 'sortmerna'
+    if ret['retcode'] == 0:
+        cmd = [ f'dist/bin/{exe}', '--version' ]
+        ret = proc_run(cmd)
+    if ret['retcode'] == 0:
+        cmd = [ f'dist/bin/{exe}', '-h' ]
+        ret = proc_run(cmd)
     return ret
 #END smr_build
 
@@ -630,16 +609,16 @@ modfunc['cmake_install'] = cmake_install
 
 if __name__ == "__main__":
     '''
-    python setup.py -n sortmerna [-e WIN] [--] [--cmake-preset <preset>]
-    python setup.py -n sortmerna -e LNX_VBox_Ubuntu_1804   build smr
-    python setup.py -n conda -e LNX_VBox_Ubuntu_1804       install conda
-    python setup.py -n cmake -e LNX_VBox_Ubuntu_1804       install cmake
-    python setup.py -n rocksdb -e LNX_VBox_Centos_77 -c    build rocksdb
-    python setup.py --name cmake --envn WIN [--env scripts/env_non_git.yaml]
-        --winhome /mnt/c/Users/biocodz --btype debug
+    python setup.py -n all         build zlib + rocksdb + smr
+    python setup.py -n sortmerna   build smr
+    python setup.py -n sortmerna [--cmake-preset <preset>]  TODO
+    python setup.py -n zlib        build zlib
+    python setup.py -n rocksdb     build rocksdb
+
+    python setup.py -n conda       install conda  TODO
+    python setup.py -n cmake       install cmake  TODO
     '''
     ST = '[setup.py:__main__]'
-    #import pdb; pdb.set_trace()
     is_opts_ok = True
 
     # options
@@ -671,132 +650,8 @@ if __name__ == "__main__":
     optpar.add_option('--cmake-preset', dest='cmake_preset', help='CMake preset')
     (opts, args) = optpar.parse_args()
 
-    UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
-
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
     print(f'{ST} Current dir: {cur_dir}')
-
-    IS_TODO = True # old functionality to adjust
-    if not IS_TODO and opts.local_linux:
-        cur_wdir = os.getcwd()
-
-        LIB_DIR = cur_wdir
-
-        #CMAKE_GEN = 'Unix Makefiles'
-
-        # SMR
-        SMR_SRC   = cur_wdir
-        SMR_BUILD = f'{cur_wdir}/build'
-        SMR_DIST  = f'{cur_wdir}/dist'
-        SMR_VER = None
-
-        # ZLIB
-        ZLIB_SRC = f'{cur_wdir}/{ZLIB}'
-        ZLIB_BUILD = f'{ZLIB_SRC}/build'
-        ZLIB_DIST = f'{ZLIB_SRC}/dist'
-
-        # ROCKSDB
-        ROCKS_SRC = f'{cur_wdir}/{ROCKS}'
-        ROCKS_BUILD = f'{ROCKS_SRC}/build'
-        ROCKS_DIST = f'{ROCKS_SRC}/dist'
-        ROCKS_VER = None
-
-        CCQUEUE_SRC = f'{cur_wdir}/{CCQUEUE}' # CONCURRENTQUEUE
-
-        env = {}
-
-    elif not IS_TODO:
-        # check env.yaml. If no env file specified, try the current directory
-        envfile = os.path.join(cur_dir, 'env.jinja') if not opts.envfile else opts.envfile
-        if not os.path.exists(envfile):
-            print(f'{ST} No environment config file found. Please, provide one using \'--env\' option')
-            sys.exit(1)
-
-        if not opts.envname:
-            ENV = MY_OS
-            print(f'{ST} --envn was not specified - using {ENV}')
-        else:
-            ENV = opts.envname
-
-        # load properties from env.jinja.yaml
-        print(f'{ST} Using Environment configuration file: {envfile}')
-        env_jj = Environment(loader=FileSystemLoader(os.path.dirname(envfile)), trim_blocks=True, lstrip_blocks=True)
-        env_template = env_jj.get_template(os.path.basename(envfile))
-        #   render env.jinja template
-        vars = {'UHOME': UHOME, 'WINHOME': opts.winhome, 'ENV': ENV} if IS_WSL else {'UHOME': UHOME, 'ENV': ENV}
-        env_str = env_template.render(vars)
-        env = yaml.load(env_str, Loader=yaml.FullLoader)
-
-        if not opts.envname:
-            envl = env.get('env.list')
-            print(f'{ST} available environments: {envl}')
-
-        libdir = env.get('LIB_DIR', {}).get(ENV)
-        LIB_DIR =  libdir if libdir else UHOME
-
-        #URL_ZLIB   = env[ZLIB]['url']
-        #URL_ROCKS  = env[ROCKS]['url']
-        #URL_DIRENT = env[DIRENT]['url']
-        #URL_RAPID  = env[RAPID]['url']
-        #URL_SMR    = env[SMR]['url']
-        #URL_CONCURRENTQUEUE = env[CCQUEUE]['url']
-
-        #CMAKE_GEN = env[CMAKE]['generator'][MY_OS]
-
-        # SMR
-        SMR_SRC   = env.get(SMR,{}).get('src',{}).get(ENV)
-        SMR_SRC   = f'{UHOME}/sortmerna' if not SMR_SRC else SMR_SRC
-        SMR_BUILD = opts.build_dir if opts.build_dir else env.get(SMR,{}).get('build',{}).get(ENV)
-        SMR_BUILD = f'{SMR_SRC}/build' if not SMR_BUILD else SMR_BUILD
-        SMR_DIST  = env.get(SMR,{}).get('dist',{}).get(ENV)
-        SMR_DIST  = f'{SMR_SRC}/dist' if not SMR_DIST else SMR_DIST
-        SMR_VER   = env.get(SMR,{}).get('ver')
-
-        # ZLIB
-        val = env.get(ZLIB,{}).get('src',{}).get(ENV)
-        ZLIB_SRC = val if val else f'{LIB_DIR}/{ZLIB}'
-        val = env.get(ZLIB,{}).get('build',{}).get(ENV)
-        ZLIB_BUILD = val if val else f'{ZLIB_SRC}/build'
-        val = env.get(ZLIB,{}).get('dist',{}).get(ENV)
-        ZLIB_DIST = val if val else f'{ZLIB_SRC}/dist'
-
-        # ROCKSDB
-        val = env.get(ROCKS,{}).get('src',{}).get(ENV)
-        ROCKS_SRC = val or f'{LIB_DIR}/{ROCKS}'
-        val = env.get(ROCKS,{}).get('build',{}).get(ENV)
-        ROCKS_BUILD = val or f'{ROCKS_SRC}/build'
-        val = env.get(ROCKS,{}).get('dist',{}).get(ENV)
-        ROCKS_DIST = val or f'{ROCKS_SRC}/dist'
-        ROCKS_VER = env.get(ROCKS, {}).get('ver')
-
-        # RAPIDJSON
-        # no binaries, so always build Release only
-        """val = env.get(RAPID,{}).get('src',{}).get(ENV)
-        RAPID_SRC = val if val else f'{LIB_DIR}/{RAPID}'
-        val = env.get(RAPID,{}).get('build',{}).get(ENV)
-        RAPID_BUILD = val if val else f'{RAPID_SRC}/build'
-        val = env.get(RAPID,{}).get('dist',{}).get(ENV)
-        RAPID_DIST = val if val else f'{RAPID_SRC}/dist'
-        """
-
-        # CONCURRENTQUEUE
-        val = env.get(CCQUEUE,{}).get('src',{}).get(ENV)
-        CCQUEUE_SRC = val if val else f'{LIB_DIR}/{CCQUEUE}'
-
-        if 'WIN' == ENV:
-            SMR_DIST  = SMR_DIST + '/{}/{}'.format(opts.pt_smr, opts.btype)
-
-            # zlib puts both Debug and Release at the same location => no btype
-            opts.pt_zlib = 't1' if not opts.pt_zlib else opts.pt_zlib
-            ZLIB_DIST  = ZLIB_DIST + '/{}'.format(opts.pt_zlib) 
-
-            opts.pt_rocks = 't3' if not opts.pt_rocks else opts.pt_rocks
-            ROCKS_DIST  = ROCKS_DIST + '/{}/{}'.format(opts.pt_rocks, opts.btype)
-
-            val = env.get(DIRENT, {}).get('src', {}).get(ENV)
-            DIRENT_SRC = val if val else f'{LIB_DIR}/{DIRENT}'
-            val = env.get(DIRENT, {}).get('dist')
-            DIRENT_DIST = val.get(ENV) if val and isinstance(val, dict) else DIRENT_SRC
 
     print(f'{ST} loading configuration from 3rdparty.jinja')
     envjn = Environment(loader=FileSystemLoader('.'), trim_blocks=True, lstrip_blocks=True)
@@ -826,33 +681,28 @@ if __name__ == "__main__":
     opts.name = opts.name or ALL
     if opts.name in [ALL]:
         if opts.clean:
-            clean(ZLIB_BUILD)
-            clean(ROCKS_BUILD)
-            clean(SMR_BUILD)
-        else:
-            if not opts.cmake_preset:
-                opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
-            kw = third_party_data.get(ZLIB,{})
-            ret = zlib_build(**kw)
-            if ret['retcode'] == 0:
-                ret = rocksdb_build(**third_party_data) # ROCKS_VER, cfg=env
-            if ret['retcode'] == 0:
-                ret = concurrentqueue_build(**third_party_data)
-            if ret['retcode'] == 0:
-                ret = smr_build(**third_party_data)
+            ret = clean('build')
+        if not opts.cmake_preset:
+            opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
+        kw = third_party_data.get(ZLIB,{})
+        ret = zlib_build(**kw)
+        if ret['retcode'] == 0:
+            ret = rocksdb_build(**third_party_data) # ROCKS_VER, cfg=env
+        if ret['retcode'] == 0:
+            ret = concurrentqueue_build(**third_party_data)
+        if ret['retcode'] == 0:
+            ret = smr_build(**third_party_data)
     elif opts.name == ZLIB:
         kw = third_party_data.get(ZLIB,{})
         zlib_build(**kw)
     elif opts.name == ROCKS:
         if opts.clean:
-            clean(ROCKS_BUILD)
-        else:
-            rocksdb_build(**third_party_data)
+            ...
+        rocksdb_build(**third_party_data)
     elif opts.name in [SMR]:
         if opts.clean:
-            clean(SMR_BUILD)
-        else:
-            smr_build(**third_party_data)
+            ...
+        smr_build(**third_party_data)
     elif opts.name == CCQUEUE: 
         concurrentqueue_build(**third_party_data)
     elif opts.name == DIRENT: 
@@ -863,10 +713,10 @@ if __name__ == "__main__":
         git_clone(url, path, commit=commit, shallow=shallow) 
     elif opts.name == CMAKE: 
         if opts.clone:
-            git_clone(env[CMAKE]['url'], LIB_DIR)
-        cmake_install(**env) 
+            ... #git_clone(env[CMAKE]['url'], LIB_DIR)
+        ... #cmake_install(**env) 
     elif opts.name == CONDA: 
-        conda_install(**env) 
+        ... #conda_install(**env) 
     #elif opts.name == RAPID: 
         #rapidjson_build()
     else: test()
