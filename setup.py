@@ -466,7 +466,7 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
     shallow = kwargs.get(ROCKS).get('shallow')
     btype = kwargs.get(ROCKS).get('cmake_build_type', 'Release')
     presets_file = kwargs.get(ROCKS).get('preset')
-    zlib_dist = kwargs.get(ZLIB).get('dist').replace('\\','/')
+    zlib_dist = kwargs.get(ZLIB).get('dist')
     ret = git_clone(url, path, commit=commit)
 
     cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
