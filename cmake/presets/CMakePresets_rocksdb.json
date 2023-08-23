@@ -41,8 +41,8 @@
             "inherits": "common",
             "binaryDir": "use -B or -DCMAKE_BINARY_DIR option",
             "cacheVariables": {
-                "WITH_XPRESS" : false,
-                "PORTABLE" : true,
+                "WITH_XPRESS" : true,
+                "PORTABLE" : false,
                 "WITH_MD_LIBRARY" : true,
                 "ROCKSDB_INSTALL_ON_WINDOWS" : true
             }
