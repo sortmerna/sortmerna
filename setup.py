@@ -466,6 +466,7 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
     shallow = kwargs.get(ROCKS).get('shallow')
     btype = kwargs.get(ROCKS).get('cmake_build_type', 'Release')
     presets_file = kwargs.get(ROCKS).get('preset')
+    zlib_dist = kwargs.get(ZLIB).get('dist').replace('\\','/')
     ret = git_clone(url, path, commit=commit)
 
     cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
@@ -491,7 +492,7 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
         'cmake', '-S', path, '-B', f'build/{path}',
         '--preset', f'{MY_OS}_{bt}',
         f'-DCMAKE_INSTALL_PREFIX={dist_path}',
-        f'-DZLIB_ROOT=build/3rdparty/zlib/{btype}/dist',
+        f'-DZLIB_ROOT={zlib_dist}',
         '--fresh'
     ]
     ret = proc_run(cmd)
