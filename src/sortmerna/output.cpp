@@ -256,6 +256,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 				" denovo: ", output.blast.n_denovo);
 	}
 	if (opts.is_sam) {
+		output.sam.finish_deflate();
 		output.sam.closef(opts.dbg_level);
 		output.sam.merge(readfeed.num_splits, 1, opts.dbg_level);
 	}
