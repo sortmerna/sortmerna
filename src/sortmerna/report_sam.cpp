@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -47,7 +47,7 @@ void ReportSam::init(Readfeed& readfeed, Runopts& opts)
 {
 	fv.resize(readfeed.num_splits);
 	fsv.resize(readfeed.num_splits);
-	is_zip = readfeed.orig_files[0].isZip;
+	is_zip = (opts.zip_out == 1) || (readfeed.orig_files[0].isZip && opts.zip_out == -1);
 	// WORKDIR/out/aligned_0_PID.sam
 	for (uint32_t i = 0; i < readfeed.num_splits; ++i) {
 		std::string sfx1 = "_" + std::to_string(i);

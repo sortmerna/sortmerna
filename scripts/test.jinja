@@ -2726,7 +2726,7 @@ t36:
       aligned.fq:   23
 
 t37:
-  name: Paired reads
+  name: Paired reads - zip in - zip out
   cmd:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
@@ -2764,6 +2764,57 @@ t37:
         n_denovo:    42277
       aligned.fq.gz: 108320 # paired_in
       aligned.sam.gz:
+
+    read_len: [75, 75, 75] # min, max, avr
+  time:
+    win_8_16:
+      host: Windows 10 + 8 CPUs + 16 GiB RAM
+      total:
+        4-2-0: []
+        4-3-0: [24, 35, 1, 19] # ~80 sec
+      index_stats_calc:  # sec
+
+t37_1:
+  name: Paired reads - zip in - flat out
+  cmd:
+  - -ref
+  - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+  - -ref
+  - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+  - -reads 
+  # SRR7721017_1.fastq | SRR7721017_1_100.fastq | SRR7721017_1_15.fastq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/paired_reads_test/SRR7721017_1.fastq.gz # 20 MB  639240 reads
+  - -reads
+  # SRR7721017_2.fastq | SRR7721017_2_100.fastq | SRR7721017_2_15.fastq
+  - {{ DATA_DIR if DATA_DIR }}/sortmerna/reads/paired_reads_test/SRR7721017_2.fastq.gz # 23 MB  639240 reads
+  - -v
+  - -fastx
+  - -paired_in
+  - -blast
+  - '1 cigar qcov'
+  - -sam
+  - -zip-out
+  - '0'
+  - -threads
+  - {{THREADS or '\'8\''}}
+  - -workdir
+  - {{ WRK_DIR }}
+  validate:
+    func:
+    variant: sanger
+    files:
+      aligned.log:
+        num_reads: 1278480
+        num_hits:    66387
+        num_fail:  1212093
+      aligned.blast:
+        num_recs:    66387
+        n_yid_ycov:   1879 
+        n_yid_ncov:   8391 
+        n_nid_ycov:  13840 
+        n_denovo:    42277
+      aligned.fq: 108320 # paired_in
+      aligned.sam:
 
     read_len: [75, 75, 75] # min, max, avr
   time:
