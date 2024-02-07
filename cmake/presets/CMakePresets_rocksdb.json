@@ -25,7 +25,8 @@
             "inherits": "common",
             "binaryDir": "use --build or -DCMAKE_BINARY_DIR option",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "FAIL_ON_WARNINGS": false
             }
         },
         {

@@ -11,84 +11,60 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
-# find ZLib
-#if (NOT DEFINED CACHE{ZLIB_ROOT})
-	# or get from 3rdparty.json 'zlib:dist'
-#	if (NOT DEFINED CACHE{3RDPARTY_CONFIG})
-#		set(3RDPARTY_CONFIG ${CMAKE_SOURCE_DIR}/3rdparty.json CACHE STRING "3rd party repos config")
-#		message("3RDPARTY_CONFIG not set, trying ${3RDPARTY_CONFIG}")
-#	endif()
-#	file(READ ${3RDPARTY_CONFIG} jsonstr)
-#	string(JSON zlib_dist ERROR_VARIABLE jsonerr GET ${jsonstr} zlib dist)
-#	set(ZLIB_ROOT ${xlib_dist} CACHE STRING "ZLib installation root")
-	#set(ZLIB_ROOT ${CMAKE_SOURCE_DIR}/build/zlib/dist CACHE STRING "ZLib installation root")
-#	message("ZLIB_ROOT not set, trying ${ZLIB_ROOT}")
-#endif()
-# use cmake standard FindZLIB module to search the target
-# cmake --help-module-list | grep -i zlib
-# defines ZLIB::ZLIB target
-message("searching ZLIB in ${ZLIB_ROOT}")
 include(FindZLIB)
+if (DEFINED CACHE{ZLIB_ROOT})
+	message("searching ZLIB in ${ZLIB_ROOT}")
+else()
+	message("searching ZLIB in default locations")
+endif()
 find_package(ZLIB MODULE REQUIRED) # prevent CONFIG search mode
+
+if(ZLIB_FOUND)
+	get_target_property(lib ZLIB::ZLIB LOCATION)
+	message("ZLIB::ZLIB LOCATION: ${lib}")
+	get_target_property(lib ZLIB::ZLIB LOCATION_DEBUG)
+	message("ZLIB::ZLIB LOCATION_DEBUG: ${lib}")
+endif(ZLIB_FOUND)
 
 # cmake has no FindRocksDB module, but RocksDB build provides cmake config,
 # whence using CONFIG search.
 # defines RocksDB::rocksdb (static) and RocksDB::rocksdb-shared targets. Note that
 # these names can only be found by reading the package configuration files.
-if (NOT DEFINED CACHE{ROCKSDB_DIST})
-	# build rocksdb from source
-	if (NOT DEFINED CACHE{3RDPARTY_CONFIG})
-		set(3RDPARTY_CONFIG ${CMAKE_SOURCE_DIR}/3rdparty.json CACHE STRING "3rd party repos config")
-		message("3RDPARTY_CONFIG not set, trying ${3RDPARTY_CONFIG}")
-	endif()
-	file(READ ${3RDPARTY_CONFIG} jsonstr)
-	string(JSON rocksdb_dist ERROR_VARIABLE jsonerr GET ${jsonstr} rocksdb dist)
-	set(ROCKSDB_DIST ${rocksdb_dist} CACHE STRING "RocksDB installation root")
-	#set(ZLIB_ROOT ${CMAKE_SOURCE_DIR}/build/zlib/dist CACHE STRING "ZLib installation root")
-	message("ROCKSDB_DIST not set, trying ${ROCKSDB_DIST}")
+if (DEFINED CACHE{ROCKSDB_DIST})
+	find_package(RocksDB CONFIG REQUIRED
+	  PATHS ${ROCKSDB_DIST}
+	  NO_DEFAULT_PATH
+	)
+else()
+	message("searching RocksDB in default locations")
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+	message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+  	find_package(RocksDB REQUIRED)
 endif()
-find_package(RocksDB CONFIG REQUIRED
-  PATHS ${ROCKSDB_DIST}
-  NO_DEFAULT_PATH
-)
 
 if(RocksDB_FOUND)
 	message("RocksDB found")
+	if(ROCKSDB_USE_STATIC_LIBS)
+		message("Using Static RocksDB lib")
+		get_target_property(lib RocksDB::rocksdb LOCATION)
+		message("RocksDB::rocksdb LOCATION: ${lib}")
+		get_target_property(lib RocksDB::rocksdb LOCATION_DEBUG)
+		message("RocksDB::rocksdb LOCATION_DEBUG: ${lib}")
+		# use ROCKSDB_LIB variable for potential switching between rocksdb and rocksb-shared
+		set(ROCKSDB_LIB RocksDB::rocksdb)
+	else()
+		message("Using Shared RocksDB lib")
+		get_target_property(lib RocksDB::rocksdb-shared LOCATION)
+		message("RocksDB::rocksdb-shared LOCATION: ${lib}")
+		get_target_property(lib RocksDB::rocksdb-shared LOCATION_DEBUG)
+		message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
+	    set(ROCKSDB_LIB RocksDB::rocksdb-shared)
+	endif()
+	get_property(trans_deps TARGET ${ROCKSDB_LIB} PROPERTY INTERFACE_LINK_LIBRARIES)
+	message("${ROCKSDB_LIB} transitive link dependencies: ${trans_deps}")
 else()
 	message("RocksDB not found")
-endif()
-
-if(RocksDB_FOUND)
-if(ROCKSDB_USE_STATIC_LIBS)
-	message("Using Static RocksDB lib")
-	get_target_property(lib RocksDB::rocksdb LOCATION)
-	message("RocksDB::rocksdb LOCATION: ${lib}")
-	get_target_property(lib RocksDB::rocksdb LOCATION_DEBUG)
-	message("RocksDB::rocksdb LOCATION_DEBUG: ${lib}")
-	# use ROCKSDB_LIB variable for potential switching between rocksdb and rocksb-shared
-	set(ROCKSDB_LIB RocksDB::rocksdb)
-else()
-	message("Using Shared RocksDB lib")
-	get_target_property(lib RocksDB::rocksdb-shared LOCATION)
-	message("RocksDB::rocksdb-shared LOCATION: ${lib}")
-	get_target_property(lib RocksDB::rocksdb-shared LOCATION_DEBUG)
-	message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
-    set(ROCKSDB_LIB RocksDB::rocksdb-shared)
-endif()
-get_property(trans_deps TARGET ${ROCKSDB_LIB} PROPERTY INTERFACE_LINK_LIBRARIES)
-message("${ROCKSDB_LIB} transitive link dependencies: ${trans_deps}")
 endif(RocksDB_FOUND)
-
-if(ZLIB_FOUND)
-get_target_property(lib ZLIB::ZLIB LOCATION)
-message("ZLIB::ZLIB LOCATION: ${lib}")
-get_target_property(lib ZLIB::ZLIB LOCATION_DEBUG)
-message("ZLIB::ZLIB LOCATION_DEBUG: ${lib}")
-#get_target_property(lib RocksDB::rocksdb-shared LOCATION)
-#message("RocksDB::rocksdb-shared LOCATION: ${lib}")
-#get_target_property(lib RocksDB::rocksdb-shared LOCATION_DEBUG)
-#message("RocksDB::rocksdb-shared LOCATION_DEBUG: ${lib}")
-endif(ZLIB_FOUND)
 
 # fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(NOT WIN32)

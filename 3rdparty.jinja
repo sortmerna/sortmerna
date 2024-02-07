@@ -1,8 +1,10 @@
 {%- set zlib_static_release = 'zlibstatic.lib' %}
 {%- set zlib_static_debug = 'zlibstaticd.lib' %}
+{%- set rocksdbver = 'v7.10.2' %} # v7.1.1
 
 zlib:
   url: https://github.com/madler/zlib.git
+  url2: https://github.com/madler/zlib/releases/latest
   commit: master
   shallow: true
   path: 3rdparty/zlib # relative to sortmerna root dir
@@ -10,7 +12,8 @@ zlib:
 
 rocksdb:
   url: https://github.com/facebook/rocksdb.git
-  commit: v7.1.1
+  url2: https://github.com/facebook/rocksdb/archive/refs/tags/{{rocksdbver}}.zip
+  commit: {{rocksdbver}}
   shallow: true
   path: 3rdparty/rocksdb # relative to sortmerna root dir
   preset: cmake/presets/CMakePresets_rocksdb.json # copy to RocksDB source dir -> 3rdparty/rocksdb/ (default)

@@ -20,6 +20,17 @@
             }
         },
         {
+            "name": "common2",
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "ROCKSDB_USE_STATIC_LIBS": true,
+                "ZLIB_USE_STATIC_LIBS": true,
+                "WITH_TESTS": true,
+                "CONCURRENTQUEUE_HOME": "${sourceDir}/3rdparty/concurrentqueue",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist"
+            }
+        },
+        {
             "name": "LIN_release",
             "inherits": "common",
             "binaryDir": "${sourceDir}/build/release",
