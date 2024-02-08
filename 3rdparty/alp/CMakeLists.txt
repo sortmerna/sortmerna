@@ -1,11 +1,11 @@
 #===============================================================================
-# FILE: CMakeLists.txt
-# Created: Jun 10, 2017
+# file: CMakeLists.txt
+# created: Jun 10, 2017
 #
 # CMake file for sortmerna/3rdparty/alp
 #===============================================================================
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 project(alp CXX)
 
 set(CMAKE_CXX_STANDARD 11)

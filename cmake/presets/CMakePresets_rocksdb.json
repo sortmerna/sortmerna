@@ -1,0 +1,79 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+      "major": 3,
+      "minor": 21,
+      "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "common",
+            "description": "copy this file as 'CMakePresets.json' into the top directory of RocksDB distro",
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "OPTDBG": false,
+                "WITH_RUNTIME_DEBUG": false,
+                "WITH_TESTS": false,
+                "WITH_TOOLS": false,
+                "WITH_GFLAGS": false,
+                "WITH_ZLIB": true,
+                "CMAKE_INSTALL_PREFIX": "use -DCMAKE_INSTALL_PREFIX"
+            }
+        },
+        {
+            "name": "LIN_release",
+            "inherits": "common",
+            "binaryDir": "use --build or -DCMAKE_BINARY_DIR option",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "FAIL_ON_WARNINGS": false
+            }
+        },
+        {
+            "name": "LIN_debug",
+            "inherits": "common",
+            "binaryDir": "use -B or -DCMAKE_BINARY_DIR option",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "WIN_release",
+            "inherits": "common",
+            "binaryDir": "use -B or -DCMAKE_BINARY_DIR option",
+            "cacheVariables": {
+                "WITH_XPRESS" : true,
+                "PORTABLE" : false,
+                "WITH_MD_LIBRARY" : true,
+                "ROCKSDB_INSTALL_ON_WINDOWS" : true
+            }
+        },
+        {
+            "name": "WIN_debug",
+            "inherits": "WIN_release",
+            "binaryDir": "use --build or -DCMAKE_BINARY_DIR option"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "LIN_release",
+            "configuration": "Release",
+            "configurePreset": "LIN_release"
+        },
+        {
+            "name": "LIN_debug",
+            "configuration": "Debug",
+            "configurePreset": "LIN_debug"
+        },
+        {
+            "name": "WIN_release",
+            "configuration": "Release",
+            "configurePreset": "WIN_release"
+        },
+        {
+            "name": "WIN_debug",
+            "configuration": "Debug",
+            "configurePreset": "WIN_debug"
+        }
+    ]
+}

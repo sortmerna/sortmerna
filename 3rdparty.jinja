@@ -1,0 +1,46 @@
+{%- set zlib_static_release = 'zlibstatic.lib' %}
+{%- set zlib_static_debug = 'zlibstaticd.lib' %}
+{%- set rocksdbver = 'v7.10.2' %} # v7.1.1
+
+zlib:
+  url: https://github.com/madler/zlib.git
+  url2: https://github.com/madler/zlib/releases/latest
+  commit: master
+  shallow: true
+  path: 3rdparty/zlib # relative to sortmerna root dir
+  dist: {{zlib_dist}} # '--zlib-dist' or default 'build/3rdparty/zlib/dist' (setup.py)
+
+rocksdb:
+  url: https://github.com/facebook/rocksdb.git
+  url2: https://github.com/facebook/rocksdb/archive/refs/tags/{{rocksdbver}}.zip
+  commit: {{rocksdbver}}
+  shallow: true
+  path: 3rdparty/rocksdb # relative to sortmerna root dir
+  preset: cmake/presets/CMakePresets_rocksdb.json # copy to RocksDB source dir -> 3rdparty/rocksdb/ (default)
+  dist: {{rocksdb_dist}} # '--rocksdb-dist' or default 'build/3rdparty/rocksdb/dist' (setup.py)
+  link.type:
+    windows:
+      t1:
+        description: |
+          static linkage i.e. 
+          RocksDB:static + ZLib:static + Runtime:dynamic,multithreaded
+        zlib.release: {{zlib_static_release}}
+        zlib.debug: {{zlib_static_debug}}
+      t2: {}
+      t3: {}
+
+concurrentqueue:
+  note: a single header file - just clone and use
+  url: https://github.com/cameron314/concurrentqueue
+  commit: master
+  shallow: true
+  path: 3rdparty/concurrentqueue # relative to sortmerna
+  dist: {{concurrentqueue_dist}} # '--concurrentqueue-dist' or default '3rdparty/concurrentqueue' (setup.py)
+
+dirent:
+  note: a single header package - just clone and use (on Windows)
+  url: https://github.com/tronkko/dirent
+  commit: master
+  shallow: true
+  path: 3rdparty/dirent
+  dist: {{dirent_dist}} # default: 3rdparty/dirent
