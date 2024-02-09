@@ -10,13 +10,12 @@ General build steps:
 2. Get the sources from GitHub or from GitHub releases
 3. Build
 
-SortmeRNA-4 is C++17 compliant, and requires a compiler that supports filesystem standard library. Currently only GCC-9 and Windows SDK meet that requirement.
+SortmeRNA-4 is C++17 compliant.
 
-Ready to use GCC-9 distribution is only available on Debian (Ubuntu). It is not available on Centos, i.e. no Devtoolset-9 yet, and building GCC-9 on Centos is not trivial.
+The build uses CMake controlled from a Python script provided with the Sortmerna distribution.
 
-Clang has no support for the filesystem yet. LLVM 9.0 is due to be released later this year. At that time we'll get back to supporting builds with Clang on Linux and OSX.
+Currently the builds are performed on Linux with GCC, and Windows with native windows compilers (available with Visual Studio Community edition).
 
-The build is performed using a Python script provided with the Sortmerna distribution. The script uses a configuration file env.yaml, which can be Optionally modified to customize the build.
 
 Building on Linux
 -----------------
@@ -24,14 +23,46 @@ Building on Linux
 Quick Build
 ###########
 
-If you already have GCC, CMake and Conda, the following command will compile SortMeRNA local sources in the current working directory on a linux machine::
+The necessary build pre-requisits are::
 
-   python scripts/build.py --name all --local-linux
+   GCC (>=9, <=11.4.0)
+   Conda
+   CMake
 
-Install GCC 9
-#############
+If GCC and Conda are available, the following commands will build SortMeRNA::
 
-This is for Debian distros (Ubuntu)::
+   # create and activate conda environment
+   conda create -n sortmerna -c conda-forge pyyaml jinja2 requests cmake
+   conda activate sortmerna
+   # clone git repo
+   git clone https://github.com/sortmerna/sortmerna.git
+   pushd sortmerna
+   # build
+   python setup.py -n all
+   # test
+   dist/bin/sortmerna -h
+
+The above builds all required dependencies as listed in 'sortmerna/3rdparty.jinja'. Those include RocksDB and ZLib libraries.
+The built artifacts are output into 'sortmerna/dist' directory
+
+Install GCC
+###########
+
+For Ubuntu 20.04 and later::
+
+   # check the OS release
+   lsb_release -a
+      Ubuntu 22.04.3 LTS
+
+   # check versions installed/available
+   apt policy gcc
+      Installed: 4:11.2.0-1ubuntu1
+      Candidate: 4:11.2.0-1ubuntu1
+
+   # install if necessary
+   sudo apt install gcc
+
+For older Debian distros (Ubuntu) GCC can be installed from PPA::
 
    sudo add-apt-repository ppa:ubuntu-toolchain-r/test
    sudo apt update
@@ -48,61 +79,27 @@ This is for Debian distros (Ubuntu)::
    gcc --version
      gcc (Ubuntu 9.2.1-17ubuntu1~16.04) 9.2.1 20191102
 
+Install Conda
+#############
+
+Using official installer::
+   wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+   bash Miniconda3-latest-Linux-x86_64.sh
+
 Get SortMeRNA sources
 #####################
 
-The sources can be placed in any directory, but here we use the user's Home directory::
+The sources can be placed anywhere, but here the user's Home directory is assumed::
 
    # clone the repository
    git clone https://github.com/biocore/sortmerna.git
    
-   # alternatively get the release sources
-   wget https://github.com/biocore/sortmerna/archive/v4.0.0.tar.gz
-   
-   tar xzf v4.0.0.tar.gz
-   
    pushd sortmerna
    
    # If you need a particular release (tag)
-   git checkout v4.0.0
-
-Install Conda
-#############
-
-Use the :code:`build.py` python script provided with Sortmerna distro. The following installs Conda, and the python packages :code:`pyyaml`, and :code:`jinja2` in the User's Home directory::
+   git checkout v4.3.7
    
-   SMR_HOME=$HOME/sortmerna
-   python $SMR_HOME/scripts/build.py --name cmake
+   # alternatively get the release sources
+   wget https://github.com/biocore/sortmerna/archive/v4.3.7.tar.gz
    
-   ls -lrt
-   drwxrwxr-x 15 biocodz biocodz     4096 Nov 18 09:43 miniconda3
-   
-   # add Conda binaries to the PATH
-   export PATH=$HOME/miniconda3/bin:$PATH
-
-Install CMake
-#############
-
-The following installs CMake in user's home directory::
-
-   SMR_HOME=$HOME/sortmerna
-   python $SMR_HOME/scripts/build.py --name cmake
-     [cmake_install] Installed CMake /home/biocodz/cmake-3.15.5-Linux-x86_64/bin/cmake
-   
-   # add cmake to PATH
-   export PATH=$HOME/cmake-3.15.5-Linux-x86_64/bin:$PATH
-
-Build
-#####
-
-All required third party libraries will be checked and installed automatically (in User directory by default) The default build won't interfere with any existing system installation. By default the build produces statically linked executable i.e. portable.
-
-::
-
-   SMR_HOME=$HOME/sortmerna
-   
-   # modify configuration (optional)
-   vi $SMR_HOME/scripts/env.yaml
-   
-   # run the build
-   python $SMR_HOME/scripts/build.py --name all [--env $SMR_HOME/script/my_env.yaml]
+   tar xzf v4.3.7.tar.gz
