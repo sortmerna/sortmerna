@@ -1,10 +1,12 @@
 {%- set zlib_static_release = 'zlibstatic.lib' %}
 {%- set zlib_static_debug = 'zlibstaticd.lib' %}
 {%- set rocksdbver = 'v7.10.2' %} # v7.1.1
+{%- set zlibver = 'v1.3.1' %}
 
 zlib:
   url: https://github.com/madler/zlib.git
-  url2: https://github.com/madler/zlib/releases/latest
+  url2: https://github.com/madler/zlib/archive/refs/tags/{{zlibver}}.tar.gz
+  url3: https://github.com/madler/zlib/releases/latest
   commit: master
   shallow: true
   path: 3rdparty/zlib # relative to sortmerna root dir
@@ -12,7 +14,7 @@ zlib:
 
 rocksdb:
   url: https://github.com/facebook/rocksdb.git
-  url2: https://github.com/facebook/rocksdb/archive/refs/tags/{{rocksdbver}}.zip
+  url2: https://github.com/facebook/rocksdb/archive/refs/tags/{{rocksdbver}}.tar.gz
   commit: {{rocksdbver}}
   shallow: true
   path: 3rdparty/rocksdb # relative to sortmerna root dir
