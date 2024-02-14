@@ -47,7 +47,7 @@ from pathlib import Path
 import zipfile
 import time
 import shutil
-#from distutils.dir_util import copy_tree
+from io import BytesIO
 
 # define platform
 pf = platform.platform()
@@ -81,6 +81,32 @@ def test():
     print(os.path.dirname(os.path.realpath(__file__)))
     print(os.getcwd())
 #END test
+    
+def load_tar(url, tgtd):
+    '''
+    '''
+    ST = '[load_tar]'
+    ret = {'result': True}
+    # check path already exists
+    if Path(tgtd).exists():
+        msg = f'{ST} directory already exists {tgtd}. Skipping download'
+        print(msg)
+        ret['stdout'] = msg
+    else:
+        try:
+            with requests.get(url) as res:
+                tf = tarfile.open(mode='r:gz', fileobj=BytesIO(res.content))
+                pp = Path(tgtd).parent / tf.firstmember.name
+                msg = f'{ST} extracting into: {pp}'
+                tf.extractall(Path(tgtd).parent) # -> e.g. ./3rdparty/rocksdb-7.10.2 35.7 MB
+                ppn = pp.replace(Path(tgtd))
+                msg += f'\n{ST} moved {pp} -> {ppn}'
+                ret['stdout'] = msg
+                print(msg)
+        except Exception as ex:
+            ret['result'] = False
+            ret['stderr'] = f'{ex}'
+    return ret
 
 def git_clone(url, repo_dir, commit='master', shallow=False, force=False):
     '''
@@ -361,26 +387,30 @@ def proc_run(cmd, cwd=None, capture=False):
 
 def zlib_build(**kwargs):
     '''
-    :param str url
-    :param str path              local filesystem directory where to clone the repo
-    :param str commit            git commit
-    :param str cmake_build_type  Build type Relase | Debug | ..
-    :param ptype  Linkage type like statuc, dynamic, mixed
+    args:
+      - url
+      - path str              local filesystem directory where to clone the repo
+      - commit str            git commit
+      - cmake_build_type str  Build type Relase | Debug | ..
+      - ptype str             Linkage type like statuc, dynamic, mixed
+      - is_git bool           use git as source. Otherwise - archive (.tar.gz)
     '''
-    url = kwargs.get('url')
+    is_git = kwargs.get('is_git', False)
+    url = kwargs.get('url') if is_git else kwargs.get('url2')
     path = kwargs.get('path')
     commit = kwargs.get('commit')
     shallow = kwargs.get('shallow')
     btype = kwargs.get('cmake_build_type', 'Release')
     gen = kwargs.get('cmake_gen', 'Ninja Multi-Config')
-    git_clone(url, path, commit=commit) # URL_ZLIB
+    ret = git_clone(url, path, commit=commit) if is_git else load_tar(url, path) # URL_ZLIB
     # cmake configure
     # set CMAKE_INSTALL_PREFIX here because original zlib CMakeLists.txt uses it
     # to set cache variables used in installation at configure time (not a good solution).
     # Instead the relative paths should be used, and CMake will add the prefix during installation automatically).
     # https://discourse.cmake.org/t/cmake-install-prefix-not-work
     # https://github.com/madler/zlib/pull/170 <- PR to fix zlib CMakeLists.txt (never merged)
-    pfx = kwargs.get('dist') or os.path.abspath(f'build/{path}/dist').replace('\\', '/')
+    pfx = kwargs.get('dist') or Path(f'build/{path}/dist').absolute()
+    #pfx = kwargs.get('dist') or os.path.abspath(f'build/{path}/dist').replace('\\', '/')
     cmd = ['cmake', '-S', path, '-B', f'build/{path}', '-G', gen, '--fresh', '-D', f'CMAKE_INSTALL_PREFIX={pfx}']
     ret = proc_run(cmd)
     # cmake build
@@ -460,22 +490,24 @@ def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype=
     '''
     ST = '[rocksdb_build]'
     print(f'{ST} started')
-    url = kwargs.get(ROCKS).get('url')
+    is_git = kwargs.get(ROCKS).get('is_git', False)
+    url = kwargs.get(ROCKS).get('url') if is_git else kwargs.get(ROCKS).get('url2')
     path = kwargs.get(ROCKS).get('path')
     commit = kwargs.get(ROCKS).get('commit')
     shallow = kwargs.get(ROCKS).get('shallow')
     btype = kwargs.get(ROCKS).get('cmake_build_type', 'Release')
     presets_file = kwargs.get(ROCKS).get('preset')
     zlib_dist = kwargs.get(ZLIB).get('dist')
-    ret = git_clone(url, path, commit=commit)
+    ret = git_clone(url, path, commit=commit) if is_git else load_tar(url, path)
 
-    cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
-    ret = proc_run(cmd, path)
+    if is_git:
+        cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
+        ret = proc_run(cmd, path)
 
-    cmd = ['git', 'rev-parse', 'HEAD']
-    ret = proc_run(cmd, path, capture=True)
-    chash = ret.get('stdout')
-    print(f'{ST} building commit: {chash}')
+        cmd = ['git', 'rev-parse', 'HEAD']
+        ret = proc_run(cmd, path, capture=True)
+        chash = ret.get('stdout')
+        print(f'{ST} building commit: {chash}')
 
     if IS_WIN:
         rocksdb_modify_3party_zlib(link_type, **kwargs)
@@ -519,7 +551,7 @@ def smr_build(ver=None, btype='release', link_type='t1', **kwargs):
     '''
     ST = '[smr_build]'
 
-    if ver:
+    if ver and Path('.git').exists():
         cmd = ['git', 'checkout', ver]
         proc_run(cmd)
 
@@ -627,7 +659,10 @@ if __name__ == "__main__":
     optpar.add_option('-n', '--name', dest='name', 
         help='Package to build/process e.g. sortmerna | zlib | rocksdb | rapidjson | conda | all')
     optpar.add_option('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
+    optpar.add_option('--zlib-git', action="store_true", help='use zlib git repo as source. Otherwise tarball')
     optpar.add_option('--rocksdb-dist', dest='rocksdb_dist', help='ROcksDB installation directory')
+    optpar.add_option('--rocksdb-git', action="store_true", help='use rocksdb git repo as source. Otherwise tarball')
+    optpar.add_option('--build-dev', action="store_true", help='run build in development mode using git repos')
     optpar.add_option('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
     optpar.add_option('-e', '--envn', dest='envname', 
         help=('Name of environment: WIN | WSL | LIN .. see env.jinja:env.list'))
@@ -686,8 +721,12 @@ if __name__ == "__main__":
         if not opts.cmake_preset:
             opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
         kw = third_party_data.get(ZLIB,{})
+        if opts.zlib_git or opts.build_dev:
+            kw['is_git'] = True
         ret = zlib_build(**kw)
         if ret['retcode'] == 0:
+            if opts.rocksdb_git or opts.build_dev:
+                third_party_data['rocksdb']['is_git'] = True
             ret = rocksdb_build(**third_party_data) # ROCKS_VER, cfg=env
         if ret['retcode'] == 0:
             ret = concurrentqueue_build(**third_party_data)
