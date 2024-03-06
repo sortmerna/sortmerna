@@ -14,7 +14,9 @@ SortmeRNA-4 is C++17 compliant.
 
 The build uses CMake controlled from a Python script provided with the Sortmerna distribution.
 
-Currently the builds are performed on Linux with GCC, and Windows with native windows compilers (available with Visual Studio Community edition).
+Currently the builds are performed on Linux with GCC, on MacOS with AppleCland, and Windows with native windows compilers (available with Visual Studio Community edition).
+
+Build instructions are detailed in this github workflow: https://github.com/sortmerna/sortmerna/blob/master/.github/workflows/build_multi_platform.yml
 
 
 Building on Linux
