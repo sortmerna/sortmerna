@@ -1,0 +1,64 @@
+name: build multi-platform
+on:
+  workflow_dispatch:
+jobs:
+  job_1:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        #exclude:
+        #  - os: ubuntu-latest
+        #  - os: macos-latest
+    steps:
+    - name: git checkout
+      uses: actions/checkout@v4
+    - name: build non-windows
+      if: runner.os != 'Windows'
+      run: |
+        eval "$(conda shell.bash activate)"
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        python setup.py -n all
+        echo "=== listing dist/ ==="
+        ls -l ./dist
+    - name: build windows
+      if: runner.os == 'Windows'
+      env:
+        CC: cl
+      run: |
+        & "$env:CONDA/shell/condabin/conda-hook.ps1"
+        & "$env:programfiles/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/Launch-VsDevShell.ps1" -arch amd64
+        conda activate $env:CONDA
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        echo "cmake version: $(cmake --version)"
+        pushd $env:GITHUB_WORKSPACE
+        echo 'running python setup.py ... in $(pwd)'
+        python setup.py -n all
+        echo "=== listing dist/ ==="
+        ls -l ./dist
+    - name: upload macOS artifacts
+      uses: actions/upload-artifact@v4
+      if: runner.os == 'macOS'
+      with:
+        retention-days: 3
+        path: |
+          dist/sortmerna*Darwin.7z
+          dist/sortmerna*Darwin.sh
+          dist/sortmerna*Darwin.tar.gz
+    #- name: upload linux artifacts
+    #  uses: actions/upload-artifact@v4
+    #  if: runner.os == 'Linux'
+    #  with:
+    #    retention-days: 3
+    #    path: |
+    #      dist/sortmerna*Linux.deb
+    #      dist/sortmerna*Linux.sh
+    #      dist/sortmerna*Linux.tar.gz
+    #- name: upload windows artifacts
+    #  uses: actions/upload-artifact@v4
+    #  if: runner.os == 'Windows'
+    #  with:
+    #    retention-days: 3
+    #    path: |
+    #      dist/sortmerna*win64.7z

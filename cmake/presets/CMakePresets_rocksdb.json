@@ -52,6 +52,14 @@
             "name": "WIN_debug",
             "inherits": "WIN_release",
             "binaryDir": "use --build or -DCMAKE_BINARY_DIR option"
+        },
+        {
+            "name": "OSX_release",
+            "inherits": "LIN_release"
+        },
+        {
+            "name": "OSX_debug",
+            "inherits": "LIN_debug"
         }
     ],
     "buildPresets": [
@@ -74,6 +82,16 @@
             "name": "WIN_debug",
             "configuration": "Debug",
             "configurePreset": "WIN_debug"
+        },
+        {
+            "name": "OSX_release",
+            "configuration": "Release",
+            "configurePreset": "OSX_release"
+        },
+        {
+            "name": "OSX_debug",
+            "configuration": "Debug",
+            "configurePreset": "OSX_debug"
         }
     ]
 }

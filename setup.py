@@ -49,15 +49,19 @@ import time
 import shutil
 from io import BytesIO
 
+#pkn = __name__.split('.')[-1]
 # define platform
 pf = platform.platform()
 IS_WIN = 'Windows' in pf
 IS_WSL = 'Linux' in pf and 'Microsoft' in pf # Windows Subsystem for Linux (WSL)
 IS_LNX = 'Linux' in pf and not 'Microsoft' in pf
-MY_OS = 'WIN' if IS_WIN else 'LIN' if IS_LNX else 'WSL' if IS_WSL else None
+IS_OSX = 'macOS' in pf
+MY_OS = 'WIN' if IS_WIN else 'LIN' if IS_LNX else 'WSL' if IS_WSL else 'OSX' if IS_OSX else None
 if not MY_OS:
-    print(f'Unexpected platform: {pf}')
+    print(f'[setup.py] Unexpected platform: {pf}')
     sys.exit(1)
+else:
+    print(f'[setup.py] running on: {pf}, id: {MY_OS}')
 
 modfunc = {} # holds refs to functions in this module
 
