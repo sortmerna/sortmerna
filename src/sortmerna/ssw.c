@@ -46,7 +46,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <emmintrin.h>
 #include <stdlib.h>
 #include <math.h>
 

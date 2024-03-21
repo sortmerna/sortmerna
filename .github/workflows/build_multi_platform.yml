@@ -97,7 +97,7 @@ jobs:
           --volume "${PWD}:/sortmerna"
         install: |
           apt-get update -q -y
-          apt-get install -q -y gcc g++ wget file python3
+          apt-get install -q -y gcc g++ wget file python3 git
           wget https://github.com/conda-forge/miniforge/releases/download/23.11.0-0/Mambaforge-23.11.0-0-Linux-aarch64.sh
           bash Mambaforge-23.11.0-0-Linux-aarch64.sh -b
         run: |
@@ -107,6 +107,6 @@ jobs:
           conda install -c conda-forge -y cmake pyyaml jinja2 requests ninja
           cd /sortmerna
           python3 setup.py -n all
-          echo "=== listing dist/ ==="
-          ls -laR ./dist
+          echo "=== listing files ==="
+          ls -laR
     
