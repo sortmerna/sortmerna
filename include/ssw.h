@@ -22,7 +22,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+
+#ifdef __x86_64__
 #include <emmintrin.h>
+#elif defined(__aarch64__)
+#include "sse2neon.h"
+#endif
 
 extern const char map_nt[122];
 /*!	@typedef	structure of the query profile	*/
