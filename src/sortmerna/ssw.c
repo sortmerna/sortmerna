@@ -51,6 +51,12 @@
 
 #include "ssw.h"
 
+#ifdef __aarch64__
+#include "sse2neon.h"
+#else
+#include <emmintrin.h>
+#endif
+
 #ifdef __GNUC__
 #define LIKELY(x) __builtin_expect((x),1)
 #define UNLIKELY(x) __builtin_expect((x),0)

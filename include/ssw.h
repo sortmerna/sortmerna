@@ -23,10 +23,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef __x86_64__
-#include <emmintrin.h>
-#elif defined(__aarch64__)
+#ifdef __aarch64__
 #include "sse2neon.h"
+#else
+#include <emmintrin.h>
 #endif
 
 extern const char map_nt[122];
