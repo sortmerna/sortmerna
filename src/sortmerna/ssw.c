@@ -46,11 +46,16 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <emmintrin.h>
 #include <stdlib.h>
 #include <math.h>
 
 #include "ssw.h"
+
+#ifdef __aarch64__
+#include "sse2neon.h"
+#else
+#include <emmintrin.h>
+#endif
 
 #ifdef __GNUC__
 #define LIKELY(x) __builtin_expect((x),1)
