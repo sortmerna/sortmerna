@@ -1054,7 +1054,8 @@ if __name__ == "__main__":
             nexcl = len(excl)
             print(f'{ST} excluding {nexcl} tests from the list as specified in \'exclude.list\'')
         for tt in excl:
-            tlist.remove(tt)
+            if tt in tlist:
+                tlist.remove(tt)
     else:
         tlist = [opts.name]
     print(f'{ST} number of tests: {len(tlist)}')
