@@ -6,7 +6,7 @@ on:
       - master
   push: 
     branches: 
-      - mastter
+      - master
   workflow_dispatch:
 
 concurrency: 
@@ -54,15 +54,15 @@ jobs:
         python setup.py -n all
         echo "=== listing dist/ ==="
         ls -l ./dist
-    - name: upload macOS artifacts
-      uses: actions/upload-artifact@v4
-      if: runner.os == 'macOS'
-      with:
-        retention-days: 3
-        path: |
-          dist/sortmerna*Darwin.7z
-          dist/sortmerna*Darwin.sh
-          dist/sortmerna*Darwin.tar.gz
+    #- name: upload macOS artifacts
+    #  uses: actions/upload-artifact@v4
+    #  if: runner.os == 'macOS'
+    #  with:
+    #    retention-days: 3
+    #    path: |
+    #      dist/sortmerna*Darwin.7z
+    #      dist/sortmerna*Darwin.sh
+    #      dist/sortmerna*Darwin.tar.gz
     #- name: upload linux artifacts
     #  uses: actions/upload-artifact@v4
     #  if: runner.os == 'Linux'
