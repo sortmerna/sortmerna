@@ -28,7 +28,7 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 ## Getting Started
 
-SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMake as the build system, and can be run/built on all major OS including Linux, Windows, and Mac. 
+SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMake as the build system, and can be run/built on all major OS including Linux, Windows, and Mac, on AMD64 and ARM64 processors.
 
 ### Using Conda package
 

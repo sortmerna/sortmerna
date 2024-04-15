@@ -19,7 +19,7 @@ permissions:
     
 
 jobs:
-  job_1:
+  build-multi-platform:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:

@@ -11,7 +11,7 @@ permissions:
   contents: read
     
 jobs:
-  job_1:
+  build-linux:
     name: build on Linux
     runs-on: ubuntu-latest
     steps:
