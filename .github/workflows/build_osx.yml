@@ -1,0 +1,35 @@
+name: build on macos
+
+on:
+  workflow_dispatch:
+
+concurrency: 
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+    
+jobs:
+  build-osx:
+    name: build on macos
+    runs-on: macos-latest
+    steps:
+    - name: git checkout
+      uses: actions/checkout@v4
+    - name: build
+      run: |
+        eval "$(conda shell.bash activate)"
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        python setup.py -n all
+        echo "=== listing dist/ ==="
+        ls -l ./dist
+    - name: upload
+      uses: actions/upload-artifact@v4
+      with:
+        retention-days: 3
+        path: |
+          dist/sortmerna*Darwin.7z
+          dist/sortmerna*Darwin.sh
+          dist/sortmerna*Darwin.tar.gz
+    

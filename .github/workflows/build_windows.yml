@@ -1,0 +1,40 @@
+name: build on windows
+
+on:
+  workflow_dispatch:
+
+concurrency: 
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+    
+jobs:
+  build-windows:
+    name: build on windows
+    runs-on: windows-latest
+    steps:
+    - name: git checkout
+      uses: actions/checkout@v4
+    - name: build
+      env:
+        CC: cl
+      run: |
+        & "$env:CONDA/shell/condabin/conda-hook.ps1"
+        & "$env:programfiles/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/Launch-VsDevShell.ps1" -arch amd64
+        conda activate $env:CONDA
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        echo "cmake version: $(cmake --version)"
+        pushd $env:GITHUB_WORKSPACE
+        echo 'running python setup.py ... in $(pwd)'
+        python setup.py -n all
+        echo "=== listing dist/ ==="
+        ls -l ./dist
+    - name: upload
+      uses: actions/upload-artifact@v4
+      with:
+        retention-days: 3
+        path: |
+          dist/sortmerna*win64.7z
+    
