@@ -766,9 +766,9 @@ bool Readfeed::is_split_ready() {
 						}
 						else if (fpidx == 1) { // file size
 							if (fcnt <= num_orig_files)
-								is_ready = is_ready && std::stoul(line) == orig_files[fidx].size; // original files
+								is_ready = is_ready && std::stoull(line) == orig_files[fidx].size; // original files
 							else
-								split_files[fidx].size = std::stoul(line); // set sizes of split files
+								split_files[fidx].size = std::stoull(line); // set sizes of split files
 						}
 						else if (fpidx == 2) { // number of reads
 							if (fcnt <= num_orig_files)
