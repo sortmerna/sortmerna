@@ -1,24 +1,31 @@
 
 FROM ubuntu:jammy
 
-SHELL ["/bin/bash", "-c"]
-RUN apt update && apt upgrade -y && \
-    apt install -y build-essential git wget file
+ENV CONDA_DIR=/opt/conda
+ENV SMR_DIR=/sortmerna
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV DEBIAN_FRONTEND noninteractive
+ENV PATH=${SMR_DIR}/dist/bin:${CONDA_DIR}/bin:${PATH}
 
-RUN wget -q -P /tmp https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh && \
-    /bin/bash /tmp/Miniforge3-Linux-x86_64.sh -b -p /opt/miniforge3 && \
-    rm /tmp/Miniforge3-Linux-x86_64.sh && \
-    ln -s /opt/miniforge3/bin/conda /usr/local/bin && \
-    ln -s /opt/miniforge3/bin/mamba /usr/local/bin && \
-    mamba init && \
-    mamba install -y pyyaml jinja2 requests ninja cmake=3.29.6
-    # scikit-bio
+# jammy packs gcc 11.4.0 by default (build-essential)
+RUN apt-get update > /dev/null && \
+    apt-get install --no-install-recommends --yes \
+        build-essential wget bzip2 ca-certificates git tini file > /dev/null && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    wget --no-hsts --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh -O /tmp/miniforge.sh && \
+    /bin/bash /tmp/miniforge.sh -b -p ${CONDA_DIR} && \
+    rm /tmp/miniforge.sh && \
+    mamba install -y pyyaml jinja2 requests ninja cmake=3.29.6  && \
+    git clone https://github.com/biocore/sortmerna.git && \
+    cd ${SMR_DIR} && \
+    python setup.py -n all && \
+    conda clean --tarballs --index-cache --packages --yes && \
+    find ${CONDA_DIR} -follow -type f -name '*.a' -delete && \
+    find ${CONDA_DIR} -follow -type f -name '*.pyc' -delete && \
+    conda clean --force-pkgs-dirs --all --yes  && \
+    echo ". ${CONDA_DIR}/etc/profile.d/conda.sh && conda activate base" >> /etc/skel/.bashrc && \
+    echo ". ${CONDA_DIR}/etc/profile.d/conda.sh && conda activate base" >> ~/.bashrc
 
-ENV PATH=/opt/miniforge3/bin:$PATH
-RUN git clone https://github.com/biocore/sortmerna.git && \
-    cd /sortmerna && \
-    python setup.py -n all
-
-
-
-
+ENTRYPOINT ["tini", "--"]
+CMD [ "/bin/bash" ]
