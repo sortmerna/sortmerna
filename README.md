@@ -32,12 +32,29 @@ SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMak
 
 ### Using Conda package
 
-[Install conda]:(https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
+Install conda - [official docs](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 ```
-Then, as per the [Bioconda guidelines](https://bioconda.github.io), add the following conda channels:
+The conda packages before Sortmerna 4.3.7 were hosted on Bioconda. Starting with 4.3.7 the packages are hosted on conda-forge.
+Erroneously an empty 4.3.7 package made its way to Bioconda, and should be ignored until removed (from Bioconda).
+
+Currently the build on conda-forge still waiting to be merged. Until it is ready, the local installation package can be used:
+```
+# == only for 4.3.7 until ready on conda-forge ==
+# download the conda-build package into a directory of your choice e.g. Downloads/
+wget https://github.com/sortmerna/sortmerna/releases/download/v4.3.7/sortmerna-4.3.7-conda-linux-64.tar.bz2 -P ~/Downloads/
+
+# create a new environment and install SortMeRNA in it
+conda create --name sortmerna
+conda activate sortmerna
+conda install ~/Downloads/sortmerna-4.3.7-conda-linux-64.tar.bz2
+
+which sortmerna  # check the installed binary e.g. miniforge3/envs/sortmerna/bin/sortmerna 
+sortmerna -h
+```
+For versions older then 4.3.7 per the [Bioconda guidelines](https://bioconda.github.io), add the following conda channels:
 ```
 conda config --add channels defaults
 conda config --add channels bioconda
@@ -53,6 +70,8 @@ conda search sortmerna
   sortmerna                      4.3.4               0  bioconda
   ...
   sortmerna                      4.3.6               0  bioconda
+  ...
+  sortmerna                      4.3.7      hdbdd923_1  bioconda <- (!) ignore - corrupt, see instructions above
 
 # create a new environment and install SortMeRNA in it
 conda create --name sortmerna_env
