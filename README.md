@@ -20,7 +20,7 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
     - [Execution trace](#execution-trace)
 - [Building from sources](#building-from-sources)
 - [User Manual](#user-manual)
-- [Databases](#database)
+- [Databases](#databases)
 - [Taxonomies](#taxonomies)
 - [Citation](#citation)
 - [Contributors](#contributors)
