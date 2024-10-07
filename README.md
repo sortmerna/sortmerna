@@ -20,6 +20,7 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
     - [Execution trace](#execution-trace)
 - [Building from sources](#building-from-sources)
 - [User Manual](#user-manual)
+- [Databases](#database)
 - [Taxonomies](#taxonomies)
 - [Citation](#citation)
 - [Contributors](#contributors)
@@ -188,6 +189,32 @@ Here is a [sample execution trace](https://sortmerna.readthedocs.io/en/latest/tr
 See [Sortmerna Read The Docs project](https://sortmerna.readthedocs.io/en/latest/index.html).
 
 In case you need PDF, any modern browser can print web pages to PDF.
+
+## Databases
+
+Please, use [database.tar.gz](https://github.com/biocore/sortmerna/releases/download/v4.3.4/database.tar.gz) from release 4.3.4.
+
+We recommend to use smr_v4.3_default_db.fasta.
+
+Original source databases (clustering parameters given below):
+* Silva 138 SSURef NR99 (16S, 18S)
+* Silva 132 LSURef (23S, 28S)
+* RFAM v14.1 (5S, 5.8S)
+
+The difference between the databases is the % ID for clustering the sequences for each kingdom + rRNA component.
+
+Specifically,
+
+* smr_v4.3_fast_db.fasta
+  * bac-16S 85%, 5S & 5.8S seeds, rest 90% (benchmark accuracy: 99.888%)
+* smr_v4.3_default_db.fasta
+  * bac-16S 90%, 5S & 5.8S seeds, rest 95% (benchmark accuracy: 99.899%)
+* smr_v4.3_sensitive_db.fasta
+  * all 97% (benchmark accuracy: 99.907%)
+* smr_v4.3_sensitive_db_rfam_seeds.fasta
+  * all 97%, except RFAM database which includes the full seed database sequences
+
+The accuracy (based on sensitivity and selectivity) is very good for all databases, however the "sensitive" databases will run at least 2x slower.
 
 ## Taxonomies
 
