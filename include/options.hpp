@@ -45,8 +45,14 @@
 #include <tuple>
 #include <array>
 #include <filesystem>
+#include <cstdint>  // uint64_t
 
 #include "common.hpp"
+
+/*! @brief Maximum length of input reads
+    (not limited to this length algorithmically)
+*/
+const uint64_t MAX_READ_LEN = 30000;
 
 // global constants
 const std::string \
@@ -110,7 +116,8 @@ OPT_ZIP_OUT = "zip-out",
 OPT_INDEX = "index",
 OPT_ALIGN = "align",  // TODO: on hold
 OPT_FILTER = "filter",  // TODO: on hold
-OPT_DBG_LEVEL = "dbg-level";
+OPT_DBG_LEVEL = "dbg-level",
+OPT_MAX_READ_LEN = "max_read_len";
 
 // help strings
 const std::string \
@@ -390,7 +397,10 @@ help_dbg_level =
 	"Debug level                                             0\n\n"
 	"      Controls verbosity of the execution trace. Default value of 0 corresponds to\n"
 	"      the least verbose output.\n"
-	"      The highest value currently is 2.\n\n"
+	"      The highest value currently is 2.\n\n",
+
+help_max_read_len =
+	"Maximum allowed read length                             " + std::to_string(MAX_READ_LEN) + "\n\n"
 
 //help_align =
 //    "Perform the alignment                                   False\n\n"
@@ -520,6 +530,7 @@ public:
 	int dbg_level = 0; // lowest debug level - minimal info.
 
 	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
+    uint64_t max_read_len = MAX_READ_LEN; // max allowed read len
 	/*
 	* 0 (false) | 1 (true) | -1 (not set)
 	* read.is_zip  zip_out  out_zip
@@ -660,6 +671,7 @@ private:
 	void opt_default(const std::string& opt);
 	void opt_dbg_put_db(const std::string& opt);
 	void opt_unknown(char** argv, int& narg, char* opt);
+	void opt_max_read_len(const std::string& val);
 
 	std::string to_string();
 	std::string to_bin_string();
@@ -682,7 +694,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 53> options = {
+	const std::array<opt_6_tuple, 54> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
@@ -715,6 +727,7 @@ private:
 		std::make_tuple(OPT_F,              "BOOL",        COMMON,      false, help_F, &Runopts::opt_F),
 		std::make_tuple(OPT_N,              "BOOL",        COMMON,      false, help_N, &Runopts::opt_N),
 		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
+		std::make_tuple(OPT_MAX_READ_LEN,   "INT",         COMMON,      false, help_max_read_len, &Runopts::opt_max_read_len),
 		//std::make_tuple(OPT_READS_FEED,     "INT",         COMMON,      false, help_reads_feed, &Runopts::opt_reads_feed),
 		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
 		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),

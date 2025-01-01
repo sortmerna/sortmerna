@@ -133,7 +133,7 @@ public:
 	Read();
 	Read(std::string& readstr);
 	Read(std::string id, std::size_t read_num);
-	Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format);
+	//Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format);
 	Read(const Read & that); // copy constructor
 	Read & operator=(const Read & that); // copy assignment
 	//~Read();
@@ -141,7 +141,7 @@ public:
 public:
 	void generate_id();
 	void initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N);
-	void validate();
+	void validate(uint64_t& max_read_len);
 	void clear();
 	void init(Runopts& opts);
 	/* convert to Json string to store in DB */

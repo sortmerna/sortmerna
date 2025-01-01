@@ -1200,6 +1200,17 @@ void Runopts::opt_filter(const std::string& val)
 	is_filter = true;
 }
 
+void Runopts::opt_max_read_len(const std::string& val)
+{
+	if (val.size() > 0) {
+		max_read_len = std::stoull(val);
+		INFO("using '", OPT_MAX_READ_LEN, "' with specified value ", max_read_len);
+	}
+	else {
+		INFO("using '", OPT_MAX_READ_LEN, "' with default value ", max_read_len);
+	}
+}
+
 /* 
  * called from validate
  */
@@ -1404,9 +1415,9 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	// parse cmd options and store into 'mopt' multimap
 	for (auto i = argc - argc, flag_count = 0; i != argc; ++i)
 	{
-		bool is_flag = is_option(*(argv + i));
-		if (is_flag && flag_count == 0) {
-			std::cout << "Found flag: " << *(argv + i) << std::endl;
+		bool is_opt = is_option(*(argv + i));
+		if (is_opt && flag_count == 0) {
+			std::cout << "Found option: " << *(argv + i) << std::endl;
 			if (i == argc - 1) {
 				flag = trim_leading_dashes(*(argv + i));
 				mopt.emplace(std::make_pair(flag, "")); // add the last boolean flag
@@ -1415,20 +1426,20 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			continue;
 		}
 
-		if (is_flag && flag_count == 1) {
-			std::cout << "Previous flag: " << *(argv + i - 1) << " is Boolean. Setting to True" << std::endl;
-			std::cout << "Found flag: " << *(argv + i) << std::endl;
+		if (is_opt && flag_count == 1) {
+			std::cout << "Previous option: " << *(argv + i - 1) << " is Boolean. Setting to True" << std::endl;
+			std::cout << "Found option: " << *(argv + i) << std::endl;
 			flag = trim_leading_dashes(*(argv + i - 1));
-			mopt.emplace(std::make_pair(flag, "")); // previous boolean flag
+			mopt.emplace(std::make_pair(flag, "")); // previous boolean option
 			if (i == argc - 1) {
 				flag = trim_leading_dashes(*(argv + i));
-				mopt.emplace(std::make_pair(flag, "")); // add the last boolean flag
+				mopt.emplace(std::make_pair(flag, "")); // add the last boolean option
 			}
 			continue;
 		}
 
-		// value without a preceeding flag
-		if (!is_flag && flag_count == 0) {
+		// value without a preceeding option argument
+		if (!is_opt && flag_count == 0) {
 			std::cout << "Found value: " << *(argv + i) << std::endl;
 			if (i != 0) {
 				ERR("the value provided without a flag/option. Note that e.g. '-", 
@@ -1439,8 +1450,8 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			continue;
 		}
 
-		if (!is_flag && flag_count == 1) {
-			std::cout << "Found value: " << *(argv + i) << " of previous flag: " << *(argv + i - 1) << std::endl;
+		if (!is_opt && flag_count == 1) {
+			std::cout << "Found value: " << *(argv + i) << " of previous option: " << *(argv + i - 1) << std::endl;
 			flag = trim_leading_dashes(*(argv + i - 1));
 			mopt.emplace(std::make_pair(flag, *(argv + i)));
 			--flag_count;
@@ -1829,12 +1840,16 @@ void Runopts::print_help()
 	std::cout << ss.str();
 }
 
+/**
+ * check if the argument is an option name like e.g. '--max_read_len' and not an option value like '10000'
+ */
 bool Runopts::is_option(const std::string& opt)
 {
 	bool is_opt = false;
 	if (opt.size() > 0 && opt[0] == '-') {
 		auto pos = opt.find_first_not_of('-');
-		auto opt_no_dash = std::string::npos != pos ? opt.substr(pos) : opt; // i.e. '--opt' -> 'opt'
+        // strip the dash prefix of an option i.e. '--opt' -> 'opt'
+		auto opt_no_dash = std::string::npos != pos ? opt.substr(pos) : opt;
 		for (auto& optt: options) {
 			if (opt_no_dash == std::get<0>(optt)) {
 				is_opt = true;

@@ -146,18 +146,18 @@ Read::Read(std::string& readstr) : Read() {	isEmpty = !from_string(readstr); }
 
 Read::Read(std::string id, std::size_t read_num) : Read() { id = id; read_num = read_num; }
 
-Read::Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format)
-	:
-	Read()
-{
-	id = id;
-	isEmpty = false;
-	format = format;
-	header = header; // std::move(header)
-	sequence = sequence;
-	quality = quality;
-	validate();
-}
+//Read::Read(std::string id, std::string header, std::string sequence, std::string quality, BIO_FORMAT format)
+//	:
+//	Read()
+//{
+//	id = id;
+//	isEmpty = false;
+//	format = format;
+//	header = header; // std::move(header)
+//	sequence = sequence;
+//	quality = quality;
+//	validate();
+//}
 
 //Read::~Read() {}
 
@@ -263,7 +263,7 @@ void Read::init(Runopts& opts)
 {
 	if (opts.num_alignments > 0) this->num_alignments = opts.num_alignments;
 	if (opts.min_lis > 0) this->best = opts.min_lis;
-	validate();
+	validate(opts.max_read_len);
 	seqToIntStr();
 	initScoringMatrix(opts.match, opts.mismatch, opts.score_N);
 } // ~Read::init
@@ -285,11 +285,11 @@ void Read::initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N)
 	}
 }
 
-void Read::validate() {
-	if (sequence.size() > MAX_READ_LEN)
+void Read::validate(uint64_t& max_read_len) {
+	if (sequence.size() > max_read_len)
 	{
 		ERR("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
-			MAX_READ_LEN, " nt \n", "  Please check your reads or contact the authors.");
+			max_read_len, " nt \n", "  Please check your reads or contact the authors.");
 		exit(EXIT_FAILURE);
 	}
 	isValid = true;
