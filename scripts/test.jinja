@@ -1284,8 +1284,8 @@ t18:
     #- -e
     #- '1e-15'
     #- -out2
-    - -workdir
-    - {{ WRK_DIR }}
+    - -max_read_len
+    - '100000'
     - -threads
     - {{THREADS or '\'4\''}}
     - -dbg-level

@@ -251,13 +251,13 @@ def parse_log(fpath, logd={}):
     with open(fpath) as f_log:    
         for line in f_log:
             if logd['num_reads'][0] in line:
-                logd['num_reads'][1] = int((re.split(' = ', line)[1]).strip())
+                logd['num_reads'][1] = int((re.split(r' = ', line)[1]).strip())
             elif logd['results']['num_denovo'][0] in line:
-                logd['results']['num_denovo'][1] = int((re.split(' = ', line)[1]).strip())
+                logd['results']['num_denovo'][1] = int((re.split(r' = ', line)[1]).strip())
             elif logd['results']['num_hits'][0] in line:
-                logd['results']['num_hits'][1] = int((re.split(' = | \(', line)[1]).strip())
+                logd['results']['num_hits'][1] = int((re.split(r' = | \(', line)[1]).strip())
             elif logd['results']['num_fail'][0] in line:
-                logd['results']['num_fail'][1] = int((re.split(' = | \(', line)[1]).strip())
+                logd['results']['num_fail'][1] = int((re.split(r' = | \(', line)[1]).strip())
             elif logd['num_id_cov'][0] in line:
                 # line: '..thresholds = 44223 (44.22)'
                 val = line.split('=')[1]

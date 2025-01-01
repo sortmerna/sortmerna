@@ -34,6 +34,9 @@
  * 
  */
 
+#include "common.hpp"
+#include "readfeed.hpp"
+
 #include <vector>
 #include <iostream>
 #include <ios> // std::ios_base
@@ -43,8 +46,6 @@
 #include <locale> // std::isspace
 #include <thread>
 #include <regex>
-
-#include "readfeed.hpp"
 
 // forward
 std::streampos filesize(const std::string& file); //util.cpp
@@ -136,7 +137,7 @@ void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
 }
 
 /* 
- * can be run in a thread
+ * can be run in a threadq
  */
 void Readfeed::run()
 {

@@ -112,17 +112,10 @@ const char DELIM = ';';
 const char DELIM = ':';
 #endif
 
-
-/*! @brief Maximum length of input reads
-    (not limited to this length algorithmically)
-*/
-#define MAX_READ_LEN 30000
-
 //#define LOCKQUEUE // Lock queue with mutexes
 #define CONCURRENTQUEUE // lockless queue
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
-
 
 template<typename ...Args>
 static inline std::string fold_to_string(Args&&... args) {

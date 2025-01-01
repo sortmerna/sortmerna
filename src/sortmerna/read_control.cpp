@@ -14,7 +14,6 @@
 #include <iomanip> // std::precision
 
 #include "common.hpp"
-#include "read_control.hpp"
 #include "read.hpp"
 
 

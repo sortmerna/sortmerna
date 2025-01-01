@@ -38,12 +38,15 @@
 
 #include "common.hpp"
 #include "kseq.h"
+
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 KSEQ_INIT(gzFile, gzread)
 #else
 KSEQ_INIT(int, read)
 #endif
+
+#include <cstdint>
 
 
 
