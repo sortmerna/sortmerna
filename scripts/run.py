@@ -1053,7 +1053,7 @@ def split(files:list,
     readfeed += (
         f'{len(stats)}\n'  # number of original files
         f'{len(stats)}\n'  # number of senses
-        f'{kw.get('count')}\n'  # number of splits
+        f'{num_splits}\n'  # number of splits
         f'{total_reads}\n'  # total number of reads
         f'{stats[0][0]}\n'  # fwd reads file
         f'{stats[0][1]}\n'  # file size
