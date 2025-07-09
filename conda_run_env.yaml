@@ -1,0 +1,8 @@
+name: sortmerna-run
+dependencies:
+- pyyaml
+- jinja2
+- requests
+- pigz
+- pip:
+  - rapidgzip
