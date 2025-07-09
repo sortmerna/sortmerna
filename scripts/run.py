@@ -34,21 +34,20 @@ import os
 import sys
 import subprocess
 import platform
-from optparse import OptionParser
 import re
 import time
 import difflib
 import shutil
 import yaml
-from jinja2 import Environment, FileSystemLoader
 import gzip
+import multiprocessing
+from argparse import ArgumentParser
+from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
 
 def mock_missing(name):
     def init(self, *args, **kwargs):
-        raise ImportError(
-            f'The class {name} is not importable; '
-            f'likely due to it not being installed. '
-            f'Supposed to be used on a minion running a k8s control node.')
+        raise ImportError(f'Failed to import class {name}; likely not installed.')
     return type(name, (), {'__init__': init})
 
 try:
@@ -81,23 +80,23 @@ if not OS:
 UHOME = os.environ.get('USERPROFILE') if IS_WIN else os.environ.get('HOME') # not defined for AWS SSM
 
 SMR = 'sortmerna'
-SMR_SRC  = None # source root dir
+SMR_SRC = None # source root dir
 SMR_DIST = None # dist root dir
-SMR_EXE  = None # full path to executable
+SMR_EXE = None # full path to executable
 
-ZLIB_SRC   = None
-ZLIB_DIST  = None
+ZLIB_SRC = None
+ZLIB_DIST = None
 
-ROCKS_SRC   = None
-ROCKS_DIST  = None
+ROCKS_SRC = None
+ROCKS_DIST = None
 
 # no binaries, so always build Release only
-RAPID_SRC   = None
-RAPID_DIST  = None
+RAPID_SRC = None
+RAPID_DIST = None
 
 DATA_DIR = None
-RUN_DIR  = None
-OUT_DIR  = None
+RUN_DIR = None
+OUT_DIR = None
 TEST_DATA = None
 
 # base names of the report files
@@ -918,122 +917,245 @@ def t17(datad, ret={}, **kwarg):
     print("{ST} done")
 #END t17
 
-def set_file_names(basenames, is_other=False):
+def set_file_names(basenames:list, is_other:bool=False):
     '''
-    :param list basenames   list of basenames as in test.jinja,yaml:aligned.names
-    :param bool is_other    flag aligned (default) | other files
+    args:
+      - basenames   list of basenames as in test.jinja,yaml:aligned.names
+      - is_other    flag aligned (default) | other files
     '''
     global ALI_NAMES
 
-
-if __name__ == "__main__":
+def split(files:list,
+          num_splits:int,
+          size_per_thread:int=200000,
+          rapidgz:str=None,
+          pigz:str=None,
+          workdir:str=None,
+          **kw):
     '''
-    $env:path="$env:userprofile/a1/code/sortmerna/dist/bin;$env:path"; &python scripts/run.py -n t1
-    python scripts/run.py -n t1 --smr-exe=dist/bin/sortmerna.exe
-    python scripts/run.py -n t15 --smr-exe=dist/bin/sortmerna.exe --data-dir=../../data
-
-    python scripts/run.py -n t0 -v [--capture] [--validate-only]
-    python scripts/run.py --name t12 -f process_otu --validate-only -d 2
-    python scripts/run.py --name t0 -f dbg_blast --validate-only
-    python /media/sf_a01_code/sortmerna/scripts/run.py --name t6 --envn LNX_VBox_Ubuntu_1804
-    python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py --name t0 --winhome /mnt/c/Users/biocodz [--capture]  
-                                                                              |_ on WSL
+    args:
+      - files       list of input files
+      - num_splits  number of splits
+      - rapidgz     path to rapidgz executable
+      - pigz        path to pigz executable
+      - workdir     working directory to output to
     '''
-    ST = '[run.py:__main__]'
-    #import pdb; pdb.set_trace()
-    is_opts_ok = True
+    if rapidgz and Path(rapidgz).exists():
+        print(f'using provided rapidgzip executable: {rapidgz}')
+    elif shutil.which('rapidgzip'):
+        rapidgz = Path(shutil.which('rapidgzip'))
+        print(f'found rapidgzip executable: {rapidgz}')
+    else:
+        msg = f'no rapidgzip executable found or provided. Use \'--rapidgz\' option'
+        raise Exception(msg)
 
-    # process options
-    optpar = OptionParser()
-    optpar.add_option('-n', '--name', dest='name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
-    optpar.add_option('-f', '--func', dest='func', help='function to run: process_otu | ')
-    optpar.add_option('-c', '--clean', action="store_true", help='clean Work directory and exit. Requires \'--name\'')
-    optpar.add_option('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
-    optpar.add_option('--btype', dest='btype', default='release', help = 'Build type: release | debug')
-    optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
-    optpar.add_option('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
-    optpar.add_option('--capture', action="store_true", help='Capture output. By default prints to stdout')
-    optpar.add_option('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
-    optpar.add_option('--config', dest='config', help='Tests configuration file.')
-    optpar.add_option('--env', dest='envfile', help='Environment variables')
-    optpar.add_option('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
-                                                  '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
-    optpar.add_option('-w', '--workdir', dest='workdir', help='Environment variables')
-    optpar.add_option('--threads', dest='threads', help='Number of threads to use')
-    optpar.add_option('--index', dest='index', help='Index option 0 | 1 | 2')
-    optpar.add_option('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
-    optpar.add_option('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
-    optpar.add_option('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    if pigz and Path(pigz).exists():
+        print(f'using provided pigz executable: {pigz}')
+    elif shutil.which('pigz'):
+        pigz = Path(shutil.which('pigz'))
+        print(f'found pigz executable: {pigz}')
+    else:
+        msg = f'no pigz executable found or provided. Use \'--pigz\' option'
+        raise Exception(msg)
+    
+    cpu_max = multiprocessing.cpu_count()  # CPUs count
+    print(f'number of CPUs/cores on this machine: {cpu_max}')
+    lines_per_read = 4
+    
+    # collect the input files statistics: size, number of lines, and reads
+    #   calculate the number of reads
+    print(f'processing {len(files)} files')
+    tgtd = Path(workdir) / 'readb'
+    if tgtd.exists() and any(tgtd.iterdir()):
+        print(f'{tgtd} is not empty. Removing the content')
+        for ff in tgtd.iterdir():
+            print(f'removing {ff}')
+            ff.unlink()
+    elif not tgtd.exists():
+        print(f'creating {tgtd}')
+        tgtd.mkdir(parents=True)
+        
+    sstart = time.time()
+    stats = []  # input files statistics
+    for ff in files:
+        sbytes = Path(ff).stat().st_size
+        #sz_per_thread = sbytes // cpu_max
+        threads = 2 if sbytes <= size_per_thread else sbytes // size_per_thread
+        threads = 0 if threads >= cpu_max else threads
+        tt = threads or cpu_max
+        print(f'using {tt} threads for inflating {sbytes} bytes file')
+        cmd1 = f'{rapidgz} -d -c -P {threads} {ff}'
+        cmd2 = 'wc -l'
+        start = time.time()
+        ps1 = subprocess.Popen(cmd1.split(), stdout=subprocess.PIPE)
+        ps2 = subprocess.Popen(cmd2.split(), stdin=ps1.stdout, stdout=subprocess.PIPE)
+        ps1.stdout.close()  # allow SIGPIPE to terminate
+        out, serr = ps2.communicate()
+        reads = int(out.decode().strip()) // lines_per_read
+        stats.append([ff, sbytes, reads])
+        print(f'processed file {ff} in: {time.time() - start:.2f} sec. Size: {sbytes}, reads: {reads}')
+    if len(stats) == 2 and stats[0][2] != stats[1][2]:
+        print(f'error: the files contain unequal number of records {stats[0][2]} != {stats[1][2]}')
+        
+    total_reads = sum([st[2] for st in stats])
+    print(f'total number of reads in {len(files)} files: {total_reads}')
+        
+    # split files
+    stats_out = []  # split file statistics
+    for i, ss in enumerate(stats):
+        sz_split = ss[1] // num_splits  # size of a split
+        ln_split = ss[2] * lines_per_read // num_splits  # lines in a split
+        ln_last = ss[2] * lines_per_read % num_splits  # lines in the last split
+        # if enough CPUs use 1 thread per 100KB
+        # if file size is less then 100KB - use 2 threads
+        threads = 2 if sz_split <= size_per_thread else sz_split // size_per_thread
+        threads = 0 if threads >= cpu_max else threads
+        tt = threads or cpu_max
+        print(f'using {tt} threads for inflating {sz_split} bytes split')
+        offset = 0
+        for j in range(num_splits):
+            ln_split = ln_last if j == num_splits - 1 and ln_last > 0 else ln_split
+            cmd1 = f'{rapidgz} -d -c -P {threads} --ranges {ln_split}L@{offset}L {ss[0]}'
+            cmd2 = f'pigz -c -p {tt}'
+            fname = f'fwd_{j}.fq.gz' if i == 0 else f'rev_{j}.fq.gz'
+            fout = tgtd / fname
+            start = time.time()
+            with open(fout, 'w') as fh:
+                ps1 = subprocess.Popen(cmd1.split(), stdout=subprocess.PIPE)
+                print(f'writing {ln_split} lines to {fout} using {tt} threads')
+                ps2 = subprocess.Popen(cmd2.split(), stdin=ps1.stdout, stdout=fh)
+                ps1.stdout.close()  # allow SIGPIPE to terminate
+                out, serr = ps2.communicate()
+            rec = [fout.as_posix(), fout.stat().st_size, ln_split // lines_per_read, 1, 'fastq']
+            stats_out.append(rec)
+            offset += ln_split
+            print(f'processed file {rec[0]} in: {time.time() - start:.2f} sec. Size: {rec[1]}, reads: {rec[2]}')
+            
+    # write the descriptor
+    readfeed = (
+        '# format of this file:\n'
+        '#   time\n'
+        '#   num_orig_files\n'
+        '#   num_sense\n'
+        '#   num_splits\n'
+        '#   num_reads_tot\n'
+        '#   [\n'
+        '#     file\n'
+        '#     size\n'
+        '#     reads\n'
+        '#     zip\n'
+        '#     fastq/a\n'
+        '#   ] for each file both original and split\n\n'
+    )
+    readfeed += (f'{time.strftime("%a %d %b %Y %H:%M:%S", time.gmtime())}\n\n')
+    
+    # fwd
+    readfeed += (
+        f'{len(stats)}\n'  # number of original files
+        f'{len(stats)}\n'  # number of senses
+        f'{kw.get('count')}\n'  # number of splits
+        f'{total_reads}\n'  # total number of reads
+        f'{stats[0][0]}\n'  # fwd reads file
+        f'{stats[0][1]}\n'  # file size
+        f'{stats[0][2]}\n'  # number of reads in file
+        '1\n'  # compressed file
+        'fastq\n'  # file format
+    )
+    # rev
+    if len(stats) == 2:
+        readfeed += (
+            f'{stats[1][0]}\n'  # fwd reads file
+            f'{stats[1][1]}\n'  # file size
+            f'{stats[1][2]}\n'  # lines in file
+            '1\n'  # compressed file
+            'fastq\n'  # file format
+        )
+    # splits statistics
+    for i in range(num_splits):
+        # fwd
+        readfeed += (
+            f'{stats_out[i][0]}\n'  # fwd reads file split
+            f'{stats_out[i][1]}\n'  # file size
+            f'{stats_out[i][2]}\n'  # reads in file
+            '1\n'  # compressed file
+            'fastq\n'  # file format
+        )
+        # rev
+        if len(stats) == 2:
+            j = i + num_splits
+            readfeed += (
+                f'{stats_out[j][0]}\n'  # fwd reads file split
+                f'{stats_out[j][1]}\n'  # file size
+                f'{stats_out[j][2]}\n'  # reads in file
+                '1\n'  # compressed file
+                'fastq\n'  # file format
+            )
+        
+    dfile = tgtd / 'readfeed'
+    print(f'writing to {dfile}')
+    with open(dfile, 'a') as fh:
+        fh.write(readfeed)
+    print(f'done split in {time.time() - sstart:.2f} sec')
+    return stats
 
-    (opts, args) = optpar.parse_args()
-
-    # process configuration
-    script_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
-    SMR_SRC = os.path.dirname(script_dir)
-    DATA_DIR = opts.data_dir
-    print(f'{ST} smr source dir: {SMR_SRC} script dir: {script_dir}')
+def process_config() -> dict:
+    '''
+    '''
+    global SMR_EXE
+    script_dir = Path(__file__).parent # directory where this script is located
+    SMR_SRC = Path(script_dir).parent
+    if args.data_dir:
+        DATA_DIR = args.data_dir
+        print(f'{ST} smr source dir: {SMR_SRC} script dir: {script_dir}')
 
     # check env.yaml. If no env file specified, try the current directory
-    env_yaml = os.path.join(script_dir, 'env.jinja') if not opts.envfile else opts.envfile
-    if not os.path.exists(env_yaml):
-        print('{} No environment config file found. Please, provide one using \'--env\' option'.format(ST))
-        sys.exit(1)
-    else:
-        # load properties from env.yaml
-        print('{} Using Environment configuration file: {}'.format(ST, env_yaml))
-        #with open(env_yaml, 'r') as envh:
-        #    env = yaml.load(envh, Loader=yaml.FullLoader)
-        env_jj = Environment(loader=FileSystemLoader(os.path.dirname(env_yaml)), trim_blocks=True, lstrip_blocks=True)
-        env_template = env_jj.get_template(os.path.basename(env_yaml))
-    
-        # render jinja template env.jinja.yaml
-        vars = {'UHOME': UHOME}
-        if IS_WSL: vars['WINHOME'] = opts.winhome
-        env_str = env_template.render(vars)
-        env = yaml.load(env_str, Loader=yaml.FullLoader)
+    env_yaml = Path(script_dir) / 'env.jinja' if not args.envfile else args.envfile
+    if not Path(env_yaml).exists():
+        msg = f'{ST} No environment config file found. Please, provide one using \'--env\' option'
+        raise Exception(msg)
+
+    # load properties from env.yaml
+    print(f'{ST} Using Environment configuration file: {env_yaml}')
+    env_jj = Environment(loader=FileSystemLoader(Path(env_yaml).parent), 
+                                                    trim_blocks=True, 
+                                                    lstrip_blocks=True)
+    env_template = env_jj.get_template(Path(env_yaml).name)
+
+    # render jinja template env.jinja.yaml
+    vars = {'UHOME': UHOME}
+    if IS_WSL: vars['WINHOME'] = args.winhome
+    env_str = env_template.render(vars)
+    env = yaml.load(env_str, Loader=yaml.FullLoader)
 
     # check test.jinja
-    cfgfile = os.path.join(script_dir, 'test.jinja') if not opts.config else opts.config
-    if not os.path.exists(cfgfile):
-        print('{} No build configuration template found. Please, provide one using \'--config\' option'.format(ST))
-        sys.exit(1)
+    cfgfile = Path(script_dir) / 'test.jinja' if not args.config else args.config
+    if not Path(cfgfile).exists():
+        msg = f'{ST} No build configuration template found. Please, provide one using \'--config\' option'
+        raise Exception(msg)
 
-    print('{} using tests configuration template: {}'.format(ST, cfgfile))
+    print(f'{ST} using tests configuration template: {cfgfile}')
 
     # load 'test.jinja' template
-    jjenv = Environment(loader=FileSystemLoader(os.path.dirname(cfgfile)), trim_blocks=True, lstrip_blocks=True)
-    template = jjenv.get_template(os.path.basename(cfgfile))
+    jjenv = Environment(loader=FileSystemLoader(Path(cfgfile).parent), trim_blocks=True, lstrip_blocks=True)
+    template = jjenv.get_template(Path(cfgfile).name)
 
-    ENV = opts.envname or OS if IS_WIN or IS_WSL else None
+    ENV = args.envname or OS if IS_WIN or IS_WSL else None
     if ENV:
-        print('{} using ENV {}'.format(ST, ENV))
+        print(f'{ST} using ENV: {ENV}')
     else:
-        print('{} --envn is required on OS {}'.format(ST, OS))
+        print(f'{ST} --envn is required on OS: {OS}')
         is_opts_ok = False
 
-    WRK_DIR = opts.workdir or f'{SMR_SRC}/run'
+    WRK_DIR = args.workdir or f'{SMR_SRC}/run'
 
     # render 'test.jinja' template
     val = env.get(SMR,{}).get('src',{}).get(ENV)
     vars = {'SMR_SRC':SMR_SRC, 'DATA_DIR':DATA_DIR, 'WRK_DIR':WRK_DIR}
-    if opts.threads: 
-        # prevent the renderer from interpreting the threads as int
-        tmpl = '{}' if opts.threads[0] in ['\'','\"'] and opts.threads[-1] in ['\'','\"'] else '\'{}\''
-        vars['THREADS'] = tmpl.format(opts.threads)
-    if opts.index:
-        tmpl = '{}' if opts.index[0] in ['\'','\"'] and opts.index[-1] in ['\'','\"'] else '\'{}\''
-        vars['INDEX'] = tmpl.format(opts.index)
-    if opts.task:
-        tmpl = '{}' if opts.task[0] in ['\'','\"'] and opts.task[-1] in ['\'','\"'] else '\'{}\''
-        vars['TASK'] = tmpl.format(opts.task)
-    if opts.dbg_level:
-        tmpl = '{}' if opts.dbg_level[0] in ['\'','\"'] and opts.index[-1] in ['\'','\"'] else '\'{}\''
-        vars['DBG_LEVEL'] = tmpl.format(opts.dbg_level)
     cfg_str = template.render(vars)
     #cfg_str = template.render(env) # env[OS]
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     
-    SMR_EXE = opts.smr_exe or shutil.which('sortmerna')
+    SMR_EXE = args.smr_exe or shutil.which('sortmerna')
     if not SMR_EXE or not os.path.exists(SMR_EXE):
         print('{ST} sortmerna executable {SMR_EXE} not found.'
               ' Use \'--smr-exe\' option or ensure the PATH is set')
@@ -1041,80 +1163,162 @@ if __name__ == "__main__":
     
     print(f'{ST} using {SMR_EXE}')
 
-    TEST_DATA = os.path.join(SMR_SRC, 'data')  # data directory
+    TEST_DATA = Path(SMR_SRC)/'data'  # data directory
     ALI_NAMES = cfg.get('aligned.names')
+    
+    return cfg
 
-    # run test
-    ret = {}
-    tlist = []
-    if opts.name == 'all':
-        excl = cfg.get('exclude.list', [])
-        tlist = list(cfg.get('tests').keys())
-        if excl:
-            nexcl = len(excl)
-            print(f'{ST} excluding {nexcl} tests from the list as specified in \'exclude.list\'')
-        for tt in excl:
-            if tt in tlist:
-                tlist.remove(tt)
-    else:
-        tlist = [opts.name]
-    print(f'{ST} number of tests: {len(tlist)}')
-    for test in tlist:
-        tn = cfg[test]['name']
-        print('\n')
-        print(f'{ST} running {test}: {tn}')
-        process_smr_opts(cfg[test]['cmd'])
+if __name__ == "__main__":
+    '''
+    cmd:
+      - python scripts/run.py split -f file1 -f file2 --num_splits 4
+      - $env:path="$env:userprofile/a1/code/sortmerna/dist/bin;$env:path"; &python scripts/run.py -n t1
+      - python scripts/run.py test -n t1 --smr-exe=dist/bin/sortmerna.exe
+      - python scripts/run.py test -n t15 --smr-exe=dist/bin/sortmerna.exe --data-dir=../../data
 
-        # clean-up the KVDB, IDX directories, and the output. 
-        # May Fail if any file in the directory is open. Close the files and re-run.
-        if opts.clean:
-            if os.path.exists(KVDB_DIR):
-                print(f'{ST} removing dir: {KVDB_DIR}')
-                shutil.rmtree(KVDB_DIR)
-            if os.path.exists(IDX_DIR):
-                print(f'{ST} removing dir: {IDX_DIR}')
-                shutil.rmtree(IDX_DIR)
-            break
+      - python scripts/run.py test -n t0 -v [--capture] [--validate-only]
+      - python scripts/run.py test -n t12 -f process_otu --validate-only -d 2
+      - python scripts/run.py test -n t0 -f dbg_blast --validate-only
+      - python /media/sf_a01_code/sortmerna/scripts/run.py -n t6 --envn LNX_VBox_Ubuntu_1804
+      - python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py -n t0 --winhome /mnt/c/Users/biocodz [--capture]  
+                                                                            |_ on WSL
+    '''
+    ST = '[run.py:__main__]'
+    is_opts_ok = True
 
-        # clean previous alignments (KVDB)
-        if os.path.exists(KVDB_DIR) and not opts.validate_only:
-            print(f'{ST} Removing KVDB dir: {KVDB_DIR}')
-            shutil.rmtree(KVDB_DIR)
+    # process options
+    parser = ArgumentParser()
+    parser.add_argument('--config', dest='config', help='Configuration file')
+    parser.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    parser.add_argument('--env', dest='envfile', help='Environment variables')
+    subpar = parser.add_subparsers(dest='cmd', help='subcommand help')
+                                #  |_this is the key parameter to access the commands as args.cmd.
+    # split using rapidgzip
+    psplit = subpar.add_parser('split', help='split reads and generate split descriptor')
+    psplit.add_argument('--rapidgz', help='rapidgzip executable path')
+    psplit.add_argument('--pigz', help='pigz executable path')
+    psplit.add_argument('-f', '--file', action='append', help='the input file')
+    psplit.add_argument('-s', '--num-splits', dest='num_splits', type=int, help='number of splits to generate')
+    psplit.add_argument('-c', '--size-per-thread', dest='size_per_thread', type=str, 
+                        help='size of chunk processed by a single thread')
+    psplit.add_argument('-w', '--workdir', dest='workdir', help='working directory path')
+    
+    # run tests
+    ptest = subpar.add_parser('test', help='run selected test')
+    ptest.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
+    ptest.add_argument('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
+    ptest.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    ptest.add_argument('--threads', dest='threads', help='Number of threads to use')
+    ptest.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
+    ptest.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
+    ptest.add_argument('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
+    ptest.add_argument('-w', '--workdir', dest='workdir', help='Environment variables')
+    ptest.add_argument('-c', '--clean', action="store_true", help='clean Work directory and exit. Requires \'--name\'')
+    ptest.add_argument('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
+    ptest.add_argument('-f', '--func', dest='func', help='function to run: process_otu | ')
+    ptest.add_argument('--btype', dest='btype', default='release', help = 'Build type: release | debug')
+    ptest.add_argument('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
+    ptest.add_argument('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
+    ptest.add_argument('--capture', action="store_true", help='Capture output. By default prints to stdout')
+    ptest.add_argument('--config', dest='config', help='Tests configuration file.')
+    ptest.add_argument('--env', dest='envfile', help='Environment variables')
+    ptest.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
+                                                      '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
+    args = parser.parse_args()
 
-        # clean output
-        ali_dir = os.path.dirname(ALIF)
-        if ali_dir and os.path.exists(ali_dir) and not opts.validate_only:
-            print(f'{ST} Removing Aligned Output: {ali_dir}')
-            shutil.rmtree(ali_dir)
+    if 'split' == args.cmd:
+        res = split(files=args.file, num_splits=args.num_splits, rapidgz=args.rapidgz, workdir=args.workdir)
+        ...
+    elif 'test' == args.cmd:
+        if args.threads:
+            # prevent the renderer from interpreting the threads as int
+            tmpl = '{}' if args.threads[0] in ['\'','\"'] and args.threads[-1] in ['\'','\"'] else '\'{}\''
+            vars['THREADS'] = tmpl.format(args.threads)
+        if args.index:
+            tmpl = '{}' if args.index[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
+            vars['INDEX'] = tmpl.format(args.index)
+        if args.task:
+            tmpl = '{}' if args.task[0] in ['\'','\"'] and args.task[-1] in ['\'','\"'] else '\'{}\''
+            vars['TASK'] = tmpl.format(args.task)
+        if args.dbg_level:
+            tmpl = '{}' if args.dbg_level[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
+            vars['DBG_LEVEL'] = tmpl.format(args.dbg_level)
 
-        if OTHF:
-            oth_dir = os.path.dirname(OTHF)
-            if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not opts.validate_only:
-                print(f'{ST} removing Non-Aligned Output: {oth_dir}')
-                shutil.rmtree(oth_dir)
-
-        if not opts.validate_only:
-            cfg[test]['cmd'].insert(0, SMR_EXE)
-            is_capture = cfg[test].get('capture', False) or opts.capture
-            ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
-
-        # validate alignment results
-        if ret.get('retcode', 0) == 0 or not cfg[test].get('failonerror', True):
-            if opts.func:
-                gdict = globals().copy()
-                gdict.update(locals())
-                func = gdict.get(opts.func)
-                func(**cfg[test])
-            elif cfg[test].get('validate', {}).get('func'):
-                fn = cfg[test].get('validate', {}).get('func')
-                gdict = globals().copy()
-                gdict.update(locals())
-                func = gdict.get(fn)
-                if func:
-                    func(TEST_DATA, ret, **cfg[test])
-            else:
-                process_output(test, **cfg)
+        cfg = process_config()  # process configuration
+        
+        # run test
+        ret = {}
+        tlist = []
+        if args.name == 'all':
+            excl = cfg.get('exclude.list', [])
+            tlist = list(cfg.get('tests').keys())
+            if excl:
+                nexcl = len(excl)
+                print(f'{ST} excluding {nexcl} tests from the list as specified in \'exclude.list\'')
+            for tt in excl:
+                if tt in tlist:
+                    tlist.remove(tt)
         else:
-            break
+            tlist = [args.name]
+        print(f'{ST} number of tests: {len(tlist)}')
+        for test in tlist:
+            tn = cfg[test]['name']
+            print('\n')
+            print(f'{ST} running {test}: {tn}')
+            process_smr_opts(cfg[test]['cmd'])
+
+            # clean-up the KVDB, IDX directories, and the output. 
+            # May Fail if any file in the directory is open. Close the files and re-run.
+            if args.clean:
+                if os.path.exists(KVDB_DIR):
+                    print(f'{ST} removing dir: {KVDB_DIR}')
+                    shutil.rmtree(KVDB_DIR)
+                if os.path.exists(IDX_DIR):
+                    print(f'{ST} removing dir: {IDX_DIR}')
+                    shutil.rmtree(IDX_DIR)
+                break
+
+            # clean previous alignments (KVDB)
+            if os.path.exists(KVDB_DIR) and not args.validate_only:
+                print(f'{ST} Removing KVDB dir: {KVDB_DIR}')
+                shutil.rmtree(KVDB_DIR)
+
+            # clean output
+            ali_dir = os.path.dirname(ALIF)
+            if ali_dir and os.path.exists(ali_dir) and not args.validate_only:
+                print(f'{ST} Removing Aligned Output: {ali_dir}')
+                shutil.rmtree(ali_dir)
+
+            if OTHF:
+                oth_dir = os.path.dirname(OTHF)
+                if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not args.validate_only:
+                    print(f'{ST} removing Non-Aligned Output: {oth_dir}')
+                    shutil.rmtree(oth_dir)
+
+            if not args.validate_only:
+                cfg[test]['cmd'].insert(0, SMR_EXE)
+                is_capture = cfg[test].get('capture', False) or args.capture
+                ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
+
+            # validate alignment results
+            if ret.get('retcode', 0) == 0 or not cfg[test].get('failonerror', True):
+                if args.func:
+                    gdict = globals().copy()
+                    gdict.update(locals())
+                    func = gdict.get(args.func)
+                    func(**cfg[test])
+                elif cfg[test].get('validate', {}).get('func'):
+                    fn = cfg[test].get('validate', {}).get('func')
+                    gdict = globals().copy()
+                    gdict.update(locals())
+                    func = gdict.get(fn)
+                    if func:
+                        func(TEST_DATA, ret, **cfg[test])
+                else:
+                    process_output(test, **cfg)
+            else:
+                break
+    else:
+        ...
 #END main
 #END END run.py
