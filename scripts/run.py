@@ -991,7 +991,11 @@ def split(files:list,
         ps2 = subprocess.Popen(cmd2.split(), stdin=ps1.stdout, stdout=subprocess.PIPE)
         ps1.stdout.close()  # allow SIGPIPE to terminate
         out, serr = ps2.communicate()
-        reads = int(out.decode().strip()) // lines_per_read
+        num_lines = int(out.decode().strip())
+        reads = num_lines // lines_per_read
+        if num_lines % lines_per_read != 0:
+            print(f'Warning: number of lines {num_lines} is not multiple of lines per'
+                  f' read {lines_per_read}. Extra lines: {num_lines % lines_per_read}')
         stats.append([ff, sbytes, reads])
         print(f'processed file {ff} in: {time.time() - start:.2f} sec. Size: {sbytes}, reads: {reads}')
     if len(stats) == 2 and stats[0][2] != stats[1][2]:
@@ -1004,8 +1008,8 @@ def split(files:list,
     stats_out = []  # split file statistics
     for i, ss in enumerate(stats):
         sz_split = ss[1] // num_splits  # size of a split
-        ln_split = ss[2] * lines_per_read // num_splits  # lines in a split
-        ln_last = ss[2] * lines_per_read % num_splits  # lines in the last split
+        reads_per_split_min = ss[2] // num_splits
+        remainder_reads = ss[2] % num_splits
         # if enough CPUs use 1 thread per 100KB
         # if file size is less then 100KB - use 2 threads
         threads = 2 if sz_split <= size_per_thread else sz_split // size_per_thread
@@ -1014,7 +1018,10 @@ def split(files:list,
         print(f'using {tt} threads for inflating {sz_split} bytes split')
         offset = 0
         for j in range(num_splits):
-            ln_split = ln_last if j == num_splits - 1 and ln_last > 0 else ln_split
+            # distribute remainder reads (if any) between splits by adding an extra read 
+            # to each split starting from the 0th up to a max (num_splits - 2)th
+            reads_per_split = reads_per_split_min + 1 if j < remainder_reads else reads_per_split_min
+            ln_split = reads_per_split * lines_per_read
             cmd1 = f'{rapidgz} -d -c -P {threads} --ranges {ln_split}L@{offset}L {ss[0]}'
             cmd2 = f'pigz -c -p {tt}'
             fname = f'fwd_{j}.fq.gz' if i == 0 else f'rev_{j}.fq.gz'
@@ -1026,7 +1033,7 @@ def split(files:list,
                 ps2 = subprocess.Popen(cmd2.split(), stdin=ps1.stdout, stdout=fh)
                 ps1.stdout.close()  # allow SIGPIPE to terminate
                 out, serr = ps2.communicate()
-            rec = [fout.as_posix(), fout.stat().st_size, ln_split // lines_per_read, 1, 'fastq']
+            rec = [fout.as_posix(), fout.stat().st_size, reads_per_split, 1, 'fastq']
             stats_out.append(rec)
             offset += ln_split
             print(f'processed file {rec[0]} in: {time.time() - start:.2f} sec. Size: {rec[1]}, reads: {rec[2]}')
