@@ -973,9 +973,11 @@ void Readfeed::init_split_files()
 	auto nreads = num_reads_tot / num_sense; // num reads of the same sense e.g. FWD
 	auto minr = nreads / num_splits; // quotient i.e. min number of reads in each output file
 	auto surplus = nreads - minr * num_splits; // remainder of reads to be distributed between the output files
-	for (decltype(num_splits) i = 0, idx = 0; i < num_splits; ++i) {
+    // for each split
+	for (size_t i = 0, idx = 0; i < num_splits; ++i) {
 		auto maxr = i < surplus ? minr + 1 : minr; // distribute the surplus
-		for (decltype(num_sense) j = 0; j < num_sense; ++j, ++idx) {
+        // for each sense
+		for (size_t j = 0; j < num_sense; ++j, ++idx) {
 			split_files[idx].numreads = maxr;
 			auto jj = is_two_files ? j : 0;
 			split_files[idx].isZip = orig_files[jj].isZip;
@@ -1021,8 +1023,9 @@ void Readfeed::write_descriptor()
 			exit(1);
 		}
 
-		ofs << comments << '\n';
+        INFO("writing reads descriptor to: ", fn.generic_string());
 		std::time_t tm = std::time(0);
+		ofs << comments << '\n';
 		ofs << std::ctime(&tm) << '\n'; // line 0: timestamp  <ctime> 'Tue Oct 20 08:39:35 2020'
 		ofs << num_orig_files << '\n';  // line 1:
 		ofs << num_sense << '\n';       // line 2
