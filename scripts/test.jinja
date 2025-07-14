@@ -2885,9 +2885,9 @@ t39:
       --best 0 -min_lis 1 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
   cmd:
   - -ref
-  - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta # 
+  - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
   - -reads
-  - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/smr_iss_207_20200123_test.fq.gz #
+  - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/smr_iss_207_20200123_test.fq.gz  # 1.5M reads
   - -e
   - '100'
   - -fastx
