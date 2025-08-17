@@ -1284,6 +1284,8 @@ t18:
     #- -e
     #- '1e-15'
     #- -out2
+    #- -num_alignments
+    #- '1'
     - -max_read_len
     - '100000'
     - -threads
@@ -1332,9 +1334,11 @@ t18_1:
     - '1'
     - -paired_in
     - -v
-    #- -e
-    #- '1e-15'
+    - -e
+    - '1e-15'
     #- -out2
+    - -num_alignments
+    - '1'
     - -workdir
     - {{ WRK_DIR }}
     - -threads
