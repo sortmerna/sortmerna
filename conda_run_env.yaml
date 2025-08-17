@@ -4,5 +4,6 @@ dependencies:
 - jinja2
 - requests
 - pigz
+- gdb  # if debugging
 - pip:
   - rapidgzip
