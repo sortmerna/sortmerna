@@ -927,7 +927,7 @@ def set_file_names(basenames:list, is_other:bool=False):
 
 def split(files:list,
           num_splits:int,
-          size_per_thread:int=200000,
+          size_per_thread:int=500000,
           rapidgz:str=None,
           pigz:str=None,
           workdir:str=None,
@@ -984,13 +984,18 @@ def split(files:list,
         threads = 0 if threads >= cpu_max else threads
         tt = threads or cpu_max
         print(f'using {tt} threads for inflating {sbytes} bytes file')
-        cmd1 = f'{rapidgz} -d -c -P {threads} {ff}'
-        cmd2 = 'wc -l'
+        cmd = f'{rapidgz} --count-lines {ff}'
+        #cmd1 = f'{rapidgz} -d -c -P {threads} {ff}'
+        #cmd2 = 'wc -l'
         start = time.time()
-        ps1 = subprocess.Popen(cmd1.split(), stdout=subprocess.PIPE)
-        ps2 = subprocess.Popen(cmd2.split(), stdin=ps1.stdout, stdout=subprocess.PIPE)
-        ps1.stdout.close()  # allow SIGPIPE to terminate
-        out, serr = ps2.communicate()
+        ps = subprocess.run(cmd.split(), capture_output=True)
+        out = ps.stdout
+        #serr = ps.stderr
+        #ps1 = subprocess.Popen(cmd1.split(), stdout=subprocess.PIPE)
+        #ps2 = subprocess.Popen(cmd2.split(), stdin=ps1.stdout, stdout=subprocess.PIPE)
+        #ps1.stdout.close()  # allow SIGPIPE to terminate
+        #out, serr = ps2.communicate()
+        #out, serr = ps1.communicate()
         num_lines = int(out.decode().strip())
         reads = num_lines // lines_per_read
         if num_lines % lines_per_read != 0:
@@ -1175,6 +1180,71 @@ def process_config() -> dict:
     
     return cfg
 
+def count_lines(files:list,
+          num_splits:int=3,
+          size_per_thread:int=500000):
+    '''
+    args:
+      - files  list of .gz files to split
+      
+    threads  records  sec  bytes/thread
+    -----------------------------------
+    2        20000    21   500000
+    4        20000    24   300000
+    6        20000    27   200000    too many threads slow the execution down
+    '''
+    import rapidgzip
+    lines_tot = 0
+    cpu_max = os.cpu_count()  # multiprocessing.cpu_count()
+    ts = time.time()
+    for ff in files:
+        sbytes = Path(ff).stat().st_size
+        threads = 2 if sbytes <= size_per_thread else sbytes // size_per_thread
+        threads = 0 if threads >= cpu_max else threads
+        # count lines
+        print(f'counting lines using {threads or cpu_max} threads')
+        with rapidgzip.open(ff, parallelization=threads) as file:
+            #lines_tot = sum(1 for _ in file)  # super inefficient. Orders of magnitude.
+            while True:
+                chunk = file.read(16 * 1024 * 1024)  # 16MB
+                if not chunk:
+                    break
+                lines_tot += chunk.count(b'\n')
+            print(f'counted {lines_tot} lines in {time.time()-ts} sec')
+    return lines_tot
+
+def process(file:str, num_lines:int, offset:int):
+    '''
+    args:
+      - num_lines  number of lines to process
+      - offset     starting offset
+    '''
+    print(f'processing {num_lines} at offset {offset} in {file}')
+
+def split_process(file:str, num_threads:int=2):
+    '''
+    '''
+    import threading
+    threads = []
+    lines_tot = count_lines()
+    lines_per_thread = lines_tot // num_threads
+    ex_lines = lines_tot % num_threads
+    lines = [lines_per_thread for _ in range(num_threads)]
+    for i in range(ex_lines):
+        lines[i] += 1
+    
+    for i in range(num_threads):
+        thr = threading.Thread(target=process, args=[file, lines[i], i+lines[i]])
+        threads.append(thr)
+        
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
+    print(f'done processing')
+    
+
 if __name__ == "__main__":
     '''
     cmd:
@@ -1210,6 +1280,15 @@ if __name__ == "__main__":
                         help='size of chunk processed by a single thread')
     psplit.add_argument('-w', '--workdir', dest='workdir', help='working directory path')
     
+    # split using rapidgzip API
+    psplit2 = subpar.add_parser('split2', help='split reads and generate split descriptor')
+    psplit2.add_argument('-f', '--file', action='append', help='the input file')
+    psplit2.add_argument('-s', '--num-splits', dest='num_splits', type=int, help='number of splits to generate')
+    
+    p3 = subpar.add_parser('split_process', help='process file using multiple threads, a chunk per threads')
+    p3.add_argument('-f', '--file', action='append', help='the input file')
+    p3.add_argument('-t', '--num-threads', dest='num_threads', type=int, help='number of threads to use')
+    
     # run tests
     ptest = subpar.add_parser('test', help='run selected test')
     ptest.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
@@ -1236,6 +1315,8 @@ if __name__ == "__main__":
     if 'split' == args.cmd:
         res = split(files=args.file, num_splits=args.num_splits, rapidgz=args.rapidgz, workdir=args.workdir)
         ...
+    elif 'split2' == args.cmd:
+        res =  split2(args.file, num_splits=args.num_splits)
     elif 'test' == args.cmd:
         if args.threads:
             # prevent the renderer from interpreting the threads as int
