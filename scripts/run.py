@@ -975,8 +975,9 @@ def split(files:list,
         print(f'creating {tgtd}')
         tgtd.mkdir(parents=True)
         
+    # collect the input files' statistics
     sstart = time.time()
-    stats = []  # input files statistics
+    stats = []
     for ff in files:
         sbytes = Path(ff).stat().st_size
         #sz_per_thread = sbytes // cpu_max
