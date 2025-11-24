@@ -1244,6 +1244,76 @@ def split_process(file:str, num_threads:int=2):
         t.join()
     print(f'done processing')
     
+def iss_453(num_splits:int,
+            reads_mln:int=15,
+            threads:int=8,
+            pigz:str=None,
+            workdir:str=None,
+            **kw):
+    '''
+    generate gzip files for testing issue 453
+    '''
+    ST = 'iss_453'
+    import itertools
+    # check pigz
+    if pigz and Path(pigz).exists():
+        print(f'using provided pigz executable: {pigz}')
+    elif shutil.which('pigz'):
+        pigz = Path(shutil.which('pigz'))
+        print(f'found pigz executable: {pigz}')
+    else:
+        msg = f'no pigz executable found or provided. Use \'--pigz\' option'
+        raise Exception(msg)
+    
+    # prepare workdir
+    tgtd = Path(workdir) if num_splits == 1 else Path(workdir) / 'readb'
+    if num_splits > 1 and tgtd.exists() and any(tgtd.iterdir()):
+        print(f'{tgtd} is not empty. Removing the content')
+        for ff in tgtd.iterdir():
+            print(f'removing {ff}')
+            ff.unlink()
+    elif not tgtd.exists():
+        print(f'creating {tgtd}')
+        tgtd.mkdir(parents=True)
+    
+    cpu_max = multiprocessing.cpu_count()  # CPUs count
+    print(f'number of CPUs/cores on this machine: {cpu_max}')
+    #lines_per_read = 4
+    if num_splits == 1:
+        splits_len = [reads_mln*10**6]
+    else:
+        reads_per_split_min = reads_mln*10**6 // num_splits
+        remainder_reads = reads_mln*10**6 % num_splits
+        splits_len_min = [reads_per_split_min for _ in range(num_splits)]
+        splits_remain = [1 for _ in range(remainder_reads)]
+        splits_len = [sum(x) for x in itertools.zip_longest(splits_len_min, splits_remain, fillvalue=0)]
+    tt = threads or cpu_max
+    print(f'using {tt} threads')
+    
+    # write split reads files
+    cmd = f'pigz -c -p {tt}'
+    read_fq = 'GGCGGCGTCCGGTGAGCTCTCGCTGGCC\n+\nIIIIIIIIIIIIIIIIIIIIIIIIIIII'
+    for i, split_reads_num in enumerate(splits_len):
+        fname = f'fwd_{i}.fq.gz' if num_splits > 1 else f'{ST}_fwd.fq.gz'
+        fout = tgtd / fname
+        if num_splits == 1 and fout.exists():
+            print(f'{ST} removing existing file {fout}')
+            fout.unlink()
+        print(f'writing {split_reads_num} reads to {fout} using {tt} threads')
+        sstart = time.time()
+        with open(fout, 'a') as fh:
+            ps = subprocess.Popen(cmd.split(), stdin=subprocess.PIPE, stdout=fh)
+            cnt, chunk = 0, ''
+            for j in range(split_reads_num):
+                chunk = f'@{j}\n{read_fq}\n' if j < split_reads_num - 1 else f'@{j}\n{read_fq}'
+                #cnt += 1
+                #if cnt == 10:
+                ps.stdin.write(chunk.encode('utf-8'))
+                #cnt = 0
+                #chunk = ''
+            out, serr = ps.communicate()
+        print(f'done writing in {time.time() - sstart} sec')
+    
 
 if __name__ == "__main__":
     '''
@@ -1271,23 +1341,26 @@ if __name__ == "__main__":
     subpar = parser.add_subparsers(dest='cmd', help='subcommand help')
                                 #  |_this is the key parameter to access the commands as args.cmd.
     # split using rapidgzip
-    psplit = subpar.add_parser('split', help='split reads and generate split descriptor')
-    psplit.add_argument('--rapidgz', help='rapidgzip executable path')
-    psplit.add_argument('--pigz', help='pigz executable path')
-    psplit.add_argument('-f', '--file', action='append', help='the input file')
-    psplit.add_argument('-s', '--num-splits', dest='num_splits', type=int, help='number of splits to generate')
-    psplit.add_argument('-c', '--size-per-thread', dest='size_per_thread', type=str, 
+    p1 = subpar.add_parser('split', help='split reads and generate split descriptor')
+    p1.add_argument('--rapidgz', help='rapidgzip executable path')
+    p1.add_argument('--pigz', help='pigz executable path')
+    p1.add_argument('-f', '--file', action='append', help='the input file')
+    p1.add_argument('-s', '--num-splits', dest='num_splits', type=int, help='number of splits to generate')
+    p1.add_argument('-c', '--size-per-thread', dest='size_per_thread', type=str, 
                         help='size of chunk processed by a single thread')
-    psplit.add_argument('-w', '--workdir', dest='workdir', help='working directory path')
-    
-    # split using rapidgzip API
-    psplit2 = subpar.add_parser('split2', help='split reads and generate split descriptor')
-    psplit2.add_argument('-f', '--file', action='append', help='the input file')
-    psplit2.add_argument('-s', '--num-splits', dest='num_splits', type=int, help='number of splits to generate')
+    p1.add_argument('-w', '--workdir', dest='workdir', help='working directory path')
     
     p3 = subpar.add_parser('split_process', help='process file using multiple threads, a chunk per threads')
     p3.add_argument('-f', '--file', action='append', help='the input file')
     p3.add_argument('-t', '--num-threads', dest='num_threads', type=int, help='number of threads to use')
+    
+    p4 = subpar.add_parser('iss_453', help = 'test issue 453')
+    p4.add_argument('--pigz', help='pigz executable path')
+    p4.add_argument('-r', '--reads-mln', dest='reads_mln', type=int, help='number of mln of reads')
+    p4.add_argument('-s', '--num-splits', dest='num_splits', type=int, help='number of splits to generate')
+    p4.add_argument('-t', '--threads', dest='threads', type=int, 
+                        help='umber of threads to use')
+    p4.add_argument('-w', '--workdir', dest='workdir', help='working directory path')
     
     # run tests
     ptest = subpar.add_parser('test', help='run selected test')
@@ -1315,8 +1388,9 @@ if __name__ == "__main__":
     if 'split' == args.cmd:
         res = split(files=args.file, num_splits=args.num_splits, rapidgz=args.rapidgz, workdir=args.workdir)
         ...
-    elif 'split2' == args.cmd:
-        res =  split2(args.file, num_splits=args.num_splits)
+    elif 'iss_453' == args.cmd:
+        res =  iss_453(num_splits=args.num_splits, reads_mln=args.reads_mln, threads=args.threads, workdir=args.workdir)
+        ...
     elif 'test' == args.cmd:
         if args.threads:
             # prevent the renderer from interpreting the threads as int
