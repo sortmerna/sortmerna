@@ -1211,6 +1211,11 @@ void Runopts::opt_max_read_len(const std::string& val)
 	}
 }
 
+void Runopts::opt_score_split(const std::string& val)
+{
+	is_score_split = true;
+}
+
 /* 
  * called from validate
  */
