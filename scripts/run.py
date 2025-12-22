@@ -1294,7 +1294,7 @@ def iss_453(num_splits:int,
     cmd = f'pigz -c -p {tt}'
     read_fq = 'GGCGGCGTCCGGTGAGCTCTCGCTGGCC\n+\nIIIIIIIIIIIIIIIIIIIIIIIIIIII'
     for i, split_reads_num in enumerate(splits_len):
-        fname = f'fwd_{i}.fq.gz' if num_splits > 1 else f'{ST}_fwd.fq.gz'
+        fname = f'fwd_{i}.fq.gz' if num_splits > 1 else f'{ST}_{reads_mln}M.fq.gz'
         fout = tgtd / fname
         if num_splits == 1 and fout.exists():
             print(f'{ST} removing existing file {fout}')

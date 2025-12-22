@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -64,7 +64,7 @@ public:
 
 	/* minimal SW score corresponing to the threshold E-value */
 	std::vector<uint32_t> minimal_score;
-	std::vector<std::pair<double, double>> gumbel; // Gumbel parameters Lambda and K. see Refstats::load
+	std::vector<std::pair<double, double>> gumbel; // Gumbel parameters (Lambda, K). see Refstats::load
 	std::vector<uint64_t> numbvs; /* number of bitvectors at depth > 0 in [w_1] reverse or [w_2] forward */
 	std::vector<uint64_t> numseq;  /* total number of reference sequences in one complete reference database */
 
