@@ -117,7 +117,8 @@ OPT_INDEX = "index",
 OPT_ALIGN = "align",  // TODO: on hold
 OPT_FILTER = "filter",  // TODO: on hold
 OPT_DBG_LEVEL = "dbg-level",
-OPT_MAX_READ_LEN = "max_read_len";
+OPT_MAX_READ_LEN = "max_read_len",
+OPT_SCORE_SPLIT = "score_split";
 
 // help strings
 const std::string \
@@ -400,7 +401,13 @@ help_dbg_level =
 	"      The highest value currently is 2.\n\n",
 
 help_max_read_len =
-	"Maximum allowed read length                             " + std::to_string(MAX_READ_LEN) + "\n\n"
+	"Maximum allowed read length                             " + std::to_string(MAX_READ_LEN) + "\n\n",
+
+help_score_split = 
+	"Calculate minimal SW score per split rather than        False\n"
+    "                                            all reads. This has an effect similar to increasing\n"
+    "                                            e-value i.e. lowers the filtering threshold to less\n"
+    "                                            sensitive (see issue 453)\n"
 
 //help_align =
 //    "Perform the alignment                                   False\n\n"
@@ -501,6 +508,7 @@ public:
 	int  findex = 2; // 0 (don't build index) | 1 (only build index) | 2 (default - build index if not present)
 	bool is_align = false;
 	bool is_filter = false;
+    bool is_score_split = false;  // if true - calculate the SW score per split rather then for all reads
 
 	// Option derived Flags
 	bool is_as_percent = false; // derived from OPT_EDGES
@@ -520,16 +528,16 @@ public:
 	std::filesystem::path other_pfx; // non-aligned reads output file prefix [dir/][pfx]
 	std::string cmdline;
 
-	int num_read_thread = 1;     // number of threads reading the Reads file.
-	int num_write_thread = 1;    // number of threads writing to Key-value database
-	int num_proc_thread = 2;     // number of threads to use for alignment
-	int num_read_thread_pp = 1;  // number of post-processing read threads
-	int num_proc_thread_pp = 1;  // number of post-processing processor threads
-	int num_read_thread_rep = 1; // number of report reader threads
-	int num_proc_thread_rep = 1; // number of report processor threads
-	int dbg_level = 0; // lowest debug level - minimal info.
+	unsigned num_read_thread = 1;  // number of threads reading the Reads file.
+	unsigned num_write_thread = 1;  // number of threads writing to Key-value database
+	unsigned num_proc_thread = 2;  // number of threads to use for alignment
+	unsigned num_read_thread_pp = 1;  // number of post-processing read threads
+	unsigned num_proc_thread_pp = 1;  // number of post-processing processor threads
+	unsigned num_read_thread_rep = 1;  // number of report reader threads
+	unsigned num_proc_thread_rep = 1;  // number of report processor threads
+	unsigned dbg_level = 0;  // lowest debug level - minimal info.
 
-	int queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
+	unsigned queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
     uint64_t max_read_len = MAX_READ_LEN; // max allowed read len
 	/*
 	* 0 (false) | 1 (true) | -1 (not set)
@@ -660,6 +668,7 @@ private:
 	void opt_L(const std::string &val);
 	void opt_max_pos(const std::string &val);
 	void opt_reads_feed(const std::string& val);
+	void opt_score_split(const std::string& val);
 	/*
 	 * true: 1,yes,Yes,Y,y,T,t, false: 0,No,NO,no,N,n,F,f
 	*/
@@ -694,7 +703,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 54> options = {
+	const std::array<opt_6_tuple, 55> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
@@ -727,6 +736,7 @@ private:
 		std::make_tuple(OPT_F,              "BOOL",        COMMON,      false, help_F, &Runopts::opt_F),
 		std::make_tuple(OPT_N,              "BOOL",        COMMON,      false, help_N, &Runopts::opt_N),
 		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
+		std::make_tuple(OPT_SCORE_SPLIT,    "BOOL",        COMMON,      false, help_score_split, &Runopts::opt_score_split),
 		std::make_tuple(OPT_MAX_READ_LEN,   "INT",         COMMON,      false, help_max_read_len, &Runopts::opt_max_read_len),
 		//std::make_tuple(OPT_READS_FEED,     "INT",         COMMON,      false, help_reads_feed, &Runopts::opt_reads_feed),
 		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
