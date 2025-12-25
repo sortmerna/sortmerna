@@ -18,9 +18,13 @@ jobs:
     - name: git checkout
       uses: actions/checkout@v4
     - name: build
+      install: |
+        wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+        bash Miniforge3-$(uname)-$(uname -m).sh -b
       run: |
         eval "$(conda shell.bash activate)"
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        mamba create -f conda_build_env.yaml
+        mamba activate sortmerna-build
         python setup.py -n all
         echo "=== listing dist/ ==="
         ls -l ./dist
