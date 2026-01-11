@@ -136,11 +136,12 @@ SAMF    = None
 KVDB_DIR = None
 IDX_DIR  = None
 
-def run(cmd, cwd=None, capture=False):
+def run_test(cmd, cwd=None, capture=False):
     '''
+    run a test confgiured in test.jinja
     '''
     ST = '[run]'
-    ret = {'retcode':0, 'stdout':None, 'stderr':None}
+    rcode, outl, errl = 0, [], []
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
     cmds = ' '.join(cmd)
@@ -152,29 +153,29 @@ def run(cmd, cwd=None, capture=False):
     # cmake configure and generate
     #kw = {'stdout':subprocess.PIPE, 'stderr':subprocess.PIPE} if capture else {}
     try:
-        if cwd and not os.path.exists(cwd):
+        if cwd and not Path(cwd).exists():
             os.makedirs(cwd)
             proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
         else:
             proc = subprocess.run(cmd, capture_output=capture)
 
-        ret['retcode'] = proc.returncode
+        rcode = proc.returncode
         if capture:
-            ret['stdout'] = proc.stdout
-            ret['stderr'] = proc.stderr
+            outl.append(proc.stdout.decode().strip())
+            errl.append(proc.stderr.decode().strip())
         #proc = subprocess.run(cmd, cwd=build_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as err:
         print(err)
-        ret['retcode'] = 1
-        ret['stderr'] = err
-    except:
-        for info in sys.exc_info(): print(info)
-        ret['retcode'] = 1
-        ret['stderr'] = sys.exc_info()
+        rcode = 1
+        errl.append(str(err))
+    except Exception as ex:
+        print(str(ex))
+        rcode = 1
+        errl.append(str(ex))
 
     rt = time.time() - start
     print(f"{ST} run time: {rt}")
-    return ret
+    return rcode, outl, errl
 #END cmake_run
 
 def get_diff(fpath0, fpath1):
@@ -1334,11 +1335,11 @@ if __name__ == "__main__":
     is_opts_ok = True
 
     # process options
-    parser = ArgumentParser()
-    parser.add_argument('--config', dest='config', help='Configuration file')
-    parser.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
-    parser.add_argument('--env', dest='envfile', help='Environment variables')
-    subpar = parser.add_subparsers(dest='cmd', help='subcommand help')
+    p0 = ArgumentParser()
+    p0.add_argument('--config', dest='config', help='Configuration file')
+    p0.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    p0.add_argument('--env', dest='envfile', help='Environment variables')
+    subpar = p0.add_subparsers(dest='cmd', help='subcommand help')
                                 #  |_this is the key parameter to access the commands as args.cmd.
     # split using rapidgzip
     p1 = subpar.add_parser('split', help='split reads and generate split descriptor')
@@ -1363,27 +1364,27 @@ if __name__ == "__main__":
     p4.add_argument('-w', '--workdir', dest='workdir', help='working directory path')
     
     # run tests
-    ptest = subpar.add_parser('test', help='run selected test')
-    ptest.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
-    ptest.add_argument('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
-    ptest.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
-    ptest.add_argument('--threads', dest='threads', help='Number of threads to use')
-    ptest.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
-    ptest.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
-    ptest.add_argument('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
-    ptest.add_argument('-w', '--workdir', dest='workdir', help='Environment variables')
-    ptest.add_argument('-c', '--clean', action="store_true", help='clean Work directory and exit. Requires \'--name\'')
-    ptest.add_argument('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
-    ptest.add_argument('-f', '--func', dest='func', help='function to run: process_otu | ')
-    ptest.add_argument('--btype', dest='btype', default='release', help = 'Build type: release | debug')
-    ptest.add_argument('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
-    ptest.add_argument('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
-    ptest.add_argument('--capture', action="store_true", help='Capture output. By default prints to stdout')
-    ptest.add_argument('--config', dest='config', help='Tests configuration file.')
-    ptest.add_argument('--env', dest='envfile', help='Environment variables')
-    ptest.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
+    p5 = subpar.add_parser('test', help='run selected test')
+    p5.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
+    p5.add_argument('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
+    p5.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    p5.add_argument('--threads', dest='threads', help='Number of threads to use')
+    p5.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
+    p5.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
+    p5.add_argument('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
+    p5.add_argument('-w', '--workdir', dest='workdir', help='Environment variables')
+    p5.add_argument('-c', '--clean', action="store_true", help='clean Work directory and exit. Requires \'--name\'')
+    p5.add_argument('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
+    p5.add_argument('-f', '--func', dest='func', help='function to run: process_otu | ')
+    p5.add_argument('--btype', dest='btype', default='release', help = 'Build type: release | debug')
+    p5.add_argument('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
+    p5.add_argument('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
+    p5.add_argument('--capture', action="store_true", help='Capture output. By default prints to stdout')
+    p5.add_argument('--config', dest='config', help='Tests configuration file.')
+    p5.add_argument('--env', dest='envfile', help='Environment variables')
+    p5.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                       '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
-    args = parser.parse_args()
+    args = p0.parse_args()
 
     if 'split' == args.cmd:
         res = split(files=args.file, num_splits=args.num_splits, rapidgz=args.rapidgz, workdir=args.workdir)
@@ -1432,16 +1433,16 @@ if __name__ == "__main__":
             # clean-up the KVDB, IDX directories, and the output. 
             # May Fail if any file in the directory is open. Close the files and re-run.
             if args.clean:
-                if os.path.exists(KVDB_DIR):
+                if Path(KVDB_DIR).exists():
                     print(f'{ST} removing dir: {KVDB_DIR}')
                     shutil.rmtree(KVDB_DIR)
-                if os.path.exists(IDX_DIR):
+                if Path(IDX_DIR).exists:
                     print(f'{ST} removing dir: {IDX_DIR}')
                     shutil.rmtree(IDX_DIR)
                 break
 
             # clean previous alignments (KVDB)
-            if os.path.exists(KVDB_DIR) and not args.validate_only:
+            if Path(KVDB_DIR).exists() and not args.validate_only:
                 print(f'{ST} Removing KVDB dir: {KVDB_DIR}')
                 shutil.rmtree(KVDB_DIR)
 
@@ -1460,10 +1461,10 @@ if __name__ == "__main__":
             if not args.validate_only:
                 cfg[test]['cmd'].insert(0, SMR_EXE)
                 is_capture = cfg[test].get('capture', False) or args.capture
-                ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
+                rcode, outl, errl = run_test(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
 
             # validate alignment results
-            if ret.get('retcode', 0) == 0 or not cfg[test].get('failonerror', True):
+            if rcode == 0 or not cfg[test].get('failonerror', True):
                 if args.func:
                     gdict = globals().copy()
                     gdict.update(locals())
