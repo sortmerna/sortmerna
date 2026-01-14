@@ -55,7 +55,7 @@ void Report::merge(const uint32_t& num_splits, const uint32_t& num_out, const in
 {
 	for (uint32_t i = 0; i < num_out; ++i) {
 		if (!fsv[i].is_open()) { 
-			openfw(i, dbg);
+			openfw2(i, dbg);
 		}
 		else {
 			fsv[i].seekp(0); //rewind
@@ -94,7 +94,7 @@ void Report::merge(const uint32_t& num_splits, const uint32_t& num_out, const in
 	}
 } // ~Report::merge
 
-void Report::openfw(const uint32_t& idx, const int& dbg)
+void Report::openfw2(const unsigned& idx, const unsigned& dbg)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
@@ -109,10 +109,10 @@ void Report::openfw(const uint32_t& idx, const int& dbg)
 	}
 }
 
-void Report::openfw(const int& dbg)
+void Report::openfw(const unsigned& dbg)
 {
 	for (size_t i = 0; i < fv.size(); ++i) {
-		openfw(i, dbg);
+		openfw2(i, dbg);
 	}
 }
 
@@ -130,7 +130,7 @@ void Report::openfr(unsigned idx)
 	}
 }
 
-void Report::closef(const uint32_t& idx, const int& dbg)
+void Report::closef2(const unsigned& idx, const unsigned& dbg)
 {
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
@@ -140,10 +140,10 @@ void Report::closef(const uint32_t& idx, const int& dbg)
 	}
 }
 
-void Report::closef(const int& dbg)
+void Report::closef(const unsigned& dbg)
 {
 	for (uint32_t i = 0; i < fsv.size(); ++i) {
-		closef(i, dbg);
+		closef2(i, dbg);
 	}
 }
 

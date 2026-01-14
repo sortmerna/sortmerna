@@ -65,15 +65,15 @@ public:
 	* open report files for writing
 	* @param dbg  debug level, see 'Runopts.dbg_level'
 	*/
-	void openfw(const int& dbg=0);
+	void openfw(const unsigned& dbg=0);
 	/*
 	* open selected report file for writing
 	* @param idx  index into the array of report files
 	* @param dbg  debug level as in 'Runopts.dbg_level'
 	*/
-	void openfw(const uint32_t& idx, const int& dbg=0); // close selected report file
-	void closef(const int& dbg=0); // close report files
-	void closef(const uint32_t& idx, const int& dbg=0); // close a file
+	void openfw2(const unsigned& idx, const unsigned& dbg=0); // close selected report file
+	void closef(const unsigned& dbg=0); // close report files
+	void closef2(const unsigned& idx, const unsigned& dbg=0); // close a file given an array index
 	int finish_deflate();
 	/*
 	* strip the split suffix from the output file name 
