@@ -269,9 +269,10 @@ def parse_log(fpath, logd={}):
     return logd
 #END parse_log
 
-def process_smr_opts(args):
+def process_smr_opts(args:list):
     '''
-    :param args  list of parameters passed to sortmerna
+    args:
+      - args  list of parameters passed to sortmerna
     '''
     ST = '[process_smr_opts]'
     WDIR = '-workdir'
@@ -351,10 +352,10 @@ def process_smr_opts(args):
             OTHF = os.path.join(os.path.dirname(ALIF), OTH_BASE + READS_EXT) # use the same out dir as ALN
         elif WDIR in args:
             wdir = args[args.index(WDIR) + 1]
-            print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(ST, os.path.realpath(wdir)))
-            ALIF = os.path.join(wdir, 'out', OTH_BASE + READS_EXT)
+            print(f'{ST} \'-workdir\' option was provided. Using workdir: [{os.path.realpath(wdir)}]')
+            ALIF = Path(wdir) / 'out' / f'{OTH_BASE}.{READS_EXT}'
         else:
-            OTHF = os.path.join(UHOME, 'sortmerna', 'run', 'out', OTH_BASE + READS_EXT)
+            OTHF = Path(UHOME) / 'sortmerna/run/out' / f'{OTH_BASE}.{READS_EXT}'
 
         if OUT2 in args:
             OTH_FWD = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_fwd' + READS_EXT)
@@ -363,23 +364,23 @@ def process_smr_opts(args):
     if KVD in args:
         KVDB_DIR = args[args.index(KVD) + 1]
     elif WDIR in args:
-        KVDB_DIR = os.path.join(args[args.index(WDIR) + 1], 'kvdb')
+        KVDB_DIR = Path(args[args.index(WDIR) + 1]) / 'kvdb'
     else:
-        KVDB_DIR = os.path.join(UHOME, 'sortmerna', 'run', 'kvdb')
+        KVDB_DIR = Path(UHOME) / 'sortmerna/run/kvdb'
 
     if IDX in args:
         IDX_DIR = args[args.index(IDX) + 1]
     elif WDIR in args:
-        IDX_DIR = os.path.join(args[args.index(WDIR) + 1], 'idx')
+        IDX_DIR = Path(args[args.index(WDIR) + 1]) / 'idx'
     else:
-        IDX_DIR = os.path.join(UHOME, 'sortmerna', 'run', 'idx')
+        IDX_DIR = Path(UHOME) / 'sortmerna/run/idx'
 
     gzs = '.gz' if is_gz else ''
-    LOGF    = os.path.join(os.path.dirname(ALIF), '{}.log'.format(ALI_BASE))
-    BLASTF  = os.path.join(os.path.dirname(ALIF), '{}.blast{}'.format(ALI_BASE, gzs))
+    LOGF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.log')
+    BLASTF  = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.blast{gzs}')
     OTUF    = os.path.join(os.path.dirname(ALIF), 'otu_map.txt')
-    DENOVOF = os.path.join(os.path.dirname(ALIF), '{}_denovo.fa'.format(ALI_BASE))
-    SAMF    = os.path.join(os.path.dirname(ALIF), '{}.sam'.format(ALI_BASE))
+    DENOVOF = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}_denovo.fa')
+    SAMF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.sam')
 #END process_smr_opts
 
 def process_blast(**kwarg):
@@ -617,10 +618,11 @@ def validate_log(logd, ffd):
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
 #END validate_log
 
-def process_output(name, **kwarg):
+def process_output(name:str, **kwarg):
     '''
-    :param str name    test name e.g. t0
-    :param dict        test configuration see 'test.jinja'
+    args:
+      - name    test name e.g. t0
+      - kwawrg  test configuration dictionary see 'test.jinja'
     '''
     ST = '[process_output]'
     global is_skbio
@@ -1111,7 +1113,7 @@ def split(files:list,
     print(f'done split in {time.time() - sstart:.2f} sec')
     return stats
 
-def process_config() -> dict:
+def process_config(**kw) -> dict:
     '''
     '''
     global SMR_EXE
@@ -1371,7 +1373,7 @@ if __name__ == "__main__":
     p5.add_argument('--threads', dest='threads', help='Number of threads to use')
     p5.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
     p5.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
-    p5.add_argument('-d', '--dbg_level', dest="dbg_level", help='debug level 0 | 1 | 2')
+    p5.add_argument('-d', '--dbg-level', dest="dbg_level", help='debug level 0 | 1 | 2')
     p5.add_argument('-w', '--workdir', dest='workdir', help='Environment variables')
     p5.add_argument('-c', '--clean', action="store_true", help='clean Work directory and exit. Requires \'--name\'')
     p5.add_argument('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
@@ -1384,6 +1386,7 @@ if __name__ == "__main__":
     p5.add_argument('--env', dest='envfile', help='Environment variables')
     p5.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                       '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
+    p5.add_argument('--score-split', action="store_true", help='set corresponding sortmerna argument')
     args = p0.parse_args()
 
     if 'split' == args.cmd:
@@ -1393,19 +1396,20 @@ if __name__ == "__main__":
         res =  iss_453(num_splits=args.num_splits, reads_mln=args.reads_mln, threads=args.threads, workdir=args.workdir)
         ...
     elif 'test' == args.cmd:
+        smr_args = {}
         if args.threads:
             # prevent the renderer from interpreting the threads as int
             tmpl = '{}' if args.threads[0] in ['\'','\"'] and args.threads[-1] in ['\'','\"'] else '\'{}\''
-            vars['THREADS'] = tmpl.format(args.threads)
+            smr_args['THREADS'] = tmpl.format(args.threads)
         if args.index:
             tmpl = '{}' if args.index[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
-            vars['INDEX'] = tmpl.format(args.index)
+            smr_args['INDEX'] = tmpl.format(args.index)
         if args.task:
             tmpl = '{}' if args.task[0] in ['\'','\"'] and args.task[-1] in ['\'','\"'] else '\'{}\''
-            vars['TASK'] = tmpl.format(args.task)
+            smr_args['TASK'] = tmpl.format(args.task)
         if args.dbg_level:
             tmpl = '{}' if args.dbg_level[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
-            vars['DBG_LEVEL'] = tmpl.format(args.dbg_level)
+            smr_args['DBG_LEVEL'] = tmpl.format(args.dbg_level)
 
         cfg = process_config()  # process configuration
         
@@ -1428,6 +1432,14 @@ if __name__ == "__main__":
             tn = cfg[test]['name']
             print('\n')
             print(f'{ST} running {test}: {tn}')
+            if args.dbg_level:
+                if '-dbg-level' in cfg[test]['cmd']:
+                    dbg_level_idx = cfg[test]['cmd'].index('-dbg-level')
+                    cfg[test]['cmd'][dbg_level_idx+1] = args.dbg_level
+                else:
+                    cfg[test]['cmd'].extend(['-dbg-level', args.dbg_level])
+            if args.score_split:
+                cfg[test]['cmd'].append('-score_split')
             process_smr_opts(cfg[test]['cmd'])
 
             # clean-up the KVDB, IDX directories, and the output. 
