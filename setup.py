@@ -112,34 +112,41 @@ def load_tar(url, tgtd):
             ret['stderr'] = f'{ex}'
     return ret
 
-def git_clone(url, repo_dir, commit='master', shallow=False, force=False):
+def git_clone(url:str, 
+              repo_dir:str, 
+              shallow:bool=False, 
+              force:bool=False) -> tuple:
     '''
     clone a git repo if not already existing
-
-    :param str url    url to clone
-    :param str repo_dir   directory where to clone
+    args:
+      - url        url to clone
+      - repo_dir   directory where to clone
     '''
     ST = '[git_clone]'
-    ret = {}
+    rcode, sout, eout = 0, None, None
     # make sure parent directory where to clone exists
-    if not os.path.exists(os.path.split(repo_dir)[0]):
-        os.makedirs(os.path.dirname(repo_dir)) # create parent repo
+    if not Path(repo_dir).parent.exists():
+        msg = f'{ST} creating {Path(repo_dir).parent}'
+        print(msg)
+        Path(repo_dir).parent.mkdir(parents=True) # create parent repo
 
     # check clone already exists
-    if os.path.exists(repo_dir) and os.path.exists(os.path.join(repo_dir, '.git')):
-        print('{} git clone already exists: {}'.format(ST, repo_dir))
+    if Path(repo_dir).exists() and (Path(repo_dir) / '.git').exists():
+        msg = f'{ST} git clone already exists: {repo_dir}'
+        print(msg)
         cmd = ['git', 'status']
-        ret = proc_run(cmd, repo_dir)
+        rcode, sout, eout = proc_run(cmd, repo_dir, capture=True)
     else: # do clone
         cmd = [ 'git', 'clone', url, repo_dir]
-        ret = proc_run(cmd)
-    return ret
+        rcode, sout, eout = proc_run(cmd)
+    return rcode, sout, eout
 #END git_clone  
 
-def conda_install(dir=None, force=False, clean=False, **cfg):
+def conda_install(dir:str=None, force:bool=False, clean:bool=False, **cfg):
     '''
-    :param cfg   Config dictionary
-    :param dir   installation root dir. Default: User Home
+    args:
+      - cfg   Config dictionary
+      - dir   installation root dir. Default: User Home
 
     pip install -U pyyaml
     pip install -U Jinja2
@@ -322,29 +329,32 @@ def git_install(**cfg):
     cmd = ['apt', 'policy', 'git']
     proc_run(cmd)
 
-def clean(dir):
+def clean(dir:str):
     '''
-    :param str dir  Directory to clean
-
     remove content of the given directory.
+    args:
+      - dir  Directory to clean
     '''
     cmd = ['rm', '-rf', './*']
-    ret = proc_run(cmd, dir)
-    return ret
+    rcode, sout, eout = proc_run(cmd, dir)
+    return rcode, sout, eout
 #END clean
 
-def proc_run(cmd, cwd=None, capture=False):
+def proc_run(cmd:list, cwd:str=None, capture:bool=False) -> tuple:
     '''
-    :param list cmd      command to execute
-    :param str cwd       CWD
-    :param bool capture  capture the output
+    args:
+      - cmd      command to execute
+      - cwd      CWD
+      - capture  capture the output
     '''
     ST = '[proc_run]'
-    ret = {'retcode':0, 'stdout':None, 'stderr':None}
+    rcode, sout, eout = True, None, None
     spr = '==========================================================='
 
     cwdp = cwd or Path().resolve()
-    print('{} Running in {}:\n{}\n{}\n{}'.format(ST, cwdp, spr, ' '.join(cmd), spr))
+    cmdstr = ' '.join(cmd)
+    msg = f'{ST} Running in {cwdp}:\n{spr}\n{cmdstr}\n{spr}'
+    print(msg)
 
     start = time.time()
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
@@ -353,8 +363,8 @@ def proc_run(cmd, cwd=None, capture=False):
     if shutil.which(cmd[0]):
         try:
             if cwd:
-                if not os.path.exists(cwd):
-                    os.makedirs(cwd)
+                if not Path(cwd).exists():
+                    Path(cwd).mkdir(parents=True)
                 if sys.version_info[1] > 6:
                     proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
                 else:
@@ -367,29 +377,32 @@ def proc_run(cmd, cwd=None, capture=False):
 
             if proc.returncode:
                 for info in sys.exc_info(): print(info)
-            ret['retcode'] = proc.returncode
+            rcode = proc.returncode
             if capture:
-                ret['stdout'] = proc.stdout
-                ret['stderr'] = proc.stderr
+                if proc.stdout:
+                    sout = proc.stdout.decode('utf-8').strip()
+                if proc.stderr:
+                    eout = proc.stderr.decode('utf-8').strip()
         except OSError as err:
             print(err)
-            ret['retcode'] = 1
-            ret['stderr'] = err
-        except:
-            for info in sys.exc_info(): print(info)
-            ret['retcode'] = 1
-            ret['stderr'] = sys.exc_info()
+            rcode = 1
+            sout = str(err)
+        except Exception as ex:
+            msg = f'{ST} {ex}'
+            print(msg)
+            rcode = 1
+            eout = str(ex)
 
-        print("{} Run time: {}".format(ST, time.time() - start))
-    else:
-        msg = '{} Executable {} not found'.format(ST, cmd[0])
-        ret['retcode'] = 1
-        ret['stderr'] = msg
+        msg = f"{ST} Run time: {time.time() - start}"
         print(msg)
-    return ret
+    else:
+        eout = f'{ST} Executable {cmd[0]} not found'
+        rcode = 1
+        print(eout)
+    return rcode, sout, eout
 #END proc_run
 
-def zlib_build(**kwargs):
+def zlib_build(**kw):
     '''
     args:
       - url
@@ -399,29 +412,53 @@ def zlib_build(**kwargs):
       - ptype str             Linkage type like statuc, dynamic, mixed
       - is_git bool           use git as source. Otherwise - archive (.tar.gz)
     '''
-    is_git = kwargs.get('is_git', False)
-    url = kwargs.get('url') if is_git else kwargs.get('url2')
-    path = kwargs.get('path')
-    commit = kwargs.get('commit')
-    shallow = kwargs.get('shallow')
-    btype = kwargs.get('cmake_build_type', 'Release')
-    gen = kwargs.get('cmake_gen', 'Ninja Multi-Config')
-    ret = git_clone(url, path, commit=commit) if is_git else load_tar(url, path) # URL_ZLIB
+    outl, errl = [], []
+    sysroot = kw.get('sysroot')
+    build_dir = Path(sysroot) / 'sortmerna' / kw[ZLIB].get('build') if sysroot else kw[ZLIB].get('build')
+    dist_dir = Path(sysroot) / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else kw[ZLIB].get('dist') or Path(f'build/{src}/dist').absolute()
+    is_git = kw[ZLIB].get('is_git', False)
+    is_checkout = kw[ZLIB].get('is_checkout', True)
+    url = kw[ZLIB].get('url') if is_git else kw[ZLIB].get('url2')
+    src = kw[ZLIB].get('src')
+    commit = kw[ZLIB].get('commit') or 'master'
+    shallow = kw[ZLIB].get('shallow')
+    btype = kw[ZLIB].get('cmake_build_type', 'Release')
+    gen = kw[ZLIB].get('cmake_gen', 'Ninja Multi-Config')
+    rcode, sout, eout = git_clone(url, src) if is_git else load_tar(url, path) # URL_ZLIB
+    outl.append(sout)
+    errl.append(eout)
+
+    if is_git and is_checkout:
+        cmd = ['git', 'checkout', commit]
+        proc_run(cmd, src)
+    if is_git:
+        cmd = ['git', 'rev-parse', 'HEAD']
+        rcode, sout, eout = proc_run(cmd, src, capture=True)
+        chash = sout
+        print(f'{ST} building commit: {chash}')
+        
     # cmake configure
     # set CMAKE_INSTALL_PREFIX here because original zlib CMakeLists.txt uses it
     # to set cache variables used in installation at configure time (not a good solution).
     # Instead the relative paths should be used, and CMake will add the prefix during installation automatically).
     # https://discourse.cmake.org/t/cmake-install-prefix-not-work
     # https://github.com/madler/zlib/pull/170 <- PR to fix zlib CMakeLists.txt (never merged)
-    pfx = kwargs.get('dist') or Path(f'build/{path}/dist').absolute()
+    cmake_min = '3.5'
     #pfx = kwargs.get('dist') or os.path.abspath(f'build/{path}/dist').replace('\\', '/')
-    cmd = ['cmake', '-S', path, '-B', f'build/{path}', '-G', gen, '--fresh', '-D', f'CMAKE_INSTALL_PREFIX={pfx}']
-    ret = proc_run(cmd)
+    cmd = ['cmake', '-S', src, '-B', str(build_dir), 
+           '-G', gen, '--fresh', 
+           f'-DCMAKE_INSTALL_PREFIX={str(dist_dir)}', 
+           f'-DCMAKE_POLICY_VERSION_MINIMUM={cmake_min}']
+    rcode, sout, eout = proc_run(cmd, capture=True)
+    outl.append(sout)
+    errl.append(eout)
     # cmake build
-    if ret['retcode'] == 0:
-        cmd = [ 'cmake', '--build', f'build/{path}', '--target', 'install', '--config', btype]
-        proc_run(cmd)
-    return ret
+    if rcode == 0:
+        cmd = [ 'cmake', '--build', str(build_dir), '--target', 'install', '--config', btype]
+        rcode, sout, eout = proc_run(cmd, capture=True)
+        outl.append(sout)
+        errl.append(eout)
+    return rcode, outl, errl
 #END zlib_build
 
 """def rapidjson_build(btype='Release'):
@@ -485,146 +522,193 @@ def rocksdb_modify_3party_zlib(link_type='t1', **kwargs):
     #txtn = re.sub(r'ZLIB_LIB_RELEASE .*\)', r'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{})'.format(lib_rel), txtn, flags = re.M)
 #END rocksdb_fix_3party
     
-def rocksdb_build(link_type='t1', **kwargs): # ver=None, btype='Release', ptype='t3', **cfg
+def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release', ptype='t3', **cfg
     '''
-    :param str btype  build type Release | Debug
-    :param str ptype  Linkage type on Windows t1 | t2 | t3
+    args:
+      - btype  build type Release | Debug
+      - ptype  Linkage type on Windows t1 | t2 | t3
 
     NOTE: on Windows 'thridparty.inc' file has to be modified.
     '''
     ST = '[rocksdb_build]'
     print(f'{ST} started')
-    is_git = kwargs.get(ROCKS).get('is_git', False)
-    url = kwargs.get(ROCKS).get('url') if is_git else kwargs.get(ROCKS).get('url2')
-    path = kwargs.get(ROCKS).get('path')
-    commit = kwargs.get(ROCKS).get('commit')
-    shallow = kwargs.get(ROCKS).get('shallow')
-    btype = kwargs.get(ROCKS).get('cmake_build_type', 'Release')
-    presets_file = kwargs.get(ROCKS).get('preset')
-    zlib_dist = kwargs.get(ZLIB).get('dist')
-    ret = git_clone(url, path, commit=commit) if is_git else load_tar(url, path)
+    sysroot, eout = get_sysroot()
+    sysroot = Path(sysroot).resolve()
+    src = kw.get(ROCKS).get('src')
+    build_dir = sysroot / 'sortmerna' / kw[ROCKS].get('build') if sysroot else kw[ROCKS].get('build')
+    dist_dir = sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else kw[ROCKS].get('dist') or Path(f'build/{src}/dist').absolute()
+    zlib_dist = sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute()
+    is_git = kw.get(ROCKS).get('is_git', False)
+    is_checkout = kw.get(ROCKS).get('is_checkout', False)
+    url = kw.get(ROCKS).get('url') if is_git else kw.get(ROCKS).get('url2')
+    commit = kw.get(ROCKS).get('commit')
+    shallow = kw.get(ROCKS).get('shallow')
+    btype = kw.get(ROCKS).get('cmake_build_type', 'Release')
+    presets_file = kw.get(ROCKS).get('preset')
+    rcode, sout, eout = git_clone(url, src) if is_git else load_tar(url, src)
 
-    if is_git:
+    if is_git and is_checkout:
         cmd = ['git', 'checkout', commit] if commit  else ['git', 'checkout', 'master']
-        ret = proc_run(cmd, path)
-
+        rcode, sout, eout = proc_run(cmd, src)
+    if is_git:
         cmd = ['git', 'rev-parse', 'HEAD']
-        ret = proc_run(cmd, path, capture=True)
-        chash = ret.get('stdout')
+        rcode, sout, eout = proc_run(cmd, src, capture=True)
+        chash = sout
         print(f'{ST} building commit: {chash}')
 
     if IS_WIN:
-        rocksdb_modify_3party_zlib(link_type, **kwargs)
+        rocksdb_modify_3party_zlib(link_type, **kw)
+        
+    # check cmake version
+    cmd = ['cmake', '--version']
+    rcode, sout, eout = proc_run(cmd, capture=True)
+    msg = f'{ST} {sout}'
+    print(msg)
 
     # copy presets file
-    src = os.path.abspath(presets_file)
-    dst = os.path.abspath(f'{path}/CMakePresets.json')
-    print(f'{ST} copying {src} -> {dst}')
-    ret = shutil.copyfile(presets_file, f'{path}/CMakePresets.json')
+    presets = Path(presets_file).absolute()
+    dst = Path(f'{src}/CMakePresets.json').absolute()
+    print(f'{ST} copying {presets} -> {dst}')
+    shutil.copyfile(presets_file, f'{src}/CMakePresets.json')
 
-    dist_path = os.path.abspath(f'build/{path}/dist').replace('\\','/')
     bt = btype.lower()
     cmd = [
-        'cmake', '-S', path, '-B', f'build/{path}',
+        'cmake', '-S', src, '-B', str(build_dir),
         '--preset', f'{MY_OS}_{bt}',
-        f'-DCMAKE_INSTALL_PREFIX={dist_path}',
-        f'-DZLIB_ROOT={zlib_dist}',
-        '--fresh'
+        f'-DCMAKE_INSTALL_PREFIX={str(dist_dir)}',
+        f'-DZLIB_ROOT={str(zlib_dist)}',
+        f'-DCMAKE_POLICY_DEFAULT_CMP0074=NEW'
     ]
-    ret = proc_run(cmd)
+    if sysroot:
+        toolchain = Path(kw.get('toolchain')) if kw.get('toolchain') else Path.cwd() / 'cmake/conda_tc.cmake'
+        if toolchain.exists():
+            cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={str(toolchain)}')
+        else:
+            msg = f'{ST} file not found {toolchain}'
+            print(msg)
+            raise ValueError(msg)
+    cmd.append('--fresh')
+    rcode, sout, eout = proc_run(cmd)
 
-    if ret['retcode'] == 0:
-        cmd = [ 'cmake', '--build', f'build/{path}', '--config', btype, '--target', 'install' ]
-        ret = proc_run(cmd)
+    if rcode == 0:
+        cmd = [ 'cmake', '--build', str(build_dir), '--config', btype, '--target', 'install']
+        rcode, sout, eout = proc_run(cmd)
     else:
         print(f'{ST} failed to build')
-    return ret
+    return rcode, sout, eout
 #END rocksdb_build
 
-def smr_build(ver=None, btype='release', link_type='t1', **kwargs):
+def smr_build(ver:str=None, 
+              btype:str='release', 
+              is_checkout:bool=False, 
+              link_type:str='t1', 
+              **kw):
     '''
     build sortmerna using CMake with CMakePresets.json
     CMake flags mostly specified in presets - no need here
-
-    :param str ver        git commit/tag - default master
-    :param str btype      Build type Release | Debug
-    :param str link_type  Linking type: t1 | t2 | t3
+    args:
+      - ver        git commit/tag - default master
+      - btype      Build type Release | Debug
+      - link_type  Linking type: t1 | t2 | t3
                             t1 all static
                             t2 static 3rd party + dynamic runtime
                             t3 all dynamic
     '''
     ST = '[smr_build]'
-
-    if ver and Path('.git').exists():
+    sysroot, eout = get_sysroot()
+    if sysroot:
+        sysroot = Path(sysroot).resolve()
+    build_dir = sysroot / 'sortmerna/build' if sysroot else 'build'
+    rocksdb_dist = (sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else 
+                    kw[ROCKS].get('dist') or Path(f'build/{kw.get(ROCKS).get('src')}/dist').absolute())
+    zlib_dist = (sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else 
+                 kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute())
+    conque_home = kw[CCQUEUE].get('dist') or kw[CCQUEUE].get('src')
+    install_dir = Path(build_dir) / 'dist' if sysroot else 'dist'
+    
+    if is_checkout and ver and Path('.git').exists():
         cmd = ['git', 'checkout', ver]
         proc_run(cmd)
 
     # list available presets
     cmd = ['cmake', '--list-presets']
-    ret = proc_run(cmd, capture=True)
-    if bool(ret.get('retcode')):
-        print(ret)
+    rcode, sout, eout = proc_run(cmd, capture=True)
+    if rcode > 0:
+        print(eout)
         return
 
     presets = []
-    if ret.get('stdout'):
-        ol = ret.get('stdout').decode('utf8').replace('"','').split('\n')
+    if sout:
+        ol = sout.replace('"','').split('\n')
         presets = [l.strip() for l in ol if l.strip()][1:]
 
     # cmake preset e.g. LIN_release | WIN_release
     preset = f'LIN_{btype}' if IS_LNX or IS_WSL else f'WIN_{btype}'
     if preset not in presets:
-        print('{} preset {} not found in available presets: {}'.format(ST, preset, presets))
-        return
+        msg = f'{ST} preset {preset} not found in available presets: {presets}'
+        print(msg)
+        return 1, None, msg
     
     # generate CMake configuration
     # cmake -S . --preset LIN_Release
-    cmd = ['cmake', '-S', '.', '--preset', preset]
-    if opts.vb:
+    cmd = ['cmake', '-S', '.', '-B', str(build_dir), '--preset', preset]
+    if sysroot:
+        toolchain = Path(kw.get('toolchain')) if kw.get('toolchain') else Path.cwd() / 'cmake/conda_tc.cmake'
+        if toolchain.exists():
+            cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={str(toolchain)}')
+        else:
+            msg = f'{ST} file not found {toolchain}'
+            print(msg)
+            raise ValueError(msg)
+        cmd.append(f'-DZLIB_ROOT={zlib_dist}')
+        cmd.append(f'-DROCKSDB_DIST={rocksdb_dist}')
+        cmd.append(f'-DCONCURRENTQUEUE_HOME={conque_home}')
+        cmd.append(f'-DCMAKE_INSTALL_PREFIX={str(install_dir)}')
+    if kw.get('vb'):
         cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
-    if opts.loglevel:
-        cmd.append('--loglevel={}'.format(opts.loglevel.upper()))
-    elif opts.trace:
+    if kw.get('loglevel'):
+        cmd.append('--loglevel={}'.format(kw.get('loglevel').upper()))
+    elif kw.get('trace'):
         cmd.append('--trace')
-    ret = proc_run(cmd)
+    cmd.append('--fresh')
+    proc_run(cmd)
 
     # build and install
-    cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'install' ]
-    ret = proc_run(cmd)
+    cmd = [ 'cmake', '--build', str(build_dir), '--preset', preset, '--target', 'install' ]
+    proc_run(cmd)
 
     # generate installation package
-    if ret['retcode'] == 0:
-        cmd = [ 'cmake', '--build', '--preset', preset, '--target', 'package' ]
-        ret = proc_run(cmd)
+    cmd = [ 'cmake', '--build', str(build_dir), '--preset', preset, '--target', 'package' ]
+    proc_run(cmd)
 
     # test  CMAKE_INSTALL_PREFIX/bin/sortmerna --version
     exe = 'sortmerna.exe' if IS_WIN else 'sortmerna'
-    if ret['retcode'] == 0:
-        cmd = [ f'dist/bin/{exe}', '--version' ]
-        ret = proc_run(cmd)
-    if ret['retcode'] == 0:
-        cmd = [ f'dist/bin/{exe}', '-h' ]
-        ret = proc_run(cmd)
-    return ret
+    cmd = [ f'{install_dir}/bin/{exe}', '--version' ]
+    proc_run(cmd)
+    
+    cmd = [ f'{install_dir}/bin/{exe}', '-h' ]
+    proc_run(cmd)
+    return rcode, sout, eout
 #END smr_build
 
-def concurrentqueue_build(**kwargs):
+def concurrentqueue_build(**kw):
     '''
     a single header file - just clone and use
     '''
-    url = kwargs.get(CCQUEUE).get('url')
-    path = kwargs.get(CCQUEUE).get('path')
-    commit = kwargs.get(CCQUEUE).get('commit')
-    shallow = kwargs.get(CCQUEUE).get('shallow')
-    ret = git_clone(url, path, commit=commit, shallow=shallow)
-    return ret
+    url = kw.get(CCQUEUE).get('url')
+    src = kw.get(CCQUEUE).get('src')
+    commit = kw.get(CCQUEUE).get('commit')
+    shallow = kw.get(CCQUEUE).get('shallow')
+    rcode, sout, eout = git_clone(url, src, shallow=shallow)
+    return rcode, sout, eout
 #END concurrentqueue_build
 
 def env_check(**cfg):
     '''
     verify all pre-requisit packages/tools are present
 
-    :param dict cfg
+    args:
+      - cfg
     '''
     for env in cfg.get('env.config',[]):
         if ENV in env.get('env', []):
@@ -638,6 +722,29 @@ def env_check(**cfg):
                 ret = proc_run(cmd)
             break
 #END env_check
+
+def get_sysroot():
+    '''
+    check if the compiler was configured with_sysroot
+    '''
+    ST = '[get_sysroot]'
+    sysroot = None
+    gcc = shutil.which('gcc')
+    if gcc:
+        print(f'{ST} using {gcc}')
+        cmd = ['gcc', '-print-sysroot']
+        rcode, sysroot, eout = proc_run(cmd, capture=True)
+        if rcode:
+            return None, eout
+        print(f'{ST} sysroot: {sysroot}')
+        if not sysroot:
+            eout = f'{ST} sysroot is not defined'
+            print(eout)
+        return sysroot, eout
+    else:
+        eout = f'{ST} no gcc found'
+        print(eout)
+        return sysroot, eout
 
 modfunc['git_install'] = git_install
 modfunc['conda_install'] = conda_install
@@ -662,9 +769,14 @@ if __name__ == "__main__":
     optpar = OptionParser()
     optpar.add_option('-n', '--name', dest='name', 
         help='Package to build/process e.g. sortmerna | zlib | rocksdb | rapidjson | conda | all')
+    optpar.add_option('--toolchain-config', dest='toolchain', help='CMake toolchain file')
+    optpar.add_option('--zlib-src', dest='zlib_src', help='ZLib source directory')
+    optpar.add_option('--zlib-build', dest='zlib_build', help='ZLib cmake build directory')
     optpar.add_option('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
     optpar.add_option('--zlib-git', action="store_true", help='use zlib git repo as source. Otherwise tarball')
-    optpar.add_option('--rocksdb-dist', dest='rocksdb_dist', help='ROcksDB installation directory')
+    optpar.add_option('--rocksdb-dist', dest='rocksdb_dist', help='RocksDB installation directory')
+    optpar.add_option('--rocksdb-src', dest='rocksdb_src', help='RocksDB sources directory')
+    optpar.add_option('--rocksdb-build', dest='rocksdb_build', help='RocksDB cmake build directory')
     optpar.add_option('--rocksdb-git', action="store_true", help='use rocksdb git repo as source. Otherwise tarball')
     optpar.add_option('--build-dev', action="store_true", help='run build in development mode using git repos')
     optpar.add_option('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
@@ -696,65 +808,85 @@ if __name__ == "__main__":
     print(f'{ST} loading configuration from 3rdparty.jinja')
     envjn = Environment(loader=FileSystemLoader('.'), trim_blocks=True, lstrip_blocks=True)
     thirdparty_jinja = envjn.get_template('3rdparty.jinja')
+    vars = {}
+    jinja_str = thirdparty_jinja.render(vars)
+    config = yaml.load(jinja_str, Loader=yaml.FullLoader) # render jinja template
+    
+    if opts.toolchain:
+        config['toolchain'] = opts.toolchain
+       
     # zlib
-    vars = { 'zlib_dist': opts.zlib_dist} if opts.zlib_dist else {}
+    if opts.zlib_src:
+        config['zlib']['src'] = opts.zlib_src  # sources location
+        
+    if opts.zlib_dist:
+        config['zlib']['dist'] = opts.zlib_dist  # installation dir (distro)
+    else:
+        config['zlib']['dist'] = f'build/{config['zlib']['src']}/dist'
+        
+    if opts.zlib_git or opts.build_dev:
+        config['zlib']['is_git'] = True  # indicate if the sources are a git repo
+
     # rocksdb
+    if opts.rocksdb_src:
+        config['rocksdb']['src'] = opts.rocksdb_src
+        
     if opts.rocksdb_dist:
-        vars['rocksdb_dist'] = opts.rocksdb_dist
+        config['rocksdb']['dist'] = opts.rocksdb_dist
+    else:
+        config['rocksdb']['dist'] = f'build/{config['rocksdb']['src']}/dist'
+        
+    if opts.rocksdb_git or opts.build_dev:
+        config['rocksdb']['is_git'] = True
+        
     # concurrentqueue
     if opts.concurrentqueue_dist:
-        vars['concurrentqueue_dist'] = opts.concurrentqueue_dist
+        config['concurrentqueue']['dist'] = opts.concurrentqueue_dist
+    else:
+        config['concurrentqueue']['dist'] = f'{config['concurrentqueue']['src']}'
+        
+    if opts.vb:
+        config['vb'] = True
+    if opts.loglevel:
+        config['loglevel'] = opts.loglevel
+    elif opts.trace:
+        config['trace'] = True
 
-    jinja_str = thirdparty_jinja.render(vars)
-    third_party_data = yaml.load(jinja_str, Loader=yaml.FullLoader) # render jinja template
-    # set zlib and rocksdb default roots if not provided through options
-    if not third_party_data.get('zlib',{}).get('dist'):
-        pp = third_party_data['zlib']['path']
-        third_party_data['zlib']['dist'] = os.path.abspath(f'build/{pp}/dist').replace('\\', '/')
-    if not third_party_data.get('rocksdb',{}).get('dist'):
-        pp = third_party_data['rocksdb']['path']
-        third_party_data['rocksdb']['dist'] = os.path.abspath(f'build/{pp}/dist').replace('\\', '/')
-    if not third_party_data.get('concurrentqueue',{}).get('dist'):
-        pp = third_party_data['concurrentqueue']['path']
-        third_party_data['concurrentqueue']['dist'] = os.path.abspath(f'{pp}').replace('\\', '/')
-    
     opts.name = opts.name or ALL
-    if opts.name in [ALL]:
+    if opts.name in ALL:
         if opts.clean:
-            ret = clean('build')
+            rcode, sout, eout = clean('build')
         if not opts.cmake_preset:
             opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
-        kw = third_party_data.get(ZLIB,{})
-        if opts.zlib_git or opts.build_dev:
-            kw['is_git'] = True
-        ret = zlib_build(**kw)
-        if ret['retcode'] == 0:
-            if opts.rocksdb_git or opts.build_dev:
-                third_party_data['rocksdb']['is_git'] = True
-            ret = rocksdb_build(**third_party_data) # ROCKS_VER, cfg=env
-        if ret['retcode'] == 0:
-            ret = concurrentqueue_build(**third_party_data)
-        if ret['retcode'] == 0:
-            ret = smr_build(**third_party_data)
+
+        rcode, outl, errl = zlib_build(**config)
+        if rcode == 0:
+            rcode, sout, eout = rocksdb_build(**config) # ROCKS_VER, cfg=env
+        if rcode == 0:
+            ret = concurrentqueue_build(**config)
+        if rcode == 0:
+            btype = opts.btype or 'release'
+            rcode, sout, eout = smr_build(btype=btype, **config)
     elif opts.name == ZLIB:
-        kw = third_party_data.get(ZLIB,{})
-        zlib_build(**kw)
+        kw = config.get(ZLIB,{})
+        rcode, outl, errl = zlib_build(**config)
     elif opts.name == ROCKS:
         if opts.clean:
             ...
-        rocksdb_build(**third_party_data)
+        rocksdb_build(**config)
     elif opts.name in [SMR]:
         if opts.clean:
             ...
-        smr_build(**third_party_data)
+        btype = opts.btype or 'release'
+        smr_build(btype=btype, **config)
     elif opts.name == CCQUEUE: 
-        concurrentqueue_build(**third_party_data)
+        concurrentqueue_build(**config)
     elif opts.name == DIRENT: 
-        url = third_party_data[DIRENT].get('url')
-        path = third_party_data[DIRENT].get('path')
-        commit = third_party_data[DIRENT].get('commit')
-        shallow = third_party_data[DIRENT].get('shallow')
-        git_clone(url, path, commit=commit, shallow=shallow) 
+        url = config[DIRENT].get('url')
+        path = config[DIRENT].get('src')
+        commit = config[DIRENT].get('commit')
+        shallow = config[DIRENT].get('shallow')
+        git_clone(url, path, shallow=shallow) 
     elif opts.name == CMAKE: 
         if opts.clone:
             ... #git_clone(env[CMAKE]['url'], LIB_DIR)
