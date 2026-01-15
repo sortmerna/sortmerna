@@ -136,11 +136,12 @@ SAMF    = None
 KVDB_DIR = None
 IDX_DIR  = None
 
-def run(cmd, cwd=None, capture=False):
+def run_test(cmd, cwd=None, capture=False):
     '''
+    run a test configured in test.jinja
     '''
     ST = '[run]'
-    ret = {'retcode':0, 'stdout':None, 'stderr':None}
+    rcode, outl, errl = 0, [], []
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
     cmds = ' '.join(cmd)
@@ -152,29 +153,29 @@ def run(cmd, cwd=None, capture=False):
     # cmake configure and generate
     #kw = {'stdout':subprocess.PIPE, 'stderr':subprocess.PIPE} if capture else {}
     try:
-        if cwd and not os.path.exists(cwd):
+        if cwd and not Path(cwd).exists():
             os.makedirs(cwd)
             proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
         else:
             proc = subprocess.run(cmd, capture_output=capture)
 
-        ret['retcode'] = proc.returncode
+        rcode = proc.returncode
         if capture:
-            ret['stdout'] = proc.stdout
-            ret['stderr'] = proc.stderr
+            outl = proc.stdout.decode().strip()
+            errl = proc.stderr.decode().strip()
         #proc = subprocess.run(cmd, cwd=build_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as err:
         print(err)
-        ret['retcode'] = 1
-        ret['stderr'] = err
-    except:
-        for info in sys.exc_info(): print(info)
-        ret['retcode'] = 1
-        ret['stderr'] = sys.exc_info()
+        rcode = 1
+        errl.appedn(str(err))
+    except Exception as ex:
+        print(ex)
+        rcode = 1
+        errl.append(str(ex))
 
     rt = time.time() - start
     print(f"{ST} run time: {rt}")
-    return ret
+    return rcode, outl, errl
 #END cmake_run
 
 def get_diff(fpath0, fpath1):
@@ -1432,16 +1433,16 @@ if __name__ == "__main__":
             # clean-up the KVDB, IDX directories, and the output. 
             # May Fail if any file in the directory is open. Close the files and re-run.
             if args.clean:
-                if os.path.exists(KVDB_DIR):
+                if Path(KVDB_DIR).exists():
                     print(f'{ST} removing dir: {KVDB_DIR}')
                     shutil.rmtree(KVDB_DIR)
-                if os.path.exists(IDX_DIR):
+                if Path(IDX_DIR).exists():
                     print(f'{ST} removing dir: {IDX_DIR}')
                     shutil.rmtree(IDX_DIR)
                 break
 
             # clean previous alignments (KVDB)
-            if os.path.exists(KVDB_DIR) and not args.validate_only:
+            if Path(KVDB_DIR).exists() and not args.validate_only:
                 print(f'{ST} Removing KVDB dir: {KVDB_DIR}')
                 shutil.rmtree(KVDB_DIR)
 
@@ -1460,10 +1461,10 @@ if __name__ == "__main__":
             if not args.validate_only:
                 cfg[test]['cmd'].insert(0, SMR_EXE)
                 is_capture = cfg[test].get('capture', False) or args.capture
-                ret = run(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
+                rcode, outl, errl = run_test(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
 
             # validate alignment results
-            if ret.get('retcode', 0) == 0 or not cfg[test].get('failonerror', True):
+            if rcode == 0 or not cfg[test].get('failonerror', True):
                 if args.func:
                     gdict = globals().copy()
                     gdict.update(locals())
