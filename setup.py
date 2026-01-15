@@ -616,14 +616,15 @@ def smr_build(ver:str=None,
     '''
     ST = '[smr_build]'
     sysroot, eout = get_sysroot()
-    sysroot = Path(sysroot).resolve()
+    if sysroot:
+        sysroot = Path(sysroot).resolve()
     build_dir = sysroot / 'sortmerna/build' if sysroot else 'build'
     rocksdb_dist = (sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else 
                     kw[ROCKS].get('dist') or Path(f'build/{kw.get(ROCKS).get('src')}/dist').absolute())
     zlib_dist = (sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else 
                  kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute())
     conque_home = kw[CCQUEUE].get('dist') or kw[CCQUEUE].get('src')
-    install_dir = Path(build_dir) / 'dist'
+    install_dir = Path(build_dir) / 'dist' if sysroot else 'dist'
     
     if is_checkout and ver and Path('.git').exists():
         cmd = ['git', 'checkout', ver]
@@ -682,10 +683,10 @@ def smr_build(ver:str=None,
 
     # test  CMAKE_INSTALL_PREFIX/bin/sortmerna --version
     exe = 'sortmerna.exe' if IS_WIN else 'sortmerna'
-    cmd = [ f'{build_dir}/dist/bin/{exe}', '--version' ]
+    cmd = [ f'{install_dir}/bin/{exe}', '--version' ]
     proc_run(cmd)
     
-    cmd = [ f'{build_dir}/dist/bin/{exe}', '-h' ]
+    cmd = [ f'{install_dir}/bin/{exe}', '-h' ]
     proc_run(cmd)
     return rcode, sout, eout
 #END smr_build
@@ -864,7 +865,8 @@ if __name__ == "__main__":
         if rcode == 0:
             ret = concurrentqueue_build(**config)
         if rcode == 0:
-            rcode, sout, eout = smr_build(**config)
+            btype = opts.btype or 'release'
+            rcode, sout, eout = smr_build(btype=btype, **config)
     elif opts.name == ZLIB:
         kw = config.get(ZLIB,{})
         rcode, outl, errl = zlib_build(**config)
@@ -875,7 +877,8 @@ if __name__ == "__main__":
     elif opts.name in [SMR]:
         if opts.clean:
             ...
-        smr_build(**config)
+        btype = opts.btype or 'release'
+        smr_build(btype=btype, **config)
     elif opts.name == CCQUEUE: 
         concurrentqueue_build(**config)
     elif opts.name == DIRENT: 
