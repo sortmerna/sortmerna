@@ -383,7 +383,7 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 							init_destroy(&profile);
 
 						// check alignment passes the threshold
-						is_aligned = (result != 0 && result->score1 >= refstats.minimal_score[index.index_num]);
+						is_aligned = (result != 0 && result->score1 > refstats.minimal_score[index.index_num]);
 						if (is_aligned)
 						{
 							if (result->score1 == max_SW_score) 
