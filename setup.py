@@ -362,27 +362,25 @@ def proc_run(cmd:list, cwd:str=None, capture:bool=False) -> tuple:
     # check executable
     if shutil.which(cmd[0]):
         try:
-            if cwd:
-                if not Path(cwd).exists():
-                    Path(cwd).mkdir(parents=True)
-                if sys.version_info[1] > 6:
-                    proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
-                else:
-                    proc = subprocess.run(cmd, cwd=cwd)
+            if cwd and not Path(cwd).exists():
+                Path(cwd).mkdir(parents=True)
+            cwd = cwd or '.'
+            if sys.version_info[1] > 6:
+                proc = subprocess.run(cmd, cwd=cwd, capture_output=capture)
             else:
-                if sys.version_info[1] > 6:
-                    proc = subprocess.run(cmd, capture_output=capture)
-                else:
-                    proc = subprocess.run(cmd)
+                proc = subprocess.run(cmd, cwd=cwd)
 
             if proc.returncode:
-                for info in sys.exc_info(): print(info)
+                for info in sys.exc_info():
+                    print(info)
             rcode = proc.returncode
             if capture:
                 if proc.stdout:
                     sout = proc.stdout.decode('utf-8').strip()
+                    print(f'{ST} {sout}')
                 if proc.stderr:
                     eout = proc.stderr.decode('utf-8').strip()
+                    print(f'{ST} {eout}')
         except OSError as err:
             print(err)
             rcode = 1
@@ -675,23 +673,35 @@ def smr_build(ver:str=None,
     elif kw.get('trace'):
         cmd.append('--trace')
     cmd.append('--fresh')
-    proc_run(cmd)
+    rcode, sout, eout = proc_run(cmd, capture=True)
+    if rcode:
+        return rcode,sout, eout
 
     # build and install
     cmd = [ 'cmake', '--build', str(build_dir), '--preset', preset, '--target', 'install' ]
-    proc_run(cmd)
+    rcode, sout, eout = proc_run(cmd, capture=True)
+    if rcode:
+        return rcode,sout, eout
 
     # generate installation package
     cmd = [ 'cmake', '--build', str(build_dir), '--preset', preset, '--target', 'package' ]
-    proc_run(cmd)
+    rcode, sout, eout = proc_run(cmd, capture=True)
+    if rcode:
+        return rcode,sout, eout
 
     # test  CMAKE_INSTALL_PREFIX/bin/sortmerna --version
     exe = 'sortmerna.exe' if IS_WIN else 'sortmerna'
-    cmd = [ f'{install_dir}/bin/{exe}', '--version' ]
-    proc_run(cmd)
-    
-    cmd = [ f'{install_dir}/bin/{exe}', '-h' ]
-    proc_run(cmd)
+    exef = Path(install_dir) / 'bin' / exe
+    if not exef.exists():
+        msg = f'{ST} file {exef} not found'
+        print(msg)
+        return 1,'',msg
+    else:
+        cmd = [ str(exef), '--version' ]
+        rcode, sout, eout = proc_run(cmd, capture=True)
+        if not rcode:
+            cmd = [ str(exef), '-h' ]
+            rcode, sout, eout = proc_run(cmd, capture=True)
     return rcode, sout, eout
 #END smr_build
 
