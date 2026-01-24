@@ -12,15 +12,38 @@ permissions:
     
 jobs:
   build-osx:
-    name: build on macos
-    runs-on: macos-latest
+    name: build on macos arm64
+    runs-on: macos-latest  # arm64 as of 20260124 Sat https://github.com/actions/runner-images
+
     steps:
     - name: git checkout
       uses: actions/checkout@v4
+
+    - name: install gcc-11
+      run: |
+        sudo apt update
+        sudo apt install -y gcc-11 g++-11
+
+    #- name: set gcc-11 as default
+    #  run: |
+    #    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+    #    sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+
+    - name: verify gcc
+      run: gcc --version
+
+    - name: install conda
+      run: |
+        wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+        bash Miniforge3-$(uname)-$(uname -m).sh -b -p "${HOME}/conda"
+        source "${HOME}/conda/etc/profile.d/conda.sh"
+        source "${HOME}/conda/etc/profile.d/mamba.sh"
+        #conda activate
+        eval "$(conda shell.bash activate)"
+        mamba install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+
     - name: build
       run: |
-        eval "$(conda shell.bash activate)"
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja
         python setup.py -n all
         echo "=== listing dist/ ==="
         ls -l ./dist
