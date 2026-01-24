@@ -38,6 +38,10 @@ jobs:
 
     - name: build
       run: |
+        source "${HOME}/conda/etc/profile.d/conda.sh"
+        source "${HOME}/conda/etc/profile.d/mamba.sh"
+        conda activate
+        conda env list
         python setup.py -n all
         echo "=== listing dist/ ==="
         ls -l ./dist
