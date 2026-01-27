@@ -1,4 +1,4 @@
-name: build on macos
+name: build on macos  # with AppleClang
 
 on:
   workflow_dispatch:
@@ -19,12 +19,12 @@ jobs:
     - name: git checkout
       uses: actions/checkout@v4
 
-    - name: install gcc-11
-      run: |
-        brew install gcc@11
+    #- name: install gcc-11
+    #  run: |
+    #    brew install gcc@11
 
-    - name: verify gcc
-      run: gcc --version
+    #- name: verify gcc
+    #  run: gcc --version
 
     - name: install conda
       run: |
