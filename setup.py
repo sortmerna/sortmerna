@@ -645,7 +645,7 @@ def smr_build(ver:str=None,
         presets = [l.strip() for l in ol if l.strip()][1:]
 
     # cmake preset e.g. LIN_release | WIN_release
-    preset = f'LIN_{btype}' if IS_LNX or IS_WSL else f'WIN_{btype}'
+    preset = f'LIN_{btype}' if IS_LNX or IS_WSL or IS_OSX else f'WIN_{btype}'
     if preset not in presets:
         msg = f'{ST} preset {preset} not found in available presets: {presets}'
         print(msg)
