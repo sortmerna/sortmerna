@@ -31,14 +31,40 @@ jobs:
     steps:
     - name: git checkout
       uses: actions/checkout@v4
-    - name: build non-windows
-      if: runner.os != 'Windows'
+
+    - name: build on linux
+      if: runner.os == 'Linux'
       run: |
+        sudo apt update
+        sudo apt install -y gcc-11 g++-11
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+        gcc --version
         eval "$(conda shell.bash activate)"
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
         python setup.py -n all
         echo "=== listing dist/ ==="
         ls -l ./dist
+
+    - name: build on macOS
+      # latest macos is arm64 based
+      if: runner.os == 'macOS'
+      run: |
+        wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+        bash Miniforge3-$(uname)-$(uname -m).sh -b -p "${HOME}/conda"
+        source "${HOME}/conda/etc/profile.d/conda.sh"
+        source "${HOME}/conda/etc/profile.d/mamba.sh"
+        #conda activate
+        eval "$(conda shell.bash activate)"
+        mamba install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+        source "${HOME}/conda/etc/profile.d/conda.sh"
+        source "${HOME}/conda/etc/profile.d/mamba.sh"
+        conda activate
+        conda env list
+        python setup.py -n all
+        echo "=== listing dist/ ==="
+        ls -l ./dist
+
     - name: build windows
       if: runner.os == 'Windows'
       env:
@@ -47,7 +73,7 @@ jobs:
         & "$env:CONDA/shell/condabin/conda-hook.ps1"
         & "$env:programfiles/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/Launch-VsDevShell.ps1" -arch amd64
         conda activate $env:CONDA
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
         echo "cmake version: $(cmake --version)"
         pushd $env:GITHUB_WORKSPACE
         echo 'running python setup.py ... in $(pwd)'
@@ -87,6 +113,7 @@ jobs:
     steps:
     - name: git checkout
       uses: actions/checkout@v4
+
     - name: Build
       uses: uraimo/run-on-arch-action@v2
       with:
