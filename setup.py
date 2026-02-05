@@ -622,8 +622,9 @@ def smr_build(ver:str=None,
     if sysroot:
         sysroot = Path(sysroot).resolve()
     build_dir = sysroot / 'sortmerna/build' if sysroot else 'build'
+    rocksdb_src = kw.get(ROCKS).get('src')
     rocksdb_dist = (sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else 
-                    kw[ROCKS].get('dist') or Path(f'build/{kw.get(ROCKS).get('src')}/dist').absolute())
+                    kw[ROCKS].get('dist') or Path(f'build/{rocksdb_src}/dist').absolute())
     zlib_dist = (sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else 
                  kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute())
     conque_home = kw[CCQUEUE].get('dist') or kw[CCQUEUE].get('src')
