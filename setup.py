@@ -499,7 +499,7 @@ def rocksdb_modify_3party_zlib(link_type='t1', **kwargs):
     link_type = kwargs.get(ROCKS,{}).get('link.type', {}).get('windows',{}).get(link_type,{})
     zlib_rel = link_type.get('zlib.release')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_RELEASE']
     zlib_dbg = link_type.get('zlib.debug')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_DEBUG']
-    file3p = os.path.join(kwargs.get(ROCKS).get('path'), 'thirdparty.inc')
+    file3p = Path(kwargs.get(ROCKS).get('src')) / 'thirdparty.inc'
     zlib_dist = kwargs.get('zlib',{}).get('dist')
 
     for line in fileinput.FileInput(file3p, inplace=True):
