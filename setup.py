@@ -537,9 +537,10 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
     build_dir = sysroot / 'sortmerna' / kw[ROCKS].get('build') if sysroot else kw[ROCKS].get('build')
     dist_dir = (sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else kw[ROCKS].get('dist') 
                                                             or Path(f'build/{src}/dist').absolute())
+    zlib_src = kw[ZLIB].get('src')
     zlib_dist = (sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot 
                  else Path(kw[ZLIB].get('dist')).absolute() 
-                    or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute())
+                    or Path(f'build/{zlib_src}/dist').absolute())
     is_git = kw.get(ROCKS).get('is_git', False)
     is_checkout = kw.get(ROCKS).get('is_checkout', False)
     url = kw.get(ROCKS).get('url') if is_git else kw.get(ROCKS).get('url2')
