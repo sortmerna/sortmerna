@@ -632,7 +632,7 @@ def smr_build(ver:str=None,
     rocksdb_dist = sysroot / 'sortmerna' / kw[ROCKS].get('dist') if is_conda_cpp and sysroot \
                         else kw[ROCKS].get('dist') or Path(f'build/{rocksdb_src}/dist').absolute()
     zlib_dist = sysroot / 'sortmerna' / kw[ZLIB].get('dist') if is_conda_cpp and sysroot \
-                    else kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute()
+                    else kw[ZLIB].get('dist') or Path(f"build/{kw[ZLIB].get('src')}/dist").absolute()
     conque_home = kw[CCQUEUE].get('dist') or kw[CCQUEUE].get('src')
     install_dir = Path(build_dir) / 'dist' if is_conda_cpp and sysroot else 'dist'
     
