@@ -845,7 +845,7 @@ if __name__ == "__main__":
     if opts.zlib_dist:
         config['zlib']['dist'] = opts.zlib_dist  # installation dir (distro)
     else:
-        config['zlib']['dist'] = f'build/{config['zlib']['src']}/dist'
+        config['zlib']['dist'] = f"build/{config['zlib']['src']}/dist"
         
     if opts.zlib_git or opts.build_dev:
         config['zlib']['is_git'] = True  # indicate if the sources are a git repo
@@ -857,7 +857,7 @@ if __name__ == "__main__":
     if opts.rocksdb_dist:
         config['rocksdb']['dist'] = opts.rocksdb_dist
     else:
-        config['rocksdb']['dist'] = f'build/{config['rocksdb']['src']}/dist'
+        config['rocksdb']['dist'] = f"build/{config['rocksdb']['src']}/dist"
         
     if opts.rocksdb_git or opts.build_dev:
         config['rocksdb']['is_git'] = True
@@ -866,7 +866,7 @@ if __name__ == "__main__":
     if opts.concurrentqueue_dist:
         config['concurrentqueue']['dist'] = opts.concurrentqueue_dist
     else:
-        config['concurrentqueue']['dist'] = f'{config['concurrentqueue']['src']}'
+        config['concurrentqueue']['dist'] = f"{config['concurrentqueue']['src']}"
         
     if opts.vb:
         config['vb'] = True
