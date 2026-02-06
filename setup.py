@@ -533,7 +533,7 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
     '''
     ST = '[rocksdb_build]'
     print(f'{ST} started')
-    is_conda_cpp = kw.get('conda_cpp')
+    is_conda_cpp = kw.get('conda_cpp', False)
     sysroot, eout = get_sysroot() if is_conda_cpp else None, None
     if is_conda_cpp and sysroot:
         sysroot = Path(sysroot).resolve()
@@ -623,7 +623,7 @@ def smr_build(ver:str=None,
                             t3 all dynamic
     '''
     ST = '[smr_build]'
-    is_conda_cpp = kw.get('conda_cpp')
+    is_conda_cpp = kw.get('conda_cpp', False)
     sysroot, eout = get_sysroot() if is_conda_cpp else None, None
     if is_conda_cpp and sysroot:
         sysroot = Path(sysroot).resolve()
