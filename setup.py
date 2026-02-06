@@ -411,15 +411,18 @@ def zlib_build(**kw):
       - is_git bool           use git as source. Otherwise - archive (.tar.gz)
     '''
     outl, errl = [], []
-    sysroot = kw.get('sysroot')
-    build_dir = Path(sysroot) / 'sortmerna' / kw[ZLIB].get('build') if sysroot else kw[ZLIB].get('build')
-    dist_dir = Path(sysroot) / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else kw[ZLIB].get('dist') or Path(f'build/{src}/dist').absolute()
     is_git = kw[ZLIB].get('is_git', False)
     is_checkout = kw[ZLIB].get('is_checkout', True)
+    is_conda_cpp = kw.get('conda_cpp', False)
     url = kw[ZLIB].get('url') if is_git else kw[ZLIB].get('url2')
     src = kw[ZLIB].get('src')
+    sysroot = kw.get('sysroot') if is_conda_cpp else None
+    build_dir = Path(sysroot) / 'sortmerna' / kw[ZLIB].get('build') if is_conda_cpp and sysroot \
+                else kw[ZLIB].get('build')
+    dist_dir = Path(sysroot) / 'sortmerna' / kw[ZLIB].get('dist') if is_conda_cpp and sysroot \
+                else kw[ZLIB].get('dist') or Path(f'build/{src}/dist').absolute()
     commit = kw[ZLIB].get('commit') or 'master'
-    shallow = kw[ZLIB].get('shallow')
+    #shallow = kw[ZLIB].get('shallow')
     btype = kw[ZLIB].get('cmake_build_type', 'Release')
     gen = kw[ZLIB].get('cmake_gen', 'Ninja Multi-Config')
     rcode, sout, eout = git_clone(url, src) if is_git else load_tar(url, path) # URL_ZLIB
@@ -530,17 +533,19 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
     '''
     ST = '[rocksdb_build]'
     print(f'{ST} started')
-    sysroot, eout = get_sysroot()
-    if sysroot:
+    is_conda_cpp = kw.get('conda_cpp')
+    sysroot, eout = get_sysroot() if is_conda_cpp else None, None
+    if is_conda_cpp and sysroot:
         sysroot = Path(sysroot).resolve()
     src = kw.get(ROCKS).get('src')
-    build_dir = sysroot / 'sortmerna' / kw[ROCKS].get('build') if sysroot else kw[ROCKS].get('build')
-    dist_dir = (sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else kw[ROCKS].get('dist') 
-                                                            or Path(f'build/{src}/dist').absolute())
+    build_dir = sysroot / 'sortmerna' / kw[ROCKS].get('build') if is_conda_cpp and sysroot \
+                else kw[ROCKS].get('build')
+    dist_dir = sysroot / 'sortmerna' / kw[ROCKS].get('dist') if is_conda_cpp and sysroot \
+                else kw[ROCKS].get('dist') or Path(f'build/{src}/dist').absolute()
     zlib_src = kw[ZLIB].get('src')
-    zlib_dist = (sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot 
-                 else Path(kw[ZLIB].get('dist')).absolute() 
-                    or Path(f'build/{zlib_src}/dist').absolute())
+    zlib_dist = sysroot / 'sortmerna' / kw[ZLIB].get('dist') if is_conda_cpp and sysroot \
+                 else Path(kw[ZLIB].get('dist')).absolute() \
+                    or Path(f'build/{zlib_src}/dist').absolute()
     is_git = kw.get(ROCKS).get('is_git', False)
     is_checkout = kw.get(ROCKS).get('is_checkout', False)
     url = kw.get(ROCKS).get('url') if is_git else kw.get(ROCKS).get('url2')
@@ -618,17 +623,18 @@ def smr_build(ver:str=None,
                             t3 all dynamic
     '''
     ST = '[smr_build]'
-    sysroot, eout = get_sysroot()
-    if sysroot:
+    is_conda_cpp = kw.get('conda_cpp')
+    sysroot, eout = get_sysroot() if is_conda_cpp else None, None
+    if is_conda_cpp and sysroot:
         sysroot = Path(sysroot).resolve()
-    build_dir = sysroot / 'sortmerna/build' if sysroot else 'build'
+    build_dir = sysroot / 'sortmerna/build' if is_conda_cpp and sysroot else 'build'
     rocksdb_src = kw.get(ROCKS).get('src')
-    rocksdb_dist = (sysroot / 'sortmerna' / kw[ROCKS].get('dist') if sysroot else 
-                    kw[ROCKS].get('dist') or Path(f'build/{rocksdb_src}/dist').absolute())
-    zlib_dist = (sysroot / 'sortmerna' / kw[ZLIB].get('dist') if sysroot else 
-                 kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute())
+    rocksdb_dist = sysroot / 'sortmerna' / kw[ROCKS].get('dist') if is_conda_cpp and sysroot \
+                        else kw[ROCKS].get('dist') or Path(f'build/{rocksdb_src}/dist').absolute()
+    zlib_dist = sysroot / 'sortmerna' / kw[ZLIB].get('dist') if is_conda_cpp and sysroot \
+                    else kw[ZLIB].get('dist') or Path(f'build/{kw[ZLIB].get('src')}/dist').absolute()
     conque_home = kw[CCQUEUE].get('dist') or kw[CCQUEUE].get('src')
-    install_dir = Path(build_dir) / 'dist' if sysroot else 'dist'
+    install_dir = Path(build_dir) / 'dist' if is_conda_cpp and sysroot else 'dist'
     
     if is_checkout and ver and Path('.git').exists():
         cmd = ['git', 'checkout', ver]
@@ -816,6 +822,7 @@ if __name__ == "__main__":
     optpar.add_option('--dist-dir', dest='dist_dir', help='Distro directory.')
     optpar.add_option('--local-linux', dest='local_linux', action='store_true', help='Perform the build on local source files in the current working directory.')
     optpar.add_option('--cmake-preset', dest='cmake_preset', help='CMake preset')
+    optpar.add_option('--use-conda-cpp', action="store_false", help='Use Conda C++ tools for building')
     (opts, args) = optpar.parse_args()
 
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
@@ -867,6 +874,8 @@ if __name__ == "__main__":
         config['loglevel'] = opts.loglevel
     elif opts.trace:
         config['trace'] = True
+    if opts.use_conda_cpp:
+        config['conda_cpp'] = True
 
     opts.name = opts.name or ALL
     if opts.name in ALL:
