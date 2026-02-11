@@ -351,9 +351,9 @@ def proc_run(cmd:list, cwd:str=None, capture:bool=False) -> tuple:
     rcode, sout, eout = True, None, None
     spr = '==========================================================='
 
-    cwdp = cwd or Path().resolve()
+    cwd = cwd or Path().resolve()
     cmdstr = ' '.join(cmd)
-    msg = f'{ST} Running in {cwdp}:\n{spr}\n{cmdstr}\n{spr}'
+    msg = f'{ST} Running in {cwd}:\n{spr}\n{cmdstr}\n{spr}'
     print(msg)
 
     start = time.time()
@@ -484,13 +484,14 @@ def zlib_build(**kw):
 #END rapidjson_build
 """
 
-def rocksdb_modify_3party_zlib(link_type='t1', **kwargs):
+def rocksdb_modify_3party_zlib(link_type:str='t1', **kwargs):
     '''
     modify 'thirdparty.inc' config file provided with RocksDb distro to point to zlib installation
     only used on Windows
 
-    :param str ptype  library linkage type as in 'env.jinja.yaml:rocksdb:link:win:t3'
-    :param dict cfg   build configuration from 'env.jinja.yaml'
+    args:
+      - ptype  library linkage type as in 'env.jinja.yaml:rocksdb:link:win:t3'
+      - cfg    build configuration from 'env.jinja.yaml'
 
     '''
     ST = '[rocksdb_modify_3party_zlib]'
@@ -498,7 +499,7 @@ def rocksdb_modify_3party_zlib(link_type='t1', **kwargs):
         print('{} not used on Non-Windows'.format(ST))
         return
 
-    print('{} fixing \'thirdparty.inc\' for linkage type [{}] on Windows'.format(ST, link_type))
+    print(f'{ST} fixing \'thirdparty.inc\' for linkage type \'{link_type}\' on Windows')
     link_type = kwargs.get(ROCKS,{}).get('link.type', {}).get('windows',{}).get(link_type,{})
     zlib_rel = link_type.get('zlib.release')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_RELEASE']
     zlib_dbg = link_type.get('zlib.debug')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_DEBUG']
@@ -550,7 +551,7 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
     is_checkout = kw.get(ROCKS).get('is_checkout', False)
     url = kw.get(ROCKS).get('url') if is_git else kw.get(ROCKS).get('url2')
     commit = kw.get(ROCKS).get('commit')
-    shallow = kw.get(ROCKS).get('shallow')
+    #shallow = kw.get(ROCKS).get('shallow')
     btype = kw.get(ROCKS).get('cmake_build_type', 'Release')
     presets_file = kw.get(ROCKS).get('preset')
     rcode, sout, eout = git_clone(url, src) if is_git else load_tar(url, src)
@@ -581,13 +582,16 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
 
     bt = btype.lower()
     cmd = [
-        'cmake', '-S', src, '-B', str(build_dir),
+        'cmake', '-S', src, '-B', Path(build_dir).as_posix(),
         '--preset', f'{MY_OS}_{bt}',
-        f'-DCMAKE_INSTALL_PREFIX={str(dist_dir)}',
-        f'-DZLIB_ROOT={str(zlib_dist)}',
+        f'-DCMAKE_INSTALL_PREFIX:PATH={Path(dist_dir).as_posix()}',
+        f'-DZLIB_ROOT:PATH={Path(zlib_dist).as_posix()}',
         f'-DCMAKE_POLICY_DEFAULT_CMP0074=NEW'
     ]
-    if sysroot:
+    # 20260210 Tue  warning: Policy CMP194 is not set: MSVC is not an assembler for language ASM.
+    if IS_WIN:
+        cmd.append(f'-DCMAKE_POLICY_DEFAULT_CMP194=OLD')
+    if is_conda_cpp and sysroot:
         toolchain = Path(kw.get('toolchain')) if kw.get('toolchain') else Path.cwd() / 'cmake/conda_tc.cmake'
         if toolchain.exists():
             cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={str(toolchain)}')
@@ -662,7 +666,7 @@ def smr_build(ver:str=None,
     # generate CMake configuration
     # cmake -S . --preset LIN_Release
     cmd = ['cmake', '-S', '.', '-B', str(build_dir), '--preset', preset]
-    if sysroot:
+    if is_conda_cpp and sysroot:
         toolchain = Path(kw.get('toolchain')) if kw.get('toolchain') else Path.cwd() / 'cmake/conda_tc.cmake'
         if toolchain.exists():
             cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={str(toolchain)}')
