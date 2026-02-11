@@ -2,6 +2,7 @@
 # mamba create -y --file conda_build_env.yaml
 name: sortmerna-build-nogcc  # 
 dependencies:
+#- python=3.11
 - pyyaml
 - jinja2
 - requests
