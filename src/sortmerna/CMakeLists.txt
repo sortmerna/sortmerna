@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
-include(FindZLIB)
+#include(FindZLIB)
 if (DEFINED CACHE{ZLIB_ROOT})
 	message("searching ZLIB in ${ZLIB_ROOT}")
 else()
