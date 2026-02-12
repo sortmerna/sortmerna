@@ -46,7 +46,8 @@
                 "WITH_XPRESS" : true,
                 "PORTABLE" : false,
                 "WITH_MD_LIBRARY" : true,
-                "ROCKSDB_INSTALL_ON_WINDOWS" : true
+                "ROCKSDB_INSTALL_ON_WINDOWS" : true,
+                "ROCKSDB_SKIP_THIRDPARTY": false
             }
         },
         {

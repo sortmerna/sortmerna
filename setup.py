@@ -484,7 +484,7 @@ def zlib_build(**kw):
 #END rapidjson_build
 """
 
-def rocksdb_modify_3party_zlib(link_type:str='t1', **kwargs):
+def rocksdb_modify_3party_zlib(link_type:str='t1', **kw):
     '''
     modify 'thirdparty.inc' config file provided with RocksDb distro to point to zlib installation
     only used on Windows
@@ -500,15 +500,15 @@ def rocksdb_modify_3party_zlib(link_type:str='t1', **kwargs):
         return
 
     print(f'{ST} fixing \'thirdparty.inc\' for linkage type \'{link_type}\' on Windows')
-    link_type = kwargs.get(ROCKS,{}).get('link.type', {}).get('windows',{}).get(link_type,{})
+    link_type = kw.get(ROCKS,{}).get('link.type', {}).get('windows',{}).get(link_type,{})
     zlib_rel = link_type.get('zlib.release')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_RELEASE']
     zlib_dbg = link_type.get('zlib.debug')  # cfg[ROCKS]['link']['WIN'][ptype]['ZLIB_LIB_DEBUG']
-    file3p = Path(kwargs.get(ROCKS).get('src')) / 'thirdparty.inc'
-    zlib_dist = kwargs.get('zlib',{}).get('dist')
+    file3p = Path(kw.get(ROCKS).get('src')) / 'thirdparty.inc'
+    zlib_dist = Path(kw.get('zlib',{}).get('dist')).absolute()  # absolute to avoid package finding problems
 
     for line in fileinput.FileInput(file3p, inplace=True):
         if line.startswith('set(ZLIB_HOME'):
-            line = re.sub(r'ZLIB_HOME .*\)', r'ZLIB_HOME {})'.format(zlib_dist), line, flags = re.M)
+            line = re.sub(r'ZLIB_HOME .*\)', r'ZLIB_HOME {})'.format(zlib_dist.as_posix()), line, flags = re.M)
         if line.startswith('set(ZLIB_INCLUDE'):
             line = re.sub(r'ZLIB_INCLUDE .*\)', r'ZLIB_INCLUDE ${ZLIB_HOME}/include)', line, flags = re.M)
         if line.startswith('set(ZLIB_LIB_DEBUG'):
@@ -585,12 +585,16 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
         'cmake', '-S', src, '-B', Path(build_dir).as_posix(),
         '--preset', f'{MY_OS}_{bt}',
         f'-DCMAKE_INSTALL_PREFIX:PATH={Path(dist_dir).as_posix()}',
-        f'-DZLIB_ROOT:PATH={Path(zlib_dist).as_posix()}',
         f'-DCMAKE_POLICY_DEFAULT_CMP0074=NEW'
     ]
     # 20260210 Tue  warning: Policy CMP194 is not set: MSVC is not an assembler for language ASM.
     if IS_WIN:
         cmd.append(f'-DCMAKE_POLICY_DEFAULT_CMP194=OLD')
+    else:
+        # on Win 'find_package' is not used to search for zlib, so ZLIB_ROOT is not used. 
+        # Instead 'include_directories' and THIRDPARTY_LIBS variables are used to direct
+        # the build to ZLIB's includes and libs. See 'thirdparty.inc'
+        cmd.append(f'-DZLIB_ROOT:PATH={Path(zlib_dist).as_posix()}')
     if is_conda_cpp and sysroot:
         toolchain = Path(kw.get('toolchain')) if kw.get('toolchain') else Path.cwd() / 'cmake/conda_tc.cmake'
         if toolchain.exists():
