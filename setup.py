@@ -584,7 +584,7 @@ def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release
     cmd = [
         'cmake', '-S', src, '-B', Path(build_dir).as_posix(),
         '--preset', f'{MY_OS}_{bt}',
-        f'-DCMAKE_INSTALL_PREFIX:PATH={Path(dist_dir).as_posix()}',
+        f'-DCMAKE_INSTALL_PREFIX:PATH={Path(dist_dir).absolute().as_posix()}',
         f'-DCMAKE_POLICY_DEFAULT_CMP0074=NEW'
     ]
     # 20260210 Tue  warning: Policy CMP194 is not set: MSVC is not an assembler for language ASM.
