@@ -138,11 +138,7 @@ IDX_DIR  = None
 
 def run_test(cmd, cwd=None, capture=False):
     '''
-<<<<<<< HEAD
-    run a test configured in test.jinja
-=======
     run a test confgiured in test.jinja
->>>>>>> f0b5b23 (tests modified)
     '''
     ST = '[run]'
     rcode, outl, errl = 0, [], []
@@ -165,26 +161,15 @@ def run_test(cmd, cwd=None, capture=False):
 
         rcode = proc.returncode
         if capture:
-<<<<<<< HEAD
-            outl = proc.stdout.decode().strip()
-            errl = proc.stderr.decode().strip()
-=======
             outl.append(proc.stdout.decode().strip())
             errl.append(proc.stderr.decode().strip())
->>>>>>> f0b5b23 (tests modified)
         #proc = subprocess.run(cmd, cwd=build_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as err:
         print(err)
         rcode = 1
-<<<<<<< HEAD
-        errl.appedn(str(err))
-    except Exception as ex:
-        print(ex)
-=======
         errl.append(str(err))
     except Exception as ex:
         print(str(ex))
->>>>>>> f0b5b23 (tests modified)
         rcode = 1
         errl.append(str(ex))
 
@@ -1463,11 +1448,7 @@ if __name__ == "__main__":
                 if Path(KVDB_DIR).exists():
                     print(f'{ST} removing dir: {KVDB_DIR}')
                     shutil.rmtree(KVDB_DIR)
-<<<<<<< HEAD
                 if Path(IDX_DIR).exists():
-=======
-                if Path(IDX_DIR).exists:
->>>>>>> f0b5b23 (tests modified)
                     print(f'{ST} removing dir: {IDX_DIR}')
                     shutil.rmtree(IDX_DIR)
                 break
