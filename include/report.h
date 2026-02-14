@@ -20,11 +20,11 @@
  @endparblock
 
  @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
+			   Laurent Noï¿½      laurent.noe@lifl.fr
 			   Pierre Pericard  pierre.pericard@lifl.fr
 			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
+			   Mikaï¿½l Salson    mikael.salson@lifl.fr
+			   Hï¿½lï¿½ne Touzet    helene.touzet@lifl.fr
 			   Rob Knight       robknight@ucsd.edu
 */
 
@@ -65,15 +65,15 @@ public:
 	* open report files for writing
 	* @param dbg  debug level, see 'Runopts.dbg_level'
 	*/
-	void openfw(const int& dbg=0);
+	void openfw(const unsigned& dbg=0);
 	/*
 	* open selected report file for writing
 	* @param idx  index into the array of report files
 	* @param dbg  debug level as in 'Runopts.dbg_level'
 	*/
-	void openfw(const uint32_t& idx, const int& dbg=0); // close selected report file
-	void closef(const int& dbg=0); // close report files
-	void closef(const uint32_t& idx, const int& dbg=0); // close a file
+	void openfw2(const unsigned& idx, const unsigned& dbg=0); // close selected report file
+	void closef(const unsigned& dbg=0); // close report files
+	void closef2(const unsigned& idx, const unsigned& dbg=0); // close a file given an array index
 	int finish_deflate();
 	/*
 	* strip the split suffix from the output file name 
@@ -88,7 +88,7 @@ protected:
 	std::string pid_str; // std::to_string(getpid());
 	bool is_zip; // flags the report is compressed
 	std::vector<std::string> fv; // report files
-	std::vector<std::fstream> fsv;
+	std::vector<std::fstream> fsv;  // streams for the report files
 
 	// reading compressed out files when merging the final output
 	std::vector<Izlib> vzlib_in;

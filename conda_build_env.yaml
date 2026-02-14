@@ -1,0 +1,14 @@
+# conda env for building sortmerna
+# mamba create -y --file conda_build_env.yaml
+name: sortmerna-build-nogcc  # 
+dependencies:
+#- python=3.11
+- pyyaml
+- jinja2
+- requests
+- cmake
+- ninja
+#- gcc=11.4.0
+#- gxx=11.4.0
+#- pip:
+#  -

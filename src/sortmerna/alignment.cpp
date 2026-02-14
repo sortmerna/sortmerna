@@ -360,7 +360,9 @@ void compute_lis_alignment( Read& read, Runopts& opts,
                        
 						// create profile for read
 						s_profile* profile = 0;
-						profile = ssw_init((int8_t*)(&read.isequence[0] + align_que_start), (align_length - head - tail), &read.scoring_matrix[0], 5, 2);
+						profile = ssw_init((int8_t*)(&read.isequence[0] + align_que_start), 
+                                                    (align_length - head - tail), 
+                                                    &read.scoring_matrix[0], 5, 2);
 
 						s_align* result = 0;
 
