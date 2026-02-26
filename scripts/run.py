@@ -42,6 +42,7 @@ import yaml
 import gzip
 import multiprocessing
 from argparse import ArgumentParser
+from argparse import Namespace
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
@@ -59,7 +60,7 @@ is_skbio = True
 try:
     import skbio.io
 except (ImportError, OSError) as ex:
-    print(f'\'import skbio.io\' failed: {ex}')
+    print(f'\'skbio.io\' not available - skipping: {ex}')
     is_skbio = False
 
 # globals
@@ -136,9 +137,20 @@ SAMF    = None
 KVDB_DIR = None
 IDX_DIR  = None
 
-def run_test(cmd, cwd=None, capture=False):
+def is_windows():
+    return sys.platform.startswith("win")
+
+def is_linux():
+    return sys.platform.startswith("linux")
+
+def is_darwin():
+    return sys.platform.startswith("darwin")
+
+def run_test(cmd:list, cwd=None, capture=False):
     '''
-    run a test confgiured in test.jinja
+    run a test
+    args:
+      - cmd  command to run
     '''
     ST = '[run]'
     rcode, outl, errl = 0, [], []
@@ -222,50 +234,30 @@ def to_lf(ddir):
     print('to_lf Done')
 #END to_lf
 
-def parse_log(fpath, logd={}):
+def parse_log(fpath:str):
     '''
     parse 'aligned.log' to dictionary
-
-    :param str fpath  'aligned.log' file
-    :param dict logd  log file structure (test.jinja.yaml:aligned.log)
+    args"
+      - fpath  'aligned.log' file
     '''
-    #logd = {
-    #    'cmd': ['Command', None],
-    #    'pid': ['Process pid', None],
-    #    'params': {'refs': []},
-    #    'num_reads': ['Total reads =', 0],
-    #    'results': {
-    #        'num_hits': ['Total reads passing E-value threshold', 0],
-    #        'num_fail': ['Total reads failing E-value threshold', 0],
-    #        'num_denovo': ['Total reads for de novo clustering', 0],
-    #        'min_len': ['Minimum read length', 0],
-    #        'max_len': ['Maximum read length', 0],
-    #        'mean_len': ['Mean read length', 0]
-    #    },
-    #    'coverage': [],
-    #    'num_id_cov': ['Total reads passing %%id and %%coverage thresholds', 0],
-    #    'num_otus': ['Total OTUs', 0],
-    #    'date': None
-    #}
-
+    logd = {}
     with open(fpath) as f_log:    
         for line in f_log:
-            if logd['num_reads'][0] in line:
-                logd['num_reads'][1] = int((re.split(r' = ', line)[1]).strip())
-            elif logd['results']['num_denovo'][0] in line:
-                logd['results']['num_denovo'][1] = int((re.split(r' = ', line)[1]).strip())
-            elif logd['results']['num_hits'][0] in line:
-                logd['results']['num_hits'][1] = int((re.split(r' = | \(', line)[1]).strip())
-            elif logd['results']['num_fail'][0] in line:
-                logd['results']['num_fail'][1] = int((re.split(r' = | \(', line)[1]).strip())
-            elif logd['num_id_cov'][0] in line:
+            if 'Total reads =' in line:
+                logd['num_reads'] = int((re.split(r' = ', line)[1]).strip())
+            elif 'Total reads for de novo clustering'in line:
+                logd['num_denovo'] = int((re.split(r' = ', line)[1]).strip())
+            elif 'Total reads passing E-value threshold' in line:
+                logd['num_hits'] = int((re.split(r' = | \(', line)[1]).strip())
+            elif 'Total reads failing E-value threshold' in line:
+                logd['num_fail'] = int((re.split(r' = | \(', line)[1]).strip())
+            elif 'Total reads passing %%id and %%coverage thresholds' in line:
                 # line: '..thresholds = 44223 (44.22)'
                 val = line.split('=')[1]
                 if val: val = val.split()[0].strip()
-                logd['num_id_cov'][1] = int(val)
-            elif logd['num_otus'][0] in line:
-                logd['num_otus'][1] = int((re.split(' = ', line)[1]).strip())
-
+                logd['num_id_cov'] = int(val)
+            elif 'Total OTUs' in line:
+                logd['num_otus'] = int((re.split(' = ', line)[1]).strip())
     return logd
 #END parse_log
 
@@ -383,14 +375,21 @@ def process_smr_opts(args:list):
     SAMF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.sam')
 #END process_smr_opts
 
-def process_blast(**kwarg):
+def process_blast(**kw):
     '''
-    # Check count of reads passing %id and %coverage threshold
-    # as given in aligned.blast
+    Check count of reads passing %id and %coverage threshold
+    as given in aligned.blast
     '''
-    ST = '[{}]'.format('process_blast')
-    vald = kwarg.get('validate')
+    ST = f'[process_blast]'
+    vald = kw.get('validate')
 
+    outdir = Path(get_dict_val('args:-workdir', kw))/'out'
+    #logf = outdir /'aligned.log'
+    #readf = Path(get_dict_val('args:-reads', kw)[0]).suffix
+    gzx = '.gz' if Path(get_dict_val('args:-reads', kw)[0]).suffix == '.gz' else ''
+    is_gz = bool(gzx)
+    blastf = outdir / f'aligned.blast{gzx}'
+    blast_pid_cov = outdir / 'pid_pcov.blast'
     BLAST_ID_COL = 2
     BLAST_COV_COL = 13
     num_hits_file = 0
@@ -399,25 +398,23 @@ def process_blast(**kwarg):
     n_nid_ycov = 0
     n_denovo = 0
     has_cov = False
-    BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
     is_dbg_pid_pcov = True
 
     cols = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 
             'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sseq', 'qcovs']
     
-    if os.path.exists(BLASTF): 
-        print(f'{ST} processing : {BLASTF}')
-        gzs = os.path.basename(BLASTF).split(os.extsep)[-1]
-        is_gz = gzs == 'gz'
+    if blastf.exists(): 
+        print(f'{ST} processing : {blastf}')
         is_use_skbio = False
-        with open(BLASTF, 'rb') as f_blast:
+        with open(blastf, 'rb') as f_blast:
             is_gz = is_gz and (f_blast.read(2) == b'\x1f\x8b')
         if is_use_skbio:
             # just returns column names - not at all what's expected
-            for seq in skbio.io.read(BLASTF, format='blast+6', columns=cols, compression='gzip', into=pandas.DataFrame):
+            for seq in skbio.io.read(blastf, format='blast+6', columns=cols, 
+                                     compression='gzip', into=pandas.DataFrame):
                 num_hits_file += 1
         else:
-            with gzip.open(BLASTF, 'rb') if is_gz else open(BLASTF, 'rb') as f_blast, open(BLAST_PID_PCOV, 'w') as f_pid_pcov:
+            with gzip.open(blastf, 'rb') if is_gz else open(blastf, 'rb') as f_blast, open(blast_pid_cov, 'w') as f_pid_pcov:
                 for lineb in f_blast:
                     num_hits_file += 1
                     line = lineb.decode('utf-8')
@@ -442,24 +439,24 @@ def process_blast(**kwarg):
                     is_pass_id = False
                     is_pass_cov = False
     
-            bn = os.path.basename(BLASTF)
-            print(f'{ST} from {bn}: num_hits= {num_hits_file} n_yid_ycov= {n_yid_ycov}'
-                ' n_yid_ncov= {n_yid_ncov} n_nid_ycov= {n_nid_ycov} n_denovo= {n_denovo}')
+            print(f'{ST} from {blastf.name}: num_hits= {num_hits_file} n_yid_ycov= {n_yid_ycov}'
+                f' n_yid_ncov= {n_yid_ncov} n_nid_ycov= {n_nid_ycov} n_denovo= {n_denovo}')
             
             blastd = vald.get('files', {}).get('aligned.blast')
             if blastd:
                 if blastd.get('n_yid_ycov'):
-                    tmpl = '{} Testing reads passing ID threshold: {}: {} Expected: {}'
-                    print(tmpl.format(ST, os.path.basename(BLASTF), n_yid_ycov, blastd['n_yid_ycov']))
+                    msg = (f"{ST} Testing reads passing ID threshold: {blastf.name}:"
+                           f" {n_yid_ycov} Expected: {blastd['n_yid_ycov']}")
+                    print(msg)
                     assert n_yid_ycov == blastd['n_yid_ycov'], \
-                        '{} not equals {}'.format(blastd['n_yid_ycov'], n_yid_ycov)
+                        f"{blastd['n_yid_ycov']} not equals {n_yid_ycov}"
                 
                 num_recs = blastd.get('num_recs')
                 if num_recs:
-                    tmpl = '{} Testing num_hits: {}: {} Expected: {}'
-                    print(tmpl.format(ST, os.path.basename(BLASTF), num_hits_file, num_recs))
-                    assert num_hits_file == num_recs, \
-                        '{} not equals {}'.format(num_hits_file, num_recs)
+                    msg = (f'{ST} Testing num_hits: {blastf.name}:'
+                            f' {num_hits_file} Expected: {num_recs}')
+                    print(msg)
+                    assert num_hits_file == num_recs, f'{num_hits_file} not equals {num_recs}'
 
     return {
         'n_hits'  : num_hits_file, 
@@ -517,7 +514,7 @@ def dbg_otu(**kwarg):
                 blast_reads.append(lls[0]) # collect reads
 
     # parse otu groups file
-    if os.path.exists(OTUF):
+    if Path(OTUF).exists():
         num_clusters_file = 0
         num_reads_in_clusters_file = 0
         with open(OTUF) as f_otus:
@@ -543,14 +540,14 @@ def dbg_otu(**kwarg):
                 diff.write('{}\n'.format(rd))
 #END dbg_otu
 
-def validate_otu(**kwarg):
+def validate_otu(**kw):
     '''
-    :param dict kwarg         test configuration see 'test.jinja.yaml'
-    :param dict kwarg[logd]   parsed aligned.log data see 'parse_log(LOGF)'
+    args:
+      - kw  test configuration see 'test.jinja.yaml'
     '''
-    ST = '[{}]'.format('validate_otu')
-    vald = kwarg.get('validate')
-    logd = kwarg.get('logd') or parse_log(LOGF)
+    ST = f'[validate_otu]'
+    vald = kw.get('validate')
+    logd = kw.get('logd') or parse_log(LOGF)
 
     # parse otu groups file
     if os.path.exists(OTUF):
@@ -560,98 +557,104 @@ def validate_otu(**kwarg):
             for line in f_otus:
                 num_clusters_file += 1
                 num_reads_in_clusters_file += (len(line.strip().split('\t'))-1)
-        print('{} num groups in OTU file {} , expected {}'.format(ST, num_clusters_file, logd['num_otus'][1]))
+        msg = f"{ST} num groups in OTU file {num_clusters_file} , expected {logd['num_otus'][1]}"
+        print(msg)
         assert logd['num_otus'][1] == num_clusters_file, \
-            '{} not equals {}'.format(logd['num_otus'][1], num_clusters_file)
-        print('{} count of reads in OTU file {} , expected {}'.format(ST, num_reads_in_clusters_file, logd['num_id_cov'][1]))
+            f"{logd['num_otus'][1]} not equals {num_clusters_file}"
+        msg = (f"{ST} count of reads in OTU file {num_reads_in_clusters_file},"
+               f" expected {logd['num_id_cov'][1]}")
+        print(msg)
         assert logd['num_id_cov'][1] == num_reads_in_clusters_file, \
-            '{} not equals {}'.format(logd['num_id_cov'][1], num_reads_in_clusters_file)
+            f"{logd['num_id_cov'][1]} not equals {num_reads_in_clusters_file}"
 
     # verify count of groups in the aligned.log is the same as specified in configuration validate data
     if logd.get('num_otus') and vald.get('num_cluster'):
         assert logd['num_otus'][1] in vald['num_cluster'], \
-            '{} not in {}'.format(logd['num_otus'][1], vald['num_cluster'])
+            f"{logd['num_otus'][1]} not in {vald['num_cluster']}"
 #END validate_otu
 
-def validate_log(logd, ffd):
+def validate_log(logd:dict, ffd:dict):
     '''
-    :param dict logd
-    :param dict ffd   files data as in test.jinja.yaml:<test_name>:validate:files
+    args:
+      - logd
+      - ffd   files data as in test.jinja.yaml:<test_name>:validate:files
     '''
     ST = '[validate_log]'
     # aligned.log : 
     #   verify the total number of reads in aligned.log vs the number in the validation spec
     n_vald = ffd.get('aligned.log', {}).get('num_reads')
-    n_logd = logd['num_reads'][1]
     if n_vald:
-        print('{} testing num_reads: {} Expected: {}'.format(ST, n_logd, n_vald))
-        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+        n_logd = logd['num_reads']
+        msg = f'{ST} testing num_reads: {n_logd} Expected: {n_vald}'
+        print(msg)
+        assert n_vald == n_logd, f'{n_vald} not equals {n_logd}'
     #   verify number of hits
     n_vald = ffd.get('aligned.log', {}).get('num_hits')
-    n_logd = logd['results']['num_hits'][1]
     if n_vald:
-        print('{} testing num_hits: {} Expected: {}'.format(ST, n_logd, n_vald))
-        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+        n_logd = logd['num_hits']
+        print(f'{ST} testing num_hits: {n_logd} Expected: {n_vald}')
+        assert n_vald == n_logd, f'{n_vald} not equals {n_logd}'
     #   verify number of misses
     n_vald = ffd.get('aligned.log', {}).get('num_fail')
-    n_logd = logd['results']['num_fail'][1]
     if n_vald:
-        print('{} testing num_fail: {} Expected: {}'.format(ST, n_logd, n_vald))
-        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+        n_logd = logd['num_fail']
+        print(f'{ST} testing num_fail: {n_logd} Expected: {n_vald}')
+        assert n_vald == n_logd, f'{n_vald} not equals {n_logd}'
     #   verify count of COV+ID
     n_vald = ffd.get('aligned.log', {}).get('n_yid_ycov')
-    n_logd = logd['num_id_cov'][1]
     if n_vald:
-        print('{} testing n_yid_ycov: {} Expected: {}'.format(ST, n_logd, n_vald))
-        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+        n_logd = logd.get('num_id_cov')
+        print(f'{ST} testing n_yid_ycov: {n_logd} Expected: {n_vald}')
+        assert n_vald == n_logd, f'{n_vald} not equals {n_logd}'
     #   verify count of OUT groups
     n_vald = ffd.get('aligned.log', {}).get('num_groups')
-    n_logd = logd['num_otus'][1]
     if n_vald:
+        n_logd = logd.get('num_otus')
         print(f'{ST} testing num_groups: {n_logd} Expected: {n_vald}')
         assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
     #   verify count of de-novo reads
     n_vald = ffd.get('aligned.log', {}).get('n_denovo')
-    n_logd = logd['results']['num_denovo'][1]
     if n_vald:
+        n_logd = logd['num_denovo']
         print(f'{ST} testing n_denovo: {n_logd} Expected: {n_vald}')
-        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+        assert n_vald == n_logd, f'{n_vald} not equals {n_logd}'
 #END validate_log
 
-def process_output(name:str, **kwarg):
+def process_output(**kw):
     '''
     args:
       - name    test name e.g. t0
-      - kwawrg  test configuration dictionary see 'test.jinja'
+      - kw  test configuration dictionary see e.g. 't18.jinja'
     '''
     ST = '[process_output]'
     global is_skbio
-    log_struct = kwarg.get('aligned.log')
-    vald = kwarg.get(name, {}).get('validate')
+    vald = kw.get('validate')
     #cmdd = kwarg.get('cmd')
     
     if not vald:
-        print('{} validation info not provided'.format(ST))
+        print(f'{ST} validation info not provided')
         return
-
-    logd = parse_log(LOGF, log_struct)
+    
+    outdir = Path(get_dict_val('args:-workdir', kw))/'out'
+    logf = outdir /'aligned.log'
+    logd = parse_log(logf)
     ffd = vald.get('files')
     if ffd and isinstance(ffd, dict):
-
         for ff, vv in ffd.items():
-            print('{} {}'.format(ST, ff))
+            print(f'{ST} {ff}')
             # Check aligned/other reads count
             # aligned/other files only specify read count in the test validation data
             if isinstance(vv, int):
-                ffp = os.path.join(os.path.dirname(ALIF), ff) # file path
+                ffp = outdir / ff # file path
                 count = 0
-                assert os.path.exists(ffp), '{} does not exists: {}'.format(ST, ffp)
+                assert ffp.exists(), f'{ST} does not exists: {ffp}'
                 if ff == 'otu_map.txt':
                     with open(ffp) as ffs:
                         for line in ffs:
                             count += 1
-                    print('{} testing count of groups in {}: {} Expected: {}'.format(ST, ff, count, vv))
-                    assert count == vv, '{} not equals {}'.format(count, vv)
+                    msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
+                    print(msg)
+                    assert count == vv, f'{count} not equals {vv}'
                     continue
                 if is_skbio:
                     if IS_FASTQ:
@@ -661,13 +664,12 @@ def process_output(name:str, **kwarg):
                         fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
                         for seq in skbio.io.read(ffp, format=fmt):
                             count += 1
-                    print('{} Testing count of reads in {}: {} Expected: {}'.format(ST, ff, count, vv))
-                    assert count == vv, '{} not equals {}'.format(count, vv)
+                    print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
+                    assert count == vv, f'{count} not equals {vv}'
             elif ff == 'aligned.log':
                 validate_log(logd, ffd)
             elif 'aligned.blast' in ff:
-                test_cfg = kwarg.get(name, {})
-                process_blast(**test_cfg)
+                process_blast(**kw)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
@@ -1317,6 +1319,60 @@ def iss_453(num_splits:int,
             out, serr = ps.communicate()
         print(f'done writing in {time.time() - sstart} sec')
     
+def parse_test_config(args:Namespace):
+    '''
+    parse test jinja template and set all sortmerna options
+    args:
+      - args  arguments produced by argparse package
+    '''
+    script_dir = Path(__file__).parent # directory where this script is located
+    
+    smr_exe = args.smr_exe or shutil.which('sortmerna')
+    if not smr_exe or not Path(smr_exe).exists():
+        msg = (f'{ST} sortmerna executable {smr_exe} not found.'
+              f' Use \'--smr-exe\' option or ensure the PATH is set')
+        raise Exception(msg)
+    else:
+        print(f'{ST} using {smr_exe}') 
+
+    # check test.jinja
+    cfgfile =  args.config or Path(script_dir) / f'{args.name}.jinja'
+    if not Path(cfgfile).exists():
+        msg = (f"{ST} No test template found: {cfgfile}"
+               f" Please, provide one using \'--config\' option")
+        raise Exception(msg)
+
+    print(f'{ST} using tests configuration template: {cfgfile}')
+
+    # load 'test.jinja' template
+    jjenv = Environment(loader=FileSystemLoader(Path(cfgfile).parent), trim_blocks=True, lstrip_blocks=True)
+    template = jjenv.get_template(Path(cfgfile).name)
+
+    # render 'test.jinja' template
+    smr_src = Path(script_dir).parent
+    vars = {'SMR_SRC':smr_src, 'DATA_DIR':args.data_dir, 'WRK_DIR':args.workdir}
+    if args.threads:
+        vars.append({'THREADS':str(args.threads)})
+    cfg_str = template.render(vars)
+    cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
+    if args.task:
+        cfg['args']['-task'] = str(args.task)
+    if args.dbg_level:
+        cfg['args']['-dbg-level'] = args.dbg_level
+    if args.score_split:
+        cfg['args'].append('-score_split')
+        
+    cfg['exe'] = smr_exe
+    return cfg
+
+def get_dict_val(path:str, nested_dict:dict):
+    '''
+    get nested value from the dictionary given the path like 'validate:failes:aligned.log'
+    '''
+    vv = nested_dict
+    for k in path.split(':'):
+        vv = vv.get(k) or {}
+    return vv
 
 if __name__ == "__main__":
     '''
@@ -1396,27 +1452,28 @@ if __name__ == "__main__":
         res =  iss_453(num_splits=args.num_splits, reads_mln=args.reads_mln, threads=args.threads, workdir=args.workdir)
         ...
     elif 'test' == args.cmd:
-        smr_args = {}
-        if args.threads:
-            # prevent the renderer from interpreting the threads as int
-            tmpl = '{}' if args.threads[0] in ['\'','\"'] and args.threads[-1] in ['\'','\"'] else '\'{}\''
-            smr_args['THREADS'] = tmpl.format(args.threads)
-        if args.index:
-            tmpl = '{}' if args.index[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
-            smr_args['INDEX'] = tmpl.format(args.index)
-        if args.task:
-            tmpl = '{}' if args.task[0] in ['\'','\"'] and args.task[-1] in ['\'','\"'] else '\'{}\''
-            smr_args['TASK'] = tmpl.format(args.task)
-        if args.dbg_level:
-            tmpl = '{}' if args.dbg_level[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
-            smr_args['DBG_LEVEL'] = tmpl.format(args.dbg_level)
+        #smr_args = {}
+        #if args.threads:
+        #    # prevent the renderer from interpreting the threads as int
+        #    tmpl = '{}' if args.threads[0] in ['\'','\"'] and args.threads[-1] in ['\'','\"'] else '\'{}\''
+        #    smr_args['THREADS'] = tmpl.format(args.threads)
+        #if args.index:
+        #    tmpl = '{}' if args.index[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
+        #    smr_args['INDEX'] = tmpl.format(args.index)
+        #if args.task:
+        #    tmpl = '{}' if args.task[0] in ['\'','\"'] and args.task[-1] in ['\'','\"'] else '\'{}\''
+        #    smr_args['TASK'] = tmpl.format(args.task)
+        #if args.dbg_level:
+        #    tmpl = '{}' if args.dbg_level[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
+        #    smr_args['DBG_LEVEL'] = tmpl.format(args.dbg_level)
 
-        cfg = process_config()  # process configuration
+        #cfg = process_config()  # process configuration
         
         # run test
         ret = {}
         tlist = []
         if args.name == 'all':
+            # get the list of all tests from tests.yaml
             excl = cfg.get('exclude.list', [])
             tlist = list(cfg.get('tests').keys())
             if excl:
@@ -1429,19 +1486,7 @@ if __name__ == "__main__":
             tlist = [args.name]
         print(f'{ST} number of tests: {len(tlist)}')
         for test in tlist:
-            tn = cfg[test]['name']
-            print('\n')
-            print(f'{ST} running {test}: {tn}')
-            if args.dbg_level:
-                if '-dbg-level' in cfg[test]['cmd']:
-                    dbg_level_idx = cfg[test]['cmd'].index('-dbg-level')
-                    cfg[test]['cmd'][dbg_level_idx+1] = args.dbg_level
-                else:
-                    cfg[test]['cmd'].extend(['-dbg-level', args.dbg_level])
-            if args.score_split:
-                cfg[test]['cmd'].append('-score_split')
-            process_smr_opts(cfg[test]['cmd'])
-
+            cfg = parse_test_config(args)
             # clean-up the KVDB, IDX directories, and the output. 
             # May Fail if any file in the directory is open. Close the files and re-run.
             if args.clean:
@@ -1454,43 +1499,55 @@ if __name__ == "__main__":
                 break
 
             # clean previous alignments (KVDB)
-            if Path(KVDB_DIR).exists() and not args.validate_only:
-                print(f'{ST} Removing KVDB dir: {KVDB_DIR}')
-                shutil.rmtree(KVDB_DIR)
+            kvdb = cfg['args'].get('-kvdb') or Path(cfg['args'].get('-workdir')) / 'kvdb'
+            if Path(kvdb).exists() and not (args.validate_only or args.task in ['1','2']):
+                print(f'{ST} Removing KVDB dir: {kvdb}')
+                shutil.rmtree(kvdb)
 
             # clean output
-            ali_dir = os.path.dirname(ALIF)
-            if ali_dir and os.path.exists(ali_dir) and not args.validate_only:
+            ali_dir = os.path.dirname(ALIF) if ALIF else None  # aligned output directory
+            if ali_dir and os.path.exists(ali_dir) and not (args.validate_only or args.task in ['1','2']):
                 print(f'{ST} Removing Aligned Output: {ali_dir}')
                 shutil.rmtree(ali_dir)
 
             if OTHF:
                 oth_dir = os.path.dirname(OTHF)
-                if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not args.validate_only:
+                if oth_dir and os.path.exists(oth_dir) and oth_dir != ali_dir and not (args.validate_only or args.task in ['1','2']):
                     print(f'{ST} removing Non-Aligned Output: {oth_dir}')
                     shutil.rmtree(oth_dir)
 
+            # run the test
             if not args.validate_only:
-                cfg[test]['cmd'].insert(0, SMR_EXE)
-                is_capture = cfg[test].get('capture', False) or args.capture
-                rcode, outl, errl = run_test(cfg[test]['cmd'], cwd=cfg[test].get('cwd'), capture=is_capture)
+                is_capture = cfg.get('capture', False) or args.capture
+                cmd = [cfg.get('exe')]
+                # references and reads are provided as lists in the configuration
+                for k,v in cfg['args'].items():
+                    if 'ref' in k or 'reads' in k:
+                        for rr in v:
+                            cmd.append(k)
+                            cmd.append(rr)
+                    else:
+                        cmd.append(k)
+                        if v:
+                            cmd.append(v)
+                rcode, outl, errl = run_test(cmd, capture=is_capture)
 
             # validate alignment results
-            if rcode == 0 or not cfg[test].get('failonerror', True):
+            if rcode == 0 or not cfg.get('failonerror', True):
                 if args.func:
                     gdict = globals().copy()
                     gdict.update(locals())
                     func = gdict.get(args.func)
                     func(**cfg[test])
-                elif cfg[test].get('validate', {}).get('func'):
-                    fn = cfg[test].get('validate', {}).get('func')
+                elif cfg.get('validate', {}).get('func'):
+                    fn = cfg['validate']['func']
                     gdict = globals().copy()
                     gdict.update(locals())
                     func = gdict.get(fn)
                     if func:
-                        func(TEST_DATA, ret, **cfg[test])
+                        func(TEST_DATA, ret, **cfg)
                 else:
-                    process_output(test, **cfg)
+                    process_output(**cfg)
             else:
                 break
     else:
