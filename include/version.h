@@ -31,5 +31,5 @@
 #pragma once
 
 #define SORTMERNA_MAJOR 4
-#define SORTMERNA_MINOR 3
-#define SORTMERNA_PATCH 8
+#define SORTMERNA_MINOR 4
+#define SORTMERNA_PATCH 0
