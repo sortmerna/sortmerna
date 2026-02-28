@@ -33,6 +33,9 @@ jobs:
       run: gcc --version
 
     - name: build
+      install: |
+        wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+        bash Miniforge3-$(uname)-$(uname -m).sh -b
       run: |
         eval "$(conda shell.bash activate)"
         conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
