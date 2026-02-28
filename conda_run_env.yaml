@@ -4,5 +4,4 @@ dependencies:
 - jinja2
 - requests
 - pigz
-- pip:
-  - rapidgzip
+- rapidgzip

@@ -49,12 +49,12 @@ void ReportSam::init(Readfeed& readfeed, Runopts& opts)
 	fsv.resize(readfeed.num_splits);
 	is_zip = (opts.zip_out == 1) || (readfeed.orig_files[0].isZip && opts.zip_out == -1);
 	// WORKDIR/out/aligned_0_PID.sam
-	for (uint32_t i = 0; i < readfeed.num_splits; ++i) {
+	for (unsigned i = 0; i < readfeed.num_splits; ++i) {
 		std::string sfx1 = "_" + std::to_string(i);
 		std::string sfx2 = opts.is_pid ? "_" + pid_str : "";
 		std::string gz = is_zip ? ".gz" : "";
 		fv[i] = opts.aligned_pfx.string() + sfx1 + sfx2 + ext + gz;
-		openfw(i);
+		openfw2(i, opts.dbg_level);
 	}
 	if (is_zip) init_zip();
 }

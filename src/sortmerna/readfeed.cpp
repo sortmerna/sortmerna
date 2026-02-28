@@ -965,7 +965,7 @@ void Readfeed::init_split_files()
 			//auto idx = i * num_orig_files + j;
 			split_files[idx].path = basedir / ss.str();
 			ss.str("");
-			INFO("added file: ", split_files[idx].path.generic_string());
+			INFO("adding split to the list: ", split_files[idx].path.generic_string());
 		}
 	}
 
