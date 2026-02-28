@@ -1452,23 +1452,6 @@ if __name__ == "__main__":
         res =  iss_453(num_splits=args.num_splits, reads_mln=args.reads_mln, threads=args.threads, workdir=args.workdir)
         ...
     elif 'test' == args.cmd:
-        #smr_args = {}
-        #if args.threads:
-        #    # prevent the renderer from interpreting the threads as int
-        #    tmpl = '{}' if args.threads[0] in ['\'','\"'] and args.threads[-1] in ['\'','\"'] else '\'{}\''
-        #    smr_args['THREADS'] = tmpl.format(args.threads)
-        #if args.index:
-        #    tmpl = '{}' if args.index[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
-        #    smr_args['INDEX'] = tmpl.format(args.index)
-        #if args.task:
-        #    tmpl = '{}' if args.task[0] in ['\'','\"'] and args.task[-1] in ['\'','\"'] else '\'{}\''
-        #    smr_args['TASK'] = tmpl.format(args.task)
-        #if args.dbg_level:
-        #    tmpl = '{}' if args.dbg_level[0] in ['\'','\"'] and args.index[-1] in ['\'','\"'] else '\'{}\''
-        #    smr_args['DBG_LEVEL'] = tmpl.format(args.dbg_level)
-
-        #cfg = process_config()  # process configuration
-        
         # run test
         ret = {}
         tlist = []
