@@ -1452,6 +1452,8 @@ if __name__ == "__main__":
         res =  iss_453(num_splits=args.num_splits, reads_mln=args.reads_mln, threads=args.threads, workdir=args.workdir)
         ...
     elif 'test' == args.cmd:
+        #cfg = process_config()  # process configuration
+        
         # run test
         ret = {}
         tlist = []
