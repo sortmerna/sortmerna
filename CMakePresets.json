@@ -33,7 +33,6 @@
         {
             "name": "LIN_release",
             "inherits": "common",
-            "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
@@ -41,7 +40,6 @@
         {
             "name": "LIN_debug",
             "inherits": "common",
-            "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
@@ -49,7 +47,6 @@
         {
             "name": "WIN_release",
             "inherits": "common",
-            "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
                 "DIRENTWIN_HOME": "${sourceDir}/3rdparty/dirent",
                 "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
@@ -62,8 +59,7 @@
         },
         {
             "name": "WIN_debug",
-            "inherits": "WIN_release",
-            "binaryDir": "${sourceDir}/build/debug"
+            "inherits": "WIN_release"
         }
     ],
     "buildPresets": [

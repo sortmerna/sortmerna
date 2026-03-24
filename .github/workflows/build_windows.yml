@@ -24,7 +24,7 @@ jobs:
         & "$env:CONDA/shell/condabin/conda-hook.ps1"
         & "$env:programfiles/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/Launch-VsDevShell.ps1" -arch amd64
         conda activate $env:CONDA
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
         echo "cmake version: $(cmake --version)"
         pushd $env:GITHUB_WORKSPACE
         echo 'running python setup.py ... in $(pwd)'

@@ -5,5 +5,4 @@ dependencies:
 - requests
 - pigz
 - gdb  # if debugging
-- pip:
-  - rapidgzip
+- rapidgzip

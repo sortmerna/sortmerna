@@ -29,3 +29,8 @@ tmp
 test_dir
 .vs
 .vscode
+3rdparty/indexed_bzip2/
+3rdparty/rocksdb/
+3rdparty/zlib/
+3rdparty/concurrentqueue/
+test.sh

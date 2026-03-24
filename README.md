@@ -18,6 +18,7 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
   - [Running](#running)
     - [Execution trace](#execution-trace)
+    - [Split reads generation](#split-reads-generation)
 - [Building from sources](#building-from-sources)
 - [User Manual](#user-manual)
 - [Databases](#databases)
@@ -179,6 +180,30 @@ Here is a [sample execution trace](https://sortmerna.readthedocs.io/en/latest/tr
 - please, provide the execution trace when filing issues.
 
 [Sample execution statistics](https://github.com/biocore/sortmerna/wiki/sample-execution-statistics) are provided to give an idea on what the execution time might be.
+
+#### Split reads generation
+
+When working with gzipped reads Sortmerna splits the files into chunks, so that each chunk can be processed on a separate thread. Currently the splitting itself is done on a single thread due complexities of processing archived files. This becomes a bottleneck for large files, so much so that the splitting becomes the most time consuming part of the whole processing pipeline. To mitigate this problem the splitting can be performed prior running Sortmerna, and the split files then can be reused. The efficient multithreaded splitting can be performed using the [rapidgzip](https://github.com/mxmlnkn/rapidgzip) utility. Sortmerna repository now offers a convenience python script [run.py:split](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py#L928) to perform just that splitting operation. It invokes the rapidgzip and writes the split descriptor. Here is how to use it:
+
+Assuming that conda/mamba is installed on your system. Download the [run.py](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py) and [conda_run_env.yaml](https://github.com/sortmerna/sortmerna/blob/master/conda_run_env.yaml) from GitHub to any desired location and then
+
+```
+mamba create -y --file conda_run_env.yaml  # installs needed dependencies including rapidgzip and pigz
+conda activate sortmerna-run
+# run the splitting
+python run.py split --file <file1> --file <file2> --num-splits <number of splits> --workdir <working directory>
+e.g.
+python run.py split \
+    --file ${data_dir}/a1/data/bio/reads/rna/SRR1635864_1.fastq.gz \
+    --file ${data_dir}/a1/data/bio/reads/rna/SRR1635864_2.fastq.gz \
+    --num-splits 8 \
+    --workdir ~/a1/data/sortmerna/run
+# run sortmerna
+sortmerna -ref ~/a1/data/sortmerna/run/data/silva-bac-16s-database-id85.fasta \
+    -reads ${data_dir}/a1/data/bio/reads/rna/SRR1635864_1.fastq.gz \
+    -reads ${data_dir}/a1/data/bio/reads/rna/SRR1635864_2.fastq.gz \
+    -fastx -blast 0 -no-best -threads 8 -workdir ~/a1/data/sortmerna/run
+```
 
 ## Building from sources
 

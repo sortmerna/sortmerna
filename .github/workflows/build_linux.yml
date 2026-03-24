@@ -14,16 +14,32 @@ jobs:
   build-linux:
     name: build on Linux
     runs-on: ubuntu-latest
+
     steps:
     - name: git checkout
       uses: actions/checkout@v4
+
+    - name: install gcc-11
+      run: |
+        sudo apt update
+        sudo apt install -y gcc-11 g++-11
+
+    - name: set gcc-11 as default
+      run: |
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+
+    - name: verify gcc
+      run: gcc --version
+
     - name: build
       run: |
         eval "$(conda shell.bash activate)"
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja
+        conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
         python setup.py -n all
         echo "=== listing dist/ ==="
         ls -l ./dist
+
     - name: upload
       uses: actions/upload-artifact@v4
       with:

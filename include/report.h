@@ -1,31 +1,33 @@
 /*
- @copyright 2016-2021  Clarity Genomics BVBA
- @copyright 2012-2016  Bonsai Bioinformatics Research Group
- @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
+@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2012-2016 Bonsai Bioinformatics Research Group
+@copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
- @parblock
- SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- This is a free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+@parblock
+SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
 
- SortMeRNA is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+This is a free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
- You should have received a copy of the GNU Lesser General Public License
- along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
- @endparblock
+SortMeRNA is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
 
- @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
-			   Pierre Pericard  pierre.pericard@lifl.fr
-			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
-			   Rob Knight       robknight@ucsd.edu
+You should have received a copy of the GNU Lesser General Public License
+along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+@endparblock
+
+@contributors Jenya Kopylova   jenya.kopylov@gmail.com
+              Laurent NoÃ©      laurent.noe@lifl.fr
+              Pierre Pericard  pierre.pericard@lifl.fr
+              Daniel McDonald  wasade@gmail.com
+              MikaÃ«l Salson    mikael.salson@lifl.fr
+              HÃ©lÃ¨ne Touzet    helene.touzet@lifl.fr
+              Rob Knight       robknight@ucsd.edu
+              biocodz          biocodz@protonmail.com
 */
 
 #pragma once
@@ -65,15 +67,15 @@ public:
 	* open report files for writing
 	* @param dbg  debug level, see 'Runopts.dbg_level'
 	*/
-	void openfw(const int& dbg=0);
+	void openfw(const unsigned& dbg=0);
 	/*
 	* open selected report file for writing
 	* @param idx  index into the array of report files
 	* @param dbg  debug level as in 'Runopts.dbg_level'
 	*/
-	void openfw(const uint32_t& idx, const int& dbg=0); // close selected report file
-	void closef(const int& dbg=0); // close report files
-	void closef(const uint32_t& idx, const int& dbg=0); // close a file
+	void openfw2(const unsigned& idx, const unsigned& dbg=0); // close selected report file
+	void closef(const unsigned& dbg=0); // close report files
+	void closef2(const unsigned& idx, const unsigned& dbg=0); // close a file given an array index
 	int finish_deflate();
 	/*
 	* strip the split suffix from the output file name 
@@ -88,7 +90,7 @@ protected:
 	std::string pid_str; // std::to_string(getpid());
 	bool is_zip; // flags the report is compressed
 	std::vector<std::string> fv; // report files
-	std::vector<std::fstream> fsv;
+	std::vector<std::fstream> fsv;  // streams for the report files
 
 	// reading compressed out files when merging the final output
 	std::vector<Izlib> vzlib_in;

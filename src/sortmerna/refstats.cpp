@@ -1,5 +1,37 @@
-﻿/*
- @copyright 2016-2021  Clarity Genomics BVBA
+/*
+@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2012-2016 Bonsai Bioinformatics Research Group
+@copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+
+@parblock
+SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
+
+This is a free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+SortMeRNA is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+@endparblock
+
+@contributors Jenya Kopylova   jenya.kopylov@gmail.com
+              Laurent Noé      laurent.noe@lifl.fr
+              Pierre Pericard  pierre.pericard@lifl.fr
+              Daniel McDonald  wasade@gmail.com
+              Mikaël Salson    mikael.salson@lifl.fr
+              Hélène Touzet    helene.touzet@lifl.fr
+              Rob Knight       robknight@ucsd.edu
+              biocodz          biocodz@protonmail.com
+*/
+
+/*
+ @copyright 2016-2026  Clarity Genomics BVBA
  @copyright 2012-2016  Bonsai Bioinformatics Research Group
  @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -37,6 +69,7 @@
 #include <sstream>
 #include <ios>
 #include <vector>
+#include <cmath>  // log2
 
 #include "sls_alignment_evaluer.hpp" // ../alp/
 
@@ -123,7 +156,9 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 		numbvs[index_num] = 4 * (partialwin[index_num] - 3);
 
 		// set the window shift for different seed lengths (if not set by user, or one of the lengths is <= 0)
-		if ((opts.skiplengths[index_num][0] == 0) || (opts.skiplengths[index_num][1] == 0) || (opts.skiplengths[index_num][2] == 0))
+		if ((opts.skiplengths[index_num][0] == 0) 
+                || (opts.skiplengths[index_num][1] == 0) 
+                || (opts.skiplengths[index_num][2] == 0))
 		{
 			opts.skiplengths[index_num][0] = lnwin[index_num];
 			opts.skiplengths[index_num][1] = partialwin[index_num];
@@ -201,29 +236,33 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 		delete[] letterFreqs1;
 
 		// Shannon's entropy for reference sequence nucleotide distribution
-		double entropy_H_gv =
-			-(background_freq_gv[0] * (log(background_freq_gv[0]) / log(2))
-				+ background_freq_gv[1] * (log(background_freq_gv[1]) / log(2))
-				+ background_freq_gv[2] * (log(background_freq_gv[2]) / log(2))
-				+ background_freq_gv[3] * (log(background_freq_gv[3]) / log(2)));
+		double entropy_H_gv = -(
+            background_freq_gv[0] * std::log2(background_freq_gv[0])
+		  + background_freq_gv[1] * std::log2(background_freq_gv[1])
+		  + background_freq_gv[2] * std::log2(background_freq_gv[2])
+		  + background_freq_gv[3] * std::log2(background_freq_gv[3]));
 
 		// Length correction for Smith-Waterman alignment score
-		uint64_t expect_L = static_cast<uint64_t>(log((gumbel[index_num].second)*full_read[index_num] * full_ref[index_num]) / entropy_H_gv);
+        // ln(Kmn)/H  (H - entropy)
+        auto full_read_scale = opts.is_score_split ? opts.num_proc_thread : 1;
+		uint64_t expect_L = static_cast<uint64_t>(std::log((gumbel[index_num].second)
+                                                        * full_ref[index_num]
+                                                        * full_read[index_num]/full_read_scale)
+                                                    / entropy_H_gv);
 
 		// correct the reads & databases sizes for E-value calculation
 		if (full_ref[index_num] > (expect_L*numseq[index_num]))
 			full_ref[index_num] -= (expect_L*numseq[index_num]);
 
-		full_read[index_num] -= (expect_L * readstats.all_reads_count);
+		full_read[index_num] -= (expect_L * readstats.all_reads_count / full_read_scale);
 
 		// minimum score required to reach E-value 
 		// S = ln(E/Kmn)/-λ   <--   E = K*m*n*exp(-λS)
-		minimal_score[index_num] = static_cast<uint32_t>(
-			(log(opts.evalue
-				/ ((double)(gumbel[index_num].second)
-					* full_ref[index_num]
-					* full_read[index_num])))
-			/ -(gumbel[index_num].first));
+		minimal_score[index_num] = static_cast<uint32_t>((std::log(opts.evalue 
+                                                            / ((double)(gumbel[index_num].second)
+					                                            * full_ref[index_num]
+					                                            * full_read[index_num] / full_read_scale)))
+			                                            / -(gumbel[index_num].first));
 
 		stats.close();
 	} // ~for loop indices

@@ -1,0 +1,34 @@
+name: Paired reads GZ 2 x 2 GB  ~50M reads
+args:
+  -ref: [ {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta ] # 12,734,464 ~12MB
+  -reads: 
+   - {{ DATA_DIR }}/bio/reads/rna/SRR1635864_1.fastq.gz  # 2 GB 24,654,594 reads
+   - {{ DATA_DIR }}/bio/reads/rna/SRR1635864_2.fastq.gz  # 2 GB 24,654,594 reads
+  -v:
+  -blast: '1 cigar qcov'
+  -sam:
+  -threads: '{{THREADS or 8}}'
+  -workdir: {{ WRK_DIR }}
+validate:
+  func:
+  variant: sanger
+  files:
+    aligned.log:
+      num_reads: 49309188
+      num_hits:    687225
+      num_fail:  48621963
+    aligned.blast.gz:
+      num_recs:   687225
+      n_yid_ycov:    201 
+      n_yid_ncov: 502288 
+      n_nid_ycov:   1222 
+      n_denovo:   183514
+    aligned.sam.gz:
+time:
+  win_8_16:
+    host: Windows 10 + 8 CPUs + 16GB RAM
+    4-3-3:
+    - threads: 8
+      total:  # sec no indexing
+      # indexing, read count, readfeed, align, summary, report
+      totals: [ 0, 227, 2237, 1107, 1, 509]  # 20210520 seems unusually slow today

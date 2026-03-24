@@ -1,31 +1,33 @@
 /*
- @copyright 2016-2021  Clarity Genomics BVBA
- @copyright 2012-2016  Bonsai Bioinformatics Research Group
- @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
+@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2012-2016 Bonsai Bioinformatics Research Group
+@copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
- @parblock
- SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- This is a free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+@parblock
+SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
 
- SortMeRNA is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+This is a free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
- You should have received a copy of the GNU Lesser General Public License
- along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
- @endparblock
+SortMeRNA is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
 
- @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent No�      laurent.noe@lifl.fr
-			   Pierre Pericard  pierre.pericard@lifl.fr
-			   Daniel McDonald  wasade@gmail.com
-			   Mika�l Salson    mikael.salson@lifl.fr
-			   H�l�ne Touzet    helene.touzet@lifl.fr
-			   Rob Knight       robknight@ucsd.edu
+You should have received a copy of the GNU Lesser General Public License
+along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+@endparblock
+
+@contributors Jenya Kopylova   jenya.kopylov@gmail.com
+              Laurent Noé      laurent.noe@lifl.fr
+              Pierre Pericard  pierre.pericard@lifl.fr
+              Daniel McDonald  wasade@gmail.com
+              Mikaël Salson    mikael.salson@lifl.fr
+              Hélène Touzet    helene.touzet@lifl.fr
+              Rob Knight       robknight@ucsd.edu
+              biocodz          biocodz@protonmail.com
 */
 
 #include <string>
@@ -55,7 +57,7 @@ void Report::merge(const uint32_t& num_splits, const uint32_t& num_out, const in
 {
 	for (uint32_t i = 0; i < num_out; ++i) {
 		if (!fsv[i].is_open()) { 
-			openfw(i, dbg);
+			openfw2(i, dbg);
 		}
 		else {
 			fsv[i].seekp(0); //rewind
@@ -94,7 +96,7 @@ void Report::merge(const uint32_t& num_splits, const uint32_t& num_out, const in
 	}
 } // ~Report::merge
 
-void Report::openfw(const uint32_t& idx, const int& dbg)
+void Report::openfw2(const unsigned& idx, const unsigned& dbg)
 {
 	if (!fsv[idx].is_open()) {
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
@@ -109,10 +111,10 @@ void Report::openfw(const uint32_t& idx, const int& dbg)
 	}
 }
 
-void Report::openfw(const int& dbg)
+void Report::openfw(const unsigned& dbg)
 {
 	for (size_t i = 0; i < fv.size(); ++i) {
-		openfw(i, dbg);
+		openfw2(i, dbg);
 	}
 }
 
@@ -130,7 +132,7 @@ void Report::openfr(unsigned idx)
 	}
 }
 
-void Report::closef(const uint32_t& idx, const int& dbg)
+void Report::closef2(const unsigned& idx, const unsigned& dbg)
 {
 	if (fsv[idx].is_open()) {
 		fsv[idx].flush();
@@ -140,10 +142,10 @@ void Report::closef(const uint32_t& idx, const int& dbg)
 	}
 }
 
-void Report::closef(const int& dbg)
+void Report::closef(const unsigned& dbg)
 {
 	for (uint32_t i = 0; i < fsv.size(); ++i) {
-		closef(i, dbg);
+		closef2(i, dbg);
 	}
 }
 

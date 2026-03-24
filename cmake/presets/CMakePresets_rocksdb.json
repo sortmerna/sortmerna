@@ -16,8 +16,8 @@
                 "WITH_TESTS": false,
                 "WITH_TOOLS": false,
                 "WITH_GFLAGS": false,
-                "WITH_ZLIB": true,
-                "CMAKE_INSTALL_PREFIX": "use -DCMAKE_INSTALL_PREFIX"
+                "WITH_ZLIB": "ON",
+                "CMAKE_INSTALL_PREFIX": "use -DCMAKE_INSTALL_PREFIX:PATH"
             }
         },
         {
@@ -42,16 +42,21 @@
             "inherits": "common",
             "binaryDir": "use -B or -DCMAKE_BINARY_DIR option",
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
                 "WITH_XPRESS" : true,
                 "PORTABLE" : false,
                 "WITH_MD_LIBRARY" : true,
-                "ROCKSDB_INSTALL_ON_WINDOWS" : true
+                "ROCKSDB_INSTALL_ON_WINDOWS" : true,
+                "ROCKSDB_SKIP_THIRDPARTY": false
             }
         },
         {
             "name": "WIN_debug",
             "inherits": "WIN_release",
-            "binaryDir": "use --build or -DCMAKE_BINARY_DIR option"
+            "binaryDir": "use --build or -DCMAKE_BINARY_DIR option",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
         },
         {
             "name": "OSX_release",
