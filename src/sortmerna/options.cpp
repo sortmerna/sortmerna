@@ -1156,18 +1156,18 @@ void Runopts::opt_max_pos(const std::string &val)
 	}
 }
 
-void Runopts::opt_reads_feed(const std::string& val)
+void Runopts::opt_readfeed(const std::string& val)
 {
 	FEED_TYPE ftype = static_cast<FEED_TYPE>(std::stoi(val));
 
 	if (ftype > FEED_TYPE::MAX)
 	{
-		ERR("Option '", OPT_READS_FEED, "' can only take values in range [0..", static_cast<int>(FEED_TYPE::MAX), "] Provided value is ['", val, "'");
+		ERR("Option '", OPT_READFEED, "' can only take values in range [0..", static_cast<int>(FEED_TYPE::MAX), "] Provided value is ['", val, "'");
 		exit(EXIT_FAILURE);
 	}
 
 	feed_type = ftype;
-} // ~Runopts::opt_reads_feed
+} // ~Runopts::opt_readfeed
 
 void Runopts::opt_zip_out(const std::string& val)
 {

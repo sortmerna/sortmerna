@@ -31,36 +31,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
- @copyright 2016-2026  Clarity Genomics BVBA
- @copyright 2012-2016  Bonsai Bioinformatics Research Group
- @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
-
- @parblock
- SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- This is a free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- SortMeRNA is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public License
- along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
- @endparblock
-
- @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
-			   Pierre Pericard  pierre.pericard@lifl.fr
-			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
-			   Rob Knight       robknight@ucsd.edu
-*/
-
-/*
  * FILE: readfeed.cpp
  * Created: Nov 26, 2017 Sun
  * 
@@ -79,8 +49,76 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <thread>
 #include <regex>
 
+#include <filereader/Standard.hpp>
+#include <rapidgzip/ParallelGzipReader.hpp>
+
 // forward
 std::streampos filesize(const std::string& file); //util.cpp
+
+// ---------------------------------------------------------------------------
+// FlatSlot implementation
+// ---------------------------------------------------------------------------
+
+bool FlatSlot::fill_buf()
+{
+	if (bytes_remaining == 0) return false;
+	size_t toRead = static_cast<size_t>(std::min(static_cast<uint64_t>(BUF_SIZE), bytes_remaining));
+	ifs.read(buf.data(), static_cast<std::streamsize>(toRead));
+	auto n = ifs.gcount();
+	if (n <= 0) { bytes_remaining = 0; return false; }
+	bytes_remaining -= static_cast<uint64_t>(n);
+	buf_pos = 0;
+	buf_len = static_cast<size_t>(n);
+	return true;
+}
+
+int FlatSlot::getline(std::string& line)
+{
+	line.clear();
+	for (;;) {
+		if (buf_pos >= buf_len) {
+			if (!fill_buf())
+				return line.empty() ? RL_END : RL_OK;
+		}
+		while (buf_pos < buf_len) {
+			char c = buf[buf_pos++];
+			if (c == '\n') return RL_OK;
+			line += c;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// GzSlot implementation
+// ---------------------------------------------------------------------------
+
+bool GzSlot::fill_buf()
+{
+	if (bytes_remaining == 0) return false;
+	size_t toRead = static_cast<size_t>(std::min(static_cast<uint64_t>(BUF_SIZE), bytes_remaining));
+	auto n = reader->read(reinterpret_cast<char*>(buf.data()), toRead);
+	if (n <= 0) { bytes_remaining = 0; return false; }
+	bytes_remaining -= static_cast<uint64_t>(n);
+	buf_pos = 0;
+	buf_len = static_cast<size_t>(n);
+	return true;
+}
+
+int GzSlot::getline(std::string& line)
+{
+	line.clear();
+	for (;;) {
+		if (buf_pos >= buf_len) {
+			if (!fill_buf())
+				return line.empty() ? RL_END : RL_OK; // EOF or end-of-chunk
+		}
+		while (buf_pos < buf_len) {
+			char c = static_cast<char>(buf[buf_pos++]);
+			if (c == '\n') return RL_OK;
+			line += c;
+		}
+	}
+}
 
 /*
  @param type       feed type
@@ -91,7 +129,10 @@ std::streampos filesize(const std::string& file); //util.cpp
    - check the split was already done:
      - check readb directory for the descriptor and file
 */
-Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir, bool is_paired)
+Readfeed::Readfeed(FEED_TYPE type, 
+                    std::vector<std::string>& readfiles, 
+                    std::filesystem::path& basedir, 
+                    bool is_paired)
 	:
 	type(type),
 	is_done(false),
@@ -112,7 +153,11 @@ Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::fil
 	init(readfiles);
 } // ~Readfeed::Readfeed 1
 
-Readfeed::Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir, bool is_paired)
+Readfeed::Readfeed(FEED_TYPE type, 
+                    std::vector<std::string>& readfiles, 
+                    const unsigned num_parts, 
+                    std::filesystem::path& basedir, 
+                    bool is_paired)
 	:
 	type(type),
 	is_done(false),
@@ -152,16 +197,54 @@ void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
 
 	// always do even when split is ready (need for validation)
 	define_format();
-	count_reads();
+	count_reads();  // calculate this.num_reads_tot
 
-	if (type == FEED_TYPE::SPLIT_READS) {
+	// Select INDEXED_GZ or INDEXED_FLAT based on input file format.
+    // Single interleaved paired files when (num_orig_files < num_sense) 
+	// are handled by sharing a single reader between FWD/REV slots.
+	//if (num_splits > 0) {
+	//	bool all_gz_fastq = true;
+	//	bool all_flat = true;
+	//	for (auto& f : orig_files) {
+	//		if (!f.isZip || !f.isFastq) all_gz_fastq = false;
+	//		if (f.isZip)                all_flat     = false;
+	//	}
+	//	const bool is_interleaved = (num_orig_files < num_sense);
+	//	if (all_gz_fastq) {
+	//		if (is_interleaved) { 
+    //            INFO("Input: single interleaved gzipped FASTQ — using INDEXED_GZ feed type"); 
+    //        }
+	//		else { 
+    //            INFO("Input: gzipped FASTQ — using INDEXED_GZ feed type"); 
+    //        }
+	//		type = FEED_TYPE::INDEXED_GZ;
+	//	} else if (all_flat) {
+	//		if (is_interleaved) { INFO("Input: single interleaved flat — using INDEXED_FLAT feed type"); }
+	//		else                { INFO("Input: flat — using INDEXED_FLAT feed type"); }
+	//		type = FEED_TYPE::INDEXED_FLAT;
+	//	} else {
+	//		WARN("Mixed gzipped/flat input — falling back to deprecated SPLIT_READS feed type");
+	//	}
+	//}
+	if (type == FEED_TYPE::INDEXED) {
+        if (orig_files[0].isZip) {
+		    build_chunk_offsets();
+        }
+        else {
+		    build_flat_chunk_offsets();
+        }
+		is_ready = true;
+	}
+	else if (type == FEED_TYPE::SPLIT_READS) {
 		init_split_files();
 		is_ready = is_split_ready();
 		if (is_ready) { INFO("split is ready - no need to run"); }
 		else split();
 	}
 	else {
-		is_ready = true;
+        // should never get here since feed type is validated at the command line parsing stage, but just in case...
+        ERR("Unsupported feed type: ", static_cast<unsigned>(type));
+        exit(1);
 	}
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -306,7 +389,11 @@ bool Readfeed::loadReadById(Read& read)
 	return true;
 } // ~Readfeed::loadReadById
 
-bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig, std::vector<Readfile>& files) {
+bool Readfeed::next(int inext, 
+                    std::string& read, 
+                    unsigned& seqlen, 
+                    bool is_orig, 
+                    std::vector<Readfile>& files) {
 	std::string line;
 	std::stringstream readss; // an empty read
 	auto stat = vstate_in[inext].last_stat;
@@ -339,7 +426,8 @@ bool Readfeed::next(int inext, std::string& read, unsigned& seqlen, bool is_orig
 
 		// right-trim whitespace in place (removes '\r' too)
 		if (!line.empty()) {
-			line.erase(std::find_if(line.rbegin(), line.rend(), [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+			line.erase(std::find_if(line.rbegin(), line.rend(), 
+                        [l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
 		}
 
 		// EOF reached - return last read
@@ -570,14 +658,204 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<R
 } // ~Readfeed::next
 
 /*
+ * next_gz  (INDEXED_GZ)
+ * Mirrors next(int,string&,bool,vector<Readfile>&) but reads lines from
+ * gz_slots[inext].getline() instead of vzlib_in / ifsv.
+ */
+bool Readfeed::next_gz(int inext, std::string& readstr, bool is_orig)
+{
+	// For interleaved paired (single file), FWD and REV slots share one reader.
+	// REV slot (inext % num_sense != 0) delegates to its FWD partner's reader and state.
+	const int slot_idx = (num_orig_files < num_sense && inext % static_cast<int>(num_sense) != 0)
+	                     ? inext - (inext % static_cast<int>(num_sense))
+	                     : inext;
+
+	std::string line;
+	std::stringstream readss;
+	auto stat = vstate_in[slot_idx].last_stat;
+	auto& files = gz_slot_files;
+
+	for (auto count = vstate_in[slot_idx].last_count; !vstate_in[slot_idx].is_done; ++count)
+	{
+		if (vstate_in[slot_idx].last_header.size() > 0) {
+			if (!is_orig)
+				readss << inext << '_' << vstate_in[slot_idx].read_count << '\n';
+			readss << vstate_in[slot_idx].last_header << '\n';
+			vstate_in[slot_idx].last_header = "";
+		}
+
+		line = "";
+		if (!vstate_in[slot_idx].is_done) {
+			stat = gz_slots[slot_idx].getline(line);
+		}
+
+		if (!line.empty()) {
+			line.erase(std::find_if(line.rbegin(), line.rend(),
+				[l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+		}
+
+		if (stat == RL_END) {
+			if (!line.empty()) readss << line;
+			vstate_in[slot_idx].is_done = true;
+			auto FR = (inext & 1) == 0 ? FWD : REV;
+			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[slot_idx].read_count);
+			break;
+		}
+
+		if (stat == RL_ERR) {
+			auto FR = (inext & 1) == 0 ? FWD : REV;
+			ERR("reading from ", FR, " file. Exiting...");
+			exit(1);
+		}
+
+		if (line.empty()) { --count; continue; }
+
+		++vstate_in[slot_idx].line_count;
+
+		if (vstate_in[slot_idx].line_count == 1) {
+			files[slot_idx].isFastq = (line[0] == FASTQ_HEADER_START);
+			files[slot_idx].isFasta = (line[0] == FASTA_HEADER_START);
+		}
+
+		if (count == 4 && files[slot_idx].isFastq) count = 0;
+
+		if ((files[slot_idx].isFasta && line[0] == FASTA_HEADER_START) ||
+			(files[slot_idx].isFastq && count == 0))
+		{
+			if (vstate_in[slot_idx].line_count == 1) {
+				if (!is_orig)
+					readss << inext << '_' << vstate_in[slot_idx].read_count << '\n';
+				readss << line << '\n';
+				count = 0;
+			} else {
+				if (files[slot_idx].isFasta) readss << '\n';
+				vstate_in[slot_idx].last_header = line;
+				vstate_in[slot_idx].last_count  = 1;
+				vstate_in[slot_idx].last_stat   = stat;
+				break;
+			}
+		} else {
+			if (files[slot_idx].isFastq) {
+				if (count == 2) { if (is_orig) readss << line << '\n'; continue; }
+				if (count == 3) { readss << line; if (is_orig) readss << '\n'; continue; }
+				readss << line << '\n';
+			} else {
+				readss << line;
+			}
+		}
+	} // ~for getline
+
+	++vstate_in[slot_idx].read_count;
+	auto is_read_ok = readss.str().size() > 0;
+	if (is_read_ok) readstr = readss.str();
+	return is_read_ok;
+} // ~Readfeed::next_gz
+
+/*
+ * next_flat  (INDEXED_FLAT)
+ * Mirrors next_gz() but reads lines from flat_slots[inext].getline() instead of gz_slots.
+ */
+bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
+{
+	// For interleaved paired (single file), FWD and REV slots share one ifstream.
+	// REV slot (inext % num_sense != 0) delegates to its FWD partner's ifstream and state.
+	const int slot_idx = (num_orig_files < num_sense && inext % static_cast<int>(num_sense) != 0)
+	                     ? inext - (inext % static_cast<int>(num_sense))
+	                     : inext;
+
+	std::string line;
+	std::stringstream readss;
+	auto stat = vstate_in[slot_idx].last_stat;
+	auto& files = flat_slot_files;
+
+	for (auto count = vstate_in[slot_idx].last_count; !vstate_in[slot_idx].is_done; ++count)
+	{
+		if (vstate_in[slot_idx].last_header.size() > 0) {
+			if (!is_orig)
+				readss << inext << '_' << vstate_in[slot_idx].read_count << '\n';
+			readss << vstate_in[slot_idx].last_header << '\n';
+			vstate_in[slot_idx].last_header = "";
+		}
+
+		line = "";
+		if (!vstate_in[slot_idx].is_done) {
+			stat = flat_slots[slot_idx].getline(line);
+		}
+
+		if (!line.empty()) {
+			line.erase(std::find_if(line.rbegin(), line.rend(),
+				[l = std::locale{}](auto ch) { return !std::isspace(ch, l); }).base(), line.end());
+		}
+
+		if (stat == RL_END) {
+			if (!line.empty()) readss << line;
+			vstate_in[slot_idx].is_done = true;
+			auto FR = (inext & 1) == 0 ? FWD : REV;
+			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[slot_idx].read_count);
+			break;
+		}
+
+		if (stat == RL_ERR) {
+			auto FR = (inext & 1) == 0 ? FWD : REV;
+			ERR("reading from ", FR, " file. Exiting...");
+			exit(1);
+		}
+
+		if (line.empty()) { --count; continue; }
+
+		++vstate_in[slot_idx].line_count;
+
+		if (vstate_in[slot_idx].line_count == 1) {
+			files[slot_idx].isFastq = (line[0] == FASTQ_HEADER_START);
+			files[slot_idx].isFasta = (line[0] == FASTA_HEADER_START);
+		}
+
+		if (count == 4 && files[slot_idx].isFastq) count = 0;
+
+		if ((files[slot_idx].isFasta && line[0] == FASTA_HEADER_START) ||
+			(files[slot_idx].isFastq && count == 0))
+		{
+			if (vstate_in[slot_idx].line_count == 1) {
+				if (!is_orig)
+					readss << inext << '_' << vstate_in[slot_idx].read_count << '\n';
+				readss << line << '\n';
+				count = 0;
+			} else {
+				if (files[slot_idx].isFasta) readss << '\n';
+				vstate_in[slot_idx].last_header = line;
+				vstate_in[slot_idx].last_count  = 1;
+				vstate_in[slot_idx].last_stat   = stat;
+				break;
+			}
+		} else {
+			if (files[slot_idx].isFastq) {
+				if (count == 2) { if (is_orig) readss << line << '\n'; continue; }
+				if (count == 3) { readss << line; if (is_orig) readss << '\n'; continue; }
+				readss << line << '\n';
+			} else {
+				readss << line;
+			}
+		}
+	} // ~for getline
+
+	++vstate_in[slot_idx].read_count;
+	auto is_read_ok = readss.str().size() > 0;
+	if (is_read_ok) readstr = readss.str();
+	return is_read_ok;
+} // ~Readfeed::next_flat
+
+/*
  * public function
  */
 bool Readfeed::next(int inext, std::string& readstr)
 {
-	auto has_read = false;
 	if (type == FEED_TYPE::SPLIT_READS)
-		has_read = next(inext, readstr, false, split_files);
-	return has_read;
+		return next(inext, readstr, false, split_files);
+	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip)
+		return next_gz(inext, readstr, false);
+	if (type == FEED_TYPE::INDEXED && !orig_files[0].isZip)
+		return next_flat(inext, readstr, false);
+	return false;
 }
 
 /**
@@ -603,6 +881,41 @@ void Readfeed::rewind() {
   rewind IN feed
 */
 void Readfeed::rewind_in() {
+	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
+		const bool is_interleaved = (num_orig_files < num_sense);
+		for (std::size_t i = 0; i < gz_slots.size(); ++i) {
+			if (is_interleaved && i % num_sense != 0) continue; // REV slots share FWD reader
+			auto& slot = gz_slots[i];
+			if (slot.reader) {
+				slot.reader->seek(static_cast<long long>(slot.bytes_start));
+			}
+			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
+			slot.buf_pos = 0;
+			slot.buf_len = 0;
+			if (i < vstate_in.size()) vstate_in[i].reset();
+		}
+		return;
+	}
+
+	if (type == FEED_TYPE::INDEXED && !orig_files[0].isZip) {
+		const bool is_interleaved = (num_orig_files < num_sense);
+		for (std::size_t i = 0; i < flat_slots.size(); ++i) {
+			if (is_interleaved && i % num_sense != 0) continue; // REV slots share FWD ifstream
+			auto& slot = flat_slots[i];
+			if (slot.ifs.is_open()) {
+				if (slot.ifs.rdstate() != std::ios_base::goodbit) slot.ifs.clear();
+				slot.ifs.seekg(static_cast<std::streamoff>(slot.bytes_start));
+			}
+			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
+			slot.buf_pos = 0;
+			slot.buf_len = 0;
+			if (i < vstate_in.size()) vstate_in[i].reset();
+		}
+		return;
+	}
+
+    // SPLIT_READS - deprecated
+    // 20260329 Sun TODO: remove after INDEXED_GZ and INDEXED_FLAT are fully supported and tested
 	for (std::size_t i = 0; i < ifsv.size(); ++i) {
 		if (ifsv[i].is_open()) {
 			if (ifsv[i].rdstate() != std::ios_base::goodbit) {
@@ -611,7 +924,8 @@ void Readfeed::rewind_in() {
 			ifsv[i].seekg(0); // rewind
 
 			if (!ifsv[i].good()) {
-				ERR("failed rewind stream idx: ", i, " in vector of size: ", ifsv.size(), " iostate: ", ifsv[i].rdstate());
+				ERR("failed rewind stream idx: ", i, " in vector of size: ", ifsv.size(), 
+                    " iostate: ", ifsv[i].rdstate());
 				exit(1);
 			}
 		}
@@ -750,6 +1064,193 @@ bool Readfeed::split()
 	INFO("Done splitting. Reads count: ", num_reads_tot, " Runtime sec: ", elapsed.count(), "\n");
 	return retval;
 } // ~Readfeed::split
+
+// ---------------------------------------------------------------------------
+// build_chunk_offsets  (INDEXED zipped)
+//
+// For each original gz file, do a single-pass decompression scan to collect
+// the decompressed byte offset after every newline.  Then divide those line
+// offsets into num_splits record-aligned chunks and store the byte boundaries
+// in gz_slots[].
+// ---------------------------------------------------------------------------
+void Readfeed::build_chunk_offsets()
+{
+	auto start = std::chrono::high_resolution_clock::now();
+	INFO("build_chunk_offsets: computing byte-range chunks for ", 
+            num_orig_files, " file(s) x ", num_splits, " split(s)");
+
+	const int linesPerRecord = orig_files[0].isFastq ? 4 : 2;
+	// For a single interleaved paired file, chunk boundaries must align to complete pairs
+	// (FWD + REV), so FWD and REV slot readers stay in sync when they share a reader.
+	const bool is_interleaved = (num_orig_files < num_sense);
+	const int alignUnit = is_interleaved ? linesPerRecord * static_cast<int>(num_sense) : linesPerRecord;
+
+	gz_slots.resize(num_split_files);
+	gz_slot_files.resize(num_split_files);
+
+	for (size_t j = 0; j < num_orig_files; ++j) {
+		auto& origFile = orig_files[j];
+
+		// Pre-populate slot metadata for this file's sense (FWD slot only for interleaved)
+		for (size_t i = 0; i < num_splits; ++i) {
+			size_t slotIdx = i * num_sense + j;
+			gz_slot_files[slotIdx].path     = origFile.path;
+			gz_slot_files[slotIdx].isZip    = true;
+			gz_slot_files[slotIdx].isFastq  = origFile.isFastq;
+			gz_slot_files[slotIdx].isFasta  = origFile.isFasta;
+			gz_slots[slotIdx].file_path     = origFile.path.generic_string();
+		}
+
+		// Pass 1: decompress entire file, collect newline offsets
+		INFO("scanning ", origFile.path.generic_string());
+		std::vector<uint64_t> newlineEnds;
+		newlineEnds.reserve(static_cast<size_t>(origFile.numreads) * linesPerRecord + 1);
+
+		{
+			using PGR = rapidgzip::ParallelGzipReader<>;
+			auto reader = std::make_unique<PGR>(
+				std::make_unique<rapidgzip::StandardFileReader>(origFile.path.generic_string()),
+				static_cast<size_t>(num_splits)
+			);
+			constexpr size_t CHUNK = 1U << 20; // 1 MiB
+			std::vector<uint8_t> buf(CHUNK);
+			uint64_t pos = 0;
+			for (;;) {
+				auto n = reader->read(reinterpret_cast<char*>(buf.data()), CHUNK);
+				if (n <= 0) break;
+				for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
+					if (buf[k] == '\n') newlineEnds.push_back(pos + k + 1);
+				}
+				pos += static_cast<uint64_t>(n);
+			}
+		}
+
+		const uint64_t totalLines = static_cast<uint64_t>(newlineEnds.size());
+		INFO("build_chunk_offsets: file ", j, " totalLines=", totalLines);
+
+		// Compute line boundaries for each split, aligned to alignUnit (pair for interleaved)
+		std::vector<uint64_t> alignedStarts(num_splits + 1);
+		alignedStarts[0] = 0;
+		for (size_t i = 1; i < num_splits; ++i) {
+			uint64_t nominalLine = (totalLines * i) / num_splits;
+			alignedStarts[i] = (nominalLine / alignUnit) * alignUnit;
+		}
+		alignedStarts[num_splits] = totalLines;
+
+		for (size_t i = 0; i < num_splits; ++i) {
+			size_t slotIdx = i * num_sense + j;
+			uint64_t startLine = alignedStarts[i];
+			uint64_t endLine   = alignedStarts[i + 1];
+
+			uint64_t startByte = (startLine == 0 || newlineEnds.empty()) ? 0 : newlineEnds[startLine - 1];
+			uint64_t endByte   = (endLine   == 0 || newlineEnds.empty()) ? 0 : newlineEnds[endLine   - 1];
+
+			gz_slots[slotIdx].bytes_start = startByte;
+			gz_slots[slotIdx].bytes_end   = endByte;
+			gz_slot_files[slotIdx].numreads = static_cast<unsigned>((endLine - startLine) / linesPerRecord);
+
+			INFO("build_chunk_offsets: slot ", slotIdx,
+				" bytes=[", startByte, ",", endByte, ")",
+				" reads=", gz_slot_files[slotIdx].numreads);
+		}
+	}
+
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("build_chunk_offsets done in ", elapsed.count(), " sec");
+} // ~Readfeed::build_chunk_offsets
+
+// ---------------------------------------------------------------------------
+// build_flat_chunk_offsets  (INDEXED_FLAT)
+//
+// For each original flat file, do a single-pass byte scan to collect the byte
+// offset after every newline.  Then divide those line offsets into num_splits
+// record-aligned chunks and store the byte boundaries in flat_slots[].
+// ---------------------------------------------------------------------------
+void Readfeed::build_flat_chunk_offsets()
+{
+	auto start = std::chrono::high_resolution_clock::now();
+	INFO("build_flat_chunk_offsets: computing byte-range chunks for ", num_orig_files, " file(s) x ", num_splits, " split(s)");
+
+	const int linesPerRecord = orig_files[0].isFastq ? 4 : 2;
+	// For a single interleaved paired file, chunk boundaries must align to complete pairs
+	// (FWD + REV), so FWD and REV slot readers stay in sync when they share a reader.
+	const bool is_interleaved = (num_orig_files < num_sense);
+	const int alignUnit = is_interleaved ? linesPerRecord * static_cast<int>(num_sense) : linesPerRecord;
+
+	flat_slots.resize(num_split_files);
+	flat_slot_files.resize(num_split_files);
+
+	for (size_t j = 0; j < num_orig_files; ++j) {
+		auto& origFile = orig_files[j];
+
+		// Pre-populate slot metadata for this file's sense (FWD slot only for interleaved)
+		for (size_t i = 0; i < num_splits; ++i) {
+			size_t slotIdx = i * num_sense + j;
+			flat_slot_files[slotIdx].path    = origFile.path;
+			flat_slot_files[slotIdx].isZip   = false;
+			flat_slot_files[slotIdx].isFastq = origFile.isFastq;
+			flat_slot_files[slotIdx].isFasta = origFile.isFasta;
+			flat_slots[slotIdx].file_path    = origFile.path.generic_string();
+		}
+
+		// Pass 1: scan file, collect newline offsets
+		INFO("build_flat_chunk_offsets: scanning ", origFile.path.generic_string());
+		std::vector<uint64_t> newlineEnds;
+		newlineEnds.reserve(static_cast<size_t>(origFile.numreads) * linesPerRecord + 1);
+
+		{
+			std::ifstream ifs(origFile.path, std::ios_base::in | std::ios_base::binary);
+			if (!ifs.is_open()) {
+				ERR("failed to open: ", origFile.path.generic_string());
+				exit(1);
+			}
+			constexpr size_t CHUNK = 1U << 20; // 1 MiB
+			std::vector<char> buf(CHUNK);
+			uint64_t pos = 0;
+			for (;;) {
+				ifs.read(buf.data(), static_cast<std::streamsize>(CHUNK));
+				auto n = ifs.gcount();
+				if (n <= 0) break;
+				for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
+					if (buf[k] == '\n') newlineEnds.push_back(pos + k + 1);
+				}
+				pos += static_cast<uint64_t>(n);
+			}
+		}
+
+		const uint64_t totalLines = static_cast<uint64_t>(newlineEnds.size());
+		INFO("build_flat_chunk_offsets: file ", j, " totalLines=", totalLines);
+
+		// Compute line boundaries for each split, aligned to alignUnit (pair for interleaved)
+		std::vector<uint64_t> alignedStarts(num_splits + 1);
+		alignedStarts[0] = 0;
+		for (size_t i = 1; i < num_splits; ++i) {
+			uint64_t nominalLine = (totalLines * i) / num_splits;
+			alignedStarts[i] = (nominalLine / alignUnit) * alignUnit;
+		}
+		alignedStarts[num_splits] = totalLines;
+
+		for (size_t i = 0; i < num_splits; ++i) {
+			size_t slotIdx = i * num_sense + j;
+			uint64_t startLine = alignedStarts[i];
+			uint64_t endLine   = alignedStarts[i + 1];
+
+			uint64_t startByte = (startLine == 0 || newlineEnds.empty()) ? 0 : newlineEnds[startLine - 1];
+			uint64_t endByte   = (endLine   == 0 || newlineEnds.empty()) ? 0 : newlineEnds[endLine   - 1];
+
+			flat_slots[slotIdx].bytes_start = startByte;
+			flat_slots[slotIdx].bytes_end   = endByte;
+			flat_slot_files[slotIdx].numreads = static_cast<unsigned>((endLine - startLine) / linesPerRecord);
+
+			INFO("build_flat_chunk_offsets: slot ", slotIdx,
+				" bytes=[", startByte, ",", endByte, ")",
+				" reads=", flat_slot_files[slotIdx].numreads);
+		}
+	}
+
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("build_flat_chunk_offsets done in ", elapsed.count(), " sec");
+} // ~Readfeed::build_flat_chunk_offsets
 
 bool Readfeed::is_split_ready() {
 	// compare with data in descriptor
@@ -1088,6 +1589,8 @@ void Readfeed::write_descriptor()
 
 void Readfeed::init_vzlib_in()
 {
+	if (type == FEED_TYPE::INDEXED) return;
+
 	vzlib_in.resize(split_files.size());
 	for (std::size_t i = 0; i < vzlib_in.size(); ++i) {
 		if (split_files[i].isZip) vzlib_in[i].init();
@@ -1103,6 +1606,50 @@ void Readfeed::init_vzlib_in()
  */
 void Readfeed::init_reading()
 {
+	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
+		vstate_in.resize(gz_slots.size());
+		for (auto& s : vstate_in) s.reset();
+
+		// For interleaved paired, REV slots (odd) share the FWD slot's reader — skip them.
+		const bool is_interleaved = (num_orig_files < num_sense);
+		for (std::size_t i = 0; i < gz_slots.size(); ++i) {
+			if (is_interleaved && i % num_sense != 0) continue;
+			auto& slot = gz_slots[i];
+			slot.reader = std::make_unique<rapidgzip::ParallelGzipReader<>>(
+				std::make_unique<rapidgzip::StandardFileReader>(slot.file_path),
+				/*parallelization=*/1
+			);
+			slot.reader->seek(static_cast<long long>(slot.bytes_start));
+			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
+			slot.buf_pos = 0;
+			slot.buf_len = 0;
+		}
+		return;
+	}
+
+	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip == false) {
+		vstate_in.resize(flat_slots.size());
+		for (auto& s : vstate_in) s.reset();
+
+		// For interleaved paired, REV slots (odd) share the FWD slot's ifstream — skip them.
+		const bool is_interleaved = (num_orig_files < num_sense);
+		for (std::size_t i = 0; i < flat_slots.size(); ++i) {
+			if (is_interleaved && i % num_sense != 0) continue;
+			auto& slot = flat_slots[i];
+			if (slot.ifs.is_open()) slot.ifs.close();
+			slot.ifs.open(slot.file_path, std::ios_base::in | std::ios_base::binary);
+			if (!slot.ifs.is_open()) {
+				ERR("failed to open: ", slot.file_path);
+				exit(1);
+			}
+			slot.ifs.seekg(static_cast<std::streamoff>(slot.bytes_start));
+			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
+			slot.buf_pos = 0;
+			slot.buf_len = 0;
+		}
+		return;
+	}
+
 	for (std::size_t i = 0; i < vstate_in.size(); ++i) {
 		vstate_in[i].reset();
 	}

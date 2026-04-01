@@ -1,6 +1,10 @@
+# t18
 name: 2 paired reads files flat + paired_in + joint FWD/REV output
 info: |
   Test the new option '-out2' (issue 202)
+                     output type                                       |    alignment type
+    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+      1     2     0    1      1        0        0     0     0      1       1   1    2       2
   Test different E-values
   ...                               paired_in
   -e      min_sw  hits  2*hits   aligned   other

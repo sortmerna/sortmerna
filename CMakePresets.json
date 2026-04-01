@@ -16,6 +16,7 @@
                 "ZLIB_ROOT": "${sourceDir}/build/3rdparty/zlib/dist",
                 "ROCKSDB_DIST": "${sourceDir}/build/3rdparty/rocksdb/dist",
                 "CONCURRENTQUEUE_HOME": "${sourceDir}/3rdparty/concurrentqueue",
+                "INDEXED_BZIP2_HOME": "${sourceDir}/3rdparty/indexed_bzip2/src",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist"
             }
         },

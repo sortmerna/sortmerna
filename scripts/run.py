@@ -1321,7 +1321,7 @@ def iss_453(num_splits:int,
             out, serr = ps.communicate()
         print(f'done writing in {time.time() - sstart} sec')
     
-def parse_test_config(args:Namespace):
+def parse_test_config(args:Namespace) -> dict:
     '''
     parse test jinja template and set all sortmerna options
     args:
