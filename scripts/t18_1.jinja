@@ -3,7 +3,7 @@ info: |
   The same as t18 on gzipped Fastq reads
   Test different E-values
   ...                               paired_in
-  -e      min_sw  hits  2*hits   aligned   other
+   e      min_sw  hits  2*hits   aligned   other
    1          48  9188
    0.001      60  8956
    1e-7       75  7919    
@@ -21,12 +21,12 @@ args:
   -de_novo_otu:
   -paired_in:
   -v:
+  #-e: '1e-15'
+  #-out2:
   -workdir: {{ WRK_DIR }}
   -threads: '{{THREADS or 4}}'
   -dbg-level: '{{DBG_LEVEL or 0}}'
   -task: '{{TASK or 4}}'
-  #-e: '1e-15'
-  #-out2:
 validate:
   func:
   variant: sanger # fastq quality variant

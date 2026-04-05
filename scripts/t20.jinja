@@ -10,17 +10,18 @@ args:
   -ref:
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
-  -reads:
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
-    #- {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq.gz
+  -reads:  # Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq  # 10000 reads 7329 KB
+    #- {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq.gz  # 10000 reads
   -fastx:
   -other:
-  -paired:
   -blast: '1'
+  -paired:
   -paired_in:
   -v:
-  -workdir: {{ WRK_DIR }}
+  #-out2:
   -threads: '{{THREADS or 4}}'
+  -workdir: {{ WRK_DIR }}
 validate:
   func:
   variant: sanger # fastq quality variant
