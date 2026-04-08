@@ -173,6 +173,14 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("==== Starting alignment ====");
+    INFO("Alignment parameters:  is_best: ", opts.is_best,
+            "  num_alignments: ", opts.num_alignments,
+            "  min_lis: ", opts.min_lis);
+    if (opts.num_alignments == 0) {
+        INFO("num_alignments is set to: ",  opts.num_alignments,
+            ", so all alignments passing E-value threshold will be reported,"
+            " and the option is_best is ignored.");
+    }
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 	INFO("Number of cores: ", numCores);
@@ -239,8 +247,9 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), std::ref(readstats), std::ref(index),
-					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(opts)));
+				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), 
+                                    std::ref(readstats), std::ref(index), std::ref(refs), 
+                                    std::ref(refstats),  std::ref(kvdb), std::ref(opts)));
 			}
 			for (auto& thr: tpool) {
 				thr.join();
@@ -260,7 +269,9 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			tpool.clear();
 			// rewind for the next index
 			readfeed.rewind_in();
-			readfeed.init_vzlib_in();
+            // does nothing for indexed feed. Only for split reads feed. 
+            // TODO: remove this call after removing split reads feed.
+			readfeed.init_vzlib_in();   
 			//read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(idx_num)

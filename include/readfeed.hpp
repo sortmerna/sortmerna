@@ -141,6 +141,7 @@ public:
     */
 	bool define_format(const int& dbg = 0);
 	void count_reads();
+	void count_reads_parallel();
 	void write_descriptor();
 	/*
      * verify the split was already performed and the feed is ready
@@ -242,7 +243,6 @@ private:
 	// input processing (SPLIT_READS)
 	std::vector<std::ifstream> ifsv; // [fwd_0, rev_0, fwd_1, rev_1, ... fwd_n-1, rev_n-1]
 	std::vector<Izlib> vzlib_in;
-	std::vector<Readstate> vstate_in;
 
 	// input processing (INDEXED_GZ) — one GzSlot per thread per sense
 	std::vector<GzSlot>   gz_slots;      // [thread_0_fwd, thread_0_rev, thread_1_fwd, ...]
@@ -251,6 +251,9 @@ private:
 	// input processing (INDEXED_FLAT) — one FlatSlot per thread per sense
 	std::vector<FlatSlot>  flat_slots;      // [thread_0_fwd, thread_0_rev, thread_1_fwd, ...]
 	std::vector<Readfile>  flat_slot_files; // metadata parallel to flat_slots
+
+    // used by all types of readfeed
+	std::vector<Readstate> vstate_in;
 
 	// output processing
 	std::vector<std::ofstream> ofsv;

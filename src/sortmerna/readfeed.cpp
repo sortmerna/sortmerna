@@ -195,9 +195,14 @@ void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
 		orig_files[i].size = filesize(readfiles[i]);
 	}
 
-	// always do even when split is ready (need for validation)
 	define_format();
-	count_reads();  // calculate this.num_reads_tot
+    // calculate this.num_reads_tot
+    if (type == FEED_TYPE::INDEXED) {
+        count_reads_parallel();
+    }
+    else {
+        count_reads();
+    }
 
 	// Select INDEXED_GZ or INDEXED_FLAT based on input file format.
     // Single interleaved paired files when (num_orig_files < num_sense) 
@@ -753,7 +758,7 @@ bool Readfeed::next_gz(int inext, std::string& readstr, bool is_orig)
 
 /*
  * next_flat  (INDEXED_FLAT)
- * Mirrors next_gz() but reads lines from flat_slots[inext].getline() instead of gz_slots.
+ * Mirrors next_gz() but reads lines from flat_slots[inext].getline().
  */
 bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
 {
@@ -772,7 +777,7 @@ bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
 	{
 		if (vstate_in[slot_idx].last_header.size() > 0) {
 			if (!is_orig)
-				readss << inext << '_' << vstate_in[slot_idx].read_count << '\n';
+				readss << slot_idx << '_' << vstate_in[slot_idx].read_count << '\n';
 			readss << vstate_in[slot_idx].last_header << '\n';
 			vstate_in[slot_idx].last_header = "";
 		}
@@ -790,14 +795,24 @@ bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
 		if (stat == RL_END) {
 			if (!line.empty()) readss << line;
 			vstate_in[slot_idx].is_done = true;
-			auto FR = (inext & 1) == 0 ? FWD : REV;
-			INFO("EOF ", FR, " reached. Total reads: ", ++vstate_in[slot_idx].read_count);
+            if (num_orig_files == 1) {
+			    INFO("EOF reached. Slot: ", slot_idx, " Total reads: ", ++vstate_in[slot_idx].read_count);
+            }
+            else {
+			    auto FR = (inext & 1) == 0 ? FWD : REV;
+			    INFO("EOF ", FR, " reached. Slot: ", slot_idx, " Total reads: ", ++vstate_in[slot_idx].read_count);
+            }
 			break;
 		}
 
 		if (stat == RL_ERR) {
-			auto FR = (inext & 1) == 0 ? FWD : REV;
-			ERR("reading from ", FR, " file. Exiting...");
+            if (num_orig_files == 1) {
+                ERR("reading from file. Slot: ", slot_idx, " Exiting...");
+            }
+            else {
+			    auto FR = (inext & 1) == 0 ? FWD : REV;
+			    ERR("reading from ", FR, " file. Slot: ", slot_idx, " Exiting...");
+            }
 			exit(1);
 		}
 
@@ -817,7 +832,7 @@ bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
 		{
 			if (vstate_in[slot_idx].line_count == 1) {
 				if (!is_orig)
-					readss << inext << '_' << vstate_in[slot_idx].read_count << '\n';
+					readss << slot_idx << '_' << vstate_in[slot_idx].read_count << '\n';
 				readss << line << '\n';
 				count = 0;
 			} else {
@@ -1169,7 +1184,8 @@ void Readfeed::build_chunk_offsets()
 void Readfeed::build_flat_chunk_offsets()
 {
 	auto start = std::chrono::high_resolution_clock::now();
-	INFO("build_flat_chunk_offsets: computing byte-range chunks for ", num_orig_files, " file(s) x ", num_splits, " split(s)");
+	INFO("build_flat_chunk_offsets: computing byte-range chunks for ", num_orig_files, 
+            " file(s) x ", num_splits, " split(s)", " num_split_files | number of slots = ", num_split_files);
 
 	const int linesPerRecord = orig_files[0].isFastq ? 4 : 2;
 	// For a single interleaved paired file, chunk boundaries must align to complete pairs
@@ -1441,6 +1457,198 @@ bool Readfeed::define_format(const int& dbg)
 	return is_format_defined;
 } // ~Readfeed::define_format
 
+// ---------------------------------------------------------------------------
+// count_reads_parallel  (FEED_TYPE::INDEXED)
+//
+// For gzipped input files: creates a ParallelGzipReader per file with
+// num_splits decompression workers and scans the decompressed stream in a
+// single pass to count records and accumulate sequence lengths.
+//
+// For flat input files: finds record-aligned byte boundaries for each split,
+// then spawns num_splits threads that each scan their assigned byte range.
+//
+// Populates: num_reads_tot, length_all, min_read_len, max_read_len, and
+//            orig_files[j].numreads.
+// ---------------------------------------------------------------------------
+void Readfeed::count_reads_parallel()
+{
+	auto start = std::chrono::high_resolution_clock::now();
+	INFO("count_reads_parallel: started with ", num_splits, " worker thread(s)");
+
+	if (!is_format_defined)
+		define_format();
+
+	const int linesPerRecord = orig_files[0].isFastq ? 4 : 2;
+
+	for (size_t j = 0; j < num_orig_files; ++j) {
+		auto& origFile = orig_files[j];
+
+		if (origFile.isZip) {
+			// --- gz: ParallelGzipReader decompresses with num_splits threads internally ---
+			using PGR = rapidgzip::ParallelGzipReader<>;
+			auto reader = std::make_unique<PGR>(
+				std::make_unique<rapidgzip::StandardFileReader>(origFile.path.generic_string()),
+				static_cast<size_t>(num_splits)
+			);
+
+			constexpr size_t CHUNK = 1U << 20; // 1 MiB
+			std::vector<uint8_t> buf(CHUNK);
+
+			int lineInRecord = 0; // 0=header, 1=seq, 2='+', 3=qual (FASTQ); 0=header, 1=seq (FASTA)
+			uint64_t seqlen = 0;
+
+			for (;;) {
+				const auto n = reader->read(reinterpret_cast<char*>(buf.data()), CHUNK);
+				if (n <= 0) break;
+				for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
+					if (buf[k] == '\n') {
+						if (lineInRecord == 1) { // end of sequence line
+							++origFile.numreads;
+							length_all += seqlen;
+							if (seqlen > max_read_len) max_read_len = static_cast<uint32_t>(seqlen);
+							if (min_read_len == 0 || static_cast<uint32_t>(seqlen) < min_read_len)
+								min_read_len = static_cast<uint32_t>(seqlen);
+							seqlen = 0;
+						}
+						lineInRecord = (lineInRecord + 1) % linesPerRecord;
+					} else if (lineInRecord == 1) {
+						++seqlen;
+					}
+				}
+			}
+		} else {
+			// --- flat: parallel threads, each scanning a record-aligned byte range ---
+			const uint64_t fileSize = static_cast<uint64_t>(origFile.size);
+
+			// Build record-aligned split boundaries.
+			// boundaries[i]   = byte offset where thread i starts (inclusive)
+			// boundaries[i+1] = byte offset where thread i ends   (exclusive)
+			std::vector<uint64_t> boundaries(num_splits + 1);
+			boundaries[0] = 0;
+			boundaries[num_splits] = fileSize;
+
+			if (num_splits > 1) {
+				// Sequential boundary-finding pass: seek near each split point and advance
+				// to the start of the next complete record.
+				std::ifstream bifs(origFile.path, std::ios_base::in | std::ios_base::binary);
+				if (!bifs.is_open()) {
+					ERR("count_reads_parallel: cannot open ", origFile.path.generic_string());
+					exit(1);
+				}
+
+				for (size_t i = 1; i < num_splits; ++i) {
+					bifs.seekg(static_cast<std::streamoff>(fileSize * i / num_splits));
+					std::string ln;
+					std::getline(bifs, ln); // skip to end of current (partial) line
+
+					if (origFile.isFastq) {
+						// Read 4-line groups until we find one where line[0] starts with '@'
+						// and line[2] starts with '+' (valid FASTQ record start).
+						bool found = false;
+						for (int attempt = 0; attempt < linesPerRecord && !found; ++attempt) {
+							const uint64_t candidatePos = static_cast<uint64_t>(bifs.tellg());
+							std::string l0, l1, l2, l3;
+							if (!std::getline(bifs, l0)) { boundaries[i] = fileSize; break; }
+							if (!std::getline(bifs, l1)) { boundaries[i] = fileSize; break; }
+							if (!std::getline(bifs, l2)) { boundaries[i] = fileSize; break; }
+							if (!std::getline(bifs, l3)) { boundaries[i] = fileSize; break; }
+							if (!l0.empty() && l0[0] == '@' && !l2.empty() && l2[0] == '+') {
+								boundaries[i] = candidatePos;
+								found = true;
+							} else {
+								// Advance by one line and retry
+								bifs.seekg(static_cast<std::streamoff>(candidatePos + l0.size() + 1));
+							}
+						}
+						if (!found) boundaries[i] = fileSize; // fold empty range into previous split
+					} else {
+						// FASTA: scan for the next '>' at the start of a line
+						bool found = false;
+						std::string fln;
+						while (!found) {
+							const uint64_t pos = static_cast<uint64_t>(bifs.tellg());
+							if (!std::getline(bifs, fln)) { boundaries[i] = fileSize; break; }
+							if (!fln.empty() && fln[0] == '>') { boundaries[i] = pos; found = true; }
+						}
+					}
+				}
+			}
+
+			// Thread-local accumulator
+			struct ThreadResult {
+				uint64_t numreads = 0;
+				uint64_t length   = 0;
+				uint32_t minlen   = 0;
+				uint32_t maxlen   = 0;
+			};
+			std::vector<ThreadResult> results(num_splits);
+
+			{
+				std::vector<std::thread> workers;
+				workers.reserve(num_splits);
+				for (size_t i = 0; i < num_splits; ++i) {
+					workers.emplace_back([&, i]() {
+						auto& res = results[i];
+						const uint64_t startByte = boundaries[i];
+						const uint64_t endByte   = boundaries[i + 1];
+						if (startByte >= endByte) return;
+
+						std::ifstream ifs(origFile.path, std::ios_base::in | std::ios_base::binary);
+						if (!ifs.is_open()) return;
+						ifs.seekg(static_cast<std::streamoff>(startByte));
+
+						constexpr size_t BUFSZ = 1U << 16; // 64 KiB
+						std::vector<char> buf(BUFSZ);
+						uint64_t remaining = endByte - startByte;
+						int lineInRecord = 0;
+						uint64_t seqlen = 0;
+
+						while (remaining > 0) {
+							const size_t toRead = static_cast<size_t>(
+								std::min(static_cast<uint64_t>(BUFSZ), remaining));
+							ifs.read(buf.data(), static_cast<std::streamsize>(toRead));
+							const auto n = static_cast<size_t>(ifs.gcount());
+							if (n == 0) break;
+							remaining -= n;
+							for (size_t k = 0; k < n; ++k) {
+								if (buf[k] == '\n') {
+									if (lineInRecord == 1) { // end of sequence line
+										++res.numreads;
+										res.length += seqlen;
+										if (seqlen > res.maxlen) res.maxlen = static_cast<uint32_t>(seqlen);
+										if (res.minlen == 0 || static_cast<uint32_t>(seqlen) < res.minlen)
+											res.minlen = static_cast<uint32_t>(seqlen);
+										seqlen = 0;
+									}
+									lineInRecord = (lineInRecord + 1) % linesPerRecord;
+								} else if (lineInRecord == 1) {
+									++seqlen;
+								}
+							}
+						}
+					});
+				}
+				for (auto& t : workers) t.join();
+			}
+
+			// Reduce per-thread results into origFile and class-level members
+			for (const auto& r : results) {
+				origFile.numreads += static_cast<unsigned>(r.numreads);
+				length_all += r.length;
+				if (r.maxlen > max_read_len) max_read_len = r.maxlen;
+				if (min_read_len == 0 || (r.minlen > 0 && r.minlen < min_read_len))
+					min_read_len = r.minlen;
+			}
+		}
+
+		num_reads_tot += origFile.numreads;
+	}
+
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+	INFO("count_reads_parallel done. Elapsed: ", elapsed.count(),
+	     " sec. Total reads: ", num_reads_tot);
+} // ~Readfeed::count_reads_parallel
+
 /*
 */
 void Readfeed::count_reads()
@@ -1650,6 +1858,7 @@ void Readfeed::init_reading()
 		return;
 	}
 
+    // split files - outdated - to be removed
 	for (std::size_t i = 0; i < vstate_in.size(); ++i) {
 		vstate_in[i].reset();
 	}
