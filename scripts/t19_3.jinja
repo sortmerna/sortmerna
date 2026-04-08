@@ -2,10 +2,9 @@
 name: 2 ref, 2 reads, flat, out2, paired_out
 info: |
   Test the new option '-out2' (issue 202)
-                     output type                                       |    alignment type
-    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-    --------------------------------------------------------------------------------------------
-     2      2     0    1      0         1       1     0     0      1      1    1     2      2
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+     2      2     0    1       0         1       1     0     0      1      1    1     2      2
 args:
   -ref:
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
