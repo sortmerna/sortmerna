@@ -52,34 +52,38 @@ tests:
   t13: []
   t14: []
   t15: []
-  #                       output type                                       |    alignment type
-  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  t16:   [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   1,    2,     2 ]
-  t16_2: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   0,    2,     2 ]
-  t16_3: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      1,   2,    2,     2 ]
-  t16_4: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   1,    2,     2 ]
-  t16_5: [ 2,    2,    1,   1,     0,        0,      0,    0,    1,    0,      0,   2,    2,     2 ]
-  t16_6: [ 2,    2,    1,   1,     0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
-  t16_7: [ 2,    2,    1,   1,     0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
-  t16_8: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
-  t16_9: [ 2,    2,    1,   1,     0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
+  #           input type        |               output type                  |    alignment type
+  #      refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t16:   [ 2,    2,    1,   1,      0,        0,      0,    0,    1,    0,      1,   1,    2,     2 ]
+  t16_2: [ 2,    2,    1,   1,      0,        0,      0,    0,    1,    0,      1,   0,    2,     2 ]
+  t16_3: [ 2,    2,    1,   1,      0,        0,      0,    0,    1,    0,      1,   2,    2,     2 ]
+  t16_4: [ 2,    2,    1,   1,      0,        0,      0,    0,    1,    0,      0,   1,    2,     2 ]
+  t16_5: [ 2,    2,    1,   1,      0,        0,      0,    0,    1,    0,      0,   2,    2,     2 ]
+  t16_6: [ 2,    2,    1,   1,      0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  t16_7: [ 2,    2,    1,   1,      0,        0,      0,    1,    1,    0,      1,   1,    2,     2 ]
+  t16_8: [ 2,    2,    1,   1,      0,        0,      1,    1,    1,    0,      1,   1,    2,     2 ]
+  t16_9: [ 2,    2,    1,   1,      0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #
   t17: []
   t18: []
-  #                       output type                                       |    alignment type
-  #      refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-  t19:   [ 2,    2,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  t19_1: [ 2,    2,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  t19_2: [ 2,    2,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  t19_3: [ 2,    2,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  t19_4: [ 2,    2,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  t19_5: [ 2,    2,    0,   1,      0,       0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  #           input type        |               output type                  |    alignment type
+  #      refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  t19:   [ 2,    2,    0,   1,      1,        0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_1: [ 2,    2,    0,   1,      1,        0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_2: [ 2,    2,    0,   1,      0,        1,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_3: [ 2,    2,    0,   1,      0,        1,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_4: [ 2,    2,    0,   1,      0,        0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t19_5: [ 2,    2,    0,   1,      0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  t19_6: [ 2,    2,    0,   1,      0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
+  t19_7: [ 2,    2,    1,   1,      0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #
-  t20:   [ 2,    1,    0,   1,      1,       0,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  t20_1: [ 2,    1,    0,   1,      1,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  t20_2: [ 2,    1,    0,   1,      0,       1,      0,    0,    0,    1,      1,   1,    2,     2 ]
-  t20_3: [ 2,    1,    0,   1,      0,       1,      1,    0,    0,    1,      1,   1,    2,     2 ]
-  t20_4: [ 2,    1,    0,   1,      0,       0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20:   [ 2,    1,    0,   1,      1,        0,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_1: [ 2,    1,    0,   1,      1,        0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_2: [ 2,    1,    0,   1,      0,        1,      0,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_3: [ 2,    1,    0,   1,      0,        1,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_4: [ 2,    1,    0,   1,      0,        0,      1,    0,    0,    1,      1,   1,    2,     2 ]
+  t20_5: [ 2,    1,    0,   1,      0,        0,      1,    0,    1,    0,      1,   1,    2,     2 ]
+  t20_6: [ 2,    1,    0,   1,      0,        0,      1,    1,    1,    1,      1,   1,    2,     2 ]
   #
   t21: []
   t22: []
@@ -138,7 +142,7 @@ t0:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1    2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
     - -reads
@@ -173,7 +177,7 @@ t0_1:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
     - -reads
@@ -210,7 +214,7 @@ t1:
     same input as t0
     using default number of threads (2)
     blast format is different than tests 0, 0_other
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
     - -reads
@@ -242,7 +246,7 @@ t1:
 
 t2:
   name: test_cigar_lcs_1
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/test_ref.fasta
     - -reads
@@ -273,7 +277,7 @@ t3:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -332,7 +336,7 @@ t4:
   name: test_indexing_split_databases
   info: |
     No alignment is performed, just building a multi-part index
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/gg_13_8_ref_set.fasta # 27,424 bytes (27KB) file
     - -reads
@@ -359,7 +363,7 @@ t4:
 
 t5:
   name: test_mate_pairs - part 1
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -396,7 +400,7 @@ t6:
      1e-7       74  6000
      1e-12      93  6000
      1e-15     105  6000
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -437,7 +441,7 @@ t6:
 
 t7:
   name: test_mate_pairs - part 3 - paired_out
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -465,7 +469,7 @@ t7:
 
 t8:
   name: test_multiple_databases_search
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -487,7 +491,7 @@ t8:
 
 t9:
   name: test_output_all_alignments_f_rc
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/ref_GQ099317_forward_and_rc.fasta
     - -reads
@@ -545,7 +549,7 @@ t10:
   note: |
     This captures the output of the command and verifies the error message.
     No output files are produced
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/ref_short_seqs.fasta
     - -reads
@@ -562,7 +566,7 @@ t10:
 
 t11:
   name: test_simulated_amplicon_1_part_map
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -608,7 +612,7 @@ t11:
 t12:
   name: test_simulated_amplicon_1_part_map
   note: same as t11 + 'best 5'
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -653,7 +657,7 @@ t12:
 
 t13:
   name: test_simulated_amplicon_6_part_map
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -702,7 +706,7 @@ t13:
 t14:
   name: test_simulated_amplicon_12_part_map
   note: identical to t13 except using 12-part index instead of 6-part
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -750,7 +754,7 @@ t15:
     ref  reads  best  N  min_lis zip
     ---------------------------------
     1    2      true  1  2       true
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -785,7 +789,7 @@ t16:
     ----------------------  alignment type
       1   1     2      2
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -832,7 +836,7 @@ t16_2:
     ----------------------  alignment type
       1   0     2      2
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -878,7 +882,7 @@ t16_3:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   2     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -926,7 +930,7 @@ t16_4:
     ----------------------  alignment type
       0   1     2      2
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -971,7 +975,7 @@ t16_5:
     best  N  min_lis seeds
     ----------------------  alignment type
       0   2     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1018,7 +1022,7 @@ t16_6:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1065,7 +1069,7 @@ t16_7:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1111,7 +1115,7 @@ t16_8:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1161,7 +1165,7 @@ t16_9:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1212,7 +1216,7 @@ t17:
     ref  reads  best   N  min_lis zip
     ----------------------------------
     8    2      true   1  2       true
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
     - -ref
@@ -1269,7 +1273,7 @@ t18_2:
      1e-7       75  7919    
      1e-12      95  6501    
      1e-15     106  5307    
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -1320,7 +1324,7 @@ t18_3:
      1e-7       75  7919    
      1e-12      95  6501    
      1e-15     106  5307    
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -1369,7 +1373,7 @@ t18_4:
      1e-7       75  7919    
      1e-12      95  6501    
      1e-15     106  5307    
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -1418,7 +1422,7 @@ t18_5:
      1e-7       75  7919    
      1e-12      95  6501    
      1e-15     106  5307    
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -1454,64 +1458,6 @@ t18_5:
       aligned.fa.gz: 9852  # paired_in
       other.fa.gz:    148
 
-t19:
-  name: 2 reads + paired_in
-  info: |
-    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
-    ------------------------------------------------------------------- output type
-     2      2      1        1           -         -     -     -    1
-
-    best  N  min_lis seeds
-    ----------------------  alignment type
-    true  1     2      2
-
-    Test the new option '-out2' (issue 202)
-    ...                               paired_in
-    -e      min_sw  hits  2*hits   aligned   other
-     1          48  9188
-     0.001      60  8956
-     1e-7       75  7919    
-     1e-12      95  6501    
-     1e-15     106  5307    
-  cmd:
-    - -ref
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
-    - -ref
-    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
-    - -fastx
-    - -other
-    - -blast
-    - '1'
-    - -paired_in
-    - -v
-    #- -e
-    #- '1e-15'
-    #- -out2
-    - -threads
-    - {{THREADS or '\'4\''}}
-    - -workdir
-    - {{WRK_DIR}}
-  validate:
-    func:
-    variant:        sanger # fastq quality variant
-    files:
-      aligned.log:
-        num_reads: 10000
-        num_hits:   9833
-        num_fail:    167
-      aligned.blast:
-        num_recs: 9833
-      aligned.fq: 9936
-      other.fq:     64
-    runtime:
-      win:
-        - threads: 8
-          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
-
 t19_1:
   name: 2 reads + paired_in + out2
   info: |
@@ -1522,7 +1468,7 @@ t19_1:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2 
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1571,7 +1517,7 @@ t19_2:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2 
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1607,55 +1553,6 @@ t19_2:
         - threads: 8
           sec: [1.24292, 0.322213, 0.566375] # align, log, reports
 
-t19_3:
-  name: 2 reads + paired_out + out2
-  info: |
-    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
-    ------------------------------------------------------------------- output type
-     2      2      1        -           1         1     -     -    1
-
-    best  N  min_lis seeds
-    ----------------------  alignment type
-    true  1     2      2
-  cmd:
-    - -ref
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
-    - -ref
-    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
-    - -fastx
-    - -other
-    - -blast
-    - '1'
-    - -paired_out
-    - -out2
-    - -v
-    - -threads
-    - {{THREADS or '\'4\''}}
-    - -workdir
-    - {{WRK_DIR}}
-  validate:
-    func:
-    variant: sanger # fastq quality variant
-    files:
-      aligned.log:
-        num_reads:   10000
-        num_hits:     9833
-        num_fail:      167
-      aligned.blast:
-        num_recs:     9833
-      aligned_fwd.fq: 4865
-      aligned_rev.fq: 4865
-      other_fwd.fq:    135
-      other_rev.fq:    135
-    runtime:
-      win:
-        - threads: 8
-          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
-
 t19_4:
   name: 2 reads + out2
   info: |
@@ -1666,7 +1563,7 @@ t19_4:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1704,95 +1601,6 @@ t19_4:
         - threads: 8
           sec: [1.24292, 0.322213, 0.566375] # align, log, reports
 
-t19_5:
-  name: 2 reads no zip + out2 + zip out
-  info: |
-    refs  reads  zip  paired  paired_in  paired_out  out2  sout  zout  other
-    ------------------------------------------------------------------------ output type
-     2      2     0     1        -           -         1     -     1    0
-
-    best  N  min_lis seeds
-    ----------------------  alignment type
-    true  1     2      2
-  cmd:
-    - -ref
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
-    - -ref
-    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq # 5,000 reads: Mouse gut metagenome of 16S rRNA
-    - -fastx
-    - -blast
-    - '1'
-    - -out2
-    - -zip-out
-    - '1'
-    - -v
-    - -threads
-    - {{THREADS or '\'4\''}}
-    - -workdir
-    - {{ WRK_DIR }}
-  validate:
-    func:
-    variant: sanger # fastq quality variant
-    files:
-      aligned.log:
-        num_reads:   10000
-        num_hits:     9833
-        num_fail:      167
-      aligned.blast:
-        num_recs:     9833
-      aligned_fwd.fq.gz: 4876
-      aligned_rev.fq.gz: 4957
-    runtime:
-      win:
-        - threads: 8
-          sec: [1.24292, 0.322213, 0.566375] # align, log, reports
-
-t20:
-  name: 1 reads + paired_in
-  info: |
-    Test the new option '-out2' (issue 202)
-
-    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
-    ------------------------------------------------------------------- output type
-     2      1      1        1           -         -     -     -    1
-
-    best  N  min_lis seeds
-    ----------------------  alignment type
-    true  1     2      2
-  cmd:
-    - -ref
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
-    - -ref
-    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq # 10,000 reads: Mouse gut metagenome of 16S rRNA
-    - -fastx
-    - -other
-    - -blast
-    - '1'
-    - -paired_in
-    - -v
-    - -workdir
-    - {{ WRK_DIR }}
-    - -threads
-    - {{THREADS or '\'4\''}}
-  validate:
-    func:
-    variant: sanger # fastq quality variant
-    files:
-      aligned.log:
-        num_reads: 10000
-        num_hits:   9833
-        num_fail:    167
-      aligned.blast:
-        num_recs:   9833
-      aligned.fq:   9936
-      other.fq:       64
-
 t20_1:
   name: 1 reads + paired_in + out2
   info: |
@@ -1803,7 +1611,7 @@ t20_1:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1846,7 +1654,7 @@ t20_2:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1886,7 +1694,7 @@ t20_3:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1929,7 +1737,7 @@ t20_4:
     best  N  min_lis seeds
     ----------------------  alignment type
     true  1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -1966,7 +1774,7 @@ t21:
   name: single paired reads file + paired_in + separate FWD/REV output
   note: |
     Same as test 20 + 'out2' option
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2000,7 +1808,7 @@ t22:
   note: |
     Test the new option '-out2' (issue 202)
     ...                               paired_in 
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2030,7 +1838,7 @@ t23:
   name: single paired reads file + separate FWD/REV output
   note: |
     Same as 22 but FWD and REV output to different files
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2063,7 +1871,7 @@ t24:
   name: 1 paired reads file + joint FWD/REV output
   note: |
     Same as 22 but 'paired' is used without 'out2' => FWD and REV output to the same files
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2097,7 +1905,7 @@ t25:
     2    2 gz   true  1  2
 
     test '-aligned' option with custom prefix
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2138,7 +1946,7 @@ t26:
     -idx
     -aligned
     -other
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2184,7 +1992,7 @@ t27:
     -idx
     -aligned
     -other
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2229,7 +2037,7 @@ t28:
     -idx
     -aligned
     -other
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2269,7 +2077,7 @@ t29:
     -idx
     -aligned 'no file name' -> use default 'aligned'
     -other   'boolean' -> to be placed in the same location as aligned output
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2310,7 +2118,7 @@ t30:
     -kvdb
     -aligned 'no file name' -> use default 'aligned'
     -other   'boolean' -> to be placed in the same location as aligned output
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2353,7 +2161,7 @@ t31:
     -kvdb
     -aligned 'no file name' -> use default 'aligned'
     -other   'boolean' -> to be placed in the same location as aligned output
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -2386,7 +2194,7 @@ t31:
 t32:
   name: 2 reads + no_best + N_1 + paired_in + out2 (separate FWD/REV output)
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2440,7 +2248,7 @@ t32:
 t33:
   name: 2 reads + best + N_1 + paired_in + out2 (separate FWD/REV output)
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2493,7 +2301,7 @@ t33:
 t34:
   name: 2 reads + best + N_3 + paired_in + out2 (separate FWD/REV output)
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2546,7 +2354,7 @@ t34:
 t35:
   name: 2 reads + N_0 (all alignments) + paired_in + out2 (separate FWD/REV output)
   note:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
     - -reads
@@ -2602,7 +2410,7 @@ t35:
 #
 t36:
   name: Single reads file, 250 reads
-  cmd:
+  args:
   - -ref
   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
   - -reads
@@ -2625,7 +2433,7 @@ t36:
 
 t37:
   name: Paired reads - zip in - zip out
-  cmd:
+  args:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
   - -ref
@@ -2674,7 +2482,7 @@ t37:
 
 t37_1:
   name: Paired reads - zip in - flat out
-  cmd:
+  args:
   - -ref
   - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
   - -ref
@@ -2740,7 +2548,7 @@ t39:
       --best 0 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
     sortmerna -m 4096 -a 4 -L 10 --fastx --blast 1 --workdir test 
       --best 0 -min_lis 1 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
-  cmd:
+  args:
   - -ref
   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
   - -reads
@@ -2790,7 +2598,7 @@ t40:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
     - -ref
@@ -2860,7 +2668,7 @@ t41:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
     - -ref
@@ -3036,7 +2844,7 @@ t42:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
     - -ref
@@ -3185,132 +2993,10 @@ t42:
           aws.yaml: sortmerna.data.load:t42,sortmerna.test.run
           aligned.log: {{STAT_DIR}}/sortmerna/out/20210307_1419_t42_aws_ubuntu18_32_128_32.log
 
-t43:
-  name: issue 231 8x50M
-  info: |
-    stress test - 8 reference databases, 50M reads
-
-    refs  reads  paired  paired_in  paired_out  out2  sout  zout  other
-    ------------------------------------------------------------------- output type
-     8      2      -        -           -         -     -     y    -
-
-    best  N  min_lis seeds
-    ----------------------  alignment type
-    true  1     2      2
-  cmd:
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta  # 15M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta  # 13M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta  # 13M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta  # 19M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta  # 13M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta  # 3.8M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta  # 8.2M
-    - -ref
-    -  {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta  # 2.2M
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_1.fastq.gz # 2 GB 24,654,594 reads
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/SRR1635864_2.fastq.gz # 2 GB 24,654,594 reads
-    - -fastx
-    - -blast
-    - '1 cigar qcov'
-    - -out2
-    - -sout
-    - -v
-    - -workdir
-    - {{ WRK_DIR }}
-    - -threads
-    - {{THREADS or '\'8\''}}
-    - -index
-    - {{INDEX or '\'2\''}}  # 2 is the default
-  cwd: {{ SMR_SRC }}
-  validate:
-    func:
-    variant: sanger # fastq quality variant
-    files:
-      aligned.log:
-        num_reads: 49309188
-        num_hits:   2499868
-        num_fail:  46809320
-        num_hits_db:
-          euk_28s_id98: 0.51
-          euk_18s_id95: 0.02
-          bac_23s_id98: 3.18
-          bac_16s_id90: 1.33
-          arc_23s_id98: 0
-          arc_16s_id95: 0
-          nc_5s_id98:   0.03  # non-coding - RFAM
-          nc_5.8s_id98: 0     # non-coding - RFAM
-    time:
-      win_8_16:
-        host: Windows 10 + 8 CPUs + 16 GiB RAM
-        notes: |
-          Win apparently limits the amount of memory available to the process, 
-          which seems to slow it down because less memory is available to RocksDB. 
-          On Ubuntu the memory used by the process is much higher, and the process runs faster.
-        4-2-1:
-          - threads: 8
-            total: 17587 # sec ~5hrs
-            # indexing, read count, idx stats, align, summary, report
-            totals: [ 0, 100, 3, 0,0,0,0 ] # sec
-            align: [ 997, 1089, 1226, 1404, 760, 884, 1061, 888 ]  # sec  8 indices
-        4-3-1:
-          - threads: 8
-            total: 10239 # sec ~2.8Hr
-            # indexing, read count, split, idx stats, align, summary, report
-            totals: [ 0, 177, 1870, 3, 5880, 4, 2305] # sec  600/10M=~60  1900/50M=~40
-            align: [ 722, 635, 1007, 1719, 406, 476, 514, 391 ]
-            trace: {{ DATA_DIR }}/sortmerna/logs/win10_8_16_t43_th8_20210321_2045.stdout
-            out: {{ DATA_DIR }}/sortmerna/out/tests/t43/win10_8_16/20210321/
-      ubuntu18_4_16_32:
-        host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HDD
-      ubuntu18_8_16_32:
-        host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
-        4-2-1:
-          - threads: 8
-            total:
-            # indexing, read count, idx stats, align, summary, report
-            totals: [0, 150, 4, 0,0,0]  # sec
-            align: [ 635, 653, 729, 0,0,0,0,0]  # ExecutionTimedOut bug after 3 indices
-      ubuntu18_16_64_32:
-        host: AWS m5.4xlarge + Ubuntu 18 + 16 cpu + 64 GB RAM + 32 GB HD
-        total:  # sec - python trace from command sent to response received - with indexing
-        reads_stats_calc: [82, 82]
-      ubuntu18_32_128_32:
-        host: AWS m5.8xlarge + Ubuntu 18 + 32 cpu + 128 GB RAM + 32 GB HD
-        info: testing on 50M reads always times-out after 3 indices.
-        4-3-1:
-          - threads: 32
-            total: 4820 # sec - estimated ~80min ~4 times faster than 8 threads i.e. linear time
-            #      3660 sec - python trace from command sent to response received. No indexing, early termination
-            #      1598 sec - alignment only
-            # indexing, read count, split, idx stats, align, summary, report
-            totals: [ 186, 218, 3100, 5, 1034, 5, 269 ]   # sec,  3100/50=~60 (split)
-            align:  [ 137, 124, 188, 286, 64, 80, 90, 62 ] # sec
-            aws.cmd.id: 43b6b9d1-1162-4d8f-8885-18f160457c4c
-            aws.trace: 
-              - {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_32_128_32_t43_th32_20210319_0904.stdout # complete alignment
-              - {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_32_128_32_t43_th32_20210318_0947.stdout # non-complete alignment
-            aws.yaml: sortmerna.data.load:t43,sortmerna.test.run
-            aligned.log: {{ DATA_DIR }}/sortmerna/out/20210319_0904_t43_aws_ubuntu18_32_128_32.log
-    memory:
-      prior_idx_load: [  5100]
-      idx_load:       [378400]
-      ref_load:       [395924]
-      align_done:     [608508, 568984, 1185272, 1897344, 1702888, 1793292, ?, ?]
-      idx_ref_unloaded:
-
 t44:
   name: test concatenated gzip - issue 221,272,283
   info:
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -reads
@@ -3350,7 +3036,7 @@ t44_2:
     5 files (430K,370K,450K,350K,400K) catenated into a single one:
       cat SRR1635864_1_2M_1.fq.gz SRR1635864_1_2M_2.fq.gz SRR1635864_1_2M_3.fq.gz 
           SRR1635864_1_2M_4.fq.gz SRR1635864_1_2M_5.fq.gz > SRR1635864_1_2M_cat.fq.gz  # second file is similar
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
     - -ref
@@ -3425,7 +3111,7 @@ t45:
     refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
     -------------------------------------------------------------------------------------------
       1     1     1     1      0        0        1     1     1     1       1   1     2      2
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
     - -reads
@@ -3481,7 +3167,7 @@ t45:
 
 # aligned.log file structure
 aligned.log:
-  cmd: ['Command', None]
+  args: ['Command', None]
   pid: ['Process pid', None]
   params:
     refs: []
@@ -3509,47 +3195,6 @@ aligned.names:
   - aligned_singleton_fwd
   - aligned_singleton_rev
 
-t46:
-  name: segfault - iss 288-2
-  info: |
-    1 reference databases, 10000 reads
-
-    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-    -------------------------------------------------------------------------------------------
-      1     1     1     0      0        0        0     0     0     1       1   1     2      2
-  cmd:
-    - -ref
-    - {{ SMR_SRC }}/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq.gz # 10000 reads
-    - -fastx
-    - -other
-    #- -paired_out  # runs OK with this too
-    - -num_alignments 
-    - '1'
-    - -v
-    - -dbg-level
-    - '2'
-    - -threads
-    - {{THREADS or '\'8\''}}
-    - -index
-    - {{INDEX or '\'2\''}}  # 2 is the default
-    - -task
-    - {{TASK or '\'4\''}}  # 4 is default
-    - -workdir
-    - {{ WRK_DIR }}
-  cwd: {{ SMR_SRC }}
-  validate:
-    func:
-    variant: sanger # fastq quality variant
-    files:
-      aligned.log:
-        num_reads:  10000
-        num_hits:    9847
-        num_fail:     153
-      aligned.fq.gz: 9847
-      other.fq.gz:    153
-
 t47:
   name: 1 reads, no zip, no paired
   info: |
@@ -3565,7 +3210,7 @@ t47:
     true  1     2      2
 
     python /media/sf_a01_code/sortmerna/scripts/run.py -e LNX_VBox_Ubuntu_1604 -n t47 --threads 2 --validate-only
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -3614,7 +3259,7 @@ t48:
     true  1     2      2
 
     python /media/sf_a01_code/sortmerna/scripts/run.py -e LNX_VBox_Ubuntu_1604 -n t48 --threads 8
-  cmd:
+  args:
     - -ref
     - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
     - -ref
@@ -3651,7 +3296,7 @@ t49:
     best  N  min_lis seeds
     ----------------------  alignment type
       1   1     2      2
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
     - -ref
@@ -3687,7 +3332,7 @@ t49:
 
 t50:
   name: issue 312 - wrong suffix removed in output file name
-  cmd:
+  args:
   - -ref
   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta
   - -reads
@@ -3717,7 +3362,7 @@ t50:
 t51:
   name: issue 328 - segfault on missed '-reads' option
   info: correct behaviour is to warn user on the wrong usage and exit
-  cmd:
+  args:
     - -ref
     -  {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta
     - -ref
@@ -3739,30 +3384,30 @@ t51:
 
 t52:
   name: issue 338 - suboptimal alignment when matching the end of the reference (in blast output)
-  cmd:
-    - -ref
-    -  {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_338_subopt_align/aref.fa
-    - -reads
-    - {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_338_subopt_align/aread.fa
-    - -fastx
-    - -blast
-    - '0'
-    - -no-best
-    - -num_alignments
-    - '0'
-    - -v
+  args:
+    -ref
+     {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_338_subopt_align/aref.fa
+    -reads
+    {{ DATA_DIR if DATA_DIR }}/sortmerna/bugs/iss_338_subopt_align/aread.fa
+    -fastx
+    -blast
+    '0'
+    -no-best
+    -num_alignments
+    '0'
+    -v
   #  - -L
   #  - '10'
-    - -threads
-    - '1'
+    -threads
+    '1'
   #  - -passes
   #  - '10,5,1'
   #  - -e
   #  - '1e-15'
-    - '-full_search'
-    - '1'
-    - '-F'
-    - -workdir
-    - {{ WRK_DIR }}
+    '-full_search'
+    '1'
+    '-F'
+    -workdir
+    {{ WRK_DIR }}
   cwd: {{ SMR_SRC }}
 
