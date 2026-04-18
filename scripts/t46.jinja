@@ -1,20 +1,22 @@
 
 
 # t46:
-name: segfault - iss 288-2
+name: 1 ref, 1 gz pair, iss 288-2
 info: |
-  1 reference databases, 10000 reads
-  refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+  segfault - iss 288-2   tests 19x,20x are similar with a smaller reference file
+      input type         |               output type                  |    alignment type
+  refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
   -------------------------------------------------------------------------------------------
-    1     1     1     0      0        0        0     0     0     1       1   1     2      2
+    1     1     1     1       0        0        0     0     0     1       1   1     2      2
 args:
   -ref:
-    #- {{ SMR_SRC }}/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+    - /mnt/c/Users/ak.xps15i9/a1/code/sortmerna/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
+    #- {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta  # For fast test. num_hits is less though.
   -reads:
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq.gz # 10000 reads
+    - {{ DATA_DIR if DATA_DIR }}/DRR121111_5k_paired.fastq.gz # 10000 reads
   -fastx:
   -other:
+  -paired:
   #-paired_out  # runs OK with this too
   -num_alignments: '1'
   -v:

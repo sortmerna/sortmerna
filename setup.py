@@ -77,7 +77,6 @@ CMAKE   = 'cmake'
 CONDA   = 'conda'
 ALL     = 'all'
 CCQUEUE = 'concurrentqueue'
-IBZIP2  = 'indexed_bzip2'
 
 ENV = None # WIN | WSL | LNX_AWS | LNX_TRAVIS
 UHOME = os.environ['USERPROFILE'] if IS_WIN else os.environ['HOME']
@@ -736,17 +735,6 @@ def concurrentqueue_build(**kw):
     return rcode, sout, eout
 #END concurrentqueue_build
 
-def indexed_bzip2_build(**kw):
-    '''
-    header-only rapidgzip library - just clone and use
-    '''
-    url = kw.get(IBZIP2).get('url')
-    src = kw.get(IBZIP2).get('src')
-    shallow = kw.get(IBZIP2).get('shallow')
-    rcode, sout, eout = git_clone(url, src, shallow=shallow)
-    return rcode, sout, eout
-#END indexed_bzip2_build
-
 def env_check(**cfg):
     '''
     verify all pre-requisit packages/tools are present
@@ -824,7 +812,6 @@ if __name__ == "__main__":
     optpar.add_option('--rocksdb-git', action="store_true", help='use rocksdb git repo as source. Otherwise tarball')
     optpar.add_option('--build-dev', action="store_true", help='run build in development mode using git repos')
     optpar.add_option('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
-    optpar.add_option('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
     optpar.add_option('-e', '--envn', dest='envname', 
         help=('Name of environment: WIN | WSL | LIN .. see env.jinja:env.list'))
     optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
@@ -890,12 +877,6 @@ if __name__ == "__main__":
         config['concurrentqueue']['dist'] = opts.concurrentqueue_dist
     else:
         config['concurrentqueue']['dist'] = f"{config['concurrentqueue']['src']}"
-
-    # indexed_bzip2
-    if opts.indexed_bzip2_dist:
-        config['indexed_bzip2']['dist'] = opts.indexed_bzip2_dist
-    else:
-        config['indexed_bzip2']['dist'] = f"{config['indexed_bzip2']['src']}"
         
     if opts.vb:
         config['vb'] = True
@@ -919,8 +900,6 @@ if __name__ == "__main__":
         if rcode == 0:
             ret = concurrentqueue_build(**config)
         if rcode == 0:
-            ret = indexed_bzip2_build(**config)
-        if rcode == 0:
             btype = opts.btype or 'release'
             rcode, sout, eout = smr_build(btype=btype, **config)
     elif opts.name == ZLIB:
@@ -935,10 +914,8 @@ if __name__ == "__main__":
             ...
         btype = opts.btype or 'release'
         smr_build(btype=btype, **config)
-    elif opts.name == CCQUEUE:
+    elif opts.name == CCQUEUE: 
         concurrentqueue_build(**config)
-    elif opts.name == IBZIP2:
-        indexed_bzip2_build(**config)
     elif opts.name == DIRENT: 
         url = config[DIRENT].get('url')
         path = config[DIRENT].get('src')
