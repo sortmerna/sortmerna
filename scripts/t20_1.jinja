@@ -1,0 +1,36 @@
+# t20_1
+name: 2 ref, 1 flat pair, paired_in, out2
+info: |
+  Test the new option '-out2' (issue 202)
+            input type         |               output type                  |    alignment type
+        refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+          2     1     0    1       1        0        1     0     0      1       1   1    2       2
+args:
+  -ref:
+    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+  -reads:  # Mouse gut metagenome of 16S rRNA
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq  # 10000 reads 7329 KB
+  -fastx:
+  -other:
+  -blast: '1'
+  -paired:
+  -paired_in:
+  -out2:
+  -v:
+  -threads: '{{THREADS or 4}}'
+  -workdir: {{ WRK_DIR }}
+validate:
+  func:
+  variant: sanger # fastq quality variant
+  files:
+    aligned.log:
+      num_reads: 10000
+      num_hits:   9833
+      num_fail:    167
+    aligned.blast:
+      num_recs:     9833
+    aligned_fwd.fq: 4968
+    aligned_rev.fq: 4968
+    other_fwd.fq:     32
+    other_rev.fq:     32

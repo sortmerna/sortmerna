@@ -1,0 +1,44 @@
+# t20_6:
+name: 2 ref, 1 flat pair, flat, out2, sout
+info: |
+  Test out2, sout
+         input type        |     output type                            |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+      2     1     0    1       0        0        1     1     0      1      1    1     2      2
+args:
+  -ref:
+    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
+    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+  -reads:  # Mouse gut metagenome of 16S
+    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_5k_paired.fastq  # 10000 reads 7329 KB
+  -fastx:
+  -other:
+  -blast: '1'
+  -paired:
+  -out2:
+  -sout:
+  -v:
+  -threads: '{{THREADS or 4}}'
+  -workdir:  {{ WRK_DIR }}
+validate:
+  func:
+  variant: sanger  # fastq quality variant
+  files:
+    aligned.log:
+      num_reads:   10000
+      num_hits:     9833
+      num_fail:      167
+    aligned.blast:
+      num_recs:               9833
+    aligned_paired_fwd.fq:    4865
+    aligned_paired_rev.fq:    4865
+    aligned_singleton_fwd.fq:   11
+    aligned_singleton_rev.fq:   92
+    other_paired_fwd.fq:        32
+    other_paired_rev.fq:        32
+    other_singleton_fwd.fq:     92
+    other_singleton_rev.fq:     11
+  runtime:
+    win:
+      - threads: 8
+        sec: [1.24292, 0.322213, 0.566375]  # align, log, reports
