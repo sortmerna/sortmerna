@@ -32,6 +32,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#define SORTMERNA_MAJOR 4
-#define SORTMERNA_MINOR 4
+#define SORTMERNA_MAJOR 5
+#define SORTMERNA_MINOR 0
 #define SORTMERNA_PATCH 0
