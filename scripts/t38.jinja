@@ -1,9 +1,15 @@
-name: Paired reads GZ 2 x 2 GB  ~50M reads
+# t38
+name: 1 ref, 2 gz pair x 2GB/~50M reads
+info: |
+  xxx
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+     1      2     1    1       0        0        0     0     0      0      1    1     2      2
 args:
-  -ref: [ {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta ] # 12,734,464 ~12MB
+  -ref: [ {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta ]  # 12,734,464 ~12MB
   -reads: 
-   - {{ DATA_DIR }}/bio/reads/rna/SRR1635864_1.fastq.gz  # 2 GB 24,654,594 reads
-   - {{ DATA_DIR }}/bio/reads/rna/SRR1635864_2.fastq.gz  # 2 GB 24,654,594 reads
+   - {{ DATA_DIR }}/SRR1635864_1.fastq.gz  # 2 GB 24,654,594 reads
+   - {{ DATA_DIR }}/SRR1635864_2.fastq.gz  # 2 GB 24,654,594 reads
   -v:
   -blast: '1 cigar qcov'
   -sam:
