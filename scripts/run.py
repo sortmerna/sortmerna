@@ -1355,6 +1355,8 @@ def parse_test_config(args:Namespace) -> dict:
     vars = {'SMR_SRC':smr_src, 'DATA_DIR':args.data_dir, 'WRK_DIR':args.workdir}
     if args.threads:
         vars.append({'THREADS':str(args.threads)})
+    if args.ref_dir:
+        vars['REF_DIR'] = args.ref_dir
     cfg_str = template.render(vars)
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     if args.task:
@@ -1428,6 +1430,7 @@ if __name__ == "__main__":
     p5.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
     p5.add_argument('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
     p5.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    p5.add_argument('--ref-dir', dest='ref_dir', help='path to the reference data. Abs or relative')
     p5.add_argument('--threads', dest='threads', help='Number of threads to use')
     p5.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
     p5.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')

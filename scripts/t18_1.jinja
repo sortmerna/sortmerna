@@ -1,19 +1,24 @@
+# t18_1  1 ref, 2 gz, paired_in
 name: 2 paired reads files gz + paired_in + joint FWD/REV output
 info: |
   The same as t18 on gzipped Fastq reads
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+      1     2     0    1       1        0        0     0     0      1       1   1    2       2
   Test different E-values
   ...                               paired_in
-   e      min_sw  hits  2*hits   aligned   other
-   1          48  9188
-   0.001      60  8956
-   1e-7       75  7919    
-   1e-12      95  6501    
-   1e-15     106  5307    
+   e            min_sw  hits  2*hits   aligned   other
+   score_split          9214  <- more hits with scoring per split
+   1                48  9188
+   0.001            60  8956
+   1e-7             75  7919    
+   1e-12            95  6501    
+   1e-15           106  5307
 args:
   -ref: [ {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta ]
-  -reads:
-   - {{ DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz # 5,000 reads: Mouse gut metagenome of 16S rRNA
-   - {{ DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz # 5,000 reads: Mouse gut metagenome of 16S rRNA
+  -reads:  # Mouse gut metagenome of 16S rRNA
+   - {{ DATA_DIR }}/DRR121111_1_5k.fastq.gz  # 5,000 reads
+   - {{ DATA_DIR }}/DRR121111_2_5k.fastq.gz  # 5,000 reads
   -fastx:
   -other:
   -blast: '1'
@@ -22,6 +27,7 @@ args:
   -paired_in:
   -v:
   #-e: '1e-15'
+  #-score_split:
   #-out2:
   -workdir: {{ WRK_DIR }}
   -threads: '{{THREADS or 4}}'

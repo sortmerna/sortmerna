@@ -6,14 +6,14 @@ info: |
     8     2     1    1       0        0         1     1    1      0      1    1     2      2
 args:
   -ref:
-   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-28s-id98.fasta  # 15M
-   - {{ SMR_SRC }}/data/rRNA_databases/silva-euk-18s-id95.fasta  # 13M
-   - {{ SMR_SRC }}/data/rRNA_databases/silva-bac-23s-id98.fasta  # 13M
-   - {{ SMR_SRC }}/data/rRNA_databases/silva-bac-16s-id90.fasta  # 19M
-   - {{ SMR_SRC }}/data/rRNA_databases/silva-arc-23s-id98.fasta  # 13M
-   - {{ SMR_SRC }}/data/rRNA_databases/silva-arc-16s-id95.fasta  # 3.8M
-   - {{ SMR_SRC }}/data/rRNA_databases/rfam-5s-database-id98.fasta  # 8.2M
-   - {{ SMR_SRC }}/data/rRNA_databases/rfam-5.8s-database-id98.fasta  # 2.2M
+   - {{ REF_DIR }}/silva-euk-28s-id98.fasta  # 15M
+   - {{ REF_DIR }}/silva-euk-18s-id95.fasta  # 13M
+   - {{ REF_DIR }}/silva-bac-23s-id98.fasta  # 13M
+   - {{ REF_DIR }}/silva-bac-16s-id90.fasta  # 19M
+   - {{ REF_DIR }}/silva-arc-23s-id98.fasta  # 13M
+   - {{ REF_DIR }}/silva-arc-16s-id95.fasta  # 3.8M
+   - {{ REF_DIR }}/rfam-5s-database-id98.fasta  # 8.2M
+   - {{ REF_DIR }}/rfam-5.8s-database-id98.fasta  # 2.2M
   -reads:
    - {{ DATA_DIR if DATA_DIR }}/SRR1635864_1.fastq.gz  # 2 GB 24,654,594 reads
    - {{ DATA_DIR if DATA_DIR }}/SRR1635864_2.fastq.gz  # 2 GB 24,654,594 reads
@@ -44,6 +44,17 @@ validate:
         nc_5s_id98:   0.03  # non-coding - RFAM
         nc_5.8s_id98: 0     # non-coding - RFAM
   time:
+    wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:  # 20260421 Tue
+      4.3.7:  # split reads
+        threads: 8
+        times:
+          # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
+          -           256.074     256.101   5301.85  3.90     1720.19  7538.12  125.64
+      5.0.0:  # at least 35% faster overall than using split even with the split already done
+        threads: 8
+        times:
+          # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
+          -           26.353      50.223    4208.52  3.27     1307.47  5595.84  93.26
     win_8_16:
       host: Windows 10 + 8 CPUs + 16 GiB RAM
       notes: |

@@ -1,10 +1,10 @@
-# t18
+# t18 1 ref, 2 flat pair, paired_in
 name: 2 paired reads files flat + paired_in + joint FWD/REV output
 info: |
   Test the new option '-out2' (issue 202)
-                     output type                                       |    alignment type
-    refs  reads  zip  pair  pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
-      1     2     0    1      1        0        0     0     0      1       1   1    2       2
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+      1     2     0    1       1        0        0     0     0      1       1   1    2       2
   Test different E-values
   ...                               paired_in
   -e      min_sw  hits  2*hits   aligned   other
@@ -16,17 +16,15 @@ info: |
 args:
   -ref: [ {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta ]
   -reads:  # Mouse gut metagenome of 16S rRNA
-   - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq  # 5,000 reads
-   - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq  # 5,000 reads
+   - {{ DATA_DIR if DATA_DIR }}/DRR121111_1_5k.fastq  # 5,000 reads
+   - {{ DATA_DIR if DATA_DIR }}/DRR121111_2_5k.fastq  # 5,000 reads
   -fastx:
   -other:
   -blast: '1'
   -paired_in:
-  #- -e
-  #- '1e-15'
-  #- -out2
-  #- -max_read_len
-  #- '100000'
+  #-e: '1e-15'
+  #-out2:
+  #-max_read_len: '100000'
   -threads: '{{THREADS or 4}}'
   -dbg-level: '{{DBG_LEVEL or 0}}'
   -task: '{{TASK or 4}}'
