@@ -32,6 +32,12 @@ created: Aug 12, 2019 Mon
 
 conda install scikit-bio -c conda-forge  <- pre-requisites
 '''
+
+def mock_missing(name):
+    def init(self, *args, **kwargs):
+        raise ImportError(f'Failed to import class {name}; likely not installed.')
+    return type(name, (), {'__init__': init})
+
 import os
 import sys
 import subprocess
@@ -48,15 +54,15 @@ from argparse import Namespace
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
-def mock_missing(name):
-    def init(self, *args, **kwargs):
-        raise ImportError(f'Failed to import class {name}; likely not installed.')
-    return type(name, (), {'__init__': init})
-
 try:
     import pandas
 except ImportError:
     pandas = mock_missing('pandas')
+    
+try:
+    import rapidgzip
+except ImportError:
+    rapidgzip = mock_missing('rapidgzip')
 
 is_skbio = True
 try:
@@ -148,13 +154,13 @@ def is_linux():
 def is_darwin():
     return sys.platform.startswith("darwin")
 
-def run_test(cmd:list, cwd=None, capture=False):
+def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str], list[str]]:
     '''
     run a test
     args:
       - cmd  command to run
     '''
-    ST = '[run]'
+    ST = '[run.run_test]'
     rcode, outl, errl = 0, [], []
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
@@ -243,6 +249,9 @@ def parse_log(fpath:str):
       - fpath  'aligned.log' file
     '''
     logd = {}
+    if not Path(fpath).exists():
+        print(f'{fpath} does not exist')
+        return logd
     with open(fpath) as f_log:    
         for line in f_log:
             if 'Total reads =' in line:
@@ -624,14 +633,13 @@ def validate_log(logd:dict, ffd:dict):
 
 def process_output(**kw):
     '''
+    validate a test's output
     args:
-      - name    test name e.g. t0
-      - kw  test configuration dictionary see e.g. 't18.jinja'
+      - kw      test configuration dictionary see e.g. 't18.jinja'
     '''
-    ST = '[process_output]'
+    ST = '[run.process_output]'
     global is_skbio
     vald = kw.get('validate')
-    #cmdd = kwarg.get('cmd')
     
     if not vald:
         print(f'{ST} validation info not provided')
@@ -640,38 +648,37 @@ def process_output(**kw):
     outdir = Path(get_dict_val('args:-workdir', kw))/'out'
     logf = outdir /'aligned.log'
     logd = parse_log(logf)
-    ffd = vald.get('files')
-    if ffd and isinstance(ffd, dict):
-        for ff, vv in ffd.items():
-            print(f'{ST} {ff}')
-            # Check aligned/other reads count
-            # aligned/other files only specify read count in the test validation data
-            if isinstance(vv, int):
-                ffp = outdir / ff # file path
-                count = 0
-                assert ffp.exists(), f'{ST} does not exists: {ffp}'
-                if ff == 'otu_map.txt':
-                    with open(ffp) as ffs:
-                        for line in ffs:
-                            count += 1
-                    msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
-                    print(msg)
-                    assert count == vv, f'{count} not equals {vv}'
-                    continue
-                if is_skbio:
-                    if IS_FASTQ:
-                        for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
-                            count += 1
-                    else:
-                        fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
-                        for seq in skbio.io.read(ffp, format=fmt):
-                            count += 1
-                    print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
-                    assert count == vv, f'{count} not equals {vv}'
-            elif ff == 'aligned.log':
-                validate_log(logd, ffd)
-            elif 'aligned.blast' in ff:
-                process_blast(**kw)
+    ffd = vald.get('files', {})
+    for ff, vv in ffd.items():
+        print(f'{ST} validating file {ff}')
+        # Check aligned/other reads count
+        # aligned/other files only specify read count in the test validation data
+        if isinstance(vv, int):
+            ffp = outdir / ff # file path
+            count = 0
+            assert ffp.exists(), f'{ST} does not exists: {ffp}'
+            if 'otu_map.txt' in ff:
+                with open(ffp) as ffs:
+                    for line in ffs:
+                        count += 1
+                msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
+                print(msg)
+                assert count == vv, f'{count} not equals {vv}'
+                continue
+            if is_skbio:
+                if IS_FASTQ:
+                    for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
+                        count += 1
+                else:
+                    fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
+                    for seq in skbio.io.read(ffp, format=fmt):
+                        count += 1
+                print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
+                assert count == vv, f'{count} not equals {vv}'
+        elif ff == 'aligned.log':
+            validate_log(logd, ffd)
+        elif 'aligned.blast' in ff:
+            process_blast(**kw)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
@@ -1200,7 +1207,6 @@ def count_lines(files:list,
     4        20000    24   300000
     6        20000    27   200000    too many threads slow the execution down
     '''
-    import rapidgzip
     lines_tot = 0
     cpu_max = os.cpu_count()  # multiprocessing.cpu_count()
     ts = time.time()

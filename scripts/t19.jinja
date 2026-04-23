@@ -15,8 +15,8 @@ info: |
      1e-15          106  5307
 args:
   -ref:
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
-    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - {{ REF_DIR }}/silva-bac-16s-database-id85.fasta
+    - {{ REF_DIR }}/silva-arc-16s-database-id95.fasta
   -reads:  #  Mouse gut metagenome of 16S rRNA
     - {{ DATA_DIR if DATA_DIR }}/DRR121111_1_5k.fastq  # 5,000 reads  3665 KB
     - {{ DATA_DIR if DATA_DIR }}/DRR121111_2_5k.fastq  # 5,000 reads  3665 KB
