@@ -1,0 +1,50 @@
+# t3: 1 ref, 1 flat fa
+name: test_environmental_output
+info: |
+  search for a single best alignment per read i.e.
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+     1      1     0    0       0        0        0     0     0      1      1    1     2      2
+args:
+  -ref: [ {{ REF_DIR }}/silva-bac-16s-database-id85.fasta ]
+  -reads: [ {{ DATA_DIR }}/set2_environmental_study_550_amplicon.fasta ]
+  -max_pos: '250'
+  -fastx:
+  -other:
+  -blast: '1 cigar qcov'
+  -otu_map:
+  -de_novo_otu:
+  -id: '0.97'
+  -coverage: '0.97'
+  -v:
+  #-no-best:
+  #-num_alignments: '2'
+  -threads: '{{THREADS or 4}}'
+  -dbg-level: '{{DBG_LEVEL or 0}}'
+  -task: '{{TASK or 4}}'
+  -workdir: {{WRK_DIR}}
+validate: 
+  func:
+  non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
+  files:
+    aligned.log:
+      num_reads:     100000
+      num_hits:       99999
+      num_fail:           1
+      n_yid_ycov:     47981 # lin:43678  pass SW + %Cov + %ID
+      n_denovo:        4441 # lin:11080  (52018 420) pass SW & fail (%Cov & %ID)   num_denovo + num_pass_id_cov = num_hits
+      num_groups:       265 # LIN:257, WIN:4441
+    aligned.fa:       99999
+    other.fa:             1
+    aligned_denovo.fa: 4441
+    otu_map.txt:        265
+    aligned.blast:
+      num_recs:       99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = 19995 = num_hits
+      n_yid_ycov:     47981 # lin:43678  num_pass_id ⋂ num_pass_cov
+      n_yid_ncov:      1513 # lin:6571   ID + !COV
+      n_nid_ycov:     46064 # lin:38670  !ID + COV
+      n_denovo:        4441 # lin:11080  !ID + !COV 
+  runtime:
+    win:
+      - threads: 8
+        sec: [13, 0.7, 4] # align, log, reports
