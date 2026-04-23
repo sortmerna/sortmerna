@@ -11,6 +11,14 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
 
+# indexed_bzip2 / rapidgzip (header-only, seekable parallel gzip decompression)
+if(NOT DEFINED INDEXED_BZIP2_HOME)
+	set(INDEXED_BZIP2_HOME ${CMAKE_SOURCE_DIR}/3rdparty/indexed_bzip2/src CACHE PATH "Path to indexed_bzip2/src")
+endif()
+if(NOT TARGET rapidgzip::rapidgzip)
+	add_subdirectory(${INDEXED_BZIP2_HOME} ${CMAKE_BINARY_DIR}/indexed_bzip2_src EXCLUDE_FROM_ALL)
+endif()
+
 #include(FindZLIB)
 if (DEFINED CACHE{ZLIB_ROOT})
 	message("searching ZLIB in ${ZLIB_ROOT}")
@@ -147,6 +155,7 @@ target_link_libraries(smr_objs
 		alp
 		${ROCKSDB_LIB}
 		ZLIB::ZLIB
+		rapidgzip::rapidgzip
 		#RapidJSON::RapidJSON
 )
 if(WIN32)

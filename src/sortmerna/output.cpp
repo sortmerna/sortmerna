@@ -173,10 +173,10 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	std::chrono::duration<double> elapsed;
 
 	uint32_t nthreads = 0;
-	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
-		nthreads = opts.num_proc_thread;
-		readfeed.init_reading(); // prepare readfeed
-	}
+	//if (readfeed.type == FEED_TYPE::SPLIT_READS || readfeed.type == FEED_TYPE::INDEXED_GZ || readfeed.type == FEED_TYPE::INDEXED_FLAT) {
+	nthreads = opts.num_proc_thread;
+	readfeed.init_reading(); // prepare readfeed
+	//}
 
 	//ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	std::vector<std::thread> tpool;
@@ -207,12 +207,12 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			start_i = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			// start processing threads
-			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-				for (uint32_t i = 0; i < nthreads; ++i) {
-					tpool.emplace_back(std::thread(report, i, std::ref(readfeed),
-						std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(output), std::ref(opts)));
-				}
+			//if (opts.feed_type == FEED_TYPE::SPLIT_READS || opts.feed_type == FEED_TYPE::INDEXED_GZ || opts.feed_type == FEED_TYPE::INDEXED_FLAT) {
+			for (uint32_t i = 0; i < nthreads; ++i) {
+				tpool.emplace_back(std::thread(report, i, std::ref(readfeed),
+					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(output), std::ref(opts)));
 			}
+			//}
 			// wait till processing is done
 			for (uint32_t i = 0; i < tpool.size(); ++i) {
 				tpool[i].join();

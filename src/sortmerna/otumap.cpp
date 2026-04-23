@@ -189,24 +189,28 @@ void fill_otu_map2(int id, OtuMap& otumap, Readfeed& readfeed, References& refs,
 		" done. All reads: ", c_reads, ". aligned reads: ", c_aligned, " c_yid_ycov: ", c_yid_ycov);
 } // ~fill_otu_map2
 
-void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts, bool is_write)
+void fill_otu_map(Readfeed& readfeed, 
+                    Readstats& readstats, 
+                    KeyValueDatabase& kvdb, 
+                    Runopts& opts, 
+                    bool is_write)
 {
 	INFO("==== OTU groups processing started ====");
 	auto ss = std::chrono::high_resolution_clock::now();
 	if (readstats.n_yid_ycov.load(std::memory_order_relaxed) > 0) {
 		int numThreads = 0;
-		if (opts.feed_type == FEED_TYPE::LOCKLESS)
-		{
-			numThreads = opts.num_read_thread_pp + opts.num_proc_thread_pp;
-			INFO("using total threads: ", numThreads, 
-				" including Read threads: ", opts.num_read_thread_pp, 
-				" Processor threads: ", opts.num_proc_thread_pp);
-		}
-		else {
-			numThreads = opts.num_proc_thread;
-			INFO("using total threads: ", numThreads);
-			readfeed.init_reading(); // prepare readfeed
-		}
+		//if (opts.feed_type == FEED_TYPE::LOCKLESS)
+		//{
+		//	numThreads = opts.num_read_thread_pp + opts.num_proc_thread_pp;
+		//	INFO("using total threads: ", numThreads, 
+		//		" including Read threads: ", opts.num_read_thread_pp, 
+		//		" Processor threads: ", opts.num_proc_thread_pp);
+		//}
+		//else {
+		numThreads = opts.num_proc_thread;
+		INFO("using total threads: ", numThreads);
+		readfeed.init_reading(); // prepare readfeed
+		//}
 
 		std::vector<std::thread> tpool;
 		tpool.reserve(numThreads);
@@ -227,17 +231,19 @@ void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 				starts = std::chrono::high_resolution_clock::now(); // index processing starts
 
 				// add Readfeed job if necessary
-				if (opts.feed_type == FEED_TYPE::LOCKLESS)
-				{
+				//if (opts.feed_type == FEED_TYPE::LOCKLESS)
+				//{
 					//tpool.addJob(f_readfeed_run);
 					//tpool.addJob(Readfeed(opts.feed_type, opts.readfiles, opts.is_gz));
+				//}
+				//else if (opts.feed_type == FEED_TYPE::SPLIT_READS ||
+				//	 opts.feed_type == FEED_TYPE::INDEXED_GZ ||
+				//	 opts.feed_type == FEED_TYPE::INDEXED_FLAT) {
+				for (int i = 0; i < numThreads; ++i) {
+					tpool.emplace_back(std::thread(fill_otu_map2, i, std::ref(otumap),
+						std::ref(readfeed), std::ref(refs),	std::ref(kvdb), std::ref(opts)));
 				}
-				else if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-					for (int i = 0; i < numThreads; ++i) {
-						tpool.emplace_back(std::thread(fill_otu_map2, i, std::ref(otumap), 
-							std::ref(readfeed), std::ref(refs),	std::ref(kvdb), std::ref(opts)));
-					}
-				}
+				//}
 
 				// wait till processing is done on one index part
 				//tpool.waitAll(); 

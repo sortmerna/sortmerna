@@ -173,6 +173,14 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("==== Starting alignment ====");
+    INFO("Alignment parameters:  is_best: ", opts.is_best,
+            "  num_alignments: ", opts.num_alignments,
+            "  min_lis: ", opts.min_lis);
+    if (opts.num_alignments == 0) {
+        INFO("num_alignments is set to: ",  opts.num_alignments,
+            ", so all alignments passing E-value threshold will be reported,"
+            " and the option is_best is ignored.");
+    }
 
 	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
 	INFO("Number of cores: ", numCores);
@@ -183,18 +191,18 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 
 	// calculate the number of threads to use
 	int numThreads = 0;
-	if (opts.feed_type == FEED_TYPE::LOCKLESS)
-	{
-		numThreads = opts.num_read_thread + numProcThread;
-		INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
+	//if (opts.feed_type == FEED_TYPE::LOCKLESS)
+	//{
+	//	numThreads = opts.num_read_thread + numProcThread;
+	//	INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
 		//ThreadPool tpool(numThreads);
 		//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
-	}
-	else {
-		numThreads = numProcThread;
-		INFO("Using number of Processor threads: ", numProcThread);
-		readfeed.init_reading(); // prepare readfeed
-	}
+	//}
+	//else {
+	numThreads = numProcThread;
+	INFO("Using number of Processor threads: ", numProcThread);
+	readfeed.init_reading(); // prepare readfeed
+	//}
 	std::vector<std::thread> tpool;
 	tpool.reserve(numThreads);
 
@@ -231,16 +239,17 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			start_i = std::chrono::high_resolution_clock::now();
 
 			// add Readfeed job if necessary
-			if (opts.feed_type == FEED_TYPE::LOCKLESS)
-			{
+			//if (opts.feed_type == FEED_TYPE::LOCKLESS)
+			//{
 				//tpool.addJob(f_readfeed_run);
-			}
+			//}
 
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), std::ref(readstats), std::ref(index),
-					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(opts)));
+				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), 
+                                    std::ref(readstats), std::ref(index), std::ref(refs), 
+                                    std::ref(refstats),  std::ref(kvdb), std::ref(opts)));
 			}
 			for (auto& thr: tpool) {
 				thr.join();
@@ -260,7 +269,9 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			tpool.clear();
 			// rewind for the next index
 			readfeed.rewind_in();
-			readfeed.init_vzlib_in();
+            // does nothing for indexed feed. Only for split reads feed. 
+            // TODO: remove this call after removing split reads feed.
+			readfeed.init_vzlib_in();   
 			//read_queue.reset();
 		} // ~for(idx_part)
 	} // ~for(idx_num)
@@ -361,10 +372,10 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 	std::chrono::duration<double> elapsed;
 
 	int nthreads = 0;
-	if (readfeed.type == FEED_TYPE::SPLIT_READS) {
-		nthreads = opts.num_proc_thread;
-		readfeed.init_reading(); // prepare readfeed
-	}
+	//if (readfeed.type == FEED_TYPE::SPLIT_READS || readfeed.type == FEED_TYPE::INDEXED_GZ || readfeed.type == FEED_TYPE::INDEXED_FLAT) {
+	nthreads = opts.num_proc_thread;
+	readfeed.init_reading(); // prepare readfeed
+	//}
 
 	std::vector<std::thread> tpool;
 	tpool.reserve(nthreads);
@@ -392,12 +403,12 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			start_i = std::chrono::high_resolution_clock::now(); // index processing starts
 
 			// start threads
-			if (opts.feed_type == FEED_TYPE::SPLIT_READS) {
-				for (int i = 0; i < nthreads; ++i) {
-					tpool.emplace_back(std::thread(denovo_stats_run, i, std::ref(readfeed),
-						std::ref(readstats), std::ref(refs), std::ref(kvdb), std::ref(opts)));
-				}
+			//if (opts.feed_type == FEED_TYPE::SPLIT_READS || opts.feed_type == FEED_TYPE::INDEXED_GZ || opts.feed_type == FEED_TYPE::INDEXED_FLAT) {
+			for (int i = 0; i < nthreads; ++i) {
+				tpool.emplace_back(std::thread(denovo_stats_run, i, std::ref(readfeed),
+					std::ref(readstats), std::ref(refs), std::ref(kvdb), std::ref(opts)));
 			}
+			//}
 			// wait for all threads to finish
 			for (auto& thr: tpool) {
 				thr.join();

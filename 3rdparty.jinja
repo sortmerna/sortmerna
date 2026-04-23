@@ -45,6 +45,14 @@ concurrentqueue:
   src: 3rdparty/concurrentqueue # relative to sortmerna
   dist: {{concurrentqueue_dist}} # '--concurrentqueue-dist' or default '3rdparty/concurrentqueue' (setup.py)
 
+indexed_bzip2:
+  note: header-only rapidgzip library for seekable parallel gzip decompression
+  url: https://github.com/mxmlnkn/indexed_bzip2.git
+  commit: master
+  shallow: true
+  src: 3rdparty/indexed_bzip2 # relative to sortmerna
+  dist: {{indexed_bzip2_dist}} # '--indexed-bzip2-dist' or default '3rdparty/indexed_bzip2' (setup.py)
+
 dirent:
   note: a single header package - just clone and use (on Windows)
   url: https://github.com/tronkko/dirent

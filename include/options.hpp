@@ -113,7 +113,7 @@ OPT_DBG_PUT_DB = "dbg_put_db",
 OPT_TMPDIR = "tmpdir",
 OPT_INTERVAL = "interval",
 OPT_MAX_POS = "max_pos",
-OPT_READS_FEED = "reads_feed",  // TODO: on hold
+OPT_READFEED = "readfeed",
 OPT_ZIP_OUT = "zip-out",
 OPT_INDEX = "index",
 OPT_ALIGN = "align",  // TODO: on hold
@@ -129,14 +129,17 @@ help_header =
 "  -------------------------------------------------------------------------------------------------------------\n"
 "  | option            type-format           description                                          default      |\n"
 "  -------------------------------------------------------------------------------------------------------------\n",
+
 help_ref = 
 	"Reference file (FASTA) absolute or relative path.\n\n"
 	"       Use mutliple times, once per a reference file\n\n",
+
 help_reads = 
 	"Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).\n\n"
 	"       Use twice for files with paired reads.\n"
 	"       The file extensions are Not important. The program automatically\n"
 	"       recognizes the file format as flat/compressed, fasta/fastq\n\n",
+
 help_aligned = 
 	"Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned\n\n"
 	"       Directory and file prefix for aligned output i.e. each\n"
@@ -152,6 +155,7 @@ help_aligned =
 	"       '-aligned dir_1/'               -> $PWD/aligned.fasta\n"
 	"       '-aligned apfx'                 -> $PWD/apfx.fasta\n"
 	"       '-aligned  (no argument)'       -> WORKDIR/out/aligned.fasta\n\n",
+
 help_other = 
 	"Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other\n\n"
 	"       Directory and file prefix for non-aligned output i.e. each\n"
@@ -170,8 +174,10 @@ help_other =
 	"       '-other  (no argument)'       -> aligned_out/other.fasta\n"
 	"                                        i.e. the same output directory\n"
 	"                                        as used for aligned output\n\n",
+
 help_fastx = 
 	"Output aligned reads into FASTA/FASTQ file",
+
 help_workdir = 
 	"Workspace directory                         USRDIR/sortmerna/run/\n\n"
 	"       Default structure: WORKDIR/\n"
@@ -179,15 +185,29 @@ help_workdir =
 	"                              kvdb/  (Key-value storage for alignments)\n"
 	"                              out/   (processing output)\n"
 	"                              readb/ (pre-processed reads/index)\n\n",
+
 help_kvdb =
 	"Directory for Key-value database            WORKDIR/kvdb\n\n"
 	"       KVDB is used for storing the alignment results.\n\n",
+
 help_idxdir =
 	"Directory for storing Reference index.      WORKDIR/idx\n\n",
+
 help_readb = 
 	"Storage for pre-processed reads             WORKDIR/readb/\n\n"
-	"       Directory storing the split reads, or the random access index of compressed reads\n\n",
-	//"       Use with '" + OPT_READS_FEED + "'\n\n",
+	"       Directory storing the split reads\n"
+	"       Only used with '-" + OPT_READFEED + "' = " 
+            + std::to_string(static_cast<int>(FEED_TYPE::SPLIT_READS)) + 
+            " i.e. Split Reads. Otherwise ignored'\n\n",
+
+help_readfeed = 
+	"Method of accessing the reads by the                    " + 
+                                            std::to_string(static_cast<int>(FEED_TYPE::INDEXED)) + "\n"
+	"                                            reads processors\n\n"
+	"       0 - Indexed. Random access to compresssed or flat reads files using pre-calculated indices\n"
+	"       1 - DEPRECATED: Split reads. Reads files are split into parts equal the number of\n"
+    "                                                                             processing threads\n\n",
+
 help_sam = 
 	"Output SAM alignment for aligned reads.\n\n",
 help_SQ = 
@@ -364,15 +384,6 @@ help_max_pos =
 	"                                            store for each unique L-mer.\n"
 	"                                            If 0 - all positions are stored.\n",
 
-//help_reads_feed = 
-//	"Method of accessing the reads by the                    0\n"
-//	"                                            reads processors\n\n"
-//	"       0 - Split reads. Reads files are split into parts equal the number of processing threads\n"
-//	"       1 - FUTURE: Lockless queue. Reads are put into a lockless queue\n"
-//	"                   to be popped by the processing threads\n"
-//	"       3 - FUTURE: Random access to the compresssed reads files\n"
-//	"       4 - FUTURE: combination of the random access and the lockless queue\n\n",
-
 help_zip_out =
 	"Controls the output compression                        '-1'\n\n"
 	"       By default the report files are produced in the same format as the input i.e.\n"
@@ -410,7 +421,6 @@ help_score_split =
     "                                            all reads. This has an effect similar to increasing\n"
     "                                            e-value i.e. lowers the filtering threshold to less\n"
     "                                            sensitive (see issue 453)\n"
-
 //help_align =
 //    "Perform the alignment                                   False\n\n"
 //	"       Search a single best alignment per read\n\n",
@@ -566,7 +576,7 @@ public:
 	long gap_open = 5; // '--gap_open' SW penalty (positive integer) for introducing a gap
 	long gap_extension = 2; // '--gap_ext' SW penalty (positive integer) for extending a gap
 	int score_N = 0; // '-N' SW penalty for ambiguous letters (N's)
-	FEED_TYPE feed_type = FEED_TYPE::SPLIT_READS; // OPT_READS_FEED
+	FEED_TYPE feed_type = FEED_TYPE::INDEXED; // OPT_READFEED
 
 	double evalue = -1.0; // '-e' E-value threshold
 	double min_id = -1.0; // OTU-picking option: Identity threshold (%ID)
@@ -669,7 +679,7 @@ private:
 	void opt_m(const std::string &val);
 	void opt_L(const std::string &val);
 	void opt_max_pos(const std::string &val);
-	void opt_reads_feed(const std::string& val);
+	void opt_readfeed(const std::string& val);
 	void opt_score_split(const std::string& val);
 	/*
 	 * true: 1,yes,Yes,Y,y,T,t, false: 0,No,NO,no,N,n,F,f
@@ -705,7 +715,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 55> options = {
+	const std::array<opt_6_tuple, 56> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
@@ -714,6 +724,7 @@ private:
 		std::make_tuple(OPT_KVDB,           "PATH",        COMMON,      false, help_kvdb, &Runopts::opt_kvdb),
 		std::make_tuple(OPT_IDXDIR,         "PATH",        COMMON,      false, help_idxdir, &Runopts::opt_idxdir),
 		std::make_tuple(OPT_READB,          "PATH",        COMMON,      false, help_readb, &Runopts::opt_readb),
+		std::make_tuple(OPT_READFEED,       "INT",         COMMON,      false, help_readfeed, &Runopts::opt_readfeed),
 		std::make_tuple(OPT_FASTX,          "BOOL",        COMMON,      false, help_fastx, &Runopts::opt_fastx),
 		std::make_tuple(OPT_SAM,            "BOOL",        COMMON,      false, help_sam, &Runopts::opt_sam),
 		std::make_tuple(OPT_SQ,             "BOOL",        COMMON,      false, help_SQ, &Runopts::opt_SQ),
@@ -740,7 +751,6 @@ private:
 		std::make_tuple(OPT_R,              "BOOL",        COMMON,      false, help_R, &Runopts::opt_R),
 		std::make_tuple(OPT_SCORE_SPLIT,    "BOOL",        COMMON,      false, help_score_split, &Runopts::opt_score_split),
 		std::make_tuple(OPT_MAX_READ_LEN,   "INT",         COMMON,      false, help_max_read_len, &Runopts::opt_max_read_len),
-		//std::make_tuple(OPT_READS_FEED,     "INT",         COMMON,      false, help_reads_feed, &Runopts::opt_reads_feed),
 		std::make_tuple(OPT_ID,             "INT",         OTU_PICKING, false, help_id, &Runopts::opt_id),
 		std::make_tuple(OPT_COVERAGE,       "INT",         OTU_PICKING, false, help_coverage, &Runopts::opt_coverage),
 		std::make_tuple(OPT_DENOVO_OTU,     "BOOL",        OTU_PICKING, false, help_denovo_otu, &Runopts::opt_denovo_otu),
