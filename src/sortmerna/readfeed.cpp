@@ -165,7 +165,7 @@ void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
 	}
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
-	INFO("Readfeed init done in sec [", elapsed.count(), "]");
+	INFO("Readfeed init done in sec [", elapsed.count(), "]\n");
 }
 
 /* 

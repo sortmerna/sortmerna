@@ -1548,7 +1548,7 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		}
 	}
 
-	INFO("=== Options processing done ===");
+	INFO("=== Options processing done ===\n");
 	INFO("Alignment type: [best:", is_best, 
 			" num_alignments:", num_alignments, 
 			" min_lis:", min_lis, " seeds:", num_seeds,"]");
