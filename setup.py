@@ -118,7 +118,7 @@ def load_tar(url, tgtd):
 def git_clone(url:str, 
               repo_dir:str, 
               shallow:bool=False, 
-              force:bool=False) -> tuple:
+              force:bool=False) -> tuple[int, list[str], list[str]]:
     '''
     clone a git repo if not already existing
     args:
@@ -527,7 +527,7 @@ def rocksdb_modify_3party_zlib(link_type:str='t1', **kw):
     #txtn = re.sub(r'ZLIB_LIB_RELEASE .*\)', r'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{})'.format(lib_rel), txtn, flags = re.M)
 #END rocksdb_fix_3party
     
-def rocksdb_build(link_type:str='t1', **kw) -> tuple: # ver=None, btype='Release', ptype='t3', **cfg
+def rocksdb_build(link_type:str='t1', **kw) -> tuple[int, list[str], list[str]]: # ver=None, btype='Release', ptype='t3', **cfg
     '''
     args:
       - btype  build type Release | Debug
@@ -621,7 +621,7 @@ def smr_build(ver:str=None,
               btype:str='release', 
               is_checkout:bool=False, 
               link_type:str='t1', 
-              **kw):
+              **kw) -> tuple[int, list[str], list[str]]:
     '''
     build sortmerna using CMake with CMakePresets.json
     CMake flags mostly specified in presets - no need here
@@ -724,7 +724,7 @@ def smr_build(ver:str=None,
     return rcode, sout, eout
 #END smr_build
 
-def concurrentqueue_build(**kw):
+def concurrentqueue_build(**kw) -> tuple[int, list[str], list[str]]:
     '''
     a single header file - just clone and use
     '''
@@ -736,7 +736,7 @@ def concurrentqueue_build(**kw):
     return rcode, sout, eout
 #END concurrentqueue_build
 
-def indexed_bzip2_build(**kw):
+def indexed_bzip2_build(**kw) -> tuple[int, list[str], list[str]]:
     '''
     header-only rapidgzip library - just clone and use
     '''
@@ -917,9 +917,9 @@ if __name__ == "__main__":
         if rcode == 0:
             rcode, sout, eout = rocksdb_build(**config) # ROCKS_VER, cfg=env
         if rcode == 0:
-            ret = concurrentqueue_build(**config)
+            rcode, sout, eout = concurrentqueue_build(**config)
         if rcode == 0:
-            ret = indexed_bzip2_build(**config)
+            rcode, sout, eout = indexed_bzip2_build(**config)
         if rcode == 0:
             btype = opts.btype or 'release'
             rcode, sout, eout = smr_build(btype=btype, **config)
