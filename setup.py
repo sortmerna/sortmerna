@@ -403,7 +403,7 @@ def proc_run(cmd:list, cwd:str=None, capture:bool=False) -> tuple:
     return rcode, sout, eout
 #END proc_run
 
-def zlib_build(**kw):
+def zlib_build(**kw) -> tuple[int, list[str], list[str]]:
     '''
     args:
       - url
@@ -413,7 +413,7 @@ def zlib_build(**kw):
       - ptype str             Linkage type like statuc, dynamic, mixed
       - is_git bool           use git as source. Otherwise - archive (.tar.gz)
     '''
-    outl, errl = [], []
+    rcode, outl, errl = 0, [], []
     is_git = kw[ZLIB].get('is_git', False)
     is_checkout = kw[ZLIB].get('is_checkout', True)
     is_conda_cpp = kw.get('conda_cpp', False)
@@ -738,12 +738,15 @@ def concurrentqueue_build(**kw) -> tuple[int, list[str], list[str]]:
 
 def indexed_bzip2_build(**kw) -> tuple[int, list[str], list[str]]:
     '''
-    header-only rapidgzip library - just clone and use
+    header-only rapidgzip library - clone and init submodules (external/zlib etc.)
     '''
     url = kw.get(IBZIP2).get('url')
     src = kw.get(IBZIP2).get('src')
     shallow = kw.get(IBZIP2).get('shallow')
     rcode, sout, eout = git_clone(url, src, shallow=shallow)
+    if rcode == 0:
+        cmd = ['git', 'submodule', 'update', '--init', '--recursive']
+        rcode, sout, eout = proc_run(cmd, src, capture=True)
     return rcode, sout, eout
 #END indexed_bzip2_build
 
