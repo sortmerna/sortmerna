@@ -165,9 +165,9 @@ def conda_install(dir:str=None, force:bool=False, clean:bool=False, **cfg):
         cmd = ['python', '--version']
         ret = proc_run(cmd, bin_conda, True)
         if not ret['retcode']:
-            print('{} Conda already installed: {} : {}'.format(ST, bin_conda, ret['stdout']))
+            print(f'{ST} Conda already installed: {bin_conda} : {ret["stdout"]}')
             if force:
-                print('{} TODO: Force specified - removing the existing installation: {}'.format(ST, bin_conda))
+                print(f'{ST} TODO: Force specified - removing the existing installation: {bin_conda}')
             return
 
     # download the installer if not already present
@@ -180,14 +180,14 @@ def conda_install(dir:str=None, force:bool=False, clean:bool=False, **cfg):
             # this works with conda but not standard python3
         #    req = url_conda
 
-        print('{} Loading Conda from url: {}'.format(ST, url_conda))
+        print(f'{ST} Loading Conda from url: {url_conda}')
         try:
             req = requests.get(url_conda, allow_redirects=True)
             #with urllib.request.urlopen(req) as surl:
             with open(fsh, 'wb') as fp:
                 fp.write(req.content) # loads the file into memory before writing to disk. No good for very big files.
         except:
-            print('{} Exception getting Conda distro: {} {}'.format(ST, sys.exc_info()[1], sys.exc_info()[0]))
+            print(f'{ST} Exception getting Conda distro: {sys.exc_info()[1]} {sys.exc_info()[0]}')
             sys.exit(1)
 
     # run the installer
@@ -198,32 +198,32 @@ def conda_install(dir:str=None, force:bool=False, clean:bool=False, **cfg):
 
         # delete the installer
         if clean:
-            print('{} Deleting the installer {}'.format(ST, os.path.join(dir, fsh)))
+            print(f'{ST} Deleting the installer {os.path.join(dir, fsh)}')
             os.remove(os.path.join(dir, fsh))
 
-        print('{} Installed conda in {}'.format(ST, os.path.join(dir, 'miniconda3')))
+        print(f'{ST} Installed conda in {os.path.join(dir, "miniconda3")}')
 
         # install packages required to use sortmerna's build.py
-        print('{} Installing PyYaml package'.format(ST))
+        print(f'{ST} Installing PyYaml package')
         bin_pip = os.path.join(bin_conda, 'pip')
         cmd = [bin_pip, 'install', 'pyyaml']
         proc_run(cmd, bin_conda)
 
-        print('{} Installing Jinja2 package'.format(ST))
+        print(f'{ST} Installing Jinja2 package')
         cmd = [bin_pip, 'install', 'jinja2']
         proc_run(cmd, bin_conda)
 
-        print('{} Installing NumPy package'.format(ST))
+        print(f'{ST} Installing NumPy package')
         cmd = [bin_pip, 'install', 'numpy']
         proc_run(cmd, bin_conda)
 
-        print('{} Installing scikit-bio package'.format(ST))
+        print(f'{ST} Installing scikit-bio package')
         cmd = [bin_pip, 'install', 'scikit-bio']
         proc_run(cmd, bin_conda)
     else:
-        print('{} Conda installer not found - likely failed to download'.format(ST))
+        print(f'{ST} Conda installer not found - likely failed to download')
 
-    print('{} Done'.format(ST))
+    print(f'{ST} Done')
 #END conda_install
 
 def cmake_install(dir=None, force=False, **cfg):
@@ -244,15 +244,15 @@ def cmake_install(dir=None, force=False, **cfg):
     #cmake_home = val if val else os.path.join(UHOME, 'cmake-{}-win64-x64'.format(cmake_cfg.get('ver')))
     #                                          |_ default         
     # check already installed
-    cmake_bin = '{}/bin/cmake'.format(cmake_home)
-    if IS_WIN: cmake_bin = '{}.exe'.format(cmake_bin)
+    cmake_bin = f'{cmake_home}/bin/cmake'
+    if IS_WIN: cmake_bin = f'{cmake_bin}.exe'
     if os.path.exists(cmake_bin):
-        print('{} Cmake is already installed: {}'.format(ST, cmake_bin))
+        print(f'{ST} Cmake is already installed: {cmake_bin}')
         if not force:
             is_installed = True
 
     if not is_installed:
-        print('{} CMake not found at: {} - installing'.format(ST, cmake_bin))
+        print(f'{ST} CMake not found at: {cmake_bin} - installing')
         os.chdir(Path(cmake_home).parent.as_posix()) # navigate to the parent dir e.g. installation root (pathlib)
         # download the installer if not already present
         if not os.path.exists(zipped):
@@ -263,7 +263,7 @@ def cmake_install(dir=None, force=False, **cfg):
                 with open(zipped, 'wb') as fp:
                     fp.write(req.content) # loads all file into memory first before writing to disk. No good for very big files.
             except:
-                print('{} Exception getting CMake distro: {} {}'.format(ST, sys.exc_info()[1], sys.exc_info()[0]))
+                print(f'{ST} Exception getting CMake distro: {sys.exc_info()[1]} {sys.exc_info()[0]}')
                 sys.exit(1)
 
         # extract archive
@@ -272,7 +272,7 @@ def cmake_install(dir=None, force=False, **cfg):
             tar = tarfile.open(zipped)
             tar.extractall()
             tar.close()
-        elif '.zip' == ext: 
+        elif '.zip' == ext:
             with zipfile.ZipFile(zipped, 'r') as fp:
                 fp.extractall(os.curdir)
 
@@ -281,9 +281,9 @@ def cmake_install(dir=None, force=False, **cfg):
 
         # Verify installation
         if os.path.exists(cmake_bin):
-            print('{} Installed CMake {}'.format(ST, cmake_bin))
+            print(f'{ST} Installed CMake {cmake_bin}')
         else:
-            print('{} Failed to install CMake {}'.format(ST, cmake_bin))
+            print(f'{ST} Failed to install CMake {cmake_bin}')
 
         # copy binarties to HOME/bin to avoid setting the PATH
         #if IS_LNX:
@@ -499,7 +499,7 @@ def rocksdb_modify_3party_zlib(link_type:str='t1', **kw):
     '''
     ST = '[rocksdb_modify_3party_zlib]'
     if not IS_WIN:
-        print('{} not used on Non-Windows'.format(ST))
+        print(f'{ST} not used on Non-Windows')
         return
 
     print(f'{ST} fixing \'thirdparty.inc\' for linkage type \'{link_type}\' on Windows')
@@ -511,13 +511,13 @@ def rocksdb_modify_3party_zlib(link_type:str='t1', **kw):
 
     for line in fileinput.FileInput(file3p, inplace=True):
         if line.startswith('set(ZLIB_HOME'):
-            line = re.sub(r'ZLIB_HOME .*\)', r'ZLIB_HOME {})'.format(zlib_dist.as_posix()), line, flags = re.M)
+            line = re.sub(r'ZLIB_HOME .*\)', f'ZLIB_HOME {zlib_dist.as_posix()})', line, flags=re.M)
         if line.startswith('set(ZLIB_INCLUDE'):
-            line = re.sub(r'ZLIB_INCLUDE .*\)', r'ZLIB_INCLUDE ${ZLIB_HOME}/include)', line, flags = re.M)
+            line = re.sub(r'ZLIB_INCLUDE .*\)', r'ZLIB_INCLUDE ${ZLIB_HOME}/include)', line, flags=re.M)
         if line.startswith('set(ZLIB_LIB_DEBUG'):
-            line = re.sub(r'ZLIB_LIB_DEBUG .*\)', r'ZLIB_LIB_DEBUG ${{ZLIB_HOME}}/lib/{})'.format(zlib_dbg), line, flags = re.M)
+            line = re.sub(r'ZLIB_LIB_DEBUG .*\)', f'ZLIB_LIB_DEBUG ${{ZLIB_HOME}}/lib/{zlib_dbg})', line, flags=re.M)
         if line.startswith('set(ZLIB_LIB_RELEASE'):
-            line = re.sub(r'ZLIB_LIB_RELEASE .*\)', r'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{})'.format(zlib_rel), line, flags = re.M)
+            line = re.sub(r'ZLIB_LIB_RELEASE .*\)', f'ZLIB_LIB_RELEASE ${{ZLIB_HOME}}/lib/{zlib_rel})', line, flags=re.M)
         sys.stdout.write(line)
    
     #mo = re.search(r'ZLIB_HOME .*\)+?', txt)
@@ -688,7 +688,7 @@ def smr_build(ver:str=None,
     if kw.get('vb'):
         cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
     if kw.get('loglevel'):
-        cmd.append('--loglevel={}'.format(kw.get('loglevel').upper()))
+        cmd.append(f'--loglevel={kw.get("loglevel").upper()}')
     elif kw.get('trace'):
         cmd.append('--trace')
     cmd.append('--fresh')
