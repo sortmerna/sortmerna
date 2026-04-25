@@ -36,7 +36,7 @@ jobs:
       run: |
         eval "$(conda shell.bash activate)"
         conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
-        python setup.py -n all
+        python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
 

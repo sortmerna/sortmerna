@@ -42,7 +42,7 @@ jobs:
         source "${HOME}/conda/etc/profile.d/mamba.sh"
         conda activate
         conda env list
-        python setup.py -n all
+        python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
     - name: upload

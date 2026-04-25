@@ -28,7 +28,7 @@ jobs:
         echo "cmake version: $(cmake --version)"
         pushd $env:GITHUB_WORKSPACE
         echo 'running python setup.py ... in $(pwd)'
-        python setup.py -n all
+        python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
     - name: upload
