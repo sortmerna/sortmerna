@@ -37,7 +37,7 @@ import os
 import sys
 import subprocess
 import platform
-from optparse import OptionParser
+from argparse import ArgumentParser
 import requests
 import tarfile
 import re
@@ -800,56 +800,90 @@ modfunc['cmake_install'] = cmake_install
 
 if __name__ == "__main__":
     '''
-    python setup.py -n all         build zlib + rocksdb + smr
-    python setup.py -n sortmerna   build smr
-    python setup.py -n sortmerna [--cmake-preset <preset>]  TODO
-    python setup.py -n zlib        build zlib
-    python setup.py -n rocksdb     build rocksdb
-
-    python setup.py -n conda       install conda  TODO
-    python setup.py -n cmake       install cmake  TODO
+    python setup.py all          build zlib + rocksdb + smr
+    python setup.py sortmerna    build smr
+    python setup.py sortmerna [--cmake-preset <preset>]
+    python setup.py zlib         build zlib
+    python setup.py rocksdb      build rocksdb
+    python setup.py conda        install conda  TODO
+    python setup.py cmake        install cmake  TODO
     '''
     ST = '[setup.py:__main__]'
-    is_opts_ok = True
 
-    # options
-    optpar = OptionParser()
-    optpar.add_option('-n', '--name', dest='name', 
-        help='Package to build/process e.g. sortmerna | zlib | rocksdb | rapidjson | conda | all')
-    optpar.add_option('--toolchain-config', dest='toolchain', help='CMake toolchain file')
-    optpar.add_option('--zlib-src', dest='zlib_src', help='ZLib source directory')
-    optpar.add_option('--zlib-build', dest='zlib_build', help='ZLib cmake build directory')
-    optpar.add_option('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
-    optpar.add_option('--zlib-git', action="store_true", help='use zlib git repo as source. Otherwise tarball')
-    optpar.add_option('--rocksdb-dist', dest='rocksdb_dist', help='RocksDB installation directory')
-    optpar.add_option('--rocksdb-src', dest='rocksdb_src', help='RocksDB sources directory')
-    optpar.add_option('--rocksdb-build', dest='rocksdb_build', help='RocksDB cmake build directory')
-    optpar.add_option('--rocksdb-git', action="store_true", help='use rocksdb git repo as source. Otherwise tarball')
-    optpar.add_option('--build-dev', action="store_true", help='run build in development mode using git repos')
-    optpar.add_option('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
-    optpar.add_option('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
-    optpar.add_option('-e', '--envn', dest='envname', 
-        help=('Name of environment: WIN | WSL | LIN .. see env.jinja:env.list'))
-    optpar.add_option('--clone', action="store_true", help='Perform git clone for the given name')
-    optpar.add_option('-c', '--clean', action="store_true", help='clean build directory for the given name')
-    optpar.add_option('-b', '--btype', dest='btype', default='release', help = 'Build type: release | debug')
-    optpar.add_option('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
-    optpar.add_option('--pt_zlib', dest='pt_zlib', help = 'Zlib Linkage type t1 | t2 | t3')
-    optpar.add_option('--pt_rocks', dest='pt_rocks', help = 'Rocksdb Linkage type t1 | t2 | t3')
-    optpar.add_option('--rocks3p', dest='rocks3p', help='Fix thirdparty.inc when building Rocksb')
-    optpar.add_option('--winhome', dest='winhome', 
-                help='when building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
-    optpar.add_option('--trace', action="store_true", help='Run cmake with --trace')
-    optpar.add_option('--loglevel', dest='loglevel', help = 'Cmake log level')
-    optpar.add_option('--vb', action="store_true", help='Export compile commands')
-    optpar.add_option('--env', dest='envfile', help='Env configuration file.')
-    optpar.add_option('--config', dest='config', help='Build configuration file.')
-    optpar.add_option('--build-dir', dest='build_dir', help='Build directory.')
-    optpar.add_option('--dist-dir', dest='dist_dir', help='Distro directory.')
-    optpar.add_option('--local-linux', dest='local_linux', action='store_true', help='Perform the build on local source files in the current working directory.')
-    optpar.add_option('--cmake-preset', dest='cmake_preset', help='CMake preset')
-    optpar.add_option('--use-conda-cpp', action="store_false", help='Use Conda C++ tools for building')
-    (opts, args) = optpar.parse_args()
+    p0 = ArgumentParser(description='SortMeRNA build utility')
+    p0.add_argument('--toolchain-config', dest='toolchain', help='CMake toolchain file')
+    p0.add_argument('--vb', action='store_true', help='Export compile commands')
+    p0.add_argument('--loglevel', dest='loglevel', help='CMake log level')
+    p0.add_argument('--trace', action='store_true', help='Run cmake with --trace')
+    p0.add_argument('--use-conda-cpp', action='store_true', dest='use_conda_cpp', help='Use Conda C++ tools for building')
+    p0.add_argument('-e', '--envn', dest='envname', help='Name of environment: WIN | WSL | LIN ..')
+    p0.add_argument('--env', dest='envfile', help='Env configuration file.')
+    p0.add_argument('--config', dest='config', help='Build configuration file.')
+    p0.add_argument('--build-dir', dest='build_dir', help='Build directory.')
+    p0.add_argument('--dist-dir', dest='dist_dir', help='Distro directory.')
+    p0.add_argument('--local-linux', dest='local_linux', action='store_true', help='Perform the build on local source files.')
+    p0.add_argument('--winhome', dest='winhome', help='when building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
+    subpar = p0.add_subparsers(dest='name', help='package to build/process')
+
+    p_all = subpar.add_parser('all', help='build zlib + rocksdb + concurrentqueue + indexed_bzip2 + sortmerna')
+    p_all.add_argument('-b', '--btype', dest='btype', default='release', help='Build type: release | debug')
+    p_all.add_argument('--cmake-preset', dest='cmake_preset', help='CMake preset')
+    p_all.add_argument('-c', '--clean', action='store_true', help='clean build directory')
+    p_all.add_argument('--build-dev', action='store_true', help='run build in development mode using git repos')
+    p_all.add_argument('--zlib-src', dest='zlib_src', help='ZLib source directory')
+    p_all.add_argument('--zlib-build', dest='zlib_build', help='ZLib cmake build directory')
+    p_all.add_argument('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
+    p_all.add_argument('--zlib-git', action='store_true', help='use zlib git repo as source. Otherwise tarball')
+    p_all.add_argument('--rocksdb-src', dest='rocksdb_src', help='RocksDB sources directory')
+    p_all.add_argument('--rocksdb-build', dest='rocksdb_build', help='RocksDB cmake build directory')
+    p_all.add_argument('--rocksdb-dist', dest='rocksdb_dist', help='RocksDB installation directory')
+    p_all.add_argument('--rocksdb-git', action='store_true', help='use rocksdb git repo as source. Otherwise tarball')
+    p_all.add_argument('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
+    p_all.add_argument('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
+    p_all.add_argument('--pt_smr', dest='pt_smr', default='t1', help='Sortmerna Linkage type t1 | t2 | t3')
+    p_all.add_argument('--pt_zlib', dest='pt_zlib', help='Zlib Linkage type t1 | t2 | t3')
+    p_all.add_argument('--pt_rocks', dest='pt_rocks', help='Rocksdb Linkage type t1 | t2 | t3')
+
+    p_smr = subpar.add_parser('sortmerna', help='build sortmerna')
+    p_smr.add_argument('-b', '--btype', dest='btype', default='release', help='Build type: release | debug')
+    p_smr.add_argument('--cmake-preset', dest='cmake_preset', help='CMake preset')
+    p_smr.add_argument('-c', '--clean', action='store_true', help='clean build directory')
+    p_smr.add_argument('--pt_smr', dest='pt_smr', default='t1', help='Sortmerna Linkage type t1 | t2 | t3')
+
+    p_zlib = subpar.add_parser('zlib', help='build zlib')
+    p_zlib.add_argument('--zlib-src', dest='zlib_src', help='ZLib source directory')
+    p_zlib.add_argument('--zlib-build', dest='zlib_build', help='ZLib cmake build directory')
+    p_zlib.add_argument('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
+    p_zlib.add_argument('--zlib-git', action='store_true', help='use zlib git repo as source. Otherwise tarball')
+
+    p_rocks = subpar.add_parser('rocksdb', help='build rocksdb')
+    p_rocks.add_argument('--rocksdb-src', dest='rocksdb_src', help='RocksDB sources directory')
+    p_rocks.add_argument('--rocksdb-build', dest='rocksdb_build', help='RocksDB cmake build directory')
+    p_rocks.add_argument('--rocksdb-dist', dest='rocksdb_dist', help='RocksDB installation directory')
+    p_rocks.add_argument('--rocksdb-git', action='store_true', help='use rocksdb git repo as source. Otherwise tarball')
+    p_rocks.add_argument('--zlib-dist', dest='zlib_dist', help='ZLib installation directory')
+    p_rocks.add_argument('-c', '--clean', action='store_true', help='clean build directory')
+    p_rocks.add_argument('--pt_rocks', dest='pt_rocks', help='Rocksdb Linkage type t1 | t2 | t3')
+    p_rocks.add_argument('--rocks3p', dest='rocks3p', help='Fix thirdparty.inc when building Rocksdb')
+
+    p_ccq = subpar.add_parser('concurrentqueue', help='clone concurrentqueue')
+    p_ccq.add_argument('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
+
+    p_ibzip2 = subpar.add_parser('indexed_bzip2', help='clone indexed_bzip2 and init submodules')
+    p_ibzip2.add_argument('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
+
+    subpar.add_parser('dirent', help='clone dirent')
+
+    p_cmake = subpar.add_parser('cmake', help='install cmake')
+    p_cmake.add_argument('--clone', action='store_true', help='Perform git clone')
+
+    subpar.add_parser('conda', help='install conda')
+
+    args = p0.parse_args()
+
+    if args.name is None:
+        p0.print_help()
+        sys.exit(0)
 
     cur_dir = os.path.dirname(os.path.realpath(__file__)) # directory where this script is located
     print(f'{ST} Current dir: {cur_dir}')
@@ -860,103 +894,92 @@ if __name__ == "__main__":
     vars = {}
     jinja_str = thirdparty_jinja.render(vars)
     config = yaml.load(jinja_str, Loader=yaml.FullLoader) # render jinja template
-    
-    if opts.toolchain:
-        config['toolchain'] = opts.toolchain
-       
+
+    if args.toolchain:
+        config['toolchain'] = args.toolchain
+
     # zlib
-    if opts.zlib_src:
-        config['zlib']['src'] = opts.zlib_src  # sources location
-        
-    if opts.zlib_dist:
-        config['zlib']['dist'] = opts.zlib_dist  # installation dir (distro)
+    if getattr(args, 'zlib_src', None):
+        config['zlib']['src'] = args.zlib_src
+    if getattr(args, 'zlib_dist', None):
+        config['zlib']['dist'] = args.zlib_dist
     else:
         config['zlib']['dist'] = f"build/{config['zlib']['src']}/dist"
-        
-    if opts.zlib_git or opts.build_dev:
-        config['zlib']['is_git'] = True  # indicate if the sources are a git repo
+    if getattr(args, 'zlib_git', False) or getattr(args, 'build_dev', False):
+        config['zlib']['is_git'] = True
 
     # rocksdb
-    if opts.rocksdb_src:
-        config['rocksdb']['src'] = opts.rocksdb_src
-        
-    if opts.rocksdb_dist:
-        config['rocksdb']['dist'] = opts.rocksdb_dist
+    if getattr(args, 'rocksdb_src', None):
+        config['rocksdb']['src'] = args.rocksdb_src
+    if getattr(args, 'rocksdb_dist', None):
+        config['rocksdb']['dist'] = args.rocksdb_dist
     else:
         config['rocksdb']['dist'] = f"build/{config['rocksdb']['src']}/dist"
-        
-    if opts.rocksdb_git or opts.build_dev:
+    if getattr(args, 'rocksdb_git', False) or getattr(args, 'build_dev', False):
         config['rocksdb']['is_git'] = True
-        
+
     # concurrentqueue
-    if opts.concurrentqueue_dist:
-        config['concurrentqueue']['dist'] = opts.concurrentqueue_dist
+    if getattr(args, 'concurrentqueue_dist', None):
+        config['concurrentqueue']['dist'] = args.concurrentqueue_dist
     else:
         config['concurrentqueue']['dist'] = f"{config['concurrentqueue']['src']}"
 
     # indexed_bzip2
-    if opts.indexed_bzip2_dist:
-        config['indexed_bzip2']['dist'] = opts.indexed_bzip2_dist
+    if getattr(args, 'indexed_bzip2_dist', None):
+        config['indexed_bzip2']['dist'] = args.indexed_bzip2_dist
     else:
         config['indexed_bzip2']['dist'] = f"{config['indexed_bzip2']['src']}"
-        
-    if opts.vb:
+
+    if args.vb:
         config['vb'] = True
-    if opts.loglevel:
-        config['loglevel'] = opts.loglevel
-    elif opts.trace:
+    if args.loglevel:
+        config['loglevel'] = args.loglevel
+    elif args.trace:
         config['trace'] = True
-    if opts.use_conda_cpp:
+    if args.use_conda_cpp:
         config['conda_cpp'] = True
 
-    opts.name = opts.name or ALL
-    if opts.name in ALL:
-        if opts.clean:
+    if args.name == ALL:
+        if getattr(args, 'clean', False):
             rcode, sout, eout = clean('build')
-        if not opts.cmake_preset:
-            opts.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
-
+        if not getattr(args, 'cmake_preset', None):
+            args.cmake_preset = 'WIN_release' if IS_WIN else 'LIN_release'
         rcode, outl, errl = zlib_build(**config)
         if rcode == 0:
-            rcode, sout, eout = rocksdb_build(**config) # ROCKS_VER, cfg=env
+            rcode, sout, eout = rocksdb_build(**config)
         if rcode == 0:
             rcode, sout, eout = concurrentqueue_build(**config)
         if rcode == 0:
             rcode, sout, eout = indexed_bzip2_build(**config)
         if rcode == 0:
-            btype = opts.btype or 'release'
-            rcode, sout, eout = smr_build(btype=btype, **config)
-    elif opts.name == ZLIB:
-        kw = config.get(ZLIB,{})
+            rcode, sout, eout = smr_build(btype=getattr(args, 'btype', 'release'), **config)
+    elif args.name == ZLIB:
         rcode, outl, errl = zlib_build(**config)
-    elif opts.name == ROCKS:
-        if opts.clean:
+    elif args.name == ROCKS:
+        if getattr(args, 'clean', False):
             ...
         rocksdb_build(**config)
-    elif opts.name in [SMR]:
-        if opts.clean:
+    elif args.name == SMR:
+        if getattr(args, 'clean', False):
             ...
-        btype = opts.btype or 'release'
-        smr_build(btype=btype, **config)
-    elif opts.name == CCQUEUE:
+        smr_build(btype=getattr(args, 'btype', 'release'), **config)
+    elif args.name == CCQUEUE:
         concurrentqueue_build(**config)
-    elif opts.name == IBZIP2:
+    elif args.name == IBZIP2:
         indexed_bzip2_build(**config)
-    elif opts.name == DIRENT: 
+    elif args.name == DIRENT:
         url = config[DIRENT].get('url')
         path = config[DIRENT].get('src')
-        commit = config[DIRENT].get('commit')
         shallow = config[DIRENT].get('shallow')
-        git_clone(url, path, shallow=shallow) 
-    elif opts.name == CMAKE: 
-        if opts.clone:
+        git_clone(url, path, shallow=shallow)
+    elif args.name == CMAKE:
+        if getattr(args, 'clone', False):
             ... #git_clone(env[CMAKE]['url'], LIB_DIR)
-        ... #cmake_install(**env) 
-    elif opts.name == CONDA: 
-        ... #conda_install(**env) 
-    #elif opts.name == RAPID: 
-        #rapidjson_build()
-    else: test()
+        ... #cmake_install(**env)
+    elif args.name == CONDA:
+        ... #conda_install(**env)
+    else:
+        test()
 #END main
 
 #END END
