@@ -50,9 +50,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstate.h"
 #include "readfile.h"
 
-#include <filereader/Standard.hpp>
-#include <rapidgzip/ParallelGzipReader.hpp>
-
 /*
  * Per-thread slot for reading a byte-range chunk of a flat (non-gzipped) file.
  * Each slot holds an open ifstream seeked to bytes_start and reads up to bytes_end.
@@ -78,6 +75,13 @@ struct FlatSlot {
     int getline(std::string& line);
 };
 
+// Opaque wrapper around rapidgzip::ParallelGzipReader — defined only in readfeed.cpp
+// to avoid pulling rapidgzip headers (and their non-inline constexpr LUTs) into every TU.
+struct GzReaderImpl;
+// Custom deleter declared here but defined in readfeed.cpp so GCC never checks
+// sizeof(GzReaderImpl) in any other translation unit.
+struct GzReaderDeleter { void operator()(GzReaderImpl*) noexcept; };
+
 /*
  * Per-thread slot for reading a byte-range chunk of a gzipped file
  * using ParallelGzipReader (seekable parallel decompression).
@@ -88,7 +92,7 @@ struct GzSlot {
     uint64_t bytes_end       = 0;
     uint64_t bytes_remaining = 0;
 
-    std::unique_ptr<rapidgzip::ParallelGzipReader<>> reader;
+    std::unique_ptr<GzReaderImpl, GzReaderDeleter> reader;
 
     static constexpr size_t BUF_SIZE = 1U << 16; // 64 KiB
     std::vector<uint8_t> buf;

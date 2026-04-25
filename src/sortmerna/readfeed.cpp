@@ -52,6 +52,19 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <filereader/Standard.hpp>
 #include <rapidgzip/ParallelGzipReader.hpp>
 
+// Opaque wrapper — keeps rapidgzip headers out of readfeed.hpp and every TU that includes it.
+// The explicit template specialisation NEXT_DYNAMIC_DEFLATE_CANDIDATE_LUT<15> in DynamicHuffman.hpp
+// lacks 'inline', so it gets external linkage; Apple ld rejects duplicate definitions across TUs.
+struct GzReaderImpl {
+    rapidgzip::ParallelGzipReader<> rdr;
+    template <typename T>
+    GzReaderImpl(std::unique_ptr<T> fr, std::size_t threads)
+        : rdr(std::move(fr), threads) {}
+};
+
+// Custom deleter — body defined here so sizeof(GzReaderImpl) is never checked in other TUs.
+void GzReaderDeleter::operator()(GzReaderImpl* p) noexcept { delete p; }
+
 // forward
 std::streampos filesize(const std::string& file); //util.cpp
 
@@ -96,7 +109,7 @@ bool GzSlot::fill_buf()
 {
 	if (bytes_remaining == 0) return false;
 	size_t toRead = static_cast<size_t>(std::min(static_cast<uint64_t>(BUF_SIZE), bytes_remaining));
-	auto n = reader->read(reinterpret_cast<char*>(buf.data()), toRead);
+	auto n = reader->rdr.read(reinterpret_cast<char*>(buf.data()), toRead);
 	if (n <= 0) { bytes_remaining = 0; return false; }
 	bytes_remaining -= static_cast<uint64_t>(n);
 	buf_pos = 0;
@@ -902,7 +915,7 @@ void Readfeed::rewind_in() {
 			if (is_interleaved && i % num_sense != 0) continue; // REV slots share FWD reader
 			auto& slot = gz_slots[i];
 			if (slot.reader) {
-				slot.reader->seek(static_cast<long long>(slot.bytes_start));
+				slot.reader->rdr.seek(static_cast<long long>(slot.bytes_start));
 			}
 			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
 			slot.buf_pos = 0;
@@ -1823,11 +1836,13 @@ void Readfeed::init_reading()
 		for (std::size_t i = 0; i < gz_slots.size(); ++i) {
 			if (is_interleaved && i % num_sense != 0) continue;
 			auto& slot = gz_slots[i];
-			slot.reader = std::make_unique<rapidgzip::ParallelGzipReader<>>(
-				std::make_unique<rapidgzip::StandardFileReader>(slot.file_path),
-				/*parallelization=*/1
+			slot.reader = std::unique_ptr<GzReaderImpl, GzReaderDeleter>(
+				new GzReaderImpl(
+					std::make_unique<rapidgzip::StandardFileReader>(slot.file_path),
+					/*parallelization=*/std::size_t(1)
+				)
 			);
-			slot.reader->seek(static_cast<long long>(slot.bytes_start));
+			slot.reader->rdr.seek(static_cast<long long>(slot.bytes_start));
 			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
