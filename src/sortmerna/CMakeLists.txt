@@ -159,7 +159,8 @@ target_link_libraries(smr_objs
 		#RapidJSON::RapidJSON
 )
 if(WIN32)
-	target_include_directories(smr_objs 
+	target_compile_definitions(smr_objs PUBLIC NOMINMAX)
+	target_include_directories(smr_objs
 		PUBLIC
 			${CMAKE_SOURCE_DIR}/include
 			$<TARGET_PROPERTY:winapi,INCLUDE_DIRECTORIES>
