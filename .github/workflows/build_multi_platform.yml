@@ -42,7 +42,7 @@ jobs:
         gcc --version
         eval "$(conda shell.bash activate)"
         conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
-        python setup.py -n all
+        python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
 
@@ -61,7 +61,7 @@ jobs:
         source "${HOME}/conda/etc/profile.d/mamba.sh"
         conda activate
         conda env list
-        python setup.py -n all
+        python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
 
@@ -77,7 +77,7 @@ jobs:
         echo "cmake version: $(cmake --version)"
         pushd $env:GITHUB_WORKSPACE
         echo 'running python setup.py ... in $(pwd)'
-        python setup.py -n all
+        python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
     #- name: upload macOS artifacts
@@ -133,7 +133,7 @@ jobs:
           eval "$(conda shell.bash activate)"
           conda install -c conda-forge -y cmake pyyaml jinja2 requests ninja
           cd /sortmerna
-          python3 setup.py -n all
+          python3 setup.py all
           echo "=== listing files ==="
           ls -laR
     

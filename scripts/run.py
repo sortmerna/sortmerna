@@ -32,6 +32,12 @@ created: Aug 12, 2019 Mon
 
 conda install scikit-bio -c conda-forge  <- pre-requisites
 '''
+
+def mock_missing(name):
+    def init(self, *args, **kwargs):
+        raise ImportError(f'Failed to import class {name}; likely not installed.')
+    return type(name, (), {'__init__': init})
+
 import os
 import sys
 import subprocess
@@ -48,15 +54,15 @@ from argparse import Namespace
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
-def mock_missing(name):
-    def init(self, *args, **kwargs):
-        raise ImportError(f'Failed to import class {name}; likely not installed.')
-    return type(name, (), {'__init__': init})
-
 try:
     import pandas
 except ImportError:
     pandas = mock_missing('pandas')
+    
+try:
+    import rapidgzip
+except ImportError:
+    rapidgzip = mock_missing('rapidgzip')
 
 is_skbio = True
 try:
@@ -148,13 +154,13 @@ def is_linux():
 def is_darwin():
     return sys.platform.startswith("darwin")
 
-def run_test(cmd:list, cwd=None, capture=False):
+def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str], list[str]]:
     '''
     run a test
     args:
       - cmd  command to run
     '''
-    ST = '[run]'
+    ST = '[run.run_test]'
     rcode, outl, errl = 0, [], []
     # print compiler version e.g. 'Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x86'
     #"%VS_HOME%"\bin\Hostx86\x86\cl.exe
@@ -243,6 +249,9 @@ def parse_log(fpath:str):
       - fpath  'aligned.log' file
     '''
     logd = {}
+    if not Path(fpath).exists():
+        print(f'{fpath} does not exist')
+        return logd
     with open(fpath) as f_log:    
         for line in f_log:
             if 'Total reads =' in line:
@@ -319,7 +328,7 @@ def process_smr_opts(args:list):
             ALIF = os.path.abspath(aln_pfx + READS_EXT)
     elif WDIR in args:
         wdir = args[args.index(WDIR) + 1]
-        print('{} \'-workdir\' option was provided. Using workdir: [{}]'.format(ST, os.path.realpath(wdir)))
+        print(f"{ST} '-workdir' option was provided. Using workdir: [{os.path.realpath(wdir)}]")
         ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
     elif WRK_DIR:
         ALIF = os.path.join(WRK_DIR, 'out', ALI_BASE + READS_EXT)
@@ -475,7 +484,7 @@ def dbg_blast(**kwarg):
     compare unique read IDs in two blast reports produced using different program versions
     cmd: python scripts/run.py --name t0 -f dbg_blast --validate-only
     '''
-    ST = '[{}]'.format('dbg_blast')
+    ST = '[dbg_blast]'
     rdiff = None
     bl_421 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-2-1/20210322/aligned.blast')
     bl_431 = os.path.join(DATA_DIR, 'sortmerna/out/tests/t42/win10_8_16/4-3-1/20210322/aligned.blast')
@@ -488,21 +497,21 @@ def dbg_blast(**kwarg):
             l421.sort(key=lambda rr: int(rr[0].split('.')[-1]))  # SRR1635864.8745 -> [SRR1635864, 8745] -> 8745
             l431.sort(key=lambda rr: int(rr[0].split('.')[-1]))
             with open(srt421, 'w') as sr421, open(srt431, 'w') as sr431:
-                sr421.write('\n'.join('{}\t{}'.format(x[0], x[1]) for x in l421))
-                sr431.write('\n'.join('{}\t{}'.format(x[0], x[1]) for x in l431))
+                sr421.write('\n'.join(f'{x[0]}\t{x[1]}' for x in l421))
+                sr431.write('\n'.join(f'{x[0]}\t{x[1]}' for x in l431))
             #l421 = [ '  '.join(line.strip().split('\t')[:2]) for line in f421 ]
             #l431 = [ '  '.join(line.strip().split('\t')[:2]) for line in f431 ]
             doset = False
             if doset:
                 rdiff = set(l421) - set(l431)
-                print('{} rdiff.len= {}'.format(ST, len(rdiff))) # 0
+                print(f'{ST} rdiff.len= {len(rdiff)}') # 0
                 [print(x) for x in list(rdiff)]
 #END dbg_blast
 
 def dbg_otu(**kwarg):
     '''
     '''
-    ST = '[{}]'.format('dbg_otu')
+    ST = '[dbg_otu]'
     OTU_READSF = os.path.join(os.path.dirname(ALIF), 'otu_reads.txt')
     BLAST_PID_PCOV = os.path.join(os.path.dirname(ALIF), 'pid_pcov.blast')
     READS_DIFF = os.path.join(os.path.dirname(ALIF), 'reads_diff.txt')
@@ -531,7 +540,7 @@ def dbg_otu(**kwarg):
             reads.sort(key=lambda rr: int(rr.split('_')[-1]))
             reads.sort(key=lambda rr: int(rr.split('_')[0][:-1]))
             for read in reads:
-                readsf.write('{}\n'.format(read))
+                readsf.write(f'{read}\n')
 
         with open(READS_DIFF, 'w') as diff:
             rds = set(blast_reads) - set(reads)
@@ -539,7 +548,7 @@ def dbg_otu(**kwarg):
             rdsl.sort(key=lambda rr: int(rr.split('_')[-1]))
             rdsl.sort(key=lambda rr: int(rr.split('_')[0][:-1]))
             for rd in rdsl:
-                diff.write('{}\n'.format(rd))
+                diff.write(f'{rd}\n')
 #END dbg_otu
 
 def validate_otu(**kw):
@@ -613,7 +622,7 @@ def validate_log(logd:dict, ffd:dict):
     if n_vald:
         n_logd = logd.get('num_otus')
         print(f'{ST} testing num_groups: {n_logd} Expected: {n_vald}')
-        assert n_vald == n_logd, '{} not equals {}'.format(n_vald, n_logd)
+        assert n_vald == n_logd, f'{n_vald} not equals {n_logd}'
     #   verify count of de-novo reads
     n_vald = ffd.get('aligned.log', {}).get('n_denovo')
     if n_vald:
@@ -624,14 +633,13 @@ def validate_log(logd:dict, ffd:dict):
 
 def process_output(**kw):
     '''
+    validate a test's output
     args:
-      - name    test name e.g. t0
-      - kw  test configuration dictionary see e.g. 't18.jinja'
+      - kw      test configuration dictionary see e.g. 't18.jinja'
     '''
-    ST = '[process_output]'
+    ST = '[run.process_output]'
     global is_skbio
     vald = kw.get('validate')
-    #cmdd = kwarg.get('cmd')
     
     if not vald:
         print(f'{ST} validation info not provided')
@@ -640,38 +648,37 @@ def process_output(**kw):
     outdir = Path(get_dict_val('args:-workdir', kw))/'out'
     logf = outdir /'aligned.log'
     logd = parse_log(logf)
-    ffd = vald.get('files')
-    if ffd and isinstance(ffd, dict):
-        for ff, vv in ffd.items():
-            print(f'{ST} {ff}')
-            # Check aligned/other reads count
-            # aligned/other files only specify read count in the test validation data
-            if isinstance(vv, int):
-                ffp = outdir / ff # file path
-                count = 0
-                assert ffp.exists(), f'{ST} does not exists: {ffp}'
-                if ff == 'otu_map.txt':
-                    with open(ffp) as ffs:
-                        for line in ffs:
-                            count += 1
-                    msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
-                    print(msg)
-                    assert count == vv, f'{count} not equals {vv}'
-                    continue
-                if is_skbio:
-                    if IS_FASTQ:
-                        for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
-                            count += 1
-                    else:
-                        fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
-                        for seq in skbio.io.read(ffp, format=fmt):
-                            count += 1
-                    print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
-                    assert count == vv, f'{count} not equals {vv}'
-            elif ff == 'aligned.log':
-                validate_log(logd, ffd)
-            elif 'aligned.blast' in ff:
-                process_blast(**kw)
+    ffd = vald.get('files', {})
+    for ff, vv in ffd.items():
+        print(f'{ST} validating file {ff}')
+        # Check aligned/other reads count
+        # aligned/other files only specify read count in the test validation data
+        if isinstance(vv, int):
+            ffp = outdir / ff # file path
+            count = 0
+            assert ffp.exists(), f'{ST} does not exists: {ffp}'
+            if 'otu_map.txt' in ff:
+                with open(ffp) as ffs:
+                    for line in ffs:
+                        count += 1
+                msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
+                print(msg)
+                assert count == vv, f'{count} not equals {vv}'
+                continue
+            if is_skbio:
+                if IS_FASTQ:
+                    for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
+                        count += 1
+                else:
+                    fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
+                    for seq in skbio.io.read(ffp, format=fmt):
+                        count += 1
+                print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
+                assert count == vv, f'{count} not equals {vv}'
+        elif ff == 'aligned.log':
+            validate_log(logd, ffd)
+        elif 'aligned.blast' in ff:
+            process_blast(**kw)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
@@ -679,8 +686,8 @@ def t0(datad, ret={}, **kwarg):
     :param datad   Data directory
     :param outd    results output directory
     '''
-    ST = '[t0:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(ST))   
+    ST = f'[t0:{kwarg.get("name")}]'
+    print(f'{ST} Validating ...')
 
     BLAST_EXPECTED = os.path.join(datad, 't0_expected_alignment.blast')
 
@@ -700,7 +707,7 @@ def t0(datad, ret={}, **kwarg):
                     print(line, end='')
 
     assert len(dlist) == 0
-    print("{} Done".format(ST))
+    print(f'{ST} Done')
 #END t0
 
 def t2(datad, ret={}, **kwarg):
@@ -717,8 +724,8 @@ def t2(datad, ret={}, **kwarg):
                   ^
                   align_que_start
     '''
-    ST = '[t2:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(ST))
+    ST = f'[t2:{kwarg.get("name")}]'
+    print(f'{ST} Validating ...')
 
     vald = kwarg['validate']
 
@@ -730,7 +737,7 @@ def t2(datad, ret={}, **kwarg):
     assert len(vald['expected']) == len(actual_alignment)
     assert sorted(vald['expected']) == sorted(actual_alignment)
     #a = set(expected_alignment) & set(actual_alignment)
-    print("{} Done".format(ST))
+    print(f'{ST} Done')
 #END t2
 
 def t3(datad, ret={}, **kwarg):
@@ -747,8 +754,8 @@ def t3(datad, ret={}, **kwarg):
     Conditions: input FASTA file is processed in
                 one mapped section.
     '''
-    ST = '[t3:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(ST))
+    ST = f'[t3:{kwarg.get("name")}]'
+    print(f'{ST} Validating ...')
     global is_skbio
     logd = parse_log(LOGF)
     vald = kwarg.get('validate')
@@ -765,15 +772,14 @@ def t3(datad, ret={}, **kwarg):
         assert logd['num_otus'][1] == vald['num_groups'][0] # originally
     else:
         assert logd['num_otus'][1] == vald['num_groups'][1], \
-            'num_otus = {} != num_groups = {} expected'.format(logd['num_otus'][1], vald['num_groups'][1])
+            f'num_otus = {logd["num_otus"][1]} != num_groups = {vald["num_groups"][1]} expected'
 
     # OTU file contains one line per OTU group, so the number of lines
     # has to be equal 'Total OTUs' in aligned.log
     with open(OTUF) as f_otumap:
         num_clusters_file = sum(1 for line in f_otumap)
     assert logd['num_otus'][1] == num_clusters_file, \
-        'num_otus = {} != {}:num_otus = {}'.format(logd['num_otus'][1], 
-                                            OTU_BASE, num_clusters_file)
+        f'num_otus = {logd["num_otus"][1]} != {OTU_BASE}:num_otus = {num_clusters_file}'
 
     # number of reads in aligned_denovo.fasta has to be equal the
     # 'Total reads for de novo clustering' in aligned.log
@@ -783,17 +789,16 @@ def t3(datad, ret={}, **kwarg):
             n_denovo_file += 1
 
         assert logd['results']['num_denovo'][1] == n_denovo_file, \
-                'num_denovo = {} != {}:num_denovo = {}'.format(\
-                    logd['results']['num_denovo'][1], DENOVO_BASE, n_denovo_file)
+                f'num_denovo = {logd["results"]["num_denovo"][1]} != {DENOVO_BASE}:num_denovo = {n_denovo_file}'
     
-    print("{} Done".format(ST))
+    print(f'{ST} Done')
 #END t3
 
 def t4(datad, ret={}, **kwarg ):
     '''
     count idx files
     '''
-    ST = '[t4:{}]'.format(kwarg.get('name'))
+    ST = f'[t4:{kwarg.get("name")}]'
     vald = kwarg.get('validate')
     if IS_WIN:
         sfx = vald.get('idx_sfx_win')
@@ -804,7 +809,7 @@ def t4(datad, ret={}, **kwarg ):
     if os.path.exists(IDX_DIR):
         idx_count = len([fn for fn in os.listdir(IDX_DIR) if str(sfx) in fn])
 
-    print('{} Expected number of index files: {} Actual number: {}'.format(ST, idx_count_expect, idx_count))
+    print(f'{ST} Expected number of index files: {idx_count_expect} Actual number: {idx_count}')
     assert idx_count_expect == idx_count
 #END t4
 
@@ -815,7 +820,7 @@ def t9(datad, ret={}, **kwarg):
 
     test_output_all_alignments_f_rc
     '''
-    ST = '[t9:{}]'.format(kwarg.get('name'))
+    ST = f'[t9:{kwarg.get("name")}]'
     print(f'{ST} Validating ...')
     vald = kwarg.get('validate')
     sam_alignments = []
@@ -841,7 +846,7 @@ def t10(datad, ret={}, **kwarg):
 
     test_ref_shorter_than_seed
     '''
-    ST = '[t10:{}]'.format(kwarg.get('name'))
+    ST = f'[t10:{kwarg.get("name")}]'
     print(f'{ST} validating ...'.format)
 
     vald = kwarg.get('validate')
@@ -868,18 +873,18 @@ def t11(datad, ret={}, **kwarg):
         query FASTA file both processed as one
         section.
     '''
-    ST = '[t11:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(ST))
+    ST = f'[t11:{kwarg.get("name")}]'
+    print(f'{ST} Validating ...')
 
     if ret and ret.get('retcode'):
-        print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
+        print(f'ERROR running alignemnt. Return code: {ret["retcode"]}')
         print(ret['stdout'])
         print(ret['stderr'])
         sys.exit(1)
     else:
         process_output(**kwarg)
    
-    print("{} Done".format(ST))
+    print(f'{ST} Done')
 #END t11
 
 def t12(datad, ret={}, **kwarg):
@@ -897,18 +902,18 @@ def t12(datad, ret={}, **kwarg):
         query FASTA file both processed as one
         section.
     '''
-    ST = '[t12:{}]'.format(kwarg.get('name'))
-    print('{} Validating ...'.format(ST))
+    ST = f'[t12:{kwarg.get("name")}]'
+    print(f'{ST} Validating ...')
 
     if ret and ret.get('retcode'):
-        print('ERROR running alignemnt. Return code: {}'.format(ret['retcode']))
+        print(f'ERROR running alignemnt. Return code: {ret["retcode"]}')
         print(ret['stdout'])
         print(ret['stderr'])
         sys.exit(1)
     else:
         process_output(**kwarg)
    
-    print("{} Done".format(ST))
+    print(f'{ST} Done')
 #END t12
 
 def t17(datad, ret={}, **kwarg):
@@ -918,7 +923,7 @@ def t17(datad, ret={}, **kwarg):
     :param outd    results output directory
     :param capture Capture output
     '''
-    ST = '[t17:{}]'.format(kwarg.get('name'))
+    ST = f'[t17:{kwarg.get("name")}]'
     print(f'{ST} TODO: implement')
     logd = parse_log(LOGF)
     print("{ST} done")
@@ -1200,7 +1205,6 @@ def count_lines(files:list,
     4        20000    24   300000
     6        20000    27   200000    too many threads slow the execution down
     '''
-    import rapidgzip
     lines_tot = 0
     cpu_max = os.cpu_count()  # multiprocessing.cpu_count()
     ts = time.time()
@@ -1355,6 +1359,8 @@ def parse_test_config(args:Namespace) -> dict:
     vars = {'SMR_SRC':smr_src, 'DATA_DIR':args.data_dir, 'WRK_DIR':args.workdir}
     if args.threads:
         vars.append({'THREADS':str(args.threads)})
+    if args.ref_dir:
+        vars['REF_DIR'] = args.ref_dir
     cfg_str = template.render(vars)
     cfg = yaml.load(cfg_str, Loader=yaml.FullLoader)
     if args.task:
@@ -1428,6 +1434,7 @@ if __name__ == "__main__":
     p5.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
     p5.add_argument('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
     p5.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
+    p5.add_argument('--ref-dir', dest='ref_dir', help='path to the reference data. Abs or relative')
     p5.add_argument('--threads', dest='threads', help='Number of threads to use')
     p5.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
     p5.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
@@ -1455,6 +1462,11 @@ if __name__ == "__main__":
         ...
     elif 'test' == args.cmd:
         #cfg = process_config()  # process configuration
+        outd = Path(args.workdir) / 'out' if args.workdir else None
+        if outd and outd.exists():
+            for ff in outd.iterdir():
+                print(f'{ST} removing {ff}')
+                ff.unlink()
         
         # run test
         ret = {}

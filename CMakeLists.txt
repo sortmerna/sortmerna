@@ -77,7 +77,7 @@ endif()
 # build build_version
 set(BUILD_VERSION_CPP ${CMAKE_BINARY_DIR}/build_version.cpp)
 configure_file(src/util/build_version.cpp.in ${BUILD_VERSION_CPP} @ONLY)
-add_library(build_version OBJECT ${BUILD_VERSION_CPP})
+add_library(build_version STATIC ${BUILD_VERSION_CPP})
 target_include_directories(build_version PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 ## build cmph

@@ -57,7 +57,7 @@ set (ALP_SRCS
 )
 
 
-add_Library(alp OBJECT ${ALP_HDRS} ${ALP_SRCS})
+add_Library(alp STATIC ${ALP_HDRS} ${ALP_SRCS})
 target_include_directories(alp PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/alp)
 
 #add_Library(alp INTERFACE)

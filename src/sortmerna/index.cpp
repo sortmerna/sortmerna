@@ -101,7 +101,7 @@ Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_read
 		if (count_indexed == opts.indexfiles.size() * sfxarr.size())
 		{
 			is_ready = true;
-			INFO("Found ", count_indexed, " non-empty index files. Skipping indexing.");
+			INFO("Found ", count_indexed, " non-empty index files. Skipping indexing.\n");
 			if (opts.dbg_level == 2)
 				INFO("TODO: a better validation using an index descriptor to decide on indexing");
 		}

@@ -30,7 +30,7 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 
 ## Getting Started
 
-SortMeRNA 4 is C++17 compliant, and mostly uses standard libraries. It uses CMake as the build system, and can be run/built on all major OS including Linux, Windows, and Mac, on AMD64 and ARM64 processors.
+SortMeRNA 5 is C++17 compliant. It uses CMake as the build system, and can be run/built on all major OS including Linux, Windows, and Mac, on AMD64 and ARM64 architectures.
 
 ### Using Conda package
 
@@ -39,55 +39,31 @@ Install conda - [official docs](https://docs.conda.io/projects/conda/en/latest/u
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 ```
-The conda packages before Sortmerna 4.3.7 were hosted on Bioconda. Starting with 4.3.7 the packages are hosted on conda-forge.
-Erroneously an empty 4.3.7 package made its way to Bioconda, and should be ignored until removed (from Bioconda).
+Sortmerna conda packages are hosted on conda-forge.
 
-Currently the build on conda-forge still waiting to be merged. Until it is ready, the local installation package can be used:
 ```
-# == only for 4.3.7 until ready on conda-forge ==
-# download the conda-build package into a directory of your choice e.g. Downloads/
-wget https://github.com/sortmerna/sortmerna/releases/download/v4.3.7/sortmerna-4.3.7-conda-linux-64.tar.bz2 -P ~/Downloads/
-
-# create a new environment and install SortMeRNA in it
-conda create --name sortmerna
-conda activate sortmerna
-conda install ~/Downloads/sortmerna-4.3.7-conda-linux-64.tar.bz2
-
-which sortmerna  # check the installed binary e.g. miniforge3/envs/sortmerna/bin/sortmerna 
-sortmerna -h
-```
-For versions older then 4.3.7 per the [Bioconda guidelines](https://bioconda.github.io), add the following conda channels:
-```
-conda config --add channels defaults
-conda config --add channels bioconda
 conda config --add channels conda-forge
-conda config --set channel_priority strict
-
 
 conda search sortmerna
-  Loading channels: done
-  # Name                       Version           Build  Channel
-  sortmerna                        2.0               0  bioconda
-  ...
-  sortmerna                      4.3.4               0  bioconda
-  ...
-  sortmerna                      4.3.6               0  bioconda
-  ...
-  sortmerna                      4.3.7      hdbdd923_1  bioconda <- (!) ignore - corrupt, see instructions above
+
+ Name      Version Build                         Channel     Subdir  
+──────────────────────────────────────────────────────────────────────
+ sortmerna 4.4.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
+ sortmerna 4.3.7   py310hea66570_0 (+ 13 builds) conda-forge linux-64
 
 # create a new environment and install SortMeRNA in it
-conda create --name sortmerna_env
-conda activate sortmerna_env
+conda create --name sortmerna_run
+conda activate sortmerna_run
 conda install sortmerna
 which sortmerna
   /home/biocodz/miniconda3/envs/sortmerna_env/bin/sortmerna
 
-# test the installation
+# check version
 sortmerna --version
-  SortMeRNA version 4.3.6
-  Build Date: Aug 16 2022
-  sortmerna_build_git_sha:@db8c1983765f61986b46ee686734749eda235dcc@
-  sortmerna_build_git_date:@2022/08/16 11:42:59@
+  SortMeRNA version 5.0.0
+  Build Date: Apr 22 2026
+  sortmerna_build_git_sha:@c31b3a81bdb8c338b1a7c34a2fb8b366e1ce8de2@
+  sortmerna_build_git_date:@2026/04/22 10:42:32@
 
 # view help
 sortmerna -h
@@ -95,7 +71,7 @@ sortmerna -h
 
 ### Using GitHub release binaries on Linux
 
-Visit [Sortmerna GitHub Releases](https://github.com/biocore/sortmerna/releases)
+Visit [Sortmerna GitHub Releases](https://github.com/sortmerna/sortmerna/releases)
 
 Linux distribution is a Shell script with the embedded installation archive.
 
@@ -105,21 +81,21 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/biocore/sortmerna/releases/download/v4.3.6/sortmerna-4.3.6-Linux.sh
+wget https://github.com/biocore/sortmerna/releases/download/v5.0.0/sortmerna-5.0.0-Linux.sh
 
 # view the installer usage
-bash sortmerna-4.3.6-Linux.sh --help
+bash sortmerna-5.0.0-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-4.3.6-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-4.3.6-Linux subdirectory
+      --include-subdir  include the sortmerna-5.0.0-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-5.0.0-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
-bash sortmerna-4.3.6-Linux.sh --skip-license
-  sortmerna Installer Version: 4.3.6, Copyright (c) Clarity Genomics
+bash sortmerna-5.0.0-Linux.sh --skip-license
+  sortmerna Installer Version: 5.0.0, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
   The archive will be extracted to: $HOME/sortmerna
   
@@ -137,7 +113,7 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 4.3.6
+  SortMeRNA version 5.0.0
   Build Date: Jul 17 2021
   sortmerna_build_git_sha:@921fa40256760ea2d44c49b21eb326afda748d5e@
   sortmerna_build_git_date:@2022/08/16 10:59:31@
@@ -181,9 +157,11 @@ Here is a [sample execution trace](https://sortmerna.readthedocs.io/en/latest/tr
 
 [Sample execution statistics](https://github.com/biocore/sortmerna/wiki/sample-execution-statistics) are provided to give an idea on what the execution time might be.
 
-#### Split reads generation
+#### Split reads generation (deprecated since version 5.0.0)
 
-When working with gzipped reads Sortmerna splits the files into chunks, so that each chunk can be processed on a separate thread. Currently the splitting itself is done on a single thread due complexities of processing archived files. This becomes a bottleneck for large files, so much so that the splitting becomes the most time consuming part of the whole processing pipeline. To mitigate this problem the splitting can be performed prior running Sortmerna, and the split files then can be reused. The efficient multithreaded splitting can be performed using the [rapidgzip](https://github.com/mxmlnkn/rapidgzip) utility. Sortmerna repository now offers a convenience python script [run.py:split](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py#L928) to perform just that splitting operation. It invokes the rapidgzip and writes the split descriptor. Here is how to use it:
+NOTE: this information is only relevant to versions < 5.0.0. Since 5.0.0 multithreaded parallel processing of indexed files is implemented instead of physical splitting.
+
+Sortmerna (versions < 5.0.0) splits the files into chunks, so that each chunk can be processed on a separate thread. The splitting is done on a single thread due complexities of processing archived files. This becomes a bottleneck for large files, so much so that the splitting becomes the most time consuming part of the whole processing pipeline. To mitigate this problem the splitting can be performed prior running Sortmerna, and the split files then can be reused. The efficient multithreaded splitting can be performed using the [rapidgzip](https://github.com/mxmlnkn/rapidgzip) utility. Sortmerna repository now offers a convenience python script [run.py:split](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py#L928) to perform just that splitting operation. It invokes the rapidgzip and writes the split descriptor. Here is how to use it:
 
 Assuming that conda/mamba is installed on your system. Download the [run.py](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py) and [conda_run_env.yaml](https://github.com/sortmerna/sortmerna/blob/master/conda_run_env.yaml) from GitHub to any desired location and then
 
@@ -194,14 +172,14 @@ conda activate sortmerna-run
 python run.py split --file <file1> --file <file2> --num-splits <number of splits> --workdir <working directory>
 e.g.
 python run.py split \
-    --file ${data_dir}/a1/data/bio/reads/rna/SRR1635864_1.fastq.gz \
-    --file ${data_dir}/a1/data/bio/reads/rna/SRR1635864_2.fastq.gz \
+    --file ${data_dir}/SRR1635864_1.fastq.gz \
+    --file ${data_dir}/SRR1635864_2.fastq.gz \
     --num-splits 8 \
     --workdir ~/a1/data/sortmerna/run
 # run sortmerna
-sortmerna -ref ~/a1/data/sortmerna/run/data/silva-bac-16s-database-id85.fasta \
-    -reads ${data_dir}/a1/data/bio/reads/rna/SRR1635864_1.fastq.gz \
-    -reads ${data_dir}/a1/data/bio/reads/rna/SRR1635864_2.fastq.gz \
+sortmerna -ref ${ref_dir}/silva-bac-16s-database-id85.fasta \
+    -reads ${data_dir}/SRR1635864_1.fastq.gz \
+    -reads ${data_dir}/SRR1635864_2.fastq.gz \
     -fastx -blast 0 -no-best -threads 8 -workdir ~/a1/data/sortmerna/run
 ```
 
@@ -217,7 +195,9 @@ In case you need PDF, any modern browser can print web pages to PDF.
 
 ## Databases
 
-Please, use [database.tar.gz](https://github.com/biocore/sortmerna/releases/download/v4.3.4/database.tar.gz) from release 4.3.4.
+[database.tar.gz](https://github.com/biocore/sortmerna/releases/download/v4.3.4/database.tar.gz) provided since release 4.3.4. The tarball contains 4 separate files.
+
+Since the version 4.3.7 the four database files are also provided as separate .gz archives.
 
 We recommend to use smr_v4.3_default_db.fasta.
 

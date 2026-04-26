@@ -10,8 +10,8 @@ info: |
     1     1     1     1       0        0        0     0     0     1       1   1     2      2
 args:
   -ref:
-    - /mnt/c/Users/ak.xps15i9/a1/code/sortmerna/data/rRNA_databases/smr_v4.3_default_db.fasta  # 140MB
-    #- {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta  # For fast test. num_hits is less though.
+    - {{ REF_DIR }}/smr_v4.3_default_db.fasta  # 140MB
+    #- {{ REF_DIR }}/silva-bac-16s-database-id85.fasta  # For fast test. num_hits is less though.
   -reads:
     - {{ DATA_DIR if DATA_DIR }}/DRR121111_5k_paired.fastq.gz # 10000 reads
   -fastx:

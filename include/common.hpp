@@ -54,7 +54,11 @@ const std::string REV = "REV";
 
 enum class BIO_FORMAT : unsigned { FASTQ = 0, FASTA = 1 };
 enum class ZIP_FORMAT : unsigned { GZIP = 0, ZLIB = 1, FLAT = 2, XPRESS = 3 };
-enum class FEED_TYPE : unsigned { SPLIT_READS = 0, LOCKLESS = 1, MAX = LOCKLESS };
+enum class FEED_TYPE : unsigned {
+    INDEXED = 0,
+    SPLIT_READS = 1, // deprecated
+    MAX = SPLIT_READS
+};
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
 
 /*! @brief Map nucleotides to integers.
