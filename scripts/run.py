@@ -1462,6 +1462,11 @@ if __name__ == "__main__":
         ...
     elif 'test' == args.cmd:
         #cfg = process_config()  # process configuration
+        outd = Path(args.workdir) / 'out' if args.workdir else None
+        if outd and outd.exists():
+            for ff in outd.iterdir():
+                print(f'{ST} removing {ff}')
+                ff.unlink()
         
         # run test
         ret = {}
