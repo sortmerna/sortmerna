@@ -25,6 +25,7 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 - [Taxonomies](#taxonomies)
 - [Citation](#citation)
 - [Contributors](#contributors)
+- [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
 
 
@@ -159,9 +160,9 @@ Here is a [sample execution trace](https://sortmerna.readthedocs.io/en/latest/tr
 
 #### Split reads generation (deprecated since version 5.0.0)
 
-NOTE: this information is only relevant to versions < 5.0.0. Since 5.0.0 multithreaded parallel processing of indexed files is implemented instead of physical splitting.
+NOTE: this information is only relevant to versions < 5.0.0. Since 5.0.0 multithreaded parallel processing of indexed files is implemented instead of physical splitting. Using physical split is a deprecated facility as the indexed access is faster and more convenient.
 
-Sortmerna (versions < 5.0.0) splits the files into chunks, so that each chunk can be processed on a separate thread. The splitting is done on a single thread due complexities of processing archived files. This becomes a bottleneck for large files, so much so that the splitting becomes the most time consuming part of the whole processing pipeline. To mitigate this problem the splitting can be performed prior running Sortmerna, and the split files then can be reused. The efficient multithreaded splitting can be performed using the [rapidgzip](https://github.com/mxmlnkn/rapidgzip) utility. Sortmerna repository now offers a convenience python script [run.py:split](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py#L928) to perform just that splitting operation. It invokes the rapidgzip and writes the split descriptor. Here is how to use it:
+The splitting in version 5.0.0 can be enabled using the option `--readfeed 1`. The files are split into chunks, and each chunk is processed on a separate thread. The splitting is done on a single thread due complexities of processing archived files. This becomes a bottleneck for large files, so much so that the splitting becomes the most time consuming part of the whole processing pipeline. To mitigate this problem the splitting can be performed prior running Sortmerna, and the split files then can be reused. The efficient multithreaded splitting can be performed using the [rapidgzip](https://github.com/mxmlnkn/rapidgzip) utility. Sortmerna repository now offers a convenience python script [run.py:split](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py#L928) to perform just that splitting operation. It invokes the rapidgzip and writes the split descriptor. Here is how to use it:
 
 Assuming that conda/mamba is installed on your system. Download the [run.py](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py) and [conda_run_env.yaml](https://github.com/sortmerna/sortmerna/blob/master/conda_run_env.yaml) from GitHub to any desired location and then
 
@@ -236,7 +237,10 @@ Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of r
 
 See [AUTHORS](./AUTHORS) for a list of contributors to this project.
 
+## Third-party dependencies
+
+Refer to `3rdparty.jinja` for the list of external libraries used in Sortmerna including ZLib, RocksDB, Rapidgzip.
+
 ## Support
 
 For questions and comments, feel free to file an [issue](https://github.com/sortmerna/sortmerna/issues), or start a [discussion](https://github.com/sortmerna/sortmerna/discussions).
-	
