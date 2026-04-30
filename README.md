@@ -49,6 +49,7 @@ conda search sortmerna
 
  Name      Version Build                         Channel     Subdir  
 ──────────────────────────────────────────────────────────────────────
+ sortmerna 5.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.4.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.3.7   py310hea66570_0 (+ 13 builds) conda-forge linux-64
 
@@ -62,9 +63,9 @@ which sortmerna
 # check version
 sortmerna --version
   SortMeRNA version 5.0.0
-  Build Date: Apr 22 2026
+  Build Date: Apr 30 2026
   sortmerna_build_git_sha:@c31b3a81bdb8c338b1a7c34a2fb8b366e1ce8de2@
-  sortmerna_build_git_date:@2026/04/22 10:42:32@
+  sortmerna_build_git_date:@2026/04/30 17:54:45@
 
 # view help
 sortmerna -h
