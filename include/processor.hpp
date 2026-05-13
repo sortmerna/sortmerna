@@ -45,6 +45,8 @@ struct Runopts;
 struct Index;
 struct Readstats;
 class KeyValueDatabase;
+namespace restart { struct State; }
 
-void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts);
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb,
+           Runopts& opts, const restart::State* rstate = nullptr);
 void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
