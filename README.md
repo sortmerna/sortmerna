@@ -233,7 +233,7 @@ Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of r
 
 See [AUTHORS](./AUTHORS) for a list of contributors to this project.
 
-Maintained by the team at [Clarity Genomics Inc](www.clarity-genomics.com) and [Centre de Recherche en Informatique, Signal et Automatique de Lille](https://www.cristal.univ-lille.fr/).
+Maintained by the team at [Clarity Genomics Inc](https://www.clarity-genomics.com) and [Centre de Recherche en Informatique, Signal et Automatique de Lille](https://www.cristal.univ-lille.fr/).
 
 ## Third-party dependencies
 
