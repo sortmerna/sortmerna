@@ -727,6 +727,7 @@ def parasail_build(**kw) -> tuple[int, list[str], list[str]]:
     Path(build_dir).mkdir(parents=True, exist_ok=True)
 
     cmd = ['cmake', '-S', src, '-B', str(build_dir),
+           '-G', 'Ninja',
            '-DBUILD_SHARED_LIBS=OFF',
            f'-DCMAKE_INSTALL_PREFIX={dist_dir}',
            f'-DCMAKE_BUILD_TYPE={btype}',
