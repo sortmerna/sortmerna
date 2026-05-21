@@ -44,11 +44,6 @@ SortMeRNA 6 is C++17 compliant. It uses CMake as the build system, and can be ru
 
 ### Using Conda package
 
-**Note:** v6.0.0 may not yet be available on conda-forge while the
-feedstock is updated. Until then, `conda install sortmerna` will install
-the most recent published version (5.0.0). To run 6.0.0 today, use the
-GitHub release binary (next section) or build from source.
-
 Install conda - [official docs](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -63,6 +58,7 @@ conda search sortmerna
 
  Name      Version Build                         Channel     Subdir  
 ──────────────────────────────────────────────────────────────────────
+ sortmerna 6.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 5.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.4.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.3.7   py310hea66570_0 (+ 13 builds) conda-forge linux-64
