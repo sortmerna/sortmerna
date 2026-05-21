@@ -36,6 +36,11 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "rocksdb/db.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/options.h"
@@ -47,6 +52,16 @@ public:
 
 	void put(std::string key, std::string val);
 	std::string get(std::string key);
+	bool has(const std::string& key);
+	void del(const std::string& key);
+	// Atomically apply a batch of put operations.
+	void put_batch(const std::vector<std::pair<std::string, std::string>>& kvs);
+	// Iterate all keys with the given prefix. fn receives (key, value).
+	// Return false from fn to stop iteration early.
+	void iter_prefix(const std::string& prefix,
+	                 const std::function<bool(const std::string&, const std::string&)>& fn);
+	// Delete every key with the given prefix.
+	void delete_prefix(const std::string& prefix);
 	int clear(std::string dbPath);
 private:
 	rocksdb::DB* kvdb;

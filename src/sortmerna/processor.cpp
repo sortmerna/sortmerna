@@ -36,7 +36,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * performs the alignment
  */
 
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <thread> // std::this_thread
 #include <cmath> // std::floor
 
@@ -48,6 +50,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstats.hpp"
 #include "refstats.hpp"
 #include "options.hpp"
+#include "restart.hpp"
 //#include "readsqueue.hpp"
 
 // forward
@@ -59,7 +62,75 @@ void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstat
 *  @param id
 *  @param is_last_idx  flags the last index is being processed
 */
-void align2(int id, Readfeed& readfeed, Readstats& readstats, 
+/*
+ * Rollback for a pass that was interrupted before commit_pass. The pending_reads
+ * markers identify exactly which reads had a kvdb mutation during that pass, so
+ * we only touch those. For each: trim alignv entries whose (index_num, part) is
+ * the rolled-back pass; clamp lastIndex/lastPart back to the last completed
+ * pass; reset transient hit-search state. Readstats is already consistent
+ * because the snapshot stored under Readstats::dbkey reflects only passes that
+ * reached commit_pass.
+ *
+ * max_SW_count is reset to 0 here. We can't reconstruct it exactly without the
+ * read sequence (its computation depends on max_SW_score = read.length * match,
+ * which we don't have at this point), so we accept a bounded amount of
+ * redundant SW work on the next pass: alignv growth is still capped by
+ * opts.num_alignments, so correctness is preserved.
+ */
+static void rollback_partial_pass(KeyValueDatabase& kvdb,
+                                  uint16_t rb_i, uint16_t rb_p,
+                                  int last_done_i, int last_done_p,
+                                  const std::vector<std::string>& pending_ids)
+{
+	INFO("Restart: rolling back partial pass (idx=", rb_i, ", part=", rb_p,
+	     ") covering ", pending_ids.size(), " reads");
+
+	unsigned rewind_idx  = last_done_i >= 0 ? static_cast<unsigned>(last_done_i) : 0;
+	unsigned rewind_part = last_done_p >= 0 ? static_cast<unsigned>(last_done_p) : 0;
+
+	std::size_t trimmed = 0;
+	std::size_t emptied = 0;
+	for (const auto& rid : pending_ids) {
+		Read read;
+		read.id = rid;
+		if (!read.load_db(kvdb)) continue; // never persisted; nothing to undo
+
+		auto& v = read.alignment.alignv;
+		auto before = v.size();
+		v.erase(std::remove_if(v.begin(), v.end(),
+			[&](const s_align2& a) {
+				return a.index_num == rb_i && a.part == rb_p;
+			}),
+			v.end());
+		if (v.size() == before) {
+			// Pending marker existed but no matching alignv entry — the read had
+			// a kvdb.put for some other reason (or the entry was already removed
+			// by replacement). Still safe to rewrite below to clear transient
+			// flags.
+		} else {
+			trimmed += (before - v.size());
+		}
+		if (v.empty()) ++emptied;
+
+		// Reset derived selection indices; they get recomputed lazily.
+		read.alignment.min_index = 0;
+		read.alignment.max_index = 0;
+		read.max_SW_count        = 0;
+		read.is_done             = false;
+		read.is_hit              = !v.empty();
+		read.is_new_hit          = false;
+		read.lastIndex           = rewind_idx;
+		read.lastPart            = rewind_part;
+
+		kvdb.put(read.id, read.toBinString());
+	}
+
+	restart::clear_pending_reads(kvdb, rb_i, rb_p);
+	INFO("Restart: rollback done. Trimmed alignments: ", trimmed,
+	     " Reads now hit-less: ", emptied);
+}
+
+void align2(int id, Readfeed& readfeed, Readstats& readstats,
 			Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	unsigned num_all = 0; // all reads this processor sees
@@ -119,8 +190,14 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 			if (read.isValid && !read.isEmpty)
 			{
 				if (read.is_hit) ++num_hit;
-				if (read.is_new_hit)
-					kvdb.put(read.id, read.toBinString());
+				if (read.is_new_hit) {
+					// One atomic batch so a crash between the two writes can't
+					// leave a mutated read entry without its pending marker.
+					restart::record_read_with_pending(kvdb,
+						static_cast<uint16_t>(index.index_num),
+						static_cast<uint16_t>(index.part),
+						read.id, read.toBinString());
+				}
 			}
 
 			readstr.resize(0);
@@ -139,9 +216,15 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 /*
 * launches processing threads. called from main
 */
-void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts)
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb,
+           Runopts& opts, const restart::State* rstate)
 {
 	INFO("==== Starting alignment ====");
+	if (rstate && rstate->is_resume) {
+		INFO("Restart: align() resuming. Completed passes: ", rstate->align_done.size(),
+		     " latest=(", rstate->latest_pass.first, ",", rstate->latest_pass.second, ")");
+	}
+	restart::set_phase(kvdb, restart::Phase::Align);
     INFO("Alignment parameters:  is_best: ", opts.is_best,
             "  num_alignments: ", opts.num_alignments,
             "  min_lis: ", opts.min_lis);
@@ -180,6 +263,25 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 
 	int loopCount = 0; // counter of total number of processing iterations
 
+	// Resume: roll back any partial pass before starting normal iteration. The
+	// rollback rewrites the kvdb entries touched by the interrupted pass so the
+	// upcoming run sees a state consistent with the last commit_pass snapshot.
+	if (rstate && rstate->is_resume && rstate->rollback_pass.first >= 0) {
+		rollback_partial_pass(kvdb,
+			static_cast<uint16_t>(rstate->rollback_pass.first),
+			static_cast<uint16_t>(rstate->rollback_pass.second),
+			rstate->latest_pass.first, rstate->latest_pass.second,
+			rstate->rollback_read_ids);
+	}
+
+	auto is_pass_done = [&](uint16_t i, uint16_t p) -> bool {
+		if (!rstate || !rstate->is_resume) return false;
+		for (const auto& pr : rstate->align_done) {
+			if (pr.first == i && pr.second == p) return true;
+		}
+		return false;
+	};
+
 	// perform alignment
 	auto start_a = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
@@ -190,6 +292,10 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[idx_num]; ++idx_part)
 		{
+			if (is_pass_done(static_cast<uint16_t>(idx_num), idx_part)) {
+				INFO("Restart: skipping committed pass idx=", idx_num, " part=", idx_part + 1);
+				continue;
+			}
 			// load index
 			INFO("Loading index: ", idx_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[idx_num], " Memory KB: ", (get_memory() >> 10), " ... ");
 			auto start_i = std::chrono::high_resolution_clock::now();
@@ -223,6 +329,18 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			for (auto& thr: tpool) {
 				thr.join();
 			}
+
+			// Atomically commit "pass (idx_num, idx_part) is done" together with
+			// the Readstats snapshot. Then clear pending markers — if we crash
+			// between commit and clear, the leftover markers belong to a pass
+			// already in align_done and resume will ignore them.
+			restart::commit_pass(kvdb,
+				static_cast<uint16_t>(idx_num),
+				idx_part,
+				readstats.dbkey,
+				readstats.toBstring());
+			restart::clear_pending_reads(kvdb,
+				static_cast<uint16_t>(idx_num), idx_part);
 
 			++loopCount;
 

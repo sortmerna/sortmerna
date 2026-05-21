@@ -1276,22 +1276,14 @@ void Runopts::validate_kvdbdir()
 		}
 		else // not empty
 		{
-			// TODO: Store some metadata in DB to verify the alignment.
-			// kvdb.verify()
-			if (TASK::align == task || TASK::all == task || TASK::align_summary == task)
-			{
-				// if (kvdb.verify()) // TODO
-				// output the listing
-				std::stringstream ss;
-				for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
-					ss << '\t' << subpath.path().filename() << '\n';
-				std::string flist = ss.str();
-
-				WARN("Path: ", std::filesystem::absolute(kvdbdir), " exists with the following content:\n", 
-					flist,
-					"\tPlease, ensure the directory ", std::filesystem::absolute(kvdbdir), " is Empty prior running 'sortmerna'");
-				exit(EXIT_FAILURE);
-			}
+			// Non-empty kvdb is the resume path. restart::probe_or_init will
+			// verify the opts/inputs fingerprints when the DB is opened and
+			// either resume (matching) or abort with a diagnostic (mismatched).
+			std::stringstream ss;
+			for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
+				ss << '\t' << subpath.path().filename() << '\n';
+			INFO("KVDB directory ", std::filesystem::absolute(kvdbdir),
+			     " is not empty. Will attempt auto-resume; existing contents:\n", ss.str());
 		}
 	}
 	else

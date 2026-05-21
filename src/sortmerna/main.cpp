@@ -46,6 +46,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "indexdb.hpp"
 #include "readfeed.hpp"
 #include "processor.hpp"
+#include "restart.hpp"
 #include "summary.hpp"
 #include "output.hpp"
 #include "otumap.h"
@@ -76,37 +77,71 @@ int main(int argc, char** argv)
 
 		// init common objects
 		KeyValueDatabase kvdb(opts.kvdbdir.string());
+		// Probe kvdb for prior run state. Fresh kvdb -> stamp identity; existing
+		// kvdb with matching fingerprints -> auto-resume; mismatched fingerprints
+		// throw std::runtime_error so the user sees what changed.
+		restart::State rstate = restart::probe_or_init(kvdb, opts);
+
 		Readfeed readfeed(opts.feed_type, opts.readfiles, opts.num_proc_thread, opts.readb_dir, opts.is_paired);
 		Readstats readstats(readfeed.num_reads_tot, readfeed.length_all, readfeed.min_read_len, readfeed.max_read_len, kvdb, opts);
+
+		auto need_align = [&]() {
+			if (!rstate.is_resume) return true;
+			return rstate.phase <= restart::Phase::Align;
+		};
+		auto need_post_align = [&]() {
+			if (!rstate.is_resume) return true;
+			if (rstate.phase >= restart::Phase::Report) return false;
+			return !restart::is_denovo_done(kvdb);
+		};
+		auto run_align = [&]() {
+			if (need_align()) {
+				align(readfeed, readstats, index, kvdb, opts, &rstate);
+				restart::set_phase(kvdb, restart::Phase::PostAlign);
+			} else {
+				INFO("Restart: skipping alignment, phase already at ",
+				     restart::phase_to_string(rstate.phase));
+			}
+		};
+		auto run_post_align = [&]() {
+			if (!need_post_align()) {
+				INFO("Restart: skipping post-alignment (denovo_done present)");
+				return;
+			}
+			restart::set_phase(kvdb, restart::Phase::Denovo);
+			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
+			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
+			writeSummary(readstats, opts);
+			restart::mark_denovo_done(kvdb);
+		};
+		auto run_reports = [&]() {
+			restart::set_phase(kvdb, restart::Phase::Report);
+			writeReports(readfeed, readstats, kvdb, opts);
+			restart::set_phase(kvdb, restart::Phase::Done);
+		};
 
 		switch (opts.task)
 		{
 		case Runopts::TASK::index_only:
 			break;
 		case Runopts::TASK::align:
-			align(readfeed, readstats, index, kvdb, opts);
+			run_align();
 			break;
 		case Runopts::TASK::summary:
-			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
-			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
-			writeSummary(readstats, opts);
+			run_post_align();
 			break;
 		case Runopts::TASK::report:
-			writeReports(readfeed, readstats, kvdb, opts);
+			run_reports();
 			break;
 		case Runopts::TASK::align_summary:
-			align(readfeed, readstats, index, kvdb, opts);
-			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
-			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
-			writeSummary(readstats, opts);
+			run_align();
+			run_post_align();
 			break;
 		case Runopts::TASK::all:
-			align(readfeed, readstats, index, kvdb, opts);
+			run_align();
 			// TODO: combine processing otu map and reports to avoid double run through reads and refs (in this case only) 20201126
-			if (opts.is_otu_map || opts.is_denovo) denovo_stats(readfeed, readstats, kvdb, opts);
-			if (opts.is_otu_map) fill_otu_map(readfeed, readstats, kvdb, opts);
-			writeSummary(readstats, opts);
-			writeReports(readfeed, readstats, kvdb, opts);
+			run_post_align();
+			run_reports();
 			break;
 		}
 	}

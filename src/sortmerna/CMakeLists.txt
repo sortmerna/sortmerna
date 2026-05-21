@@ -146,6 +146,7 @@ set(SMR_SRCS
 	readstats.cpp
 	references.cpp
 	refstats.cpp
+	restart.cpp
 	traverse_bursttrie.cpp
 	util.cpp
 	otumap.cpp
