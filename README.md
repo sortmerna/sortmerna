@@ -8,17 +8,17 @@ SortMeRNA takes as input files of reads (fasta, fastq, fasta.gz, fastq.gz) and o
 rRNA database file(s), and sorts apart aligned and rejected reads into two files. SortMeRNA works
 with Illumina, Ion Torrent and PacBio data, and can produce SAM and BLAST-like alignments.
 
-SortMeRNA is also available through [QIIME v1.9.1](http://qiime.org) and
-the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
+SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](https://nf-co.re/rnaseq/3.26.0).
 
 ## Table of Contents
 
+- [What's new in 6.0.0](#whats-new-in-600)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
   - [Running](#running)
     - [Execution trace](#execution-trace)
-    - [Split reads generation](#split-reads-generation)
+    - [Read feed modes (gzipped FASTQ)](#read-feed-modes-gzipped-fastq)
 - [Building from sources](#building-from-sources)
 - [User Manual](#user-manual)
 - [Databases](#databases)
@@ -28,6 +28,15 @@ the [nf-core RNA-Seq pipeline v.3.9](https://nf-co.re/rnaseq/3.9).
 - [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
 
+
+## What's new in 6.0.0
+
+- **Native Windows support dropped.** Linux and macOS only (AMD64 and ARM64). Use WSL to run SortMeRNA on a Windows host.
+- **Index format change: BBHash replaces CMPH.** The minimal-perfect-hash backend is now [BBHash](https://github.com/rizkg/BBHash) for a faster, smaller index build. **Indexes built with earlier releases must be rebuilt.**
+- **Alignment backend: Parasail replaces SSW.** SortMeRNA now uses [Parasail](https://github.com/jeffdaily/parasail) for SIMD Smith–Waterman alignment.
+- **Reference index statistics on disk.** SortMeRNA writes index statistics alongside the index files; these are preferred over the Python re-implementation in `run.py` for validation.
+- **CLI fixes.** Correct handling of `-task 5` (index only), with updated help strings; resolved the `-index` / `-task` option collision.
+- **Test runner improvements.** `scripts/run.py` now drives batches from `presets.yaml`, prints a per-test summary table (also written to `test_summary.txt`), continues on failure by default, and exposes `--stop-on-fail` to restore the previous behavior. Process exit code equals the number of failing tests.
 
 ## Getting Started
 
@@ -49,6 +58,7 @@ conda search sortmerna
 
  Name      Version Build                         Channel     Subdir  
 ──────────────────────────────────────────────────────────────────────
+ sortmerna 6.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 5.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.4.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.3.7   py310hea66570_0 (+ 13 builds) conda-forge linux-64
@@ -62,10 +72,6 @@ which sortmerna
 
 # check version
 sortmerna --version
-  SortMeRNA version 6.0.0
-  Build Date: May 11 2026
-  sortmerna_build_git_sha:@dfe166f75553712afb48bb434ca6cff40f481e14@
-  sortmerna_build_git_date:@2026/05/11 11:00:07@
 
 # view help
 sortmerna -h
@@ -83,7 +89,7 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/biocore/sortmerna/releases/download/v6.0.0/sortmerna-6.0.0-Linux.sh
+wget https://github.com/sortmerna/sortmerna/releases/download/v6.0.0/sortmerna-6.0.0-Linux.sh
 
 # view the installer usage
 bash sortmerna-6.0.0-Linux.sh --help
@@ -91,8 +97,8 @@ bash sortmerna-6.0.0-Linux.sh --help
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-5.0.0-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-5.0.0-Linux subdirectory
+      --include-subdir  include the sortmerna-6.0.0-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-6.0.0-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
@@ -116,9 +122,9 @@ export PATH=$HOME/sortmerna/bin:$PATH
 # test the installation
 sortmerna --version
   SortMeRNA version 6.0.0
-  Build Date: Jul 17 2021
-  sortmerna_build_git_sha:@921fa40256760ea2d44c49b21eb326afda748d5e@
-  sortmerna_build_git_date:@2022/08/16 10:59:31@
+  Build Date: May 15 2026
+  sortmerna_build_git_sha:@c750937be9a37bfde9a3d1d5157fe185becd384e@
+  sortmerna_build_git_date:@2026/05/15 10:41:11@
 
 # view help
 sortmerna -h
@@ -146,7 +152,7 @@ sortmerna --ref REF_PATH_1 --ref REF_PATH_2 --ref REF_PATH_3 --reads READS_PATH_
 
 ```
 
-More examples can be found in [test.jinja](https://github.com/biocore/sortmerna/blob/master/scripts/test.jinja) and [run.py](https://github.com/biocore/sortmerna/blob/master/scripts/run.py)
+More examples can be found in [test.jinja](https://github.com/sortmerna/sortmerna/blob/master/scripts/test.jinja) and [run.py](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py)
 
 #### Execution trace
 
@@ -154,36 +160,21 @@ Here is a [sample execution trace](https://sortmerna.readthedocs.io/en/latest/tr
 
 `IMPORTANT`
 - Progressing execution trace showing the number of reads processed so far indicates a normally running program. 
-- Non-progressing trace means a problem. Please, kill the process (no waiting for two days), and file an issue [here](https://github.com/biocore/sortmerna/issues)  
+- Non-progressing trace means a problem. Please, kill the process (no waiting for two days), and file an issue [here](https://github.com/sortmerna/sortmerna/issues)  
 - please, provide the execution trace when filing issues.
 
-[Sample execution statistics](https://github.com/biocore/sortmerna/wiki/sample-execution-statistics) are provided to give an idea on what the execution time might be.
+[Sample execution statistics](https://github.com/sortmerna/sortmerna/wiki/sample-execution-statistics) are provided to give an idea on what the execution time might be.
 
-#### Split reads generation (deprecated since version 5.0.0)
+#### Read feed modes (gzipped FASTQ)
 
-NOTE: this information is only relevant to versions < 5.0.0. Since 5.0.0 multithreaded parallel processing of indexed files is implemented instead of physical splitting. Using physical split is a deprecated facility as the indexed access is faster and more convenient.
+Since 5.0.0 SortMeRNA processes both indexed and flat files in parallel rather than physically
+splitting them. SortMeRNA automatically defaults to indexed in-memory feed (`INDEXED_GZ`) that 
+uses [rapidgzip](https://github.com/mxmlnkn/rapidgzip) to assign each worker thread its own 
+byte range — no split files are written to disk.
 
-The splitting in version 5.0.0 can be enabled using the option `--readfeed 1`. The files are split into chunks, and each chunk is processed on a separate thread. The splitting is done on a single thread due complexities of processing archived files. This becomes a bottleneck for large files, so much so that the splitting becomes the most time consuming part of the whole processing pipeline. To mitigate this problem the splitting can be performed prior running Sortmerna, and the split files then can be reused. The efficient multithreaded splitting can be performed using the [rapidgzip](https://github.com/mxmlnkn/rapidgzip) utility. Sortmerna repository now offers a convenience python script [run.py:split](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py#L928) to perform just that splitting operation. It invokes the rapidgzip and writes the split descriptor. Here is how to use it:
-
-Assuming that conda/mamba is installed on your system. Download the [run.py](https://github.com/sortmerna/sortmerna/blob/master/scripts/run.py) and [conda_run_env.yaml](https://github.com/sortmerna/sortmerna/blob/master/conda_run_env.yaml) from GitHub to any desired location and then
-
-```
-mamba create -y --file conda_run_env.yaml  # installs needed dependencies including rapidgzip and pigz
-conda activate sortmerna-run
-# run the splitting
-python run.py split --file <file1> --file <file2> --num-splits <number of splits> --workdir <working directory>
-e.g.
-python run.py split \
-    --file ${data_dir}/SRR1635864_1.fastq.gz \
-    --file ${data_dir}/SRR1635864_2.fastq.gz \
-    --num-splits 8 \
-    --workdir ~/a1/data/sortmerna/run
-# run sortmerna
-sortmerna -ref ${ref_dir}/silva-bac-16s-database-id85.fasta \
-    -reads ${data_dir}/SRR1635864_1.fastq.gz \
-    -reads ${data_dir}/SRR1635864_2.fastq.gz \
-    -fastx -blast 0 -no-best -threads 8 -workdir ~/a1/data/sortmerna/run
-```
+The legacy `--readfeed 1` on-disk splitting still works but is deprecated. 
+The previously-documented `run.py split` pre-splitting workflow is no longer necessary
+and not advised.
 
 ## Building from sources
 
@@ -197,7 +188,7 @@ In case you need PDF, any modern browser can print web pages to PDF.
 
 ## Databases
 
-[database.tar.gz](https://github.com/biocore/sortmerna/releases/download/v4.3.4/database.tar.gz) provided since release 4.3.4. The tarball contains 4 separate files.
+[database.tar.gz](https://github.com/sortmerna/sortmerna/releases/download/v4.3.4/database.tar.gz) provided since release 4.3.4. The tarball contains 4 separate files.
 
 Since the version 4.3.7 the four database files are also provided as separate .gz archives.
 
@@ -238,9 +229,13 @@ Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of r
 
 See [AUTHORS](./AUTHORS) for a list of contributors to this project.
 
+Maintained by the team at [Clarity Genomics Inc](https://www.clarity-genomics.com) and [Centre de Recherche en Informatique, Signal et Automatique de Lille](https://www.cristal.univ-lille.fr/).
+
 ## Third-party dependencies
 
-Refer to `3rdparty.jinja` for the list of external libraries used in Sortmerna including ZLib, RocksDB, Rapidgzip.
+Refer to `3rdparty.jinja` for the full list of bundled libraries. In 6.0.0 these include: 
+Zlib, RocksDB, Rapidgzip (indexed_bzip2), BBHash (replaces CMPH), Parasail (replaces SSW), 
+ALP, and concurrentqueue.
 
 ## Support
 

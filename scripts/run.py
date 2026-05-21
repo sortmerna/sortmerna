@@ -1,4 +1,4 @@
-# @copyright 2016-2026 Clarity Genomics BVBA
+# @copyright 2016-2026 Clarity Genomics Inc
 # @copyright 2012-2016 Bonsai Bioinformatics Research Group
 # @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 #
@@ -24,7 +24,7 @@
 #               Mikaël Salson    mikael.salson@lifl.fr
 #               Hélène Touzet    helene.touzet@lifl.fr
 #               Rob Knight       robknight@ucsd.edu
-#               biocodz          biocodz@protonmail.com
+#
 
 '''
 file: run.py
@@ -1867,7 +1867,9 @@ if __name__ == "__main__":
     
     # run tests
     p5 = subpar.add_parser('test', help='run selected test')
-    p5.add_argument('name', help='Test to run e.g. t0 | t1 | t2 | to_lf | to_crlf | all')
+    p5.add_argument('name', help=('Test to run: single name (t3), comma-separated list (t3,t18,t46), '
+                                  'or group alias resolved from presets.yaml (all -> presets.yaml:all, '
+                                  'all-big -> presets.yaml:all_big). Aliases may be mixed with explicit names.'))
     p5.add_argument('--smr-exe', dest='smr_exe', help='path to sortmerna executable. Abs or relative')
     p5.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
     p5.add_argument('--ref-dir', dest='ref_dir', help='path to the reference data. Abs or relative')
@@ -1889,6 +1891,8 @@ if __name__ == "__main__":
     p5.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                       '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     p5.add_argument('--score-split', action="store_true", help='set corresponding sortmerna argument')
+    p5.add_argument('--stop-on-fail', dest='stop_on_fail', action="store_true",
+                    help='Abort the batch on the first failing test (default: continue and summarize at end)')
 
     # build index and record statistics into test jinja
     p6 = subpar.add_parser('index-stats', help='build index and record statistics into test jinja')
@@ -1919,72 +1923,133 @@ if __name__ == "__main__":
             for ff in outd.iterdir():
                 print(f'{ST} removing {ff}')
                 ff.unlink()
-        
-        # run test
+
+        # resolve group aliases ('all', 'all-big') against presets.yaml
+        # CLI dashes map to underscores in the yaml key (all-big -> all_big)
+        script_dir = Path(__file__).parent
+        presets_path = Path(args.presets) if getattr(args, 'presets', None) else script_dir / 'presets.yaml'
+        _presets = {}
+        if presets_path.exists():
+            with open(presets_path) as _f:
+                _presets = yaml.safe_load(_f) or {}
+
         ret = {}
         tlist = []
-        if args.name == 'all':
-            # get the list of all tests from tests.yaml
-            excl = cfg.get('exclude.list', [])
-            tlist = list(cfg.get('tests').keys())
-            if excl:
-                nexcl = len(excl)
-                print(f'{ST} excluding {nexcl} tests from the list as specified in \'exclude.list\'')
-            for tt in excl:
-                if tt in tlist:
-                    tlist.remove(tt)
-        else:
-            raw = args.name.replace(',', ' ')
-            tlist = raw.split()
-            
+        for nm in args.name.replace(',', ' ').split():
+            val = _presets.get(nm.replace('-', '_'))
+            if isinstance(val, str):
+                tlist.extend(x.strip() for x in val.split(',') if x.strip())
+            else:
+                tlist.append(nm)
+
         print(f'{ST} number of tests: {len(tlist)}')
+        # Snapshot args once so preset values applied for test N don't leak into test N+1
+        # (parse_test_config only fills None-valued attrs from the preset; without this
+        # reset, the first test's preset would shadow every later test's preset).
+        args_snapshot = vars(args).copy()
+        results = []
+        batch_start = time.time()
         for test in tlist:
             rcode = 0
+            status = 'PASS'
+            err_excerpt = ''
+            t_start = time.time()
+            for _k, _v in args_snapshot.items():
+                setattr(args, _k, _v)
             args.name = test
-            cfg = parse_test_config(args)
-            # clean-up the KVDB, IDX directories, and the output. 
-            # May Fail if any file in the directory is open. Close the files and re-run.
-            if args.workdir and Path(args.workdir).exists() \
-                and not (args.validate_only or args.task in ['1','2']):
-                print(f'{ST} clearing workdir prior to {test}: {args.workdir}')
-                shutil.rmtree(args.workdir)
+            try:
+                cfg = parse_test_config(args)
+                # clean-up the KVDB, IDX directories, and the output.
+                # May fail if any file in the directory is open. Close the files and re-run.
+                if args.workdir and Path(args.workdir).exists() \
+                    and not (args.validate_only or args.task in ['1','2']):
+                    print(f'{ST} clearing workdir prior to {test}: {args.workdir}')
+                    shutil.rmtree(args.workdir)
 
-            # run the test
-            if not args.validate_only:
-                is_capture = cfg.get('capture', False) or args.capture
-                cmd = [cfg.get('exe')]
-                for k,v in cfg['args'].items():
-                    if isinstance(v, list):
-                        for rr in v:
+                if not args.validate_only:
+                    is_capture = cfg.get('capture', False) or args.capture
+                    cmd = [cfg.get('exe')]
+                    for k,v in cfg['args'].items():
+                        if isinstance(v, list):
+                            for rr in v:
+                                cmd.append(k)
+                                cmd.append(rr)
+                        else:
                             cmd.append(k)
-                            cmd.append(rr)
-                    else:
-                        cmd.append(k)
-                        if v:
-                            cmd.append(v)
-                rcode, outl, errl = run_test(cmd, capture=is_capture)
+                            if v:
+                                cmd.append(v)
+                    rcode, outl, errl = run_test(cmd, capture=is_capture)
 
-            # validate alignment results
-            if args.task == '5':
-                msg = f'{ST} task 5 (only indexing) was requested for test {test}. Skipping validation.'
-                print(msg)
-            elif rcode == 0 or not cfg.get('failonerror', True):
-                if args.func:
-                    gdict = globals().copy()
-                    gdict.update(locals())
-                    func = gdict.get(args.func)
-                    func(**cfg[test])
-                elif cfg.get('validate', {}).get('func'):
-                    fn = cfg['validate']['func']
-                    gdict = globals().copy()
-                    gdict.update(locals())
-                    func = gdict.get(fn)
-                    if func:
-                        func(TEST_DATA, ret, **cfg)
+                if args.task == '5':
+                    msg = f'{ST} task 5 (only indexing) was requested for test {test}. Skipping validation.'
+                    print(msg)
+                elif rcode == 0 or not cfg.get('failonerror', True):
+                    if args.func:
+                        gdict = globals().copy()
+                        gdict.update(locals())
+                        func = gdict.get(args.func)
+                        func(**cfg[test])
+                    elif cfg.get('validate', {}).get('func'):
+                        fn = cfg['validate']['func']
+                        gdict = globals().copy()
+                        gdict.update(locals())
+                        func = gdict.get(fn)
+                        if func:
+                            func(TEST_DATA, ret, **cfg)
+                    else:
+                        process_output(**cfg)
                 else:
-                    process_output(**cfg)
-            else:
+                    raise RuntimeError(f'sortmerna exited with rcode={rcode}')
+            except Exception as ex:
+                status = 'FAIL'
+                err_excerpt = f'{type(ex).__name__}: {ex}'.replace('\n', ' ')
+                print(f'{ST} test {test} FAILED: {err_excerpt}')
+
+            results.append(dict(name=test,
+                                status=status,
+                                duration=time.time() - t_start,
+                                exit_code=rcode,
+                                error=err_excerpt))
+            if status == 'FAIL' and getattr(args, 'stop_on_fail', False):
+                print(f'{ST} --stop-on-fail set; aborting batch after {test}')
                 break
+
+        # batch summary
+        total_dur = time.time() - batch_start
+        n_pass = sum(1 for r in results if r['status'] == 'PASS')
+        n_fail = sum(1 for r in results if r['status'] == 'FAIL')
+        col_name = max(6, max((len(r['name']) for r in results), default=6))
+        hdr = f'{"name":<{col_name}}  {"status":<6}  {"dur_s":>8}  {"rcode":>5}  error'
+        sep = '-' * len(hdr)
+        summary_lines = [
+            f'requested={len(tlist)} ran={len(results)} pass={n_pass} fail={n_fail} duration={total_dur:.1f}s',
+            hdr,
+            sep,
+        ]
+        for r in results:
+            summary_lines.append(
+                f'{r["name"]:<{col_name}}  {r["status"]:<6}  {r["duration"]:>8.1f}  {r["exit_code"]:>5}  {r["error"]}'
+            )
+        print()
+        print(f'{ST} ===== BATCH SUMMARY =====')
+        for ln in summary_lines:
+            print(f'{ST} {ln}')
+
+        _summary_cfg = _presets.get('summary')
+        if _summary_cfg:
+            summary_dir = Path(_summary_cfg)
+        elif args.workdir:
+            summary_dir = Path(args.workdir) / 'out'
+        else:
+            summary_dir = Path.cwd()
+        summary_dir.mkdir(parents=True, exist_ok=True)
+        summary_path = summary_dir / 'test_summary.txt'
+        with open(summary_path, 'w') as _sf:
+            _sf.write('\n'.join(summary_lines) + '\n')
+        print(f'{ST} summary written to {summary_path}')
+
+        if n_fail:
+            sys.exit(n_fail)
     elif 'index-stats' == args.cmd:
         generate_index_stats(args)
     else:

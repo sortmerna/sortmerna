@@ -10,6 +10,7 @@
 #
 all: t3,t3_1,t18,t18_1,t19,t19_1,t19_3,t19_5,t19_6,t19_7,t20,t20_1,t20_5,t20_6,t39
 all_big: t38,t43,t46
+summary: /home/biocodz/a1/data/sortmerna/run
 t3: [
   "--smr-exe", "dist/bin/sortmerna",
   "--ref-dir", "data",

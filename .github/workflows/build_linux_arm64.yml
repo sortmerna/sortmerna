@@ -1,0 +1,84 @@
+name: build on Linux ARM64
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag or ref to build (default: current branch)'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag or ref to build'
+        required: false
+        type: string
+
+concurrency:
+  cancel-in-progress: true
+  group: build-linux-arm64-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-arm64:
+    name: Build on Linux ARM64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+    - name: git checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.tag || github.ref }}
+
+    - name: install gcc-11
+      run: |
+        sudo apt update
+        sudo apt install -y gcc-11 g++-11
+
+    - name: set gcc-11 as default
+      run: |
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+
+    - name: verify gcc
+      run: gcc --version
+
+    - name: install miniforge (conda not preinstalled on ubuntu-24.04-arm)
+      run: |
+        wget -q "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
+        bash Miniforge3-Linux-aarch64.sh -b -p "${HOME}/conda"
+        source "${HOME}/conda/etc/profile.d/conda.sh"
+        eval "$(conda shell.bash activate)"
+        mamba install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+
+    - name: build
+      run: |
+        source "${HOME}/conda/etc/profile.d/conda.sh"
+        eval "$(conda shell.bash activate)"
+        conda env list
+        python setup.py all
+        echo "=== listing dist/ ==="
+        ls -l ./dist
+
+    - name: rename artifacts with -aarch64 suffix
+      run: |
+        cd dist
+        for f in sortmerna*Linux.deb sortmerna*Linux.sh sortmerna*Linux.tar.gz; do
+          [ -f "$f" ] || continue
+          new="${f%-Linux.*}-Linux-aarch64.${f##*-Linux.}"
+          mv "$f" "$new"
+          echo "renamed: $f -> $new"
+        done
+        ls -l
+
+    - name: upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-arm64
+        retention-days: 3
+        path: |
+          dist/sortmerna*Linux-aarch64.deb
+          dist/sortmerna*Linux-aarch64.sh
+          dist/sortmerna*Linux-aarch64.tar.gz

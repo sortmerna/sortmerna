@@ -2,10 +2,21 @@ name: build on macos  # with AppleClang
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag or ref to build (default: current branch)'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag or ref to build'
+        required: false
+        type: string
 
-concurrency: 
+concurrency:
   cancel-in-progress: true
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: build-osx-${{ github.ref }}
 
 permissions:
   contents: read
@@ -18,6 +29,8 @@ jobs:
     steps:
     - name: git checkout
       uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.tag || github.ref }}
 
     #- name: install gcc-11
     #  run: |
@@ -48,6 +61,7 @@ jobs:
     - name: upload
       uses: actions/upload-artifact@v4
       with:
+        name: macos-arm64
         retention-days: 3
         path: |
           dist/sortmerna*Darwin.7z

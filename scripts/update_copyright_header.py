@@ -1,4 +1,32 @@
 #!/usr/bin/env python3
+# @copyright 2016-2026 Clarity Genomics Inc
+# @copyright 2012-2016 Bonsai Bioinformatics Research Group
+# @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
+#
+# SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
+#
+# This is a free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# SortMeRNA is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+#
+# @contributors Jenya Kopylova   jenya.kopylov@gmail.com
+#               Laurent Noé      laurent.noe@lifl.fr
+#               Pierre Pericard  pierre.pericard@lifl.fr
+#               Daniel McDonald  wasade@gmail.com
+#               Mikaël Salson    mikael.salson@lifl.fr
+#               Hélène Touzet    helene.touzet@lifl.fr
+#               Rob Knight       robknight@ucsd.edu
+#
+
 """
 20260321 Sat   update_copyright_header.py
 Updates copyright headers in specified C/C++ and Python files
@@ -43,15 +71,14 @@ TARGET_DIRS = [
 # Target specific files (relative to repo root)
 TARGET_FILES = [
     "scripts/run.py",
+    "scripts/update_copyright_header.py",
     "setup.py",
 ]
 
 EXCLUDE_FILES = [
     "include/kseq.h",
     "include/sse2neon.h",
-    "include/ssw.h",
     "src/sortmerna/ssw_example.c",
-    "src/sortmerna/ssw.c"
 ]
 
 # File extensions and their comment styles
@@ -183,6 +210,51 @@ def generate_header_python(template: str, current_year: int, contributors: List[
     return '\n'.join(commented_lines)
 
 
+def compute_new_content(
+    original_content: str,
+    template: str,
+    style: str,
+    current_year: int,
+    contributors: List[str],
+) -> Optional[str]:
+    """Return the new file content with the updated header, or None on error."""
+    if style == "c_block":
+        existing_header = extract_existing_header_c(original_content)
+        new_header = generate_header_c(template, current_year, contributors)
+    elif style == "python":
+        existing_header = extract_existing_header_python(original_content)
+        new_header = generate_header_python(template, current_year, contributors)
+    else:
+        return None
+
+    if existing_header:
+        return original_content.replace(existing_header, new_header, 1)
+
+    lines = original_content.split("\n", 1)
+    if lines[0].startswith("#!"):
+        return f"{lines[0]}\n{new_header}\n\n{lines[1] if len(lines) > 1 else ''}"
+    return f"{new_header}\n\n{original_content}"
+
+
+def file_needs_update(
+    filepath: Path,
+    template: str,
+    style: str,
+    current_year: int,
+    contributors: List[str],
+) -> bool:
+    """Check whether the file's current header differs from the generated one."""
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            original = f.read()
+    except Exception as e:
+        print(f"✗ Error reading {filepath}: {e}", file=sys.stderr)
+        return False
+
+    new_content = compute_new_content(original, template, style, current_year, contributors)
+    return new_content is not None and new_content != original
+
+
 def update_file_header(
     filepath: Path,
     template: str,
@@ -200,27 +272,11 @@ def update_file_header(
         print(f"✗ Error reading {filepath}: {e}", file=sys.stderr)
         return False
     
-    if style == "c_block":
-        existing_header = extract_existing_header_c(original_content)
-        new_header = generate_header_c(template, current_year, contributors)
-    elif style == "python":
-        existing_header = extract_existing_header_python(original_content)
-        new_header = generate_header_python(template, current_year, contributors)
-    else:
+    new_content = compute_new_content(original_content, template, style, current_year, contributors)
+    if new_content is None:
         print(f"✗ Unknown style '{style}' for {filepath}", file=sys.stderr)
         return False
-    
-    # Replace or prepend header
-    if existing_header:
-        new_content = original_content.replace(existing_header, new_header, 1)
-    else:
-        lines = original_content.split("\n", 1)
-        # Preserve shebang for Python files
-        if lines[0].startswith("#!"):
-            new_content = f"{lines[0]}\n{new_header}\n\n{lines[1] if len(lines) > 1 else ''}"
-        else:
-            new_content = f"{new_header}\n\n{original_content}"
-    
+
     if new_content == original_content:
         return False
     
@@ -366,9 +422,9 @@ def update_copyright_header(
     Returns:
         Number of files that would be/were updated
     """
-    #if contributors is None:
-    #    contributors = []
-    
+    if contributors is None:
+        contributors = []
+
     repo_root = get_repo_root()
     current_year = datetime.now().year
     
@@ -392,17 +448,27 @@ def update_copyright_header(
         return 0
     
     if list_only:
-        print(f"📁 Target files that would be updated ({total_files} total):")
-        print(f"\n   C/C++ Files ({len(files_by_style['c_block'])}):")
-        for f in files_by_style["c_block"]:
+        eligible = {
+            "c_block": [f for f in files_by_style["c_block"]
+                        if file_needs_update(f, template, "c_block", current_year, contributors)],
+            "python": [f for f in files_by_style["python"]
+                       if file_needs_update(f, template, "python", current_year, contributors)],
+        }
+        eligible_count = len(eligible["c_block"]) + len(eligible["python"])
+        skipped = total_files - eligible_count
+        print(f"📁 Eligible files (header differs from template, {eligible_count} of {total_files}):")
+        print(f"\n   C/C++ Files ({len(eligible['c_block'])}):")
+        for f in eligible["c_block"]:
             print(f"      • {f.relative_to(repo_root)}")
-        print(f"\n   Python Files ({len(files_by_style['python'])}):")
-        for f in files_by_style["python"]:
+        print(f"\n   Python Files ({len(eligible['python'])}):")
+        for f in eligible["python"]:
             print(f"      • {f.relative_to(repo_root)}")
+        if skipped:
+            print(f"\n✓ Up-to-date (skipped): {skipped} file(s)")
         print(f"\n⊘ Excluded files ({len(EXCLUDE_FILES)}):")
         for excl in EXCLUDE_FILES:
             print(f"      • {excl}")
-        return total_files
+        return eligible_count
     
     print(f"🔄 Processing {total_files} target file(s)...")
     print(f"📁 Target directories: {', '.join(TARGET_DIRS)}")

@@ -1,4 +1,4 @@
-# @copyright 2016-2026 Clarity Genomics BVBA
+# @copyright 2016-2026 Clarity Genomics Inc
 # @copyright 2012-2016 Bonsai Bioinformatics Research Group
 # @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 #
@@ -24,7 +24,7 @@
 #               Mikaël Salson    mikael.salson@lifl.fr
 #               Hélène Touzet    helene.touzet@lifl.fr
 #               Rob Knight       robknight@ucsd.edu
-#               biocodz          biocodz@protonmail.com
+#
 
 '''
 file: setup.py
@@ -727,6 +727,7 @@ def parasail_build(**kw) -> tuple[int, list[str], list[str]]:
     Path(build_dir).mkdir(parents=True, exist_ok=True)
 
     cmd = ['cmake', '-S', src, '-B', str(build_dir),
+           '-G', 'Ninja',
            '-DBUILD_SHARED_LIBS=OFF',
            f'-DCMAKE_INSTALL_PREFIX={dist_dir}',
            f'-DCMAKE_BUILD_TYPE={btype}',

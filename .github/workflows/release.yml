@@ -1,0 +1,115 @@
+name: release
+
+# Assembles a draft GitHub release for a given tag:
+#   - builds Linux x64, Linux arm64, macOS arm64 artifacts via reusable workflows
+#   - copies the four reference database files from a prior release
+#   - attaches everything to a draft release with notes taken from the tag annotation
+#
+# Run manually: Actions -> release -> Run workflow -> enter the tag (e.g. v6.0.0)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (must already exist, e.g. v6.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write   # required to create the release and upload assets
+
+env:
+  DB_SOURCE_TAG: v5.0.0
+
+jobs:
+  build-linux:
+    uses: ./.github/workflows/build_linux.yml
+    with:
+      tag: ${{ inputs.tag }}
+
+  build-osx:
+    uses: ./.github/workflows/build_osx.yml
+    with:
+      tag: ${{ inputs.tag }}
+
+  build-linux-arm64:
+    uses: ./.github/workflows/build_linux_arm64.yml
+    with:
+      tag: ${{ inputs.tag }}
+
+  fetch-databases:
+    name: fetch databases from v5.0.0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download .fasta.gz files from source release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dbs
+          gh release download "$DB_SOURCE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.fasta.gz' \
+            --dir dbs
+          ls -lh dbs/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: databases
+          path: dbs/*.fasta.gz
+          retention-days: 1
+
+  publish:
+    needs: [build-linux, build-osx, build-linux-arm64, fetch-databases]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify tag exists on remote
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/${{ inputs.tag }}" > /dev/null
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: List collected assets
+        run: |
+          ls -lh assets/
+          echo "---"
+          (cd assets && sha256sum *) | tee SHA256SUMS.txt
+          mv SHA256SUMS.txt assets/
+
+      - name: Fetch tag annotation for release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # gh release create's --notes-from-tag needs a local git repo, so
+          # it can't be combined with --repo. Fetch the annotated tag's
+          # message via the API and pass via --notes-file instead.
+          tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" --jq '.object.sha')
+          tag_type=$(gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" --jq '.object.type')
+          if [ "$tag_type" = "tag" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" --jq '.message' > tag_notes.md
+          else
+            echo "Release $TAG" > tag_notes.md
+            echo "(lightweight tag - no annotation)" >> tag_notes.md
+          fi
+          echo "=== release notes ==="
+          cat tag_notes.md
+
+      - name: Create / update draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG exists; uploading assets with --clobber"
+            gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber assets/*
+          else
+            echo "Creating draft release $TAG"
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft \
+              --title "SortMeRNA $TAG" \
+              --notes-file tag_notes.md \
+              assets/*
+          fi
