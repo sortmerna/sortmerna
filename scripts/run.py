@@ -39,6 +39,7 @@ def mock_missing(name):
     return type(name, (), {'__init__': init})
 
 import os
+import signal
 import sys
 import struct
 import ctypes
@@ -199,6 +200,103 @@ def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str]
     print(f"{ST} run time: {rt}")
     return rcode, outl, errl
 #END cmake_run
+
+def run_with_interrupts(cmd:list,
+                        num_interrupts:int,
+                        wait_after_align_start:int=60,
+                        startup_deadline:int=1800,
+                        cwd:str=None) -> tuple[int, list[str], list[str]]:
+    '''
+    Exercise the auto-resume path. Launches sortmerna num_interrupts times in
+    succession; on each non-final launch we wait until "Processor 0 thread ..
+    started" appears, sleep wait_after_align_start seconds, then SIGKILL the
+    process group. The final launch runs to completion and relies on
+    restart::probe_or_init to detect the prior mid-pass interrupt and roll back.
+
+    args:
+      cmd                     sortmerna argv (without stdbuf prefix)
+      num_interrupts          number of mid-pass kills before the final run
+      wait_after_align_start  seconds to let alignment progress before SIGKILL
+      startup_deadline        seconds to wait for alignment to start before giving up
+    '''
+    ST = '[run_with_interrupts]'
+    print(f'{ST} num_interrupts={num_interrupts} wait_after_align_start={wait_after_align_start}s')
+
+    # Line-buffer the child's stdout/stderr so log polling sees lines promptly.
+    stdbuf_path = shutil.which('stdbuf')
+    if stdbuf_path:
+        wrapped = [stdbuf_path, '-oL', '-eL'] + cmd
+    else:
+        print(f'{ST} WARN: stdbuf not found; child stdout may be block-buffered and the log poll may lag')
+        wrapped = cmd
+
+    log_path = Path(f'/tmp/sortmerna_interrupt_{os.getpid()}.log')
+    marker = re.compile(r'Processor 0 thread .* started')
+    done_pat = re.compile(r'Processor .* done\. Processed')
+
+    total_attempts = num_interrupts + 1
+    for iattempt in range(total_attempts):
+        is_final = (iattempt == num_interrupts)
+        label = 'final' if is_final else f'kill-mid-pass {iattempt+1}/{num_interrupts}'
+        log_path.unlink(missing_ok=True)
+        log_path.touch()
+
+        print(f'{ST} attempt {iattempt+1}/{total_attempts} ({label})')
+        with open(log_path, 'w') as flog:
+            proc = subprocess.Popen(wrapped, stdout=flog, stderr=subprocess.STDOUT,
+                                    cwd=cwd, start_new_session=True)
+        print(f'{ST} pid={proc.pid}')
+
+        if is_final:
+            rcode = proc.wait()
+            print(f'{ST} sortmerna exited rcode={rcode}')
+            if rcode != 0:
+                tail = log_path.read_text(errors='replace').splitlines()[-30:]
+                print(f'{ST} log tail:\n' + '\n'.join(tail))
+            return rcode, [], []
+
+        deadline = time.time() + startup_deadline
+        while True:
+            if proc.poll() is not None:
+                tail = log_path.read_text(errors='replace').splitlines()[-30:]
+                print(f'{ST} sortmerna exited before alignment started (rc={proc.returncode}); log tail:\n' + '\n'.join(tail))
+                return 1, [], []
+            if time.time() > deadline:
+                _kill_pg(proc)
+                print(f'{ST} timeout waiting for alignment to start')
+                return 1, [], []
+            if any(marker.search(line) for line in log_path.read_text(errors='replace').splitlines()):
+                break
+            time.sleep(2)
+        print(f'{ST} alignment threads up; waiting {wait_after_align_start}s')
+
+        time.sleep(wait_after_align_start)
+
+        done_count = sum(1 for line in log_path.read_text(errors='replace').splitlines()
+                         if done_pat.search(line))
+        if done_count > 0:
+            print(f'{ST} WARN: {done_count} thread(s) already finished; interrupt landing past mid-pass. '
+                  f'Reduce wait_after_align_start or use a larger dataset.')
+
+        print(f'{ST} sending SIGKILL to pgid={proc.pid}')
+        _kill_pg(proc)
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            print(f'{ST} ERROR: sortmerna did not exit within 15s of SIGKILL')
+            return 1, [], []
+        print(f'{ST} killed cleanly; next launch should auto-resume')
+
+    return 0, [], []
+#END run_with_interrupts
+
+def _kill_pg(proc):
+    '''Send SIGKILL to the process group started via start_new_session=True.'''
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except (ProcessLookupError, OSError):
+        pass
+#END _kill_pg
 
 def get_diff(fpath0, fpath1):
     '''
@@ -1891,6 +1989,13 @@ if __name__ == "__main__":
     p5.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                       '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     p5.add_argument('--score-split', action="store_true", help='set corresponding sortmerna argument')
+    p5.add_argument('--interrupt', dest='interrupt', nargs='?', const=1, default=0, type=int,
+                    choices=[0, 1, 2],
+                    help='Inject N mid-alignment SIGKILLs to exercise auto-resume. '
+                         '0 (default) runs normally; --interrupt (no value) implies 1; max 2.')
+    p5.add_argument('--interrupt-wait', dest='interrupt_wait', type=int, default=60,
+                    help='Seconds to let alignment run after threads start before each SIGKILL '
+                         '(default: 60). Used only when --interrupt > 0.')
     p5.add_argument('--stop-on-fail', dest='stop_on_fail', action="store_true",
                     help='Abort the batch on the first failing test (default: continue and summarize at end)')
 
@@ -1978,7 +2083,13 @@ if __name__ == "__main__":
                             cmd.append(k)
                             if v:
                                 cmd.append(v)
-                    rcode, outl, errl = run_test(cmd, capture=is_capture)
+                    if getattr(args, 'interrupt', 0):
+                        rcode, outl, errl = run_with_interrupts(
+                            cmd,
+                            num_interrupts=args.interrupt,
+                            wait_after_align_start=getattr(args, 'interrupt_wait', 60))
+                    else:
+                        rcode, outl, errl = run_test(cmd, capture=is_capture)
 
                 if args.task == '5':
                     msg = f'{ST} task 5 (only indexing) was requested for test {test}. Skipping validation.'
