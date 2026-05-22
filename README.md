@@ -12,7 +12,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ## Table of Contents
 
-- [What's new in 6.0.0](#whats-new-in-600)
+- [What's new in 7.0.0](#whats-new-in-700)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
@@ -28,15 +28,26 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 - [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
 
+## What's new in 7.0.0
 
-## What's new in 6.0.0
+### Resume after interruption (headline)
 
-- **Native Windows support dropped.** Linux and macOS only (AMD64 and ARM64). Use WSL to run SortMeRNA on a Windows host.
-- **Index format change: BBHash replaces CMPH.** The minimal-perfect-hash backend is now [BBHash](https://github.com/rizkg/BBHash) for a faster, smaller index build. **Indexes built with earlier releases must be rebuilt.**
-- **Alignment backend: Parasail replaces SSW.** SortMeRNA now uses [Parasail](https://github.com/jeffdaily/parasail) for SIMD Smith–Waterman alignment.
-- **Reference index statistics on disk.** SortMeRNA writes index statistics alongside the index files; these are preferred over the Python re-implementation in `run.py` for validation.
-- **CLI fixes.** Correct handling of `-task 5` (index only), with updated help strings; resolved the `-index` / `-task` option collision.
-- **Test runner improvements.** `scripts/run.py` now drives batches from `presets.yaml`, prints a per-test summary table (also written to `test_summary.txt`), continues on failure by default, and exposes `--stop-on-fail` to restore the previous behavior. Process exit code equals the number of failing tests.
+A sortmerna run that is killed mid-alignment now resumes automatically
+on the next invocation against the same kvdb. There is no `--resume`
+flag: presence of a non-empty kvdb plus matching opts/input fingerprints
+is sufficient. If any alignment-relevant option or input file fingerprint
+has changed since the previous run, sortmerna aborts with a diagnostic
+naming the kvdb so the user can either restore the original inputs or
+wipe the kvdb. Internally, progress is persisted at pass boundaries via
+atomic kvdb batches; if a pass is interrupted, the partial work is
+rolled back on resume before the pass is retried, so end-of-run
+statistics and outputs are identical to an uninterrupted run.
+
+### Testing & dev
+
+`scripts/run.py test ... --interrupt [N]` exercises the auto-resume
+path by SIGKILLing the binary mid-alignment N times (max 2, default
+1) and re-launching, then validating the final output normally.
 
 ## Getting Started
 
