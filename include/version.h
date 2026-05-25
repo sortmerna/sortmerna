@@ -34,4 +34,4 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #define SORTMERNA_MAJOR 5
 #define SORTMERNA_MINOR 0
-#define SORTMERNA_PATCH 0
+#define SORTMERNA_PATCH 1
