@@ -30,7 +30,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ## What's new in 7.0.0
 
-### Resume after interruption (headline)
+### Resume after interruption
 
 A sortmerna run that is killed mid-alignment now resumes automatically
 on the next invocation against the same kvdb. There is no `--resume`
@@ -46,8 +46,8 @@ statistics and outputs are identical to an uninterrupted run.
 ### Testing & dev
 
 `scripts/run.py test ... --interrupt [N]` exercises the auto-resume
-path by SIGKILLing the binary mid-alignment N times (max 2, default
-1) and re-launching, then validating the final output normally.
+path by SIGKILLing the binary mid-alignment N times (max 2, default 1)
+and re-launching, then validating the final output normally.
 
 ## Getting Started
 
