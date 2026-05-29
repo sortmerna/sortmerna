@@ -1,0 +1,26 @@
+# t18_6 - regression test for multi-line FASTA read counting (bug introduced in v5.0.0)
+name: single multi-line FASTA reads file aligned against itself
+info: |
+  silva-arc-16s-database-id95_part.fasta is a multi-line FASTA (199 records,
+  sequences wrapped over many lines). The reads file is a subset of the reference
+  so every record aligns (100% hits, 0 fail).
+args:
+  -ref: [ {{ REF_DIR }}/silva-arc-16s-database-id95.fasta ]
+  -reads: [ {{ REF_DIR }}/silva-arc-16s-database-id95_part.fasta ]
+  -fastx:
+  -other:
+  -blast: '1'
+  -threads: '{{THREADS or 2}}'
+  -dbg-level: '{{DBG_LEVEL or 0}}'
+  -task: '{{TASK or 4}}'
+  -workdir: {{WRK_DIR}}
+validate:
+  func:
+  variant: sanger
+  files:
+    aligned.log:
+      num_reads: 199
+      num_hits: 199
+      num_fail: 0
+    aligned.blast:
+      num_recs: 199
