@@ -29,11 +29,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Rob Knight       robknight@ucsd.edu
 */
 
-/*
- * FILE: readfeed.cpp
- * Created: Nov 26, 2017 Sun
- * 
- */
+// readfeed.cpp  Created: Nov 26, 2017 Sun
 
 #include "common.hpp"
 #include "readfeed.hpp"
