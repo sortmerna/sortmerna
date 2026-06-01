@@ -40,6 +40,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <cmath> // log, exp
 #include <filesystem>
 #include <functional> // std::ref
+#include <thread>
 
 #include "options.hpp"
 #include "output.hpp"
@@ -47,8 +48,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstats.hpp"
 #include "processor.hpp"
 #include "refstats.hpp"
-#include "readsqueue.hpp"
 #include "readfeed.hpp"
+#include "read.hpp"
 
 // forward
 class Read;
@@ -186,7 +187,6 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 	Refstats refstats(opts, readstats);
 	References refs;
-	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	Output output(readfeed, opts);
 
 	if (opts.is_sam) output.sam.write_header(opts);

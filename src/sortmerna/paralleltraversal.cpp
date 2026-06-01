@@ -55,7 +55,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "processor.hpp"
 #include "readfeed.hpp"
 #include "output.hpp"
-#include "readsqueue.hpp"
 
 
 #define O_SMR_READ_BIN O_RDONLY

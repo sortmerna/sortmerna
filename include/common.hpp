@@ -102,7 +102,6 @@ extern timeval t;
 const char DELIM = ':';
 
 //#define LOCKQUEUE // Lock queue with mutexes
-#define CONCURRENTQUEUE // lockless queue
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
 

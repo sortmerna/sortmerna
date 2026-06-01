@@ -16,7 +16,6 @@
                 "ZLIB_ROOT": "${sourceDir}/build/3rdparty/zlib/dist",
                 "ROCKSDB_DIST": "${sourceDir}/build/3rdparty/rocksdb/dist",
                 "PARASAIL_DIST": "${sourceDir}/build/3rdparty/parasail/dist",
-                "CONCURRENTQUEUE_HOME": "${sourceDir}/3rdparty/concurrentqueue",
                 "INDEXED_BZIP2_HOME": "${sourceDir}/3rdparty/indexed_bzip2/src",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist"
             }
@@ -28,7 +27,6 @@
                 "ROCKSDB_USE_STATIC_LIBS": true,
                 "ZLIB_USE_STATIC_LIBS": true,
                 "WITH_TESTS": true,
-                "CONCURRENTQUEUE_HOME": "${sourceDir}/3rdparty/concurrentqueue",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist"
             }
         },

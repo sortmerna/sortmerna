@@ -51,7 +51,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 #include "options.hpp"
 #include "restart.hpp"
-//#include "readsqueue.hpp"
 
 // forward
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
@@ -248,7 +247,6 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	//	numThreads = opts.num_read_thread + numProcThread;
 	//	INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
 		//ThreadPool tpool(numThreads);
-		//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
 	//}
 	//else {
 	numThreads = numProcThread;

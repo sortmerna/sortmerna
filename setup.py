@@ -74,7 +74,6 @@ ROCKS   = 'rocksdb'
 CMAKE   = 'cmake'
 CONDA   = 'conda'
 ALL     = 'all'
-CCQUEUE = 'concurrentqueue'
 IBZIP2    = 'indexed_bzip2'
 BBHASH    = 'bbhash'
 PARASAIL  = 'parasail'
@@ -592,7 +591,6 @@ def smr_build(ver:str=None,
                     else kw[ZLIB].get('dist') or Path(f"build/{kw[ZLIB].get('src')}/dist").absolute()
     parasail_dist = sysroot / 'sortmerna' / kw[PARASAIL].get('dist') if is_conda_cpp and sysroot \
                         else kw[PARASAIL].get('dist') or Path(f"build/{kw[PARASAIL].get('src')}/dist").absolute()
-    conque_home = kw[CCQUEUE].get('dist') or kw[CCQUEUE].get('src')
     install_dir = Path(build_dir) / 'dist' if is_conda_cpp and sysroot else 'dist'
     
     if is_checkout and ver and Path('.git').exists():
@@ -632,7 +630,6 @@ def smr_build(ver:str=None,
         cmd.append(f'-DZLIB_ROOT={zlib_dist}')
         cmd.append(f'-DROCKSDB_DIST={rocksdb_dist}')
         cmd.append(f'-DPARASAIL_DIST={parasail_dist}')
-        cmd.append(f'-DCONCURRENTQUEUE_HOME={conque_home}')
         cmd.append(f'-DCMAKE_INSTALL_PREFIX={str(install_dir)}')
     if kw.get('vb'):
         cmd.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=1')
@@ -671,18 +668,6 @@ def smr_build(ver:str=None,
             rcode, sout, eout = proc_run(cmd, capture=True)
     return rcode, sout, eout
 #END smr_build
-
-def concurrentqueue_build(**kw) -> tuple[int, list[str], list[str]]:
-    '''
-    a single header file - just clone and use
-    '''
-    url = kw.get(CCQUEUE).get('url')
-    src = kw.get(CCQUEUE).get('src')
-    commit = kw.get(CCQUEUE).get('commit')
-    shallow = kw.get(CCQUEUE).get('shallow')
-    rcode, sout, eout = git_clone(url, src, shallow=shallow)
-    return rcode, sout, eout
-#END concurrentqueue_build
 
 def indexed_bzip2_build(**kw) -> tuple[int, list[str], list[str]]:
     '''
@@ -819,7 +804,7 @@ if __name__ == "__main__":
     p0.add_argument('--winhome', dest='winhome', help='when building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     subpar = p0.add_subparsers(dest='name', help='package to build/process')
 
-    p_all = subpar.add_parser('all', help='build zlib + rocksdb + concurrentqueue + indexed_bzip2 + bbhash + sortmerna')
+    p_all = subpar.add_parser('all', help='build zlib + rocksdb + indexed_bzip2 + bbhash + sortmerna')
     p_all.add_argument('-b', '--btype', dest='btype', default='release', help='Build type: release | debug')
     p_all.add_argument('--cmake-preset', dest='cmake_preset', help='CMake preset')
     p_all.add_argument('-c', '--clean', action='store_true', help='clean build directory')
@@ -832,7 +817,6 @@ if __name__ == "__main__":
     p_all.add_argument('--rocksdb-build', dest='rocksdb_build', help='RocksDB cmake build directory')
     p_all.add_argument('--rocksdb-dist', dest='rocksdb_dist', help='RocksDB installation directory')
     p_all.add_argument('--rocksdb-git', action='store_true', help='use rocksdb git repo as source. Otherwise tarball')
-    p_all.add_argument('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
     p_all.add_argument('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
     p_all.add_argument('--bbhash-dist', dest='bbhash_dist', help='bbhash installation directory')
     p_all.add_argument('--parasail-dist', dest='parasail_dist', help='parasail installation directory')
@@ -861,9 +845,6 @@ if __name__ == "__main__":
     p_rocks.add_argument('-c', '--clean', action='store_true', help='clean build directory')
     p_rocks.add_argument('--pt_rocks', dest='pt_rocks', help='Rocksdb Linkage type t1 | t2 | t3')
     p_rocks.add_argument('--rocks3p', dest='rocks3p', help='Fix thirdparty.inc when building Rocksdb')
-
-    p_ccq = subpar.add_parser('concurrentqueue', help='clone concurrentqueue')
-    p_ccq.add_argument('--concurrentqueue-dist', dest='concurrentqueue_dist', help='concurrentqueue installation directory')
 
     p_ibzip2 = subpar.add_parser('indexed_bzip2', help='clone indexed_bzip2 and init submodules')
     p_ibzip2.add_argument('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
@@ -918,12 +899,6 @@ if __name__ == "__main__":
     if getattr(args, 'rocksdb_git', False) or getattr(args, 'build_dev', False):
         config['rocksdb']['is_git'] = True
 
-    # concurrentqueue
-    if getattr(args, 'concurrentqueue_dist', None):
-        config['concurrentqueue']['dist'] = args.concurrentqueue_dist
-    else:
-        config['concurrentqueue']['dist'] = f"{config['concurrentqueue']['src']}"
-
     # indexed_bzip2
     if getattr(args, 'indexed_bzip2_dist', None):
         config['indexed_bzip2']['dist'] = args.indexed_bzip2_dist
@@ -960,8 +935,6 @@ if __name__ == "__main__":
         if rcode == 0:
             rcode, sout, eout = rocksdb_build(**config)
         if rcode == 0:
-            rcode, sout, eout = concurrentqueue_build(**config)
-        if rcode == 0:
             rcode, sout, eout = indexed_bzip2_build(**config)
         if rcode == 0:
             rcode, sout, eout = bbhash_build(**config)
@@ -979,8 +952,6 @@ if __name__ == "__main__":
         if getattr(args, 'clean', False):
             ...
         smr_build(btype=getattr(args, 'btype', 'release'), **config)
-    elif args.name == CCQUEUE:
-        concurrentqueue_build(**config)
     elif args.name == IBZIP2:
         indexed_bzip2_build(**config)
     elif args.name == BBHASH:

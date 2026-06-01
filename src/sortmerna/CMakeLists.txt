@@ -141,7 +141,6 @@ set(SMR_SRCS
 	paralleltraversal.cpp
 	processor.cpp
 	read.cpp
-	#read_control.cpp
 	readfeed.cpp
 	readstats.cpp
 	references.cpp
@@ -158,7 +157,6 @@ set(SMR_SRCS
 	report_denovo.cpp
 	report_biom.cpp
 	report_sam.cpp
-	#writer.cpp
 )
 
 # SMR Objects - build a separate library to use with Tests
@@ -176,7 +174,6 @@ target_include_directories(smr_objs
 	PUBLIC
 		${CMAKE_SOURCE_DIR}/include
 		${CMAKE_SOURCE_DIR}/3rdparty/bbhash
-		${CONCURRENTQUEUE_HOME}
 		${PARASAIL_INCLUDE_DIR}
 )
 
@@ -191,7 +188,6 @@ message("SMR Objects COMPILE_OPT: ${COMPILE_OPT}  COMPILE_FLG: ${COMPILE_FLG}")
 add_executable(sortmerna main.cpp)
 target_include_directories(sortmerna
 	PRIVATE
-		${CONCURRENTQUEUE_HOME}
 		${CMAKE_SOURCE_DIR}/include
 )
 #get_property(rocksdb_trans_deps TARGET RocksDB::rocksdb PROPERTY INTERFACE_LINK_LIBRARIES)
