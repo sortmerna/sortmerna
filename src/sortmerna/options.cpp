@@ -1464,7 +1464,25 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			{
 				if (mopt.count(std::get<0>(opt)) == 0)
 				{
-					std::cout << "Missing required flag: " << std::get<0>(opt) << std::endl;
+                    // NOTE: option-processing (incl. opt_task) hasn't run yet, so the
+                    // 'task' member still holds its default. Read the raw value from mopt.
+                    auto task_it = mopt.find(OPT_TASK);
+                    bool is_index_only = (task_it != mopt.end())
+                        && (std::stoi(task_it->second) == static_cast<int>(TASK::index_only));
+                    if (std::get<0>(opt) == OPT_READS && is_index_only) {
+                        // reads are not required when only building the index
+                        continue;
+                    }
+                    else if (std::get<0>(opt) == OPT_READS) {
+                        ERR("Missing required flag: ", std::get<0>(opt),
+                            ". Use '", OPT_TASK, "' option with value '", TASK::index_only,
+                            "' if you intend to build index without processing reads. See 'sortmerna -h' for details.");
+                        exit(EXIT_FAILURE);
+                    }
+                    else {
+                        ERR("Missing required flag: ", std::get<0>(opt), ". See 'sortmerna -h' for details.");
+                        exit(EXIT_FAILURE);
+                    }
 				}
 			}
 		}
