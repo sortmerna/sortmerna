@@ -145,6 +145,18 @@ void Runopts::opt_reads(const std::string &file)
 		exit(EXIT_FAILURE);
 	}
 	else {
+		// verify the file is not empty (unless only building the index, task = index_only)
+		// NOTE: opt_task may not have run yet, so read the raw task value from mopt.
+		auto task_it = mopt.find(OPT_TASK);
+		bool is_index_only = (task_it != mopt.end())
+			&& (std::stoi(task_it->second) == static_cast<int>(TASK::index_only));
+		ifs.seekg(0, std::ios_base::end);
+		auto fsize = ifs.tellg();
+		if (fsize <= 0 && !is_index_only)
+		{
+			ERR("The reads file [", fpath_a, "] is empty");
+			exit(EXIT_FAILURE);
+		}
 		ifs.close();
 		have_reads = true;
 		readfiles.push_back(fpath_a.generic_string());
