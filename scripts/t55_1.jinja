@@ -1,0 +1,14 @@
+# t55 1 ref, 0 reads
+name: test missing '--reads' argument handling
+info: |
+  Test the new option '-out2' (issue 202)
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+      1     0     0    0       0        0        0     0     0      0       1   1    2       2  
+args:
+  -ref: [ {{ REF_DIR }}/silva-arc-16s-database-id95.fasta ]
+  -fastx:
+  -threads: '{{THREADS or 4}}'
+  -dbg-level: '{{DBG_LEVEL or 0}}'
+  -task: '{{ 5 }}'
+  -workdir: {{WRK_DIR}}
