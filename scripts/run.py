@@ -234,6 +234,13 @@ def run_with_interrupts(cmd:list,
     marker = re.compile(r'Processor 0 thread .* started')
     done_pat = re.compile(r'Processor .* done\. Processed')
 
+    def echo_log(text:str, pos:int) -> int:
+        '''echo any text beyond pos to this process' stdout, return new pos'''
+        if len(text) > pos:
+            sys.stdout.write(text[pos:])
+            sys.stdout.flush()
+        return len(text)
+
     total_attempts = num_interrupts + 1
     for iattempt in range(total_attempts):
         is_final = (iattempt == num_interrupts)
@@ -248,29 +255,38 @@ def run_with_interrupts(cmd:list,
         print(f'{ST} pid={proc.pid}')
 
         if is_final:
-            rcode = proc.wait()
+            log_pos = 0
+            while proc.poll() is None:
+                log_pos = echo_log(log_path.read_text(errors='replace'), log_pos)
+                time.sleep(0.5)
+            # flush any tail written between the last poll and exit
+            echo_log(log_path.read_text(errors='replace'), log_pos)
+            rcode = proc.returncode
             print(f'{ST} sortmerna exited rcode={rcode}')
-            if rcode != 0:
-                tail = log_path.read_text(errors='replace').splitlines()[-30:]
-                print(f'{ST} log tail:\n' + '\n'.join(tail))
             return rcode, [], []
 
         deadline = time.time() + startup_deadline
+        log_pos = 0
         while True:
+            text = log_path.read_text(errors='replace')
+            log_pos = echo_log(text, log_pos)
             if proc.poll() is not None:
-                tail = log_path.read_text(errors='replace').splitlines()[-30:]
-                print(f'{ST} sortmerna exited before alignment started (rc={proc.returncode}); log tail:\n' + '\n'.join(tail))
+                print(f'{ST} sortmerna exited before alignment started (rc={proc.returncode})')
                 return 1, [], []
             if time.time() > deadline:
                 _kill_pg(proc)
                 print(f'{ST} timeout waiting for alignment to start')
                 return 1, [], []
-            if any(marker.search(line) for line in log_path.read_text(errors='replace').splitlines()):
+            if any(marker.search(line) for line in text.splitlines()):
                 break
             time.sleep(2)
         print(f'{ST} alignment threads up; waiting {wait_after_align_start}s')
 
-        time.sleep(wait_after_align_start)
+        wait_end = time.time() + wait_after_align_start
+        while time.time() < wait_end and proc.poll() is None:
+            log_pos = echo_log(log_path.read_text(errors='replace'), log_pos)
+            time.sleep(0.5)
+        log_pos = echo_log(log_path.read_text(errors='replace'), log_pos)
 
         done_count = sum(1 for line in log_path.read_text(errors='replace').splitlines()
                          if done_pat.search(line))
