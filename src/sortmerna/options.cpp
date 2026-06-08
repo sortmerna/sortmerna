@@ -76,13 +76,6 @@ std::streampos filesize(const std::string& file); // util.cpp
 Runopts::Runopts(int argc, char** argv, bool dryrun)
 {
 	process(argc, argv, dryrun);
-	if (skiplengths.empty())
-	{
-		for (std::size_t i = 0; i < indexfiles.size(); ++i)
-		{
-			skiplengths.push_back({ 0,0,0 });
-		}
-	}
 }
 
 /* 
@@ -684,31 +677,46 @@ void Runopts::opt_SQ(const std::string &val)
 
 void Runopts::opt_passes(const std::string &val)
 {
-	if (passes_set)
+    auto countpass = mopt.count(OPT_PASSES);
+	if (countpass > 1)
 	{
-		ERR("'", OPT_PASSES, "' [INT,INT,INT] has been set twice, please verify your choice.");
-		exit(EXIT_FAILURE);
+		ERR("'", OPT_PASSES, "' [INT,INT,INT] has been set more than once");
+        exit(EXIT_FAILURE);
 	}
 
-	// set passes
-	for (auto pos = val.find(",", 0), pos_from = pos-pos, count = pos-pos; pos != std::string::npos; pos = val.find(",", pos_from))
-	{
-		auto tok = val.substr(pos_from, pos);
-		pos_from += pos +1;
-		if (++count > 3) 
-		{
-			ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
-			exit(EXIT_FAILURE);
-		}
-		auto skiplen = std::stoi(tok);
-		if (skiplen > 0)
-			skiplengths.emplace_back(skiplen);
-		else
-		{
-			ERR("All three integers in '", OPT_PASSES, "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).");
-			exit(EXIT_FAILURE);
-		}
-	}
+    INFO("'", OPT_PASSES, "' option has been set. Using the provided skip lengths.");
+    // Parse comma-separated tokens "INT,INT,INT". Only parse and validate here;
+    // the values are stashed in 'skiplengths_user' and replicated per-index at
+    // the end of process(), once 'indexfiles' is populated. Options are processed
+    // in alphabetical order ('passes' before 'ref'), so 'indexfiles' is still
+    // empty at this point.
+    std::vector<uint32_t> skiplenvec;
+    std::size_t count = 0;
+    for (std::size_t pos_from = 0; pos_from <= val.size(); )
+    {
+    	auto pos = val.find(",", pos_from);
+    	auto tok = val.substr(pos_from, pos == std::string::npos ? std::string::npos : pos - pos_from);
+    	pos_from = (pos == std::string::npos) ? val.size() + 1 : pos + 1;
+    	if (++count > 3)
+    	{
+    		ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
+    		exit(EXIT_FAILURE);
+    	}
+    	auto skiplen = std::stoi(tok);
+    	if (skiplen > 0)
+    		skiplenvec.emplace_back(skiplen);
+    	else
+    	{
+    		ERR("All three integers in '", OPT_PASSES, "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).");
+    		exit(EXIT_FAILURE);
+    	}
+    } // ~for
+    if (skiplenvec.size() != 3)
+    {
+        ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
+        exit(EXIT_FAILURE);
+    }
+    skiplengths_user = skiplenvec;
 	passes_set = true;
 } // ~Runopts::opt_passes
 
@@ -1096,7 +1104,9 @@ void Runopts::opt_L(const std::string &val)
 	auto count = mopt.count(OPT_L);
 	if (count > 1)
 	{
-		WARN(" Option '", OPT_L, "' entered [", count, "] times. Only the last value will be used.\n", "\tHelp: ", help_L);
+		ERR(" Option '", OPT_L, "' entered [", count, "] times. Only a single one is expected.\n", 
+                "\tHelp: ", help_L);
+        exit(EXIT_FAILURE);
 	}
 
 	if (val.size() == 0)
@@ -1535,12 +1545,36 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 
 	INFO("=== Options processing done ===\n");
-	INFO("Alignment type: [best:", is_best, 
-			" num_alignments:", num_alignments, 
+	INFO("Alignment type: [best:", is_best,
+			" num_alignments:", num_alignments,
 			" min_lis:", min_lis, " seeds:", num_seeds,"]");
 
 	if (!is_help_opt)
 	{
+		// Build per-index skip lengths now that 'indexfiles' is populated (opt_ref
+		// ran in the loop above). Done here rather than in opt_passes because options
+		// are processed in alphabetical order, so 'passes' is handled before 'ref'.
+		if (skiplengths.empty())
+		{
+			std::vector<uint32_t> def;
+			if (passes_set) {
+				def = skiplengths_user; // user-supplied '--passes' [INT,INT,INT]
+				INFO("Using '", OPT_PASSES, "' skip lengths: ", def[0], ",", def[1], ",", def[2]);
+			}
+			else if (mopt.count(OPT_L) > 0) {
+				auto len = std::stoi(mopt.find(OPT_L)->second);
+				def = { static_cast<uint32_t>(len), static_cast<uint32_t>(len / 2), 3 };
+				INFO("'", OPT_PASSES, "' not set. Using '", OPT_L, "'-derived skip lengths: ",
+					def[0], ",", def[1], ",", def[2]);
+			}
+			else {
+				// Leave zeros; Refstats::load fills index-derived defaults.
+				def = { 0, 0, 0 };
+			}
+			for (std::size_t i = 0; i < indexfiles.size(); ++i)
+				skiplengths.push_back(def);
+		}
+
 		validate();
 		//about(); // if we are here, args are OK, welcome the user
 	}

@@ -595,6 +595,11 @@ public:
 	//                 |_populated during options processing
 	std::vector<std::pair<std::string, std::string>> indexfiles;
 	std::vector<std::vector<uint32_t>> skiplengths; // [2] OPT_PASSES K-mer window shift sizes. Refstats::load
+	// The 3 skip lengths parsed from '--passes'. Stored here by opt_passes and
+	// replicated into 'skiplengths' (per index) at the end of process(), because
+	// options are processed in alphabetical order ('passes' before 'ref'), so
+	// 'indexfiles' is still empty while opt_passes runs.
+	std::vector<uint32_t> skiplengths_user;
 
 	const std::string dbkey = "run_options";
 	const std::string IDX_DIR  = "idx";
