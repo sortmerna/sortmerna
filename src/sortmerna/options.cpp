@@ -788,7 +788,7 @@ void Runopts::opt_e(const std::string &val)
 
 	if (evalue < 0)
 	{
-		sscanf(val.data(), "%lf", &evalue);
+		sscanf(val.data(), "%lf", &evalue);  // default 1e-5 is set in validate()
 		if (evalue < 0)
 		{
 			ERR(" : -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)");
@@ -1701,7 +1701,7 @@ void Runopts::validate()
 	}
 
 	// default E-value 
-	if (evalue < 0.0) evalue = 1;
+	if (evalue < 0.0) evalue = 1e-5;
 
 	// SW alignment parameters
 	if (!match_set) {

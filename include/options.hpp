@@ -299,7 +299,7 @@ help_F =
 help_R = 
 	"Search only the reverse-complementary strand.           False\n",
 help_e = 
-	"E-value threshold.                                      1\n\n"
+	"E-value threshold.                                      1e-5\n\n"
 	"       Defines the 'statistical significance' of a local alignment.\n"
 	"       Exponentially correllates with the Minimal Alignment score.\n"
 	"       Higher E-values (100, 1000, ...) cause More reads to Pass the alignment threshold\n\n",
