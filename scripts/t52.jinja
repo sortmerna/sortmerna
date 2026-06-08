@@ -1,0 +1,21 @@
+# t52:  1 ref, 1 flat fa
+name: issue 338 - suboptimal alignment when matching the end of the reference (in blast output)
+info: |
+  issue 338 was not a bug and produced the output as designed. Just didn't match the user expectation.
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+     1      1     0    0       0        0        0     0     0      0      0    0     2      2
+args:
+  -ref: [ {{ DATA_DIR }}/aref.fa ]  # 5 sequences
+  -reads: [ {{ DATA_DIR }}/aread.fa ]  # 1 read
+  -fastx:
+  -blast: '0'
+  -no-best:
+  -num_alignments: '0'
+  #-L: '10'
+  -passes: '10,5,1'  # default: 18,9,3
+  -e: '1e-15'
+  -full_search: '1'
+  -F:  # search only forward strand
+  -threads: '1'
+  -workdir: {{ WRK_DIR }}
