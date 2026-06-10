@@ -1701,7 +1701,10 @@ void Runopts::validate()
 	}
 
 	// default E-value 
-	if (evalue < 0.0) evalue = 1e-5;
+	if (evalue < 0.0) {
+        INFO("No E-value threshold provided. Using default: ", 1e-5);
+        evalue = 1e-5;
+	}
 
 	// SW alignment parameters
 	if (!match_set) {
