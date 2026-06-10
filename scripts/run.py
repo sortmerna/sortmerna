@@ -1988,7 +1988,7 @@ if __name__ == "__main__":
     p5.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
     p5.add_argument('--ref-dir', dest='ref_dir', help='path to the reference data. Abs or relative')
     p5.add_argument('--threads', dest='threads', help='Number of threads to use')
-    p5.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
+    p5.add_argument('--index', dest='index', help='Index option 0 | 1')
     p5.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
     p5.add_argument('-d', '--dbg-level', dest="dbg_level", help='debug level 0 | 1 | 2')
     p5.add_argument('-w', '--workdir', dest='workdir', help='Environment variables')
@@ -2014,6 +2014,9 @@ if __name__ == "__main__":
                          '(default: 60). Used only when --interrupt > 0.')
     p5.add_argument('--stop-on-fail', dest='stop_on_fail', action="store_true",
                     help='Abort the batch on the first failing test (default: continue and summarize at end)')
+    p5.add_argument('--clean-index', dest='clean_index', action="store_true",
+                    help='Also remove the index (idx) directory prior to running. '
+                         'By default the index is preserved and reused across runs.')
 
     # build index and record statistics into test jinja
     p6 = subpar.add_parser('index-stats', help='build index and record statistics into test jinja')
@@ -2080,12 +2083,24 @@ if __name__ == "__main__":
             args.name = test
             try:
                 cfg = parse_test_config(args)
-                # clean-up the KVDB, IDX directories, and the output.
+                # clean-up the workdir (KVDB, IDX directories, and the output) prior to running.
+                # The index ('idx') directory is preserved and reused unless --clean-index is given.
                 # May fail if any file in the directory is open. Close the files and re-run.
                 if args.workdir and Path(args.workdir).exists() \
                     and not (args.validate_only or args.task in ['1','2']):
-                    print(f'{ST} clearing workdir prior to {test}: {args.workdir}')
-                    shutil.rmtree(args.workdir)
+                    wd = Path(args.workdir)
+                    if args.clean_index:
+                        print(f'{ST} clearing workdir (including index) prior to {test}: {args.workdir}')
+                        shutil.rmtree(wd)
+                    else:
+                        print(f'{ST} clearing workdir (preserving index) prior to {test}: {args.workdir}')
+                        for child in wd.iterdir():
+                            if child.name == 'idx':
+                                continue
+                            if child.is_dir() and not child.is_symlink():
+                                shutil.rmtree(child)
+                            else:
+                                child.unlink()
 
                 if not args.validate_only:
                     is_capture = cfg.get('capture', False) or args.capture
