@@ -14,7 +14,7 @@ info: |
   sortmerna -m 4096 -a 4 -L 10 --fastx --blast 1 --workdir test 
     --best 0 -min_lis 1 --ref /path/rRNA_index.fasta --reads test.fq --other test2_mir.fq
 args:
-  -ref: [ {{ REF_DIR }}/rRNA_databases/silva-euk-28s-id98.fasta ]  # 15MB
+  -ref: [ {{ REF_DIR }}/silva-euk-28s-id98.fasta ]  # 15MB
   -reads: [ {{ DATA_DIR if DATA_DIR }}/smr_iss_207_20200123_test.fq.gz ]  # 15M reads
   -fastx:
   -blast: '1'

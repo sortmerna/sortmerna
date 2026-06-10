@@ -7,11 +7,11 @@ info: |
       2     2     0    1       0        0       1     1     0      1      1    1     2      2
 args:
   -ref:
-    - {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta
-    - {{ SMR_SRC }}/data/silva-arc-16s-database-id95.fasta
+    - {{ REF_DIR }}/silva-bac-16s-database-id85.fasta
+    - {{ REF_DIR }}/silva-arc-16s-database-id95.fasta
   -reads:  # Mouse gut metagenome of 16S
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_1_5k.fastq.gz  # 5,000 reads
-    - {{ DATA_DIR if DATA_DIR }}/bio/reads/rna/DRR121111_2_5k.fastq.gz  # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/DRR121111_1_5k.fastq.gz  # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/DRR121111_2_5k.fastq.gz  # 5,000 reads
   -fastx:
   -other:
   -blast: '1'
@@ -26,10 +26,10 @@ validate:
   files:
     aligned.log:
       num_reads:   10000
-      num_hits:     9833
-      num_fail:      167
+      num_hits:     9821  # 9833/e=1
+      num_fail:      179  # 167/e=1
     aligned.blast:
-      num_recs:     9833
+      num_recs:     9821  # 9833/e=1
     aligned_paired_fwd.fq.gz: 4865
     aligned_paired_rev.fq.gz: 4865
     aligned_singleton_fwd.fq.gz: 11

@@ -31,19 +31,19 @@ validate:
       num_reads:     100000
       num_hits:       99999
       num_fail:           1
-      n_yid_ycov:     47890 # parasail:47890  ssw-lin:47981 ssw-lin2:43678  pass SW + %Cov + %ID
-      n_denovo:        4414 # parasail: 4414  ssw-lin: 4441 ssw-lin2:11080  pass SW & fail (%Cov & %ID)
-      num_groups:       264 # parasail:  264  ssw-lin:  265
+      n_yid_ycov:     47890 # pass SW + %Cov + %ID
+      n_denovo:        4414 # pass SW & fail (%Cov & %ID)
+      num_groups:       264
     aligned.fa:       99999
     other.fa:             1
     aligned_denovo.fa: 4414
     otu_map.txt:        264
     aligned.blast:
       num_recs:       99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = num_hits
-      n_yid_ycov:     47890 # parasail:47890  ssw-lin:47981  num_pass_id ⋂ num_pass_cov
-      n_yid_ncov:      1537 # parasail: 1537  ssw-lin: 1513  ID + !COV
-      n_nid_ycov:     46158 # parasail:46158  ssw-lin:46064  !ID + COV
-      n_denovo:        4414 # parasail: 4414  ssw-lin: 4441  !ID + !COV
+      n_yid_ycov:     47890 # num_pass_id ⋂ num_pass_cov
+      n_yid_ncov:      1537 # ID + !COV
+      n_nid_ycov:     46158 # !ID + COV
+      n_denovo:        4414 # !ID + !COV
   indices:
     silva-bac-16s-database-id85:
       stats:
