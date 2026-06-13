@@ -26,14 +26,14 @@ validate:
   files:
     aligned.log:
       num_reads:   10000
-      num_hits:     9833
-      num_fail:      167
+      num_hits:     9821  # 9833/e=1
+      num_fail:      179  #  167/e=1
     aligned.blast:
-      num_recs:     9833
-    aligned_fwd.fq: 4865
-    aligned_rev.fq: 4865
-    other_fwd.fq:    135
-    other_rev.fq:    135
+      num_recs:     9821  # 9833/e=1
+    aligned_fwd.fq: 4860  # 4865/e=1
+    aligned_rev.fq: 4860  # 4865/e=1
+    other_fwd.fq:    140  #  135/e=1
+    other_rev.fq:    140  #  135/e=1
   runtime:
     win:
       - threads: 8

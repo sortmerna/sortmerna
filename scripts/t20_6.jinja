@@ -26,17 +26,17 @@ validate:
   files:
     aligned.log:
       num_reads:   10000
-      num_hits:     9833
-      num_fail:      167
+      num_hits:     9821  # 9833/e=1
+      num_fail:      179  #  167/e=1
     aligned.blast:
-      num_recs:               9833
-    aligned_paired_fwd.fq:    4865
-    aligned_paired_rev.fq:    4865
+      num_recs:               9821  # 9833/e=1
+    aligned_paired_fwd.fq:    4860  # 4865/e=1
+    aligned_paired_rev.fq:    4860  # 4865/e=1
     aligned_singleton_fwd.fq:   11
-    aligned_singleton_rev.fq:   92
-    other_paired_fwd.fq:        32
-    other_paired_rev.fq:        32
-    other_singleton_fwd.fq:     92
+    aligned_singleton_rev.fq:   90  # 92/e=1
+    other_paired_fwd.fq:        39  # 32/e=1
+    other_paired_rev.fq:        30  # 32/e=1
+    other_singleton_fwd.fq:     90  # 92/e=1
     other_singleton_rev.fq:     11
   runtime:
     win:
