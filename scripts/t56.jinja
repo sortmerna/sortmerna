@@ -1,0 +1,38 @@
+# t56:
+name: 2 ref, 1x15M gz reads, test interrupt
+info: |
+  xxx
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+     2      1     1    0       0         0       0     0     0      0      1    1     2      2
+args:
+  -ref:
+    - {{ REF_DIR }}/silva-euk-28s-id98.fasta  # 15MB
+    - {{ REF_DIR }}/silva-arc-23s-id98.fasta  # 735KB
+  -reads: [ {{ DATA_DIR if DATA_DIR }}/smr_iss_207_20200123_test.fq.gz ]  # 15M reads
+  -fastx:
+  -blast: '1'
+  -threads: '{{THREADS or 8}}'
+  -workdir: {{ WRK_DIR }}
+validate:
+  func:
+  variant: sanger
+  files:
+    aligned.log:
+      num_reads: 15000000
+      num_hits:         1
+      num_fail:  14999999
+    aligned.blast.gz:
+      num_recs:    1
+      n_yid_ycov:  0 
+      n_yid_ncov:  0 
+      n_nid_ycov:  0 
+      n_denovo:    0
+    aligned.fq.gz: 1
+time:
+  wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:  # data/sortmerna/logs/20260503_09xxxx_t39_xps15i9_wsl_ubuntu_v540.txt
+    7.0.0:  # 20260614 Sun
+      threads: 8
+      times:
+        # indexing  read_count  readfeed  align  summary  report   tot,sec
+        -  38.52      2.22        4.82    891.80  0.76    51.75     982.2
