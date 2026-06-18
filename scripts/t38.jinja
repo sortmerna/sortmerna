@@ -35,8 +35,10 @@ time:
     7.0.0:
     - threads: 8
       times:
-        # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
-        -             23.22       81.22   1135.43  0.4      504.39   2157.74  35.96
+        # indexing  read_count  readfeed  read_init  align    summary  report   tot,sec  tot,min
+        -             23.22       81.22    418.96    1135.43    0.4    504.39   2157.74  35.96
+        -             25.37       79.31              1227.68    0.4    558.10   2270.2   37.83  # ~5% - 'resume' drag?
+        -             23.90       66.22              1390.62    0.4    599.93
   win_8_16:  # 20210520 seems unusually slow today
     host: Windows 10 + 8 CPUs + 16GB RAM
     4-3-3:

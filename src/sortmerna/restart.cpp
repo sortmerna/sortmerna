@@ -118,6 +118,16 @@ std::string key_pending_reads_prefix(uint16_t i, uint16_t p) {
 std::string key_pending_read(uint16_t i, uint16_t p, const std::string& read_id) {
 	return key_pending_reads_prefix(i, p) + read_id;
 }
+std::string key_pass_watermark_prefix(uint16_t i, uint16_t p) {
+	std::ostringstream ss;
+	ss << PFX_PASS_WATERMARK << i << '/' << p << '/';
+	return ss.str();
+}
+std::string key_pass_watermark(uint16_t i, uint16_t p, uint32_t slot) {
+	std::ostringstream ss;
+	ss << PFX_PASS_WATERMARK << i << '/' << p << '/' << slot;
+	return ss.str();
+}
 std::string key_report_done(const std::string& kind) {
 	return std::string(PFX_REPORT_DONE) + kind;
 }
@@ -256,9 +266,40 @@ State probe_or_init(KeyValueDatabase& kvdb, const Runopts& opts) {
 		return true;
 	});
 
-	// Find any in-flight pass: pending_reads/* with no matching align_done.
-	// pending_reads keys look like "__sm/v1/pending_reads/{i}/{p}/{read_id}".
+	auto pass_is_done = [&](uint16_t i, uint16_t p) {
+		for (const auto& pr : st.align_done) {
+			if (pr.first == i && pr.second == p) return true;
+		}
+		return false;
+	};
+
+	// Find any in-flight pass via pass_watermark/*. Watermarks persist between
+	// the last mid-pass commit and the next, even when pending_reads is empty,
+	// so they're the authoritative signal that a pass is mid-flight. Keys look
+	// like "__sm/v1/pass_watermark/{i}/{p}/{slot}".
 	std::pair<int, int> in_flight = {-1, -1};
+	std::vector<std::pair<uint32_t, uint64_t>> wm_pairs;
+	kvdb.iter_prefix(PFX_PASS_WATERMARK, [&](const std::string& k, const std::string& v) {
+		auto tail = k.substr(std::string(PFX_PASS_WATERMARK).size());
+		auto s1 = tail.find('/');
+		if (s1 == std::string::npos) return true;
+		auto s2 = tail.find('/', s1 + 1);
+		if (s2 == std::string::npos) return true;
+		uint16_t i = static_cast<uint16_t>(std::stoul(tail.substr(0, s1)));
+		uint16_t p = static_cast<uint16_t>(std::stoul(tail.substr(s1 + 1, s2 - s1 - 1)));
+		uint32_t slot = static_cast<uint32_t>(std::stoul(tail.substr(s2 + 1)));
+		if (pass_is_done(i, p)) return true; // stale: pass was committed afterwards
+		if (in_flight.first == -1) in_flight = {i, p};
+		if (in_flight.first == i && in_flight.second == p) {
+			wm_pairs.emplace_back(slot, std::stoull(v));
+		}
+		return true;
+	});
+
+	// pending_reads keys look like "__sm/v1/pending_reads/{i}/{p}/{read_id}".
+	// pending_reads may be empty even when watermarks exist: a clean commit
+	// clears them. They may also be present without watermarks: pass started,
+	// no mid-pass commit has happened yet.
 	kvdb.iter_prefix(PFX_PENDING_READS, [&](const std::string& k, const std::string&) {
 		auto tail = k.substr(std::string(PFX_PENDING_READS).size());
 		auto s1 = tail.find('/');
@@ -268,15 +309,8 @@ State probe_or_init(KeyValueDatabase& kvdb, const Runopts& opts) {
 		uint16_t i = static_cast<uint16_t>(std::stoul(tail.substr(0, s1)));
 		uint16_t p = static_cast<uint16_t>(std::stoul(tail.substr(s1 + 1, s2 - s1 - 1)));
 		std::string read_id = tail.substr(s2 + 1);
-		bool done = false;
-		for (const auto& pr : st.align_done) {
-			if (pr.first == i && pr.second == p) { done = true; break; }
-		}
-		if (done) return true; // stale leftover from a successfully-completed pass
+		if (pass_is_done(i, p)) return true; // stale leftover from committed pass
 		if (in_flight.first == -1) in_flight = {i, p};
-		// Only collect read ids for the first in-flight pass we discover. There
-		// should never be more than one (we only advance to the next pass after
-		// committing align_done for the previous), but be defensive.
 		if (in_flight.first == i && in_flight.second == p) {
 			st.rollback_read_ids.push_back(std::move(read_id));
 		}
@@ -284,11 +318,19 @@ State probe_or_init(KeyValueDatabase& kvdb, const Runopts& opts) {
 	});
 	st.rollback_pass = in_flight;
 
+	if (!wm_pairs.empty()) {
+		uint32_t max_slot = 0;
+		for (const auto& pr : wm_pairs) if (pr.first > max_slot) max_slot = pr.first;
+		st.rollback_watermarks.assign(max_slot + 1, 0);
+		for (const auto& pr : wm_pairs) st.rollback_watermarks[pr.first] = pr.second;
+	}
+
 	INFO("Restart: resuming kvdb run_id=", st.run_id, " writer(stored)=", stored_version,
 	     " phase=", phase_to_string(st.phase),
 	     " passes_done=", st.align_done.size(),
 	     " rollback_pass=(", st.rollback_pass.first, ",", st.rollback_pass.second, ")",
-	     " rollback_reads=", st.rollback_read_ids.size());
+	     " rollback_reads=", st.rollback_read_ids.size(),
+	     " watermarks=", st.rollback_watermarks.size());
 	return st;
 }
 
@@ -308,6 +350,32 @@ void commit_pass(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
 	});
 }
 
+void commit_watermark(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
+                      const std::vector<uint64_t>& slot_positions,
+                      const std::string& readstats_dbkey,
+                      const std::string& readstats_blob)
+{
+	// Step 1: fsync the WAL so every per-read Put issued before the caller's
+	// quiesce barrier is durable on disk. Without this, a crash between here
+	// and the prefix-delete below would leave reads with no pending marker AND
+	// no durable kvdb data => silent loss on resume.
+	kvdb.flush_wal();
+
+	// Step 2: Readstats snapshot + per-slot watermarks in one atomic batch.
+	std::vector<std::pair<std::string, std::string>> batch;
+	batch.reserve(slot_positions.size() + 1);
+	batch.emplace_back(readstats_dbkey, readstats_blob);
+	for (uint32_t slot = 0; slot < slot_positions.size(); ++slot) {
+		batch.emplace_back(key_pass_watermark(i, p, slot),
+		                   std::to_string(slot_positions[slot]));
+	}
+	kvdb.put_batch(batch);
+
+	// Step 3: the rollback set is now empty. Caller-held quiesce guarantees no
+	// new pending marker was added between the WAL flush and this delete.
+	kvdb.delete_prefix(key_pending_reads_prefix(i, p));
+}
+
 void add_pending_read(KeyValueDatabase& kvdb, uint16_t i, uint16_t p, const std::string& read_id) {
 	kvdb.put(key_pending_read(i, p, read_id), "");
 }
@@ -324,6 +392,10 @@ void record_read_with_pending(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
 
 void clear_pending_reads(KeyValueDatabase& kvdb, uint16_t i, uint16_t p) {
 	kvdb.delete_prefix(key_pending_reads_prefix(i, p));
+}
+
+void clear_pass_watermarks(KeyValueDatabase& kvdb, uint16_t i, uint16_t p) {
+	kvdb.delete_prefix(key_pass_watermark_prefix(i, p));
 }
 
 void set_phase(KeyValueDatabase& kvdb, Phase p) {

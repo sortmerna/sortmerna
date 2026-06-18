@@ -37,8 +37,12 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
+#include <mutex>
+#include <shared_mutex>
 #include <thread> // std::this_thread
 #include <cmath> // std::floor
 
@@ -130,7 +134,8 @@ static void rollback_partial_pass(KeyValueDatabase& kvdb,
 }
 
 void align2(int id, Readfeed& readfeed, Readstats& readstats,
-			Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
+			Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts,
+			std::shared_mutex& commit_mtx)
 {
 	unsigned num_all = 0; // all reads this processor sees
 	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
@@ -140,8 +145,15 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 	auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
 	int idx = id * readfeed.num_sense; // index into split files array
-	for (; readfeed.next(idx, readstr);)
+	for (;;)
 	{
+		// Hold a shared lock around the entire per-read iteration (next() through
+		// the kvdb.put_batch). The mid-pass watermark ticker takes an exclusive
+		// lock to quiesce all workers atomically; this guarantees no record_read_
+		// with_pending() write can land between the ticker's flush_wal() and the
+		// clearing of pending_reads/*.
+		std::shared_lock<std::shared_mutex> commit_sl(commit_mtx);
+		if (!readfeed.next(idx, readstr)) break;
 		{
 			Read read(readstr);
 			read.init(opts);
@@ -242,17 +254,10 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 
 	// calculate the number of threads to use
 	int numThreads = 0;
-	//if (opts.feed_type == FEED_TYPE::LOCKLESS)
-	//{
-	//	numThreads = opts.num_read_thread + numProcThread;
-	//	INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
-		//ThreadPool tpool(numThreads);
-	//}
-	//else {
 	numThreads = numProcThread;
 	INFO("Using number of Processor threads: ", numProcThread);
 	readfeed.init_reading(); // prepare readfeed
-	//}
+
 	std::vector<std::thread> tpool;
 	tpool.reserve(numThreads);
 
@@ -284,6 +289,11 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	auto start_a = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
+	// Cross-thread quiesce used by the mid-pass watermark ticker. Workers take
+	// it in shared mode around each per-read iteration; the ticker takes it in
+	// exclusive mode to commit a Readstats snapshot + per-slot byte watermarks.
+	std::shared_mutex commit_mtx;
+
 	// loop through every index passed to option '--ref'
 	for (size_t idx_num = 0; idx_num < opts.indexfiles.size(); ++idx_num)
 	{
@@ -309,35 +319,90 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
 			INFO_MEM("done in [", elapsed.count(), "] sec.");
 
+			// Resume: if this is the interrupted (in-flight) pass and the kvdb
+			// holds per-slot watermarks for it, seek each gz_slot to its last
+			// committed byte position before workers start. Reads consumed before
+			// the watermark are guaranteed durable, so we skip past them and
+			// re-align only the post-watermark slice.
+			if (rstate && rstate->is_resume
+			    && rstate->rollback_pass.first == static_cast<int>(idx_num)
+			    && rstate->rollback_pass.second == static_cast<int>(idx_part)
+			    && !rstate->rollback_watermarks.empty())
+			{
+				const auto N = std::min(rstate->rollback_watermarks.size(),
+				                        readfeed.num_gz_slots());
+				std::size_t seeked = 0;
+				uint64_t total_skipped = 0;
+				for (std::size_t s = 0; s < N; ++s) {
+					const uint64_t wm = rstate->rollback_watermarks[s];
+					if (wm == 0) continue;
+					const uint64_t before = readfeed.gz_slot_tell(s);
+					readfeed.gz_slot_seek(s, wm);
+					if (wm > before) total_skipped += wm - before;
+					++seeked;
+				}
+				INFO("Restart: seeked ", seeked, " gz_slot(s) to watermark "
+				     "(decompressed bytes skipped: ", total_skipped, ")");
+			}
+
 			start_i = std::chrono::high_resolution_clock::now();
 
-			// add Readfeed job if necessary
-			//if (opts.feed_type == FEED_TYPE::LOCKLESS)
-			//{
-				//tpool.addJob(f_readfeed_run);
-			//}
+			// Spawn the mid-pass watermark ticker. It sleeps opts.flush_delay
+			// seconds via cv.wait_for, then takes commit_mtx exclusive to snapshot
+			// per-slot tells + Readstats and commit_watermark() durably. Stop is
+			// signalled via stop_ticker + cv.notify after workers join.
+			std::atomic<bool> stop_ticker{false};
+			std::condition_variable_any ticker_cv;
+			std::thread ticker_thread([&]() {
+				const auto delay = std::chrono::seconds(opts.flush_delay);
+				while (true) {
+					std::unique_lock<std::shared_mutex> ul(commit_mtx);
+					if (ticker_cv.wait_for(ul, delay, [&]{ return stop_ticker.load(); }))
+						return; // shutdown requested
+					// Quiesced: snapshot per-slot tells, Readstats blob, commit.
+					std::vector<uint64_t> tells(readfeed.num_gz_slots(), 0);
+					for (std::size_t s = 0; s < tells.size(); ++s)
+						tells[s] = readfeed.gz_slot_tell(s);
+					const std::string blob = readstats.toBstring();
+					restart::commit_watermark(kvdb,
+						static_cast<uint16_t>(idx_num), idx_part,
+						tells, readstats.dbkey, blob);
+					INFO("Restart: mid-pass watermark committed (idx=", idx_num,
+					     " part=", idx_part + 1, " slots=", tells.size(), ")");
+				}
+			});
 
 			// add Processor jobs
 			for (int i = 0; i < numProcThread; i++)
 			{
-				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), 
-                                    std::ref(readstats), std::ref(index), std::ref(refs), 
-                                    std::ref(refstats),  std::ref(kvdb), std::ref(opts)));
+				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed),
+                                    std::ref(readstats), std::ref(index), std::ref(refs),
+                                    std::ref(refstats),  std::ref(kvdb), std::ref(opts),
+                                    std::ref(commit_mtx)));
 			}
 			for (auto& thr: tpool) {
 				thr.join();
 			}
 
+			// Workers are done. Stop the ticker before pass-end commit so any
+			// final watermark write doesn't race with commit_pass.
+			stop_ticker.store(true);
+			ticker_cv.notify_one();
+			ticker_thread.join();
+
 			// Atomically commit "pass (idx_num, idx_part) is done" together with
-			// the Readstats snapshot. Then clear pending markers — if we crash
-			// between commit and clear, the leftover markers belong to a pass
-			// already in align_done and resume will ignore them.
+			// the Readstats snapshot. Then clear pending markers and any leftover
+			// watermark keys — if we crash between commit and these deletes, the
+			// leftovers belong to a pass already in align_done and resume ignores
+			// them.
 			restart::commit_pass(kvdb,
 				static_cast<uint16_t>(idx_num),
 				idx_part,
 				readstats.dbkey,
 				readstats.toBstring());
 			restart::clear_pending_reads(kvdb,
+				static_cast<uint16_t>(idx_num), idx_part);
+			restart::clear_pass_watermarks(kvdb,
 				static_cast<uint16_t>(idx_num), idx_part);
 
 			++loopCount;

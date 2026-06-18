@@ -128,6 +128,30 @@ int GzSlot::getline(std::string& line)
 	}
 }
 
+uint64_t GzSlot::tell_byte() const
+{
+	// reader's tell() = decompressed bytes the rapidgzip reader has produced
+	// (== the high-water mark of fill_buf reads). buf currently holds [buf_pos,
+	// buf_len); only the prefix [0, buf_pos) has been delivered via getline().
+	// What getline() will read next is therefore: reader.tell() - (buf_len - buf_pos).
+	if (!reader) return 0;
+	const uint64_t rpos = static_cast<uint64_t>(reader->rdr.tell());
+	const uint64_t unconsumed = static_cast<uint64_t>(buf_len - buf_pos);
+	return rpos > unconsumed ? rpos - unconsumed : 0;
+}
+
+void GzSlot::seek_byte(uint64_t pos)
+{
+	if (!reader) return;
+	reader->rdr.seek(static_cast<long long>(pos));
+	buf_pos = 0;
+	buf_len = 0;
+	// bytes_remaining tracks the size of [pos, bytes_end). Clamp if seek went
+	// past the slot's chunk end; never grow it beyond original chunk size.
+	if (pos < bytes_end) bytes_remaining = bytes_end - pos;
+	else                 bytes_remaining = 0;
+}
+
 /*
  @param type       feed type
  @param readfiles  vector with reads file paths
@@ -1969,7 +1993,7 @@ void Readfeed::init_vzlib_in()
 }
 
 /*
- * called at the start of reading the split files 
+ * called at the start of reading the reads files 
  * init readfeed for reading:
  *   ifsv
  *   vstate_in
@@ -1978,6 +2002,8 @@ void Readfeed::init_vzlib_in()
 void Readfeed::init_reading()
 {
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
+        auto starts = std::chrono::high_resolution_clock::now();
+	    INFO("Initiating indexed gzipped files reading ...  ");
 		vstate_in.resize(gz_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -1997,10 +2023,14 @@ void Readfeed::init_reading()
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
 		}
+        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	    INFO("Done reading initiation in sec: ", elapsed.count());
 		return;
 	}
 
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip == false) {
+        auto starts = std::chrono::high_resolution_clock::now();
+	    INFO("Initiating indexed flat files reading ...  ");
 		vstate_in.resize(flat_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -2020,10 +2050,14 @@ void Readfeed::init_reading()
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
 		}
+        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	    INFO("Done reading initiation in sec: ", elapsed.count());
 		return;
 	}
 
     // split files - outdated - to be removed
+    auto starts = std::chrono::high_resolution_clock::now();
+	INFO("Initiating split files reading (deprecated) ...  ");
 	for (std::size_t i = 0; i < vstate_in.size(); ++i) {
 		vstate_in[i].reset();
 	}
@@ -2044,6 +2078,8 @@ void Readfeed::init_reading()
 
 	// vzlib_in
 	init_vzlib_in();
+    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	INFO("Done reading initiation in sec: ", elapsed.count());
 } // ~Readfeed::init_reading
 
 int Readfeed::clean()

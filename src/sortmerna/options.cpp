@@ -998,6 +998,16 @@ void Runopts::opt_dbg_level(const std::string& val)
 	}
 }
 
+void Runopts::opt_flush_delay(const std::string& val)
+{
+	int v = std::stoi(val);
+	if (v <= 0) {
+		ERR("'", OPT_FLUSH_DELAY, "' must be a positive integer (seconds); got: ", val);
+		exit(EXIT_FAILURE);
+	}
+	flush_delay = static_cast<unsigned>(v);
+}
+
 // interactive session '--cmd'
 void Runopts::opt_cmd(const std::string &val)
 {

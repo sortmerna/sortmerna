@@ -22,8 +22,15 @@ Licensed under the GNU LGPL v3 or later. See COPYING.LESSER for details.
  *                        store, so on restart "align_done present" implies
  *                        "Readstats reflects pass (i,p) and all prior passes".
  *   pending_reads/{i}/{p}/{read.id}  empty marker: read was touched during the
- *                                    in-flight pass (i,p) and may need rollback
- *                                    if pass never reaches align_done
+ *                                    in-flight pass (i,p) since the last
+ *                                    watermark and may need rollback if the
+ *                                    pass never reaches align_done. Cleared at
+ *                                    each watermark commit.
+ *   pass_watermark/{i}/{p}/{slot}    decimal decompressed-byte offset of the
+ *                                    next read each gz_slot reader will produce
+ *                                    after the most recent mid-pass commit.
+ *                                    Resume seeks each slot to its watermark
+ *                                    instead of restarting the pass from zero.
  *   denovo_done          marker: denovo_stats phase finished
  *   report_done/{kind}   marker: report kind (fastx|sam|blast|biom|denovo|otu_map) finished
  *
@@ -64,9 +71,10 @@ constexpr const char* KEY_PHASE       = "__sm/v1/phase";
 constexpr const char* KEY_DENOVO_DONE = "__sm/v1/denovo_done";
 
 // Prefix-namespaced keys (key builders below).
-constexpr const char* PFX_ALIGN_DONE    = "__sm/v1/align_done/";
-constexpr const char* PFX_PENDING_READS = "__sm/v1/pending_reads/";
-constexpr const char* PFX_REPORT_DONE   = "__sm/v1/report_done/";
+constexpr const char* PFX_ALIGN_DONE     = "__sm/v1/align_done/";
+constexpr const char* PFX_PENDING_READS  = "__sm/v1/pending_reads/";
+constexpr const char* PFX_PASS_WATERMARK = "__sm/v1/pass_watermark/";
+constexpr const char* PFX_REPORT_DONE    = "__sm/v1/report_done/";
 
 enum class Phase {
 	Init,
@@ -84,6 +92,8 @@ Phase phase_from_string(const std::string& s);
 std::string key_align_done(uint16_t i, uint16_t p);
 std::string key_pending_reads_prefix(uint16_t i, uint16_t p);
 std::string key_pending_read(uint16_t i, uint16_t p, const std::string& read_id);
+std::string key_pass_watermark_prefix(uint16_t i, uint16_t p);
+std::string key_pass_watermark(uint16_t i, uint16_t p, uint32_t slot);
 std::string key_report_done(const std::string& kind);
 
 // Snapshot of what probe_or_init found in the kvdb. Drives the resume logic
@@ -103,6 +113,10 @@ struct State {
 	std::pair<int, int> rollback_pass = {-1, -1};
 	// Read ids touched during rollback_pass, harvested from pending_reads/*.
 	std::vector<std::string> rollback_read_ids;
+	// Per-slot decompressed-byte watermarks for rollback_pass, harvested from
+	// pass_watermark/*. Indexed by slot id (i*num_sense + j). Slots absent from
+	// the kvdb get a 0 here, meaning "start of slot's chunk".
+	std::vector<uint64_t> rollback_watermarks;
 	std::string run_id;
 };
 
@@ -119,6 +133,20 @@ State probe_or_init(KeyValueDatabase& kvdb, const Runopts& opts);
 void commit_pass(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
                  const std::string& readstats_dbkey,
                  const std::string& readstats_blob);
+// Periodic mid-pass commit. Steps (all while the caller holds workers exclusive):
+//   1. kvdb.flush_wal()        — fsync every prior per-read Put so they survive
+//                                a crash before we clear pending markers.
+//   2. atomic WriteBatch:
+//        - Readstats blob under readstats_dbkey
+//        - pass_watermark/{i}/{p}/{slot} = decimal byte offset, per slot
+//   3. delete_prefix pending_reads/{i}/{p}/
+// Reads consumed before slot_positions[slot] in each slot are guaranteed
+// durable after this call. Reads written between the WAL flush and the delete
+// are forbidden by the caller-held quiesce.
+void commit_watermark(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
+                      const std::vector<uint64_t>& slot_positions,
+                      const std::string& readstats_dbkey,
+                      const std::string& readstats_blob);
 void mark_align_done(KeyValueDatabase& kvdb, uint16_t i, uint16_t p);
 void add_pending_read(KeyValueDatabase& kvdb, uint16_t i, uint16_t p, const std::string& read_id);
 // Atomically write a read kvdb entry + its pending-read marker for pass (i,p).
@@ -128,6 +156,8 @@ void record_read_with_pending(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
                               const std::string& read_id,
                               const std::string& read_blob);
 void clear_pending_reads(KeyValueDatabase& kvdb, uint16_t i, uint16_t p);
+// Delete all pass_watermark/{i}/{p}/* keys (e.g. after commit_pass completes).
+void clear_pass_watermarks(KeyValueDatabase& kvdb, uint16_t i, uint16_t p);
 void set_phase(KeyValueDatabase& kvdb, Phase p);
 void mark_report_done(KeyValueDatabase& kvdb, const std::string& kind);
 bool is_report_done(KeyValueDatabase& kvdb, const std::string& kind);
