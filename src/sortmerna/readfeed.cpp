@@ -45,6 +45,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <regex>
 
 #include <filereader/Standard.hpp>
+#include <filereader/BufferView.hpp>
 #include <rapidgzip/ParallelGzipReader.hpp>
 
 // Opaque wrapper — keeps rapidgzip headers out of readfeed.hpp and every TU that includes it.
@@ -55,6 +56,18 @@ struct GzReaderImpl {
     template <typename T>
     GzReaderImpl(std::unique_ptr<T> fr, std::size_t threads)
         : rdr(std::move(fr), threads) {}
+
+    void exportTo(std::vector<std::uint8_t>& out) {
+        out.clear();
+        rdr.exportIndex([&out](const void* buf, size_t n) {
+            const auto* p = static_cast<const std::uint8_t*>(buf);
+            out.insert(out.end(), p, p + n);
+        });
+    }
+
+    void importFrom(const std::vector<std::uint8_t>& in) {
+        rdr.importIndex(std::make_unique<rapidgzip::BufferViewFileReader>(in));
+    }
 };
 
 // Custom deleter — body defined here so sizeof(GzReaderImpl) is never checked in other TUs.
@@ -1135,6 +1148,7 @@ void Readfeed::build_chunk_offsets()
 
 	gz_slots.resize(num_split_files);
 	gz_slot_files.resize(num_split_files);
+	gz_index_buffers.assign(num_orig_files, {});
 
 	for (size_t j = 0; j < num_orig_files; ++j) {
 		auto& origFile = orig_files[j];
@@ -1185,6 +1199,17 @@ void Readfeed::build_chunk_offsets()
 				}
 				pos += static_cast<uint64_t>(n);
 			}
+
+			// Capture the now-complete block map so init_reading can replay it into
+			// each per-slot reader, turning seek(bytes_start) from a decompress-to-offset
+			// into an O(1) lookup.
+			auto& outBuf = gz_index_buffers[j];
+			outBuf.clear();
+			reader->exportIndex([&outBuf](const void* p, size_t n) {
+				const auto* b = static_cast<const std::uint8_t*>(p);
+				outBuf.insert(outBuf.end(), b, b + n);
+			});
+			INFO("captured gz block-map for file ", j, " bytes=", outBuf.size());
 		}
 
 		const uint64_t totalLines = static_cast<uint64_t>(newlineEnds.size());
@@ -2002,8 +2027,8 @@ void Readfeed::init_vzlib_in()
 void Readfeed::init_reading()
 {
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
-        auto starts = std::chrono::high_resolution_clock::now();
-	    INFO("Initiating indexed gzipped files reading ...  ");
+        INFO("Initiating indexed gzipped files reading ...");
+	    auto start_a = std::chrono::high_resolution_clock::now();
 		vstate_in.resize(gz_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -2018,18 +2043,24 @@ void Readfeed::init_reading()
 					/*parallelization=*/std::size_t(1)
 				)
 			);
+			// Replay the block map captured by build_chunk_offsets so seek(bytes_start)
+			// resolves via lookup instead of decompress-and-discard from byte 0.
+			const std::size_t file_idx = is_interleaved ? 0 : (i % num_sense);
+			if (file_idx < gz_index_buffers.size() && !gz_index_buffers[file_idx].empty()) {
+				slot.reader->importFrom(gz_index_buffers[file_idx]);
+			}
 			slot.reader->rdr.seek(static_cast<long long>(slot.bytes_start));
 			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
 		}
-        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
 	    INFO("Done reading initiation in sec: ", elapsed.count());
-		return;
-	}
+        return;
+    }
 
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip == false) {
-        auto starts = std::chrono::high_resolution_clock::now();
+	    auto start_a = std::chrono::high_resolution_clock::now();
 	    INFO("Initiating indexed flat files reading ...  ");
 		vstate_in.resize(flat_slots.size());
 		for (auto& s : vstate_in) s.reset();
@@ -2050,7 +2081,7 @@ void Readfeed::init_reading()
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
 		}
-        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
 	    INFO("Done reading initiation in sec: ", elapsed.count());
 		return;
 	}

@@ -268,6 +268,9 @@ private:
 	// input processing (INDEXED_GZ) — one GzSlot per thread per sense
 	std::vector<GzSlot>   gz_slots;      // [thread_0_fwd, thread_0_rev, thread_1_fwd, ...]
 	std::vector<Readfile> gz_slot_files; // metadata parallel to gz_slots
+	// Serialized rapidgzip block-map per orig_files[j], captured during build_chunk_offsets
+	// and replayed in init_reading so per-slot seeks are O(1) instead of decompress-to-offset.
+	std::vector<std::vector<uint8_t>> gz_index_buffers;
 
 	// input processing (INDEXED_FLAT) — one FlatSlot per thread per sense
 	std::vector<FlatSlot>  flat_slots;      // [thread_0_fwd, thread_0_rev, thread_1_fwd, ...]
