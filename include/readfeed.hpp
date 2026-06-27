@@ -104,6 +104,13 @@ struct GzSlot {
     bool fill_buf();
     // Returns RL_OK, RL_END, RL_ERR (from izlib.hpp)
     int getline(std::string& line);
+
+    // Decompressed-byte position next getline() will read from. Accounts for
+    // bytes still buffered in 'buf' but not yet consumed.
+    uint64_t tell_byte() const;
+    // Seek the underlying reader to a decompressed-byte position and reset
+    // the local buffer. Used on resume to fast-forward past committed reads.
+    void seek_byte(uint64_t pos);
 };
 
  // forward
@@ -175,6 +182,10 @@ public:
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
 	static bool loadReadById(Read& read);
+
+	// Slot accessors. Slot indices match the [thread*num_sense + sense] layout
+	// of gz_slots / flat_slots. num_sense is exposed publicly below.
+	std::size_t num_gz_slots() const { return gz_slots.size(); }
 
 private:
 	/*

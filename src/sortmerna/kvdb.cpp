@@ -122,3 +122,10 @@ void KeyValueDatabase::delete_prefix(const std::string& prefix)
 	}
 	kvdb->Write(rocksdb::WriteOptions(), &batch);
 }
+
+void KeyValueDatabase::flush_wal()
+{
+	// Sync the WAL only; we don't need a memtable flush here. After this call,
+	// every Put issued earlier from any thread is durable on disk.
+	kvdb->FlushWAL(/*sync=*/true);
+}
