@@ -183,16 +183,9 @@ public:
 	static bool loadReadByIdx(Read& read);
 	static bool loadReadById(Read& read);
 
-	// INDEXED_GZ accessors used by the restart-watermark machinery in
-	// processor.cpp. Slot indices match the [thread*num_sense + sense]
-	// layout of gz_slots.
+	// Slot accessors. Slot indices match the [thread*num_sense + sense] layout
+	// of gz_slots / flat_slots. num_sense is exposed publicly below.
 	std::size_t num_gz_slots() const { return gz_slots.size(); }
-	uint64_t gz_slot_tell(std::size_t i) const {
-		return i < gz_slots.size() ? gz_slots[i].tell_byte() : 0;
-	}
-	void gz_slot_seek(std::size_t i, uint64_t pos) {
-		if (i < gz_slots.size()) gz_slots[i].seek_byte(pos);
-	}
 
 private:
 	/*

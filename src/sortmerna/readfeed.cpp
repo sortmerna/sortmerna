@@ -2026,9 +2026,9 @@ void Readfeed::init_vzlib_in()
  */
 void Readfeed::init_reading()
 {
+	auto start_a = std::chrono::high_resolution_clock::now();
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
         INFO("Initiating indexed gzipped files reading ...");
-	    auto start_a = std::chrono::high_resolution_clock::now();
 		vstate_in.resize(gz_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -2055,13 +2055,13 @@ void Readfeed::init_reading()
 			slot.buf_len = 0;
 		}
         std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
-	    INFO("Done reading initiation in sec: ", elapsed.count());
+	    INFO("Done reading initiation in: ", elapsed.count(), " sec");
         return;
     }
 
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip == false) {
-	    auto start_a = std::chrono::high_resolution_clock::now();
 	    INFO("Initiating indexed flat files reading ...  ");
+	    start_a = std::chrono::high_resolution_clock::now();
 		vstate_in.resize(flat_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -2082,13 +2082,13 @@ void Readfeed::init_reading()
 			slot.buf_len = 0;
 		}
         std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
-	    INFO("Done reading initiation in sec: ", elapsed.count());
+	    INFO("Done reading initiation in: ", elapsed.count(), " sec");
 		return;
 	}
 
     // split files - outdated - to be removed
-    auto starts = std::chrono::high_resolution_clock::now();
 	INFO("Initiating split files reading (deprecated) ...  ");
+    start_a = std::chrono::high_resolution_clock::now();
 	for (std::size_t i = 0; i < vstate_in.size(); ++i) {
 		vstate_in[i].reset();
 	}
@@ -2109,8 +2109,8 @@ void Readfeed::init_reading()
 
 	// vzlib_in
 	init_vzlib_in();
-    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
-	INFO("Done reading initiation in sec: ", elapsed.count());
+    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
+	INFO("Done reading initiation in: ", elapsed.count(), " sec");
 } // ~Readfeed::init_reading
 
 int Readfeed::clean()

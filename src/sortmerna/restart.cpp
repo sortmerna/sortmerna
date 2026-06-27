@@ -11,6 +11,7 @@ Licensed under the GNU LGPL v3 or later. See COPYING.LESSER for details.
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <random>
 #include <sstream>
@@ -84,7 +85,74 @@ std::string pair_key(const char* prefix, uint16_t i, uint16_t p) {
 	return ss.str();
 }
 
+// ThreadProgress layout (little-endian, variable length):
+//   [ 0.. 3] uint32 records_consumed
+//   [ 4..11] uint64 num_short_local
+//   [12..19] uint64 num_aligned_local
+//   [20..23] uint32 reads_matched_delta_size (N)
+//   [24..  ] N * int64 reads_matched_delta entries
+constexpr std::size_t TP_FIXED_BYTES = 24;
+
+void push_u32_le(std::string& buf, uint32_t v) {
+	for (int i = 0; i < 4; ++i)
+		buf.push_back(static_cast<char>((v >> (i * 8)) & 0xff));
+}
+
+void push_u64_le(std::string& buf, uint64_t v) {
+	for (int i = 0; i < 8; ++i)
+		buf.push_back(static_cast<char>((v >> (i * 8)) & 0xff));
+}
+
+void push_i64_le(std::string& buf, int64_t v) {
+	push_u64_le(buf, static_cast<uint64_t>(v));
+}
+
+uint32_t read_u32_le(const char* p) {
+	uint32_t v = 0;
+	for (int i = 0; i < 4; ++i)
+		v |= static_cast<uint32_t>(static_cast<uint8_t>(p[i])) << (i * 8);
+	return v;
+}
+
+uint64_t read_u64_le(const char* p) {
+	uint64_t v = 0;
+	for (int i = 0; i < 8; ++i)
+		v |= static_cast<uint64_t>(static_cast<uint8_t>(p[i])) << (i * 8);
+	return v;
+}
+
+int64_t read_i64_le(const char* p) {
+	return static_cast<int64_t>(read_u64_le(p));
+}
+
 } // anonymous namespace
+
+std::string encode_thread_progress(const ThreadProgress& tp) {
+	std::string buf;
+	const uint32_t n = static_cast<uint32_t>(tp.reads_matched_delta.size());
+	buf.reserve(TP_FIXED_BYTES + 8 * n);
+	push_u32_le(buf, tp.records_consumed);
+	push_u64_le(buf, tp.num_short_local);
+	push_u64_le(buf, tp.num_aligned_local);
+	push_u32_le(buf, n);
+	for (auto v : tp.reads_matched_delta) push_i64_le(buf, v);
+	return buf;
+}
+
+std::optional<ThreadProgress> decode_thread_progress(const std::string& s) {
+	if (s.size() < TP_FIXED_BYTES) return std::nullopt;
+	ThreadProgress tp;
+	tp.records_consumed   = read_u32_le(s.data() + 0);
+	tp.num_short_local    = read_u64_le(s.data() + 4);
+	tp.num_aligned_local  = read_u64_le(s.data() + 12);
+	const uint32_t n      = read_u32_le(s.data() + 20);
+	if (s.size() != TP_FIXED_BYTES + 8 * static_cast<std::size_t>(n)) return std::nullopt;
+	tp.reads_matched_delta.resize(n);
+	for (uint32_t i = 0; i < n; ++i) {
+		tp.reads_matched_delta[i] = read_i64_le(s.data() + TP_FIXED_BYTES + 8 * i);
+	}
+	return tp;
+}
 
 std::string phase_to_string(Phase p) {
 	switch (p) {
@@ -110,22 +178,14 @@ Phase phase_from_string(const std::string& s) {
 std::string key_align_done(uint16_t i, uint16_t p) {
 	return pair_key(PFX_ALIGN_DONE, i, p);
 }
-std::string key_pending_reads_prefix(uint16_t i, uint16_t p) {
+std::string key_thread_done_prefix(uint16_t i, uint16_t p) {
 	std::ostringstream ss;
-	ss << PFX_PENDING_READS << i << '/' << p << '/';
+	ss << PFX_THREAD_DONE << i << '/' << p << '/';
 	return ss.str();
 }
-std::string key_pending_read(uint16_t i, uint16_t p, const std::string& read_id) {
-	return key_pending_reads_prefix(i, p) + read_id;
-}
-std::string key_pass_watermark_prefix(uint16_t i, uint16_t p) {
+std::string key_thread_done(uint16_t i, uint16_t p, uint32_t slot) {
 	std::ostringstream ss;
-	ss << PFX_PASS_WATERMARK << i << '/' << p << '/';
-	return ss.str();
-}
-std::string key_pass_watermark(uint16_t i, uint16_t p, uint32_t slot) {
-	std::ostringstream ss;
-	ss << PFX_PASS_WATERMARK << i << '/' << p << '/' << slot;
+	ss << PFX_THREAD_DONE << i << '/' << p << '/' << slot;
 	return ss.str();
 }
 std::string key_report_done(const std::string& kind) {
@@ -177,7 +237,12 @@ std::string opts_fingerprint(const Runopts& opts) {
 	   << "min_id="         << opts.min_id         << ';'
 	   << "min_cov="        << opts.min_cov        << ';'
 	   << "max_read_len="   << opts.max_read_len   << ';'
-	   << "seed_win_len="   << opts.seed_win_len   << ';';
+	   << "seed_win_len="   << opts.seed_win_len   << ';'
+	   // Per-slot resume counters are tied to the [thread_id * num_sense + sense]
+	   // slot layout, so num_proc_thread MUST match across the original and
+	   // resumed runs. Folding it into the fingerprint makes a mismatch abort
+	   // with a diagnostic instead of silently mis-aligning records.
+	   << "num_proc_thread=" << opts.num_proc_thread << ';';
 	// blastops vector (each entry can affect tabular output schema).
 	ss << "blastops=[";
 	for (const auto& b : opts.blastops) ss << b << ',';
@@ -273,14 +338,16 @@ State probe_or_init(KeyValueDatabase& kvdb, const Runopts& opts) {
 		return false;
 	};
 
-	// Find any in-flight pass via pass_watermark/*. Watermarks persist between
-	// the last mid-pass commit and the next, even when pending_reads is empty,
-	// so they're the authoritative signal that a pass is mid-flight. Keys look
-	// like "__sm/v1/pass_watermark/{i}/{p}/{slot}".
+	// Harvest the in-flight pass via thread_done/*. Any (i, p) that has at
+	// least one thread_done entry and no matching align_done is the pass
+	// alignment was inside when the prior run stopped. There can only be one
+	// such pass: commit_pass clears thread_done/{i}/{p}/* atomically with
+	// stamping align_done.
 	std::pair<int, int> in_flight = {-1, -1};
-	std::vector<std::pair<uint32_t, uint64_t>> wm_pairs;
-	kvdb.iter_prefix(PFX_PASS_WATERMARK, [&](const std::string& k, const std::string& v) {
-		auto tail = k.substr(std::string(PFX_PASS_WATERMARK).size());
+	std::vector<std::pair<uint32_t, ThreadProgress>> tp_pairs;
+	kvdb.iter_prefix(PFX_THREAD_DONE, [&](const std::string& k, const std::string& v) {
+		// k = "__sm/v1/thread_done/{i}/{p}/{slot}"
+		auto tail = k.substr(std::string(PFX_THREAD_DONE).size());
 		auto s1 = tail.find('/');
 		if (s1 == std::string::npos) return true;
 		auto s2 = tail.find('/', s1 + 1);
@@ -291,46 +358,43 @@ State probe_or_init(KeyValueDatabase& kvdb, const Runopts& opts) {
 		if (pass_is_done(i, p)) return true; // stale: pass was committed afterwards
 		if (in_flight.first == -1) in_flight = {i, p};
 		if (in_flight.first == i && in_flight.second == p) {
-			wm_pairs.emplace_back(slot, std::stoull(v));
+			auto decoded = decode_thread_progress(v);
+			if (!decoded) {
+				WARN("Restart: ignoring malformed thread_done/", i, "/", p, "/", slot,
+				     " (", v.size(), " bytes)");
+				return true;
+			}
+			tp_pairs.emplace_back(slot, *decoded);
 		}
 		return true;
 	});
+	st.resume_pass = in_flight;
 
-	// pending_reads keys look like "__sm/v1/pending_reads/{i}/{p}/{read_id}".
-	// pending_reads may be empty even when watermarks exist: a clean commit
-	// clears them. They may also be present without watermarks: pass started,
-	// no mid-pass commit has happened yet.
-	kvdb.iter_prefix(PFX_PENDING_READS, [&](const std::string& k, const std::string&) {
-		auto tail = k.substr(std::string(PFX_PENDING_READS).size());
-		auto s1 = tail.find('/');
-		if (s1 == std::string::npos) return true;
-		auto s2 = tail.find('/', s1 + 1);
-		if (s2 == std::string::npos) return true;
-		uint16_t i = static_cast<uint16_t>(std::stoul(tail.substr(0, s1)));
-		uint16_t p = static_cast<uint16_t>(std::stoul(tail.substr(s1 + 1, s2 - s1 - 1)));
-		std::string read_id = tail.substr(s2 + 1);
-		if (pass_is_done(i, p)) return true; // stale leftover from committed pass
-		if (in_flight.first == -1) in_flight = {i, p};
-		if (in_flight.first == i && in_flight.second == p) {
-			st.rollback_read_ids.push_back(std::move(read_id));
-		}
-		return true;
-	});
-	st.rollback_pass = in_flight;
-
-	if (!wm_pairs.empty()) {
+	if (!tp_pairs.empty()) {
 		uint32_t max_slot = 0;
-		for (const auto& pr : wm_pairs) if (pr.first > max_slot) max_slot = pr.first;
-		st.rollback_watermarks.assign(max_slot + 1, 0);
-		for (const auto& pr : wm_pairs) st.rollback_watermarks[pr.first] = pr.second;
+		for (const auto& pr : tp_pairs) if (pr.first > max_slot) max_slot = pr.first;
+		st.resume_progress.assign(max_slot + 1, std::nullopt);
+		for (auto& pr : tp_pairs) st.resume_progress[pr.first] = pr.second;
+	}
+
+	uint64_t total_records = 0;
+	uint64_t total_short   = 0;
+	uint64_t total_aligned = 0;
+	for (const auto& opt : st.resume_progress) {
+		if (!opt) continue;
+		total_records += opt->records_consumed;
+		total_short   += opt->num_short_local;
+		total_aligned += opt->num_aligned_local;
 	}
 
 	INFO("Restart: resuming kvdb run_id=", st.run_id, " writer(stored)=", stored_version,
 	     " phase=", phase_to_string(st.phase),
 	     " passes_done=", st.align_done.size(),
-	     " rollback_pass=(", st.rollback_pass.first, ",", st.rollback_pass.second, ")",
-	     " rollback_reads=", st.rollback_read_ids.size(),
-	     " watermarks=", st.rollback_watermarks.size());
+	     " resume_pass=(", st.resume_pass.first, ",", st.resume_pass.second, ")",
+	     " resume_slots=", st.resume_progress.size(),
+	     " resume_records=", total_records,
+	     " resume_short=", total_short,
+	     " resume_aligned=", total_aligned);
 	return st;
 }
 
@@ -342,60 +406,38 @@ void commit_pass(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
                  const std::string& readstats_dbkey,
                  const std::string& readstats_blob)
 {
-	// Single atomic batch: marking the pass done and storing the Readstats
-	// snapshot must not be separable across a crash. See restart.hpp comment.
+	// align_done + Readstats blob in one batch — the consistency boundary.
 	kvdb.put_batch({
 		{key_align_done(i, p), std::string()},
 		{readstats_dbkey,       readstats_blob}
 	});
+	// Then drop the in-flight progress for this pass. Leaving them around is
+	// harmless (they would be ignored thanks to align_done), but cleaning up
+	// keeps the kvdb compact and probe_or_init faster on the next resume.
+	clear_thread_done(kvdb, i, p);
 }
 
-void commit_watermark(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
-                      const std::vector<uint64_t>& slot_positions,
-                      const std::string& readstats_dbkey,
-                      const std::string& readstats_blob)
-{
-	// Step 1: fsync the WAL so every per-read Put issued before the caller's
-	// quiesce barrier is durable on disk. Without this, a crash between here
-	// and the prefix-delete below would leave reads with no pending marker AND
-	// no durable kvdb data => silent loss on resume.
-	kvdb.flush_wal();
-
-	// Step 2: Readstats snapshot + per-slot watermarks in one atomic batch.
-	std::vector<std::pair<std::string, std::string>> batch;
-	batch.reserve(slot_positions.size() + 1);
-	batch.emplace_back(readstats_dbkey, readstats_blob);
-	for (uint32_t slot = 0; slot < slot_positions.size(); ++slot) {
-		batch.emplace_back(key_pass_watermark(i, p, slot),
-		                   std::to_string(slot_positions[slot]));
-	}
-	kvdb.put_batch(batch);
-
-	// Step 3: the rollback set is now empty. Caller-held quiesce guarantees no
-	// new pending marker was added between the WAL flush and this delete.
-	kvdb.delete_prefix(key_pending_reads_prefix(i, p));
-}
-
-void add_pending_read(KeyValueDatabase& kvdb, uint16_t i, uint16_t p, const std::string& read_id) {
-	kvdb.put(key_pending_read(i, p, read_id), "");
-}
-
-void record_read_with_pending(KeyValueDatabase& kvdb, uint16_t i, uint16_t p,
-                              const std::string& read_id,
-                              const std::string& read_blob)
+void put_read_with_progress(KeyValueDatabase& kvdb,
+                            const std::string& read_id,
+                            const std::string& read_blob,
+                            uint16_t i, uint16_t p, uint32_t slot,
+                            const ThreadProgress& tp)
 {
 	kvdb.put_batch({
-		{read_id,                          read_blob},
-		{key_pending_read(i, p, read_id),  std::string()}
+		{read_id,                       read_blob},
+		{key_thread_done(i, p, slot),   encode_thread_progress(tp)}
 	});
 }
 
-void clear_pending_reads(KeyValueDatabase& kvdb, uint16_t i, uint16_t p) {
-	kvdb.delete_prefix(key_pending_reads_prefix(i, p));
+void put_progress(KeyValueDatabase& kvdb,
+                  uint16_t i, uint16_t p, uint32_t slot,
+                  const ThreadProgress& tp)
+{
+	kvdb.put(key_thread_done(i, p, slot), encode_thread_progress(tp));
 }
 
-void clear_pass_watermarks(KeyValueDatabase& kvdb, uint16_t i, uint16_t p) {
-	kvdb.delete_prefix(key_pass_watermark_prefix(i, p));
+void clear_thread_done(KeyValueDatabase& kvdb, uint16_t i, uint16_t p) {
+	kvdb.delete_prefix(key_thread_done_prefix(i, p));
 }
 
 void set_phase(KeyValueDatabase& kvdb, Phase p) {

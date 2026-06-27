@@ -286,7 +286,7 @@ void traverse
 	// end of processing and read.alignments > 0
 	else {
 		bool is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
-		if (is_last_idx && isLastStrand && read.alignment.alignv.size() > 0)
+		if (is_last_idx && isLastStrand)
 			read.is_done = true;
 	}
 } // ~traverse
