@@ -53,6 +53,7 @@ import yaml
 import gzip
 import multiprocessing
 from argparse import ArgumentParser
+from argparse import BooleanOptionalAction
 from argparse import Namespace
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -2017,6 +2018,9 @@ if __name__ == "__main__":
     p5.add_argument('--clean-index', dest='clean_index', action="store_true",
                     help='Also remove the index (idx) directory prior to running. '
                          'By default the index is preserved and reused across runs.')
+    p5.add_argument('--clean-kvdb', dest='clean_kvdb', action=BooleanOptionalAction, default=True,
+                    help='Remove workdir/kvdb/ prior to each test (default: True). '
+                         'Use --no-clean-kvdb to preserve KVDB for resume testing.')
 
     # build index and record statistics into test jinja
     p6 = subpar.add_parser('index-stats', help='build index and record statistics into test jinja')
@@ -2084,7 +2088,8 @@ if __name__ == "__main__":
             try:
                 cfg = parse_test_config(args)
                 # clean-up the workdir (KVDB, IDX directories, and the output) prior to running.
-                # The index ('idx') directory is preserved and reused unless --clean-index is given.
+                # The index ('idx') directory is preserved unless --clean-index is given.
+                # The kvdb directory is preserved when --no-clean-kvdb is given.
                 # May fail if any file in the directory is open. Close the files and re-run.
                 if args.workdir and Path(args.workdir).exists() \
                     and not (args.validate_only or args.task in ['1','2']):
@@ -2093,9 +2098,14 @@ if __name__ == "__main__":
                         print(f'{ST} clearing workdir (including index) prior to {test}: {args.workdir}')
                         shutil.rmtree(wd)
                     else:
-                        print(f'{ST} clearing workdir (preserving index) prior to {test}: {args.workdir}')
+                        preserved = ['index']
+                        if not args.clean_kvdb:
+                            preserved.append('kvdb')
+                        print(f'{ST} clearing workdir (preserving {", ".join(preserved)}) prior to {test}: {args.workdir}')
                         for child in wd.iterdir():
                             if child.name == 'idx':
+                                continue
+                            if not args.clean_kvdb and child.name == 'kvdb':
                                 continue
                             if child.is_dir() and not child.is_symlink():
                                 shutil.rmtree(child)
