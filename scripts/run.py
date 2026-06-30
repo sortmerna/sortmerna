@@ -126,8 +126,6 @@ DENOVO_BASE   = None # '{}_denovo.fasta'.format(ALI_BASE)
 OTU_BASE      = None # '{}_otus.txt'.format(ALI_BASE)
 BLAST_BASE    = None # '{}.blast'.format(ALI_BASE)
 SAM_BASE      = None # '{}.sam'.format(ALI_BASE)
-READS_EXT     = None
-IS_FASTQ      = False
 IS_PAIRED_IN  = False
 IS_PAIRED_OUT = False
 
@@ -160,9 +158,8 @@ def is_darwin():
 
 def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str], list[str]]:
     '''
-    run a test
     args:
-      - cmd  command to run
+      - cmd  command to execute
     '''
     ST = '[run.run_test]'
     rcode, outl, errl = 0, [], []
@@ -389,126 +386,14 @@ def parse_log(fpath:str):
     return logd
 #END parse_log
 
-def process_smr_opts(args:list):
-    '''
-    args:
-      - args  list of parameters passed to sortmerna
-    '''
-    ST = '[process_smr_opts]'
-    WDIR = '-workdir'
-    KVD = '-kvdb'
-    IDX = '-idx'
-    ALN = '-aligned'
-    OTH = '-other'
-    OUT2 = '-out2'
-
-    global KVDB_DIR
-    global IDX_DIR
-    global ALI_BASE
-    global OTH_BASE
-
-    global LOGF
-    global ALIF
-    global ALI_FWD
-    global ALI_REV
-    global OTHF
-    global OTH_FWD
-    global OTH_REV
-    global ALI_REF
-    global DENOVOF
-    global OTUF
-    global BLASTF
-    global SAMF
-    global READS_EXT
-    global IS_FASTQ
-    global IS_PAIRED_IN 
-    global IS_PAIRED_OUT
-    global WRK_DIR
-    
-    is_gz = False
-    psplit = os.path.splitext(args[args.index('-reads')+1]) # 1.concat.fq.gz -> [1.concat.fq, .gz]
-    READS_EXT = psplit[1]
-    if READS_EXT in ['.gz']:
-        #READS_EXT = os.extsep + args[args.index('-reads')+1].split(os.extsep)[1]
-        READS_EXT = os.path.splitext(psplit[0])[1]
-        is_gz = True
-    IS_FASTQ =  READS_EXT[1:] in ['fq', 'fastq']
-    IS_PAIRED_IN = '-paired_in' in args
-    IS_PAIRED_OUT = '-paired_out' in args
-
-    if ALN in args:
-        aln_pfx = args[args.index(ALN) + 1]
-        if not os.path.basename(aln_pfx):
-            ALIF = os.path.join(aln_pfx, ALI_BASE + READS_EXT) # use default 'aligned'
-        else:
-            ALI_BASE = os.path.basename(aln_pfx)
-            ALIF = os.path.abspath(aln_pfx + READS_EXT)
-    elif WDIR in args:
-        wdir = args[args.index(WDIR) + 1]
-        print(f"{ST} '-workdir' option was provided. Using workdir: [{os.path.realpath(wdir)}]")
-        ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
-    elif WRK_DIR:
-        ALIF = os.path.join(WRK_DIR, 'out', ALI_BASE + READS_EXT)
-    elif UHOME:
-        ALIF = os.path.join(UHOME, 'sortmerna', 'run', 'out', ALI_BASE + READS_EXT)
-    else:
-        print(f'{ST} cannot define alignment file')
-
-    if OUT2 in args:
-        ALI_FWD = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_fwd' + READS_EXT)
-        ALI_REV = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_rev' + READS_EXT)
-
-    if OTH in args:
-        idx = args.index(OTH)
-        # check idx + 1 no exceeds args length and other options has arg
-        if idx + 1 < len(args) -1 and args[idx+1][:1] != '-':
-            oth_pfx = args[idx + 1]
-            if not os.path.basename(oth_pfx):
-                OTHF = os.path.join(oth_pfx, OTH_BASE + READS_EXT)
-            else:
-                OTH_BASE = os.path.basename(oth_pfx)
-                OTHF = os.path.abspath(oth_pfx + READS_EXT)
-        elif ALN in args:
-            OTHF = os.path.join(os.path.dirname(ALIF), OTH_BASE + READS_EXT) # use the same out dir as ALN
-        elif WDIR in args:
-            wdir = args[args.index(WDIR) + 1]
-            print(f'{ST} \'-workdir\' option was provided. Using workdir: [{os.path.realpath(wdir)}]')
-            ALIF = Path(wdir) / 'out' / f'{OTH_BASE}.{READS_EXT}'
-        else:
-            OTHF = Path(UHOME) / 'sortmerna/run/out' / f'{OTH_BASE}.{READS_EXT}'
-
-        if OUT2 in args:
-            OTH_FWD = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_fwd' + READS_EXT)
-            OTH_REV = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_rev' + READS_EXT)
-
-    if KVD in args:
-        KVDB_DIR = args[args.index(KVD) + 1]
-    elif WDIR in args:
-        KVDB_DIR = Path(args[args.index(WDIR) + 1]) / 'kvdb'
-    else:
-        KVDB_DIR = Path(UHOME) / 'sortmerna/run/kvdb'
-
-    if IDX in args:
-        IDX_DIR = args[args.index(IDX) + 1]
-    elif WDIR in args:
-        IDX_DIR = Path(args[args.index(WDIR) + 1]) / 'idx'
-    else:
-        IDX_DIR = Path(UHOME) / 'sortmerna/run/idx'
-
-    gzs = '.gz' if is_gz else ''
-    LOGF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.log')
-    BLASTF  = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.blast{gzs}')
-    OTUF    = os.path.join(os.path.dirname(ALIF), 'otu_map.txt')
-    DENOVOF = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}_denovo.fa')
-    SAMF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.sam')
-#END process_smr_opts
-
-def process_blast(**kw):
+def process_blast(*, errors:list=None, **kw):
     '''
     Check count of reads passing %id and %coverage threshold
     as given in aligned.blast
     '''
     ST = f'[process_blast]'
+    if errors is None:
+        errors = []
     vald = kw.get('validate')
 
     outdir = Path(get_dict_val('args:-workdir', kw))/'out'
@@ -577,7 +462,9 @@ def process_blast(**kw):
                            f" {n_yid_ycov} Expected: {blastd['n_yid_ycov']}")
                     print(msg)
                     if n_yid_ycov != blastd['n_yid_ycov']:
-                        print(f"Failed test: {blastd['n_yid_ycov']} not equals {n_yid_ycov}")
+                        _record_validation_error(
+                            errors,
+                            f"{ST} Failed test: {blastd['n_yid_ycov']} not equals {n_yid_ycov}")
 
                 num_recs = blastd.get('num_recs')
                 if num_recs:
@@ -585,7 +472,9 @@ def process_blast(**kw):
                             f' {num_hits_file} Expected: {num_recs}')
                     print(msg)
                     if num_hits_file != num_recs:
-                        print(f'Failed test: {num_hits_file} not equals {num_recs}')
+                        _record_validation_error(
+                            errors,
+                            f'{ST} Failed test: {num_hits_file} not equals {num_recs}')
     return {
         'n_hits'  : num_hits_file, 
         'yid_ycov': n_yid_ycov, 
@@ -701,13 +590,25 @@ def validate_otu(**kw):
             f"{logd['num_otus'][1]} not in {vald['num_cluster']}"
 #END validate_otu
 
-def validate_log(logd:dict, ffd:dict):
+class ValidationError(Exception):
+    '''Raised when one or more output checks fail.'''
+    def __init__(self, errors:list):
+        self.errors = errors
+        super().__init__('\n'.join(errors))
+
+def _record_validation_error(errors:list, msg:str):
+    print(msg)
+    errors.append(msg)
+
+def validate_log(logd:dict, ffd:dict, errors:list=None):
     '''
     args:
       - logd
       - ffd   files data as in test.jinja.yaml:<test_name>:validate:files
     '''
     ST = '[validate_log]'
+    if errors is None:
+        errors = []
     # aligned.log : 
     #   verify the total number of reads in aligned.log vs the number in the validation spec
     n_vald = ffd.get('aligned.log', {}).get('num_reads')
@@ -716,42 +617,42 @@ def validate_log(logd:dict, ffd:dict):
         msg = f'{ST} testing num_reads: {n_logd} Expected: {n_vald}'
         print(msg)
         if n_vald != n_logd:
-            print(f'Failing: {n_vald} not equals {n_logd}')
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify number of hits
     n_vald = ffd.get('aligned.log', {}).get('num_hits')
     if n_vald:
         n_logd = logd['num_hits']
         print(f'{ST} testing num_hits: {n_logd} Expected: {n_vald}')
         if n_vald != n_logd:
-            print(f'Failing: {n_vald} not equals {n_logd}')
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify number of misses
     n_vald = ffd.get('aligned.log', {}).get('num_fail')
     if n_vald:
         n_logd = logd['num_fail']
         print(f'{ST} testing num_fail: {n_logd} Expected: {n_vald}')
         if n_vald != n_logd:
-            print(f'Failing: {n_vald} not equals {n_logd}')
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify count of COV+ID
     n_vald = ffd.get('aligned.log', {}).get('n_yid_ycov')
     if n_vald:
         n_logd = logd.get('num_id_cov')
         print(f'{ST} testing n_yid_ycov: {n_logd} Expected: {n_vald}')
-        if n_vald != n_logd: 
-            print(f'Failing: {n_vald} not equals {n_logd}')
+        if n_vald != n_logd:
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify count of OUT groups
     n_vald = ffd.get('aligned.log', {}).get('num_groups')
     if n_vald:
         n_logd = logd.get('num_otus')
         print(f'{ST} testing num_groups: {n_logd} Expected: {n_vald}')
-        if n_vald != n_logd: 
-            print(f'Failing: {n_vald} not equals {n_logd}')
+        if n_vald != n_logd:
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify count of de-novo reads
     n_vald = ffd.get('aligned.log', {}).get('n_denovo')
     if n_vald:
         n_logd = logd['num_denovo']
         print(f'{ST} testing n_denovo: {n_logd} Expected: {n_vald}')
-        if n_vald != n_logd: 
-            print(f'Failing: {n_vald} not equals {n_logd}')
+        if n_vald != n_logd:
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
 #END validate_log
 
 def process_output(**kw):
@@ -763,6 +664,7 @@ def process_output(**kw):
     ST = '[run.process_output]'
     global is_skbio
     vald = kw.get('validate')
+    errors = []
     
     if not vald:
         print(f'{ST} validation info not provided')
@@ -788,24 +690,33 @@ def process_output(**kw):
                             count += 1
                     msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
                     print(msg)
-                    if count != vv: 
-                        print(f'Failing: {count} not equals {vv}')
+                    if count != vv:
+                        _record_validation_error(errors, f'{ST} Error: {count} not equals {vv}')
                     continue
             if is_skbio:
-                if IS_FASTQ:
+                if ffp.suffix in ['.fastq', '.fq']:
                     for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
                         count += 1
-                else:
-                    fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
-                    for seq in skbio.io.read(ffp, format=fmt):
+                elif ffp.suffix in ['.fasta', '.fa']:
+                    for seq in skbio.io.read(ffp, format='fasta'):
                         count += 1
+                else:
+                    _record_validation_error(
+                        errors, f'{ST} cannot define format from suffix: {ffp.suffix}')
+                    continue
                 print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
-                if count != vv: 
-                    print(f'Failing: {count} not equals {vv}')
+                if count != vv:
+                    _record_validation_error(errors, f'{ST} Error: {count} not equals {vv}')
         elif ff == 'aligned.log':
-            validate_log(logd, ffd)
+            validate_log(logd, ffd, errors)
         elif 'aligned.blast' in ff:
-            process_blast(**kw)
+            process_blast(**kw, errors=errors)
+
+    if errors:
+        print(f'{ST} validation failed with {len(errors)} error(s):')
+        for i, err in enumerate(errors, 1):
+            print(f'{ST}   {i}. {err}')
+        raise ValidationError(errors)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
@@ -2154,7 +2065,10 @@ if __name__ == "__main__":
                     raise RuntimeError(f'sortmerna exited with rcode={rcode}')
             except Exception as ex:
                 status = 'FAIL'
-                err_excerpt = f'{type(ex).__name__}: {ex}'.replace('\n', ' ')
+                if isinstance(ex, ValidationError):
+                    err_excerpt = '; '.join(ex.errors)
+                else:
+                    err_excerpt = f'{type(ex).__name__}: {ex}'.replace('\n', ' ')
                 print(f'{ST} test {test} FAILED: {err_excerpt}')
 
             results.append(dict(name=test,
