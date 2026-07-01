@@ -262,6 +262,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.sam.merge(readfeed.num_splits, 1, opts.dbg_level);
 	}
 	if (opts.is_denovo) {
+		output.denovo.finish_deflate();
 		output.denovo.closef(opts.dbg_level);
 		output.denovo.merge(readfeed.num_splits, output.denovo.getBase().num_out, opts.dbg_level);
 	}
