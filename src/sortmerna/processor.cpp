@@ -179,8 +179,28 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 	     ", fwd_aligned=", prog_fwd.num_aligned_local,
 	     ", rev_aligned=", prog_rev.num_aligned_local, ")");
 
+	// Dual-file paired workers alternate FWD/REV. A resume checkpoint can have
+	// fwd_records > rev_records (interrupt between the FWD read and its REV
+	// mate), and chunk boundaries can leave one slot with an extra read. If we
+	// break on the first EOF the lagging slot is stranded — drain it instead.
+	bool drain_lagging = false;
+
 	for (;;) {
-		if (!readfeed.next(idx, readstr)) break;
+		if (!readfeed.next(idx, readstr)) {
+			if (ns > 1 && !is_interleaved) {
+				const int other = (idx == static_cast<int>(slot_fwd))
+				    ? static_cast<int>(slot_rev)
+				    : static_cast<int>(slot_fwd);
+				if (readfeed.next(other, readstr)) {
+					idx = other;
+					drain_lagging = true;
+				} else {
+					break;
+				}
+			} else {
+				break;
+			}
+		}
 
 		// Update the slot's progress for this iteration.
 		const uint32_t sense = static_cast<uint32_t>(idx) % ns; // 0=FWD, 1=REV
@@ -297,7 +317,7 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 		}
 
 		readstr.resize(0);
-		if (opts.is_paired) idx ^= 1;
+		if (!drain_lagging && opts.is_paired) idx ^= 1;
 	}
 
 	// Final flush of the slot counters so the end-of-pass commit_pass sees
