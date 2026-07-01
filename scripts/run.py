@@ -649,7 +649,7 @@ def validate_log(logd:dict, ffd:dict, errors:list=None):
     #   verify count of de-novo reads
     n_vald = ffd.get('aligned.log', {}).get('n_denovo')
     if n_vald:
-        n_logd = logd['num_denovo']
+        n_logd = logd.get('num_denovo')
         print(f'{ST} testing n_denovo: {n_logd} Expected: {n_vald}')
         if n_vald != n_logd:
             _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
@@ -693,17 +693,39 @@ def process_output(**kw):
                     if count != vv:
                         _record_validation_error(errors, f'{ST} Error: {count} not equals {vv}')
                     continue
+            fmt_path = ffp.with_suffix('') if ffp.suffix == '.gz' else ffp
+            is_gz = ffp.suffix == '.gz'
+            read_kw = {'compression': 'gzip'} if is_gz else {}
             if is_skbio:
-                if ffp.suffix in ['.fastq', '.fq']:
-                    for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
+                if fmt_path.suffix in ['.fastq', '.fq']:
+                    for seq in skbio.io.read(
+                            ffp, format='fastq',
+                            variant=vald.get('variant'), **read_kw):
                         count += 1
-                elif ffp.suffix in ['.fasta', '.fa']:
-                    for seq in skbio.io.read(ffp, format='fasta'):
+                elif fmt_path.suffix in ['.fasta', '.fa']:
+                    for seq in skbio.io.read(ffp, format='fasta', **read_kw):
                         count += 1
                 else:
                     _record_validation_error(
                         errors, f'{ST} cannot define format from suffix: {ffp.suffix}')
                     continue
+            elif ffp.exists():
+                opener = gzip.open if is_gz else open
+                mode = 'rt' if is_gz else 'r'
+                with opener(ffp, mode) as f_in:
+                    if fmt_path.suffix in ['.fastq', '.fq']:
+                        for i, _ in enumerate(f_in, 1):
+                            if i % 4 == 0:
+                                count += 1
+                    elif fmt_path.suffix in ['.fasta', '.fa']:
+                        for line in f_in:
+                            if line.startswith('>'):
+                                count += 1
+                    else:
+                        _record_validation_error(
+                            errors, f'{ST} cannot define format from suffix: {ffp.suffix}')
+                        continue
+            if is_skbio or ffp.exists():
                 print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
                 if count != vv:
                     _record_validation_error(errors, f'{ST} Error: {count} not equals {vv}')
