@@ -26,6 +26,7 @@ args:
 validate: 
   func:
   non_aligned_id: L1S23.273699_272664 # 0_64412  the only non-aligned read of this test
+  variant: sanger # fastq quality variant
   files:
     aligned.log:
       num_reads:     100000
@@ -36,14 +37,14 @@ validate:
       num_groups:       265 # 264/e=1
     aligned.fa:       99999
     other.fa:             1
-    aligned_denovo.fa: 4414
-    otu_map.txt:        264
+    aligned_denovo.fa: 4441 # 4414/e=1
+    otu_map.txt:        265  # 264/e=1
     aligned.blast:
       num_recs:       99999 # num_pass_id_cov + num_denovo + num_y_id_n_cov + num_n_id_y_cov = num_hits
-      n_yid_ycov:     47890 # num_pass_id ⋂ num_pass_cov
+      n_yid_ycov:     47981 # num_pass_id ⋂ num_pass_cov
       n_yid_ncov:      1537 # ID + !COV
       n_nid_ycov:     46158 # !ID + COV
-      n_denovo:        4414 # !ID + !COV
+      n_denovo:        4441 # 4414/e=1    !ID + !COV
   indices:
     silva-bac-16s-database-id85:
       stats:
