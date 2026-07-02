@@ -63,8 +63,7 @@ public:
 	// Delete every key with the given prefix.
 	void delete_prefix(const std::string& prefix);
 	// Fsync the WAL so every prior Put / WriteBatch is durable on disk. Used
-	// by the restart-watermark commit to guarantee committed reads survive a
-	// crash before pending markers are cleared.
+	// to guarantee committed reads survive a crash.
 	void flush_wal();
 	int clear(std::string dbPath);
 private:
