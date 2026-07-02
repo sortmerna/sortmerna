@@ -343,11 +343,8 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
  * Launches the alignment threads. Called from main.
  *
  * Concurrency: workers run independently and each owns one or two
- * gz_slots/flat_slots plus the corresponding thread_done/{i}/{p}/{slot} key.
- * There is no lock between workers and a writer; in particular the previous
- * shared_mutex + ticker design (which deadlocked under reader-preference
- * shared_mutex and never produced a watermark commit) is gone. The only
- * background thread here flushes the WAL periodically; it never touches
+ * gz/flat_slots plus the corresponding thread_done/{i}/{p}/{slot} key.
+ * The only background thread here flushes the WAL periodically; it never touches
  * any shared sortmerna state.
  */
 void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb,

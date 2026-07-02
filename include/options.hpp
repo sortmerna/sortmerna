@@ -424,12 +424,9 @@ help_score_split =
 
 help_flush_delay =
     "Mid-alignment restart checkpoint interval (seconds).    60\n\n"
-    "      Every N seconds workers briefly pause so a Readstats snapshot\n"
-    "      and per-slot byte-offset watermarks can be committed durably to\n"
-    "      the kvdb. On the next invocation an interrupted alignment\n"
-    "      resumes from the latest watermark rather than from the start\n"
-    "      of the pass. Larger N reduces overhead; smaller N reduces lost\n"
-    "      work on interrupt.\n"
+    "      Interval in seconds to flash/persist the alignment related data to the kvdb,\n"
+	"      so that the alignment could renew from the point of interrupt other than\n"
+	"      repeating the process from the start.\n"
 //help_align =
 //    "Perform the alignment                                   False\n\n"
 //	"       Search a single best alignment per read\n\n",

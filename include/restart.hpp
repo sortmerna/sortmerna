@@ -53,10 +53,7 @@ Licensed under the GNU LGPL v3 or later. See COPYING.LESSER for details.
  *
  * Concurrency / durability model (per-thread, lock-free between workers and
  * the durability path):
- *   - Workers update their own thread_done entry. There is no centralized
- *     watermark commit and no shared/exclusive lock between workers and the
- *     durability path. Writer starvation, which broke the previous design,
- *     cannot occur.
+ *   - Workers update their own thread_done entry.
  *   - A background helper thread periodically calls kvdb.flush_wal(sync=true).
  *     This makes everything written into the WAL up to that moment durable
  *     against a kernel crash. A process-only crash (SIGKILL) preserves the
