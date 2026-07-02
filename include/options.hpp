@@ -425,7 +425,7 @@ help_score_split =
 help_flush_delay =
     "Mid-alignment restart checkpoint interval (seconds).    60\n\n"
     "      Interval in seconds to flash/persist the alignment related data to the kvdb,\n"
-	"      so that the alignment could renew from the point of interrupt other than\n"
+	"      so that the alignment could renew from the point of interrupt rather than\n"
 	"      repeating the process from the start.\n"
 //help_align =
 //    "Perform the alignment                                   False\n\n"
