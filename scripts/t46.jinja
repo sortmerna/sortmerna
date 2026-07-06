@@ -21,7 +21,7 @@ args:
   -v:
   -dbg-level: '2'
   -threads: '{{THREADS or 4}}'
-  -index: '{{INDEX or 2}}'  # 2 is the default
+  -index: '{{INDEX or 1}}'  # 1 is the default
   -task: '{{TASK or 4}}'  # 4 is default
   -workdir: {{ WRK_DIR }}
 cwd: {{ SMR_SRC }}
@@ -60,6 +60,12 @@ validate:
         total_positions: 130307588
         max_positions: 10000
 time:
+  ubuntu_26.04_LTS_xps15i9_16_32:  # 20260703 Fri
+    7.0.0:
+      threads: 4
+      times:
+        # indexing  read_count  readfeed  read_init  align    summary  report   tot,sec  tot,min
+        -    331       0.03       0.05      0.02      14       0.18      0.6     331+16  
   wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:  # data/sortmerna/logs/20260503_102237_t46_xps15i9_wsl_ubuntu_v540.txt
     5.4.0:  # 20260503 Sun
       threads: 2
