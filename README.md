@@ -38,10 +38,7 @@ flag: presence of a non-empty kvdb plus matching opts/input fingerprints
 is sufficient. If any alignment-relevant option or input file fingerprint
 has changed since the previous run, sortmerna aborts with a diagnostic
 naming the kvdb so the user can either restore the original inputs or
-wipe the kvdb. Internally, progress is persisted at pass boundaries via
-atomic kvdb batches; if a pass is interrupted, the partial work is
-rolled back on resume before the pass is retried, so end-of-run
-statistics and outputs are identical to an uninterrupted run.
+wipe the kvdb.
 
 ### Testing & dev
 
