@@ -1,0 +1,299 @@
+name: 8 ref, 1 flat fasta x 437MB
+info: |
+  stress test - 8 reference databases, 50M reads
+      input type         |               output type                  |    alignment type
+  refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+    8     2     1    1       0        0         1     1    1      0      1    1     2      2
+args:
+  -ref:
+   - {{ REF_DIR }}/silva-euk-28s-id98.fasta  # 15M
+#   - {{ REF_DIR }}/silva-euk-18s-id95.fasta  # 13M
+#   - {{ REF_DIR }}/silva-bac-23s-id98.fasta  # 13M
+#   - {{ REF_DIR }}/silva-bac-16s-id90.fasta  # 19M
+#   - {{ REF_DIR }}/silva-arc-23s-id98.fasta  # 13M
+#   - {{ REF_DIR }}/silva-arc-16s-id95.fasta  # 3.8M
+#   - {{ REF_DIR }}/rfam-5s-database-id98.fasta  # 8.2M
+#   - {{ REF_DIR }}/rfam-5.8s-database-id98.fasta  # 2.2M
+  -reads: [ {{ DATA_DIR if DATA_DIR }}/smr_v6.0.1_sensitive_db.fasta ]  # 437MB x 515371 reads
+  -fastx:
+  -blast: '1 cigar qcov'
+  -workdir: {{ WRK_DIR }}
+  -threads: '{{THREADS or 12}}'
+  -index: '{{INDEX or 1}}'  # 1 is the default
+cwd: {{ SMR_SRC }}
+validate:
+  func:
+  variant: sanger  # fastq quality variant
+  files:
+    aligned.log:
+      num_reads: 515371
+      num_hits:  26754
+      num_fail:  0
+      num_hits_db:
+        euk_28s_id98: 0.51
+        euk_18s_id95: 0.02
+        bac_23s_id98: 3.18
+        bac_16s_id90: 1.33
+        arc_23s_id98: 0
+        arc_16s_id95: 0
+        nc_5s_id98:   0.03  # non-coding - RFAM
+        nc_5.8s_id98: 0     # non-coding - RFAM
+    #aligned.blast.gz:
+    #aligned_paired_fwd.fq.gz:
+    #aligned_paired_rev.fq.gz:
+    #aligned_singleton_fwd.fq.gz:
+    #aligned_singleton_rev.fq.gz:
+  time:
+    wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:  # 20260421 Tue
+      4.3.7:  # split reads
+        threads: 8
+        times:
+          # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
+          -           256.074     256.101   5301.85  3.90     1720.19  7538.12  125.64
+      5.0.0:  # at least 35% faster overall than using split even with the split already done
+        threads: 8
+        times:
+          # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
+          -           26.353      50.223    4208.52  3.27     1307.47  5595.84  93.26
+    win_8_16:
+      host: Windows 10 + 8 CPUs + 16 GiB RAM
+      notes: |
+        Win apparently limits the amount of memory available to the process, 
+        which seems to slow it down because less memory is available to RocksDB. 
+        On Ubuntu the memory used by the process is much higher, and the process runs faster.
+      4-2-1:
+        - threads: 8
+          total: 17587 # sec ~5hrs
+          # indexing, read count, idx stats, align, summary, report
+          totals: [ 0, 100, 3, 0,0,0,0 ] # sec
+          align: [ 997, 1089, 1226, 1404, 760, 884, 1061, 888 ]  # sec  8 indices
+      4-3-1:
+        - threads: 8
+          total: 10239 # sec ~2.8Hr
+          # indexing, read count, split, idx stats, align, summary, report
+          totals: [ 0, 177, 1870, 3, 5880, 4, 2305] # sec  600/10M=~60  1900/50M=~40
+          align: [ 722, 635, 1007, 1719, 406, 476, 514, 391 ]
+          trace: {{ DATA_DIR }}/sortmerna/logs/win10_8_16_t43_th8_20210321_2045.stdout
+          out: {{ DATA_DIR }}/sortmerna/out/tests/t43/win10_8_16/20210321/
+    ubuntu18_4_16_32:
+      host: AWS t3.xlarge + Ubuntu 18 + 4 cpu + 16 GB RAM + 32 GB HDD
+    ubuntu18_8_16_32:
+      host: AWS c5.2xlarge + Ubuntu 18 + 8 cpu + 16 GB RAM + 32 GB HDD
+      4-2-1:
+        - threads: 8
+          total:
+          # indexing, read count, idx stats, align, summary, report
+          totals: [0, 150, 4, 0,0,0]  # sec
+          align: [ 635, 653, 729, 0,0,0,0,0]  # ExecutionTimedOut bug after 3 indices
+    ubuntu18_16_64_32:
+      host: AWS m5.4xlarge + Ubuntu 18 + 16 cpu + 64 GB RAM + 32 GB HD
+      total:  # sec - python trace from command sent to response received - with indexing
+      reads_stats_calc: [82, 82]
+    ubuntu18_32_128_32:
+      host: AWS m5.8xlarge + Ubuntu 18 + 32 cpu + 128 GB RAM + 32 GB HD
+      info: testing on 50M reads always times-out after 3 indices.
+      4-3-1:
+        - threads: 32
+          total: 4820 # sec - estimated ~80min ~4 times faster than 8 threads i.e. linear time
+          #      3660 sec - python trace from command sent to response received. No indexing, early termination
+          #      1598 sec - alignment only
+          # indexing, read count, split, idx stats, align, summary, report
+          totals: [ 186, 218, 3100, 5, 1034, 5, 269 ]   # sec,  3100/50=~60 (split)
+          align:  [ 137, 124, 188, 286, 64, 80, 90, 62 ] # sec
+          aws.cmd.id: 43b6b9d1-1162-4d8f-8885-18f160457c4c
+          aws.trace: 
+            - {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_32_128_32_t43_th32_20210319_0904.stdout # complete alignment
+            - {{ DATA_DIR }}/logs/aws/ssm/ubuntu18_32_128_32_t43_th32_20210318_0947.stdout # non-complete alignment
+          aws.yaml: sortmerna.data.load:t43,sortmerna.test.run
+          aligned.log: {{ DATA_DIR }}/sortmerna/out/20210319_0904_t43_aws_ubuntu18_32_128_32.log
+  memory:
+    prior_idx_load: [  5100]
+    idx_load:       [378400]
+    ref_load:       [395924]
+    align_done:     [608508, 568984, 1185272, 1897344, 1702888, 1793292, ?, ?]
+    idx_ref_unloaded:
+  indices:
+    silva-euk-28s-id98:
+      stats:
+        numseq: 4935
+        full_len: 14441581
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2548, C: 0.2216, G: 0.2882, T: 0.2354}
+        parts:
+          - numseq_part: 4935
+            seq_part_size: 14945070
+      files:
+        stats: 79099
+        bursttrie_0.dat: 90124804
+        pos_0.dat: 133268128
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 261624
+        total_count: 14614779
+        max_count: 6437
+      pos:
+        num_elements: 4611529
+        total_positions: 14352751
+        max_positions: 4034
+    silva-euk-18s-id95:
+      stats:
+        numseq: 7348
+        full_len: 12509540
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2621, C: 0.2072, G: 0.2652, T: 0.2655}
+        parts:
+          - numseq_part: 7348
+            seq_part_size: 13259584
+      files:
+        stats: 117707
+        bursttrie_0.dat: 84642984
+        pos_0.dat: 116043064
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 261344
+        total_count: 12639128
+        max_count: 7191
+      pos:
+        num_elements: 4256213
+        total_positions: 12377276
+        max_positions: 5829
+    silva-bac-23s-id98:
+      stats:
+        numseq: 4488
+        full_len: 12453516
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2718, C: 0.215, G: 0.3036, T: 0.2096}
+        parts:
+          - numseq_part: 4488
+            seq_part_size: 12911743
+      files:
+        stats: 71947
+        bursttrie_0.dat: 77025268
+        pos_0.dat: 114228004
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 258824
+        total_count: 12633460
+        max_count: 6141
+      pos:
+        num_elements: 3811536
+        total_positions: 12372732
+        max_positions: 4156
+    silva-bac-16s-id90:
+      stats:
+        numseq: 12798
+        full_len: 18129428
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2553, C: 0.2292, G: 0.3118, T: 0.2037}
+        parts:
+          - numseq_part: 12798
+            seq_part_size: 19437013
+      files:
+        stats: 204907
+        bursttrie_0.dat: 110426764
+        pos_0.dat: 165396916
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 260517
+        total_count: 18160173
+        max_count: 12165
+      pos:
+        num_elements: 5554814
+        total_positions: 17897207
+        max_positions: 10000
+    silva-arc-23s-id98:
+      stats:
+        numseq: 251
+        full_len: 726414
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2476, C: 0.2425, G: 0.319, T: 0.1909}
+        parts:
+          - numseq_part: 251
+            seq_part_size: 752022
+      files:
+        stats: 4155
+        bursttrie_0.dat: 10927568
+        pos_0.dat: 7258056
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 133483
+        total_count: 855049
+        max_count: 261
+      pos:
+        num_elements: 370721
+        total_positions: 721896
+        max_positions: 185
+    silva-arc-16s-id95:
+      stats:
+        numseq: 3193
+        full_len: 3568017
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2417, C: 0.2407, G: 0.3238, T: 0.1938}
+        parts:
+          - numseq_part: 3193
+            seq_part_size: 3893959
+      files:
+        stats: 51227
+        bursttrie_0.dat: 26877892
+        pos_0.dat: 32665712
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 206846
+        total_count: 3717318
+        max_count: 3011
+      pos:
+        num_elements: 1145341
+        total_positions: 3510543
+        max_positions: 2529
+    rfam-5s-database-id98:
+      stats:
+        numseq: 59513
+        full_len: 6883224
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.2537, C: 0.2414, G: 0.273, T: 0.232}
+        parts:
+          - numseq_part: 59513
+            seq_part_size: 8525326
+      files:
+        stats: 1880978
+        bursttrie_0.dat: 39363244
+        pos_0.dat: 53450972
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 220858
+        total_count: 6099197
+        max_count: 24105
+      pos:
+        num_elements: 1752316
+        total_positions: 5805213
+        max_positions: 10000
+    rfam-5.8s-database-id98:
+      stats:
+        numseq: 13034
+        full_len: 1991283
+        part_num: 1
+        seed_win_len: 18
+        background_freq: {A: 0.257, C: 0.2358, G: 0.2597, T: 0.2475}
+        parts:
+          - numseq_part: 13034
+            seq_part_size: 2280449
+      files:
+        stats: 341099
+        bursttrie_0.dat: 12004280
+        pos_0.dat: 15784204
+        kmer_0.dat: 1048576
+      kmer:
+        num_nonzero: 119108
+        total_count: 1956268
+        max_count: 9690
+      pos:
+        num_elements: 432708
+        total_positions: 1756671
+        max_positions: 3529

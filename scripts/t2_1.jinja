@@ -1,0 +1,15 @@
+# t2_1: 1 ref, 1 empty fa
+name: test empty reads file with taks = 5 (index only)
+info: |
+  search for a single best alignment per read i.e.
+        input type         |               output type                  |    alignment type
+    refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+     1      1     0    0       0        0        0     0     0      0      1    1     2      2
+args:
+  -ref: [ {{ REF_DIR }}/silva-bac-16s-database-id85.fasta ]
+  -reads: [ {{ DATA_DIR }}/empty_file.fasta ]
+  -fastx:
+  -threads: '{{THREADS or 2}}'
+  -dbg-level: '{{DBG_LEVEL or 0}}'
+  -task: '{{ 5 }}'
+  -workdir: {{WRK_DIR}}

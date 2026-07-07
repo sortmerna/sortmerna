@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /*
@@ -105,6 +104,13 @@ struct GzSlot {
     bool fill_buf();
     // Returns RL_OK, RL_END, RL_ERR (from izlib.hpp)
     int getline(std::string& line);
+
+    // Decompressed-byte position next getline() will read from. Accounts for
+    // bytes still buffered in 'buf' but not yet consumed.
+    uint64_t tell_byte() const;
+    // Seek the underlying reader to a decompressed-byte position and reset
+    // the local buffer. Used on resume to fast-forward past committed reads.
+    void seek_byte(uint64_t pos);
 };
 
  // forward
@@ -176,6 +182,10 @@ public:
 	static bool hasnext(std::ifstream& ifs);
 	static bool loadReadByIdx(Read& read);
 	static bool loadReadById(Read& read);
+
+	// Slot accessors. Slot indices match the [thread*num_sense + sense] layout
+	// of gz_slots / flat_slots. num_sense is exposed publicly below.
+	std::size_t num_gz_slots() const { return gz_slots.size(); }
 
 private:
 	/*
@@ -251,6 +261,9 @@ private:
 	// input processing (INDEXED_GZ) — one GzSlot per thread per sense
 	std::vector<GzSlot>   gz_slots;      // [thread_0_fwd, thread_0_rev, thread_1_fwd, ...]
 	std::vector<Readfile> gz_slot_files; // metadata parallel to gz_slots
+	// Serialized rapidgzip block-map per orig_files[j], captured during build_chunk_offsets
+	// and replayed in init_reading so per-slot seeks are O(1) instead of decompress-to-offset.
+	std::vector<std::vector<uint8_t>> gz_index_buffers;
 
 	// input processing (INDEXED_FLAT) — one FlatSlot per thread per sense
 	std::vector<FlatSlot>  flat_slots;      // [thread_0_fwd, thread_0_rev, thread_1_fwd, ...]

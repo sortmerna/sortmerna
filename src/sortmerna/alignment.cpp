@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /*
@@ -401,8 +400,20 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 
 						parasail_profile_free(pprofile);
 
-						const int pscore = parasail_result_get_score(presult);
-						is_aligned = (presult != nullptr && pscore > refstats.minimal_score[index.index_num]);
+						// Reject results we can't trust before reading the score or trace:
+						//  - A saturated result (score overflowed the integer width) carries a
+						//    meaningless score and CIGAR. The _sat profile escalates 8->16->32 bit,
+						//    so this is practically unreachable, but guard it as parasail's own
+						//    apps do rather than feed garbage into the CIGAR normalisation below.
+						//  - parasail returns a negative score (NEG_INF, e.g. INT8_MIN) when no
+						//    positive-scoring local alignment exists (e.g. all-'N' reads, where
+						//    score_N == mismatch < 0); the legacy SSW returned 0 in that case.
+						//    minimal_score is uint32_t, so comparing a signed pscore against it
+						//    directly would promote the negative pscore to a huge unsigned value
+						//    and wrongly pass the threshold - cast to int to keep it signed.
+						const bool is_trustworthy = (presult != nullptr) && !parasail_result_is_saturated(presult);
+						const int pscore = is_trustworthy ? parasail_result_get_score(presult) : 0;
+						is_aligned = is_trustworthy && (pscore > static_cast<int>(refstats.minimal_score[index.index_num]));
 						if (is_aligned)
 						{
 							if (static_cast<uint32_t>(pscore) == max_SW_score)

@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /*
@@ -45,6 +44,8 @@ struct Runopts;
 struct Index;
 struct Readstats;
 class KeyValueDatabase;
+namespace restart { struct State; }
 
-void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts);
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb,
+           Runopts& opts, const restart::State* rstate = nullptr);
 void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);

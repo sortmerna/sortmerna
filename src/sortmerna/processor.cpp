@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,37 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
-*/
-
-/*
- @copyright 2016-2026  Clarity Genomics BVBA
- @copyright 2012-2016  Bonsai Bioinformatics Research Group
- @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
-
- @parblock
- SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- This is a free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- SortMeRNA is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public License
- along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
- @endparblock
-
- @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
-			   Pierre Pericard  pierre.pericard@lifl.fr
-			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
-			   Rob Knight       robknight@ucsd.edu
 */
 
 /*
@@ -67,9 +36,14 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * performs the alignment
  */
 
+#include <algorithm>
+#include <atomic>
 #include <chrono>
-#include <thread> // std::this_thread
-#include <cmath> // std::floor
+#include <condition_variable>
+#include <cstdint>
+#include <mutex>
+#include <thread>
+#include <cmath>
 
 #include "processor.hpp"
 #include "read.hpp"
@@ -79,30 +53,167 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstats.hpp"
 #include "refstats.hpp"
 #include "options.hpp"
-//#include "readsqueue.hpp"
+#include "restart.hpp"
 
 // forward
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
 
+namespace {
+
+// Counter-write cadence inside align2. With 100 reads/write per slot, a worst-
+// case crash loses ~100 records of work per slot. Tunable; not worth a CLI flag.
+constexpr uint32_t COUNTER_FLUSH_INTERVAL = 100;
+
+} // anonymous
+
 /*
-* performs the alignment
-*  runs in a thread.  align -> align2
-*  @param id
-*  @param is_last_idx  flags the last index is being processed
-*/
-void align2(int id, Readfeed& readfeed, Readstats& readstats, 
-			Index& index, References& refs, Refstats& refstats, KeyValueDatabase& kvdb, Runopts& opts)
+ * One alignment worker. Owns the slot(s) for thread `id`:
+ *   - non-paired (num_sense==1):           slot = id
+ *   - paired, interleaved (1 input file):  slot = id*2; REV calls delegate
+ *   - paired, two input files:             slot_fwd = id*2, slot_rev = id*2+1
+ *
+ * Resume: if the current pass matches rstate->resume_pass, the worker initializes
+ * its per-slot ThreadProgress from rstate->resume_progress and then skip-reads
+ * records_consumed records from each owned slot before entering the alignment
+ * loop. Skip-read uses the same next() that delivers records during alignment,
+ * which transparently rebuilds the parser state (last_header, read_count, format
+ * detection) inside vstate_in[slot] — no parser-state serialization required.
+ *
+ * Durability: the per-slot ThreadProgress entry is advanced atomically with the
+ * read blob whenever a new hit lands (put_read_with_progress, single WriteBatch).
+ * Otherwise it's flushed every COUNTER_FLUSH_INTERVAL records via put_progress.
+ * A separate flush thread (started by align()) fsyncs the WAL periodically.
+ */
+void align2(int id, Readfeed& readfeed, Readstats& readstats,
+            Index& index, References& refs, Refstats& refstats,
+            KeyValueDatabase& kvdb, Runopts& opts,
+            const restart::State* rstate)
 {
-	unsigned num_all = 0; // all reads this processor sees
-	unsigned num_skipped = 0; // reads already processed i.e. results found in Database
-	unsigned num_hit = 0; // count of reads with read.hit = true found by a single thread - just for logging
+	const uint16_t pass_i = static_cast<uint16_t>(index.index_num);
+	const uint16_t pass_p = static_cast<uint16_t>(index.part);
+	const uint32_t ns = readfeed.num_sense;
+	const bool is_interleaved = (readfeed.num_orig_files < ns);
+	const uint32_t slot_fwd = static_cast<uint32_t>(id) * ns;
+	const uint32_t slot_rev = (ns > 1 && !is_interleaved) ? (slot_fwd + 1) : slot_fwd;
+	const std::size_t n_indexes = opts.indexfiles.size();
+
+	// Pick up per-slot progress from the resume state, if any. Either way the
+	// deltas are sized to the number of indexes so the snapshot/compare logic
+	// below can index them unconditionally.
+	restart::ThreadProgress prog_fwd;
+	restart::ThreadProgress prog_rev;
+	prog_fwd.reads_matched_delta.assign(n_indexes, 0);
+	prog_rev.reads_matched_delta.assign(n_indexes, 0);
+	const bool is_resume_pass = rstate && rstate->is_resume
+	    && rstate->resume_pass.first  == static_cast<int>(pass_i)
+	    && rstate->resume_pass.second == static_cast<int>(pass_p);
+	if (is_resume_pass) {
+		const auto& rp = rstate->resume_progress;
+		if (slot_fwd < rp.size() && rp[slot_fwd]) {
+			prog_fwd = *rp[slot_fwd];
+			if (prog_fwd.reads_matched_delta.size() != n_indexes)
+				prog_fwd.reads_matched_delta.resize(n_indexes, 0);
+		}
+		if (ns > 1 && !is_interleaved && slot_rev < rp.size() && rp[slot_rev]) {
+			prog_rev = *rp[slot_rev];
+			if (prog_rev.reads_matched_delta.size() != n_indexes)
+				prog_rev.reads_matched_delta.resize(n_indexes, 0);
+		}
+	}
+
+	// Skip-read the slots that already produced records in the prior run.
+	// next() advances vstate_in[slot] in lockstep with the reader, so the
+	// parser state is rebuilt naturally — no special skip path needed.
+	if (prog_fwd.records_consumed > 0 || prog_rev.records_consumed > 0) {
+		auto t_skip_start = std::chrono::high_resolution_clock::now();
+		std::string throwaway;
+		uint32_t skipped_fwd = 0;
+		for (uint32_t k = 0; k < prog_fwd.records_consumed; ++k) {
+			if (!readfeed.next(static_cast<int>(slot_fwd), throwaway)) break;
+			++skipped_fwd;
+		}
+		uint32_t skipped_rev = 0;
+		if (ns > 1 && !is_interleaved) {
+			for (uint32_t k = 0; k < prog_rev.records_consumed; ++k) {
+				if (!readfeed.next(static_cast<int>(slot_rev), throwaway)) break;
+				++skipped_rev;
+			}
+		}
+		std::chrono::duration<double> dt = std::chrono::high_resolution_clock::now() - t_skip_start;
+		INFO("Processor ", id, " resume: skip-read FWD=", skipped_fwd,
+		     " REV=", skipped_rev, " records in ", dt.count(), " sec");
+	}
+
+	// Starting idx after skip — mirrors what the prior run's main loop would
+	// have used for its next next() call.
+	int idx;
+	if (ns == 1) {
+		idx = static_cast<int>(slot_fwd);
+	} else if (is_interleaved) {
+		// Single shared reader; idx alternates each iteration.
+		idx = static_cast<int>(slot_fwd + (prog_fwd.records_consumed % ns));
+	} else {
+		// Two readers; FWD is always read first then toggled to REV. So if
+		// counts are equal the next read is FWD; if FWD == REV+1 the next is
+		// REV. (FWD < REV cannot happen.)
+		idx = (prog_fwd.records_consumed > prog_rev.records_consumed)
+		      ? static_cast<int>(slot_rev)
+		      : static_cast<int>(slot_fwd);
+	}
+
+	uint32_t since_flush_fwd = 0;
+	uint32_t since_flush_rev = 0;
+
+	unsigned num_all = 0;
+	unsigned num_skipped = 0;
+	unsigned num_hit = 0;
 	std::string readstr;
 
-	auto starts = std::chrono::high_resolution_clock::now();
-	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " started");
-	int idx = id * readfeed.num_sense; // index into split files array
-	for (; readfeed.next(idx, readstr);)
-	{
+	auto t_start = std::chrono::high_resolution_clock::now();
+	INFO("Processor ", id, " thread ", std::this_thread::get_id(),
+	     " started (start_idx=", idx,
+	     ", fwd_records=", prog_fwd.records_consumed,
+	     ", rev_records=", prog_rev.records_consumed,
+	     ", fwd_short=", prog_fwd.num_short_local,
+	     ", rev_short=", prog_rev.num_short_local,
+	     ", fwd_aligned=", prog_fwd.num_aligned_local,
+	     ", rev_aligned=", prog_rev.num_aligned_local, ")");
+
+	// Dual-file paired workers alternate FWD/REV. A resume checkpoint can have
+	// fwd_records > rev_records (interrupt between the FWD read and its REV
+	// mate), and chunk boundaries can leave one slot with an extra read. If we
+	// break on the first EOF the lagging slot is stranded — drain it instead.
+	bool drain_lagging = false;
+
+	for (;;) {
+		if (!readfeed.next(idx, readstr)) {
+			if (ns > 1 && !is_interleaved) {
+				const int other = (idx == static_cast<int>(slot_fwd))
+				    ? static_cast<int>(slot_rev)
+				    : static_cast<int>(slot_fwd);
+				if (readfeed.next(other, readstr)) {
+					idx = other;
+					drain_lagging = true;
+				} else {
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+
+		// Update the slot's progress for this iteration.
+		const uint32_t sense = static_cast<uint32_t>(idx) % ns; // 0=FWD, 1=REV
+		restart::ThreadProgress& prog = (is_interleaved || sense == 0) ? prog_fwd : prog_rev;
+		uint32_t& since_flush          = (is_interleaved || sense == 0) ? since_flush_fwd : since_flush_rev;
+		const uint32_t target_slot     = is_interleaved ? slot_fwd : (slot_fwd + sense);
+		++prog.records_consumed;
+		++since_flush;
+
+		bool needs_blob_write = false;
+		std::string blob_to_write;
+		std::string read_id_for_write;
+
 		{
 			Read read(readstr);
 			read.init(opts);
@@ -110,156 +221,277 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 
 			if (read.is_too_short) {
 				read.isValid = false;
+				++prog.num_short_local;
 				readstats.num_short.fetch_add(1, std::memory_order_relaxed);
 			}
 
 			if (read.isValid) {
 				read.load_db(kvdb);
-			}
-
-			if (read.isEmpty || !read.isValid || read.is_done) {
-				if (read.is_done) {
-					++num_skipped;
+				// On resume, the read may carry alignv entries from a partial
+				// prior attempt at the current pass. Trim them so traverse()
+				// can rebuild them deterministically — re-alignment is then
+				// idempotent regardless of whether the prior attempt finished.
+				auto& v = read.alignment.alignv;
+				bool had_same_pass = false;
+				for (const auto& a : v) {
+					if (a.index_num == pass_i && a.part == pass_p) { had_same_pass = true; break; }
 				}
-				//INFO("Skpping read ID: ", read.id);
-				continue;
-			}
-
-			// search the forward and/or reverse strands depending on Run options
-			int num_strands = 0;
-			bool search_single_strand = opts.is_forward ^ opts.is_reverse; // search only a single strand
-			if (search_single_strand)
-				num_strands = 1; // only search the forward xor reverse strand
-			else
-				num_strands = 2; // search both strands. The default when neither -F or -R were specified
-
-			//                                                  |- stop if read was aligned on FWD strand
-			for (int count = 0; count < num_strands && !read.is_done; ++count)
-			{
-				if ((search_single_strand && opts.is_reverse) || count == 1)
-				{
-					if (!read.reversed)
-						read.revIntStr();
+				if (had_same_pass) {
+					v.erase(std::remove_if(v.begin(), v.end(),
+						[&](const s_align2& a) {
+							return a.index_num == pass_i && a.part == pass_p;
+						}), v.end());
+					if (v.empty()) { read.is_done = false; read.is_hit = false; }
+					read.max_SW_count = 0;
 				}
-				
-				traverse(opts, index, refs, readstats, refstats, read, search_single_strand || count == 1); // 'paralleltraversal.cpp'
-				read.id_win_hits.clear(); // bug 46
 			}
 
-			// write to DB - thread safe
-			if (read.isValid && !read.isEmpty)
-			{
+			if (!read.isEmpty && read.isValid && !read.is_done) {
+				// Snapshot the read state that alignment.cpp's update of
+				// num_aligned / reads_matched_per_db is driven by. After the
+				// strands loop we compare and replicate the same delta into
+				// this slot's local counters — so on resume we can restore the
+				// in-flight pass's contribution that the blob doesn't carry.
+				const bool was_hit = read.is_hit;
+				int before_min_idx_num = -1;
+				if (!read.alignment.alignv.empty()) {
+					const uint32_t mi = read.alignment.min_index;
+					if (mi < read.alignment.alignv.size())
+						before_min_idx_num = static_cast<int>(read.alignment.alignv[mi].index_num);
+				}
+
+				int num_strands = 0;
+				const bool search_single_strand = opts.is_forward ^ opts.is_reverse;
+				num_strands = search_single_strand ? 1 : 2;
+
+				for (int count = 0; count < num_strands && !read.is_done; ++count) {
+					if ((search_single_strand && opts.is_reverse) || count == 1) {
+						if (!read.reversed) read.revIntStr();
+					}
+					traverse(opts, index, refs, readstats, refstats, read,
+					         search_single_strand || count == 1);
+					read.id_win_hits.clear();
+				}
+
+				// Mirror what alignment.cpp did to the global counters.
+				if (!was_hit && read.is_hit) ++prog.num_aligned_local;
+				int after_min_idx_num = -1;
+				if (!read.alignment.alignv.empty()) {
+					const uint32_t mi = read.alignment.min_index;
+					if (mi < read.alignment.alignv.size())
+						after_min_idx_num = static_cast<int>(read.alignment.alignv[mi].index_num);
+				}
+				if (before_min_idx_num != after_min_idx_num) {
+					if (before_min_idx_num >= 0
+					    && static_cast<std::size_t>(before_min_idx_num) < prog.reads_matched_delta.size())
+						--prog.reads_matched_delta[before_min_idx_num];
+					if (after_min_idx_num >= 0
+					    && static_cast<std::size_t>(after_min_idx_num) < prog.reads_matched_delta.size())
+						++prog.reads_matched_delta[after_min_idx_num];
+				}
+
 				if (read.is_hit) ++num_hit;
-				if (read.is_new_hit)
-					kvdb.put(read.id, read.toBinString());
+				if (read.is_new_hit) {
+					needs_blob_write   = true;
+					blob_to_write      = read.toBinString();
+					read_id_for_write  = read.id;
+				}
+				++num_all;
+			} else if (read.is_done) {
+				++num_skipped;
 			}
+		} // ~Read destroyed
 
-			readstr.resize(0);
-			++num_all;
-		} // ~if & read destroyed
+		// Atomically commit the alignment blob + the slot's progress, so that
+		// "thread_done says K" is durable iff "all hits for records 0..K-1
+		// produced by this worker are durable" (modulo OS pagecache for non-
+		// fsync'd writes — see flush thread in align()).
+		if (needs_blob_write) {
+			restart::put_read_with_progress(kvdb,
+				read_id_for_write, blob_to_write,
+				pass_i, pass_p, target_slot, prog);
+			since_flush = 0;
+		} else if (since_flush >= COUNTER_FLUSH_INTERVAL) {
+			restart::put_progress(kvdb, pass_i, pass_p, target_slot, prog);
+			since_flush = 0;
+		}
 
-		if (opts.is_paired) idx ^= 1; // switch FWD-REV
-	} // ~while there are reads
+		readstr.resize(0);
+		if (!drain_lagging && opts.is_paired) idx ^= 1;
+	}
 
-	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - starts;
+	// Final flush of the slot counters so the end-of-pass commit_pass sees
+	// the canonical totals and so any later resume of a sibling pass starts
+	// from a clean state.
+	restart::put_progress(kvdb, pass_i, pass_p, slot_fwd, prog_fwd);
+	if (ns > 1 && !is_interleaved) {
+		restart::put_progress(kvdb, pass_i, pass_p, slot_rev, prog_rev);
+	}
+
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t_start;
 	INFO("Processor ", id, " thread ", std::this_thread::get_id(), " done. Processed ",
-		num_all, " reads. Skipped already processed: ", num_skipped, " reads", 
-		" Aligned reads (passing E-value): ", num_hit, " Runtime sec: ", elapsed.count());
+	     num_all, " reads. Skipped already processed: ", num_skipped, " reads",
+	     " Aligned reads (passing E-value): ", num_hit,
+	     " fwd_records=", prog_fwd.records_consumed,
+	     " rev_records=", prog_rev.records_consumed,
+	     " fwd_aligned=", prog_fwd.num_aligned_local,
+	     " rev_aligned=", prog_rev.num_aligned_local,
+	     " Runtime sec: ", elapsed.count());
 } // ~align2
 
 /*
-* launches processing threads. called from main
-*/
-void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb, Runopts& opts)
+ * Launches the alignment threads. Called from main.
+ *
+ * Concurrency: workers run independently and each owns one or two
+ * gz/flat_slots plus the corresponding thread_done/{i}/{p}/{slot} key.
+ * The only background thread here flushes the WAL periodically; it never touches
+ * any shared sortmerna state.
+ */
+void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb,
+           Runopts& opts, const restart::State* rstate)
 {
 	INFO("==== Starting alignment ====");
-    INFO("Alignment parameters:  is_best: ", opts.is_best,
-            "  num_alignments: ", opts.num_alignments,
-            "  min_lis: ", opts.min_lis);
-    if (opts.num_alignments == 0) {
-        INFO("num_alignments is set to: ",  opts.num_alignments,
-            ", so all alignments passing E-value threshold will be reported,"
-            " and the option is_best is ignored.");
-    }
+	if (rstate && rstate->is_resume) {
+		INFO("Restart: align() resuming. Completed passes: ", rstate->align_done.size(),
+		     " latest=(", rstate->latest_pass.first, ",", rstate->latest_pass.second, ")",
+		     " resume_pass=(", rstate->resume_pass.first, ",", rstate->resume_pass.second, ")");
+	}
+	restart::set_phase(kvdb, restart::Phase::Align);
+	INFO("Alignment parameters:  is_best: ", opts.is_best,
+		"  num_alignments: ", opts.num_alignments,
+		"  min_lis: ", opts.min_lis);
+	if (opts.num_alignments == 0) {
+		INFO("num_alignments is set to: ", opts.num_alignments,
+		    ", so all alignments passing E-value threshold will be reported,"
+		    " and the option is_best is ignored.");
+	}
 
-	unsigned int numCores = std::thread::hardware_concurrency(); // find number of CPU cores
+	unsigned int numCores = std::thread::hardware_concurrency();
 	INFO("Number of cores: ", numCores);
 
-	// Init thread pool with the given number of threads
-	int numProcThread = 0;
-	numProcThread = opts.num_proc_thread; // '-thread'
-
-	// calculate the number of threads to use
-	int numThreads = 0;
-	//if (opts.feed_type == FEED_TYPE::LOCKLESS)
-	//{
-	//	numThreads = opts.num_read_thread + numProcThread;
-	//	INFO("using total threads: ", numThreads, " including Read threads: ", opts.num_read_thread, " Processor threads: ", numProcThread);
-		//ThreadPool tpool(numThreads);
-		//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count, numProcThread);
-	//}
-	//else {
-	numThreads = numProcThread;
+	const int numProcThread = opts.num_proc_thread;
 	INFO("Using number of Processor threads: ", numProcThread);
-	readfeed.init_reading(); // prepare readfeed
-	//}
+	readfeed.init_reading();
+
 	std::vector<std::thread> tpool;
-	tpool.reserve(numThreads);
+	tpool.reserve(numProcThread);
 
 	Refstats refstats(opts, readstats);
 	References refs;
 
-	int loopCount = 0; // counter of total number of processing iterations
+	int loopCount = 0;
 
-	// perform alignment
+	auto is_pass_done = [&](uint16_t i, uint16_t p) -> bool {
+		if (!rstate || !rstate->is_resume) return false;
+		for (const auto& pr : rstate->align_done) {
+			if (pr.first == i && pr.second == p) return true;
+		}
+		return false;
+	};
+
 	auto start_a = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
-	// loop through every index passed to option '--ref'
+	// Background WAL fsync thread. Workers issue per-read kvdb writes that hit
+	// the WAL but are not fsync'd; this thread makes them durable against a
+	// kernel crash. A process-only SIGKILL doesn't need this (OS pagecache
+	// survives), but a power loss does — and the work is cheap.
+	std::atomic<bool> stop_flush{false};
+	std::mutex flush_mtx;
+	std::condition_variable flush_cv;
+	std::thread flush_thread([&]() {
+		const auto delay = std::chrono::seconds(opts.flush_delay);
+		while (true) {
+			std::unique_lock<std::mutex> ul(flush_mtx);
+			if (flush_cv.wait_for(ul, delay, [&]{ return stop_flush.load(); }))
+				return;
+			ul.unlock();
+			kvdb.flush_wal();
+			INFO("Restart: WAL fsync");
+		}
+	});
+
 	for (size_t idx_num = 0; idx_num < opts.indexfiles.size(); ++idx_num)
 	{
-		// iterate every part of an index
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[idx_num]; ++idx_part)
 		{
-			// load index
-			INFO("Loading index: ", idx_num, " part: ", idx_part + 1, "/", refstats.num_index_parts[idx_num], " Memory KB: ", (get_memory() >> 10), " ... ");
+			if (is_pass_done(static_cast<uint16_t>(idx_num), idx_part)) {
+				INFO("Restart: skipping committed pass idx=", idx_num, " part=", idx_part + 1);
+				continue;
+			}
+
+			INFO("Loading index: ", idx_num, " part: ", idx_part + 1, "/",
+			     refstats.num_index_parts[idx_num], " Memory KB: ", (get_memory() >> 10), " ... ");
 			auto start_i = std::chrono::high_resolution_clock::now();
 			index.load(idx_num, idx_part, opts.indexfiles, refstats);
-			readstats.num_short.store(0, std::memory_order_relaxed); // reset the short reads counter
-			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
+
+			// num_short resets at the start of every pass (per-pass semantics
+			// in the original design). num_aligned and reads_matched_per_db
+			// are cumulative across passes; they were restored from the last
+			// commit_pass blob in the Readstats constructor on resume, but
+			// that blob does not include the in-flight pass's contribution.
+			// Re-apply the per-slot deltas saved by the prior run before
+			// workers start, so the final blob reflects the full count.
+			readstats.num_short.store(0, std::memory_order_relaxed);
+			if (rstate && rstate->is_resume
+			    && rstate->resume_pass.first  == static_cast<int>(idx_num)
+			    && rstate->resume_pass.second == static_cast<int>(idx_part))
+			{
+				uint64_t resumed_short   = 0;
+				uint64_t resumed_aligned = 0;
+				std::vector<int64_t> resumed_matched(readstats.reads_matched_per_db.size(), 0);
+				for (const auto& opt : rstate->resume_progress) {
+					if (!opt) continue;
+					resumed_short   += opt->num_short_local;
+					resumed_aligned += opt->num_aligned_local;
+					const auto m = std::min(resumed_matched.size(), opt->reads_matched_delta.size());
+					for (std::size_t i = 0; i < m; ++i)
+						resumed_matched[i] += opt->reads_matched_delta[i];
+				}
+				readstats.num_short.fetch_add(resumed_short,   std::memory_order_relaxed);
+				readstats.num_aligned.fetch_add(resumed_aligned, std::memory_order_relaxed);
+				for (std::size_t i = 0; i < resumed_matched.size(); ++i) {
+					// reads_matched_per_db entries are plain uint64_t; apply
+					// the int64 delta with wrap-safe arithmetic. Negative
+					// deltas net out swaps recorded mid-pass.
+					readstats.reads_matched_per_db[i] =
+						static_cast<uint64_t>(static_cast<int64_t>(readstats.reads_matched_per_db[i])
+						                      + resumed_matched[i]);
+				}
+				INFO("Restart: pass (", idx_num, ",", idx_part + 1,
+				     ") resumed num_short=", resumed_short,
+				     " resumed num_aligned=", resumed_aligned);
+			}
+
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
 			INFO_MEM("done in [", elapsed.count(), "] sec");
 
-			// load references
 			INFO("Loading references ...");
 			start_i = std::chrono::high_resolution_clock::now();
 			refs.load(idx_num, idx_part, opts, refstats);
-			elapsed = std::chrono::high_resolution_clock::now() - start_i; // ~20 sec Debug/Win
+			elapsed = std::chrono::high_resolution_clock::now() - start_i;
 			INFO_MEM("done in [", elapsed.count(), "] sec.");
 
 			start_i = std::chrono::high_resolution_clock::now();
 
-			// add Readfeed job if necessary
-			//if (opts.feed_type == FEED_TYPE::LOCKLESS)
-			//{
-				//tpool.addJob(f_readfeed_run);
-			//}
+			for (int i = 0; i < numProcThread; i++) {
+				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed),
+				                    std::ref(readstats), std::ref(index), std::ref(refs),
+				                    std::ref(refstats),  std::ref(kvdb), std::ref(opts),
+				                    rstate));
+			}
+			for (auto& thr : tpool) thr.join();
 
-			// add Processor jobs
-			for (int i = 0; i < numProcThread; i++)
-			{
-				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed), 
-                                    std::ref(readstats), std::ref(index), std::ref(refs), 
-                                    std::ref(refstats),  std::ref(kvdb), std::ref(opts)));
-			}
-			for (auto& thr: tpool) {
-				thr.join();
-			}
+			// All workers done for this pass. commit_pass writes align_done +
+			// readstats blob in one batch and then clears thread_done/{i}/{p}/*.
+			restart::commit_pass(kvdb,
+				static_cast<uint16_t>(idx_num), idx_part,
+				readstats.dbkey, readstats.toBstring());
 
 			++loopCount;
 
 			elapsed = std::chrono::high_resolution_clock::now() - start_i;
 			INFO_MEM("done index: ", idx_num, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");
-			//INFO_MEM("Done index ", idx_num, " Part: ", idx_part + 1, " Queue size: ", read_queue.queue.size_approx(), " Time: ", elapsed.count())
 
 			start_i = std::chrono::high_resolution_clock::now();
 			index.unload();
@@ -267,19 +499,25 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			elapsed = std::chrono::high_resolution_clock::now() - start_i;
 			INFO_MEM("Index and References unloaded in ", elapsed.count(), " sec.");
 			tpool.clear();
-			// rewind for the next index
+
 			readfeed.rewind_in();
-            // does nothing for indexed feed. Only for split reads feed. 
-            // TODO: remove this call after removing split reads feed.
-			readfeed.init_vzlib_in();   
-			//read_queue.reset();
+			readfeed.init_vzlib_in();  // noop for INDEXED feed; SPLIT_READS only
 		} // ~for(idx_part)
 	} // ~for(idx_num)
+
+	// Stop the flush thread before returning. One last fsync afterwards to
+	// catch anything written between its last cycle and now.
+	{
+		std::lock_guard<std::mutex> lk(flush_mtx);
+		stop_flush.store(true);
+	}
+	flush_cv.notify_one();
+	flush_thread.join();
+	kvdb.flush_wal();
 
 	elapsed = std::chrono::high_resolution_clock::now() - start_a;
 	INFO("==== Done alignment in ", elapsed.count(), " sec ====\n");
 
-	// store readstats calculated in alignment
 	readstats.set_is_set_aligned_id_cov();
 	readstats.store_to_db(kvdb);
 } // ~align

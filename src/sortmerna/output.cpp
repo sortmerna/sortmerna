@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /*
@@ -41,6 +40,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <cmath> // log, exp
 #include <filesystem>
 #include <functional> // std::ref
+#include <thread>
 
 #include "options.hpp"
 #include "output.hpp"
@@ -48,8 +48,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstats.hpp"
 #include "processor.hpp"
 #include "refstats.hpp"
-#include "readsqueue.hpp"
 #include "readfeed.hpp"
+#include "read.hpp"
 
 // forward
 class Read;
@@ -187,7 +187,6 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 	Refstats refstats(opts, readstats);
 	References refs;
-	//ReadsQueue read_queue("queue_1", opts.queue_size_max, readstats.all_reads_count);
 	Output output(readfeed, opts);
 
 	if (opts.is_sam) output.sam.write_header(opts);
@@ -263,6 +262,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		output.sam.merge(readfeed.num_splits, 1, opts.dbg_level);
 	}
 	if (opts.is_denovo) {
+		output.denovo.finish_deflate();
 		output.denovo.closef(opts.dbg_level);
 		output.denovo.merge(readfeed.num_splits, output.denovo.getBase().num_out, opts.dbg_level);
 	}

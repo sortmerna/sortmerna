@@ -1,31 +1,32 @@
 /*
- @copyright 2016-2026  Clarity Genomics BVBA
- @copyright 2012-2016  Bonsai Bioinformatics Research Group
- @copyright 2014-2016  Knight Lab, Department of Pediatrics, UCSD, La Jolla
+@copyright 2016-2026 Clarity Genomics Inc
+@copyright 2012-2016 Bonsai Bioinformatics Research Group
+@copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
- @parblock
- SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
- This is a free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+@parblock
+SortMeRNA - next-generation reads filter for metatranscriptomic or total RNA
 
- SortMeRNA is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+This is a free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
- You should have received a copy of the GNU Lesser General Public License
- along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
- @endparblock
+SortMeRNA is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
 
- @contributors Jenya Kopylova   jenya.kopylov@gmail.com
-			   Laurent Noé      laurent.noe@lifl.fr
-			   Pierre Pericard  pierre.pericard@lifl.fr
-			   Daniel McDonald  wasade@gmail.com
-			   Mikaël Salson    mikael.salson@lifl.fr
-			   Hélène Touzet    helene.touzet@lifl.fr
-			   Rob Knight       robknight@ucsd.edu
+You should have received a copy of the GNU Lesser General Public License
+along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
+@endparblock
+
+@contributors Jenya Kopylova   jenya.kopylov@gmail.com
+              Laurent Noé      laurent.noe@lifl.fr
+              Pierre Pericard  pierre.pericard@lifl.fr
+              Daniel McDonald  wasade@gmail.com
+              Mikaël Salson    mikael.salson@lifl.fr
+              Hélène Touzet    helene.touzet@lifl.fr
+              Rob Knight       robknight@ucsd.edu
 */
 
 /* 
@@ -75,13 +76,6 @@ std::streampos filesize(const std::string& file); // util.cpp
 Runopts::Runopts(int argc, char** argv, bool dryrun)
 {
 	process(argc, argv, dryrun);
-	if (skiplengths.empty())
-	{
-		for (std::size_t i = 0; i < indexfiles.size(); ++i)
-		{
-			skiplengths.push_back({ 0,0,0 });
-		}
-	}
 }
 
 /* 
@@ -144,6 +138,18 @@ void Runopts::opt_reads(const std::string &file)
 		exit(EXIT_FAILURE);
 	}
 	else {
+		// verify the file is not empty (unless only building the index, task = index_only)
+		// NOTE: opt_task may not have run yet, so read the raw task value from mopt.
+		auto task_it = mopt.find(OPT_TASK);
+		bool is_index_only = (task_it != mopt.end())
+			&& (std::stoi(task_it->second) == static_cast<int>(TASK::index_only));
+		ifs.seekg(0, std::ios_base::end);
+		auto fsize = ifs.tellg();
+		if (fsize <= 0 && !is_index_only)
+		{
+			ERR("The reads file [", fpath_a, "] is empty");
+			exit(EXIT_FAILURE);
+		}
 		ifs.close();
 		have_reads = true;
 		readfiles.push_back(fpath_a.generic_string());
@@ -671,31 +677,46 @@ void Runopts::opt_SQ(const std::string &val)
 
 void Runopts::opt_passes(const std::string &val)
 {
-	if (passes_set)
+    auto countpass = mopt.count(OPT_PASSES);
+	if (countpass > 1)
 	{
-		ERR("'", OPT_PASSES, "' [INT,INT,INT] has been set twice, please verify your choice.");
-		exit(EXIT_FAILURE);
+		ERR("'", OPT_PASSES, "' [INT,INT,INT] has been set more than once");
+        exit(EXIT_FAILURE);
 	}
 
-	// set passes
-	for (auto pos = val.find(",", 0), pos_from = pos-pos, count = pos-pos; pos != std::string::npos; pos = val.find(",", pos_from))
-	{
-		auto tok = val.substr(pos_from, pos);
-		pos_from += pos +1;
-		if (++count > 3) 
-		{
-			ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
-			exit(EXIT_FAILURE);
-		}
-		auto skiplen = std::stoi(tok);
-		if (skiplen > 0)
-			skiplengths.emplace_back(skiplen);
-		else
-		{
-			ERR("All three integers in '", OPT_PASSES, "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).");
-			exit(EXIT_FAILURE);
-		}
-	}
+    INFO("'", OPT_PASSES, "' option has been set. Using the provided skip lengths.");
+    // Parse comma-separated tokens "INT,INT,INT". Only parse and validate here;
+    // the values are stashed in 'skiplengths_user' and replicated per-index at
+    // the end of process(), once 'indexfiles' is populated. Options are processed
+    // in alphabetical order ('passes' before 'ref'), so 'indexfiles' is still
+    // empty at this point.
+    std::vector<uint32_t> skiplenvec;
+    std::size_t count = 0;
+    for (std::size_t pos_from = 0; pos_from <= val.size(); )
+    {
+    	auto pos = val.find(",", pos_from);
+    	auto tok = val.substr(pos_from, pos == std::string::npos ? std::string::npos : pos - pos_from);
+    	pos_from = (pos == std::string::npos) ? val.size() + 1 : pos + 1;
+    	if (++count > 3)
+    	{
+    		ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
+    		exit(EXIT_FAILURE);
+    	}
+    	auto skiplen = std::stoi(tok);
+    	if (skiplen > 0)
+    		skiplenvec.emplace_back(skiplen);
+    	else
+    	{
+    		ERR("All three integers in '", OPT_PASSES, "' [INT,INT,INT] must contain positive integers where 0 < INT < (shortest read length).");
+    		exit(EXIT_FAILURE);
+    	}
+    } // ~for
+    if (skiplenvec.size() != 3)
+    {
+        ERR("Exactly 3 integers has to be provided with '" , OPT_PASSES , "' [INT,INT,INT]");
+        exit(EXIT_FAILURE);
+    }
+    skiplengths_user = skiplenvec;
 	passes_set = true;
 } // ~Runopts::opt_passes
 
@@ -767,7 +788,7 @@ void Runopts::opt_e(const std::string &val)
 
 	if (evalue < 0)
 	{
-		sscanf(val.data(), "%lf", &evalue);
+		sscanf(val.data(), "%lf", &evalue);  // default 1e-5 is set in validate()
 		if (evalue < 0)
 		{
 			ERR(" : -e [DOUBLE] requires a positive double as input (ex. --e 1e-5)");
@@ -977,6 +998,16 @@ void Runopts::opt_dbg_level(const std::string& val)
 	}
 }
 
+void Runopts::opt_flush_delay(const std::string& val)
+{
+	int v = std::stoi(val);
+	if (v <= 0) {
+		ERR("'", OPT_FLUSH_DELAY, "' must be a positive integer (seconds); got: ", val);
+		exit(EXIT_FAILURE);
+	}
+	flush_delay = static_cast<unsigned>(v);
+}
+
 // interactive session '--cmd'
 void Runopts::opt_cmd(const std::string &val)
 {
@@ -1083,7 +1114,9 @@ void Runopts::opt_L(const std::string &val)
 	auto count = mopt.count(OPT_L);
 	if (count > 1)
 	{
-		WARN(" Option '", OPT_L, "' entered [", count, "] times. Only the last value will be used.\n", "\tHelp: ", help_L);
+		ERR(" Option '", OPT_L, "' entered [", count, "] times. Only a single one is expected.\n", 
+                "\tHelp: ", help_L);
+        exit(EXIT_FAILURE);
 	}
 
 	if (val.size() == 0)
@@ -1275,22 +1308,14 @@ void Runopts::validate_kvdbdir()
 		}
 		else // not empty
 		{
-			// TODO: Store some metadata in DB to verify the alignment.
-			// kvdb.verify()
-			if (TASK::align == task || TASK::all == task || TASK::align_summary == task)
-			{
-				// if (kvdb.verify()) // TODO
-				// output the listing
-				std::stringstream ss;
-				for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
-					ss << '\t' << subpath.path().filename() << '\n';
-				std::string flist = ss.str();
-
-				WARN("Path: ", std::filesystem::absolute(kvdbdir), " exists with the following content:\n", 
-					flist,
-					"\tPlease, ensure the directory ", std::filesystem::absolute(kvdbdir), " is Empty prior running 'sortmerna'");
-				exit(EXIT_FAILURE);
-			}
+			// Non-empty kvdb is the resume path. restart::probe_or_init will
+			// verify the opts/inputs fingerprints when the DB is opened and
+			// either resume (matching) or abort with a diagnostic (mismatched).
+			std::stringstream ss;
+			for (auto& subpath : std::filesystem::directory_iterator(kvdbdir))
+				ss << '\t' << subpath.path().filename() << '\n';
+			INFO("KVDB directory ", std::filesystem::absolute(kvdbdir),
+			     " is not empty. Will attempt auto-resume; existing contents:\n", ss.str());
 		}
 	}
 	else
@@ -1471,7 +1496,25 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 			{
 				if (mopt.count(std::get<0>(opt)) == 0)
 				{
-					std::cout << "Missing required flag: " << std::get<0>(opt) << std::endl;
+                    // NOTE: option-processing (incl. opt_task) hasn't run yet, so the
+                    // 'task' member still holds its default. Read the raw value from mopt.
+                    auto task_it = mopt.find(OPT_TASK);
+                    bool is_index_only = (task_it != mopt.end())
+                        && (std::stoi(task_it->second) == static_cast<int>(TASK::index_only));
+                    if (std::get<0>(opt) == OPT_READS && is_index_only) {
+                        // reads are not required when only building the index
+                        continue;
+                    }
+                    else if (std::get<0>(opt) == OPT_READS) {
+                        ERR("Missing required flag: ", std::get<0>(opt),
+                            ". Use '", OPT_TASK, "' option with value '", TASK::index_only,
+                            "' if you intend to build index without processing reads. See 'sortmerna -h' for details.");
+                        exit(EXIT_FAILURE);
+                    }
+                    else {
+                        ERR("Missing required flag: ", std::get<0>(opt), ". See 'sortmerna -h' for details.");
+                        exit(EXIT_FAILURE);
+                    }
 				}
 			}
 		}
@@ -1512,12 +1555,36 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	}
 
 	INFO("=== Options processing done ===\n");
-	INFO("Alignment type: [best:", is_best, 
-			" num_alignments:", num_alignments, 
+	INFO("Alignment type: [best:", is_best,
+			" num_alignments:", num_alignments,
 			" min_lis:", min_lis, " seeds:", num_seeds,"]");
 
 	if (!is_help_opt)
 	{
+		// Build per-index skip lengths now that 'indexfiles' is populated (opt_ref
+		// ran in the loop above). Done here rather than in opt_passes because options
+		// are processed in alphabetical order, so 'passes' is handled before 'ref'.
+		if (skiplengths.empty())
+		{
+			std::vector<uint32_t> def;
+			if (passes_set) {
+				def = skiplengths_user; // user-supplied '--passes' [INT,INT,INT]
+				INFO("Using '", OPT_PASSES, "' skip lengths: ", def[0], ",", def[1], ",", def[2]);
+			}
+			else if (mopt.count(OPT_L) > 0) {
+				auto len = std::stoi(mopt.find(OPT_L)->second);
+				def = { static_cast<uint32_t>(len), static_cast<uint32_t>(len / 2), 3 };
+				INFO("'", OPT_PASSES, "' not set. Using '", OPT_L, "'-derived skip lengths: ",
+					def[0], ",", def[1], ",", def[2]);
+			}
+			else {
+				// Leave zeros; Refstats::load fills index-derived defaults.
+				def = { 0, 0, 0 };
+			}
+			for (std::size_t i = 0; i < indexfiles.size(); ++i)
+				skiplengths.push_back(def);
+		}
+
 		validate();
 		//about(); // if we are here, args are OK, welcome the user
 	}
@@ -1644,7 +1711,10 @@ void Runopts::validate()
 	}
 
 	// default E-value 
-	if (evalue < 0.0) evalue = 1;
+	if (evalue < 0.0) {
+        INFO("No E-value threshold provided. Using default: ", 1e-5);
+        evalue = 1e-5;
+	}
 
 	// SW alignment parameters
 	if (!match_set) {

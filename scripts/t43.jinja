@@ -24,7 +24,7 @@ args:
   -v:
   -workdir: {{ WRK_DIR }}
   -threads: '{{THREADS or 12}}'
-  -index: '{{INDEX or 2}}'  # 2 is the default
+  -index: '{{INDEX or 1}}'  # 1 is the default
 cwd: {{ SMR_SRC }}
 validate:
   func:
@@ -32,8 +32,8 @@ validate:
   files:
     aligned.log:
       num_reads: 49309188
-      num_hits:   2499868
-      num_fail:  46809320
+      num_hits:   2171958  # 2499868/e=1
+      num_fail:  47137230  # 46809320/e=1
       num_hits_db:
         euk_28s_id98: 0.51
         euk_18s_id95: 0.02
@@ -43,18 +43,25 @@ validate:
         arc_16s_id95: 0
         nc_5s_id98:   0.03  # non-coding - RFAM
         nc_5.8s_id98: 0     # non-coding - RFAM
-    #aligned.blast.gz:
-    #aligned_paired_fwd.fq.gz:
-    #aligned_paired_rev.fq.gz:
-    #aligned_singleton_fwd.fq.gz:
-    #aligned_singleton_rev.fq.gz:
+    aligned.blast.gz:
+      num_recs:   2171958
+    #aligned_paired_fwd.fq.gz: 1047197
+    #aligned_paired_rev.fq.gz: 1047197
+    #aligned_singleton_fwd.fq.gz: 44654
+    #aligned_singleton_rev.fq.gz: 32910
   time:
+    ubuntu_26.04_LTS_xps15i9_16_32:  # 20260704 Sat
+      7.0.0:
+        threads: 8
+        times:
+          # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
+          -             11           22     2918       1.5      517    3478      58
     wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:  # 20260421 Tue
       4.3.7:  # split reads
         threads: 8
         times:
           # indexing  read_count  readfeed  align    summary  report   tot,sec  tot,min
-          -           256.074     256.101   5301.85  3.90     1720.19  7538.12  125.64
+          -              256        256     5301      3.90     1720     7538      126
       5.0.0:  # at least 35% faster overall than using split even with the split already done
         threads: 8
         times:

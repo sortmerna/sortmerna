@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /**
@@ -36,6 +35,11 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
+
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "rocksdb/db.h"
 #include "rocksdb/slice.h"
@@ -48,6 +52,19 @@ public:
 
 	void put(std::string key, std::string val);
 	std::string get(std::string key);
+	bool has(const std::string& key);
+	void del(const std::string& key);
+	// Atomically apply a batch of put operations.
+	void put_batch(const std::vector<std::pair<std::string, std::string>>& kvs);
+	// Iterate all keys with the given prefix. fn receives (key, value).
+	// Return false from fn to stop iteration early.
+	void iter_prefix(const std::string& prefix,
+	                 const std::function<bool(const std::string&, const std::string&)>& fn);
+	// Delete every key with the given prefix.
+	void delete_prefix(const std::string& prefix);
+	// Fsync the WAL so every prior Put / WriteBatch is durable on disk. Used
+	// to guarantee committed reads survive a crash.
+	void flush_wal();
 	int clear(std::string dbPath);
 private:
 	rocksdb::DB* kvdb;

@@ -6,7 +6,7 @@ info: |
     refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
      1      2     1    1       0        0        0     0     0      0      1    1     2      2
 args:
-  -ref: [ {{ SMR_SRC }}/data/silva-bac-16s-database-id85.fasta ]  # 12,734,464 ~12MB
+  -ref: [ {{ REF_DIR }}/silva-bac-16s-database-id85.fasta ]  # 12,734,464 ~12MB
   -reads: 
    - {{ DATA_DIR }}/SRR1635864_1.fastq.gz  # 2 GB 24,654,594 reads
    - {{ DATA_DIR }}/SRR1635864_2.fastq.gz  # 2 GB 24,654,594 reads
@@ -21,20 +21,34 @@ validate:
   files:
     aligned.log:
       num_reads: 49309188
-      num_hits:    687225
-      num_fail:  48621963
+      num_hits:    624802  #   687225/e=1
+      num_fail:  48684386  # 48621963/e=1
     aligned.blast.gz:
-      num_recs:   687225
+      num_recs:   624802  # 687225/e=1
       n_yid_ycov:    201 
-      n_yid_ncov: 502288 
-      n_nid_ycov:   1222 
-      n_denovo:   183514
+      n_yid_ncov: 466062  # 502288/e=1
+      n_nid_ycov:   1244  #   1222/e=1
+      n_denovo:   157295  # 183514/e=1
     aligned.sam.gz:
 time:
-  win_8_16:
+  ubuntu_24.04_LTS_xps15i9_16_32:  # 20260623 Tue
+    7.0.0:
+    - threads: 8
+      times:
+        # indexing  read_count  readfeed  read_init  align    summary  report   tot,sec  tot,min
+        -               11         23        11       520       0.2      75       630      10   (>3 times faster than WSL!)
+  wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:  # 20260613 stats
+    7.0.0:
+    - threads: 8
+      times:
+        # indexing  read_count  readfeed  read_init  align    summary  report   tot,sec  tot,min
+        -             23.22        81       419      1135       0.4     504       2157     36
+        -             25.37        79                1227       0.4     558       2270     38  # ~5% - 'resume' drag?
+        -             23.90        66                1390       0.4     599
+  win_8_16:  # 20210520 seems unusually slow today
     host: Windows 10 + 8 CPUs + 16GB RAM
     4-3-3:
     - threads: 8
       total:  # sec no indexing
       # indexing, read count, readfeed, align, summary, report
-      totals: [ 0, 227, 2237, 1107, 1, 509]  # 20210520 seems unusually slow today
+      totals: [ 0, 227, 2237, 1107, 1, 509]

@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,14 +27,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
-/*
- * FILE: readfeed.cpp
- * Created: Nov 26, 2017 Sun
- * 
- */
+// readfeed.cpp  Created: Nov 26, 2017 Sun
 
 #include "common.hpp"
 #include "readfeed.hpp"
@@ -50,6 +45,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <regex>
 
 #include <filereader/Standard.hpp>
+#include <filereader/BufferView.hpp>
 #include <rapidgzip/ParallelGzipReader.hpp>
 
 // Opaque wrapper — keeps rapidgzip headers out of readfeed.hpp and every TU that includes it.
@@ -60,6 +56,18 @@ struct GzReaderImpl {
     template <typename T>
     GzReaderImpl(std::unique_ptr<T> fr, std::size_t threads)
         : rdr(std::move(fr), threads) {}
+
+    void exportTo(std::vector<std::uint8_t>& out) {
+        out.clear();
+        rdr.exportIndex([&out](const void* buf, size_t n) {
+            const auto* p = static_cast<const std::uint8_t*>(buf);
+            out.insert(out.end(), p, p + n);
+        });
+    }
+
+    void importFrom(const std::vector<std::uint8_t>& in) {
+        rdr.importIndex(std::make_unique<rapidgzip::BufferViewFileReader>(in));
+    }
 };
 
 // Custom deleter — body defined here so sizeof(GzReaderImpl) is never checked in other TUs.
@@ -131,6 +139,30 @@ int GzSlot::getline(std::string& line)
 			line += c;
 		}
 	}
+}
+
+uint64_t GzSlot::tell_byte() const
+{
+	// reader's tell() = decompressed bytes the rapidgzip reader has produced
+	// (== the high-water mark of fill_buf reads). buf currently holds [buf_pos,
+	// buf_len); only the prefix [0, buf_pos) has been delivered via getline().
+	// What getline() will read next is therefore: reader.tell() - (buf_len - buf_pos).
+	if (!reader) return 0;
+	const uint64_t rpos = static_cast<uint64_t>(reader->rdr.tell());
+	const uint64_t unconsumed = static_cast<uint64_t>(buf_len - buf_pos);
+	return rpos > unconsumed ? rpos - unconsumed : 0;
+}
+
+void GzSlot::seek_byte(uint64_t pos)
+{
+	if (!reader) return;
+	reader->rdr.seek(static_cast<long long>(pos));
+	buf_pos = 0;
+	buf_len = 0;
+	// bytes_remaining tracks the size of [pos, bytes_end). Clamp if seek went
+	// past the slot's chunk end; never grow it beyond original chunk size.
+	if (pos < bytes_end) bytes_remaining = bytes_end - pos;
+	else                 bytes_remaining = 0;
 }
 
 /*
@@ -1104,17 +1136,19 @@ bool Readfeed::split()
 void Readfeed::build_chunk_offsets()
 {
 	auto start = std::chrono::high_resolution_clock::now();
-	INFO("build_chunk_offsets: computing byte-range chunks for ", 
+	INFO("build_chunk_offsets: computing byte-range chunks for ",
             num_orig_files, " file(s) x ", num_splits, " split(s)");
 
-	const int linesPerRecord = orig_files[0].isFastq ? 4 : 2;
-	// For a single interleaved paired file, chunk boundaries must align to complete pairs
-	// (FWD + REV), so FWD and REV slot readers stay in sync when they share a reader.
+	const bool isFastq = orig_files[0].isFastq;
+	// For FASTQ, records are exactly 4 lines. For FASTA, records are variable length and
+	// start at any line beginning with '>'. Chunk boundaries must align to record starts.
+	const int linesPerRecord = isFastq ? 4 : 2; // FASTA value is unused; kept for reserve hint
 	const bool is_interleaved = (num_orig_files < num_sense);
-	const int alignUnit = is_interleaved ? linesPerRecord * static_cast<int>(num_sense) : linesPerRecord;
+	const int alignUnit = is_interleaved ? 4 * static_cast<int>(num_sense) : 4; // FASTQ alignment unit
 
 	gz_slots.resize(num_split_files);
 	gz_slot_files.resize(num_split_files);
+	gz_index_buffers.assign(num_orig_files, {});
 
 	for (size_t j = 0; j < num_orig_files; ++j) {
 		auto& origFile = orig_files[j];
@@ -1129,10 +1163,13 @@ void Readfeed::build_chunk_offsets()
 			gz_slots[slotIdx].file_path     = origFile.path.generic_string();
 		}
 
-		// Pass 1: decompress entire file, collect newline offsets
+		// Pass 1: decompress entire file, collect newline offsets.
+		// For FASTA, additionally collect the line indices where header lines ('>') occur.
 		INFO("scanning ", origFile.path.generic_string());
 		std::vector<uint64_t> newlineEnds;
 		newlineEnds.reserve(static_cast<size_t>(origFile.numreads) * linesPerRecord + 1);
+		std::vector<uint64_t> fastaHeaderLines; // 0-based line indices where '>' starts a record
+		if (!isFastq) fastaHeaderLines.reserve(static_cast<size_t>(origFile.numreads) + 1);
 
 		{
 			using PGR = rapidgzip::ParallelGzipReader<>;
@@ -1143,25 +1180,59 @@ void Readfeed::build_chunk_offsets()
 			constexpr size_t CHUNK = 1U << 20; // 1 MiB
 			std::vector<uint8_t> buf(CHUNK);
 			uint64_t pos = 0;
+			bool atLineStart = true;
+			uint64_t lineIdx = 0; // index of the line currently being read
 			for (;;) {
 				auto n = reader->read(reinterpret_cast<char*>(buf.data()), CHUNK);
 				if (n <= 0) break;
 				for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
-					if (buf[k] == '\n') newlineEnds.push_back(pos + k + 1);
+					if (!isFastq && atLineStart && buf[k] == '>') {
+						fastaHeaderLines.push_back(lineIdx);
+					}
+					if (buf[k] == '\n') {
+						newlineEnds.push_back(pos + k + 1);
+						++lineIdx;
+						atLineStart = true;
+					} else {
+						atLineStart = false;
+					}
 				}
 				pos += static_cast<uint64_t>(n);
 			}
+
+			// Capture the now-complete block map so init_reading can replay it into
+			// each per-slot reader, turning seek(bytes_start) from a decompress-to-offset
+			// into an O(1) lookup.
+			auto& outBuf = gz_index_buffers[j];
+			outBuf.clear();
+			reader->exportIndex([&outBuf](const void* p, size_t n) {
+				const auto* b = static_cast<const std::uint8_t*>(p);
+				outBuf.insert(outBuf.end(), b, b + n);
+			});
+			INFO("captured gz block-map for file ", j, " bytes=", outBuf.size());
 		}
 
 		const uint64_t totalLines = static_cast<uint64_t>(newlineEnds.size());
 		INFO("build_chunk_offsets: file ", j, " totalLines=", totalLines);
 
-		// Compute line boundaries for each split, aligned to alignUnit (pair for interleaved)
+		// Compute split boundaries as line indices.
+		// For FASTQ: nominal-line snapped to multiples of alignUnit (record stride).
+		// For FASTA: snapped to header-line indices (records are variable-length).
 		std::vector<uint64_t> alignedStarts(num_splits + 1);
 		alignedStarts[0] = 0;
-		for (size_t i = 1; i < num_splits; ++i) {
-			uint64_t nominalLine = (totalLines * i) / num_splits;
-			alignedStarts[i] = (nominalLine / alignUnit) * alignUnit;
+		if (isFastq) {
+			for (size_t i = 1; i < num_splits; ++i) {
+				uint64_t nominalLine = (totalLines * i) / num_splits;
+				alignedStarts[i] = (nominalLine / alignUnit) * alignUnit;
+			}
+		} else {
+			const uint64_t totalRecords = static_cast<uint64_t>(fastaHeaderLines.size());
+			const uint64_t recAlign = is_interleaved ? static_cast<uint64_t>(num_sense) : 1;
+			for (size_t i = 1; i < num_splits; ++i) {
+				uint64_t nominalRec = (totalRecords * i) / num_splits;
+				nominalRec = (nominalRec / recAlign) * recAlign;
+				alignedStarts[i] = (nominalRec < totalRecords) ? fastaHeaderLines[nominalRec] : totalLines;
+			}
 		}
 		alignedStarts[num_splits] = totalLines;
 
@@ -1175,7 +1246,16 @@ void Readfeed::build_chunk_offsets()
 
 			gz_slots[slotIdx].bytes_start = startByte;
 			gz_slots[slotIdx].bytes_end   = endByte;
-			gz_slot_files[slotIdx].numreads = static_cast<unsigned>((endLine - startLine) / linesPerRecord);
+			unsigned slotReads;
+			if (isFastq) {
+				slotReads = static_cast<unsigned>((endLine - startLine) / 4);
+			} else {
+				// number of header lines in [startLine, endLine)
+				auto lo = std::lower_bound(fastaHeaderLines.begin(), fastaHeaderLines.end(), startLine);
+				auto hi = std::lower_bound(fastaHeaderLines.begin(), fastaHeaderLines.end(), endLine);
+				slotReads = static_cast<unsigned>(hi - lo);
+			}
+			gz_slot_files[slotIdx].numreads = slotReads;
 
 			INFO("build_chunk_offsets: slot ", slotIdx,
 				" bytes=[", startByte, ",", endByte, ")",
@@ -1197,14 +1277,15 @@ void Readfeed::build_chunk_offsets()
 void Readfeed::build_flat_chunk_offsets()
 {
 	auto start = std::chrono::high_resolution_clock::now();
-	INFO("build_flat_chunk_offsets: computing byte-range chunks for ", num_orig_files, 
+	INFO("build_flat_chunk_offsets: computing byte-range chunks for ", num_orig_files,
             " file(s) x ", num_splits, " split(s)", " num_split_files | number of slots = ", num_split_files);
 
-	const int linesPerRecord = orig_files[0].isFastq ? 4 : 2;
-	// For a single interleaved paired file, chunk boundaries must align to complete pairs
-	// (FWD + REV), so FWD and REV slot readers stay in sync when they share a reader.
+	const bool isFastq = orig_files[0].isFastq;
+	// For FASTQ, records are exactly 4 lines. For FASTA, records are variable length and
+	// start at any line beginning with '>'. Chunk boundaries must align to record starts.
+	const int linesPerRecord = isFastq ? 4 : 2; // FASTA value is unused; kept for reserve hint
 	const bool is_interleaved = (num_orig_files < num_sense);
-	const int alignUnit = is_interleaved ? linesPerRecord * static_cast<int>(num_sense) : linesPerRecord;
+	const int alignUnit = is_interleaved ? 4 * static_cast<int>(num_sense) : 4; // FASTQ alignment unit
 
 	flat_slots.resize(num_split_files);
 	flat_slot_files.resize(num_split_files);
@@ -1222,10 +1303,13 @@ void Readfeed::build_flat_chunk_offsets()
 			flat_slots[slotIdx].file_path    = origFile.path.generic_string();
 		}
 
-		// Pass 1: scan file, collect newline offsets
+		// Pass 1: scan file, collect newline offsets.
+		// For FASTA, additionally collect the line indices where header lines ('>') occur.
 		INFO("build_flat_chunk_offsets: scanning ", origFile.path.generic_string());
 		std::vector<uint64_t> newlineEnds;
 		newlineEnds.reserve(static_cast<size_t>(origFile.numreads) * linesPerRecord + 1);
+		std::vector<uint64_t> fastaHeaderLines;
+		if (!isFastq) fastaHeaderLines.reserve(static_cast<size_t>(origFile.numreads) + 1);
 
 		{
 			std::ifstream ifs(origFile.path, std::ios_base::in | std::ios_base::binary);
@@ -1236,12 +1320,23 @@ void Readfeed::build_flat_chunk_offsets()
 			constexpr size_t CHUNK = 1U << 20; // 1 MiB
 			std::vector<char> buf(CHUNK);
 			uint64_t pos = 0;
+			bool atLineStart = true;
+			uint64_t lineIdx = 0;
 			for (;;) {
 				ifs.read(buf.data(), static_cast<std::streamsize>(CHUNK));
 				auto n = ifs.gcount();
 				if (n <= 0) break;
 				for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
-					if (buf[k] == '\n') newlineEnds.push_back(pos + k + 1);
+					if (!isFastq && atLineStart && buf[k] == '>') {
+						fastaHeaderLines.push_back(lineIdx);
+					}
+					if (buf[k] == '\n') {
+						newlineEnds.push_back(pos + k + 1);
+						++lineIdx;
+						atLineStart = true;
+					} else {
+						atLineStart = false;
+					}
 				}
 				pos += static_cast<uint64_t>(n);
 			}
@@ -1250,12 +1345,24 @@ void Readfeed::build_flat_chunk_offsets()
 		const uint64_t totalLines = static_cast<uint64_t>(newlineEnds.size());
 		INFO("build_flat_chunk_offsets: file ", j, " totalLines=", totalLines);
 
-		// Compute line boundaries for each split, aligned to alignUnit (pair for interleaved)
+		// Compute split boundaries as line indices.
+		// For FASTQ: nominal-line snapped to multiples of alignUnit (record stride).
+		// For FASTA: snapped to header-line indices (records are variable-length).
 		std::vector<uint64_t> alignedStarts(num_splits + 1);
 		alignedStarts[0] = 0;
-		for (size_t i = 1; i < num_splits; ++i) {
-			uint64_t nominalLine = (totalLines * i) / num_splits;
-			alignedStarts[i] = (nominalLine / alignUnit) * alignUnit;
+		if (isFastq) {
+			for (size_t i = 1; i < num_splits; ++i) {
+				uint64_t nominalLine = (totalLines * i) / num_splits;
+				alignedStarts[i] = (nominalLine / alignUnit) * alignUnit;
+			}
+		} else {
+			const uint64_t totalRecords = static_cast<uint64_t>(fastaHeaderLines.size());
+			const uint64_t recAlign = is_interleaved ? static_cast<uint64_t>(num_sense) : 1;
+			for (size_t i = 1; i < num_splits; ++i) {
+				uint64_t nominalRec = (totalRecords * i) / num_splits;
+				nominalRec = (nominalRec / recAlign) * recAlign;
+				alignedStarts[i] = (nominalRec < totalRecords) ? fastaHeaderLines[nominalRec] : totalLines;
+			}
 		}
 		alignedStarts[num_splits] = totalLines;
 
@@ -1269,7 +1376,15 @@ void Readfeed::build_flat_chunk_offsets()
 
 			flat_slots[slotIdx].bytes_start = startByte;
 			flat_slots[slotIdx].bytes_end   = endByte;
-			flat_slot_files[slotIdx].numreads = static_cast<unsigned>((endLine - startLine) / linesPerRecord);
+			unsigned slotReads;
+			if (isFastq) {
+				slotReads = static_cast<unsigned>((endLine - startLine) / 4);
+			} else {
+				auto lo = std::lower_bound(fastaHeaderLines.begin(), fastaHeaderLines.end(), startLine);
+				auto hi = std::lower_bound(fastaHeaderLines.begin(), fastaHeaderLines.end(), endLine);
+				slotReads = static_cast<unsigned>(hi - lo);
+			}
+			flat_slot_files[slotIdx].numreads = slotReads;
 
 			INFO("build_flat_chunk_offsets: slot ", slotIdx,
 				" bytes=[", startByte, ",", endByte, ")",
@@ -1507,27 +1622,67 @@ void Readfeed::count_reads_parallel()
 			constexpr size_t CHUNK = 1U << 20; // 1 MiB
 			std::vector<uint8_t> buf(CHUNK);
 
-			int lineInRecord = 0; // 0=header, 1=seq, 2='+', 3=qual (FASTQ); 0=header, 1=seq (FASTA)
 			uint64_t seqlen = 0;
 
-			for (;;) {
-				const auto n = reader->read(reinterpret_cast<char*>(buf.data()), CHUNK);
-				if (n <= 0) break;
-				for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
-					if (buf[k] == '\n') {
-						if (lineInRecord == 1) { // end of sequence line
-							++origFile.numreads;
-							length_all += seqlen;
-							if (seqlen > max_read_len) max_read_len = static_cast<uint32_t>(seqlen);
-							if (min_read_len == 0 || static_cast<uint32_t>(seqlen) < min_read_len)
-								min_read_len = static_cast<uint32_t>(seqlen);
-							seqlen = 0;
+			if (origFile.isFastq) {
+				// FASTQ: exactly 4 lines per record (header, seq, '+', qual)
+				int lineInRecord = 0;
+				for (;;) {
+					const auto n = reader->read(reinterpret_cast<char*>(buf.data()), CHUNK);
+					if (n <= 0) break;
+					for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
+						if (buf[k] == '\n') {
+							if (lineInRecord == 1) { // end of sequence line
+								++origFile.numreads;
+								length_all += seqlen;
+								if (seqlen > max_read_len) max_read_len = static_cast<uint32_t>(seqlen);
+								if (min_read_len == 0 || static_cast<uint32_t>(seqlen) < min_read_len)
+									min_read_len = static_cast<uint32_t>(seqlen);
+								seqlen = 0;
+							}
+							lineInRecord = (lineInRecord + 1) % 4;
+						} else if (lineInRecord == 1) {
+							++seqlen;
 						}
-						lineInRecord = (lineInRecord + 1) % linesPerRecord;
-					} else if (lineInRecord == 1) {
-						++seqlen;
 					}
 				}
+			} else {
+				// FASTA: variable lines per record. A new record begins at any line starting with '>'.
+				// Sequence length is accumulated across all non-header lines until the next header.
+				bool atLineStart = true;
+				bool inHeader = false;
+				bool hasOpen = false;
+				auto flush = [&]() {
+					if (hasOpen) {
+						++origFile.numreads;
+						length_all += seqlen;
+						if (seqlen > max_read_len) max_read_len = static_cast<uint32_t>(seqlen);
+						if (min_read_len == 0 || static_cast<uint32_t>(seqlen) < min_read_len)
+							min_read_len = static_cast<uint32_t>(seqlen);
+						seqlen = 0;
+						hasOpen = false;
+					}
+				};
+				for (;;) {
+					const auto n = reader->read(reinterpret_cast<char*>(buf.data()), CHUNK);
+					if (n <= 0) break;
+					for (size_t k = 0; k < static_cast<size_t>(n); ++k) {
+						const uint8_t c = buf[k];
+						if (atLineStart && c == '>') {
+							flush();
+							inHeader = true;
+							hasOpen = true;
+						}
+						if (c == '\n') {
+							atLineStart = true;
+							inHeader = false;
+						} else {
+							if (!inHeader) ++seqlen;
+							atLineStart = false;
+						}
+					}
+				}
+				flush(); // finalize trailing record
 			}
 		} else {
 			// --- flat: parallel threads, each scanning a record-aligned byte range ---
@@ -1599,6 +1754,7 @@ void Readfeed::count_reads_parallel()
 			{
 				std::vector<std::thread> workers;
 				workers.reserve(num_splits);
+				const bool isFastq = origFile.isFastq;
 				for (size_t i = 0; i < num_splits; ++i) {
 					workers.emplace_back([&, i]() {
 						auto& res = results[i];
@@ -1613,31 +1769,74 @@ void Readfeed::count_reads_parallel()
 						constexpr size_t BUFSZ = 1U << 16; // 64 KiB
 						std::vector<char> buf(BUFSZ);
 						uint64_t remaining = endByte - startByte;
-						int lineInRecord = 0;
 						uint64_t seqlen = 0;
 
-						while (remaining > 0) {
-							const size_t toRead = static_cast<size_t>(
-								std::min(static_cast<uint64_t>(BUFSZ), remaining));
-							ifs.read(buf.data(), static_cast<std::streamsize>(toRead));
-							const auto n = static_cast<size_t>(ifs.gcount());
-							if (n == 0) break;
-							remaining -= n;
-							for (size_t k = 0; k < n; ++k) {
-								if (buf[k] == '\n') {
-									if (lineInRecord == 1) { // end of sequence line
-										++res.numreads;
-										res.length += seqlen;
-										if (seqlen > res.maxlen) res.maxlen = static_cast<uint32_t>(seqlen);
-										if (res.minlen == 0 || static_cast<uint32_t>(seqlen) < res.minlen)
-											res.minlen = static_cast<uint32_t>(seqlen);
-										seqlen = 0;
+						if (isFastq) {
+							int lineInRecord = 0;
+							while (remaining > 0) {
+								const size_t toRead = static_cast<size_t>(
+									std::min(static_cast<uint64_t>(BUFSZ), remaining));
+								ifs.read(buf.data(), static_cast<std::streamsize>(toRead));
+								const auto n = static_cast<size_t>(ifs.gcount());
+								if (n == 0) break;
+								remaining -= n;
+								for (size_t k = 0; k < n; ++k) {
+									if (buf[k] == '\n') {
+										if (lineInRecord == 1) { // end of sequence line
+											++res.numreads;
+											res.length += seqlen;
+											if (seqlen > res.maxlen) res.maxlen = static_cast<uint32_t>(seqlen);
+											if (res.minlen == 0 || static_cast<uint32_t>(seqlen) < res.minlen)
+												res.minlen = static_cast<uint32_t>(seqlen);
+											seqlen = 0;
+										}
+										lineInRecord = (lineInRecord + 1) % 4;
+									} else if (lineInRecord == 1) {
+										++seqlen;
 									}
-									lineInRecord = (lineInRecord + 1) % linesPerRecord;
-								} else if (lineInRecord == 1) {
-									++seqlen;
 								}
 							}
+						} else {
+							// FASTA: each record starts at a line beginning with '>'.
+							// Sequence length spans all subsequent non-header lines until the next header.
+							bool atLineStart = true; // startByte is record-aligned (boundary scan ensures this)
+							bool inHeader = false;
+							bool hasOpen = false;
+							auto flush = [&]() {
+								if (hasOpen) {
+									++res.numreads;
+									res.length += seqlen;
+									if (seqlen > res.maxlen) res.maxlen = static_cast<uint32_t>(seqlen);
+									if (res.minlen == 0 || static_cast<uint32_t>(seqlen) < res.minlen)
+										res.minlen = static_cast<uint32_t>(seqlen);
+									seqlen = 0;
+									hasOpen = false;
+								}
+							};
+							while (remaining > 0) {
+								const size_t toRead = static_cast<size_t>(
+									std::min(static_cast<uint64_t>(BUFSZ), remaining));
+								ifs.read(buf.data(), static_cast<std::streamsize>(toRead));
+								const auto n = static_cast<size_t>(ifs.gcount());
+								if (n == 0) break;
+								remaining -= n;
+								for (size_t k = 0; k < n; ++k) {
+									const char c = buf[k];
+									if (atLineStart && c == '>') {
+										flush();
+										inHeader = true;
+										hasOpen = true;
+									}
+									if (c == '\n') {
+										atLineStart = true;
+										inHeader = false;
+									} else {
+										if (!inHeader) ++seqlen;
+										atLineStart = false;
+									}
+								}
+							}
+							flush(); // finalize last record in this slot
 						}
 					});
 				}
@@ -1819,7 +2018,7 @@ void Readfeed::init_vzlib_in()
 }
 
 /*
- * called at the start of reading the split files 
+ * called at the start of reading the reads files 
  * init readfeed for reading:
  *   ifsv
  *   vstate_in
@@ -1827,7 +2026,9 @@ void Readfeed::init_vzlib_in()
  */
 void Readfeed::init_reading()
 {
+	auto start_a = std::chrono::high_resolution_clock::now();
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
+        INFO("Initiating indexed gzipped files reading ...");
 		vstate_in.resize(gz_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -1842,15 +2043,25 @@ void Readfeed::init_reading()
 					/*parallelization=*/std::size_t(1)
 				)
 			);
+			// Replay the block map captured by build_chunk_offsets so seek(bytes_start)
+			// resolves via lookup instead of decompress-and-discard from byte 0.
+			const std::size_t file_idx = is_interleaved ? 0 : (i % num_sense);
+			if (file_idx < gz_index_buffers.size() && !gz_index_buffers[file_idx].empty()) {
+				slot.reader->importFrom(gz_index_buffers[file_idx]);
+			}
 			slot.reader->rdr.seek(static_cast<long long>(slot.bytes_start));
 			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
 		}
-		return;
-	}
+        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
+	    INFO("Done reading initiation in: ", elapsed.count(), " sec");
+        return;
+    }
 
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip == false) {
+	    INFO("Initiating indexed flat files reading ...  ");
+	    start_a = std::chrono::high_resolution_clock::now();
 		vstate_in.resize(flat_slots.size());
 		for (auto& s : vstate_in) s.reset();
 
@@ -1870,10 +2081,14 @@ void Readfeed::init_reading()
 			slot.buf_pos = 0;
 			slot.buf_len = 0;
 		}
+        std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
+	    INFO("Done reading initiation in: ", elapsed.count(), " sec");
 		return;
 	}
 
     // split files - outdated - to be removed
+	INFO("Initiating split files reading (deprecated) ...  ");
+    start_a = std::chrono::high_resolution_clock::now();
 	for (std::size_t i = 0; i < vstate_in.size(); ++i) {
 		vstate_in[i].reset();
 	}
@@ -1894,6 +2109,8 @@ void Readfeed::init_reading()
 
 	// vzlib_in
 	init_vzlib_in();
+    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_a;
+	INFO("Done reading initiation in: ", elapsed.count(), " sec");
 } // ~Readfeed::init_reading
 
 int Readfeed::clean()

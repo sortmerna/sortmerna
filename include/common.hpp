@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /** @file common.hpp */
@@ -103,7 +102,6 @@ extern timeval t;
 const char DELIM = ':';
 
 //#define LOCKQUEUE // Lock queue with mutexes
-#define CONCURRENTQUEUE // lockless queue
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
 

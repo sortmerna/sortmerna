@@ -36,12 +36,12 @@ validate:
   files:
     aligned.log:
       num_reads: 10000
-      num_hits:   9833
-      num_fail:    167
+      num_hits:   9821  # 9833/e=1
+      num_fail:    179  #  167/e=1
     aligned.blast:
-      num_recs: 9833
-    aligned.fq: 9936
-    other.fq:     64
+      num_recs: 9821  # 9833/e=1
+    aligned.fq: 9922  # 9936/e=1
+    other.fq:     78  #   64/e=1
   runtime:
     win:
       - threads: 8

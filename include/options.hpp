@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /*
@@ -120,7 +119,8 @@ OPT_ALIGN = "align",  // TODO: on hold
 OPT_FILTER = "filter",  // TODO: on hold
 OPT_DBG_LEVEL = "dbg-level",
 OPT_MAX_READ_LEN = "max_read_len",
-OPT_SCORE_SPLIT = "score_split";
+OPT_SCORE_SPLIT = "score_split",
+OPT_FLUSH_DELAY = "flush-delay";
 
 // help strings
 const std::string \
@@ -300,7 +300,7 @@ help_F =
 help_R = 
 	"Search only the reverse-complementary strand.           False\n",
 help_e = 
-	"E-value threshold.                                      1\n\n"
+	"E-value threshold.                                      1e-5\n\n"
 	"       Defines the 'statistical significance' of a local alignment.\n"
 	"       Exponentially correllates with the Minimal Alignment score.\n"
 	"       Higher E-values (100, 1000, ...) cause More reads to Pass the alignment threshold\n\n",
@@ -416,11 +416,17 @@ help_dbg_level =
 help_max_read_len =
 	"Maximum allowed read length                             " + std::to_string(MAX_READ_LEN) + "\n\n",
 
-help_score_split = 
+help_score_split =
 	"Calculate minimal SW score per split rather than        False\n"
     "                                            all reads. This has an effect similar to increasing\n"
     "                                            e-value i.e. lowers the filtering threshold to less\n"
-    "                                            sensitive (see issue 453)\n"
+    "                                            sensitive (see issue 453)\n",
+
+help_flush_delay =
+    "Mid-alignment restart checkpoint interval (seconds).    60\n\n"
+    "      Interval in seconds to flash/persist the alignment related data to the kvdb,\n"
+	"      so that the alignment could renew from the point of interrupt rather than\n"
+	"      repeating the process from the start.\n"
 //help_align =
 //    "Perform the alignment                                   False\n\n"
 //	"       Search a single best alignment per read\n\n",
@@ -548,6 +554,7 @@ public:
 	unsigned num_read_thread_rep = 1;  // number of report reader threads
 	unsigned num_proc_thread_rep = 1;  // number of report processor threads
 	unsigned dbg_level = 0;  // lowest debug level - minimal info.
+	unsigned flush_delay = 60;  // seconds between mid-pass restart watermark commits. See restart.hpp.
 
 	unsigned queue_size_max = 1000; // max number of Reads in the Read and Write queues. 10 works OK.
     uint64_t max_read_len = MAX_READ_LEN; // max allowed read len
@@ -596,6 +603,11 @@ public:
 	//                 |_populated during options processing
 	std::vector<std::pair<std::string, std::string>> indexfiles;
 	std::vector<std::vector<uint32_t>> skiplengths; // [2] OPT_PASSES K-mer window shift sizes. Refstats::load
+	// The 3 skip lengths parsed from '--passes'. Stored here by opt_passes and
+	// replicated into 'skiplengths' (per index) at the end of process(), because
+	// options are processed in alphabetical order ('passes' before 'ref'), so
+	// 'indexfiles' is still empty while opt_passes runs.
+	std::vector<uint32_t> skiplengths_user;
 
 	const std::string dbkey = "run_options";
 	const std::string IDX_DIR  = "idx";
@@ -681,6 +693,7 @@ private:
 	void opt_max_pos(const std::string &val);
 	void opt_readfeed(const std::string& val);
 	void opt_score_split(const std::string& val);
+	void opt_flush_delay(const std::string& val);
 	/*
 	 * true: 1,yes,Yes,Y,y,T,t, false: 0,No,NO,no,N,n,F,f
 	*/
@@ -715,7 +728,7 @@ private:
 	std::multimap<std::string, std::string> mopt;
 
 	// OPTIONS Map - specifies all possible options
-	const std::array<opt_6_tuple, 56> options = {
+	const std::array<opt_6_tuple, 57> options = {
 		std::make_tuple(OPT_REF,            "PATH",        COMMON,      true,  help_ref, &Runopts::opt_ref),
 		std::make_tuple(OPT_READS,          "PATH",        COMMON,      true,  help_reads, &Runopts::opt_reads),
 		//std::make_tuple(OPT_ALIGN,          "BOOL",        COMMON,      true,  help_align, &Runopts::opt_align),
@@ -773,7 +786,8 @@ private:
 		std::make_tuple(OPT_DBG_PUT_DB,     "BOOL",        DEVELOPER,   false, help_dbg_put_db, &Runopts::opt_dbg_put_db),
 		std::make_tuple(OPT_CMD,            "BOOL",        DEVELOPER,   false, help_cmd, &Runopts::opt_cmd),
 		std::make_tuple(OPT_TASK,           "INT",         DEVELOPER,   false, help_task, &Runopts::opt_task),
-		std::make_tuple(OPT_DBG_LEVEL,      "INT",         DEVELOPER,   false, help_dbg_level, &Runopts::opt_dbg_level)
+		std::make_tuple(OPT_DBG_LEVEL,      "INT",         DEVELOPER,   false, help_dbg_level, &Runopts::opt_dbg_level),
+		std::make_tuple(OPT_FLUSH_DELAY,    "INT",         DEVELOPER,   false, help_flush_delay, &Runopts::opt_flush_delay)
 		//std::make_tuple(OPT_THREP,          "INT:INT",     DEVELOPER,   false, help_threp, &Runopts::opt_threp)
 	};
 	// ~map options

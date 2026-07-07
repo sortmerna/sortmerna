@@ -1,4 +1,4 @@
-# @copyright 2016-2026 Clarity Genomics BVBA
+# @copyright 2016-2026 Clarity Genomics Inc
 # @copyright 2012-2016 Bonsai Bioinformatics Research Group
 # @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 #
@@ -24,7 +24,7 @@
 #               Mikaël Salson    mikael.salson@lifl.fr
 #               Hélène Touzet    helene.touzet@lifl.fr
 #               Rob Knight       robknight@ucsd.edu
-#               biocodz          biocodz@protonmail.com
+#
 
 '''
 file: run.py
@@ -39,6 +39,7 @@ def mock_missing(name):
     return type(name, (), {'__init__': init})
 
 import os
+import signal
 import sys
 import struct
 import ctypes
@@ -52,6 +53,7 @@ import yaml
 import gzip
 import multiprocessing
 from argparse import ArgumentParser
+from argparse import BooleanOptionalAction
 from argparse import Namespace
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -124,8 +126,6 @@ DENOVO_BASE   = None # '{}_denovo.fasta'.format(ALI_BASE)
 OTU_BASE      = None # '{}_otus.txt'.format(ALI_BASE)
 BLAST_BASE    = None # '{}.blast'.format(ALI_BASE)
 SAM_BASE      = None # '{}.sam'.format(ALI_BASE)
-READS_EXT     = None
-IS_FASTQ      = False
 IS_PAIRED_IN  = False
 IS_PAIRED_OUT = False
 
@@ -158,9 +158,8 @@ def is_darwin():
 
 def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str], list[str]]:
     '''
-    run a test
     args:
-      - cmd  command to run
+      - cmd  command to execute
     '''
     ST = '[run.run_test]'
     rcode, outl, errl = 0, [], []
@@ -199,6 +198,119 @@ def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str]
     print(f"{ST} run time: {rt}")
     return rcode, outl, errl
 #END cmake_run
+
+def run_with_interrupts(cmd:list,
+                        num_interrupts:int,
+                        wait_after_align_start:int=60,
+                        startup_deadline:int=1800,
+                        cwd:str=None) -> tuple[int, list[str], list[str]]:
+    '''
+    Exercise the auto-resume path. Launches sortmerna num_interrupts times in
+    succession; on each non-final launch we wait until "Processor 0 thread ..
+    started" appears, sleep wait_after_align_start seconds, then SIGKILL the
+    process group. The final launch runs to completion and relies on
+    restart::probe_or_init to detect the prior mid-pass interrupt and roll back.
+
+    args:
+      cmd                     sortmerna argv (without stdbuf prefix)
+      num_interrupts          number of mid-pass kills before the final run
+      wait_after_align_start  seconds to let alignment progress before SIGKILL
+      startup_deadline        seconds to wait for alignment to start before giving up
+    '''
+    ST = '[run_with_interrupts]'
+    print(f'{ST} num_interrupts={num_interrupts} wait_after_align_start={wait_after_align_start}s')
+
+    # Line-buffer the child's stdout/stderr so log polling sees lines promptly.
+    stdbuf_path = shutil.which('stdbuf')
+    if stdbuf_path:
+        wrapped = [stdbuf_path, '-oL', '-eL'] + cmd
+    else:
+        print(f'{ST} WARN: stdbuf not found; child stdout may be block-buffered and the log poll may lag')
+        wrapped = cmd
+
+    log_path = Path(f'/tmp/sortmerna_interrupt_{os.getpid()}.log')
+    marker = re.compile(r'Processor 0 thread .* started')
+    done_pat = re.compile(r'Processor .* done\. Processed')
+
+    def echo_log(text:str, pos:int) -> int:
+        '''echo any text beyond pos to this process' stdout, return new pos'''
+        if len(text) > pos:
+            sys.stdout.write(text[pos:])
+            sys.stdout.flush()
+        return len(text)
+
+    total_attempts = num_interrupts + 1
+    for iattempt in range(total_attempts):
+        is_final = (iattempt == num_interrupts)
+        label = 'final' if is_final else f'kill-mid-pass {iattempt+1}/{num_interrupts}'
+        log_path.unlink(missing_ok=True)
+        log_path.touch()
+
+        print(f'{ST} attempt {iattempt+1}/{total_attempts} ({label})')
+        with open(log_path, 'w') as flog:
+            proc = subprocess.Popen(wrapped, stdout=flog, stderr=subprocess.STDOUT,
+                                    cwd=cwd, start_new_session=True)
+        print(f'{ST} pid={proc.pid}')
+
+        if is_final:
+            log_pos = 0
+            while proc.poll() is None:
+                log_pos = echo_log(log_path.read_text(errors='replace'), log_pos)
+                time.sleep(0.5)
+            # flush any tail written between the last poll and exit
+            echo_log(log_path.read_text(errors='replace'), log_pos)
+            rcode = proc.returncode
+            print(f'{ST} sortmerna exited rcode={rcode}')
+            return rcode, [], []
+
+        deadline = time.time() + startup_deadline
+        log_pos = 0
+        while True:
+            text = log_path.read_text(errors='replace')
+            log_pos = echo_log(text, log_pos)
+            if proc.poll() is not None:
+                print(f'{ST} sortmerna exited before alignment started (rc={proc.returncode})')
+                return 1, [], []
+            if time.time() > deadline:
+                _kill_pg(proc)
+                print(f'{ST} timeout waiting for alignment to start')
+                return 1, [], []
+            if any(marker.search(line) for line in text.splitlines()):
+                break
+            time.sleep(2)
+        print(f'{ST} alignment threads up; waiting {wait_after_align_start}s')
+
+        wait_end = time.time() + wait_after_align_start
+        while time.time() < wait_end and proc.poll() is None:
+            log_pos = echo_log(log_path.read_text(errors='replace'), log_pos)
+            time.sleep(0.5)
+        log_pos = echo_log(log_path.read_text(errors='replace'), log_pos)
+
+        done_count = sum(1 for line in log_path.read_text(errors='replace').splitlines()
+                         if done_pat.search(line))
+        if done_count > 0:
+            print(f'{ST} WARN: {done_count} thread(s) already finished; interrupt landing past mid-pass. '
+                  f'Reduce wait_after_align_start or use a larger dataset.')
+
+        print(f'{ST} sending SIGKILL to pgid={proc.pid}')
+        _kill_pg(proc)
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            print(f'{ST} ERROR: sortmerna did not exit within 15s of SIGKILL')
+            return 1, [], []
+        print(f'{ST} killed cleanly; next launch should auto-resume')
+
+    return 0, [], []
+#END run_with_interrupts
+
+def _kill_pg(proc):
+    '''Send SIGKILL to the process group started via start_new_session=True.'''
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except (ProcessLookupError, OSError):
+        pass
+#END _kill_pg
 
 def get_diff(fpath0, fpath1):
     '''
@@ -274,126 +386,14 @@ def parse_log(fpath:str):
     return logd
 #END parse_log
 
-def process_smr_opts(args:list):
-    '''
-    args:
-      - args  list of parameters passed to sortmerna
-    '''
-    ST = '[process_smr_opts]'
-    WDIR = '-workdir'
-    KVD = '-kvdb'
-    IDX = '-idx'
-    ALN = '-aligned'
-    OTH = '-other'
-    OUT2 = '-out2'
-
-    global KVDB_DIR
-    global IDX_DIR
-    global ALI_BASE
-    global OTH_BASE
-
-    global LOGF
-    global ALIF
-    global ALI_FWD
-    global ALI_REV
-    global OTHF
-    global OTH_FWD
-    global OTH_REV
-    global ALI_REF
-    global DENOVOF
-    global OTUF
-    global BLASTF
-    global SAMF
-    global READS_EXT
-    global IS_FASTQ
-    global IS_PAIRED_IN 
-    global IS_PAIRED_OUT
-    global WRK_DIR
-    
-    is_gz = False
-    psplit = os.path.splitext(args[args.index('-reads')+1]) # 1.concat.fq.gz -> [1.concat.fq, .gz]
-    READS_EXT = psplit[1]
-    if READS_EXT in ['.gz']:
-        #READS_EXT = os.extsep + args[args.index('-reads')+1].split(os.extsep)[1]
-        READS_EXT = os.path.splitext(psplit[0])[1]
-        is_gz = True
-    IS_FASTQ =  READS_EXT[1:] in ['fq', 'fastq']
-    IS_PAIRED_IN = '-paired_in' in args
-    IS_PAIRED_OUT = '-paired_out' in args
-
-    if ALN in args:
-        aln_pfx = args[args.index(ALN) + 1]
-        if not os.path.basename(aln_pfx):
-            ALIF = os.path.join(aln_pfx, ALI_BASE + READS_EXT) # use default 'aligned'
-        else:
-            ALI_BASE = os.path.basename(aln_pfx)
-            ALIF = os.path.abspath(aln_pfx + READS_EXT)
-    elif WDIR in args:
-        wdir = args[args.index(WDIR) + 1]
-        print(f"{ST} '-workdir' option was provided. Using workdir: [{os.path.realpath(wdir)}]")
-        ALIF = os.path.join(wdir, 'out', ALI_BASE + READS_EXT)
-    elif WRK_DIR:
-        ALIF = os.path.join(WRK_DIR, 'out', ALI_BASE + READS_EXT)
-    elif UHOME:
-        ALIF = os.path.join(UHOME, 'sortmerna', 'run', 'out', ALI_BASE + READS_EXT)
-    else:
-        print(f'{ST} cannot define alignment file')
-
-    if OUT2 in args:
-        ALI_FWD = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_fwd' + READS_EXT)
-        ALI_REV = os.path.join(os.path.dirname(ALIF), ALI_BASE + '_rev' + READS_EXT)
-
-    if OTH in args:
-        idx = args.index(OTH)
-        # check idx + 1 no exceeds args length and other options has arg
-        if idx + 1 < len(args) -1 and args[idx+1][:1] != '-':
-            oth_pfx = args[idx + 1]
-            if not os.path.basename(oth_pfx):
-                OTHF = os.path.join(oth_pfx, OTH_BASE + READS_EXT)
-            else:
-                OTH_BASE = os.path.basename(oth_pfx)
-                OTHF = os.path.abspath(oth_pfx + READS_EXT)
-        elif ALN in args:
-            OTHF = os.path.join(os.path.dirname(ALIF), OTH_BASE + READS_EXT) # use the same out dir as ALN
-        elif WDIR in args:
-            wdir = args[args.index(WDIR) + 1]
-            print(f'{ST} \'-workdir\' option was provided. Using workdir: [{os.path.realpath(wdir)}]')
-            ALIF = Path(wdir) / 'out' / f'{OTH_BASE}.{READS_EXT}'
-        else:
-            OTHF = Path(UHOME) / 'sortmerna/run/out' / f'{OTH_BASE}.{READS_EXT}'
-
-        if OUT2 in args:
-            OTH_FWD = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_fwd' + READS_EXT)
-            OTH_REV = os.path.join(os.path.dirname(ALIF), OTH_BASE + '_rev' + READS_EXT)
-
-    if KVD in args:
-        KVDB_DIR = args[args.index(KVD) + 1]
-    elif WDIR in args:
-        KVDB_DIR = Path(args[args.index(WDIR) + 1]) / 'kvdb'
-    else:
-        KVDB_DIR = Path(UHOME) / 'sortmerna/run/kvdb'
-
-    if IDX in args:
-        IDX_DIR = args[args.index(IDX) + 1]
-    elif WDIR in args:
-        IDX_DIR = Path(args[args.index(WDIR) + 1]) / 'idx'
-    else:
-        IDX_DIR = Path(UHOME) / 'sortmerna/run/idx'
-
-    gzs = '.gz' if is_gz else ''
-    LOGF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.log')
-    BLASTF  = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.blast{gzs}')
-    OTUF    = os.path.join(os.path.dirname(ALIF), 'otu_map.txt')
-    DENOVOF = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}_denovo.fa')
-    SAMF    = os.path.join(os.path.dirname(ALIF), f'{ALI_BASE}.sam')
-#END process_smr_opts
-
-def process_blast(**kw):
+def process_blast(*, errors:list=None, **kw):
     '''
     Check count of reads passing %id and %coverage threshold
     as given in aligned.blast
     '''
     ST = f'[process_blast]'
+    if errors is None:
+        errors = []
     vald = kw.get('validate')
 
     outdir = Path(get_dict_val('args:-workdir', kw))/'out'
@@ -462,7 +462,9 @@ def process_blast(**kw):
                            f" {n_yid_ycov} Expected: {blastd['n_yid_ycov']}")
                     print(msg)
                     if n_yid_ycov != blastd['n_yid_ycov']:
-                        print(f"Failed test: {blastd['n_yid_ycov']} not equals {n_yid_ycov}")
+                        _record_validation_error(
+                            errors,
+                            f"{ST} Failed test: {blastd['n_yid_ycov']} not equals {n_yid_ycov}")
 
                 num_recs = blastd.get('num_recs')
                 if num_recs:
@@ -470,7 +472,9 @@ def process_blast(**kw):
                             f' {num_hits_file} Expected: {num_recs}')
                     print(msg)
                     if num_hits_file != num_recs:
-                        print(f'Failed test: {num_hits_file} not equals {num_recs}')
+                        _record_validation_error(
+                            errors,
+                            f'{ST} Failed test: {num_hits_file} not equals {num_recs}')
     return {
         'n_hits'  : num_hits_file, 
         'yid_ycov': n_yid_ycov, 
@@ -586,13 +590,25 @@ def validate_otu(**kw):
             f"{logd['num_otus'][1]} not in {vald['num_cluster']}"
 #END validate_otu
 
-def validate_log(logd:dict, ffd:dict):
+class ValidationError(Exception):
+    '''Raised when one or more output checks fail.'''
+    def __init__(self, errors:list):
+        self.errors = errors
+        super().__init__('\n'.join(errors))
+
+def _record_validation_error(errors:list, msg:str):
+    print(msg)
+    errors.append(msg)
+
+def validate_log(logd:dict, ffd:dict, errors:list=None):
     '''
     args:
       - logd
       - ffd   files data as in test.jinja.yaml:<test_name>:validate:files
     '''
     ST = '[validate_log]'
+    if errors is None:
+        errors = []
     # aligned.log : 
     #   verify the total number of reads in aligned.log vs the number in the validation spec
     n_vald = ffd.get('aligned.log', {}).get('num_reads')
@@ -601,42 +617,42 @@ def validate_log(logd:dict, ffd:dict):
         msg = f'{ST} testing num_reads: {n_logd} Expected: {n_vald}'
         print(msg)
         if n_vald != n_logd:
-            print(f'Failing: {n_vald} not equals {n_logd}')
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify number of hits
     n_vald = ffd.get('aligned.log', {}).get('num_hits')
     if n_vald:
         n_logd = logd['num_hits']
         print(f'{ST} testing num_hits: {n_logd} Expected: {n_vald}')
         if n_vald != n_logd:
-            print(f'Failing: {n_vald} not equals {n_logd}')
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify number of misses
     n_vald = ffd.get('aligned.log', {}).get('num_fail')
     if n_vald:
         n_logd = logd['num_fail']
         print(f'{ST} testing num_fail: {n_logd} Expected: {n_vald}')
         if n_vald != n_logd:
-            print(f'Failing: {n_vald} not equals {n_logd}')
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify count of COV+ID
     n_vald = ffd.get('aligned.log', {}).get('n_yid_ycov')
     if n_vald:
         n_logd = logd.get('num_id_cov')
         print(f'{ST} testing n_yid_ycov: {n_logd} Expected: {n_vald}')
-        if n_vald != n_logd: 
-            print(f'Failing: {n_vald} not equals {n_logd}')
+        if n_vald != n_logd:
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify count of OUT groups
     n_vald = ffd.get('aligned.log', {}).get('num_groups')
     if n_vald:
         n_logd = logd.get('num_otus')
         print(f'{ST} testing num_groups: {n_logd} Expected: {n_vald}')
-        if n_vald != n_logd: 
-            print(f'Failing: {n_vald} not equals {n_logd}')
+        if n_vald != n_logd:
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
     #   verify count of de-novo reads
     n_vald = ffd.get('aligned.log', {}).get('n_denovo')
     if n_vald:
-        n_logd = logd['num_denovo']
+        n_logd = logd.get('num_denovo')
         print(f'{ST} testing n_denovo: {n_logd} Expected: {n_vald}')
-        if n_vald != n_logd: 
-            print(f'Failing: {n_vald} not equals {n_logd}')
+        if n_vald != n_logd:
+            _record_validation_error(errors, f'{ST} Error: {n_vald} not equals {n_logd}')
 #END validate_log
 
 def process_output(**kw):
@@ -648,6 +664,7 @@ def process_output(**kw):
     ST = '[run.process_output]'
     global is_skbio
     vald = kw.get('validate')
+    errors = []
     
     if not vald:
         print(f'{ST} validation info not provided')
@@ -673,24 +690,55 @@ def process_output(**kw):
                             count += 1
                     msg = f'{ST} testing count of groups in {ff}: {count} Expected: {vv}'
                     print(msg)
-                    if count != vv: 
-                        print(f'Failing: {count} not equals {vv}')
+                    if count != vv:
+                        _record_validation_error(errors, f'{ST} Error: {count} not equals {vv}')
                     continue
+            fmt_path = ffp.with_suffix('') if ffp.suffix == '.gz' else ffp
+            is_gz = ffp.suffix == '.gz'
+            read_kw = {'compression': 'gzip'} if is_gz else {}
             if is_skbio:
-                if IS_FASTQ:
-                    for seq in skbio.io.read(ffp, format='fastq', variant=vald.get('variant')):
+                if fmt_path.suffix in ['.fastq', '.fq']:
+                    for seq in skbio.io.read(
+                            ffp, format='fastq',
+                            variant=vald.get('variant'), **read_kw):
+                        count += 1
+                elif fmt_path.suffix in ['.fasta', '.fa']:
+                    for seq in skbio.io.read(ffp, format='fasta', **read_kw):
                         count += 1
                 else:
-                    fmt = 'fasta' if READS_EXT[1:] in ['fasta', 'fa'] else READS_EXT[1:]
-                    for seq in skbio.io.read(ffp, format=fmt):
-                        count += 1
+                    _record_validation_error(
+                        errors, f'{ST} cannot define format from suffix: {ffp.suffix}')
+                    continue
+            elif ffp.exists():
+                opener = gzip.open if is_gz else open
+                mode = 'rt' if is_gz else 'r'
+                with opener(ffp, mode) as f_in:
+                    if fmt_path.suffix in ['.fastq', '.fq']:
+                        for i, _ in enumerate(f_in, 1):
+                            if i % 4 == 0:
+                                count += 1
+                    elif fmt_path.suffix in ['.fasta', '.fa']:
+                        for line in f_in:
+                            if line.startswith('>'):
+                                count += 1
+                    else:
+                        _record_validation_error(
+                            errors, f'{ST} cannot define format from suffix: {ffp.suffix}')
+                        continue
+            if is_skbio or ffp.exists():
                 print(f'{ST} Testing count of reads in {ff}: {count} Expected: {vv}')
-                if count != vv: 
-                    print(f'Failing: {count} not equals {vv}')
+                if count != vv:
+                    _record_validation_error(errors, f'{ST} Error: {count} not equals {vv}')
         elif ff == 'aligned.log':
-            validate_log(logd, ffd)
+            validate_log(logd, ffd, errors)
         elif 'aligned.blast' in ff:
-            process_blast(**kw)
+            process_blast(**kw, errors=errors)
+
+    if errors:
+        print(f'{ST} validation failed with {len(errors)} error(s):')
+        for i, err in enumerate(errors, 1):
+            print(f'{ST}   {i}. {err}')
+        raise ValidationError(errors)
 #END process_output
 
 def t0(datad, ret={}, **kwarg):
@@ -1874,7 +1922,7 @@ if __name__ == "__main__":
     p5.add_argument('--data-dir', dest='data_dir', help='path to the data. Abs or relative')
     p5.add_argument('--ref-dir', dest='ref_dir', help='path to the reference data. Abs or relative')
     p5.add_argument('--threads', dest='threads', help='Number of threads to use')
-    p5.add_argument('--index', dest='index', help='Index option 0 | 1 | 2')
+    p5.add_argument('--index', dest='index', help='Index option 0 | 1')
     p5.add_argument('-t', '--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4')
     p5.add_argument('-d', '--dbg-level', dest="dbg_level", help='debug level 0 | 1 | 2')
     p5.add_argument('-w', '--workdir', dest='workdir', help='Environment variables')
@@ -1891,8 +1939,21 @@ if __name__ == "__main__":
     p5.add_argument('-e','--envn', dest='envname', help=('Name of environment: WIN | WSL '
                                                       '| LNX_AWS | LNX_TRAVIS | LNX_VBox_Ubuntu_1804 | ..'))
     p5.add_argument('--score-split', action="store_true", help='set corresponding sortmerna argument')
+    p5.add_argument('--interrupt', dest='interrupt', nargs='?', const=1, default=0, type=int,
+                    choices=[0, 1, 2],
+                    help='Inject N mid-alignment SIGKILLs to exercise auto-resume. '
+                         '0 (default) runs normally; --interrupt (no value) implies 1; max 2.')
+    p5.add_argument('--interrupt-wait', dest='interrupt_wait', type=int, default=60,
+                    help='Seconds to let alignment run after threads start before each SIGKILL '
+                         '(default: 60). Used only when --interrupt > 0.')
     p5.add_argument('--stop-on-fail', dest='stop_on_fail', action="store_true",
                     help='Abort the batch on the first failing test (default: continue and summarize at end)')
+    p5.add_argument('--clean-index', dest='clean_index', action="store_true",
+                    help='Also remove the index (idx) directory prior to running. '
+                         'By default the index is preserved and reused across runs.')
+    p5.add_argument('--clean-kvdb', dest='clean_kvdb', action=BooleanOptionalAction, default=True,
+                    help='Remove workdir/kvdb/ prior to each test (default: True). '
+                         'Use --no-clean-kvdb to preserve KVDB for resume testing.')
 
     # build index and record statistics into test jinja
     p6 = subpar.add_parser('index-stats', help='build index and record statistics into test jinja')
@@ -1959,12 +2020,30 @@ if __name__ == "__main__":
             args.name = test
             try:
                 cfg = parse_test_config(args)
-                # clean-up the KVDB, IDX directories, and the output.
+                # clean-up the workdir (KVDB, IDX directories, and the output) prior to running.
+                # The index ('idx') directory is preserved unless --clean-index is given.
+                # The kvdb directory is preserved when --no-clean-kvdb is given.
                 # May fail if any file in the directory is open. Close the files and re-run.
                 if args.workdir and Path(args.workdir).exists() \
                     and not (args.validate_only or args.task in ['1','2']):
-                    print(f'{ST} clearing workdir prior to {test}: {args.workdir}')
-                    shutil.rmtree(args.workdir)
+                    wd = Path(args.workdir)
+                    if args.clean_index:
+                        print(f'{ST} clearing workdir (including index) prior to {test}: {args.workdir}')
+                        shutil.rmtree(wd)
+                    else:
+                        preserved = ['index']
+                        if not args.clean_kvdb:
+                            preserved.append('kvdb')
+                        print(f'{ST} clearing workdir (preserving {", ".join(preserved)}) prior to {test}: {args.workdir}')
+                        for child in wd.iterdir():
+                            if child.name == 'idx':
+                                continue
+                            if not args.clean_kvdb and child.name == 'kvdb':
+                                continue
+                            if child.is_dir() and not child.is_symlink():
+                                shutil.rmtree(child)
+                            else:
+                                child.unlink()
 
                 if not args.validate_only:
                     is_capture = cfg.get('capture', False) or args.capture
@@ -1978,7 +2057,13 @@ if __name__ == "__main__":
                             cmd.append(k)
                             if v:
                                 cmd.append(v)
-                    rcode, outl, errl = run_test(cmd, capture=is_capture)
+                    if getattr(args, 'interrupt', 0):
+                        rcode, outl, errl = run_with_interrupts(
+                            cmd,
+                            num_interrupts=args.interrupt,
+                            wait_after_align_start=getattr(args, 'interrupt_wait', 60))
+                    else:
+                        rcode, outl, errl = run_test(cmd, capture=is_capture)
 
                 if args.task == '5':
                     msg = f'{ST} task 5 (only indexing) was requested for test {test}. Skipping validation.'
@@ -2002,7 +2087,10 @@ if __name__ == "__main__":
                     raise RuntimeError(f'sortmerna exited with rcode={rcode}')
             except Exception as ex:
                 status = 'FAIL'
-                err_excerpt = f'{type(ex).__name__}: {ex}'.replace('\n', ' ')
+                if isinstance(ex, ValidationError):
+                    err_excerpt = '; '.join(ex.errors)
+                else:
+                    err_excerpt = f'{type(ex).__name__}: {ex}'.replace('\n', ' ')
                 print(f'{ST} test {test} FAILED: {err_excerpt}')
 
             results.append(dict(name=test,

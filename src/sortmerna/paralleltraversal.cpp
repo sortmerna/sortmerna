@@ -1,5 +1,5 @@
 /*
-@copyright 2016-2026 Clarity Genomics BVBA
+@copyright 2016-2026 Clarity Genomics Inc
 @copyright 2012-2016 Bonsai Bioinformatics Research Group
 @copyright 2014-2016 Knight Lab, Department of Pediatrics, UCSD, La Jolla
 
@@ -27,7 +27,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
               Mikaël Salson    mikael.salson@lifl.fr
               Hélène Touzet    helene.touzet@lifl.fr
               Rob Knight       robknight@ucsd.edu
-              biocodz          biocodz@protonmail.com
 */
 
 /**
@@ -56,7 +55,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "processor.hpp"
 #include "readfeed.hpp"
 #include "output.hpp"
-#include "readsqueue.hpp"
 
 
 #define O_SMR_READ_BIN O_RDONLY
@@ -288,7 +286,7 @@ void traverse
 	// end of processing and read.alignments > 0
 	else {
 		bool is_last_idx = (index.index_num == opts.indexfiles.size() - 1) && (index.part == refstats.num_index_parts[index.index_num] - 1);
-		if (is_last_idx && isLastStrand && read.alignment.alignv.size() > 0)
+		if (is_last_idx && isLastStrand)
 			read.is_done = true;
 	}
 } // ~traverse

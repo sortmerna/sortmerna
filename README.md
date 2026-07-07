@@ -12,7 +12,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ## Table of Contents
 
-- [What's new in 6.0.0](#whats-new-in-600)
+- [What's new in 7.0.0](#whats-new-in-700)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
@@ -28,26 +28,29 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 - [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
 
+## What's new in 7.0.0
 
-## What's new in 6.0.0
+### Resume after interruption
 
-- **Native Windows support dropped.** Linux and macOS only (AMD64 and ARM64). Use WSL to run SortMeRNA on a Windows host.
-- **Index format change: BBHash replaces CMPH.** The minimal-perfect-hash backend is now [BBHash](https://github.com/rizkg/BBHash) for a faster, smaller index build. **Indexes built with earlier releases must be rebuilt.**
-- **Alignment backend: Parasail replaces SSW.** SortMeRNA now uses [Parasail](https://github.com/jeffdaily/parasail) for SIMD Smith–Waterman alignment.
-- **Reference index statistics on disk.** SortMeRNA writes index statistics alongside the index files; these are preferred over the Python re-implementation in `run.py` for validation.
-- **CLI fixes.** Correct handling of `-task 5` (index only), with updated help strings; resolved the `-index` / `-task` option collision.
-- **Test runner improvements.** `scripts/run.py` now drives batches from `presets.yaml`, prints a per-test summary table (also written to `test_summary.txt`), continues on failure by default, and exposes `--stop-on-fail` to restore the previous behavior. Process exit code equals the number of failing tests.
+A sortmerna run that is killed mid-alignment now resumes automatically
+on the next invocation against the same Key-value database (kvdb). There is no `--resume`
+flag: presence of a non-empty kvdb plus matching opts/input fingerprints
+is sufficient. If any alignment-relevant option or input file fingerprint
+has changed since the previous run, sortmerna aborts with a diagnostic
+naming the kvdb so the user can either restore the original inputs or
+wipe the kvdb.
+
+### Testing & dev
+
+`scripts/run.py test ... --interrupt [N]` exercises the auto-resume
+path by SIGKILLing the binary mid-alignment N times (max 2, default 1)
+and re-launching, then validating the final output normally.
 
 ## Getting Started
 
 SortMeRNA 6 is C++17 compliant. It uses CMake as the build system, and can be run/built on Linux, Mac, and on AMD64 and ARM64 architectures. Support for native Windows was dropped in version 6.0. WSL can be used to run Sortmerna on Windows.
 
 ### Using Conda package
-
-**Note:** v6.0.0 may not yet be available on conda-forge while the
-feedstock is updated. Until then, `conda install sortmerna` will install
-the most recent published version (5.0.0). To run 6.0.0 today, use the
-GitHub release binary (next section) or build from source.
 
 Install conda - [official docs](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 ```
@@ -63,6 +66,9 @@ conda search sortmerna
 
  Name      Version Build                         Channel     Subdir  
 ──────────────────────────────────────────────────────────────────────
+ sortmerna 6.0.2   py310hea66570_0 (+  4 builds) conda-forge linux-64
+ sortmerna 6.0.1   py310hea66570_0 (+  4 builds) conda-forge linux-64
+ sortmerna 6.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 5.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.4.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 4.3.7   py310hea66570_0 (+ 13 builds) conda-forge linux-64
@@ -93,21 +99,21 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/sortmerna/sortmerna/releases/download/v6.0.0/sortmerna-6.0.0-Linux.sh
+wget https://github.com/sortmerna/sortmerna/releases/download/v6.0.2/sortmerna-6.0.2-Linux.sh
 
 # view the installer usage
-bash sortmerna-6.0.0-Linux.sh --help
+bash sortmerna-6.0.2-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-6.0.0-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-6.0.0-Linux subdirectory
+      --include-subdir  include the sortmerna-6.0.2-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-6.0.2-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
-bash sortmerna-6.0.0-Linux.sh --skip-license
-  sortmerna Installer Version: 6.0.0, Copyright (c) Clarity Genomics
+bash sortmerna-6.0.2-Linux.sh --skip-license
+  sortmerna Installer Version: 6.0.2, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
   The archive will be extracted to: $HOME/sortmerna
   
@@ -125,10 +131,8 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 6.0.0
-  Build Date: May 15 2026
-  sortmerna_build_git_sha:@c750937be9a37bfde9a3d1d5157fe185becd384e@
-  sortmerna_build_git_date:@2026/05/15 10:41:11@
+  SortMeRNA version 6.0.2
+  ...
 
 # view help
 sortmerna -h
@@ -237,7 +241,7 @@ Maintained by the team at [Clarity Genomics Inc](https://www.clarity-genomics.co
 
 ## Third-party dependencies
 
-Refer to `3rdparty.jinja` for the full list of bundled libraries. In 6.0.0 these include: 
+Refer to `3rdparty.jinja` for the full list of bundled libraries. In 6.x these include: 
 Zlib, RocksDB, Rapidgzip (indexed_bzip2), BBHash (replaces CMPH), Parasail (replaces SSW), 
 ALP, and concurrentqueue.
 

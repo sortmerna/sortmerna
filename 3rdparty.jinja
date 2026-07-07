@@ -27,14 +27,6 @@ rocksdb:
   is_git: true
   is_checkout: true
 
-concurrentqueue:
-  note: a single header file - just clone and use
-  url: https://github.com/cameron314/concurrentqueue
-  commit: master
-  shallow: true
-  src: 3rdparty/concurrentqueue # relative to sortmerna
-  dist: {{concurrentqueue_dist}} # '--concurrentqueue-dist' or default '3rdparty/concurrentqueue' (setup.py)
-
 indexed_bzip2:
   note: header-only rapidgzip library for seekable parallel gzip decompression
   url: https://github.com/mxmlnkn/indexed_bzip2.git
