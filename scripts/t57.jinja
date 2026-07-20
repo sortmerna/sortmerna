@@ -6,8 +6,8 @@ info: |
   refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
     1     1     0    0       0        0         0     0    0      0      1    1     2      2
 args:
-  -ref: [ {{ REF_DIR }}/smr_v4.3_fast_db.fasta.gz ]  # 17M
-  -reads: [ {{ DATA_DIR }}/20260720_generated_reads_1000.fasta ]  # 1000 reads
+  -ref: [ {{ REF_DIR }}/smr_v4.3_fast_db.fasta ]  # 64M
+  -reads: [ {{ DATA_DIR }}/20260720_generated_reads_100000_3500.fasta ]  # 3500 x 100000 reads
   -fastx:
   -blast: '1 cigar qcov'
   -workdir: {{ WRK_DIR }}
