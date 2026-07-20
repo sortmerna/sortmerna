@@ -1,0 +1,15 @@
+# t57:
+name: 1 ref, 1 flat fasta very long reads
+info: |
+  test filtering on very long reads reads
+      input type         |               output type                  |    alignment type
+  refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+    1     1     0    0       0        0         0     0    0      0      1    1     2      2
+args:
+  -ref: [ {{ REF_DIR }}/smr_v4.3_fast_db.fasta.gz ]  # 17M
+  -reads: [ {{ DATA_DIR }}/20260720_generated_reads_1000.fasta ]  # 1000 reads
+  -fastx:
+  -blast: '1 cigar qcov'
+  -workdir: {{ WRK_DIR }}
+  -threads: '{{THREADS or 4}}'
+  -index: '{{INDEX or 1}}'  # 1 is the default
