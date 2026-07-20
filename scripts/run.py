@@ -43,6 +43,7 @@ import signal
 import sys
 import struct
 import ctypes
+import random
 import subprocess
 import platform
 import re
@@ -1385,6 +1386,65 @@ def iss_453(num_splits:int,
             out, serr = ps.communicate()
         print(f'done writing in {time.time() - sstart} sec')
     
+def generate_reads(length:int,
+                   count:int,
+                   out:str=None,
+                   fmt:str='fasta',
+                   alphabet:str='ACGU',
+                   seed:int=None,
+                   workdir:str=None,
+                   **kw):
+    '''
+    Generate a file of random RNA reads.
+
+    :param length   sequence length in nucleotides (--len)
+    :param count    number of sequences to generate (--count)
+    :param out      output file path. Default: <workdir|cwd>/reads_<count>x<length>.<ext>
+    :param fmt      output format: 'fasta' | 'fastq'
+    :param alphabet nucleotide alphabet to sample from (default 'ACGU')
+    :param seed     RNG seed for reproducible output
+    '''
+    ST = 'generate_reads'
+    if length is None or length <= 0:
+        raise ValueError(f'{ST} --len must be a positive integer, got {length}')
+    if count is None or count <= 0:
+        raise ValueError(f'{ST} --count must be a positive integer, got {count}')
+
+    fmt = (fmt or 'fasta').lower()
+    if fmt not in ('fasta', 'fastq'):
+        raise ValueError(f'{ST} --format must be \'fasta\' or \'fastq\', got {fmt}')
+
+    alphabet = (alphabet or 'ACGU').upper()
+    letters = list(alphabet)
+
+    rng = random.Random(seed)
+
+    ext = 'fasta' if fmt == 'fasta' else 'fastq'
+    if out:
+        fout = Path(os.path.expandvars(os.path.expanduser(out)))
+    else:
+        base = Path(os.path.expandvars(os.path.expanduser(workdir))) if workdir else Path.cwd()
+        fout = base / f'reads_{count}x{length}.{ext}'
+    if fout.parent and not fout.parent.exists():
+        print(f'{ST} creating {fout.parent}')
+        fout.parent.mkdir(parents=True, exist_ok=True)
+
+    qual = 'I' * length  # constant high-quality (Phred 40) line for FASTQ
+
+    print(f'{ST} writing {count} reads of length {length} nt (alphabet={alphabet}, '
+          f'format={fmt}) to {fout}')
+    sstart = time.time()
+    with open(fout, 'w') as fh:
+        for i in range(count):
+            seq = ''.join(rng.choices(letters, k=length))
+            if fmt == 'fasta':
+                fh.write(f'>read_{i} length={length}\n{seq}\n')
+            else:
+                fh.write(f'@read_{i} length={length}\n{seq}\n+\n{qual}\n')
+    print(f'{ST} done in {time.time() - sstart:.2f} sec. Output: {fout}')
+    return fout
+
+
 def _apply_preset_argv(args: Namespace, preset_argv: list):
     '''Fill None-valued attributes in args from an argv-style preset list.
     Explicitly provided args (non-None) are never overwritten.
@@ -1969,6 +2029,21 @@ if __name__ == "__main__":
     p6.add_argument('--task', dest='task', help='Processing task 0 | 1 | 2 | 3 | 4 | 5')
     p6.add_argument('--index', dest='index', help='Index option 0 | 1')
 
+    # generate random RNA reads
+    p7 = subpar.add_parser('generate-reads', help='generate a file of random RNA reads')
+    p7.add_argument('--len', dest='length', type=int, required=True,
+                    help='sequence length in nucleotides')
+    p7.add_argument('--count', dest='count', type=int, required=True,
+                    help='number of sequences to generate')
+    p7.add_argument('-o', '--out', dest='out',
+                    help='output file path (default: <workdir|cwd>/reads_<count>x<len>.<ext>)')
+    p7.add_argument('--format', '--fmt', dest='fmt', default='fasta', choices=['fasta', 'fastq'],
+                    help='output format (default: fasta)')
+    p7.add_argument('--alphabet', dest='alphabet', default='ACGU',
+                    help='nucleotide alphabet to sample from (default: ACGU)')
+    p7.add_argument('--seed', dest='seed', type=int, help='RNG seed for reproducible output')
+    p7.add_argument('-w', '--workdir', dest='workdir', help='working directory for the output file')
+
     args = p0.parse_args()
 
     if 'split' == args.cmd:
@@ -2140,6 +2215,10 @@ if __name__ == "__main__":
             sys.exit(n_fail)
     elif 'index-stats' == args.cmd:
         generate_index_stats(args)
+    elif 'generate-reads' == args.cmd:
+        generate_reads(length=args.length, count=args.count, out=args.out,
+                       fmt=args.fmt, alphabet=args.alphabet, seed=args.seed,
+                       workdir=args.workdir)
     else:
         ...
 #END main
