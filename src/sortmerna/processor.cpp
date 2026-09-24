@@ -226,7 +226,9 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 				readstats.num_short.fetch_add(1, std::memory_order_relaxed);
 			}
 
-			if (read.isValid) {
+			// library: read ids restart per batch, so a stored entry belongs to
+			// another batch and must not be restored
+			if (read.isValid && !opts.is_library_mode) {
 				read.load_db(kvdb);
 				// On resume, the read may carry alignv entries from a partial
 				// prior attempt at the current pass. Trim them so traverse()
@@ -301,13 +303,24 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 			} else if (read.is_done) {
 				++num_skipped;
 			}
+
+			// library: store every read, aligned or not, valid or not, so no
+			// entry from an earlier batch survives under this read id
+			if (opts.is_library_mode && !needs_blob_write) {
+				needs_blob_write  = true;
+				blob_to_write     = read.toBinString();
+				read_id_for_write = read.id;
+			}
 		} // ~Read destroyed
 
 		// Atomically commit the alignment blob + the slot's progress, so that
 		// "thread_done says K" is durable iff "all hits for records 0..K-1
 		// produced by this worker are durable" (modulo OS pagecache for non-
 		// fsync'd writes — see flush thread in align()).
-		if (needs_blob_write) {
+		if (opts.is_library_mode) {
+			// no restart progress: batches are not resumable
+			if (needs_blob_write) kvdb.put(read_id_for_write, blob_to_write);
+		} else if (needs_blob_write) {
 			restart::put_read_with_progress(kvdb,
 				read_id_for_write, blob_to_write,
 				pass_i, pass_p, target_slot, prog);
@@ -324,9 +337,11 @@ void align2(int id, Readfeed& readfeed, Readstats& readstats,
 	// Final flush of the slot counters so the end-of-pass commit_pass sees
 	// the canonical totals and so any later resume of a sibling pass starts
 	// from a clean state.
-	restart::put_progress(kvdb, pass_i, pass_p, slot_fwd, prog_fwd);
-	if (ns > 1 && !is_interleaved) {
-		restart::put_progress(kvdb, pass_i, pass_p, slot_rev, prog_rev);
+	if (!opts.is_library_mode) {
+		restart::put_progress(kvdb, pass_i, pass_p, slot_fwd, prog_fwd);
+		if (ns > 1 && !is_interleaved) {
+			restart::put_progress(kvdb, pass_i, pass_p, slot_rev, prog_rev);
+		}
 	}
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - t_start;
@@ -536,6 +551,39 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	readstats.set_is_set_aligned_id_cov();
 	readstats.store_to_db(kvdb);
 } // ~align
+
+/*
+ * Align one batch against an index part that is already loaded, for the C
+ * API (smr_index_load + smr_run_seqs_with_index), which loads the index and
+ * references once and aligns many batches against them. Runs only the
+ * align2 workers: no index/reference load or unload, no restart state, no
+ * Readstats persistence. Requires opts.is_library_mode.
+ */
+void align_loaded(Readfeed& readfeed, Readstats& readstats,
+                  Index& index, References& refs, Refstats& refstats,
+                  KeyValueDatabase& kvdb, Runopts& opts)
+{
+	if (!opts.is_library_mode)
+		SMR_THROW("align_loaded requires library mode");
+
+	readfeed.init_reading();
+	readstats.num_short.store(0, std::memory_order_relaxed);
+
+	const int numProcThread = opts.num_proc_thread;
+	ThreadErrors worker_errors;
+	std::vector<std::thread> tpool;
+	tpool.reserve(numProcThread);
+	for (int i = 0; i < numProcThread; i++) {
+		tpool.emplace_back(worker_errors.spawn(align2, i, std::ref(readfeed),
+		                    std::ref(readstats), std::ref(index), std::ref(refs),
+		                    std::ref(refstats),  std::ref(kvdb), std::ref(opts),
+		                    static_cast<const restart::State*>(nullptr)));
+	}
+	for (auto& thr : tpool) thr.join();
+	worker_errors.rethrow();
+
+	readstats.set_is_set_aligned_id_cov();
+} // ~align_loaded
 
 void denovo_stats_run(const uint32_t& id,
 	Readfeed& readfeed,

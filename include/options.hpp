@@ -527,6 +527,15 @@ public:
 	bool is_align = false;
 	bool is_filter = false;
     bool is_score_split = false;  // if true - calculate the SW score per split rather then for all reads
+    /* Set by the C API (smr_api) only; there is no CLI option. The library
+     * aligns many independent batches against one loaded index and needs the
+     * per-read result to be the same however the caller batches its reads:
+     *  - Readstats neither restores nor stores its counts in the kvdb
+     *  - Refstats sets minimal_score to 0 (the SW-score threshold depends on
+     *    the batch's total read length); callers filter on e-value instead
+     *  - align2 does not restore reads from the kvdb, always stores each
+     *    read's result, and writes no restart progress */
+    bool is_library_mode = false;
 
 	// Option derived Flags
 	bool is_as_percent = false; // derived from OPT_EDGES

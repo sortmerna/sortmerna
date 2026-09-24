@@ -81,6 +81,7 @@ Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	:
 	num_index_parts(opts.indexfiles.size(), 0),
 	full_ref(opts.indexfiles.size(), 0),
+	full_ref_raw(opts.indexfiles.size(), 0),
 	full_read(opts.indexfiles.size(), readstats.all_reads_len),
 	lnwin(opts.indexfiles.size(), 0),
 	partialwin(opts.indexfiles.size(), 0),
@@ -145,6 +146,7 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 		stats.read(reinterpret_cast<char*>(&background_freq_gv), sizeof(double) * 4);
 		// total length of sequences in the complete database
 		stats.read(reinterpret_cast<char*>(&full_ref[index_num]), sizeof(uint64_t));
+		full_ref_raw[index_num] = full_ref[index_num];
 		// sliding window length lnwin & initialize
 		stats.read(reinterpret_cast<char*>(&lnwin[index_num]), sizeof(uint32_t));
 		// total number of reference sequences in one complete reference database
@@ -240,6 +242,14 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 		  + background_freq_gv[2] * std::log2(background_freq_gv[2])
 		  + background_freq_gv[3] * std::log2(background_freq_gv[3]));
 
+		// With no reads in scope (the C API loads the index before any batch
+		// is known) the corrections below are undefined: log(K*m*0) = -inf.
+		if (readstats.all_reads_count == 0 || readstats.all_reads_len == 0) {
+			minimal_score[index_num] = 0;
+			stats.close();
+			continue;
+		}
+
 		// Length correction for Smith-Waterman alignment score
         // ln(Kmn)/H  (H - entropy)
         auto full_read_scale = opts.is_score_split ? opts.num_proc_thread : 1;
@@ -261,6 +271,10 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 					                                            * full_ref[index_num]
 					                                            * full_read[index_num] / full_read_scale)))
 			                                            / -(gumbel[index_num].first));
+
+		// library: no SW-score threshold, see Runopts::is_library_mode
+		if (opts.is_library_mode)
+			minimal_score[index_num] = 0;
 
 		stats.close();
 	} // ~for loop indices
