@@ -48,6 +48,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * See complete documentation in include/mmap.hpp
  *
  */
+
+namespace sortmerna {
+
 char**
 load_reads(char* inputreads,
            char*& raw,
@@ -134,3 +137,5 @@ load_reads(char* inputreads,
 #endif
   return reads;
 }//~load_reads()
+
+} // namespace sortmerna

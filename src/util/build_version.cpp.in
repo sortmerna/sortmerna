@@ -1,4 +1,9 @@
 #include "build_version.h"
+
+namespace sortmerna {
+
 const char* sortmerna_build_git_sha = "sortmerna_build_git_sha:@@GIT_SHA@@";
 const char* sortmerna_build_git_date = "sortmerna_build_git_date:@@GIT_DATE_TIME@@";
 const char* sortmerna_build_compile_date = __DATE__;
+
+} // namespace sortmerna

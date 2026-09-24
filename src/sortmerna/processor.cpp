@@ -57,6 +57,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "thread_errors.hpp"
 
 // forward
+
+namespace sortmerna {
+
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
 
 namespace {
@@ -739,3 +742,4 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 		"\n\t\t   num_denovo: ", readstats.num_denovo);
 	INFO("=== done Denovo stats in ", elapsed.count(), " sec ===\n");
 } // ~denovo_stats
+} // namespace sortmerna

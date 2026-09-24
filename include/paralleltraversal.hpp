@@ -45,6 +45,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "index.hpp"
 
 // forward
+
+namespace sortmerna {
+
 struct Readstats;
 class Output;
 
@@ -78,3 +81,5 @@ class Output;
 */
 
 // ~PARALLELTRAVERSAL_H
+
+} // namespace sortmerna

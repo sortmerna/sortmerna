@@ -44,6 +44,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 #include "readstats.hpp"
 
+
+namespace sortmerna {
+
 OtuMap::OtuMap(int numThreads) : mapv(numThreads), total_otu(0) {}
 
 void OtuMap::push(int idx, std::string& ref_seq_str, std::string& read_seq_str)
@@ -280,3 +283,4 @@ void fill_otu_map(Readfeed& readfeed,
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - ss;
 	INFO("==== OTU groups processing done in ", elapsed.count(), " sec ====\n");
 } // ~fill_otu_map
+} // namespace sortmerna

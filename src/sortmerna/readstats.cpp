@@ -58,6 +58,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "izlib.hpp"
 
 // forward
+
+namespace sortmerna {
+
 std::string string_hash(const std::string &val); // util.cpp
 std::string to_lower(std::string& val); // util.cpp
 
@@ -298,3 +301,5 @@ void Readstats::store_to_db(KeyValueDatabase & kvdb)
 	kvdb.put(dbkey, toBstring());
 	INFO("Stored Reads statistics to DB:\n    ", toString());
 }
+
+} // namespace sortmerna

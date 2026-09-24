@@ -40,8 +40,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "bursttrie.hpp"
 #include <fstream>
 
-using namespace std;
-
 /* Legacy header. The trie statistics it used to declare as globals are
  * now members of IndexBuildState (indexdb.cpp). Not included by any
  * compiled source file. */

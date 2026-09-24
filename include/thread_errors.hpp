@@ -25,6 +25,8 @@
 
 #include "common.hpp" // smr_tl_log_callback
 
+namespace sortmerna {
+
 class ThreadErrors {
 public:
 	/* Start a thread running f(args...), recording any exception it throws
@@ -69,3 +71,5 @@ private:
 	std::mutex mtx_;
 	std::exception_ptr first_;
 };
+
+} // namespace sortmerna

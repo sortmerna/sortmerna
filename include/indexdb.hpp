@@ -62,6 +62,9 @@ extern const char map_nt[122];
  * parse each reference file (FASTA), and build the burst tries
  * @return void
  */
+
+namespace sortmerna {
+
 int build_index(Runopts &opts);
 
 struct NodeElement
@@ -110,3 +113,5 @@ struct index_parts_stats {
     unsigned long int seq_part_size; // number of bytes of reference sequences to read
     uint32_t numseq_part; // the number of sequences in this part
 };
+
+} // namespace sortmerna

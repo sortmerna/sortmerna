@@ -50,6 +50,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 
+namespace sortmerna {
+
 /*! @brief Maximum length of input reads
     (not limited to this length algorithmically)
 */
@@ -802,3 +804,5 @@ private:
 	// ~map options
 }; // ~struct Runopts
 // ~options.cpp
+
+} // namespace sortmerna

@@ -53,6 +53,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "index.hpp"
 #include "readfeed.hpp"
 
+
+namespace sortmerna {
+
 const std::string OPT_DB   = "--db";
 //const std::string OPT_IDX  = "--idx";
 const std::string OPT_PART = "--part";
@@ -319,3 +322,4 @@ void CmdSession::cmdTest(Runopts & opts, std::string & cmd)
 {
 	std::stringstream ss;
 } // ~CmdSession::cmdTest
+} // namespace sortmerna

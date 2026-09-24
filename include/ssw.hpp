@@ -40,6 +40,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iterator>
 
+
+namespace sortmerna {
+
 typedef struct s_align2 {
 	std::vector<uint32_t> cigar;
 	uint32_t ref_num; // position of the sequence in the reference file [0...number of sequences in the ref.file - 1]
@@ -168,3 +171,4 @@ typedef struct s_align2 {
 			other.strand == strand;
 	}
 } s_align2;
+} // namespace sortmerna

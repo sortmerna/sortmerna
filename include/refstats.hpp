@@ -43,6 +43,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "indexdb.hpp" // index_parts_stats;
 
 // forward
+
+namespace sortmerna {
+
 struct Readstats;
 struct Runopts;
 
@@ -77,3 +80,5 @@ public:
 private:
 	void load(Runopts& opts, Readstats& readstats); // called at construction
 };
+
+} // namespace sortmerna

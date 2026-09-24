@@ -41,6 +41,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "references.hpp"
 #include "readfeed.hpp"
 
+
+namespace sortmerna {
+
 Summary::Summary() :
 	is_de_novo(false),
 	is_otumapout(false),
@@ -184,3 +187,4 @@ void writeSummary(Readstats& readstats, Runopts& opts)
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
 	INFO("==== Done summary in sec [", elapsed.count(), "] ====\n");
 } // ~writeSummary
+} // namespace sortmerna

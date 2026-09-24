@@ -38,6 +38,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readfeed.hpp"
 #include "izlib.hpp"
 
+
+namespace sortmerna {
+
 ReportFxBase::ReportFxBase(): num_out(0), out_type(0), num_reads(0), num_hits(0), num_miss(0), num_io_bad(0), num_io_fail(0) {}
 
 ReportFxBase::ReportFxBase(Runopts& opts): ReportFxBase()
@@ -218,3 +221,4 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstat
 		ERR("Failed deflating readstring: ", ss.str(), " zlib status: ", ret);
 	}
 }
+} // namespace sortmerna

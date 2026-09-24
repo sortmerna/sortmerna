@@ -48,6 +48,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/stat.h>
 
 // forward
+
+namespace sortmerna {
+
 unsigned int check_dir(std::string dpath);
 unsigned int list_dir(std::string dpath);
 int clear_dir(std::string dpath);
@@ -212,3 +215,4 @@ std::string to_lower(std::string& val)
 		[](unsigned char ch) { return std::tolower(ch); });
 	return ret;
 }
+} // namespace sortmerna

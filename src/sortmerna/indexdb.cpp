@@ -60,6 +60,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "options.hpp"
 
 
+namespace sortmerna {
+
+
 //! burst trie nucleotide map
 /*! the trie nodes consist of an array holding four
 	NodeElement structs, they are traversed by their
@@ -1838,3 +1841,5 @@ int build_index(Runopts& opts)
 	INFO("==== Done index building in ", elapsed.count(), " sec ====\n");
 	return 0;
 }//~build_index
+
+} // namespace sortmerna

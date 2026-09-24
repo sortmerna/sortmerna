@@ -77,6 +77,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "options.hpp"
 #include "indexdb.hpp"
 
+
+namespace sortmerna {
+
 Refstats::Refstats(Runopts & opts, Readstats & readstats)
 	:
 	num_index_parts(opts.indexfiles.size(), 0),
@@ -287,3 +290,4 @@ void Refstats::load(Runopts& opts, Readstats& readstats)
 
 	delete[] scoring_matrix;
 } // ~Index::load_stats
+} // namespace sortmerna

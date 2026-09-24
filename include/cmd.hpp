@@ -42,6 +42,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 
 // forward
+
+namespace sortmerna {
+
 struct Runopts;
 
 enum CMD { EXIT, READ, INDEX };
@@ -57,3 +60,4 @@ private:
 	void cmdTest(Runopts & opts, std::string & cmd);
 	void cmd_max_ref_part(Runopts & opts, std::string & cmd); // ref idx=0 part=1
 };
+} // namespace sortmerna

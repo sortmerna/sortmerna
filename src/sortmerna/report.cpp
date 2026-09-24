@@ -37,6 +37,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include "options.hpp"
 
+
+namespace sortmerna {
+
 Report::Report(Runopts& opts) : pid_str(std::to_string(getpid())), is_zip(false) {}
 Report::~Report() {	closef(); }
 
@@ -172,3 +175,4 @@ void Report::strip_path_sfx(std::string& path, std::string sfx)
 		WARN("no ", sfx, " found in ", path);
 	}
 }
+} // namespace sortmerna

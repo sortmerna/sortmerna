@@ -24,6 +24,8 @@ Licensed under the GNU LGPL v3 or later. See COPYING.LESSER for details.
 #include "options.hpp"
 #include "version.h"
 
+namespace sortmerna {
+
 namespace restart {
 
 namespace {
@@ -461,3 +463,5 @@ bool is_denovo_done(KeyValueDatabase& kvdb) {
 }
 
 } // namespace restart
+
+} // namespace sortmerna

@@ -49,6 +49,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstate.h"
 #include "readfile.h"
 
+namespace sortmerna {
+
 /*
  * Per-thread slot for reading a byte-range chunk of a flat (non-gzipped) file.
  * Each slot holds an open ifstream seeked to bytes_start and reads up to bytes_end.
@@ -292,3 +294,4 @@ private:
 };
 
 // ~readfeed.hpp
+} // namespace sortmerna

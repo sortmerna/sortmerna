@@ -47,6 +47,7 @@ const char FASTQ_HEADER_START = '@';
 const std::string FWD = "FWD";
 const std::string REV = "REV";
 
+namespace sortmerna {
 enum class BIO_FORMAT : unsigned { FASTQ = 0, FASTA = 1 };
 enum class ZIP_FORMAT : unsigned { GZIP = 0, ZLIB = 1, FLAT = 2, XPRESS = 3 };
 enum class FEED_TYPE : unsigned {
@@ -56,6 +57,7 @@ enum class FEED_TYPE : unsigned {
     MEMORY = 2 // reads supplied in memory through the C API; not a CLI choice
 };
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
+} // namespace sortmerna
 
 /*! @brief Map nucleotides to integers.
 Ambiguous letters map to 4.
@@ -223,6 +225,8 @@ static inline size_t get_memory() {
 		SMR_LOG_ROUTE(SMR_LOG_ERROR_, ss.str()); \
 	}
 
+namespace sortmerna {
+
 /*! @brief Error raised in place of ERR(...); exit(EXIT_FAILURE).
  *
  * Code that may run inside a host process (the C API) must not call
@@ -247,8 +251,10 @@ public:
 		: std::runtime_error(msg) {}
 };
 
+} // namespace sortmerna
+
 #define SMR_THROW(...) \
-	throw smr_error(std::string("[") + __func__ + ":" + std::to_string(__LINE__) + "] ", \
+	throw ::sortmerna::smr_error(std::string("[") + __func__ + ":" + std::to_string(__LINE__) + "] ", \
 		fold_to_string(__VA_ARGS__))
 
 #define PRN_MEM(msg) \

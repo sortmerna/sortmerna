@@ -36,6 +36,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+/* All SortMeRNA C++ types live in `namespace sortmerna`. The C API
+ * functions in this file must keep C linkage at the global namespace,
+ * so we use a file-scope `using namespace sortmerna;` for ergonomics
+ * inside the extern "C" function bodies. */
+using namespace sortmerna;
+
 /* stringification helpers for version macros */
 #define SMR_STRINGIFY2(x) #x
 #define SMR_STRINGIFY(x) SMR_STRINGIFY2(x)

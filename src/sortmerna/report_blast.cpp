@@ -40,6 +40,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "references.hpp"
 #include "refstats.hpp"
 
+
+namespace sortmerna {
+
 ReportBlast::ReportBlast(Runopts& opts)	: Report(opts), n_aligned(0), n_yid_ncov(0), n_nid_ycov(0), n_yid_ycov(0), n_denovo(0) {}
 
 ReportBlast::ReportBlast(Readfeed& readfeed, Runopts& opts)	: ReportBlast(opts)
@@ -335,3 +338,4 @@ void ReportBlast::append(const uint32_t& id, Read& read, References& refs, Refst
 		fsv[id] << ss.str();
 	}
 } // ~ ReportBlast::append
+} // namespace sortmerna

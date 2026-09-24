@@ -55,6 +55,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 
 // forward
+
+namespace sortmerna {
+
 std::string string_hash(const std::string& val); // util.cpp
 
 Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_ready(false)
@@ -373,3 +376,4 @@ void Index::unload()
 	}
 	positions_tbl.clear();
 } // ~Index::clear
+} // namespace sortmerna

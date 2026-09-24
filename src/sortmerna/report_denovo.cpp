@@ -37,6 +37,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 #include "readfeed.hpp"
 
+
+namespace sortmerna {
+
 ReportDenovo::ReportDenovo(Runopts& opts) : Report(opts), base() {}
 
 ReportDenovo::ReportDenovo(Readfeed& readfeed, Runopts& opts) : ReportDenovo(opts)
@@ -135,3 +138,4 @@ ReportFxBase& ReportDenovo::getBase()
 {
 	return base;
 }
+} // namespace sortmerna

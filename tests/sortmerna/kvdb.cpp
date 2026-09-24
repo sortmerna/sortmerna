@@ -38,6 +38,8 @@
 #include "kvdb.hpp"
 #include "options.hpp"
 
+using namespace sortmerna;
+
 void kvdb_clear()
 {
 	std::string dbpath = "C:/a01_projects/clarity_genomics/data/kvdb";

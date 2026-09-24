@@ -35,6 +35,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "report_fx_base.h"
 
 // forward
+
+namespace sortmerna {
+
 class Read;
 
 class ReportDenovo : public Report
@@ -50,3 +53,4 @@ public:
 private:
 	ReportFxBase base;
 };
+} // namespace sortmerna

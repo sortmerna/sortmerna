@@ -52,6 +52,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "otumap.h"
 #include "refstats.hpp"
 
+using namespace sortmerna;
 
 /*
 *  main entry of the sortmerna application

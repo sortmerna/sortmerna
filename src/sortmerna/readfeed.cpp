@@ -49,6 +49,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <filereader/BufferView.hpp>
 #include <rapidgzip/ParallelGzipReader.hpp>
 
+namespace sortmerna {
+
 // Opaque wrapper — keeps rapidgzip headers out of readfeed.hpp and every TU that includes it.
 // The explicit template specialisation NEXT_DYNAMIC_DEFLATE_CANDIDATE_LUT<15> in DynamicHuffman.hpp
 // lacks 'inline', so it gets external linkage; Apple ld rejects duplicate definitions across TUs.
@@ -2269,3 +2271,4 @@ int Readfeed::clean()
 	}
 	return n_del;
 } // ~Readfeed::clean
+} // namespace sortmerna

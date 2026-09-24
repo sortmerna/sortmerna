@@ -38,12 +38,18 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include <map>
 #include <queue>
+#include <deque>
+#include <vector>
+#include <utility>
 #include <algorithm>
 
 #include "traverse_bursttrie.hpp"
 #include "ssw.hpp"
 
  // forward
+
+namespace sortmerna {
+
 class Read;
 struct Runopts;
 struct Index;
@@ -51,8 +57,6 @@ class References;
 class Output;
 struct Readstats;
 class Refstats;
-
-using namespace std;
 
 /*! @brief Number of slots by which to dynamically
            increment the array storing all alignments
@@ -67,7 +71,7 @@ using namespace std;
     A data structure holding two variables
     of type uint32_t.
 */
-typedef pair<uint32_t,uint32_t> uint32pair;
+typedef std::pair<uint32_t,uint32_t> uint32pair;
 
 
 /*! @fn smallest()
@@ -100,7 +104,7 @@ typedef pair<uint32_t,uint32_t> uint32pair;
     @param deque<pair<uint32_t, uint32_t> > &a  list of matching positions on the read which fall within a range of the read's length on the genome
     @param vector<uint32_t> &b  array of starting positions of each longest subsequence
 */
-void find_lis(deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b);
+void find_lis(std::deque<std::pair<uint32_t, uint32_t> > &a, std::vector<uint32_t> &b);
 
 /*
  * called on each idx * part * read * strand * [1..max opts.skiplengths[index_num].size (3 by default)]
@@ -118,3 +122,4 @@ void find_lis(deque<pair<uint32_t, uint32_t> > &a, vector<uint32_t> &b);
  */
 void compute_lis_alignment(Read& read, Runopts& opts, Index& index, References& refs,
                            Readstats& readstats, Refstats& refstats, bool& search, uint32_t max_SW_score);
+} // namespace sortmerna

@@ -36,6 +36,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <atomic>
 
 // forward
+
+namespace sortmerna {
+
 class Read;
 struct Readstate;
 class Readfeed;
@@ -93,3 +96,5 @@ private:
 	*/
 	void set_num_out(Runopts& opts);
 };
+
+} // namespace sortmerna

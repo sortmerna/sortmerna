@@ -45,6 +45,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "report_biom.h"
 
 // forward
+
+namespace sortmerna {
+
 struct Index;
 class References;
 class Read;
@@ -72,3 +75,4 @@ private:
 	void init(Readfeed& readfeed, Runopts& opts);
 
 }; // ~class Output
+} // namespace sortmerna

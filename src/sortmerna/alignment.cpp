@@ -50,6 +50,10 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 
 // forward
+
+namespace sortmerna {
+
+using namespace std;
 uint32_t inline findMinIndex(std::vector<s_align2>& alignv);
 uint32_t inline findMaxIndex(std::vector<s_align2>& alignv);
 std::pair<bool,bool> is_id_cov_pass(std::string& read_iseq, s_align2& alignment, References& refs, Runopts& opts);
@@ -653,3 +657,5 @@ std::pair<bool,bool> inline is_id_cov_pass(std::string& read_iseq, s_align2& ali
 
 	return { rid >= opts.min_id, rcov >= opts.min_cov };
 } // ~is_id_cov_pass
+
+} // namespace sortmerna

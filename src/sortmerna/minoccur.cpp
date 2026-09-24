@@ -41,6 +41,9 @@ using namespace std;
 
 
 /* to sort the kmers_occurrences array during search for MINOCCUR value using RATIO */
+
+namespace sortmerna {
+
 int _qsort(const void *x, const void *y) 
 {
 	return (*(int*)x - *(int*)y);
@@ -633,3 +636,5 @@ void find_minoccur ( int minlenread )
 }//~ find_minoccur()
 
 
+
+} // namespace sortmerna

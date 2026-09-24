@@ -72,6 +72,8 @@ Licensed under the GNU LGPL v3 or later. See COPYING.LESSER for details.
 #include <utility>
 #include <vector>
 
+namespace sortmerna {
+
 class KeyValueDatabase;
 struct Runopts;
 
@@ -214,3 +216,5 @@ namespace report_kind {
 }
 
 } // namespace restart
+
+} // namespace sortmerna

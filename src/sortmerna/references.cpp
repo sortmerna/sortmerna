@@ -51,6 +51,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * load to memory the Reference records from a given index part
  * Read the reference file, extract the part's references into an array (vector) of reference objects
  */
+
+namespace sortmerna {
+
 void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
 	num = idx_num;
@@ -194,3 +197,5 @@ void References::unload()
 {
 	buffer.clear(); // TODO: is this enough?
 } // ~References::clear
+
+} // namespace sortmerna
