@@ -101,8 +101,7 @@ void Report::openfw2(const unsigned& idx, const unsigned& dbg)
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::app);
 	}
 	if (!fsv[idx].good()) {
-		ERR("Could not open output file number [", idx, "] : [", fv[idx], "] for writing.");
-		exit(EXIT_FAILURE);
+		SMR_THROW("Could not open output file number [", idx, "] : [", fv[idx], "] for writing.");
 	}
 	else {
 		if (dbg > 0)
@@ -123,8 +122,7 @@ void Report::openfr(unsigned idx)
 		fsv[idx].open(fv[idx], std::ios::binary | std::ios::in);
 	}
 	if (!fsv[idx].good()) {
-		ERR("Could not open output file [", fv[idx], "] for reading.");
-		exit(EXIT_FAILURE);
+		SMR_THROW("Could not open output file [", fv[idx], "] for reading.");
 	}
 	else {
 		INFO("Opened output file ", fv[idx], " for reading.");

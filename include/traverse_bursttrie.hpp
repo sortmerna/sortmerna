@@ -74,8 +74,7 @@ struct id_win
 		}
 		else
 		{
-			ERR("string size ", str.size(), " not equal to ", sizeof(id) + sizeof(win), " Cannot restore.");
-			exit(1);
+			SMR_THROW("string size ", str.size(), " not equal to ", sizeof(id) + sizeof(win), " Cannot restore.");
 		}
 	}
 

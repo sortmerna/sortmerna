@@ -290,9 +290,8 @@ void Read::initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N)
 void Read::validate(uint64_t& max_read_len) {
 	if (sequence.size() > max_read_len)
 	{
-		ERR("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
+		SMR_THROW("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
 			max_read_len, " nt \n", "  Please check your reads or contact the authors.");
-		exit(EXIT_FAILURE);
 	}
 	isValid = true;
 } // ~Read::validate

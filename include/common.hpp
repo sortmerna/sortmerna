@@ -36,6 +36,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <sstream>
 #include <iostream> // std::cout
+#include <stdexcept>
 
 #include <sys/time.h>
 #include <fstream>
@@ -188,6 +189,34 @@ static inline size_t get_memory() {
 		ss << '\n' << STAMP << RED << "ERROR" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
 		std::cerr << ss.str();\
 	}
+
+/*! @brief Error raised in place of ERR(...); exit(EXIT_FAILURE).
+ *
+ * Code that may run inside a host process (the C API) must not call
+ * exit(). SMR_THROW takes the same arguments as ERR and records the
+ * "[func:line] " stamp of the throw site, so main() can report the
+ * error exactly as ERR() would have printed it and exit with failure,
+ * while library callers catch it and return an error code.
+ */
+class smr_error : public std::runtime_error {
+public:
+	smr_error(std::string where, const std::string& msg)
+		: std::runtime_error(msg), where(std::move(where)) {}
+	std::string where; // "[func:line] " of the throw site
+};
+
+/*! @brief Thrown by --help / --version to signal a clean early exit.
+ * main() catches it and returns 0; library callers treat it as an
+ * invalid configuration. */
+class smr_exit_requested : public std::runtime_error {
+public:
+	explicit smr_exit_requested(const std::string& msg)
+		: std::runtime_error(msg) {}
+};
+
+#define SMR_THROW(...) \
+	throw smr_error(std::string("[") + __func__ + ":" + std::to_string(__LINE__) + "] ", \
+		fold_to_string(__VA_ARGS__))
 
 #define PRN_MEM(msg) \
 	{\

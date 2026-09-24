@@ -38,7 +38,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include <time.h>
 #include <algorithm>
-#include <cassert>
 #include <string>
 #include <vector>
 #include <deque>
@@ -159,8 +158,7 @@ inline void insert_prefix(NodeElement* trie_node,
 		node_elem->nodetype.bucket = (void*)malloc(ENTRYSIZE);
 		if (node_elem->nodetype.bucket == NULL)
 		{
-			ERR("Could not allocate memory for bucket (insert_prefix() in indexdb.cpp)");
-			exit(EXIT_FAILURE);
+			SMR_THROW("Could not allocate memory for bucket (insert_prefix() in indexdb.cpp)");
 		}
 		// initialize bucket memory to 0
 		memset(node_elem->nodetype.bucket, 0, ENTRYSIZE);
@@ -178,8 +176,7 @@ inline void insert_prefix(NodeElement* trie_node,
 		node_elem->nodetype.bucket = (void*)malloc(node_elem_size + ENTRYSIZE);
 		if (node_elem->nodetype.bucket == NULL)
 		{
-			ERR(": could not allocate memory for bucket resize (insert_prefix() in indexdb.cpp)");
-			exit(EXIT_FAILURE);
+			SMR_THROW(": could not allocate memory for bucket resize (insert_prefix() in indexdb.cpp)");
 		}
 
 		memset(node_elem->nodetype.bucket, 0, node_elem_size + ENTRYSIZE);
@@ -221,9 +218,7 @@ inline void insert_prefix(NodeElement* trie_node,
 			NodeElement* child_node = (NodeElement*)malloc(4 * sizeof(NodeElement));
 			if (child_node == NULL)
 			{
-				std::cerr << RED << "  ERROR" << COLOFF 
-					<< ": could not allocate memory for child_node (insert_prefix())" << std::endl;
-				exit(EXIT_FAILURE);
+				SMR_THROW("could not allocate memory for child_node (insert_prefix())");
 			}
 			memset(child_node, 0, 4 * sizeof(NodeElement));
 
@@ -241,9 +236,7 @@ inline void insert_prefix(NodeElement* trie_node,
 					node_elem_child->nodetype.bucket = (void*)malloc(ENTRYSIZE);
 					if (node_elem_child->nodetype.bucket == NULL)
 					{
-						std::cerr << RED << "  ERROR" << COLOFF <<
-							": could not allocate memory for child bucket (insert_prefix())" << std::endl;
-						exit(EXIT_FAILURE);
+						SMR_THROW("could not allocate memory for child bucket (insert_prefix())");
 					}
 					memset(node_elem_child->nodetype.bucket, 0, ENTRYSIZE);
 					node_elem_child->flag = 2;
@@ -257,9 +250,7 @@ inline void insert_prefix(NodeElement* trie_node,
 					node_elem_child->nodetype.bucket = (void*)malloc(child_bucket_size + ENTRYSIZE);
 					if (node_elem_child->nodetype.bucket == NULL)
 					{
-						std::cerr << RED << "  ERROR" << COLOFF 
-							<< ": could not allocate memory for child bucket resize (insert_prefix() in indexdb.cpp)" << std::endl;
-						exit(EXIT_FAILURE);
+						SMR_THROW("could not allocate memory for child bucket resize (insert_prefix() in indexdb.cpp)");
 					}
 					memset(node_elem_child->nodetype.bucket, 0, child_bucket_size + ENTRYSIZE);
 					memcpy(node_elem_child->nodetype.bucket, src, child_bucket_size);
@@ -642,14 +633,12 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
 			unsigned char* start_bucket = (unsigned char*)trie_node->nodetype.bucket;
 			if (start_bucket == NULL)
 			{
-				fprintf(stderr, "  ERROR: pointer start_bucket == NULL (paralleltraversal.cpp)\n");
-				exit(EXIT_FAILURE);
+				SMR_THROW("pointer start_bucket == NULL (paralleltraversal.cpp)");
 			}
 			unsigned char* end_bucket = start_bucket + trie_node->size;
 			if (end_bucket == NULL)
 			{
-				fprintf(stderr, "  ERROR: pointer end_bucket == NULL (paralleltraversal.cpp)\n");
-				exit(EXIT_FAILURE);
+				SMR_THROW("pointer end_bucket == NULL (paralleltraversal.cpp)");
 			}
 
 			// traverse the bucket
@@ -839,9 +828,7 @@ void load_index(kmer* lookup_table, char* outfile, Runopts &opts, IndexBuildStat
 					// ?
 					default:
 					{
-						std::cerr << RED << "  ERROR" << COLOFF 
-							<<": flag is set to " << trienode->flag << " (load_index)" << std::endl;
-						exit(EXIT_FAILURE);
+						SMR_THROW("flag is set to ", trienode->flag, " (load_index)");
 					}
 					break;
 					}
@@ -1038,8 +1025,7 @@ int build_index(Runopts& opts)
 		FILE *fp = fopen(idxpair.first.data(), "r");
 		if (fp == NULL)
 		{
-			ERR("Could not open file: " , idxpair.first);
-			exit(EXIT_FAILURE);
+			SMR_THROW("Could not open file: " , idxpair.first);
 		}
 
 		// get the size of the refs file
@@ -1048,8 +1034,7 @@ int build_index(Runopts& opts)
 		fseek(fp, 0L, SEEK_SET);
 
 		if (idxpair.second.size() == 0) {
-			ERR("Index file prefix for reference " , idxpair.first , " is empty. Cannot proceed.");
-			exit(EXIT_FAILURE);
+			SMR_THROW("Index file prefix for reference " , idxpair.first , " is empty. Cannot proceed.");
 		}
 		else {
 			INFO("Begin indexing file ", idxpair.first, 
@@ -1088,9 +1073,8 @@ int build_index(Runopts& opts)
 			if (nt == '>') strs += 2;
 			else
 			{
-				ERR("Each read header of the database fasta file must begin with '>';\n",
+				SMR_THROW("Each read header of the database fasta file must begin with '>';\n",
 					"  check sequence # ", strs);
-				exit(EXIT_FAILURE);
 			}
 
 			// scan to end of header name
@@ -1126,10 +1110,9 @@ int build_index(Runopts& opts)
 			full_len += len;
 			if (len < ibs.pread_gv)
 			{
-				ERR("At least one of your sequences is shorter than the seed length ",
+				SMR_THROW("At least one of your sequences is shorter than the seed length ",
 					ibs.pread_gv, ", please filter out all sequences shorter than ",
 					ibs.pread_gv, " to continue index construction.");
-				exit(EXIT_FAILURE);
 			}
 			// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
 			len > maxlen ? maxlen = len : maxlen;
@@ -1181,8 +1164,7 @@ int build_index(Runopts& opts)
 			kmer *lookup_table = (kmer*)malloc((1 << opts.seed_win_len) * sizeof(kmer));
 			if (lookup_table == NULL)
 			{
-				ERR("Could not allocate memory for 9-mer look-up table");
-				exit(EXIT_FAILURE);
+				SMR_THROW("Could not allocate memory for 9-mer look-up table");
 			}
 
 			memset(lookup_table, 0, (1 << opts.seed_win_len) * sizeof(kmer));
@@ -1353,8 +1335,7 @@ int build_index(Runopts& opts)
 							lookup_table[kmer_key_short_f].trie_F = (NodeElement*)malloc(4 * sizeof(NodeElement));
 							if (lookup_table[kmer_key_short_f].trie_F == NULL)
 							{
-								std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for trie_node in indexdb.cpp" << std::endl;
-								exit(EXIT_FAILURE);
+								SMR_THROW("could not allocate memory for trie_node in indexdb.cpp");
 							}
 							memset(lookup_table[kmer_key_short_f].trie_F, 0, 4 * sizeof(NodeElement));
 						}
@@ -1384,8 +1365,7 @@ int build_index(Runopts& opts)
 							lookup_table[kmer_key_short_r].trie_R = (NodeElement*)malloc(4 * sizeof(NodeElement));
 							if (lookup_table[kmer_key_short_r].trie_R == NULL)
 							{
-								std::cerr << RED << "  ERROR" << COLOFF << ": could not allocate memory for trie_node in indexdb.cpp" << std::endl;
-								exit(EXIT_FAILURE);
+								SMR_THROW("could not allocate memory for trie_node in indexdb.cpp");
 							}
 							memset(lookup_table[kmer_key_short_r].trie_R, 0, 4 * sizeof(NodeElement));
 						}
@@ -1435,12 +1415,14 @@ int build_index(Runopts& opts)
 			st = std::chrono::high_resolution_clock::now();
 
 			// Bug 2 check: duplicates in keys_vec cause incorrect MPHF
-			assert(keys_vec.size() == number_elements && "keys_vec size != number_elements");
+			if (keys_vec.size() != number_elements)
+				SMR_THROW("internal error: keys_vec size != number_elements");
 			{
 				std::vector<uint64_t> sorted_keys(keys_vec);
 				std::sort(sorted_keys.begin(), sorted_keys.end());
 				auto dup = std::adjacent_find(sorted_keys.begin(), sorted_keys.end());
-				assert(dup == sorted_keys.end() && "Duplicate keys in keys_vec - BBHash will be incorrect");
+				if (dup != sorted_keys.end())
+					SMR_THROW("internal error: duplicate keys in keys_vec - BBHash will be incorrect");
 			}
 
 			using hasher_t = boomphf::SingleHashFunctor<uint64_t>;
@@ -1452,8 +1434,10 @@ int build_index(Runopts& opts)
 				std::vector<bool> seen(number_elements, false);
 				for (uint64_t k : keys_vec) {
 					uint64_t vid = hash->lookup(k);
-					assert(vid < number_elements && "BBHash assigned ID >= number_elements");
-					assert(!seen[vid] && "BBHash assigned duplicate ID - not a perfect hash");
+					if (vid >= number_elements)
+						SMR_THROW("internal error: BBHash assigned ID >= number_elements");
+					if (seen[vid])
+						SMR_THROW("internal error: BBHash assigned duplicate ID - not a perfect hash");
 					seen[vid] = true;
 				}
 			}
@@ -1479,8 +1463,7 @@ int build_index(Runopts& opts)
 			positions_tbl = (kmer_origin*)malloc(number_elements * sizeof(kmer_origin));
 			if (positions_tbl == NULL)
 			{
-				ERR("could not allocate memory for positions_tbl (main(), indexdb.cpp)");
-				exit(EXIT_FAILURE);
+				SMR_THROW("could not allocate memory for positions_tbl (main(), indexdb.cpp)");
 			}
 
 			memset(positions_tbl, 0, number_elements * sizeof(kmer_origin));
@@ -1579,7 +1562,8 @@ int build_index(Runopts& opts)
 				{
 					// Bug 1 check: BBHash silently returns a false-positive for absent keys
 					uint64_t raw_id = hash->lookup(kmer_key >> 2);
-					assert(raw_id < number_elements && "BBHash lookup returned out-of-range id - key not in MPHF");
+					if (raw_id >= number_elements)
+						SMR_THROW("internal error: BBHash lookup returned out-of-range id - key not in MPHF");
 					id = static_cast<uint32_t>(raw_id);
 
 					//cout << "\t" << id << "=" << (kmer_key>>2); //TESTING
@@ -1635,8 +1619,7 @@ int build_index(Runopts& opts)
 			std::ofstream oskmer(idx_file, std::ios::binary);
 			if (!oskmer.is_open())
 			{
-				ERR("Failed to open file: ", idx_file, " for writing. Error: ", strerror(errno));
-				exit(1);
+				SMR_THROW("Failed to open file: ", idx_file, " for writing. Error: ", strerror(errno));
 			}
 
 			if (opts.is_verbose) {
@@ -1738,8 +1721,7 @@ int build_index(Runopts& opts)
 			std::ofstream stats(idxpair.second + ".stats", std::ios::binary);
 			if (!stats.good())
 			{
-				ERR("The file '", idxpair.second + ".stats", "' cannot be created: ", strerror(errno));
-				exit(EXIT_FAILURE);
+				SMR_THROW("The file '", idxpair.second + ".stats", "' cannot be created: ", strerror(errno));
 			}
 
 			// file size for file used to build the index

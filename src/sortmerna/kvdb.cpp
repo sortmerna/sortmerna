@@ -50,7 +50,8 @@ KeyValueDatabase::KeyValueDatabase(std::string const &kvdbPath)
 	options.compression = rocksdb::kZlibCompression;
 	options.create_if_missing = true;
 	rocksdb::Status s = rocksdb::DB::Open(options, kvdbPath, &kvdb);
-	assert(s.ok());
+	if (!s.ok())
+		SMR_THROW("Failed to open key-value database at ", kvdbPath, ": ", s.ToString());
 }
 
 /*

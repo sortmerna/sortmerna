@@ -122,8 +122,7 @@ Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_read
 					std::ofstream fstrm(idxfile, std::ios::binary | std::ios::out);
 					if (!fstrm.good())
 					{
-						ERR("Failed to open file [", idxfile, "] for writing: ", strerror(errno));
-						exit(EXIT_FAILURE);
+						SMR_THROW("Failed to open file [", idxfile, "] for writing: ", strerror(errno));
 					}
 					if (fstrm.is_open())
 						fstrm.close();
@@ -133,8 +132,7 @@ Index::Index(Runopts& opts) : index_num(0), part(0), number_elements(0), is_read
 			build_index(opts);
 		}
 		else {
-			ERR("index is not ready. It has to be generated using option '", OPT_INDEX, "' prior running alignment");
-			exit(1);
+			SMR_THROW("index is not ready. It has to be generated using option '", OPT_INDEX, "' prior running alignment");
 		}
 	}
 } // ~Index::Index
@@ -147,8 +145,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 
 	if (!inkmer.good())
 	{
-		ERR("The index " , idxfile , " does not exist.");
-		exit(EXIT_FAILURE);
+		SMR_THROW("The index " , idxfile , " does not exist.");
 	}
 
 	uint32_t limit = 1 << refstats.lnwin[idx_num];
@@ -167,8 +164,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 	{
 		std::stringstream ss;
 		ss << STAMP << "The index " << btriefile << " does not exist.";
-		ERR(ss.str())
-		exit(EXIT_FAILURE);
+		SMR_THROW(ss.str());
 	}
 
 	// loop through all 9-mers
@@ -191,8 +187,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 			{
 				std::stringstream ss;
 				ss << STAMP << "Failed to allocate memory for mini-burst tries";
-				ERR(ss.str())
-				exit(EXIT_FAILURE);
+				SMR_THROW(ss.str());
 			}
 			// load 2 burst tries per 9-mer
 			for (int j = 0; j < 2; j++)
@@ -268,10 +263,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 								char* bucket = new char[sizeofbucket]();
 								if (bucket == NULL)
 								{
-									std::stringstream ss;
-									ss << STAMP << "Failed to allocate memory for allocate bucket";
-									fprintf(stderr, "\n  %sERROR%s:  (paralleltraversal.cpp)\n", RED, COLOFF);
-									exit(EXIT_FAILURE);
+									SMR_THROW("Failed to allocate memory for allocate bucket");
 								}
 								btrie.read(reinterpret_cast<char*>(bucket), sizeofbucket);
 								// copy the bucket into the burst trie array
@@ -288,8 +280,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 							// ?
 							default:
 							{
-								fprintf(stderr, "\n  %sERROR%s: flag is set to %d (load_index)\n", RED, COLOFF, flag);
-								exit(EXIT_FAILURE);
+								SMR_THROW("flag is set to ", flag, " (load_index)");
 							}
 							break;
 							}
@@ -320,8 +311,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 
 	if (!inreff.good())
 	{
-		fprintf(stderr, "\n  ERROR: The database name '%s' does not exist.\n\n", posfile.c_str());
-		exit(EXIT_FAILURE);
+		SMR_THROW("The database name '", posfile, "' does not exist.");
 	}
 
 	uint32_t size = 0;
@@ -330,8 +320,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 
 	if (positions_tbl.capacity() == 0)
 	{
-		fprintf(stderr, "  ERROR: could not allocate memory for positions_tbl (main(), paralleltraversal.cpp)\n");
-		exit(EXIT_FAILURE);
+		SMR_THROW("could not allocate memory for positions_tbl (main(), paralleltraversal.cpp)");
 	}
 
 	for (uint32_t i = 0; i < number_elements; i++)
@@ -344,8 +333,7 @@ void Index::load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std:
 		positions_tbl[i].arr = new seq_pos[size]();
 		if (positions_tbl[i].arr == NULL)
 		{
-			fprintf(stderr, "  ERROR: could not allocate memory for positions_tbl (paralleltraversal.cpp)\n");
-			exit(EXIT_FAILURE);
+			SMR_THROW("could not allocate memory for positions_tbl (paralleltraversal.cpp)");
 		}
 		inreff.read(reinterpret_cast<char*>(positions_tbl[i].arr), sizeof(seq_pos)*size);
 	}

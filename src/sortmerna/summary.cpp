@@ -63,8 +63,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 	INFO("Using summary file: ", f_log.generic_string());
 	ofs.open(f_log, std::ofstream::binary | std::ofstream::out);
 	if (!ofs.is_open()) {
-		ERR("Failed opening file ", f_log);
-		exit(EXIT_FAILURE);
+		SMR_THROW("Failed opening file ", f_log);
 	}
 
 	cmd = opts.cmdline;

@@ -101,8 +101,7 @@ void ReportFxOther::append(const uint32_t& id, std::vector<Read>& reads, const R
 					continue; // ignore an aligned singleton
 			}
 			else {
-				ERR("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
-				exit(1);
+				SMR_THROW("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
 			}
 
 			if (is_zip)

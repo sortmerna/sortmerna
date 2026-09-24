@@ -76,8 +76,7 @@ void OtuMap::write()
 		std::ofstream ofs;
 		ofs.open(fmap);
 		if (!ofs.is_open()) {
-			ERR("Failed to open: ", fmap);
-			exit(1);
+			SMR_THROW("Failed to open: ", fmap);
 		}
 
 		for (auto const& amap : mapv) {

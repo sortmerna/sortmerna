@@ -78,8 +78,7 @@ unsigned int list_dir(std::string dpath)
 
 	if (pdir == NULL)
 	{
-		ERR("Failed to open (" + dpath + ")");
-		exit(1);
+		SMR_THROW("Failed to open (" + dpath + ")");
 	}
 
 	while ((next_file = readdir(pdir)) != NULL)

@@ -60,11 +60,10 @@ void ReportFastx::append(const uint32_t& id, std::vector<Read>& reads, const Run
 			&& (reads[0].read_num != reads[1].read_num
 				|| reads[0].readfile_idx == reads[1].readfile_idx))
 		{
-			ERR("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ",
+			SMR_THROW("Paired validation failed: reads[0].id= ", reads[0].id, " reads[0].read_num = ",
 				reads[0].read_num, " reads[0].readfile_idx= ", reads[0].readfile_idx,
 				" reads[1].id=", reads[1].id, " reads[1].read_num = ", reads[1].read_num,
 				" reads[1].readfile_idx = ", reads[1].readfile_idx);
-			exit(EXIT_FAILURE);
 		}
 
 		if (!reads[0].is_hit && !reads[1].is_hit)
@@ -121,8 +120,7 @@ void ReportFastx::append(const uint32_t& id, std::vector<Read>& reads, const Run
 					continue; // ignore a non-aligned singleton
 			}
 			else {
-				ERR("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
-				exit(1);
+				SMR_THROW("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
 			}
 
 			if (is_zip)

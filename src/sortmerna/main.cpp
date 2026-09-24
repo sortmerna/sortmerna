@@ -59,6 +59,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 int main(int argc, char** argv)
 {
 	bool dryrun = false;
+	try {
 	Runopts opts(argc, argv, dryrun);
 
 	INFO("Running command:\n", opts.cmdline);
@@ -144,6 +145,16 @@ int main(int argc, char** argv)
 			run_reports();
 			break;
 		}
+	}
+	} catch (const smr_exit_requested&) {
+		return 0; // --help or --version
+	} catch (const smr_error& e) {
+		// report exactly as ERR() at the throw site would have
+		std::cerr << '\n' << e.where << RED << "ERROR" << COLOFF << ": " << e.what() << std::endl;
+		return EXIT_FAILURE;
+	} catch (const std::exception& e) {
+		ERR(e.what());
+		return EXIT_FAILURE;
 	}
 	return 0;
 }//~main()

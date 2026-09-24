@@ -293,8 +293,7 @@ void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
 	}
 	else {
         // should never get here since feed type is validated at the command line parsing stage, but just in case...
-        ERR("Unsupported feed type: ", static_cast<unsigned>(type));
-        exit(1);
+        SMR_THROW("Unsupported feed type: ", static_cast<unsigned>(type));
 	}
 
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -314,8 +313,7 @@ void Readfeed::run()
 	for (std::size_t i = 0; i < split_files.size(); ++i) {
 		ifsv[i].open(split_files[i].path, std::ios_base::in | std::ios_base::binary);
 		if (!ifsv[i].is_open()) {
-			ERR("Failed to open file ", split_files[i].path);
-			exit(1);
+			SMR_THROW("Failed to open file ", split_files[i].path);
 		}
 	}
 
@@ -497,8 +495,7 @@ bool Readfeed::next(int inext,
 		if (stat == RL_ERR)
 		{
 			auto FR = (inext & 1) == 0 ? FWD : REV;
-			ERR("reading from ", FR, " file. Exiting...");
-			exit(1);
+			SMR_THROW("reading from ", FR, " file. Exiting...");
 		}
 
 		if (line.empty())
@@ -630,8 +627,7 @@ bool Readfeed::next(int inext, std::string& readstr, bool is_orig, std::vector<R
 		if (stat == RL_ERR)
 		{
 			auto FR = (inext & 1) == 0 ? FWD : REV;
-			ERR("reading from ", FR, " file. Exiting...");
-			exit(1);
+			SMR_THROW("reading from ", FR, " file. Exiting...");
 		}
 
 		if (line.empty())
@@ -754,8 +750,7 @@ bool Readfeed::next_gz(int inext, std::string& readstr, bool is_orig)
 
 		if (stat == RL_ERR) {
 			auto FR = (inext & 1) == 0 ? FWD : REV;
-			ERR("reading from ", FR, " file. Exiting...");
-			exit(1);
+			SMR_THROW("reading from ", FR, " file. Exiting...");
 		}
 
 		if (line.empty()) { --count; continue; }
@@ -852,13 +847,10 @@ bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
 
 		if (stat == RL_ERR) {
             if (num_orig_files == 1) {
-                ERR("reading from file. Slot: ", slot_idx, " Exiting...");
+                SMR_THROW("reading from file. Slot: ", slot_idx, " Exiting...");
             }
-            else {
-			    auto FR = (inext & 1) == 0 ? FWD : REV;
-			    ERR("reading from ", FR, " file. Slot: ", slot_idx, " Exiting...");
-            }
-			exit(1);
+			auto FR = (inext & 1) == 0 ? FWD : REV;
+			SMR_THROW("reading from ", FR, " file. Slot: ", slot_idx, " Exiting...");
 		}
 
 		if (line.empty()) { --count; continue; }
@@ -984,9 +976,8 @@ void Readfeed::rewind_in() {
 			ifsv[i].seekg(0); // rewind
 
 			if (!ifsv[i].good()) {
-				ERR("failed rewind stream idx: ", i, " in vector of size: ", ifsv.size(), 
+				SMR_THROW("failed rewind stream idx: ", i, " in vector of size: ", ifsv.size(), 
                     " iostate: ", ifsv[i].rdstate());
-				exit(1);
 			}
 		}
 		vstate_in[i].reset();
@@ -1021,8 +1012,7 @@ bool Readfeed::split()
 			ifsv[i].open(orig_files[i].path, std::ios_base::in | std::ios_base::binary);
 		}
 		if (!ifsv[i].is_open()) {
-			ERR("Failed to open file ", orig_files[i].path);
-			exit(1);
+			SMR_THROW("Failed to open file ", orig_files[i].path);
 		}
 	}
 	rewind_in();
@@ -1046,8 +1036,7 @@ bool Readfeed::split()
 			ofsv[i].open(split_files[i].path, std::ios::out | std::ios::binary | std::ios::trunc);
 		}
 		if (!ofsv[i].is_open()) {
-			ERR("Failed to open file ", split_files[i].path.generic_string());
-			exit(1);
+			SMR_THROW("Failed to open file ", split_files[i].path.generic_string());
 		}
 	}
 
@@ -1314,8 +1303,7 @@ void Readfeed::build_flat_chunk_offsets()
 		{
 			std::ifstream ifs(origFile.path, std::ios_base::in | std::ios_base::binary);
 			if (!ifs.is_open()) {
-				ERR("failed to open: ", origFile.path.generic_string());
-				exit(1);
+				SMR_THROW("failed to open: ", origFile.path.generic_string());
 			}
 			constexpr size_t CHUNK = 1U << 20; // 1 MiB
 			std::vector<char> buf(CHUNK);
@@ -1404,8 +1392,7 @@ bool Readfeed::is_split_ready() {
 		INFO("found existing readfeed descriptor ", fn.generic_string());
 		ifs.open(fn, std::ios_base::in | std::ios_base::binary);
 		if (!ifs.is_open()) {
-			ERR("failed to open: ", fn.generic_string());
-			exit(1);
+			SMR_THROW("failed to open: ", fn.generic_string());
 		}
 
 		unsigned lidx = 0; // line index
@@ -1518,8 +1505,7 @@ bool Readfeed::define_format(const int& dbg)
 			ifsv[i].open(orig_files[i].path, std::ios_base::in | std::ios_base::binary);
 		}
 		if (!ifsv[i].is_open()) {
-			ERR("Failed to open file ", orig_files[i].path);
-			exit(1);
+			SMR_THROW("Failed to open file ", orig_files[i].path);
 		}
 		auto fsz = std::filesystem::file_size(orig_files[i].path);
 		auto blen = fsz > 100 ? 100 : fsz; // num bytes to read: max 100 - issue 290  20210511
@@ -1569,8 +1555,7 @@ bool Readfeed::define_format(const int& dbg)
 		}
 
 		if (!is_format_defined) {
-			ERR("Cannot define format for file: ", orig_files[i].path);
-			exit(1);
+			SMR_THROW("Cannot define format for file: ", orig_files[i].path);
 		}
 
 		// reset Izlib
@@ -1700,8 +1685,7 @@ void Readfeed::count_reads_parallel()
 				// to the start of the next complete record.
 				std::ifstream bifs(origFile.path, std::ios_base::in | std::ios_base::binary);
 				if (!bifs.is_open()) {
-					ERR("count_reads_parallel: cannot open ", origFile.path.generic_string());
-					exit(1);
+					SMR_THROW("count_reads_parallel: cannot open ", origFile.path.generic_string());
 				}
 
 				for (size_t i = 1; i < num_splits; ++i) {
@@ -1972,8 +1956,7 @@ void Readfeed::write_descriptor()
 		std::filesystem::path fn = basedir / "readfeed";
 		std::ofstream ofs(fn, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!ofs.is_open()) {
-			ERR("failed to open file: ", fn.generic_string());
-			exit(1);
+			SMR_THROW("failed to open file: ", fn.generic_string());
 		}
 
         INFO("writing reads descriptor to: ", fn.generic_string());
@@ -2073,8 +2056,7 @@ void Readfeed::init_reading()
 			if (slot.ifs.is_open()) slot.ifs.close();
 			slot.ifs.open(slot.file_path, std::ios_base::in | std::ios_base::binary);
 			if (!slot.ifs.is_open()) {
-				ERR("failed to open: ", slot.file_path);
-				exit(1);
+				SMR_THROW("failed to open: ", slot.file_path);
 			}
 			slot.ifs.seekg(static_cast<std::streamoff>(slot.bytes_start));
 			slot.bytes_remaining = slot.bytes_end - slot.bytes_start;
@@ -2102,8 +2084,7 @@ void Readfeed::init_reading()
 	for (std::size_t i = 0; i < split_files.size(); ++i) {
 		ifsv[i].open(split_files[i].path, std::ios_base::in | std::ios_base::binary);
 		if (!ifsv[i].is_open()) {
-			ERR("failed to open: ", split_files[i].path.generic_string());
-			exit(1);
+			SMR_THROW("failed to open: ", split_files[i].path.generic_string());
 		}
 	}
 
@@ -2122,8 +2103,7 @@ int Readfeed::clean()
 		INFO("found descriptor ", fn.generic_string());
 		ifs.open(fn, std::ios_base::in | std::ios_base::binary);
 		if (!ifs.is_open()) {
-			ERR("failed to open: ", fn.generic_string());
-			exit(1);
+			SMR_THROW("failed to open: ", fn.generic_string());
 		}
 
 		int lidx = 0; // line index
@@ -2144,8 +2124,7 @@ int Readfeed::clean()
 				if (line[0] != '#') { // skip comments
 					if (lidx == 1 || lidx == 2 || lidx == 3 || lidx == 4) {
 						if (!std::regex_match(line, rx_num)) {
-							ERR("not a number: '", line, "'");
-							exit(1);
+							SMR_THROW("not a number: '", line, "'");
 						}
 					}
 					if (lidx == 0); // skip timestamp
