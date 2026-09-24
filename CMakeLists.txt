@@ -73,8 +73,13 @@ add_subdirectory(${EXTERNAL_DEPS}/alp)
 ## build sortmerna
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/sortmerna)
 
+## build smr_api (C library API)
+add_subdirectory(${CMAKE_SOURCE_DIR}/src/smr_api)
+
 if (WITH_TESTS)
+  enable_testing()
   add_subdirectory (tests/sortmerna)
+  add_subdirectory (tests/smr_api)
 endif ()
 
 include(CMakePackageConfigHelpers)

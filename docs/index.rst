@@ -44,6 +44,7 @@ Contents
    building
    databases
    statistics
+   c_api
    manual4.0.rst 
    trace4.0.1.rst
    trace4.3.2.rst
