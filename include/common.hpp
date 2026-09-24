@@ -86,10 +86,8 @@ const char nt_map[5] = { 'A', 'C', 'G', 'T', 'N' };
 
 const char complement[5] = { 3, 2, 1, 0, 4 }; // A <-> T, C <-> G, N <-> N
 
-extern timeval t;
-
-/*! @brief Macro for timing */
-#define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
+/*! @brief Macro for timing (uses local timeval, no global state) */
+#define TIME(x) do { struct timeval _tv; gettimeofday(&_tv, NULL); x = _tv.tv_sec + (_tv.tv_usec/1000000.0); } while(0)
 
 /*! @brief start color text red */
 #define RED    "\033[0;31m"

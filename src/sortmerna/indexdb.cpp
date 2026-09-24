@@ -99,29 +99,28 @@ const char map_nt[122] = {
 	/* 120, 121 */
 	2,   1 };
 
-/* length of the sliding window parameters */
-uint32_t pread_gv = 0; // lnwin_gv + 1
-uint32_t partialwin_gv = 0; // lnwin_gv / 2
-
-/* bit masking during sliding of window by 1 character */
-uint32_t mask32 = 0;
-uint64_t mask64 = 0;
-
-uint32_t total_num_trie_nodes = 0;
-uint32_t size_of_all_buckets = 0;
-uint32_t sizeoftrie = 0;
-
-// STATISTICS
-uint32_t total_num_buckets = 0;
-uint32_t largest_bucket_size = 0;
-uint32_t high_num_elem_in_bucket = 0;
-uint32_t low_num_elem_in_bucket = 1000;
-uint32_t longest_elem_in_bucket = 0;
-uint32_t shortest_elem_in_bucket = 1000;
-uint32_t all_lengths_elements_in_buckets = 0;
-uint32_t all_elem_in_buckets = 0;
-uint32_t avg_len[11] = { 0 };
-uint32_t num_elem[100] = { 0 };
+/* Index build state -- encapsulates all mutable state used during
+ * index construction. Allocated locally in build_index() and passed
+ * by reference to all internal helpers for reentrancy. */
+struct IndexBuildState {
+	uint32_t pread_gv = 0;
+	uint32_t partialwin_gv = 0;
+	uint32_t mask32 = 0;
+	uint64_t mask64 = 0;
+	uint32_t total_num_trie_nodes = 0;
+	uint32_t size_of_all_buckets = 0;
+	uint32_t sizeoftrie = 0;
+	uint32_t total_num_buckets = 0;
+	uint32_t largest_bucket_size = 0;
+	uint32_t high_num_elem_in_bucket = 0;
+	uint32_t low_num_elem_in_bucket = 1000;
+	uint32_t longest_elem_in_bucket = 0;
+	uint32_t shortest_elem_in_bucket = 1000;
+	uint32_t all_lengths_elements_in_buckets = 0;
+	uint32_t all_elem_in_buckets = 0;
+	uint32_t avg_len[14] = { 0 }; /* max index: seed_win_len/2, max seed_win_len=26 -> 13 */
+	uint32_t num_elem[100] = { 0 };
+};
 
 /*
  *
@@ -136,7 +135,7 @@ uint32_t num_elem[100] = { 0 };
  *
  *******************************************************************/
 inline void insert_prefix(NodeElement* trie_node,
-	unsigned char *prefix)
+	unsigned char *prefix, IndexBuildState& ibs)
 {
 	uint32_t depth = 0;
 	uint32_t sig = 0;
@@ -193,7 +192,7 @@ inline void insert_prefix(NodeElement* trie_node,
 	uint32_t* entry = (uint32_t*)((unsigned char*)node_elem->nodetype.bucket + node_elem->size);
 
 	// length of entry to add to bucket
-	int s = partialwin_gv + 1 - depth;
+	int s = ibs.partialwin_gv + 1 - depth;
 
 	// add the tail to the bucket
 	uint32_t encode = 0;
@@ -213,7 +212,7 @@ inline void insert_prefix(NodeElement* trie_node,
 #define BURST
 #ifdef BURST
 	// (-3 = -2*k-1) smallest bucket must have at least 3-character strings
-	if (depth < (pread_gv - partialwin_gv - 3))
+	if (depth < (ibs.pread_gv - ibs.partialwin_gv - 3))
 	{
 		// burst if next string will exceed bucket limit
 		if (node_elem->size > THRESHOLD)
@@ -390,7 +389,7 @@ void freebursttrie(NodeElement* trie_node)
  * @version 1.0 Mar 4, 2013
  *
  *******************************************************************/
-bool search_burst_trie(NodeElement* trie_node, unsigned char* kmer_short_key, bool &new_position)
+bool search_burst_trie(NodeElement* trie_node, unsigned char* kmer_short_key, bool &new_position, IndexBuildState& ibs)
 {
 	uint32_t depth = 0;
 
@@ -408,7 +407,7 @@ bool search_burst_trie(NodeElement* trie_node, unsigned char* kmer_short_key, bo
 	if (node_elem->flag == 0) return false;
 
 	// encode the remaining part of kmer_short_key using 4 nt per byte
-	int s = partialwin_gv + 1 - depth;
+	int s = ibs.partialwin_gv + 1 - depth;
 
 	uint32_t encode = 0;
 	for (int i = 0; i < s; i++)
@@ -454,7 +453,7 @@ bool search_burst_trie(NodeElement* trie_node, unsigned char* kmer_short_key, bo
  * @version 1.0 Jan 11, 2013
  *
  *******************************************************************/
-void add_id_to_burst_trie(NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, uint32_t id)
+void add_id_to_burst_trie(NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, uint32_t id, IndexBuildState& ibs)
 {
 	uint32_t depth = 0;
 
@@ -470,7 +469,7 @@ void add_id_to_burst_trie(NodeElement* trie_node, unsigned char* kmer_id_short_F
 	}
 
 	// encode the remaining part of kmer_id_short_F using 4 nt per byte
-	int s = partialwin_gv + 1 - depth;
+	int s = ibs.partialwin_gv + 1 - depth;
 
 	uint32_t encode = 0;
 	for (int i = 0; i < s; i++)
@@ -496,7 +495,7 @@ void add_id_to_burst_trie(NodeElement* trie_node, unsigned char* kmer_id_short_F
 }//~add_id_to_burst_trie()
 
 
-void search_for_id(NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, uint32_t &id)
+void search_for_id(NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, uint32_t &id, IndexBuildState& ibs)
 {
 	uint32_t depth = 0;
 
@@ -512,7 +511,7 @@ void search_for_id(NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, u
 	}
 
 	// encode the remaining part of kmer_id_short_F using 4 nt per byte
-	int s = partialwin_gv + 1 - depth;
+	int s = ibs.partialwin_gv + 1 - depth;
 
 	uint32_t encode = 0;
 	for (int i = 0; i < s; i++)
@@ -548,9 +547,9 @@ void search_for_id(NodeElement* trie_node, unsigned char* kmer_id_short_F_ptr, u
  * @version 1.0 Jan 14, 2013
  *
  *******************************************************************/
-void traversetrie(NodeElement* trie_node, uint32_t depth)
+void traversetrie(NodeElement* trie_node, uint32_t depth, IndexBuildState& ibs)
 {
-	total_num_trie_nodes++;
+	ibs.total_num_trie_nodes++;
 
 	// traverse through the node elements in a trie node
 	for (int i = 0; i < 4; i++)
@@ -560,7 +559,7 @@ void traversetrie(NodeElement* trie_node, uint32_t depth)
 		// the node element holds a pointer to another trie node
 		if (value == 1)
 		{
-			traversetrie(trie_node->nodetype.trie, ++depth);
+			traversetrie(trie_node->nodetype.trie, ++depth, ibs);
 			--depth;
 		}
 
@@ -570,26 +569,26 @@ void traversetrie(NodeElement* trie_node, uint32_t depth)
 			// pad to alignment length (16-byte line)
 			// int padding = 16-((trie_node->size)%16);
 			// size_of_all_buckets+=(trie_node->size + padding);
-			size_of_all_buckets += trie_node->size;
+			ibs.size_of_all_buckets += trie_node->size;
 
-			if (largest_bucket_size < trie_node->size) largest_bucket_size = trie_node->size;
+			if (ibs.largest_bucket_size < trie_node->size) ibs.largest_bucket_size = trie_node->size;
 
 			// for STATISTICS
-			total_num_buckets++;
-			uint32_t s = partialwin_gv - depth;
+			ibs.total_num_buckets++;
+			uint32_t s = ibs.partialwin_gv - depth;
 
-			if (s > longest_elem_in_bucket) longest_elem_in_bucket = s;
-			else if (s < shortest_elem_in_bucket) shortest_elem_in_bucket = s;
+			if (s > ibs.longest_elem_in_bucket) ibs.longest_elem_in_bucket = s;
+			else if (s < ibs.shortest_elem_in_bucket) ibs.shortest_elem_in_bucket = s;
 
-			all_lengths_elements_in_buckets += s;
-			avg_len[s]++;
+			ibs.all_lengths_elements_in_buckets += s;
+			ibs.avg_len[s]++;
 			uint32_t numelem = (trie_node->size) / ENTRYSIZE;
 
-			if (numelem > high_num_elem_in_bucket) high_num_elem_in_bucket = numelem;
-			else if (numelem < low_num_elem_in_bucket) low_num_elem_in_bucket = numelem;
+			if (numelem > ibs.high_num_elem_in_bucket) ibs.high_num_elem_in_bucket = numelem;
+			else if (numelem < ibs.low_num_elem_in_bucket) ibs.low_num_elem_in_bucket = numelem;
 
-			all_elem_in_buckets += numelem;
-			num_elem[numelem]++;
+			ibs.all_elem_in_buckets += numelem;
+			ibs.num_elem[numelem]++;
 		}
 
 		// the node element is empty, go to next node element
@@ -617,7 +616,7 @@ void traversetrie(NodeElement* trie_node, uint32_t depth)
  * @version 1.0 Jan 14, 2013
  *
  *******************************************************************/
-void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_entries, string &kmer_keep)
+void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_entries, string &kmer_keep, IndexBuildState& ibs)
 {
 	char get_char[4] = { 'A','C','G','T' };
 
@@ -630,7 +629,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
 		if (value == 1)
 		{
 			kmer_keep.push_back((char)get_char[i]); //TESTING
-			traversetrie_debug(trie_node->nodetype.trie, ++depth, total_entries, kmer_keep);
+			traversetrie_debug(trie_node->nodetype.trie, ++depth, total_entries, kmer_keep, ibs);
 			kmer_keep.pop_back();
 			--depth;
 		}
@@ -657,7 +656,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
 			while (start_bucket != end_bucket)
 			{
 				uint32_t entry_str = *((uint32_t*)start_bucket);
-				uint32_t s = partialwin_gv - depth;
+				uint32_t s = ibs.partialwin_gv - depth;
 				total_entries++;
 
 				// for each nt in the string
@@ -702,7 +701,7 @@ void traversetrie_debug(NodeElement* trie_node, uint32_t depth, uint32_t &total_
  * @version 1.0 Jan 16, 2013
  *
  *******************************************************************/
-void load_index(kmer* lookup_table, char* outfile, Runopts &opts)
+void load_index(kmer* lookup_table, char* outfile, Runopts &opts, IndexBuildState& ibs)
 {
 	// output the mini-burst tries
 	std::ofstream btrie(outfile, std::ofstream::binary);
@@ -721,20 +720,20 @@ void load_index(kmer* lookup_table, char* outfile, Runopts &opts)
 	// 1. output size for the two mini-burst tries for each 9-mer
 		for (int j = 0; j < 2; j++)
 		{
-			total_num_trie_nodes = 0;
-			size_of_all_buckets = 0;
+			ibs.total_num_trie_nodes = 0;
+			ibs.size_of_all_buckets = 0;
 			if (j == 0) trienode = lookup_table[i].trie_F;
 			else trienode = lookup_table[i].trie_R;
 
-			if (trienode != NULL) traversetrie(trienode, 0);
+			if (trienode != NULL) traversetrie(trienode, 0, ibs);
 
-			sizeoftrie = total_num_trie_nodes * sizeof(NodeElement) * 4 + size_of_all_buckets * sizeof(char);
-			sizeoftries[j] = sizeoftrie;
-			btrie.write(reinterpret_cast<const char*>(&sizeoftrie), sizeof(uint32_t));
+			ibs.sizeoftrie = ibs.total_num_trie_nodes * sizeof(NodeElement) * 4 + ibs.size_of_all_buckets * sizeof(char);
+			sizeoftries[j] = ibs.sizeoftrie;
+			btrie.write(reinterpret_cast<const char*>(&ibs.sizeoftrie), sizeof(uint32_t));
 
 #ifdef see_binary_output
-			if (j == 0) cout << "\tsizeoftrie f = " << sizeoftrie; //TESTING
-			else cout << "\tsizeoftrie r = " << sizeoftrie; //TESTING
+			if (j == 0) cout << "\tsizeoftrie f = " << ibs.sizeoftrie; //TESTING
+			else cout << "\tsizeoftrie r = " << ibs.sizeoftrie; //TESTING
 #endif
 		}
 
@@ -998,11 +997,12 @@ int build_index(Runopts& opts)
 	std::chrono::duration<double> elapsed;
 	INFO("==== Index building started ====");
 
-	pread_gv = opts.seed_win_len + 1;
-	partialwin_gv = opts.seed_win_len / 2;
+	IndexBuildState ibs;
+	ibs.pread_gv = opts.seed_win_len + 1;
+	ibs.partialwin_gv = opts.seed_win_len / 2;
 
-	mask32 = (1 << opts.seed_win_len) - 1;
-	mask64 = (2ULL << ((pread_gv * 2) - 1)) - 1;
+	ibs.mask32 = (1 << opts.seed_win_len) - 1;
+	ibs.mask64 = (2ULL << ((ibs.pread_gv * 2) - 1)) - 1;
 
 	// vector accumulating unique 18-mer keys for each index part (used to build BBHash MPHF)
 	std::vector<uint64_t> keys_vec;
@@ -1124,11 +1124,11 @@ int build_index(Runopts& opts)
 			sam_sq_header.push_back(std::pair<std::string, uint32_t>(s, len));
 			if (nt != EOF) ungetc(nt, fp);
 			full_len += len;
-			if (len < pread_gv)
+			if (len < ibs.pread_gv)
 			{
 				ERR("At least one of your sequences is shorter than the seed length ",
-					pread_gv, ", please filter out all sequences shorter than ",
-					pread_gv, " to continue index construction.");
+					ibs.pread_gv, ", please filter out all sequences shorter than ",
+					ibs.pread_gv, " to continue index construction.");
 				exit(EXIT_FAILURE);
 			}
 			// if ( len > maxlen ) then ( maxlen = rrnalen ) else ( do nothing )
@@ -1247,7 +1247,7 @@ int build_index(Runopts& opts)
 
 				// check the addition of this sequence will not overflow the
 				// maximum memory (estimated memory 10 bytes per L-mer)
-				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6; // MB
+				double estimated_seq_mem = (len - ibs.pread_gv + 1)*9.5e-6; // MB
 
 				// the sequence alone is too large, it will not fit into maximum
 				// memory, skip it
@@ -1304,26 +1304,26 @@ int build_index(Runopts& opts)
 				// pointer to next letter to add to 9-mer prefix
 				unsigned char* kmer_key_short_f_p = &myseq[0];
 				// pointer to next letter to add to 9-mer suffix
-				unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv + 1];
+				unsigned char* kmer_key_short_r_p = &myseq[ibs.partialwin_gv + 1];
 				// pointer to 10-mer of reverse 19-mer to insert
 				// into the mini-burst trie
-				unsigned char* kmer_key_short_r_rp = &myseqr[len - partialwin_gv - 1];
+				unsigned char* kmer_key_short_r_rp = &myseqr[len - ibs.partialwin_gv - 1];
 				// 19-mer
 				unsigned long long int kmer_key = 0;
 				// pointer to 19-mer
 				unsigned char* kmer_key_ptr = &myseq[0];
 
 				// initialize the prefix and suffix 9-mers
-				for (uint32_t j = 0; j < partialwin_gv; j++)
+				for (uint32_t j = 0; j < ibs.partialwin_gv; j++)
 				{
 					(kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
 					(kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
 				}
 
 				// initialize the 19-mer
-				for (uint32_t j = 0; j < pread_gv; j++) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
+				for (uint32_t j = 0; j < ibs.pread_gv; j++) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
 
-				uint32_t numwin = (len - pread_gv + opts.interval) / opts.interval; //TESTING
+				uint32_t numwin = (len - ibs.pread_gv + opts.interval) / opts.interval; //TESTING
 				uint32_t index_pos = 0;
 
 				// for all 19-mers on the sequence
@@ -1345,7 +1345,7 @@ int build_index(Runopts& opts)
 					// forward 19-mer does not exist in the burst trie (duplicates not allowed)
 					if (lookup_table[kmer_key_short_f].trie_F == NULL ||
 						(lookup_table[kmer_key_short_f].trie_F != NULL && 
-						!search_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, new_position)))
+						!search_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, new_position, ibs)))
 					{
 						// create a trie node if it doesn't exist
 						if (lookup_table[kmer_key_short_f].trie_F == NULL)
@@ -1359,7 +1359,7 @@ int build_index(Runopts& opts)
 							memset(lookup_table[kmer_key_short_f].trie_F, 0, 4 * sizeof(NodeElement));
 						}
 
-						insert_prefix(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p);
+						insert_prefix(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, ibs);
 					}
 
 					// 18-mer doesn't exist in the burst trie, add it to keys file
@@ -1376,7 +1376,7 @@ int build_index(Runopts& opts)
 					// reverse 19-mer does not exist in the burst trie
 					if (lookup_table[kmer_key_short_r].trie_R == NULL ||
 						((lookup_table[kmer_key_short_r].trie_R != NULL) && 
-						!search_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, new_position)))
+						!search_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, new_position, ibs)))
 					{
 						// create a trie node if it doesn't exist
 						if (lookup_table[kmer_key_short_r].trie_R == NULL)
@@ -1390,7 +1390,7 @@ int build_index(Runopts& opts)
 							memset(lookup_table[kmer_key_short_r].trie_R, 0, 4 * sizeof(NodeElement));
 						}
 
-						insert_prefix(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp);
+						insert_prefix(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, ibs);
 					}
 
 					// shift 19-mer window and both 9-mers
@@ -1398,9 +1398,9 @@ int build_index(Runopts& opts)
 					{
 						for (uint32_t shift = 0; shift < opts.interval; shift++)
 						{
-							((kmer_key_short_f <<= 2) &= mask32) |= (int)*kmer_key_short_f_p++;
-							((kmer_key_short_r <<= 2) &= mask32) |= (int)*kmer_key_short_r_p++;
-							((kmer_key <<= 2) &= mask64) |= (int)*kmer_key_ptr++;
+							((kmer_key_short_f <<= 2) &= ibs.mask32) |= (int)*kmer_key_short_f_p++;
+							((kmer_key_short_r <<= 2) &= ibs.mask32) |= (int)*kmer_key_short_r_p++;
+							((kmer_key <<= 2) &= ibs.mask64) |= (int)*kmer_key_ptr++;
 							kmer_key_short_r_rp--;
 							index_pos++;
 						}
@@ -1524,7 +1524,7 @@ int build_index(Runopts& opts)
 				if (nt != EOF) ungetc(nt, fp); // put back the '>'
 
 				// check the addition of this sequence will not overflow the maximum memory
-				double estimated_seq_mem = (len - pread_gv + 1)*9.5e-6;
+				double estimated_seq_mem = (len - ibs.pread_gv + 1)*9.5e-6;
 
 				// the sequence alone is too large, it will not fit into maximum memory, skip it
 				if (estimated_seq_mem > opts.max_file_size) continue;
@@ -1553,23 +1553,23 @@ int build_index(Runopts& opts)
 				uint32_t kmer_key_short_f = 0;
 				uint32_t kmer_key_short_r = 0;
 				unsigned char* kmer_key_short_f_p = &myseq[0];
-				unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv + 1];
-				unsigned char* kmer_key_short_r_rp = &myseqr[len - partialwin_gv - 1];
+				unsigned char* kmer_key_short_r_p = &myseq[ibs.partialwin_gv + 1];
+				unsigned char* kmer_key_short_r_rp = &myseqr[len - ibs.partialwin_gv - 1];
 				unsigned long long int kmer_key = 0;
 				unsigned char* kmer_key_ptr = &myseq[0];
 
 				// initialize the 9-mers
-				for (uint32_t j = 0; j < partialwin_gv; j++)
+				for (uint32_t j = 0; j < ibs.partialwin_gv; j++)
 				{
 					(kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
 					(kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
 				}
 
 				// initialize the 19-mer
-				for (uint32_t j = 0; j < pread_gv; j++)
+				for (uint32_t j = 0; j < ibs.pread_gv; j++)
 					(kmer_key <<= 2) |= (int)*kmer_key_ptr++;
 
-				uint32_t numwin = (len - pread_gv + opts.interval) / opts.interval; //TESTING
+				uint32_t numwin = (len - ibs.pread_gv + opts.interval) / opts.interval; //TESTING
 				uint32_t id = 0;
 
 				uint32_t index_pos = 0; //TESTING
@@ -1584,8 +1584,8 @@ int build_index(Runopts& opts)
 
 					//cout << "\t" << id << "=" << (kmer_key>>2); //TESTING
 
-					add_id_to_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id);
-					add_id_to_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id);
+					add_id_to_burst_trie(lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id, ibs);
+					add_id_to_burst_trie(lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id, ibs);
 
 					add_kmer_to_table(positions_tbl + id, i, index_pos, opts.max_pos);
 
@@ -1594,9 +1594,9 @@ int build_index(Runopts& opts)
 					{
 						for (uint32_t shift = 0; shift < opts.interval; shift++)
 						{
-							((kmer_key_short_f <<= 2) &= mask32) |= (int)*kmer_key_short_f_p++;
-							((kmer_key_short_r <<= 2) &= mask32) |= (int)*kmer_key_short_r_p++;
-							((kmer_key <<= 2) &= mask64) |= (int)*kmer_key_ptr++;
+							((kmer_key_short_f <<= 2) &= ibs.mask32) |= (int)*kmer_key_short_f_p++;
+							((kmer_key_short_r <<= 2) &= ibs.mask32) |= (int)*kmer_key_short_r_p++;
+							((kmer_key <<= 2) &= ibs.mask64) |= (int)*kmer_key_ptr++;
 							kmer_key_short_r_rp--;
 							index_pos++;
 						}
@@ -1620,179 +1620,7 @@ int build_index(Runopts& opts)
 			delete hash;
 
 			// *********** Check ID's in Burst trie are correct *****
-
-			// TESTING
-#ifdef see_binary_output
-			uint32_t total_entries_f = 0;
-			uint32_t total_entries_r = 0;
-			char get_char[4] = { 'A','C','G','T' };
-
-			for (int p = 0; p < (1 << lnwin_gv); p++)
-			{
-				uint32_t short_kmer = p;
-				char kmer_out[9] = "";
-				string kmer_keep = "";
-				for (int s = 0; s < partialwin_gv; s++)
-				{
-					kmer_keep.push_back((char)get_char[short_kmer & 3]);
-					short_kmer >>= 2;
-				}
-				string kmer_keep_rev = "";
-				for (std::string::reverse_iterator rit = kmer_keep.rbegin(); rit != kmer_keep.rend(); ++rit)
-					kmer_keep_rev.push_back(*rit);
-
-				if (lookup_table[p].trie_F != NULL) traversetrie_debug(lookup_table[p].trie_F, 0, total_entries_f, kmer_keep_rev);
-				//if (lookup_table[p].trie_R != NULL) traversetrie_debug( lookup_table[p].trie_R, 0, total_entries_r );
-			}
-#endif
-			//cout << "total_entries_f = " << total_entries_f << endl;
-			//cout << "total_entries_f = " << total_entries_r << endl;
-
-/*
-			// sequence number
-			i = 0;
-
-			// reset the file pointer to the beginning of the current part
-			fseek(fp,start_part,SEEK_SET);
-
-			cout << "number of id's in position table: " << number_elements << endl; //TESTING
-
-			TIME(s);
-			do
-			{
-			  cout << "seq = " << i << endl;
-
-			  long int start_seq = ftell(fp);
-			  nt = fgetc(fp);
-
-			  // scan to end of header name
-			  while ( nt != '\n') nt = fgetc(fp);
-
-			  unsigned char* myseq = new unsigned char[maxlen];
-			  unsigned char* myseqr = new unsigned char[maxlen];
-			  uint32_t _j = 0;
-			  len = 0;
-
-			  // encode each sequence using integer alphabet {0,1,2,3}
-			  nt = fgetc(fp);
-			  while ( nt != '>' && nt != EOF )
-			  {
-			  // skip line feed, carriage return or empty space in the sequence
-			  if ( nt != '\n' && nt != ' ' )
-			  {
-				len++;
-				// exact character
-				myseq[_j++] = map_nt[nt];
-			  }
-			  nt = fgetc(fp);
-			}
-
-			// put back the >
-			if ( nt != EOF ) ungetc(nt,fp);
-
-			// check the addition of this sequence will not overflow the maximum memory
-			double estimated_seq_mem = (len-pread_gv+1)*9.5e-6;
-
-			// the sequence alone is too large, it will not fit into maximum memory, skip it
-			if ( estimated_seq_mem > mem ) continue;
-			// the additional sequence will overflow the maximum index memory, write existing index to disk and start a new index
-			else if ( index_size+estimated_seq_mem > mem )
-			{
-			  // set the character to something other than EOF
-			  if ( nt == EOF ) nt = 'A';
-
-			  // scan back to start of sequence for next index part
-			  fseek(fp,start_seq,SEEK_SET);
-			  break;
-			}
-			// add the additional sequence to the index
-			else
-			{
-			  index_size+=estimated_seq_mem;
-			}
-
-			// create a reverse sequence using the forward
-			unsigned char* ptr = &myseq[len-1];
-
-			for ( _j = 0; _j < len; _j++ ) myseqr[_j] = *ptr--;
-
-			uint32_t kmer_key_short_f = 0;
-			uint32_t kmer_key_short_r = 0;
-			unsigned char* kmer_key_short_f_p = &myseq[0];
-			unsigned char* kmer_key_short_r_p = &myseq[partialwin_gv+1];
-			unsigned char* kmer_key_short_r_rp = &myseqr[len-partialwin_gv-1];
-			unsigned long long int kmer_key = 0;
-			unsigned char* kmer_key_ptr = &myseq[0];
-
-			// initialize the 9-mers
-			for ( uint32_t j = 0; j < partialwin_gv; j++ )
-			{
-			  (kmer_key_short_f <<= 2) |= (int)*kmer_key_short_f_p++;
-			  (kmer_key_short_r <<= 2) |= (int)*kmer_key_short_r_p++;
-			}
-
-			// initialize the 19-mer
-			for ( uint32_t j = 0; j < pread_gv; j++ ) (kmer_key <<= 2) |= (int)*kmer_key_ptr++;
-
-			uint32_t numwin = (len-pread_gv+interval)/interval; //TESTING
-			uint32_t id = 0;
-
-			uint32_t index_pos = 0; //TESTING
-
-			// for all 19-mers on the sequence
-			for ( uint32_t j = 0; j < numwin; j++ ) //TESTING
-			{
-			  uint32_t id_f = 0;
-			  uint32_t id_r = 0;
-
-			  search_for_id( lookup_table[kmer_key_short_f].trie_F, kmer_key_short_f_p, id_f );
-			  search_for_id( lookup_table[kmer_key_short_r].trie_R, kmer_key_short_r_rp, id_r );
-
-			  if (id_f != id_r)
-			  {
-				cout << "seq = " << i << "\tid_f = " << id_f << "\tid_r = " << id_r << endl;
-				exit(EXIT_FAILURE);
-			  }
-
-			  uint32_t num_entries = positions_tbl[id_f].size;
-
-			  bool found = false;
-			  seq_pos* arr = positions_tbl[id_f].arr;
-			  for ( uint32_t p = 0; p < num_entries; p++ )
-			  {
-				if (( arr->seq == i) && (arr->pos == index_pos) ) found = true;
-				arr++;
-			  }
-
-			  if (!found )
-			  {
-				cout << "seq = " << i << "\tid_f = " << id_f << "\tid_r = " << id_r << "\tposition not found in list!\n";
-				exit(EXIT_FAILURE);
-			  }
-
-			  // shift the 19-mer and 9-mers
-			  if ( j != numwin-1 )
-			  {
-				for ( int shift = 0; shift < interval; shift++ )
-				{
-				  (( kmer_key_short_f <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_f_p++;
-				  (( kmer_key_short_r <<= 2 ) &= mask32 ) |= (int)*kmer_key_short_r_p++;
-				  (( kmer_key <<= 2 ) &= mask64 ) |= (int)*kmer_key_ptr++;
-				  kmer_key_short_r_rp--;
-				  index_pos++;
-				}
-			  }
-			}
-
-			delete [] myseq;
-			delete [] myseqr;
-
-			// next sequence
-			i++;
-
-		  } while ( nt != EOF ); /// for all file
-*/
-		  // ********** DONE Check! **********
+			// (dead debug/verification block removed in Phase 3)
 
 
 		  // Load constructed index part to binary file
@@ -1842,7 +1670,7 @@ int build_index(Runopts& opts)
 				INFO_NS("      writing burst tries to ", idx_file, "\n");
 			}
 
-			load_index(lookup_table, (char*)idx_file.data(), opts);
+			load_index(lookup_table, (char*)idx_file.data(), opts, ibs);
 			uint64_t bursttrie_file_bytes = std::filesystem::file_size(idx_file);
 
 			// 3. 19-mer position look up tables

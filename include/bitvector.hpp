@@ -50,13 +50,6 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #define MSB8 (UCHAR)8	
 
 
-/* initialized in paralleltraversal.cpp */
-extern int _win_num;
-extern int thiswindow;
-extern int _readn;
-extern int thisread;
-
-
 
 
 /*

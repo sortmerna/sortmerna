@@ -43,9 +43,9 @@ using namespace std;
 
 
 /// 4 bit mask 00001111 to keep the bitvectors of length 4
-UCHAR mask_4 = 15;
+const UCHAR mask_4 = 15;
 /// 3 bit mask the first four bitvectors of substrings $xxx
-UCHAR mask_3 = 7;
+const UCHAR mask_3 = 7;
 
 
 
