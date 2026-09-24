@@ -5,7 +5,8 @@
  * std::terminate(), which kills the whole process - including a program
  * that uses SortMeRNA as a library. ThreadErrors wraps worker entry
  * functions so that the first exception thrown by any worker is captured
- * and can be rethrown by the spawning thread after join().
+ * and can be rethrown by the spawning thread after join(). The worker also
+ * logs through the spawning thread's log callback (see common.hpp).
  *
  * Usage:
  *   ThreadErrors errs;
@@ -22,6 +23,8 @@
 #include <tuple>
 #include <utility>
 
+#include "common.hpp" // smr_tl_log_callback
+
 class ThreadErrors {
 public:
 	/* Start a thread running f(args...), recording any exception it throws
@@ -31,7 +34,10 @@ public:
 	std::thread spawn(F&& f, Args&&... args)
 	{
 		return std::thread(
-			[this, fn = std::forward<F>(f), tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+			[this, log_cb = ::smr_tl_log_callback, log_ud = ::smr_tl_log_user_data,
+			 fn = std::forward<F>(f), tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+				::smr_tl_log_callback = log_cb;
+				::smr_tl_log_user_data = log_ud;
 				try {
 					std::apply(fn, std::move(tup));
 				}

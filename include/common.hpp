@@ -104,6 +104,24 @@ const char DELIM = ':';
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
 
+/*
+ * Optional log callback for library use (smr_api). It is thread-local: the
+ * C API sets it on the calling thread for the duration of a call and clears
+ * it afterwards. When set, the INFO/WARN/ERR family of macros hands their
+ * text to the callback instead of writing to stdout/stderr. When unset (the
+ * sortmerna executable), output goes to stdout/stderr exactly as before.
+ * Threads started through ThreadErrors::spawn, and align()'s WAL flush
+ * thread, take over the callback of the thread that starts them.
+ */
+typedef void (*smr_log_fn)(int level, const char *msg, void *user_data);
+extern thread_local smr_log_fn smr_tl_log_callback;
+extern thread_local void* smr_tl_log_user_data;
+
+/* log levels, matching SMR_LOG_* in smr_api.h */
+#define SMR_LOG_INFO_  1
+#define SMR_LOG_WARN_  2
+#define SMR_LOG_ERROR_ 3
+
 template<typename ...Args>
 static inline std::string fold_to_string(Args&&... args) {
     std::stringstream ss;
@@ -146,11 +164,25 @@ static inline size_t get_memory() {
     return mem;
 }
 
+/* Write a formatted log line to the callback if one is set on this thread,
+ * else to stderr (errors) or stdout (everything else). */
+#define SMR_LOG_ROUTE(level, str) \
+	do { \
+		if (smr_tl_log_callback) { \
+			smr_tl_log_callback(level, (str).c_str(), smr_tl_log_user_data); \
+		} else { \
+			((level) == SMR_LOG_ERROR_ ? std::cerr : std::cout) << (str); \
+		} \
+	} while(0)
+
+/* Terminal colour codes are only emitted on the stdout/stderr path. */
+#define SMR_COLOR(c) (smr_tl_log_callback ? "" : (c))
+
 #define INFO(...) \
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__) << std::endl; \
-		std::cout << ss.str(); \
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 // no end line
@@ -158,7 +190,7 @@ static inline size_t get_memory() {
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__); \
-		std::cout << ss.str(); \
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 // No Stamp, no endl
@@ -166,28 +198,28 @@ static inline size_t get_memory() {
 	{\
 		std::stringstream ss; \
 		ss << fold_to_string(__VA_ARGS__); \
-		std::cout << ss.str(); \
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 #define INFO_MEM(...) \
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__) << " Memory KB: " << (get_memory() >> 10) << std::endl; \
-		std::cout << ss.str();\
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 #define WARN(...) \
 	{\
 		std::stringstream ss; \
-		ss << '\n' << STAMP << YELLOW << "WARNING" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
-		std::cout << ss.str();\
+		ss << '\n' << STAMP << SMR_COLOR(YELLOW) << "WARNING" << SMR_COLOR(COLOFF) << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
+		SMR_LOG_ROUTE(SMR_LOG_WARN_, ss.str()); \
 	}
 
 #define ERR(...) \
 	{\
 		std::stringstream ss; \
-		ss << '\n' << STAMP << RED << "ERROR" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
-		std::cerr << ss.str();\
+		ss << '\n' << STAMP << SMR_COLOR(RED) << "ERROR" << SMR_COLOR(COLOFF) << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
+		SMR_LOG_ROUTE(SMR_LOG_ERROR_, ss.str()); \
 	}
 
 /*! @brief Error raised in place of ERR(...); exit(EXIT_FAILURE).
@@ -222,13 +254,13 @@ public:
 	{\
 		std::stringstream ss; \
 		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << std::endl; \
-		std::cout << ss.str();\
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 #define PRN_MEM_TIME(msg, time) \
     {\
 		std::stringstream ss; \
 		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << " Elapsed sec: " << time << std::endl; \
-		std::cout << ss.str();\
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
     }
 //~EOF

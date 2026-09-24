@@ -400,7 +400,9 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	std::atomic<bool> stop_flush{false};
 	std::mutex flush_mtx;
 	std::condition_variable flush_cv;
-	std::thread flush_thread([&]() {
+	std::thread flush_thread([&, log_cb = smr_tl_log_callback, log_ud = smr_tl_log_user_data]() {
+		smr_tl_log_callback = log_cb; // log like the spawning thread
+		smr_tl_log_user_data = log_ud;
 		const auto delay = std::chrono::seconds(opts.flush_delay);
 		while (true) {
 			std::unique_lock<std::mutex> ul(flush_mtx);
