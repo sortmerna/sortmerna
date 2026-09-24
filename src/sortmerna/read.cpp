@@ -228,6 +228,7 @@ Read & Read::operator=(const Read& that)
 	n_yid_ncov = that.n_yid_ncov;
 	n_nid_ycov = that.n_nid_ycov;
 	n_denovo = that.n_denovo;
+	is_done = that.is_done;
 	is_hit = that.is_hit;
 	is_new_hit = that.is_new_hit;
 	null_align_output = that.null_align_output;
