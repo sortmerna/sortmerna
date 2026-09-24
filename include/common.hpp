@@ -52,7 +52,8 @@ enum class ZIP_FORMAT : unsigned { GZIP = 0, ZLIB = 1, FLAT = 2, XPRESS = 3 };
 enum class FEED_TYPE : unsigned {
     INDEXED = 0,
     SPLIT_READS = 1, // deprecated
-    MAX = SPLIT_READS
+    MAX = SPLIT_READS, // highest value accepted by '--readfeed'
+    MEMORY = 2 // reads supplied in memory through the C API; not a CLI choice
 };
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
 

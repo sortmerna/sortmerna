@@ -224,6 +224,89 @@ Readfeed::Readfeed(FEED_TYPE type,
 	init(readfiles);
 } //~Readfeed::Readfeed 2
 
+/*
+ * In-memory feed. Builds, per slot, the same records next() returns for the
+ * file feeds - "<slot>_<n>\n<header>\n<sequence>[\n<quality>]" - so every
+ * consumer (align2, reports, OTU map, de novo) works unchanged.
+ *
+ * Slot layout mirrors the file feeds: each thread gets a contiguous chunk of
+ * the input, so reading the slots in order returns the reads in input order
+ * and the reports keep input order, as with file input.
+ *   single-end:  num_parts slots.
+ *   paired:      laid out like two input files (FWD, REV): 2 * num_parts
+ *                slots, thread t owns slot 2t (FWD) and 2t+1 (REV). Pairs
+ *                (input elements 2j, 2j+1) are chunked, never split.
+ *
+ * Record ids are "<slot>_<n>" with n counting from 0 within each slot, as for
+ * the file feeds. They are unique within one Readfeed only.
+ */
+Readfeed::Readfeed(std::vector<std::string> ids,
+                    std::vector<std::string> seqs,
+                    std::vector<std::string> quals,
+                    const unsigned num_parts,
+                    std::filesystem::path& basedir,
+                    bool is_paired)
+	:
+	type(FEED_TYPE::MEMORY),
+	is_done(false),
+	is_ready(true),
+	is_format_defined(true),
+	is_two_files(is_paired),
+	is_paired(is_paired),
+	num_orig_files(is_paired ? 2 : 1),
+	num_splits(num_parts),
+	num_split_files(0),
+	num_sense(is_paired ? 2 : 1),
+	num_reads_tot(ids.size()),
+	length_all(0),
+	min_read_len(0),
+	max_read_len(0),
+	basedir(basedir)
+{
+	if (num_parts == 0)
+		SMR_THROW("in-memory reads feed needs at least one part");
+	if (seqs.size() != ids.size())
+		SMR_THROW("in-memory reads feed: ", ids.size(), " ids but ", seqs.size(), " sequences");
+	const bool has_qual = !quals.empty();
+	if (has_qual && quals.size() != ids.size())
+		SMR_THROW("in-memory reads feed: ", ids.size(), " ids but ", quals.size(), " quality strings");
+	if (is_paired && ids.size() % 2 != 0)
+		SMR_THROW("in-memory paired reads feed needs an even number of reads (interleaved FWD, REV); got ", ids.size());
+
+	// describe the input as the file feeds do; reports use this to choose
+	// the output format (fasta/fastq, never zipped)
+	orig_files.resize(num_orig_files);
+	for (auto& f : orig_files) {
+		f.isFastq = has_qual;
+		f.isFasta = !has_qual;
+		f.isZip = false;
+	}
+
+	mem_records.resize(static_cast<std::size_t>(num_parts) * num_sense);
+	mem_next.assign(mem_records.size(), 0);
+
+	const char header_start = has_qual ? FASTQ_HEADER_START : FASTA_HEADER_START;
+	const std::size_t num_units = ids.size() / num_sense; // reads, or pairs
+	const std::size_t chunk = (num_units + num_parts - 1) / num_parts; // units per thread
+	uint32_t min_len = UINT32_MAX;
+	for (std::size_t i = 0; i < ids.size(); ++i) {
+		const std::size_t unit = i / num_sense;
+		const std::size_t slot = (unit / chunk) * num_sense + i % num_sense;
+		auto& recs = mem_records[slot];
+
+		std::string rec = std::to_string(slot) + '_' + std::to_string(recs.size()) + '\n'
+			+ header_start + ids[i] + '\n' + seqs[i];
+		if (has_qual) rec += '\n' + quals[i];
+		recs.emplace_back(std::move(rec));
+
+		const auto len = static_cast<uint32_t>(seqs[i].size());
+		length_all += len;
+		if (len < min_len) min_len = len;
+		if (len > max_read_len) max_read_len = len;
+	}
+	min_read_len = ids.empty() ? 0 : min_len;
+} // ~Readfeed::Readfeed (MEMORY)
+
 //Readfeed::~Readfeed() {}
 
 void Readfeed::init(std::vector<std::string>& readfiles, const int& dbg)
@@ -902,6 +985,12 @@ bool Readfeed::next_flat(int inext, std::string& readstr, bool is_orig)
  */
 bool Readfeed::next(int inext, std::string& readstr)
 {
+	if (type == FEED_TYPE::MEMORY) {
+		auto& pos = mem_next[inext];
+		if (pos >= mem_records[inext].size()) return false;
+		readstr = mem_records[inext][pos++];
+		return true;
+	}
 	if (type == FEED_TYPE::SPLIT_READS)
 		return next(inext, readstr, false, split_files);
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip)
@@ -934,6 +1023,10 @@ void Readfeed::rewind() {
   rewind IN feed
 */
 void Readfeed::rewind_in() {
+	if (type == FEED_TYPE::MEMORY) {
+		std::fill(mem_next.begin(), mem_next.end(), 0);
+		return;
+	}
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
 		const bool is_interleaved = (num_orig_files < num_sense);
 		for (std::size_t i = 0; i < gz_slots.size(); ++i) {
@@ -1995,7 +2088,7 @@ void Readfeed::write_descriptor()
 
 void Readfeed::init_vzlib_in()
 {
-	if (type == FEED_TYPE::INDEXED) return;
+	if (type == FEED_TYPE::INDEXED || type == FEED_TYPE::MEMORY) return;
 
 	vzlib_in.resize(split_files.size());
 	for (std::size_t i = 0; i < vzlib_in.size(); ++i) {
@@ -2012,6 +2105,10 @@ void Readfeed::init_vzlib_in()
  */
 void Readfeed::init_reading()
 {
+	if (type == FEED_TYPE::MEMORY) {
+		std::fill(mem_next.begin(), mem_next.end(), 0);
+		return;
+	}
 	auto start_a = std::chrono::high_resolution_clock::now();
 	if (type == FEED_TYPE::INDEXED && orig_files[0].isZip) {
         INFO("Initiating indexed gzipped files reading ...");
