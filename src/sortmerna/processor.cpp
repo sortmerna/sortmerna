@@ -54,6 +54,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 #include "options.hpp"
 #include "restart.hpp"
+#include "thread_errors.hpp"
 
 // forward
 void traverse(Runopts& opts, Index& index, References& refs, Readstats& readstats, Refstats& refstats, Read& read, bool isLastStrand);
@@ -411,6 +412,9 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 		}
 	});
 
+	ThreadErrors worker_errors;
+	std::exception_ptr align_error;
+	try {
 	for (size_t idx_num = 0; idx_num < opts.indexfiles.size(); ++idx_num)
 	{
 		for (uint16_t idx_part = 0; idx_part < refstats.num_index_parts[idx_num]; ++idx_part)
@@ -475,12 +479,14 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			start_i = std::chrono::high_resolution_clock::now();
 
 			for (int i = 0; i < numProcThread; i++) {
-				tpool.emplace_back(std::thread(align2, i, std::ref(readfeed),
+				tpool.emplace_back(worker_errors.spawn(align2, i, std::ref(readfeed),
 				                    std::ref(readstats), std::ref(index), std::ref(refs),
 				                    std::ref(refstats),  std::ref(kvdb), std::ref(opts),
 				                    rstate));
 			}
 			for (auto& thr : tpool) thr.join();
+			// a failed pass must not be committed as done
+			worker_errors.rethrow();
 
 			// All workers done for this pass. commit_pass writes align_done +
 			// readstats blob in one batch and then clears thread_done/{i}/{p}/*.
@@ -504,8 +510,14 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 			readfeed.init_vzlib_in();  // noop for INDEXED feed; SPLIT_READS only
 		} // ~for(idx_part)
 	} // ~for(idx_num)
+	} catch (...) {
+		align_error = std::current_exception();
+		for (auto& thr : tpool)
+			if (thr.joinable()) thr.join();
+	}
 
-	// Stop the flush thread before returning. One last fsync afterwards to
+	// Stop the flush thread before returning, also on error: destroying a
+	// joinable std::thread calls std::terminate. One last fsync afterwards to
 	// catch anything written between its last cycle and now.
 	{
 		std::lock_guard<std::mutex> lk(flush_mtx);
@@ -513,6 +525,7 @@ void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatab
 	}
 	flush_cv.notify_one();
 	flush_thread.join();
+	if (align_error) std::rethrow_exception(align_error);
 	kvdb.flush_wal();
 
 	elapsed = std::chrono::high_resolution_clock::now() - start_a;
@@ -606,6 +619,7 @@ void denovo_stats_run(const uint32_t& id,
 void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts)
 {
 	INFO("==== processing Denovo statistics ====");
+	ThreadErrors worker_errors;
 	auto start = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
@@ -643,7 +657,7 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			// start threads
 			//if (opts.feed_type == FEED_TYPE::SPLIT_READS || opts.feed_type == FEED_TYPE::INDEXED_GZ || opts.feed_type == FEED_TYPE::INDEXED_FLAT) {
 			for (int i = 0; i < nthreads; ++i) {
-				tpool.emplace_back(std::thread(denovo_stats_run, i, std::ref(readfeed),
+				tpool.emplace_back(worker_errors.spawn(denovo_stats_run, i, std::ref(readfeed),
 					std::ref(readstats), std::ref(refs), std::ref(kvdb), std::ref(opts)));
 			}
 			//}
@@ -651,6 +665,7 @@ void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			for (auto& thr: tpool) {
 				thr.join();
 			}
+			worker_errors.rethrow();
 
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
 			INFO("done reference ", ref_idx, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");

@@ -44,6 +44,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include "options.hpp"
 #include "output.hpp"
+#include "thread_errors.hpp"
 #include "references.hpp"
 #include "readstats.hpp"
 #include "processor.hpp"
@@ -180,6 +181,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 
 	//ThreadPool tpool(N_READ_THREADS + N_PROC_THREADS);
 	std::vector<std::thread> tpool;
+	ThreadErrors worker_errors;
 	tpool.reserve(nthreads);
 
 	bool is_db = readstats.restoreFromDb(kvdb);
@@ -208,7 +210,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			// start processing threads
 			//if (opts.feed_type == FEED_TYPE::SPLIT_READS || opts.feed_type == FEED_TYPE::INDEXED_GZ || opts.feed_type == FEED_TYPE::INDEXED_FLAT) {
 			for (uint32_t i = 0; i < nthreads; ++i) {
-				tpool.emplace_back(std::thread(report, i, std::ref(readfeed),
+				tpool.emplace_back(worker_errors.spawn(report, i, std::ref(readfeed),
 					std::ref(refs), std::ref(refstats), std::ref(kvdb), std::ref(output), std::ref(opts)));
 			}
 			//}
@@ -216,6 +218,7 @@ void writeReports(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kv
 			for (uint32_t i = 0; i < tpool.size(); ++i) {
 				tpool[i].join();
 			}
+			worker_errors.rethrow();
 
 			elapsed = std::chrono::high_resolution_clock::now() - start_i; // index processing done
 			INFO("done reference ", ref_idx, " part: ", idx_part + 1, " in ", elapsed.count(), " sec");

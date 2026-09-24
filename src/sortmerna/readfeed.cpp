@@ -33,6 +33,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 #include "readfeed.hpp"
+#include "thread_errors.hpp"
 
 #include <vector>
 #include <iostream>
@@ -1737,10 +1738,11 @@ void Readfeed::count_reads_parallel()
 
 			{
 				std::vector<std::thread> workers;
+				ThreadErrors worker_errors;
 				workers.reserve(num_splits);
 				const bool isFastq = origFile.isFastq;
 				for (size_t i = 0; i < num_splits; ++i) {
-					workers.emplace_back([&, i]() {
+					workers.emplace_back(worker_errors.spawn([&, i]() {
 						auto& res = results[i];
 						const uint64_t startByte = boundaries[i];
 						const uint64_t endByte   = boundaries[i + 1];
@@ -1822,9 +1824,10 @@ void Readfeed::count_reads_parallel()
 							}
 							flush(); // finalize last record in this slot
 						}
-					});
+					}));
 				}
 				for (auto& t : workers) t.join();
+				worker_errors.rethrow();
 			}
 
 			// Reduce per-thread results into origFile and class-level members

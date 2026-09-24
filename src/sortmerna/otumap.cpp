@@ -37,6 +37,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 #include "otumap.h"
+#include "thread_errors.hpp"
 #include "read.hpp"
 #include "readfeed.hpp"
 #include "references.hpp"
@@ -211,6 +212,7 @@ void fill_otu_map(Readfeed& readfeed,
 		//}
 
 		std::vector<std::thread> tpool;
+		ThreadErrors worker_errors;
 		tpool.reserve(numThreads);
 
 		Refstats refstats(opts, readstats);
@@ -238,7 +240,7 @@ void fill_otu_map(Readfeed& readfeed,
 				//	 opts.feed_type == FEED_TYPE::INDEXED_GZ ||
 				//	 opts.feed_type == FEED_TYPE::INDEXED_FLAT) {
 				for (int i = 0; i < numThreads; ++i) {
-					tpool.emplace_back(std::thread(fill_otu_map2, i, std::ref(otumap),
+					tpool.emplace_back(worker_errors.spawn(fill_otu_map2, i, std::ref(otumap),
 						std::ref(readfeed), std::ref(refs),	std::ref(kvdb), std::ref(opts)));
 				}
 				//}
@@ -248,6 +250,7 @@ void fill_otu_map(Readfeed& readfeed,
 				for (auto& thr: tpool) {
 					thr.join();
 				}
+				worker_errors.rethrow();
 
 				refs.unload();
 				//read_queue.reset();
