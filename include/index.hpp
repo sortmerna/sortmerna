@@ -69,7 +69,10 @@ struct Index {
 	 * If index files do not exist or are empty - build the index.
 	 */
 	Index(Runopts & opts);
-	//~Index() {}
+	// Free the loaded part also when an error unwinds past the owner.
+	~Index() { unload(); }
+	Index(const Index&) = delete;
+	Index& operator=(const Index&) = delete;
 	void load(uint32_t idx_num, uint32_t idx_part, std::vector<std::pair<std::string, std::string>>& indexfiles, Refstats & refstats);
 	void unload();
 }; // ~struct Index
