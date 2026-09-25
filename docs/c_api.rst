@@ -14,9 +14,10 @@ There are two ways to use it:
 - **One-shot**: ``smr_run`` (reads from files) and ``smr_run_seqs`` (reads
   from memory) build or load the index, align one set of reads, and return
   per-read results.
-- **Streaming**: ``smr_index_load`` loads the index and references once;
-  ``smr_run_seqs_with_index`` then aligns any number of in-memory batches
-  against them; ``smr_index_free`` releases them. This is for tools that
+- **Streaming**: ``smr_index_load`` loads the index and references once
+  (``smr_index_load_seqs`` does the same with the reference sequences in
+  memory); ``smr_run_seqs_with_index`` then aligns any number of in-memory
+  batches against them; ``smr_index_free`` releases them. This is for tools that
   align many batches against the same references (a database table
   function, a server handling requests, a FASTQ reader feeding chunks).
 
@@ -106,6 +107,17 @@ Streaming:
 
    smr_index_free(idx);
    smr_ctx_destroy(ctx);
+
+References from memory, for example the rows of a database table:
+
+.. code-block:: c
+
+   smr_seq_t refs[] = {
+       { "ref1", "ACGTACGTACGT...", NULL },
+       { "ref2", "TGCATGCATGCA...", NULL },
+   };
+   smr_index_t *idx = smr_index_load_seqs(ctx, refs, 2);
+   /* then smr_run_seqs_with_index and smr_index_free, as above */
 
 Building
 --------
@@ -203,6 +215,10 @@ Configuration
    later calls with the same reference file names. As with the sortmerna
    CLI, the index is not rebuilt when a reference file's contents or
    ``seed_win_len`` change; delete ``<workdir>/idx`` in that case.
+   ``smr_index_load_seqs`` keeps its copies of the references in
+   ``<workdir>/refs``, named after their contents, so it does not have this
+   problem. The library never deletes ``idx/`` or ``refs/`` in a caller's
+   workdir; delete them to reclaim the space.
 
    ``<workdir>/kvdb`` is scratch space. The library deletes it before and
    after each ``smr_run`` and when a handle is loaded and freed, so results
@@ -330,8 +346,9 @@ Computation
 
 .. c:type:: smr_seq_t
 
-   A single input sequence for the in-memory functions. All pointers are
-   caller-owned and must remain valid for the duration of the call.
+   A single input sequence for the in-memory functions, or a reference
+   sequence for ``smr_index_load_seqs``. All pointers are caller-owned and
+   must remain valid for the duration of the call.
 
    ==================  ===============  ==========================================
    Field               Type             Description
@@ -408,8 +425,31 @@ Streaming
 
    ``num_refs`` must be 1: a handle holds one loaded index, and each
    reference file is a separate index. Concatenate several FASTA files into
-   one. An index that does not fit in a single part is also refused with
-   ``SMR_ERR_NOT_IMPLEMENTED``.
+   one, or pass all the sequences to ``smr_index_load_seqs``. An index that
+   does not fit in a single part (about 320 Mbp of reference at the default
+   index memory) is also refused with ``SMR_ERR_NOT_IMPLEMENTED``.
+
+.. c:function:: smr_index_t* smr_index_load_seqs(smr_context_t *ctx, const smr_seq_t *refs, int32_t num_refs)
+
+   Like ``smr_index_load``, with the reference sequences given in memory.
+   SortMeRNA builds and reads its index from a FASTA file, so the library
+   writes the sequences to ``<workdir>/refs/refs_<hash>.fasta`` and indexes
+   that file. The name is a hash of the sequences and ``seed_win_len``.
+
+   With a caller-supplied ``workdir``, the copy and its index are kept, and
+   a later call with the same sequences reuses both instead of writing and
+   indexing again. Different sequences, or a different ``seed_win_len``, get
+   a copy and an index of their own. Without a workdir, both are removed by
+   ``smr_index_free``.
+
+   ``refs[i].id`` must be non-empty and contain no whitespace; it is
+   returned as ``ref_name``. ``refs[i].sequence`` must be non-empty, contain
+   no line breaks and not start with ``>``. ``quality`` is ignored. The
+   pointers need only be valid during the call.
+
+   Errors: ``SMR_ERR_INVALID_CONFIG`` for bad input, ``SMR_ERR_IO`` if the
+   copy cannot be written, ``SMR_ERR_NOT_IMPLEMENTED`` if the index needs
+   more than one part, and those of ``smr_index_load`` otherwise.
 
 .. c:function:: int smr_run_seqs_with_index(smr_index_t *idx, const smr_seq_t *seqs, int32_t num_seqs, smr_output_t **out, smr_stats_t *stats)
 
@@ -424,7 +464,7 @@ Streaming
 
 The handle keeps a pointer to its context, which must outlive it. Several
 handles may exist at once, bound to the same or different contexts, but not
-sharing one workdir. ``smr_index_load`` writes a small placeholder reads file
+sharing one workdir. Loading a handle writes a small placeholder reads file
 (``placeholder_reads.fa``) to the workdir to satisfy option parsing; it is
 never read for sequence data.
 
@@ -533,9 +573,10 @@ Thread safety
 
 ``smr_run`` and ``smr_run_seqs_with_index`` are serialized by a process-level
 mutex. They are safe to call from multiple threads with independent contexts
-or handles -- calls will execute sequentially. ``smr_index_load`` holds the
-mutex while it parses options and, if needed, builds the index; loading the
-index and references into memory runs concurrently with other calls. Context creation, destruction, and error
+or handles -- calls will execute sequentially. ``smr_index_load`` and
+``smr_index_load_seqs`` hold the mutex while they parse options and, if
+needed, build the index; loading the index and references into memory runs
+concurrently with other calls. Context creation, destruction, and error
 queries on *different* contexts are thread-safe and do not acquire the
 mutex. Concurrent access to the *same* context from multiple threads is not
 supported.

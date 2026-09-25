@@ -18,6 +18,7 @@
 #include "otumap.h"
 #include "restart.hpp"
 
+#include <cctype>
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -822,34 +823,135 @@ static int validate_seqs(smr_context_t *ctx, const smr_seq_t *seqs, int32_t num_
     return SMR_OK;
 }
 
-smr_index_t *smr_index_load(smr_context_t *ctx,
-                            const char **ref_paths, int32_t num_refs) {
-    if (!ctx) return nullptr;
+namespace {
 
-    if (!ref_paths || num_refs <= 0) {
-        set_error(ctx, SMR_ERR_INVALID_CONFIG, "ref_paths is NULL or num_refs <= 0");
-        return nullptr;
+/* 64-bit FNV-1a, used to name a reference copy after its contents. */
+struct Fnv64 {
+    uint64_t h = 14695981039346656037ull;
+    void add(const void *p, size_t n) {
+        auto *b = static_cast<const unsigned char *>(p);
+        for (size_t i = 0; i < n; i++) { h ^= b[i]; h *= 1099511628211ull; }
     }
-    /* Each reference file is a separate index, and the handle holds only
-     * one loaded index. Concatenate the FASTA files instead. */
-    if (num_refs > 1) {
-        set_error(ctx, SMR_ERR_NOT_IMPLEMENTED,
-                  "smr_index_load supports one reference file (got %d); concatenate them", num_refs);
-        return nullptr;
+    /* 8 bytes, little-endian: length prefixes keep the stream unambiguous */
+    void add_len(uint64_t v) {
+        unsigned char b[8];
+        for (int i = 0; i < 8; i++) b[i] = (unsigned char)(v >> (8 * i));
+        add(b, sizeof(b));
     }
+};
 
+} // anonymous namespace
+
+static int validate_refs(smr_context_t *ctx, const smr_seq_t *refs, int32_t num_refs) {
+    if (!refs || num_refs <= 0) {
+        set_error(ctx, SMR_ERR_INVALID_CONFIG, "refs is NULL or num_refs <= 0");
+        return SMR_ERR_INVALID_CONFIG;
+    }
     for (int32_t i = 0; i < num_refs; i++) {
-        if (!ref_paths[i] || !file_exists(ref_paths[i])) {
-            set_error(ctx, SMR_ERR_IO, "reference file not found: %s",
-                      ref_paths[i] ? ref_paths[i] : "(null)");
-            return nullptr;
+        const char *id = refs[i].id;
+        const char *seq = refs[i].sequence;
+        if (!id || id[0] == '\0') {
+            set_error(ctx, SMR_ERR_INVALID_CONFIG, "ref[%d] has NULL or empty id", i);
+            return SMR_ERR_INVALID_CONFIG;
         }
-        if (file_is_empty(ref_paths[i])) {
-            set_error(ctx, SMR_ERR_IO, "reference file is empty: %s", ref_paths[i]);
-            return nullptr;
+        for (const char *c = id; *c; c++) {
+            if (isspace((unsigned char)*c)) {
+                set_error(ctx, SMR_ERR_INVALID_CONFIG, "ref[%d] id contains whitespace", i);
+                return SMR_ERR_INVALID_CONFIG;
+            }
+        }
+        if (!seq || seq[0] == '\0') {
+            set_error(ctx, SMR_ERR_INVALID_CONFIG, "ref[%d] has NULL or empty sequence", i);
+            return SMR_ERR_INVALID_CONFIG;
+        }
+        /* the sequence is written as one FASTA line */
+        if (seq[0] == '>' || strpbrk(seq, "\r\n")) {
+            set_error(ctx, SMR_ERR_INVALID_CONFIG,
+                      "ref[%d] sequence contains a line break or starts with '>'", i);
+            return SMR_ERR_INVALID_CONFIG;
         }
     }
+    return SMR_OK;
+}
 
+/* Name of the reference copy: a hash of seed_win_len (the index depends on
+ * it) and the sequences. Also returns the size of the FASTA text. */
+static std::string refs_file_name(const smr_config_t &cfg, const smr_seq_t *refs,
+                                  int32_t num_refs, uint64_t &fasta_size) {
+    static const char tag[] = "smr_refs_v1";
+    Fnv64 f;
+    f.add(tag, sizeof(tag) - 1);
+    f.add_len((uint64_t)(int64_t)cfg.seed_win_len);
+    f.add_len((uint64_t)num_refs);
+    fasta_size = 0;
+    for (int32_t i = 0; i < num_refs; i++) {
+        size_t id_len = strlen(refs[i].id);
+        size_t seq_len = strlen(refs[i].sequence);
+        f.add_len(id_len);
+        f.add(refs[i].id, id_len);
+        f.add_len(seq_len);
+        f.add(refs[i].sequence, seq_len);
+        fasta_size += id_len + seq_len + 3; /* '>', two '\n' */
+    }
+    char name[40];
+    snprintf(name, sizeof(name), "refs_%016llx.fasta", (unsigned long long)f.h);
+    return name;
+}
+
+/* Write the references to <workdir>/refs as FASTA (">id\nsequence\n"), or
+ * reuse the copy an earlier call wrote. Sets path to the file. Returns false
+ * with the context error set on failure. */
+static bool write_refs(smr_index_t *idx, const smr_seq_t *refs, int32_t num_refs,
+                       std::string &path) {
+    smr_context_t *ctx = idx->ctx;
+    uint64_t size = 0;
+    auto dir = std::filesystem::path(idx->workdir) / "refs";
+    auto dest = dir / refs_file_name(ctx->config, refs, num_refs, size);
+    path = dest.string();
+
+    std::error_code ec;
+    auto have = std::filesystem::file_size(dest, ec);
+    if (!ec && have == size) {
+        ctx_log(ctx, SMR_LOG_INFO, "smr_index_load_seqs: reusing %s", path.c_str());
+        return true;
+    }
+    std::filesystem::create_directories(dir, ec);
+    if (ec) {
+        set_error(ctx, SMR_ERR_IO, "failed to create %s: %s",
+                  dir.string().c_str(), ec.message().c_str());
+        return false;
+    }
+
+    /* Write under a temporary name and rename it into place, so the copy is
+     * either complete or absent. */
+    std::ostringstream tn;
+    tn << ".tmp_" << getpid() << "_" << g_run_counter.fetch_add(1);
+    auto tmp = dir / tn.str();
+    {
+        std::ofstream ofs(tmp, std::ios::binary);
+        for (int32_t i = 0; i < num_refs && ofs; i++)
+            ofs << '>' << refs[i].id << '\n' << refs[i].sequence << '\n';
+        ofs.close();
+        if (!ofs) {
+            std::filesystem::remove(tmp, ec);
+            set_error(ctx, SMR_ERR_IO, "failed to write %s", tmp.string().c_str());
+            return false;
+        }
+    }
+    std::filesystem::rename(tmp, dest, ec);
+    if (ec) {
+        set_error(ctx, SMR_ERR_IO, "failed to rename %s to %s: %s", tmp.string().c_str(),
+                  path.c_str(), ec.message().c_str());
+        std::filesystem::remove(tmp, ec);
+        return false;
+    }
+    ctx_log(ctx, SMR_LOG_INFO, "smr_index_load_seqs: wrote %s", path.c_str());
+    return true;
+}
+
+/* Allocate a handle and set up its workdir. Returns NULL with the context
+ * error set on failure. */
+static smr_index_t *new_handle(smr_context_t *ctx) {
     auto *idx = new (std::nothrow) smr_index_t;
     if (!idx) {
         set_error(ctx, SMR_ERR_ALLOC, "failed to allocate smr_index_t");
@@ -857,10 +959,6 @@ smr_index_t *smr_index_load(smr_context_t *ctx,
     }
     idx->ctx = ctx;
     idx->index_loaded = false;
-    idx->ref_path_storage.reserve(num_refs);
-    for (int32_t i = 0; i < num_refs; i++) {
-        idx->ref_path_storage.emplace_back(ref_paths[i]);
-    }
 
     idx->workdir_is_temp = (ctx->config.workdir == nullptr);
     if (!idx->workdir_is_temp) {
@@ -877,6 +975,14 @@ smr_index_t *smr_index_load(smr_context_t *ctx,
         smr_index_free(idx);
         return nullptr;
     }
+    return idx;
+}
+
+/* Index ref_path (or reuse its index in the workdir) and load it into idx.
+ * Returns idx, or frees it and returns NULL with the context error set. */
+static smr_index_t *load_handle(smr_index_t *idx, const std::string &ref_path) {
+    smr_context_t *ctx = idx->ctx;
+    idx->ref_path_storage.push_back(ref_path);
 
     LogRouteGuard loguard(ctx->config.log_callback, ctx->config.log_user_data);
 
@@ -963,6 +1069,60 @@ smr_index_t *smr_index_load(smr_context_t *ctx,
 
     set_error(ctx, SMR_OK, "");
     return idx;
+}
+
+smr_index_t *smr_index_load(smr_context_t *ctx,
+                            const char **ref_paths, int32_t num_refs) {
+    if (!ctx) return nullptr;
+
+    if (!ref_paths || num_refs <= 0) {
+        set_error(ctx, SMR_ERR_INVALID_CONFIG, "ref_paths is NULL or num_refs <= 0");
+        return nullptr;
+    }
+    /* Each reference file is a separate index, and the handle holds only
+     * one loaded index. Concatenate the FASTA files instead. */
+    if (num_refs > 1) {
+        set_error(ctx, SMR_ERR_NOT_IMPLEMENTED,
+                  "smr_index_load supports one reference file (got %d); concatenate them", num_refs);
+        return nullptr;
+    }
+
+    for (int32_t i = 0; i < num_refs; i++) {
+        if (!ref_paths[i] || !file_exists(ref_paths[i])) {
+            set_error(ctx, SMR_ERR_IO, "reference file not found: %s",
+                      ref_paths[i] ? ref_paths[i] : "(null)");
+            return nullptr;
+        }
+        if (file_is_empty(ref_paths[i])) {
+            set_error(ctx, SMR_ERR_IO, "reference file is empty: %s", ref_paths[i]);
+            return nullptr;
+        }
+    }
+
+    smr_index_t *idx = new_handle(ctx);
+    if (!idx) return nullptr;
+    return load_handle(idx, ref_paths[0]);
+}
+
+smr_index_t *smr_index_load_seqs(smr_context_t *ctx,
+                                 const smr_seq_t *refs, int32_t num_refs) {
+    if (!ctx) return nullptr;
+    if (validate_refs(ctx, refs, num_refs) != SMR_OK) return nullptr;
+
+    smr_index_t *idx = new_handle(ctx);
+    if (!idx) return nullptr;
+    std::string ref_path;
+    bool written = false;
+    try {
+        written = write_refs(idx, refs, num_refs, ref_path);
+    } catch (const std::exception &e) {
+        set_error(ctx, SMR_ERR_IO, "failed to write the references: %s", e.what());
+    }
+    if (!written) {
+        smr_index_free(idx);
+        return nullptr;
+    }
+    return load_handle(idx, ref_path);
 }
 
 int smr_run_seqs_with_index(smr_index_t *idx,

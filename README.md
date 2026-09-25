@@ -200,6 +200,8 @@ SortMeRNA inside another program, without a subprocess:
 - `smr_run_seqs` aligns in-memory sequences.
 - `smr_index_load` / `smr_run_seqs_with_index` / `smr_index_free` load the
   index once and align many in-memory batches against it.
+- `smr_index_load_seqs` loads the reference sequences from memory instead of
+  a file.
 
 Reuse one `workdir` so that the index is built only once. The in-memory
 functions report every hit, with an e-value per read that does not depend on

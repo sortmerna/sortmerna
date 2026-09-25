@@ -85,9 +85,13 @@ typedef struct smr_config {
      * later calls with the same reference file names. As with the sortmerna
      * CLI, it is not rebuilt when a reference file's contents or the
      * indexing options (seed_win_len) change; delete <workdir>/idx then.
+     * smr_index_load_seqs() keeps its reference copies in <workdir>/refs,
+     * named after their contents, so it has no such problem. Nothing in
+     * idx/ or refs/ is deleted by the library; delete them to reclaim the
+     * space.
      *
      * <workdir>/kvdb is scratch space: the library deletes it before and
-     * after each smr_run() and around each smr_index_load()/smr_index_free(),
+     * after each smr_run(), when a handle is loaded and by smr_index_free(),
      * so results never carry over between calls. A workdir must not be used
      * by two calls or handles at the same time. */
     const char *workdir;
@@ -176,9 +180,10 @@ int smr_run(smr_context_t *ctx,
             smr_stats_t *stats);
 
 /*
- * smr_seq_t -- a single input sequence for smr_run_seqs().
+ * smr_seq_t -- a single input sequence for smr_run_seqs(),
+ * smr_run_seqs_with_index() or smr_index_load_seqs().
  * All pointers are caller-owned and must remain valid for the duration
- * of the smr_run_seqs() call.
+ * of the call.
  */
 typedef struct smr_seq {
     const char *id;       /* identifier (without > or @) */
@@ -216,10 +221,12 @@ int smr_run_seqs(smr_context_t *ctx,
  *     Handles alive at the same time must not share a workdir.
  *
  * Limitations:
- *   - One reference file per handle: each reference file is a separate
- *     index and a handle holds one loaded index. Concatenate several FASTA
- *     files into one. An index built in more than one part is refused too.
- *     Both return SMR_ERR_NOT_IMPLEMENTED.
+ *   - smr_index_load() takes one reference file: each reference file is a
+ *     separate index and a handle holds one loaded index. Concatenate
+ *     several FASTA files into one, or pass all the sequences to
+ *     smr_index_load_seqs(). An index built in more than one part is refused
+ *     by both (about 320 Mbp of reference at the default index memory).
+ *     These return SMR_ERR_NOT_IMPLEMENTED.
  *
  * Thread-safety:
  *   - Serialized by the same process-wide mutex as smr_run(). Concurrent
@@ -259,7 +266,7 @@ int smr_run_seqs(smr_context_t *ctx,
  *     callers drop low-significance rows themselves.
  *
  * Workdir usage:
- *   - See smr_config_t.workdir. In addition, smr_index_load() writes a
+ *   - See smr_config_t.workdir. In addition, loading a handle writes a
  *     small placeholder reads file (placeholder_reads.fa) into the workdir
  *     to satisfy internal option parsing; it is never read for sequence
  *     data and stays in a caller-supplied workdir.
@@ -283,9 +290,29 @@ smr_index_t *smr_index_load(smr_context_t *ctx,
                             const char **ref_paths, int32_t num_refs);
 
 /*
+ * Like smr_index_load(), with the reference sequences given in memory.
+ * The library writes them to <workdir>/refs/refs_<hash>.fasta, named after
+ * a hash of the sequences and seed_win_len, and indexes that file. With a
+ * caller-supplied workdir the copy and its index are kept and reused by
+ * later calls with the same sequences; without one, both are removed by
+ * smr_index_free().
+ *
+ * refs[i].id must be non-empty and contain no whitespace; it is returned
+ * as ref_name. refs[i].sequence must be non-empty, contain no line breaks
+ * and not start with '>'. quality is ignored. The pointers need only be
+ * valid during the call.
+ *
+ * Returns NULL on failure: SMR_ERR_INVALID_CONFIG for bad input, SMR_ERR_IO
+ * if the copy could not be written, SMR_ERR_NOT_IMPLEMENTED if the index
+ * needs more than one part, and the errors of smr_index_load() otherwise.
+ */
+smr_index_t *smr_index_load_seqs(smr_context_t *ctx,
+                                 const smr_seq_t *refs, int32_t num_refs);
+
+/*
  * Align an in-memory batch of query sequences against a pre-loaded index.
  * Error state and log callbacks are routed through the ctx that was
- * supplied to smr_index_load(); no separate ctx parameter is accepted
+ * supplied when the handle was loaded; no separate ctx parameter is accepted
  * to avoid the ambiguity of error routing to a mismatched context.
  */
 int smr_run_seqs_with_index(smr_index_t *idx,
@@ -293,7 +320,8 @@ int smr_run_seqs_with_index(smr_index_t *idx,
                             smr_output_t **out,
                             smr_stats_t *stats);
 
-/* Free a handle returned by smr_index_load(). Passing NULL is safe.
+/* Free a handle returned by smr_index_load() or smr_index_load_seqs().
+ * Passing NULL is safe.
  * The handle is not reusable after this call. */
 void smr_index_free(smr_index_t *idx);
 

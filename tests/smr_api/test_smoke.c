@@ -14,6 +14,7 @@
 #include <pthread.h> /* concurrent test */
 #include <sys/wait.h> /* waitpid */
 #include <math.h>    /* fabs */
+#include <dirent.h>  /* opendir */
 
 /*
  * Compare a produced output file against a golden reference file.
@@ -2180,6 +2181,305 @@ TEST(test_log_callback_not_concurrent) {
     ASSERT_EQ_INT(probe.max_active, 1);
 }
 
+/* ---- Reference sequences from memory (smr_index_load_seqs) ---- */
+
+/* A FASTA file read into memory: id = first word of the header, sequence
+ * lines joined. */
+struct fasta {
+    smr_seq_t *seqs;
+    int32_t n;
+};
+
+static int load_fasta(const char *path, struct fasta *fa) {
+    fa->seqs = NULL;
+    fa->n = 0;
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    rewind(f);
+    char *text = malloc((size_t)size + 1);
+    size_t got = fread(text, 1, (size_t)size, f);
+    fclose(f);
+    text[got] = '\0';
+
+    int32_t cap = 0;
+    for (const char *p = text; (p = strchr(p, '>')); p++) cap++;
+    fa->seqs = calloc((size_t)cap, sizeof(smr_seq_t));
+    char *p = text;
+    while ((p = strchr(p, '>'))) {
+        size_t id_len = strcspn(p + 1, " \t\r\n");
+        char *id = malloc(id_len + 1);
+        memcpy(id, p + 1, id_len);
+        id[id_len] = '\0';
+        char *body = p + strcspn(p, "\n");
+        char *end = strchr(body, '>');
+        if (!end) end = body + strlen(body);
+        char *seq = malloc((size_t)(end - body) + 1);
+        char *w = seq;
+        for (const char *q = body; q < end; q++)
+            if (*q != '\n' && *q != '\r') *w++ = *q;
+        *w = '\0';
+        fa->seqs[fa->n].id = id;
+        fa->seqs[fa->n].sequence = seq;
+        fa->seqs[fa->n].quality = NULL;
+        fa->n++;
+        p = end;
+    }
+    free(text);
+    return fa->n > 0;
+}
+
+static void free_fasta(struct fasta *fa) {
+    for (int32_t i = 0; i < fa->n; i++) {
+        free((char *)fa->seqs[i].id);
+        free((char *)fa->seqs[i].sequence);
+    }
+    free(fa->seqs);
+    fa->seqs = NULL;
+    fa->n = 0;
+}
+
+/* Number of entries in a directory, other than . and .. (-1 if missing). */
+static int count_entries(const char *dir) {
+    DIR *d = opendir(dir);
+    if (!d) return -1;
+    int n = 0;
+    struct dirent *e;
+    while ((e = readdir(d)))
+        if (strcmp(e->d_name, ".") != 0 && strcmp(e->d_name, "..") != 0) n++;
+    closedir(d);
+    return n;
+}
+
+/* Counts the messages of smr_index_load_seqs and of the index cache. */
+struct seqs_log {
+    int wrote;
+    int reusing;
+    int skipped;
+};
+static void seqs_log_cb(int level, const char *msg, void *user_data) {
+    (void)level;
+    struct seqs_log *l = (struct seqs_log *)user_data;
+    if (strstr(msg, "smr_index_load_seqs: wrote ")) l->wrote++;
+    if (strstr(msg, "smr_index_load_seqs: reusing ")) l->reusing++;
+    if (strstr(msg, "Skipping indexing")) l->skipped++;
+}
+
+/* The same references from memory and from their file give the same
+ * results, e-values included. The silva file ends with a newline, so the
+ * file reader sees all of it (see the note on test_read.fasta above). */
+TEST(test_index_load_seqs_matches_file) {
+    const char *refs[] = { SMR_DATA_DIR "/silva-arc-16s-database-id95.fasta" };
+    struct fasta fa;
+    ASSERT_TRUE(load_fasta(refs[0], &fa));
+    ASSERT_EQ_INT(fa.n, 3845);
+    smr_config_t cfg;
+    smr_config_init(&cfg);
+    cfg.num_threads = 1;
+    smr_context_t *ctx = smr_ctx_create(&cfg);
+    ASSERT_NOT_NULL(ctx);
+
+    smr_index_t *from_file = smr_index_load(ctx, refs, 1);
+    ASSERT_NOT_NULL(from_file);
+    smr_index_t *from_mem = smr_index_load_seqs(ctx, fa.seqs, fa.n);
+    free_fasta(&fa); /* the sequences need only live during the call */
+    ASSERT_NOT_NULL(from_mem);
+
+    smr_output_t *a = NULL, *b = NULL;
+    smr_stats_t stats;
+    ASSERT_EQ_INT(smr_run_seqs_with_index(from_file, SET7_SEQS, 6, &a, &stats), SMR_OK);
+    ASSERT_EQ_INT(smr_run_seqs_with_index(from_mem, SET7_SEQS, 6, &b, &stats), SMR_OK);
+    ASSERT_EQ_U64(a->num_aligned, 4);
+    ASSERT_EQ_U64(b->num_aligned, 4);
+    for (uint64_t i = 0; i < 6; i++)
+        ASSERT_TRUE(same_read(a, i, b, i));
+
+    smr_output_free(a);
+    smr_output_free(b);
+    smr_index_free(from_file);
+    smr_index_free(from_mem);
+    smr_ctx_destroy(ctx);
+}
+
+/* With a workdir, loading the same sequences again reuses the copy and its
+ * index. Other sequences, or another seed_win_len, get a copy of their own. */
+TEST(test_index_load_seqs_reuses_copy_and_index) {
+    char *wdir = make_tmpdir();
+    ASSERT_NOT_NULL(wdir);
+    char refsdir[600];
+    snprintf(refsdir, sizeof(refsdir), "%s/refs", wdir);
+    struct fasta fa;
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/test_ref.fasta", &fa));
+    struct seqs_log log = { 0, 0, 0 };
+    smr_config_t cfg;
+    smr_config_init(&cfg);
+    cfg.num_threads = 1;
+    cfg.workdir = wdir;
+    cfg.log_callback = seqs_log_cb;
+    cfg.log_user_data = &log;
+    smr_context_t *ctx = smr_ctx_create(&cfg);
+    ASSERT_NOT_NULL(ctx);
+
+    smr_index_t *idx = smr_index_load_seqs(ctx, fa.seqs, fa.n);
+    ASSERT_NOT_NULL(idx);
+    smr_index_free(idx);
+    ASSERT_EQ_INT(log.wrote, 1);
+    ASSERT_EQ_INT(log.reusing, 0);
+    ASSERT_EQ_INT(log.skipped, 0);
+    ASSERT_EQ_INT(count_entries(refsdir), 1);
+
+    idx = smr_index_load_seqs(ctx, fa.seqs, fa.n);
+    ASSERT_NOT_NULL(idx);
+    smr_index_free(idx);
+    ASSERT_EQ_INT(log.wrote, 1);
+    ASSERT_EQ_INT(log.reusing, 1);
+    ASSERT_EQ_INT(log.skipped, 1);
+    ASSERT_EQ_INT(count_entries(refsdir), 1);
+
+    /* one base changed */
+    char *changed = strdup(fa.seqs[0].sequence);
+    changed[10] = (changed[10] == 'a') ? 'c' : 'a';
+    smr_seq_t one = { fa.seqs[0].id, changed, NULL };
+    idx = smr_index_load_seqs(ctx, &one, 1);
+    ASSERT_NOT_NULL(idx);
+    smr_index_free(idx);
+    ASSERT_EQ_INT(log.wrote, 2);
+    ASSERT_EQ_INT(log.skipped, 1);
+    ASSERT_EQ_INT(count_entries(refsdir), 2);
+
+    cfg.seed_win_len = 16;
+    smr_context_t *ctx16 = smr_ctx_create(&cfg);
+    ASSERT_NOT_NULL(ctx16);
+    idx = smr_index_load_seqs(ctx16, fa.seqs, fa.n);
+    ASSERT_NOT_NULL(idx);
+    smr_index_free(idx);
+    ASSERT_EQ_INT(log.wrote, 3);
+    ASSERT_EQ_INT(log.skipped, 1);
+    ASSERT_EQ_INT(count_entries(refsdir), 3);
+
+    free(changed);
+    free_fasta(&fa);
+    smr_ctx_destroy(ctx);
+    smr_ctx_destroy(ctx16);
+    rm_rf(wdir);
+}
+
+/* Each bad element is refused, also when it is not the first. */
+TEST(test_index_load_seqs_rejects_bad_input) {
+    smr_config_t cfg;
+    smr_config_init(&cfg);
+    smr_context_t *ctx = smr_ctx_create(&cfg);
+    ASSERT_NOT_NULL(ctx);
+    const smr_seq_t good = { "r0", "ACGT", NULL };
+
+    ASSERT_NULL(smr_index_load_seqs(NULL, &good, 1));
+    ASSERT_NULL(smr_index_load_seqs(ctx, NULL, 1));
+    ASSERT_EQ_INT(smr_last_error_code(ctx), SMR_ERR_INVALID_CONFIG);
+    ASSERT_NULL(smr_index_load_seqs(ctx, &good, 0));
+    ASSERT_EQ_INT(smr_last_error_code(ctx), SMR_ERR_INVALID_CONFIG);
+
+    const smr_seq_t bad[] = {
+        { NULL, "ACGT", NULL },
+        { "", "ACGT", NULL },
+        { "r 1", "ACGT", NULL },
+        { "r1\t", "ACGT", NULL },
+        { "r1", NULL, NULL },
+        { "r1", "", NULL },
+        { "r1", "AC\nGT", NULL },
+        { "r1", "ACGT\r", NULL },
+        { "r1", ">ACGT", NULL },
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        smr_seq_t two[2] = { good, bad[i] };
+        ASSERT_NULL(smr_index_load_seqs(ctx, two, 2));
+        ASSERT_EQ_INT(smr_last_error_code(ctx), SMR_ERR_INVALID_CONFIG);
+        ASSERT_TRUE(strstr(smr_last_error(ctx), "ref[1]") != NULL);
+    }
+    smr_ctx_destroy(ctx);
+}
+
+/* Without a workdir, the copy and its index are written to a temporary
+ * directory under TMPDIR, which smr_index_free() removes. */
+TEST(test_index_load_seqs_temp_dir_removed) {
+    char tmp[512];
+    char *made = make_tmpdir();
+    ASSERT_NOT_NULL(made);
+    snprintf(tmp, sizeof(tmp), "%s", made);
+    struct fasta fa;
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/test_ref.fasta", &fa));
+    smr_config_t cfg;
+    smr_config_init(&cfg);
+    cfg.num_threads = 1;
+    smr_context_t *ctx = smr_ctx_create(&cfg);
+    ASSERT_NOT_NULL(ctx);
+
+    char *old = getenv("TMPDIR") ? strdup(getenv("TMPDIR")) : NULL;
+    setenv("TMPDIR", tmp, 1);
+    smr_index_t *idx = smr_index_load_seqs(ctx, fa.seqs, fa.n);
+    int while_loaded = count_entries(tmp);
+    smr_index_free(idx);
+    int after_free = count_entries(tmp);
+    if (old) setenv("TMPDIR", old, 1); else unsetenv("TMPDIR");
+    free(old);
+
+    ASSERT_NOT_NULL(idx);
+    ASSERT_EQ_INT(while_loaded, 1);
+    ASSERT_EQ_INT(after_free, 0);
+    free_fasta(&fa);
+    smr_ctx_destroy(ctx);
+    rmdir(tmp);
+}
+
+/* One handle can hold sequences from several sources, where smr_index_load
+ * would need two files: test_ref.fasta's Unc49508 and the silva archaea.
+ * Each read hits the reference it hits when that reference is alone. */
+TEST(test_index_load_seqs_several_references) {
+    struct fasta unc, silva, read;
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/test_ref.fasta", &unc));
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/silva-arc-16s-database-id95.fasta", &silva));
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/test_read.fasta", &read));
+    int32_t n = unc.n + silva.n;
+    smr_seq_t *all = malloc((size_t)n * sizeof(smr_seq_t));
+    memcpy(all, unc.seqs, (size_t)unc.n * sizeof(smr_seq_t));
+    memcpy(all + unc.n, silva.seqs, (size_t)silva.n * sizeof(smr_seq_t));
+    smr_seq_t batch[7];
+    batch[0] = read.seqs[0]; /* AB271211 */
+    memcpy(batch + 1, SET7_SEQS, sizeof(SET7_SEQS));
+
+    smr_config_t cfg;
+    smr_config_init(&cfg);
+    cfg.num_threads = 1;
+    smr_context_t *ctx = smr_ctx_create(&cfg);
+    ASSERT_NOT_NULL(ctx);
+    smr_index_t *idx_all = smr_index_load_seqs(ctx, all, n);
+    ASSERT_NOT_NULL(idx_all);
+    smr_index_t *idx_silva = smr_index_load_seqs(ctx, silva.seqs, silva.n);
+    ASSERT_NOT_NULL(idx_silva);
+
+    smr_output_t *out = NULL, *alone = NULL;
+    smr_stats_t stats;
+    ASSERT_EQ_INT(smr_run_seqs_with_index(idx_all, batch, 7, &out, &stats), SMR_OK);
+    ASSERT_EQ_INT(smr_run_seqs_with_index(idx_silva, SET7_SEQS, 6, &alone, &stats), SMR_OK);
+    ASSERT_EQ_U64(out->num_aligned, 5);
+    ASSERT_STR_EQ(out->ref_name[0], "Unc49508");
+    for (uint64_t i = 0; i < 6; i++) {
+        ASSERT_EQ_INT(out->aligned[i + 1], alone->aligned[i]);
+        if (alone->aligned[i])
+            ASSERT_STR_EQ(out->ref_name[i + 1], alone->ref_name[i]);
+    }
+
+    smr_output_free(out);
+    smr_output_free(alone);
+    smr_index_free(idx_all);
+    smr_index_free(idx_silva);
+    smr_ctx_destroy(ctx);
+    free(all);
+    free_fasta(&unc);
+    free_fasta(&silva);
+    free_fasta(&read);
+}
+
 TEST_MAIN_BEGIN()
     RUN_TEST(test_config_init_sets_struct_size);
     RUN_TEST(test_config_struct_size_is_first_field);
@@ -2286,4 +2586,10 @@ TEST_MAIN_BEGIN()
     RUN_TEST(test_run_discards_leftover_kvdb);
     RUN_TEST(test_log_callback_gets_worker_messages);
     RUN_TEST(test_log_callback_not_concurrent);
+    /* reference sequences from memory */
+    RUN_TEST(test_index_load_seqs_matches_file);
+    RUN_TEST(test_index_load_seqs_reuses_copy_and_index);
+    RUN_TEST(test_index_load_seqs_rejects_bad_input);
+    RUN_TEST(test_index_load_seqs_temp_dir_removed);
+    RUN_TEST(test_index_load_seqs_several_references);
 TEST_MAIN_END()
