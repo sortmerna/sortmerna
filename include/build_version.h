@@ -31,8 +31,12 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+namespace sortmerna {
+
 // the git revision used for compilation
 extern const char* sortmerna_build_git_sha;
 extern const char* sortmerna_build_git_date;
 // date when the code was compiled
 extern const char* sortmerna_build_compile_date;
+
+} // namespace sortmerna

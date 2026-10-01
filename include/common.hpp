@@ -36,6 +36,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <sstream>
 #include <iostream> // std::cout
+#include <stdexcept>
 
 #include <sys/time.h>
 #include <fstream>
@@ -46,14 +47,17 @@ const char FASTQ_HEADER_START = '@';
 const std::string FWD = "FWD";
 const std::string REV = "REV";
 
+namespace sortmerna {
 enum class BIO_FORMAT : unsigned { FASTQ = 0, FASTA = 1 };
 enum class ZIP_FORMAT : unsigned { GZIP = 0, ZLIB = 1, FLAT = 2, XPRESS = 3 };
 enum class FEED_TYPE : unsigned {
     INDEXED = 0,
     SPLIT_READS = 1, // deprecated
-    MAX = SPLIT_READS
+    MAX = SPLIT_READS, // highest value accepted by '--readfeed'
+    MEMORY = 2 // reads supplied in memory through the C API; not a CLI choice
 };
 enum class BlastFormat { TABULAR, REGULAR}; // format of the Blast output
+} // namespace sortmerna
 
 /*! @brief Map nucleotides to integers.
 Ambiguous letters map to 4.
@@ -86,10 +90,8 @@ const char nt_map[5] = { 'A', 'C', 'G', 'T', 'N' };
 
 const char complement[5] = { 3, 2, 1, 0, 4 }; // A <-> T, C <-> G, N <-> N
 
-extern timeval t;
-
-/*! @brief Macro for timing */
-#define TIME(x) gettimeofday(&t, NULL); x = t.tv_sec + (t.tv_usec/1000000.0);
+/*! @brief Macro for timing (uses local timeval, no global state) */
+#define TIME(x) do { struct timeval _tv; gettimeofday(&_tv, NULL); x = _tv.tv_sec + (_tv.tv_usec/1000000.0); } while(0)
 
 /*! @brief start color text red */
 #define RED    "\033[0;31m"
@@ -104,6 +106,24 @@ const char DELIM = ':';
 //#define LOCKQUEUE // Lock queue with mutexes
 #define STAMP  "[" << __func__ << ":" << __LINE__ << "] "
 #define STAMPL "[" << __FILE__ << ":" << __func__ ":" << __LINE__ << "] "
+
+/*
+ * Optional log callback for library use (smr_api). It is thread-local: the
+ * C API sets it on the calling thread for the duration of a call and clears
+ * it afterwards. When set, the INFO/WARN/ERR family of macros hands their
+ * text to the callback instead of writing to stdout/stderr. When unset (the
+ * sortmerna executable), output goes to stdout/stderr exactly as before.
+ * Threads started through ThreadErrors::spawn, and align()'s WAL flush
+ * thread, take over the callback of the thread that starts them.
+ */
+typedef void (*smr_log_fn)(int level, const char *msg, void *user_data);
+extern thread_local smr_log_fn smr_tl_log_callback;
+extern thread_local void* smr_tl_log_user_data;
+
+/* log levels, matching SMR_LOG_* in smr_api.h */
+#define SMR_LOG_INFO_  1
+#define SMR_LOG_WARN_  2
+#define SMR_LOG_ERROR_ 3
 
 template<typename ...Args>
 static inline std::string fold_to_string(Args&&... args) {
@@ -147,11 +167,25 @@ static inline size_t get_memory() {
     return mem;
 }
 
+/* Write a formatted log line to the callback if one is set on this thread,
+ * else to stderr (errors) or stdout (everything else). */
+#define SMR_LOG_ROUTE(level, str) \
+	do { \
+		if (smr_tl_log_callback) { \
+			smr_tl_log_callback(level, (str).c_str(), smr_tl_log_user_data); \
+		} else { \
+			((level) == SMR_LOG_ERROR_ ? std::cerr : std::cout) << (str); \
+		} \
+	} while(0)
+
+/* Terminal colour codes are only emitted on the stdout/stderr path. */
+#define SMR_COLOR(c) (smr_tl_log_callback ? "" : (c))
+
 #define INFO(...) \
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__) << std::endl; \
-		std::cout << ss.str(); \
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 // no end line
@@ -159,7 +193,7 @@ static inline size_t get_memory() {
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__); \
-		std::cout << ss.str(); \
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 // No Stamp, no endl
@@ -167,41 +201,73 @@ static inline size_t get_memory() {
 	{\
 		std::stringstream ss; \
 		ss << fold_to_string(__VA_ARGS__); \
-		std::cout << ss.str(); \
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 #define INFO_MEM(...) \
 	{\
 		std::stringstream ss; \
 		ss << STAMP << fold_to_string(__VA_ARGS__) << " Memory KB: " << (get_memory() >> 10) << std::endl; \
-		std::cout << ss.str();\
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 #define WARN(...) \
 	{\
 		std::stringstream ss; \
-		ss << '\n' << STAMP << YELLOW << "WARNING" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
-		std::cout << ss.str();\
+		ss << '\n' << STAMP << SMR_COLOR(YELLOW) << "WARNING" << SMR_COLOR(COLOFF) << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
+		SMR_LOG_ROUTE(SMR_LOG_WARN_, ss.str()); \
 	}
 
 #define ERR(...) \
 	{\
 		std::stringstream ss; \
-		ss << '\n' << STAMP << RED << "ERROR" << COLOFF << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
-		std::cerr << ss.str();\
+		ss << '\n' << STAMP << SMR_COLOR(RED) << "ERROR" << SMR_COLOR(COLOFF) << ": " << fold_to_string(__VA_ARGS__) << std::endl; \
+		SMR_LOG_ROUTE(SMR_LOG_ERROR_, ss.str()); \
 	}
+
+namespace sortmerna {
+
+/*! @brief Error raised in place of ERR(...); exit(EXIT_FAILURE).
+ *
+ * Code that may run inside a host process (the C API) must not call
+ * exit(). SMR_THROW takes the same arguments as ERR and records the
+ * "[func:line] " stamp of the throw site, so main() can report the
+ * error exactly as ERR() would have printed it and exit with failure,
+ * while library callers catch it and return an error code.
+ */
+class smr_error : public std::runtime_error {
+public:
+	smr_error(std::string where, const std::string& msg)
+		: std::runtime_error(msg), where(std::move(where)) {}
+	std::string where; // "[func:line] " of the throw site
+};
+
+/*! @brief Thrown by --help / --version to signal a clean early exit.
+ * main() catches it and returns 0; library callers treat it as an
+ * invalid configuration. */
+class smr_exit_requested : public std::runtime_error {
+public:
+	explicit smr_exit_requested(const std::string& msg)
+		: std::runtime_error(msg) {}
+};
+
+} // namespace sortmerna
+
+#define SMR_THROW(...) \
+	throw ::sortmerna::smr_error(std::string("[") + __func__ + ":" + std::to_string(__LINE__) + "] ", \
+		fold_to_string(__VA_ARGS__))
 
 #define PRN_MEM(msg) \
 	{\
 		std::stringstream ss; \
 		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << std::endl; \
-		std::cout << ss.str();\
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
 	}
 
 #define PRN_MEM_TIME(msg, time) \
     {\
 		std::stringstream ss; \
 		ss << STAMP << msg << " Memory KB: " << (get_memory() >> 10) << " Elapsed sec: " << time << std::endl; \
-		std::cout << ss.str();\
+		SMR_LOG_ROUTE(SMR_LOG_INFO_, ss.str()); \
     }
 //~EOF

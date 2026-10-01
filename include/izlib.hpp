@@ -46,6 +46,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #define RL_END   1
 #define RL_ERR  -1
 
+namespace sortmerna {
+
 class Izlib
 {
 public:
@@ -83,6 +85,7 @@ private:
 	size_t buf_in_size;
 	size_t buf_out_size;
 	unsigned z_in_num; // number of reads accumulated in IN buffer. For debugging.
+	bool strm_active = false; // strm initialized and not yet ended (inflateEnd/deflateEnd)
 	std::vector<unsigned char> z_in; // IN buffer
 	std::vector<unsigned char> z_out; // OUT buffer
 
@@ -92,3 +95,5 @@ private:
 	*/
 	int inflatez(std::ifstream& ifs); // 'z' in the name to distinguish from zlib.inflate
 };
+
+} // namespace sortmerna

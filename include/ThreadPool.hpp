@@ -50,6 +50,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 
+namespace sortmerna {
+
 /**
 *  all the pool threads are initially in a waiting state until jobs are available for execution.
 */
@@ -150,4 +152,6 @@ public:
 			thread.join();
 	}
 }; // ~class ThreadPool
+
+} // namespace sortmerna
 

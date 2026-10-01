@@ -58,6 +58,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "izlib.hpp"
 
 // forward
+
+namespace sortmerna {
+
 std::string string_hash(const std::string &val); // util.cpp
 std::string to_lower(std::string& val); // util.cpp
 
@@ -88,6 +91,12 @@ Readstats::Readstats(uint64_t all_reads_count, uint64_t all_reads_len, uint32_t 
 			key_str_tmp += "_" + std::filesystem::path(readsfile).filename().string();
 	}
 	dbkey = string_hash(key_str_tmp);
+
+	// library: counts are per batch, never persisted (see Runopts::is_library_mode)
+	if (opts.is_library_mode) {
+		calcSuffix(opts);
+		return;
+	}
 
 	bool is_restored = restoreFromDb(kvdb);
 
@@ -292,3 +301,5 @@ void Readstats::store_to_db(KeyValueDatabase & kvdb)
 	kvdb.put(dbkey, toBstring());
 	INFO("Stored Reads statistics to DB:\n    ", toString());
 }
+
+} // namespace sortmerna

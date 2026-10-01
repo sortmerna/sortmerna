@@ -49,6 +49,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readstate.h"
 #include "readfile.h"
 
+namespace sortmerna {
+
 /*
  * Per-thread slot for reading a byte-range chunk of a flat (non-gzipped) file.
  * Each slot holds an open ifstream seeked to bytes_start and reads up to bytes_end.
@@ -125,6 +127,14 @@ class Readfeed {
 public:
 	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, std::filesystem::path& basedir, bool is_paired);
 	Readfeed(FEED_TYPE type, std::vector<std::string>& readfiles, const unsigned num_parts, std::filesystem::path& basedir, bool is_paired);
+	/*
+	 * In-memory feed (FEED_TYPE::MEMORY): reads come from the given vectors
+	 * instead of files. quals is empty for FASTA input, else one quality
+	 * string per sequence (FASTQ). For paired input the vectors are
+	 * interleaved: [fwd0, rev0, fwd1, rev1, ...].
+	 */
+	Readfeed(std::vector<std::string> ids, std::vector<std::string> seqs, std::vector<std::string> quals,
+	         const unsigned num_parts, std::filesystem::path& basedir, bool is_paired);
 
 	void run();
 	bool next(int inext, std::string& readstr);
@@ -276,6 +286,12 @@ private:
 	std::vector<std::ofstream> ofsv;
 	std::vector<Izlib> vzlib_out;
 	std::vector<Readstate> vstate_out;
+
+	// input processing (MEMORY) - records per slot, same layout and record
+	// format as next() produces for the file feeds
+	std::vector<std::vector<std::string>> mem_records;
+	std::vector<std::size_t> mem_next; // index of the next record per slot
 };
 
 // ~readfeed.hpp
+} // namespace sortmerna

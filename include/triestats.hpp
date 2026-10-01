@@ -40,12 +40,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "bursttrie.hpp"
 #include <fstream>
 
-using namespace std;
-
-extern int total_num_trie_nodes;
-extern size_t size_of_all_buckets;
-extern int total_num_buckets;
-
-void traverse_trie( NodeElement* root, int depth);
+/* Legacy header. The trie statistics it used to declare as globals are
+ * now members of IndexBuildState (indexdb.cpp). Not included by any
+ * compiled source file. */
 
 #endif

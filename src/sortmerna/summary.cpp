@@ -41,6 +41,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "references.hpp"
 #include "readfeed.hpp"
 
+
+namespace sortmerna {
+
 Summary::Summary() :
 	is_de_novo(false),
 	is_otumapout(false),
@@ -63,8 +66,7 @@ void Summary::write(Refstats& refstats, Readstats& readstats, Runopts& opts)
 	INFO("Using summary file: ", f_log.generic_string());
 	ofs.open(f_log, std::ofstream::binary | std::ofstream::out);
 	if (!ofs.is_open()) {
-		ERR("Failed opening file ", f_log);
-		exit(EXIT_FAILURE);
+		SMR_THROW("Failed opening file ", f_log);
 	}
 
 	cmd = opts.cmdline;
@@ -185,3 +187,4 @@ void writeSummary(Readstats& readstats, Runopts& opts)
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
 	INFO("==== Done summary in sec [", elapsed.count(), "] ====\n");
 } // ~writeSummary
+} // namespace sortmerna

@@ -20,6 +20,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
     - [Execution trace](#execution-trace)
     - [Read feed modes (gzipped FASTQ)](#read-feed-modes-gzipped-fastq)
 - [Building from sources](#building-from-sources)
+- [C library API](#c-library-api)
 - [User Manual](#user-manual)
 - [Databases](#databases)
 - [Taxonomies](#taxonomies)
@@ -188,6 +189,28 @@ and not advised.
 ## Building from sources
 
 [Build instructions](https://sortmerna.readthedocs.io/en/latest/building.html)
+
+## C library API
+
+**Experimental:** the C API is new, and it may change in later releases in
+ways that require callers to be updated.
+
+A reentrant C library (`libsmr_api.a`, header `include/smr_api.h`) runs
+SortMeRNA inside another program, without a subprocess:
+
+- `smr_run` aligns reads files and returns per-read results as well as the
+  usual reports.
+- `smr_run_seqs` aligns in-memory sequences.
+- `smr_index_load` / `smr_run_seqs_with_index` / `smr_index_free` load the
+  index once and align many in-memory batches against it.
+- `smr_index_load_seqs` loads the reference sequences from memory instead of
+  a file.
+
+Reuse one `workdir` so that the index is built only once. The in-memory
+functions report every hit, with an e-value per read that does not depend on
+how reads are batched, so their e-values differ from the CLI's.
+
+See [C Library API](docs/c_api.rst) for the reference.
 
 ## User Manual
 

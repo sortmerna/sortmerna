@@ -37,6 +37,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 #include "readfeed.hpp"
 
+
+namespace sortmerna {
+
 ReportSam::ReportSam(Runopts& opts) : Report(opts) {}
 
 ReportSam::ReportSam(Readfeed& readfeed, Runopts& opts) : ReportSam(opts)
@@ -208,3 +211,4 @@ void ReportSam::write_header(Runopts& opts)
 	else
 		fsv[0] << ss.str();
 } // ~ReportSam::write_header
+} // namespace sortmerna

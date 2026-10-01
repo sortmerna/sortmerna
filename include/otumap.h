@@ -36,6 +36,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 
 // forward
+
+namespace sortmerna {
+
 struct Runopts;
 class Refstats;
 struct Readstats;
@@ -63,3 +66,5 @@ public:
 };
 
 void fill_otu_map(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts, bool is_write=true);
+
+} // namespace sortmerna

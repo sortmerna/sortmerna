@@ -33,6 +33,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 
+
+namespace sortmerna {
+
 class BaseRecord
 {
 public:
@@ -44,3 +47,5 @@ public:
 	BaseRecord() {}
 	~BaseRecord() {}
 };
+
+} // namespace sortmerna

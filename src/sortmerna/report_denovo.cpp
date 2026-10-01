@@ -37,6 +37,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "refstats.hpp"
 #include "readfeed.hpp"
 
+
+namespace sortmerna {
+
 ReportDenovo::ReportDenovo(Runopts& opts) : Report(opts), base() {}
 
 ReportDenovo::ReportDenovo(Readfeed& readfeed, Runopts& opts) : ReportDenovo(opts)
@@ -112,8 +115,7 @@ void ReportDenovo::append(const uint32_t& id, std::vector<Read>& reads, Runopts&
 					continue; // ignore a non-aligned singleton
 			}
 			else {
-				ERR("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
-				exit(1);
+				SMR_THROW("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
 			}
 
 			if (is_zip)
@@ -136,3 +138,4 @@ ReportFxBase& ReportDenovo::getBase()
 {
 	return base;
 }
+} // namespace sortmerna

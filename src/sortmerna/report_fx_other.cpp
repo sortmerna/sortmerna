@@ -34,6 +34,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "options.hpp"
 #include "read.hpp"
 
+
+namespace sortmerna {
+
 ReportFxOther::ReportFxOther(Runopts& opts) : Report(opts), base() {}
 ReportFxOther::ReportFxOther(Readfeed& readfeed, Runopts& opts) : ReportFxOther(opts) { init(readfeed, opts); }
 
@@ -101,8 +104,7 @@ void ReportFxOther::append(const uint32_t& id, std::vector<Read>& reads, const R
 					continue; // ignore an aligned singleton
 			}
 			else {
-				ERR("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
-				exit(1);
+				SMR_THROW("min number of output files is 1, max number of output files is 4. The current value is ", base.num_out);
 			}
 
 			if (is_zip)
@@ -128,3 +130,4 @@ ReportFxBase& ReportFxOther::getBase()
 {
 	return base;
 }
+} // namespace sortmerna

@@ -60,6 +60,11 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #define O_SMR_READ_BIN O_RDONLY
 
 // forward
+
+namespace sortmerna {
+
+using namespace std;
+
 int clear_dir(std::string dpath);
 
  // see "heuristic 1" below
@@ -146,9 +151,8 @@ void traverse
 					std::string id = read.id;
 					bool is03 = read.is03;
 					bool is04 = read.is04;
-					ERR("lookup index: ", keyf, " is larger than lookup_tbl.size: ", vsize, 
+					SMR_THROW("lookup index: ", keyf, " is larger than lookup_tbl.size: ", vsize, 
 						" Index: ", idxn, " Part: ", idxp, " Read.id: ", id, " Read.is03: ", is03, " Read.is04: ", is04, " Aborting..");
-					exit(EXIT_FAILURE);
 				}
 
 				// do traversal if the exact half window exists in the burst trie
@@ -199,10 +203,9 @@ void traverse
 						std::string id = read.id;
 						bool is03 = read.is03;
 						bool is04 = read.is04;
-						ERR("Thread: ", std::this_thread::get_id(), " lookup index: ", keyr, 
+						SMR_THROW("Thread: ", std::this_thread::get_id(), " lookup index: ", keyr, 
 							" is larger than lookup_tbl.size: ", vsize, " Index: ", idxn, " Part: ", idxp, 
 							" Read.id: ", id, " Read.is03: ", is03, " Read.is04: ", is04, " Aborting...");
-						exit(EXIT_FAILURE);
 					}
 
 					// continue subsearch (1)(b)
@@ -290,3 +293,4 @@ void traverse
 			read.is_done = true;
 	}
 } // ~traverse
+} // namespace sortmerna

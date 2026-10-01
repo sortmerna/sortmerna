@@ -43,6 +43,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "read.hpp"
 #include "references.hpp"
 
+
+namespace sortmerna {
+
 alignment_struct2::alignment_struct2() : max_size(0), min_index(0), max_index(0) 
 {}
 
@@ -228,6 +231,7 @@ Read & Read::operator=(const Read& that)
 	n_yid_ncov = that.n_yid_ncov;
 	n_nid_ycov = that.n_nid_ycov;
 	n_denovo = that.n_denovo;
+	is_done = that.is_done;
 	is_hit = that.is_hit;
 	is_new_hit = that.is_new_hit;
 	null_align_output = that.null_align_output;
@@ -289,9 +293,8 @@ void Read::initScoringMatrix(int8_t match, int8_t mismatch, int8_t score_N)
 void Read::validate(uint64_t& max_read_len) {
 	if (sequence.size() > max_read_len)
 	{
-		ERR("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
+		SMR_THROW("Read ID: ", id, " Header: ", header, " Sequence length: ", sequence.size(), " > ", 
 			max_read_len, " nt \n", "  Please check your reads or contact the authors.");
-		exit(EXIT_FAILURE);
 	}
 	isValid = true;
 } // ~Read::validate
@@ -647,3 +650,4 @@ bool Read::from_string(std::string& readstr)
 	}
 	return is_ok;
 } // ~Read::from_string
+} // namespace sortmerna

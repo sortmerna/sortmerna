@@ -36,6 +36,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 /*
  * reading state of a file
  */
+
+namespace sortmerna {
+
 struct Readstate {
 	Readstate() : is_done(false), read_count(0), line_count(0), last_count(0), last_stat(0), last_header("") {}
 	void reset() {
@@ -49,3 +52,5 @@ struct Readstate {
 	int last_stat;
 	std::string last_header; // header line last read
 };
+
+} // namespace sortmerna

@@ -48,6 +48,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * See complete documentation in include/mmap.hpp
  *
  */
+
+namespace sortmerna {
+
 char**
 load_reads(char* inputreads,
            char*& raw,
@@ -60,20 +63,14 @@ load_reads(char* inputreads,
   raw = new char[full_file_size]();
   if ( raw == NULL )
   {
-    ss << "    " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__
-		<< "] could not allocate memory for reference sequence buffer\n";
-	std::cout << ss.str(); ss.str("");
-    exit(EXIT_FAILURE);
+    SMR_THROW("could not allocate memory for reference sequence buffer");
   }
 
   // 2 pointers per entry (1 for label + 1 for sequence)
   char** reads = new char*[number_total_read*2]();
   if ( reads == NULL )
   {
-    ss << "\n  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__ 
-		<<"] cannot allocate memory for reads\n\n";
-	std::cout << ss.str(); ss.str("");
-    exit(EXIT_FAILURE);
+    SMR_THROW("cannot allocate memory for reads");
   }
 #ifdef HAVE_LIBZ
   gzFile fp = gzopen(inputreads, "r");
@@ -130,10 +127,7 @@ load_reads(char* inputreads,
   /* TEST */
   if (l == -2)
   {
-    ss << "  " << RED << "ERROR" << COLOFF << ": [Line " << __LINE__ << ": " << __FILE__ 
-		<<"] could not read reads file - " << strerror(errno) << "\n\n";
-	std::cout << ss.str(); ss.str("");
-    exit(EXIT_FAILURE);    
+    SMR_THROW("could not read reads file - ", strerror(errno));
   }
   kseq_destroy(seq);
 #ifdef HAVE_LIBZ
@@ -143,3 +137,5 @@ load_reads(char* inputreads,
 #endif
   return reads;
 }//~load_reads()
+
+} // namespace sortmerna

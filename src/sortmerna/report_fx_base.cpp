@@ -38,6 +38,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "readfeed.hpp"
 #include "izlib.hpp"
 
+
+namespace sortmerna {
+
 ReportFxBase::ReportFxBase(): num_out(0), out_type(0), num_reads(0), num_hits(0), num_miss(0), num_io_bad(0), num_io_fail(0) {}
 
 ReportFxBase::ReportFxBase(Runopts& opts): ReportFxBase()
@@ -83,8 +86,7 @@ void ReportFxBase::init(Readfeed& readfeed,
 					sfx1 = j == 0 ? "_paired" : "_singleton";
 				}
 				else { // should never happen
-					ERR("num_out = 2 implies either 'out2' or 'sout'");
-					exit(1);
+					SMR_THROW("num_out = 2 implies either 'out2' or 'sout'");
 				}
 			}
 
@@ -156,8 +158,7 @@ void ReportFxBase::validate_out_type(Runopts& opts)
 	std::cout << ss.str();
 
 	if (is_na) {
-		ERR("invalid combination of output options: rule '", rule, "': '", rules[2], "' violated");
-		exit(1);
+		SMR_THROW("invalid combination of output options: rule '", rule, "': '", rules[2], "' violated");
 	}
 }
 
@@ -194,8 +195,7 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read, const int& dbg)
 				num_miss.fetch_add(1, std::memory_order_relaxed);
 		}
 		catch (const std::exception& e) {
-			ERR("failed writing to stream. Num reads processed so far: ", num_reads, " Current read id: ", read.id, " - ", e.what());
-			exit(1);
+			SMR_THROW("failed writing to stream. Num reads processed so far: ", num_reads, " Current read id: ", read.id, " - ", e.what());
 		}
 	}
 	else {
@@ -221,3 +221,4 @@ void ReportFxBase::write_a_read(std::ostream& strm, Read& read, Readstate& rstat
 		ERR("Failed deflating readstring: ", ss.str(), " zlib status: ", ret);
 	}
 }
+} // namespace sortmerna

@@ -39,7 +39,12 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 // forward
+
+namespace sortmerna {
+
 class Readfeed;
+class References;
+class Refstats;
 struct Runopts;
 struct Index;
 struct Readstats;
@@ -48,4 +53,10 @@ namespace restart { struct State; }
 
 void align(Readfeed& readfeed, Readstats& readstats, Index& index, KeyValueDatabase& kvdb,
            Runopts& opts, const restart::State* rstate = nullptr);
+/* Align one batch against an already-loaded index part (library mode only). */
+void align_loaded(Readfeed& readfeed, Readstats& readstats,
+                  Index& index, References& refs, Refstats& refstats,
+                  KeyValueDatabase& kvdb, Runopts& opts);
 void denovo_stats(Readfeed& readfeed, Readstats& readstats, KeyValueDatabase& kvdb, Runopts& opts);
+
+} // namespace sortmerna

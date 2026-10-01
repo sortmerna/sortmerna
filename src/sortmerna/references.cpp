@@ -51,6 +51,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  * load to memory the Reference records from a given index part
  * Read the reference file, extract the part's references into an array (vector) of reference objects
  */
+
+namespace sortmerna {
+
 void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refstats & refstats)
 {
 	num = idx_num;
@@ -61,16 +64,14 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 
 	if (!ifs.is_open())
 	{
-		ERR("Could not open file ", opts.indexfiles[idx_num].first);
-		exit(EXIT_FAILURE);
+		SMR_THROW("Could not open file ", opts.indexfiles[idx_num].first);
 	}
 
 	// set the file pointer to the first sequence added to the index for this index file section
 	ifs.seekg(refstats.index_parts_stats_vec[idx_num][idx_part].start_part);
 	if (ifs.fail())
 	{
-		ERR("Could not locate the reference file ", opts.indexfiles[idx_num].first, " used to construct the index");
-		exit(EXIT_FAILURE);
+		SMR_THROW("Could not locate the reference file ", opts.indexfiles[idx_num].first, " used to construct the index");
 	}
 
 	// load references sequences, skipping the empty lines & spaces
@@ -131,8 +132,7 @@ void References::load(uint32_t idx_num, uint32_t idx_part, Runopts & opts, Refst
 		{
 			if (isFastq && count > 3) 
 			{
-				ERR("too many lines (> 4) for FASTQ file");
-				exit(EXIT_FAILURE);
+				SMR_THROW("too many lines (> 4) for FASTQ file");
 			}
 
 			++count; // count the four FASTQ lines
@@ -173,9 +173,7 @@ std::string References::convertChar(int idx)
 			chstr += nt_map[(int)*it];
 		else
 		{
-			ss << "ERROR: string is not in numeric format. Encountered character: " << *it << std::endl;
-			std::cerr << ss.str();
-			exit(EXIT_FAILURE);
+			SMR_THROW("string is not in numeric format. Encountered character: ", *it);
 		}
 	}
 	return chstr;
@@ -199,3 +197,5 @@ void References::unload()
 {
 	buffer.clear(); // TODO: is this enough?
 } // ~References::clear
+
+} // namespace sortmerna

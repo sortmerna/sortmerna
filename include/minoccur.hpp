@@ -42,6 +42,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
  *		  traversal of the universal Levenshtein automaton and the Burst trie is carried out 	  
  *
  **************************************************************************************************************/
+
+namespace sortmerna {
+
 void find_minoccur ( int );
 
 #ifdef WINDOWS
@@ -74,5 +77,7 @@ extern const char map_nt[122];
 extern hashid *kmerf;
 extern hashid *kmerr;
 
+
+} // namespace sortmerna
 #endif
 

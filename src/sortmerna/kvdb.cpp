@@ -43,6 +43,8 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "rocksdb/write_batch.h"
 #include "rocksdb/iterator.h"
 
+namespace sortmerna {
+
 KeyValueDatabase::KeyValueDatabase(std::string const &kvdbPath)
 {
 	// init and open key-value database for read matches
@@ -50,7 +52,8 @@ KeyValueDatabase::KeyValueDatabase(std::string const &kvdbPath)
 	options.compression = rocksdb::kZlibCompression;
 	options.create_if_missing = true;
 	rocksdb::Status s = rocksdb::DB::Open(options, kvdbPath, &kvdb);
-	assert(s.ok());
+	if (!s.ok())
+		SMR_THROW("Failed to open key-value database at ", kvdbPath, ": ", s.ToString());
 }
 
 /*
@@ -129,3 +132,4 @@ void KeyValueDatabase::flush_wal()
 	// every Put issued earlier from any thread is durable on disk.
 	kvdb->FlushWAL(/*sync=*/true);
 }
+} // namespace sortmerna

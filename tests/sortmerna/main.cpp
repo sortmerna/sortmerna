@@ -45,6 +45,8 @@
 #include "references.hpp"
 #include "read.hpp"
 
+using namespace sortmerna;
+
 // forward
 void kvdb_clear();
 

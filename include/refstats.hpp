@@ -43,6 +43,9 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include "indexdb.hpp" // index_parts_stats;
 
 // forward
+
+namespace sortmerna {
+
 struct Readstats;
 struct Runopts;
 
@@ -52,6 +55,7 @@ public:
 	std::vector<uint16_t> num_index_parts; /* number of parts in each index file (index can have multiple parts). see Refstats::load */
 	std::vector<std::vector<index_parts_stats>> index_parts_stats_vec; /* index parts statistics */
 	std::vector<uint64_t> full_ref;   /* corrected size of each reference index (for computing E-value) see Refstats::load */
+	std::vector<uint64_t> full_ref_raw; /* size of each reference index as stored in the .stats file, before the edge-effect correction; independent of the reads */
 	std::vector<uint64_t> full_read;  /* corrected size of reads (for computing E-value) see Refstats::load */
 
 	/* 
@@ -76,3 +80,5 @@ public:
 private:
 	void load(Runopts& opts, Readstats& readstats); // called at construction
 };
+
+} // namespace sortmerna
