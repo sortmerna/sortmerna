@@ -192,6 +192,9 @@ and not advised.
 
 ## C library API
 
+**Experimental:** the C API is new, and it may change in later releases in
+ways that require callers to be updated.
+
 A reentrant C library (`libsmr_api.a`, header `include/smr_api.h`) runs
 SortMeRNA inside another program, without a subprocess:
 

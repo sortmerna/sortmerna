@@ -1,5 +1,11 @@
-C Library API
-=============
+C Library API (experimental)
+============================
+
+.. warning::
+
+   The C API is experimental. It is new in this release, and its
+   functions, types and behaviour may change in later releases in ways
+   that require callers to be updated.
 
 SortMeRNA provides a reentrant C API for embedding rRNA filtering into other
 applications without spawning a subprocess. The API is defined in

@@ -6,6 +6,9 @@
  * through the log callback instead). smr_run() is serialized by a
  * process-level mutex, making it safe to call from multiple threads
  * with independent contexts.
+ *
+ * EXPERIMENTAL: the API is new, and its functions, types and behaviour may
+ * change in later releases in ways that require callers to be updated.
  */
 #ifndef SMR_API_H
 #define SMR_API_H
