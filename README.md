@@ -29,23 +29,12 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 - [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
 
-## What's new in 7.0.0
+## What's new in 7.1.0
 
-### Resume after interruption
+### C API library (experimental)
 
-A sortmerna run that is killed mid-alignment now resumes automatically
-on the next invocation against the same Key-value database (kvdb). There is no `--resume`
-flag: presence of a non-empty kvdb plus matching opts/input fingerprints
-is sufficient. If any alignment-relevant option or input file fingerprint
-has changed since the previous run, sortmerna aborts with a diagnostic
-naming the kvdb so the user can either restore the original inputs or
-wipe the kvdb.
+Adding a C API library (details below). The main functionality is unchanged. The library is non-intrusive and allows for programmatic access to the main Sortmerna functionality.
 
-### Testing & dev
-
-`scripts/run.py test ... --interrupt [N]` exercises the auto-resume
-path by SIGKILLing the binary mid-alignment N times (max 2, default 1)
-and re-launching, then validating the final output normally.
 
 ## Getting Started
 
