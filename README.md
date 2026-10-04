@@ -12,7 +12,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ## Table of Contents
 
-- [What's new in 7.0.0](#whats-new-in-700)
+- [What's new in 7.1.0](#whats-new-in-710)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
