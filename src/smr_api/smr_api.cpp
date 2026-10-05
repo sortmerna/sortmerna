@@ -350,7 +350,7 @@ static std::vector<std::string> build_argv(
 
     args.push_back("--threads");
     args.push_back(std::to_string(cfg.num_threads));
-    args.push_back("--num_alignments");
+    args.push_back("--num-alignments");
     args.push_back(std::to_string(cfg.num_alignments));
 
     /* always produce BLAST and SAM output for structured result extraction */
@@ -364,9 +364,9 @@ static std::vector<std::string> build_argv(
     args.push_back(std::to_string(cfg.match));
     args.push_back("--mismatch");
     args.push_back(std::to_string(cfg.mismatch));
-    args.push_back("--gap_open");
+    args.push_back("--gap-open");
     args.push_back(std::to_string(cfg.gap_open));
-    args.push_back("--gap_ext");
+    args.push_back("--gap-ext");
     args.push_back(std::to_string(cfg.gap_ext));
     args.push_back("-N");
     args.push_back(std::to_string(cfg.score_N));
@@ -384,8 +384,8 @@ static std::vector<std::string> build_argv(
     if (cfg.forward_only) args.push_back("-F");
     if (cfg.reverse_only) args.push_back("-R");
     if (!cfg.best) args.push_back("--no-best");
-    if (cfg.full_search) args.push_back("--full_search");
-    if (cfg.paired) args.push_back("--paired_in");
+    if (cfg.full_search) args.push_back("--full-search");
+    if (cfg.paired) args.push_back("--paired-in");
 
     return args;
 }

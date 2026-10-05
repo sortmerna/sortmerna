@@ -43,6 +43,14 @@ bbhash:
   src: 3rdparty/bbhash # relative to sortmerna
   dist: {{bbhash_dist}} # '--bbhash-dist' or default '3rdparty/bbhash' (setup.py)
 
+cxxopts:
+  note: header-only command line option parser - replaces the hand-rolled argv parser
+  url: https://github.com/jarro2783/cxxopts.git
+  commit: master
+  shallow: true
+  src: 3rdparty/cxxopts # relative to sortmerna
+  dist: {{cxxopts_dist}} # '--cxxopts-dist' or default '3rdparty/cxxopts' (setup.py)
+
 parasail:
   note: SIMD-accelerated pairwise sequence alignment library (replaces SSW)
   url: https://github.com/jeffdaily/parasail.git

@@ -38,6 +38,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 
  // 3rd party
 #include "zlib.h"
+#include "cxxopts.hpp"
 
 #include "version.h"
 #include "build_version.h"
@@ -58,6 +59,7 @@ along with SortMeRNA. If not, see <http://www.gnu.org/licenses/>.
 #include <functional> // std::invoke
 #include <filesystem>
 #include <algorithm>
+#include <iomanip>
 
 
 #ifdef __APPLE__
@@ -72,13 +74,25 @@ namespace sortmerna {
 void about();
 //void help();
 std::string get_user_home(); // util.cpp
-std::string trim_leading_dashes(std::string const& name); // util.cpp
 std::string get_basename(const std::string& file); // util.cpp
 std::streampos filesize(const std::string& file); // util.cpp
 
 Runopts::Runopts(int argc, char** argv, bool dryrun)
 {
 	process(argc, argv, dryrun);
+}
+
+/*
+ * Guard for the handlers that convert the value with stoi/stod and have no
+ * meaningful behaviour without one. An option name given with no value yields
+ * an empty string (see normalize_argv), so without this the conversion would
+ * throw std::invalid_argument with no indication of which option is at fault.
+ */
+static void require_value(const std::string& opt, const std::string& val, const std::string& example)
+{
+	if (val.empty()) {
+		SMR_THROW("Option '--", opt, "' requires a value e.g. '--", opt, " ", example, "'");
+	}
 }
 
 /* 
@@ -279,12 +293,6 @@ void Runopts::opt_other(const std::string &file)
 	}
 	is_other = true;
 } // ~Runopts::opt_other
-
-void Runopts::opt_log(const std::string& val)
-{
-	if (is_log)
-		WARN("'--", OPT_LOG, "' is deprecated. True by default.");
-} // ~Runopts::optLog
 
 void Runopts::opt_denovo_otu(const std::string& val)
 {
@@ -601,6 +609,7 @@ void Runopts::opt_num_alignments(const std::string &val)
 
 void Runopts::opt_edges(const std::string &val)
 {
+	require_value(OPT_EDGES, val, "4");
 	// --edges is already set
 	if (edges_set)
 	{
@@ -643,6 +652,7 @@ void Runopts::opt_SQ(const std::string &val)
 
 void Runopts::opt_passes(const std::string &val)
 {
+	require_value(OPT_PASSES, val, "18,9,3");
     auto countpass = mopt.count(OPT_PASSES);
 	if (countpass > 1)
 	{
@@ -726,12 +736,6 @@ void Runopts::opt_version(const std::string &val)
 	throw smr_exit_requested("--version");
 } // ~Runopts::opt_version
 
-void Runopts::opt_unknown(char **argv, int &narg, char * opt)
-{
-	print_help();
-	SMR_THROW(" : option --" , opt , " not recognized");
-} // ~Runopts::opt_unknown
-
 void Runopts::opt_e(const std::string &val)
 {
 	std::stringstream ss;
@@ -786,8 +790,15 @@ void Runopts::opt_h(const std::string &val)
 {
 	about();
 	print_help();
-	throw smr_exit_requested("--help");
+	throw smr_exit_requested("-h");
 } // ~Runopts::opt_h
+
+void Runopts::opt_help(const std::string &val)
+{
+	about();
+	print_help_full();
+	throw smr_exit_requested("--help");
+} // ~Runopts::opt_help
 
 void Runopts::opt_v(const std::string &val)
 {
@@ -796,6 +807,7 @@ void Runopts::opt_v(const std::string &val)
 
 void Runopts::opt_N(const std::string &val)
 {
+	require_value(OPT_N, val, "0");
 	if (!match_ambiguous_N)
 	{
 		match_ambiguous_N = true;
@@ -864,59 +876,15 @@ void Runopts::opt_threads(const std::string &val)
 } // ~Runopts::opt_threads
 
 
-void Runopts::opt_thpp(const std::string &val)
-{
-	if (val.size() == 0)
-	{
-		SMR_THROW(": --thpp [INT:INT] requires 2 integers for number of Read:Processor threads (ex. --thpp 1:1)");
-	}
-
-	std::istringstream strm(val);
-	std::string tok;
-	for (int i = 0; std::getline(strm, tok, ':'); ++i)
-	{
-		switch (i)
-		{
-		case 0: num_read_thread_pp = std::stoi(tok); break;
-		case 1: num_proc_thread_pp = std::stoi(tok); break;
-		}
-	}
-} // ~Runopts::opt_threads_pp
-
-
-void Runopts::opt_threp(const std::string &val)
-{
-	if (val.size() == 0)
-	{
-		SMR_THROW(": --threp [INT:INT] requires 2 integers for number of Read:Processor threads (ex. --threp 1:1)");
-	}
-
-	std::istringstream strm(val);
-	std::string tok;
-	for (int i = 0; std::getline(strm, tok, ':'); ++i)
-	{
-		switch (i)
-		{
-		case 0: num_read_thread_rep = std::stoi(tok); break;
-		case 1: num_proc_thread_rep = std::stoi(tok); break;
-		}
-	}
-} // ~Runopts::opt_threads
-
 void Runopts::opt_dbg_put_db(const std::string& val)
 {
 	is_dbg_put_kvdb = true;
 }
 
-void Runopts::opt_default(const std::string& opt)
-{
-	print_help();
-	SMR_THROW("Option: '", opt, "' is not recognized");
-} // ~Runopts::opt_default
-
   /* Processing task */
 void Runopts::opt_task(const std::string &val)
 {
+	require_value(OPT_TASK, val, "4");
 	int task_num = std::stoi(val);
 
 	if (task_num > 5)
@@ -937,6 +905,7 @@ void Runopts::opt_task(const std::string &val)
 
 void Runopts::opt_dbg_level(const std::string& val)
 {
+	require_value(OPT_DBG_LEVEL, val, "1");
 	dbg_level = std::stoi(val);
 	if (dbg_level > 2) {
 		INFO("provided value: ", dbg_level, " for '", OPT_DBG_LEVEL, "' is too high. Using the currently highest execution trace verbosity of 2");
@@ -946,6 +915,7 @@ void Runopts::opt_dbg_level(const std::string& val)
 
 void Runopts::opt_flush_delay(const std::string& val)
 {
+	require_value(OPT_FLUSH_DELAY, val, "60");
 	int v = std::stoi(val);
 	if (v <= 0) {
 		SMR_THROW("'", OPT_FLUSH_DELAY, "' must be a positive integer (seconds); got: ", val);
@@ -1003,12 +973,6 @@ void Runopts::opt_readb(const std::string& path) {
 		readb_dir = path;
 		INFO("Using Reads DB dir: [", std::filesystem::absolute(readb_dir), " as specified");
 	}
-}
-
-// indexing options
-void Runopts::opt_tmpdir(const std::string &val)
-{
-	INFO("TODO: deprecated indexing option: " , help_tmpdir , " To be removed.");
 }
 
 void Runopts::opt_interval(const std::string &val)
@@ -1100,6 +1064,7 @@ void Runopts::opt_max_pos(const std::string &val)
 
 void Runopts::opt_readfeed(const std::string& val)
 {
+	require_value(OPT_READFEED, val, "0");
 	FEED_TYPE ftype = static_cast<FEED_TYPE>(std::stoi(val));
 
 	if (ftype > FEED_TYPE::MAX)
@@ -1358,8 +1323,6 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		SMR_THROW("Missing required command options");
 	}
 
-	INFO("=== Options processing starts ... ===");
-
 	// store the command line
 	for (int i = 0; i < argc; i++)
 	{
@@ -1367,83 +1330,91 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 		cmdline.append(" ");
 	}
 
-	std::string flag;
+	// 'sortmerna <option> -h' - help on a single option. Handled before anything
+	// else because the bare option name is not a command line option itself.
+	if (print_single_option_help(argc, argv)) {
+		throw smr_exit_requested("single option help");
+	}
 
-	// parse cmd options and store into 'mopt' multimap
-	for (auto i = argc - argc, flag_count = 0; i != argc; ++i)
-	{
-		bool is_opt = is_option(*(argv + i));
-		if (is_opt && flag_count == 0) {
-			std::cout << "Found option: " << *(argv + i) << std::endl;
-			if (i == argc - 1) {
-				flag = trim_leading_dashes(*(argv + i));
-				mopt.emplace(std::make_pair(flag, "")); // add the last boolean flag
-			}
-			++flag_count;
-			continue;
-		}
+	// Rewrite argv into the form cxxopts accepts, then let cxxopts tokenize it.
+	// Every option is registered with an implicit value so that cxxopts never
+	// consumes the token following an option name - normalize_argv has already
+	// attached the values with '='. That keeps values that look like options
+	// (e.g. '--mismatch -3') intact.
+	auto norm = normalize_argv(argc, argv);
+	std::vector<const char*> norm_argv;
+	norm_argv.reserve(norm.size());
+	for (const auto& tok : norm)
+		norm_argv.push_back(tok.c_str());
 
-		if (is_opt && flag_count == 1) {
-			std::cout << "Previous option: " << *(argv + i - 1) << " is Boolean. Setting to True" << std::endl;
-			std::cout << "Found option: " << *(argv + i) << std::endl;
-			flag = trim_leading_dashes(*(argv + i - 1));
-			mopt.emplace(std::make_pair(flag, "")); // previous boolean option
-			if (i == argc - 1) {
-				flag = trim_leading_dashes(*(argv + i));
-				mopt.emplace(std::make_pair(flag, "")); // add the last boolean option
-			}
-			continue;
-		}
+	// The description and type are registered too, even though the help is
+	// rendered from the 'options' table rather than by cxxopts (it has no
+	// per-option help API and cannot express the required/default columns).
+	// That keeps 'cxx.help()' usable as a fallback.
+	cxxopts::Options cxx(argv[0], "");
+	cxx.set_width(100);
+	for (const auto& opt : options) {
+		cxx.add_options(opt_category_name_map.at(opt.cat))(
+			opt.name, opt.help,
+			cxxopts::value<std::vector<std::string>>()->implicit_value(""), opt.type);
+	}
 
-		// value without a preceeding option argument
-		if (!is_opt && flag_count == 0) {
-			std::cout << "Found value: " << *(argv + i) << std::endl;
-			if (i != 0) {
-				SMR_THROW("the value provided without a flag/option. Note that e.g. '-", 
-				OPT_REF, "' or '-", OPT_READS,
-				"' have to be used with Each file. See 'sortmerna -h'");
-			}
-			continue;
+	try {
+		auto parsed = cxx.parse(static_cast<int>(norm_argv.size()), norm_argv.data());
+		// 'arguments()' yields only the options actually given, in command line
+		// order, one entry per occurrence. Feeding them into 'mopt' re-sorts them
+		// alphabetically, which is the option processing order the handlers expect.
+		for (const auto& kv : parsed.arguments())
+			mopt.emplace(kv.key(), kv.value());
+		for (const auto& extra : parsed.unmatched()) {
+			SMR_THROW("Unexpected argument: '", extra, "'. Note that e.g. '-", OPT_REF,
+				"' or '-", OPT_READS, "' have to be used with Each file. See 'sortmerna -h'");
 		}
-
-		if (!is_opt && flag_count == 1) {
-			std::cout << "Found value: " << *(argv + i) << " of previous option: " << *(argv + i - 1) << std::endl;
-			flag = trim_leading_dashes(*(argv + i - 1));
-			mopt.emplace(std::make_pair(flag, *(argv + i)));
-			--flag_count;
-			continue;
-		}
-	} // ~for parsing cmd options
+	}
+	catch (const cxxopts::exceptions::exception& e) {
+		SMR_THROW(e.what(), ". See 'sortmerna -h'");
+	}
 
 	// is this only Help options?
-	bool is_help_opt = mopt.count(OPT_H) + mopt.count(OPT_VERSION) > 0;
+	bool is_help_opt = mopt.count(OPT_H) + mopt.count(OPT_HELP) + mopt.count(OPT_VERSION) > 0;
+
+	// Answer help and version before the processing trace starts, so that the
+	// output is not preceded by diagnostics. All three handlers throw
+	// smr_exit_requested i.e. nothing below this point runs.
+	if (is_help_opt)
+	{
+		for (const auto& opt : mopt) {
+			if (opt.first == OPT_H || opt.first == OPT_HELP || opt.first == OPT_VERSION) {
+				std::invoke(find_opt(opt.first)->fn, this, opt.second);
+			}
+		}
+	}
+
+	INFO("=== Options processing starts ... ===");
 
 	if (!is_help_opt)
 	{
 		// check required options were provided
-		for (auto opt : options)
+		for (const auto& opt : options)
 		{
-			if (std::get<3>(opt))
+			if (opt.required && mopt.count(opt.name) == 0)
 			{
-				if (mopt.count(std::get<0>(opt)) == 0)
-				{
-                    // NOTE: option-processing (incl. opt_task) hasn't run yet, so the
-                    // 'task' member still holds its default. Read the raw value from mopt.
-                    auto task_it = mopt.find(OPT_TASK);
-                    bool is_index_only = (task_it != mopt.end())
-                        && (std::stoi(task_it->second) == static_cast<int>(TASK::index_only));
-                    if (std::get<0>(opt) == OPT_READS && is_index_only) {
-                        // reads are not required when only building the index
-                        continue;
-                    }
-                    else if (std::get<0>(opt) == OPT_READS) {
-                        SMR_THROW("Missing required flag: ", std::get<0>(opt),
-                            ". Use '", OPT_TASK, "' option with value '", TASK::index_only,
-                            "' if you intend to build index without processing reads. See 'sortmerna -h' for details.");
-                    }
-                    else {
-                        SMR_THROW("Missing required flag: ", std::get<0>(opt), ". See 'sortmerna -h' for details.");
-                    }
+				// NOTE: option-processing (incl. opt_task) hasn't run yet, so the
+				// 'task' member still holds its default. Read the raw value from mopt.
+				auto task_it = mopt.find(OPT_TASK);
+				bool is_index_only = (task_it != mopt.end())
+					&& (std::stoi(task_it->second) == static_cast<int>(TASK::index_only));
+				if (opt.name == OPT_READS && is_index_only) {
+					// reads are not required when only building the index
+					continue;
+				}
+				else if (opt.name == OPT_READS) {
+					SMR_THROW("Missing required flag: ", opt.name,
+						". Use '", OPT_TASK, "' option with value '", TASK::index_only,
+						"' if you intend to build index without processing reads. See 'sortmerna -h' for details.");
+				}
+				else {
+					SMR_THROW("Missing required flag: ", opt.name, ". See 'sortmerna -h' for details.");
 				}
 			}
 		}
@@ -1465,22 +1436,12 @@ void Runopts::process(int argc, char**argv, bool dryrun)
 	{
 		INFO("Processing option: " , opt.first , " with value: " , opt.second);
 
-		bool has_opt = false;
-		for (auto optx : options)
-		{
-			if (std::get<0>(optx) == opt.first)
-			{
-				// call processing function for the given option
-				std::invoke(std::get<5>(optx), this, opt.second);
-				has_opt = true;
-			}
+		// cxxopts rejects unknown names, so the lookup always succeeds
+		const OptDesc* desc = find_opt(opt.first);
+		if (desc == nullptr) {
+			SMR_THROW("Option: '", opt.first, "' is not recognized");
 		}
-
-		if (!has_opt) 
-		{
-			// passed option is not recognized
-			opt_default(opt.first);
-		}
+		std::invoke(desc->fn, this, opt.second);
 	}
 
 	INFO("=== Options processing done ===\n");
@@ -1726,128 +1687,318 @@ std::string Runopts::to_bin_string()
 	return "TODO";
 }
 
-void Runopts::print_help()
+/*
+ * Map a user-supplied option name to its canonical spelling.
+ * Dashes and underscores are interchangeable; canonical form uses dashes.
+ * Case is significant - '-N' and '-n' are not the same option.
+ */
+static std::string canonicalize_opt_name(const std::string& name)
 {
-	std::stringstream ss;
-	std::string req;
-	std::string pfx;
+	std::string canon(name);
+	std::replace(canon.begin(), canon.end(), '_', '-');
+	return canon;
+}
 
-	bool set_req = false;
-	bool set_com = false;
-	bool set_otu = false;
-	bool set_adv = false;
-	bool set_idx = false;
-	bool set_hlp = false;
-	bool set_dev = false;
+const Runopts::OptDesc* Runopts::find_opt(const std::string& name) const
+{
+	auto canon = canonicalize_opt_name(name);
+	for (const auto& opt : options) {
+		if (opt.name == canon)
+			return &opt;
+	}
+	return nullptr;
+}
 
-	std::string HDR_REQ = "[REQUIRED]";
-	std::string HDR_COM = "[COMMON]";
-	std::string HDR_OTU = "[OTU_PICKING]";
-	std::string HDR_ADV = "[ADVANCED]";
-	std::string HDR_IDX = "[INDEXING]";
-	std::string HDR_HLP = "[HELP]";
-	std::string HDR_DEV = "[DEVELOPER]";
+/*
+ * Greedy word wrap. Returns the lines without any indentation.
+ */
+static std::vector<std::string> wrap_text(const std::string& text, std::size_t width)
+{
+	std::vector<std::string> lines;
+	std::istringstream iss(text);
+	std::string word;
+	std::string line;
+	while (iss >> word) {
+		if (line.empty()) {
+			line = word;
+		}
+		else if (line.size() + 1 + word.size() <= width) {
+			line += " " + word;
+		}
+		else {
+			lines.push_back(line);
+			line = word;
+		}
+	}
+	if (!line.empty())
+		lines.push_back(line);
+	if (lines.empty())
+		lines.emplace_back("");
+	return lines;
+}
 
-	// Type and Defaults are underlined
-	// 'Required' is green
-	// Options are in Bold
-	// Name Type Required Descr Default
-	//  20   12     10     47     20
-	int name_w  = 18;
-	int type_w  = 12;
-	//int req_w   = 9;
-	//int descr_w = 47; // description width
-	//int def_w = 20;
-	ss << help_header << std::endl;
-	for (auto opt : options)
-	{
-		std::string space_0 = "    "; // 4 chars
-		std::string space_1 = "";
-		std::string space_2 = "";
+/*
+ * Rewrite argv into the form cxxopts accepts:
+ *   - any number of leading dashes is reduced to one for single-character
+ *     names and two otherwise i.e. '-ref' -> '--ref' and '--N' -> '-N'
+ *   - underscores in option names become dashes i.e. '--paired_out' -> '--paired-out'
+ *   - a value given as a separate token is attached with '=' so that cxxopts
+ *     never has to decide whether the next token is a value. That keeps values
+ *     looking like options intact e.g. '--mismatch -3' -> '--mismatch=-3'
+ * Tokens that do not name a known option are passed through so that cxxopts
+ * reports them, either as an unrecognised option or as an unmatched argument.
+ */
+std::vector<std::string> Runopts::normalize_argv(int argc, char** argv) const
+{
+	std::vector<std::string> out;
+	out.reserve(static_cast<std::size_t>(argc));
+	if (argc > 0)
+		out.emplace_back(argv[0]);
 
-		req = std::get<3>(opt) ? "Required" : "Optional";
-		pfx = std::get<0>(opt).size() > 1 ? "--" : "-";
-		switch (std::get<2>(opt))
-		{
-		case OPT_CATEGORY::COMMON:
-			if (std::get<3>(opt))
-			{
-				if (!set_req) {
-					ss << space_0 << HDR_REQ << std::endl;
-					set_req = true;
-				}
-			}
-			else
-			{
-				if (!set_com)
-				{
-					ss << std::endl << space_0 << HDR_COM << std::endl;
-					set_com = true;
-				}
-			}
-			break;
-		case OPT_CATEGORY::ADVANCED: 
-			if (!set_adv) {
-				ss << std::endl << space_0 << HDR_ADV << std::endl;
-				set_adv = true;
-			}
-			break;
-		case OPT_CATEGORY::OTU_PICKING:
-			if (!set_otu) {
-				ss << std::endl << space_0 << HDR_OTU << std::endl;
-				set_otu = true;
-			}
-			break;
-		case OPT_CATEGORY::HELP:
-			if (!set_hlp) {
-				ss << std::endl << space_0 << HDR_HLP << std::endl;
-				set_hlp = true;
-			}
-			break;
-		case OPT_CATEGORY::INDEXING:
-			if (!set_idx) {
-				ss << std::endl << space_0 << HDR_IDX << std::endl;
-				set_idx = true;
-			}
-			break;
-		case OPT_CATEGORY::DEVELOPER:
-			if (!set_dev) {
-				ss << std::endl << space_0 << HDR_DEV << std::endl;
-				set_dev = true;
-			}
+	// Split a token into an option descriptor and, if present, an '=' value.
+	auto as_option = [this](const std::string& tok, std::string& value, bool& has_value) -> const OptDesc* {
+		has_value = false;
+		value.clear();
+		if (tok.size() < 2 || tok[0] != '-')
+			return nullptr;
+		auto pos = tok.find_first_not_of('-');
+		if (pos == std::string::npos)
+			return nullptr; // '-', '--', '---' ...
+		std::string body = tok.substr(pos);
+		auto eq = body.find('=');
+		if (eq != std::string::npos) {
+			has_value = true;
+			value = body.substr(eq + 1);
+			body = body.substr(0, eq);
+		}
+		return find_opt(body);
+	};
+
+	// Is the token an option rather than a value? True for a known option name,
+	// and for a dashed multi-character name i.e. a misspelled option. A dashed
+	// single character that is not an option is a negative number e.g. '-3'.
+	auto looks_like_option = [this](const std::string& tok) -> bool {
+		if (tok.size() < 2 || tok[0] != '-')
+			return false;
+		auto pos = tok.find_first_not_of('-');
+		if (pos == std::string::npos)
+			return true; // '--', '---' ...
+		std::string body = tok.substr(pos);
+		auto eq = body.find('=');
+		if (eq != std::string::npos)
+			body = body.substr(0, eq);
+		return find_opt(body) != nullptr || body.size() > 1;
+	};
+
+	for (int i = 1; i < argc; ++i) {
+		std::string tok(argv[i]);
+		if (tok == "--") { // end of options - pass the remainder through verbatim
+			for (; i < argc; ++i)
+				out.emplace_back(argv[i]);
 			break;
 		}
 
-		int space_1_size = name_w - std::get<0>(opt).size() - pfx.size(); // name
-		int space_2_size = type_w - std::get<1>(opt).size(); // type
-		for (int cnt = 0; cnt < space_1_size; ++cnt)
-			space_1 += " ";
-		for (int cnt = 0; cnt < space_2_size; ++cnt)
-			space_2 += " ";
+		std::string value;
+		bool has_value = false;
+		const OptDesc* desc = as_option(tok, value, has_value);
 
-		ss << space_0 << pfx << std::get<0>(opt) << space_1 << std::get<1>(opt) << space_2 << req << "  " << std::get<4>(opt) << std::endl;
+		if (desc == nullptr) {
+			auto pos = tok.find_first_not_of('-');
+			if (tok.size() > 1 && tok[0] == '-' && pos != std::string::npos) {
+				// an unrecognised option name. Normalize only the dash prefix so
+				// that cxxopts names it in full in the resulting error.
+				std::string body = tok.substr(pos);
+				out.push_back((body.size() > 1 ? "--" : "-") + body);
+			}
+			else {
+				out.push_back(tok); // a value or a stray argument
+			}
+			continue;
+		}
+
+		const std::string pfx = desc->name.size() > 1 ? "--" : "-";
+		if (!has_value && desc->arg != OptArg::NONE && i + 1 < argc
+			&& !looks_like_option(argv[i + 1]))
+		{
+			// the following token is this option's value
+			value = argv[i + 1];
+			has_value = true;
+			++i;
+		}
+		out.push_back(has_value ? pfx + desc->name + "=" + value : pfx + desc->name);
+	}
+	return out;
+}
+
+/*
+ * 'sortmerna <option> -h' | 'sortmerna -h <option>' - help on a single option.
+ * Recognized when a help flag is given together with exactly one other token
+ * that names an option. The name may be bare ('index') or dashed ('--index').
+ */
+bool Runopts::print_single_option_help(int argc, char** argv)
+{
+	if (argc != 3)
+		return false;
+
+	const OptDesc* subject = nullptr;
+	bool has_help_flag = false;
+
+	for (int i = 1; i < argc; ++i) {
+		std::string tok(argv[i]);
+		if (tok.empty())
+			return false;
+		bool is_dashed = tok[0] == '-';
+		auto pos = tok.find_first_not_of('-');
+		std::string body = (is_dashed && pos != std::string::npos) ? tok.substr(pos) : tok;
+		auto canon = canonicalize_opt_name(body);
+		if (is_dashed && (canon == OPT_H || canon == OPT_HELP)) {
+			has_help_flag = true;
+			continue;
+		}
+		const OptDesc* desc = find_opt(body);
+		if (desc == nullptr)
+			return false;
+		subject = desc;
+	}
+
+	if (!has_help_flag || subject == nullptr)
+		return false;
+
+	print_option_help(*subject);
+	return true;
+}
+
+/*
+ * '-h' - the compact option list.
+ */
+void Runopts::print_help()
+{
+	const std::size_t indent = 4;
+	const std::size_t name_w = 20;
+	const std::size_t type_w = 14;
+	const std::size_t descr_w = 60;
+	const std::size_t descr_col = indent + name_w + type_w;
+
+	std::stringstream ss;
+	ss << help_header << std::endl;
+
+	std::string cur_group;
+	for (const auto& opt : options) {
+		std::string group = opt.required ? "[REQUIRED]" : "[" + opt_category_name_map.at(opt.cat) + "]";
+		if (group != cur_group) {
+			if (!cur_group.empty())
+				ss << std::endl;
+			ss << std::string(indent, ' ') << group << std::endl;
+			cur_group = group;
+		}
+
+		std::string name = (opt.name.size() > 1 ? "--" : "-") + opt.name;
+		std::string descr = opt.help;
+		if (!opt.def.empty())
+			descr += " [" + opt.def + "]";
+
+		auto lines = wrap_text(descr, descr_w);
+		ss << std::string(indent, ' ')
+			<< std::left << std::setw(static_cast<int>(name_w)) << name
+			<< std::setw(static_cast<int>(type_w)) << opt.type
+			<< lines[0] << std::endl;
+		for (std::size_t i = 1; i < lines.size(); ++i)
+			ss << std::string(descr_col, ' ') << lines[i] << std::endl;
 	}
 	std::cout << ss.str();
 }
 
-/**
- * check if the argument is an option name like e.g. '--max_read_len' and not an option value like '10000'
+/*
+ * '--help' - the full reference, including the extended descriptions.
  */
-bool Runopts::is_option(const std::string& opt)
+void Runopts::print_help_full()
 {
-	bool is_opt = false;
-	if (opt.size() > 0 && opt[0] == '-') {
-		auto pos = opt.find_first_not_of('-');
-        // strip the dash prefix of an option i.e. '--opt' -> 'opt'
-		auto opt_no_dash = std::string::npos != pos ? opt.substr(pos) : opt;
-		for (auto& optt: options) {
-			if (opt_no_dash == std::get<0>(optt)) {
-				is_opt = true;
-				break;
-			}
+	const std::size_t indent = 4;
+	const std::size_t name_w = 20;
+	const std::size_t type_w = 14;
+	const std::size_t req_w = 10;
+	const std::size_t descr_w = 56;
+	const std::size_t descr_col = indent + name_w + type_w + req_w;
+	const std::size_t body_indent = indent + 3;
+
+	std::stringstream ss;
+	ss << help_header << std::endl;
+
+	std::string cur_group;
+	for (const auto& opt : options) {
+		std::string group = opt.required ? "[REQUIRED]" : "[" + opt_category_name_map.at(opt.cat) + "]";
+		if (group != cur_group) {
+			ss << std::endl << std::string(indent, ' ') << group << std::endl << std::endl;
+			cur_group = group;
 		}
+
+		std::string name = (opt.name.size() > 1 ? "--" : "-") + opt.name;
+		auto lines = wrap_text(opt.help, descr_w);
+		ss << std::string(indent, ' ')
+			<< std::left << std::setw(static_cast<int>(name_w)) << name
+			<< std::setw(static_cast<int>(type_w)) << opt.type
+			<< std::setw(static_cast<int>(req_w)) << (opt.required ? "Required" : "Optional")
+			<< lines[0] << std::endl;
+		for (std::size_t i = 1; i < lines.size(); ++i)
+			ss << std::string(descr_col, ' ') << lines[i] << std::endl;
+
+		if (!opt.def.empty())
+			ss << std::string(descr_col, ' ') << "default: " << opt.def << std::endl;
+
+		if (!opt.help_long.empty()) {
+			ss << std::endl;
+			std::istringstream body(opt.help_long);
+			std::string line;
+			while (std::getline(body, line))
+				ss << std::string(body_indent, ' ') << line << std::endl;
+		}
+		ss << std::endl;
 	}
-	return is_opt;
+	std::cout << ss.str();
+}
+
+/*
+ * 'sortmerna <option> -h' - everything known about one option.
+ */
+void Runopts::print_option_help(const OptDesc& opt)
+{
+	std::string name = (opt.name.size() > 1 ? "--" : "-") + opt.name;
+	// the underscore spelling is accepted too, but is not the canonical one
+	std::string alias(opt.name);
+	std::replace(alias.begin(), alias.end(), '-', '_');
+
+	std::stringstream ss;
+	ss << std::endl;
+	ss << "  Option:    " << name << std::endl;
+	if (alias != opt.name)
+		ss << "  Also:      " << (opt.name.size() > 1 ? "--" : "-") << alias
+		   << "  (and the single-dash forms '-" << opt.name << "', '-" << alias << "')" << std::endl;
+	else if (opt.name.size() > 1)
+		ss << "  Also:      -" << opt.name << "  (one or two leading dashes)" << std::endl;
+	ss << "  Type:      " << opt.type;
+	switch (opt.arg) {
+	case OptArg::NONE:     ss << "  (flag, takes no value)"; break;
+	case OptArg::REQUIRED: ss << "  (value required)"; break;
+	case OptArg::OPTIONAL: ss << "  (value optional)"; break;
+	}
+	ss << std::endl;
+	ss << "  Category:  " << (opt.required ? "REQUIRED" : opt_category_name_map.at(opt.cat)) << std::endl;
+	if (!opt.def.empty())
+		ss << "  Default:   " << opt.def << std::endl;
+	ss << std::endl;
+
+	for (const auto& line : wrap_text(opt.help, 76))
+		ss << "  " << line << std::endl;
+
+	if (!opt.help_long.empty()) {
+		ss << std::endl;
+		std::istringstream body(opt.help_long);
+		std::string line;
+		while (std::getline(body, line))
+			ss << "  " << line << std::endl;
+	}
+	ss << std::endl;
+	std::cout << ss.str();
 }
 
   /*! @fn welcome()
