@@ -46,6 +46,7 @@ import ctypes
 import random
 import subprocess
 import platform
+import tempfile
 import re
 import time
 import difflib
@@ -148,6 +149,11 @@ SAMF    = None
 KVDB_DIR = None
 IDX_DIR  = None
 
+# C library API tests. Unlike the jinja driven tests these are registered with
+# ctest (tests/smr_api/CMakeLists.txt) and run from the build tree.
+API_ALIAS = 'api'  # 'run.py test api' selects all of them
+API_TESTS = ('smr_api_smoke', 'smr_api_bundle_link')
+
 def is_windows():
     return sys.platform.startswith("win")
 
@@ -199,6 +205,95 @@ def run_test(cmd:list, cwd:str=None, capture:bool=False) -> tuple[int, list[str]
     print(f"{ST} run time: {rt}")
     return rcode, outl, errl
 #END cmake_run
+
+def run_api_tests(names:list, args:Namespace) -> list[dict]:
+    '''
+    run the C library API tests (tests/smr_api) through ctest.
+
+    These differ from the jinja driven tests: they are CMake registered binaries
+    living in the build tree, and they carry their golden and data directories as
+    compile time definitions, so they need neither '--smr-exe' nor '--data-dir'
+    nor a workdir. What they do need is a build directory and, since the
+    generator is Ninja Multi-Config, a configuration.
+
+    Nothing is built here - a missing or stale build tree is reported rather than
+    fixed. One ctest call per test, so that each gets its own row in the batch
+    summary.
+
+    args:
+      - names  ctest test names to run, a subset of API_TESTS
+      - args   arguments produced by argparse package
+    returns:
+      one result record per name, in the shape the batch summary expects
+    '''
+    ST = '[run.run_api_tests]'
+    if not names:
+        return []
+
+    build_dir = Path(args.build_dir) if getattr(args, 'build_dir', None) \
+                else Path(__file__).parent.parent / 'build'
+    btype = (getattr(args, 'btype', None) or 'release').lower()
+    config = 'Debug' if btype == 'debug' else 'Release'
+
+    # verify the prerequisites before running anything, so that the whole batch
+    # fails with one actionable message rather than N cryptic ctest errors
+    err = ''
+    if not shutil.which('ctest'):
+        err = (f'{ST} \'ctest\' not found on the PATH. It is installed with CMake'
+               f' - ensure the build environment is activated')
+    elif not (build_dir / 'CTestTestfile.cmake').exists():
+        err = (f'{ST} no ctest configuration in {build_dir}. Build first e.g.'
+               f' \'python3 setup.py sortmerna --cmake-preset LIN_{btype}\','
+               f' or point at another build tree with \'--build-dir\'')
+    if err:
+        print(err)
+        return [dict(name=nm, status='FAIL', duration=0.0, exit_code=1, error=err)
+                for nm in names]
+
+    print(f'{ST} using build dir {build_dir} configuration {config}')
+
+    results = []
+    # Tests are selected by exact name through a list file. The alternative,
+    # '-R', takes a regular expression, so an exact match means anchoring the
+    # name into '^name$' and escaping it - regex metacharacters on the command
+    # line buying nothing, since the names are known and fixed.
+    fd, listf = tempfile.mkstemp(prefix='smr_ctest_', suffix='.txt', text=True)
+    os.close(fd)
+    try:
+        for name in names:
+            t_start = time.time()
+            status, err_excerpt = 'PASS', ''
+            with open(listf, 'w') as _lf:
+                _lf.write(f'{name}\n')
+            # '--no-tests=error' turns a test that is not registered, i.e. a
+            # tree configured without WITH_TESTS or not built for this
+            # configuration, into a failure. Without it ctest exits 0 on
+            # 'No tests were found'.
+            # '-V' streams the test output as it is produced. smr_api_smoke
+            # runs for ~3 min printing a line per case; '--output-on-failure'
+            # would buffer all of it, leaving the terminal silent meanwhile -
+            # indistinguishable from a hang.
+            # '--test-dir' rather than run_test's cwd, which is only honoured
+            # when the directory does not exist.
+            cmd = ['ctest', '--test-dir', str(build_dir), '-C', config,
+                   '--tests-from-file', listf, '--no-tests=error', '-V']
+            rcode, _, _ = run_test(cmd)
+            if rcode:
+                status = 'FAIL'
+                err_excerpt = f'ctest exited with rcode={rcode}'
+                print(f'{ST} test {name} FAILED: {err_excerpt}')
+            results.append(dict(name=name,
+                                status=status,
+                                duration=time.time() - t_start,
+                                exit_code=rcode,
+                                error=err_excerpt))
+            if status == 'FAIL' and getattr(args, 'stop_on_fail', False):
+                print(f'{ST} --stop-on-fail set; aborting batch after {name}')
+                break
+    finally:
+        os.unlink(listf)
+    return results
+#END run_api_tests
 
 def run_with_interrupts(cmd:list,
                         num_interrupts:int,
@@ -1938,8 +2033,13 @@ if __name__ == "__main__":
       - python scripts/run.py test -n t12 -f process_otu --validate-only -d 2
       - python scripts/run.py test -n t0 -f dbg_blast --validate-only
       - python /media/sf_a01_code/sortmerna/scripts/run.py -n t6 --envn LNX_VBox_Ubuntu_1804
-      - python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py -n t0 --winhome /mnt/c/Users/biocodz [--capture]  
+      - python /mnt/c/Users/biocodz/a01_code/sortmerna/tests/run.py -n t0 --winhome /mnt/c/Users/biocodz [--capture]
                                                                             |_ on WSL
+
+      C library API tests. These run through ctest from the build tree, so they take
+      '--build-dir' and '--btype' instead of '--smr-exe' and '--data-dir':
+      - python scripts/run.py test api [--build-dir build] [--btype release|debug]
+      - python scripts/run.py test smr_api_bundle_link   |_ a single one, by its ctest name
     '''
     ST = '[run.py:__main__]'
     is_opts_ok = True
@@ -1990,6 +2090,8 @@ if __name__ == "__main__":
     p5.add_argument('-v', '--validate-only', action="store_true", help='Only perform validation. Assumes aligement already done')
     p5.add_argument('-f', '--func', dest='func', help='function to run: process_otu | ')
     p5.add_argument('--btype', dest='btype', default='release', help = 'Build type: release | debug')
+    p5.add_argument('--build-dir', dest='build_dir',
+                    help='CMake build directory holding the C API tests (default: <repo>/build)')
     p5.add_argument('--pt_smr', dest='pt_smr', default='t1', help = 'Sortmerna Linkage type t1 | t2 | t3')
     p5.add_argument('--winhome', dest='winhome', help='when running on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     p5.add_argument('--capture', action="store_true", help='Capture output. By default prints to stdout')
@@ -2072,6 +2174,9 @@ if __name__ == "__main__":
         ret = {}
         tlist = []
         for nm in args.name.replace(',', ' ').split():
+            if nm == API_ALIAS:
+                tlist.extend(API_TESTS)
+                continue
             val = _presets.get(nm.replace('-', '_'))
             if isinstance(val, str):
                 tlist.extend(x.strip() for x in val.split(',') if x.strip())
@@ -2079,12 +2184,23 @@ if __name__ == "__main__":
                 tlist.append(nm)
 
         print(f'{ST} number of tests: {len(tlist)}')
+
+        # the C API tests go to ctest, not to a jinja template driving an
+        # installed sortmerna, so they are run separately. Their results join
+        # the same list and so share the batch summary.
+        api_tlist = [t for t in tlist if t in API_TESTS]
+        tlist     = [t for t in tlist if t not in API_TESTS]
+        n_requested = len(api_tlist) + len(tlist)
+
         # Snapshot args once so preset values applied for test N don't leak into test N+1
         # (parse_test_config only fills None-valued attrs from the preset; without this
         # reset, the first test's preset would shadow every later test's preset).
         args_snapshot = vars(args).copy()
         results = []
         batch_start = time.time()
+        results.extend(run_api_tests(api_tlist, args))
+        if getattr(args, 'stop_on_fail', False) and any(r['status'] == 'FAIL' for r in results):
+            tlist = []  # already reported by run_api_tests
         for test in tlist:
             rcode = 0
             status = 'PASS'
@@ -2185,7 +2301,7 @@ if __name__ == "__main__":
         hdr = f'{"name":<{col_name}}  {"status":<6}  {"dur_s":>8}  {"rcode":>5}  error'
         sep = '-' * len(hdr)
         summary_lines = [
-            f'requested={len(tlist)} ran={len(results)} pass={n_pass} fail={n_fail} duration={total_dur:.1f}s',
+            f'requested={n_requested} ran={len(results)} pass={n_pass} fail={n_fail} duration={total_dur:.1f}s',
             hdr,
             sep,
         ]
