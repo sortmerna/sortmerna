@@ -82,34 +82,11 @@ if (WITH_TESTS)
   add_subdirectory (tests/smr_api)
 endif ()
 
-include(CMakePackageConfigHelpers)
-
-set(package_config_destination ${CMAKE_INSTALL_PREFIX}/cmake/sortmerna)
-message("package_config_destination: ${package_config_destination}")
-
-configure_package_config_file(
-	${CMAKE_SOURCE_DIR}/cmake/sortmernaConfig.cmake.in sortmernaConfig.cmake
-	INSTALL_DESTINATION ${package_config_destination}
-)
-
-write_basic_package_version_file(
-	sortmernaConfigVersion.cmake
-	VERSION ${SORTMERNA_VERSION}
-	COMPATIBILITY SameMajorVersion
-)  
-
+# The library and its public header are installed by src/smr_api.
 install(TARGETS sortmerna
-	EXPORT sortmernaTargets
-	RUNTIME 
+	RUNTIME
 	DESTINATION bin
 	COMPONENT runtime
-)
-
-install(FILES
-		${CMAKE_CURRENT_BINARY_DIR}/sortmernaConfig.cmake
-		${CMAKE_CURRENT_BINARY_DIR}/sortmernaConfigVersion.cmake
-	DESTINATION ${package_config_destination}
-	COMPONENT config
 )
 
 # generate PACKAGE and PACKAGE_SOURCE targets, and CPack configuration files

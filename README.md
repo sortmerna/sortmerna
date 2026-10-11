@@ -199,6 +199,16 @@ Reuse one `workdir` so that the index is built only once. The in-memory
 functions report every hit, with an e-value per read that does not depend on
 how reads are batched, so their e-values differ from the CLI's.
 
+The build installs the library next to the executable, so `python3 setup.py
+sortmerna` leaves `lib/libsmr_api.a` and `include/smr_api.h` under the install
+prefix (`dist` by default), and the packages contain them too. The archive is
+self-contained — RocksDB, Parasail, alp and zlib are merged into it — so an
+application links only:
+
+```
+cc app.c -I dist/include dist/lib/libsmr_api.a -lstdc++ -lpthread -ldl -lm
+```
+
 See [C Library API](docs/c_api.rst) for the reference.
 
 ## User Manual

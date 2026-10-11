@@ -94,6 +94,22 @@ else()
 	message("RocksDB not found")
 endif(RocksDB_FOUND)
 
+# src/smr_api bundles the static dependencies into a self-contained
+# libsmr_api.a, and needs their paths. RocksDB::rocksdb and ZLIB::ZLIB are
+# IMPORTED targets, which are scoped to the directory that created them, so
+# resolve them to plain paths here and publish those to the parent (top level)
+# scope - src/smr_api is added after this directory and inherits them. Both
+# point at a prebuilt dist and are the same for every configuration.
+# PARASAIL_LIB needs no publishing: find_library made it a cache entry.
+if(RocksDB_FOUND)
+	get_target_property(SMR_ROCKSDB_ARCHIVE ${ROCKSDB_LIB} LOCATION)
+	set(SMR_ROCKSDB_ARCHIVE "${SMR_ROCKSDB_ARCHIVE}" PARENT_SCOPE)
+endif()
+if(ZLIB_FOUND)
+	get_target_property(SMR_ZLIB_ARCHIVE ZLIB::ZLIB LOCATION)
+	set(SMR_ZLIB_ARCHIVE "${SMR_ZLIB_ARCHIVE}" PARENT_SCOPE)
+endif()
+
 # fix RocksDBTargets.cmake, which makes both static and shared libraries always dependent on libz.so
 if(ZLIB_LIBRARY_RELEASE)
 	# modify the dependent libraries of the RocksDB::rocksdb target

@@ -128,21 +128,37 @@ References from memory, for example the rows of a database table:
 Building
 --------
 
-The library is built together with the ``sortmerna`` binary. Configure the
-build as described in :doc:`building`, then::
+The library is built and installed together with the ``sortmerna`` binary, so
+the build described in :doc:`building` is all that is needed::
 
-   cmake --build build --target smr_api
+   python3 setup.py sortmerna
 
-With ``-DWITH_TESTS=ON`` the test program ``test_smr_api`` is built too, and
-``ctest`` runs it.
+This installs, under the install prefix (``dist`` by default)::
 
-``build/src/smr_api/libsmr_api.a`` contains the API and the SortMeRNA core
-objects. An application also links ``libbuild_version.a`` and
-``3rdparty/alp/libalp.a`` from the build tree, Parasail, RocksDB and zlib,
-plus ``-lpthread -ldl -lstdc++ -lm``. Within the SortMeRNA CMake project,
-linking the ``smr_api`` target pulls these in. The SortMeRNA CMake files
-expect to be the top-level project, so another CMake project builds it with
-``ExternalProject_Add`` and links the archives above.
+   include/smr_api.h
+   lib/libsmr_api.a
+
+and puts both into the generated ``.deb``, ``.sh`` and ``.tar.gz`` packages
+alongside ``bin/sortmerna``.
+
+The installed ``libsmr_api.a`` is self-contained: the API, the SortMeRNA core
+objects and the static dependencies (RocksDB, Parasail, alp, zlib) are merged
+into the one archive, so an application links nothing else but the system
+libraries::
+
+   cc app.c -I <prefix>/include <prefix>/lib/libsmr_api.a \
+       -lstdc++ -lpthread -ldl -lm -o app
+
+The archive is therefore around 55 MB. Note that it is produced by a separate
+bundling step, so ``cmake --build build --target smr_api`` alone yields only
+the unbundled ``build/src/smr_api/<config>/libsmr_api.a``, which links solely
+from within the build tree; build the ``smr_api_bundle`` target, or just
+``install``, for the distributable one.
+
+With ``-DWITH_TESTS=ON`` (set by the presets) ``ctest`` runs two tests for the
+library: ``smr_api_smoke`` exercises the API against golden outputs, and
+``smr_api_bundle_link`` links a program against the bundled archive alone to
+check that it really is self-contained.
 
 
 API reference

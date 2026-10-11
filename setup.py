@@ -654,6 +654,14 @@ def smr_build(ver:str=None,
     if rcode:
         return rcode,sout, eout
 
+    # the C library API has to be installed along with the executable
+    for libf in [Path(install_dir) / 'lib' / 'libsmr_api.a',
+                 Path(install_dir) / 'include' / 'smr_api.h']:
+        if not libf.exists():
+            msg = f'{ST} file {libf} not found'
+            print(msg)
+            return 1,'',msg
+
     # test  CMAKE_INSTALL_PREFIX/bin/sortmerna --version
     exef = Path(install_dir) / 'bin' / 'sortmerna'
     if not exef.exists():
