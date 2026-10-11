@@ -12,7 +12,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ## Table of Contents
 
-- [What's new in 7.0.0](#whats-new-in-700)
+- [What's new in 7.1.0](#whats-new-in-710)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
   - [Using GitHub release binaries on Linux](#using-github-release-binaries-on-linux)
@@ -29,23 +29,12 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 - [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
 
-## What's new in 7.0.0
+## What's new in 7.1.0
 
-### Resume after interruption
+### C API library (experimental)
 
-A sortmerna run that is killed mid-alignment now resumes automatically
-on the next invocation against the same Key-value database (kvdb). There is no `--resume`
-flag: presence of a non-empty kvdb plus matching opts/input fingerprints
-is sufficient. If any alignment-relevant option or input file fingerprint
-has changed since the previous run, sortmerna aborts with a diagnostic
-naming the kvdb so the user can either restore the original inputs or
-wipe the kvdb.
+Adding a C API library (details below). The main functionality is unchanged. The library is non-intrusive and allows for programmatic access to the main Sortmerna functionality.
 
-### Testing & dev
-
-`scripts/run.py test ... --interrupt [N]` exercises the auto-resume
-path by SIGKILLing the binary mid-alignment N times (max 2, default 1)
-and re-launching, then validating the final output normally.
 
 ## Getting Started
 
@@ -209,6 +198,16 @@ SortMeRNA inside another program, without a subprocess:
 Reuse one `workdir` so that the index is built only once. The in-memory
 functions report every hit, with an e-value per read that does not depend on
 how reads are batched, so their e-values differ from the CLI's.
+
+The build installs the library next to the executable, so `python3 setup.py
+sortmerna` leaves `lib/libsmr_api.a` and `include/smr_api.h` under the install
+prefix (`dist` by default), and the packages contain them too. The archive is
+self-contained — RocksDB, Parasail, alp and zlib are merged into it — so an
+application links only:
+
+```
+cc app.c -I dist/include dist/lib/libsmr_api.a -lstdc++ -lpthread -ldl -lm
+```
 
 See [C Library API](docs/c_api.rst) for the reference.
 
