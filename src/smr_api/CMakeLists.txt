@@ -52,7 +52,6 @@ endforeach()
 
 set(SMR_API_BUNDLE_DIR ${CMAKE_CURRENT_BINARY_DIR}/bundle/$<CONFIG>)
 set(SMR_API_BUNDLE     ${SMR_API_BUNDLE_DIR}/libsmr_api.a)
-set(SMR_API_MRI        ${SMR_API_BUNDLE_DIR}/smr_api.mri)
 
 # Archives to merge, in the order the linker sees them when it links
 # test_smr_api. Order matters for one pair only: libz.a (zlib) and
@@ -78,25 +77,56 @@ list(APPEND SMR_API_BUNDLE_LIBS
     $<TARGET_FILE:alp>
 )
 
-# 'ar -M' reads an MRI script: create, one addlib per archive, save, end.
-# addlib is used rather than extracting and re-archiving because 'ar x'
-# collapses the member basenames that collide across rocksdb and parasail.
-list(JOIN SMR_API_BUNDLE_LIBS "\naddlib " SMR_API_ADDLIBS)
-file(GENERATE
-    OUTPUT ${SMR_API_MRI}
-    CONTENT "create ${SMR_API_BUNDLE}\naddlib ${SMR_API_ADDLIBS}\nsave\nend\n"
-)
+# The merge input is materialized with file(GENERATE) because the archive
+# paths above carry generator expressions. The merge tool differs by platform:
+#  - GNU/Linux: 'ar -M' reads an MRI script: create, one addlib per archive,
+#    save, end. addlib is used rather than extracting and re-archiving because
+#    'ar x' collapses the member basenames that collide across rocksdb and
+#    parasail.
+#  - macOS: BSD ar has no MRI mode, so the merge runs 'libtool -static' on
+#    the archives listed one per line in smr_api.libs. libtool likewise keeps
+#    every member of every input archive.
+if(APPLE)
+    find_program(SMR_API_LIBTOOL NAMES libtool REQUIRED
+        DOC "Apple libtool used to merge the smr_api static archives")
 
-add_custom_command(
-    OUTPUT ${SMR_API_BUNDLE}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${SMR_API_BUNDLE_DIR}
-    COMMAND ${CMAKE_COMMAND} -DAR=${CMAKE_AR} -DMRI=${SMR_API_MRI}
-            -P ${CMAKE_SOURCE_DIR}/cmake/bundle_static_libs.cmake
-    DEPENDS ${SMR_API_BUNDLE_DEPS} ${SMR_API_MRI}
-            ${SMR_ROCKSDB_ARCHIVE} ${SMR_ZLIB_ARCHIVE} ${PARASAIL_LIB}
-    COMMENT "Bundling libsmr_api.a with its static dependencies"
-    VERBATIM
-)
+    set(SMR_API_LIBLIST ${SMR_API_BUNDLE_DIR}/smr_api.libs)
+    list(JOIN SMR_API_BUNDLE_LIBS "\n" SMR_API_LIBLIST_CONTENT)
+    file(GENERATE
+        OUTPUT ${SMR_API_LIBLIST}
+        CONTENT "${SMR_API_LIBLIST_CONTENT}\n"
+    )
+
+    add_custom_command(
+        OUTPUT ${SMR_API_BUNDLE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SMR_API_BUNDLE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DLIBTOOL=${SMR_API_LIBTOOL}
+                -DOUT=${SMR_API_BUNDLE} -DLIBS=${SMR_API_LIBLIST}
+                -P ${CMAKE_SOURCE_DIR}/cmake/bundle_static_libs.cmake
+        DEPENDS ${SMR_API_BUNDLE_DEPS} ${SMR_API_LIBLIST}
+                ${SMR_ROCKSDB_ARCHIVE} ${SMR_ZLIB_ARCHIVE} ${PARASAIL_LIB}
+        COMMENT "Bundling libsmr_api.a with its static dependencies"
+        VERBATIM
+    )
+else()
+    set(SMR_API_MRI ${SMR_API_BUNDLE_DIR}/smr_api.mri)
+    list(JOIN SMR_API_BUNDLE_LIBS "\naddlib " SMR_API_ADDLIBS)
+    file(GENERATE
+        OUTPUT ${SMR_API_MRI}
+        CONTENT "create ${SMR_API_BUNDLE}\naddlib ${SMR_API_ADDLIBS}\nsave\nend\n"
+    )
+
+    add_custom_command(
+        OUTPUT ${SMR_API_BUNDLE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SMR_API_BUNDLE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DAR=${CMAKE_AR} -DMRI=${SMR_API_MRI}
+                -P ${CMAKE_SOURCE_DIR}/cmake/bundle_static_libs.cmake
+        DEPENDS ${SMR_API_BUNDLE_DEPS} ${SMR_API_MRI}
+                ${SMR_ROCKSDB_ARCHIVE} ${SMR_ZLIB_ARCHIVE} ${PARASAIL_LIB}
+        COMMENT "Bundling libsmr_api.a with its static dependencies"
+        VERBATIM
+    )
+endif()
 
 add_custom_target(smr_api_bundle ALL DEPENDS ${SMR_API_BUNDLE})
 
