@@ -90,21 +90,21 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/sortmerna/sortmerna/releases/download/v7.0.0/sortmerna-7.0.0-Linux.sh
+wget https://github.com/sortmerna/sortmerna/releases/download/v7.1.0/sortmerna-7.1.0-Linux.sh
 
 # view the installer usage
-bash sortmerna-7.0.0-Linux.sh --help
+bash sortmerna-7.1.0-Linux.sh --help
     Options: [defaults in brackets after descriptions]
       --help            print this message
       --version         print cmake installer version
       --prefix=dir      directory in which to install
-      --include-subdir  include the sortmerna-7.0.0-Linux subdirectory
-      --exclude-subdir  exclude the sortmerna-7.0.0-Linux subdirectory
+      --include-subdir  include the sortmerna-7.1.0-Linux subdirectory
+      --exclude-subdir  exclude the sortmerna-7.1.0-Linux subdirectory
       --skip-license    accept license
 
 # run the installer
-bash sortmerna-7.0.0-Linux.sh --skip-license
-  sortmerna Installer Version: 7.0.0, Copyright (c) Clarity Genomics
+bash sortmerna-7.1.0-Linux.sh --skip-license
+  sortmerna Installer Version: 7.1.0, Copyright (c) Clarity Genomics
   This is a self-extracting archive.
   The archive will be extracted to: $HOME/sortmerna
   
@@ -122,7 +122,7 @@ export PATH=$HOME/sortmerna/bin:$PATH
 
 # test the installation
 sortmerna --version
-  SortMeRNA version 7.0.0
+  SortMeRNA version 7.1.0
   ...
 
 # view help
