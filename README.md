@@ -220,31 +220,12 @@ In case you need PDF, any modern browser can print web pages to PDF.
 
 ## Databases
 
-[database.tar.gz](https://github.com/sortmerna/sortmerna/releases/download/v4.3.4/database.tar.gz) provided since release 4.3.4. The tarball contains 4 separate files.
+The reference databases are maintained in the [sortmerna-database repository](https://github.com/sortmerna/sortmerna-database), which documents database sources, preparation, clustering parameters, and benchmark measurements of sensitivity, specificity, runtime, and memory usage. 
 
-Since the version 4.3.7 the four database files are also provided as separate .gz archives.
+Download the **default** (recommended), **sensitive**, or **fast** database from the [SILVA 138.2 / Rfam 15.1 release](https://github.com/sortmerna/sortmerna-database/releases/tag/silva138.2-rfam15.1-r1). 
 
-We recommend to use smr_v4.3_default_db.fasta.
-
-Original source databases (clustering parameters given below):
-* Silva 138 SSURef NR99 (16S, 18S)
-* Silva 132 LSURef (23S, 28S)
-* RFAM v14.1 (5S, 5.8S)
-
-The difference between the databases is the % ID for clustering the sequences for each kingdom + rRNA component.
-
-Specifically,
-
-* smr_v4.3_fast_db.fasta
-  * bac-16S 85%, 5S & 5.8S seeds, rest 90% (benchmark accuracy: 99.888%)
-* smr_v4.3_default_db.fasta
-  * bac-16S 90%, 5S & 5.8S seeds, rest 95% (benchmark accuracy: 99.899%)
-* smr_v4.3_sensitive_db.fasta
-  * all 97% (benchmark accuracy: 99.907%)
-* smr_v4.3_sensitive_db_rfam_seeds.fasta
-  * all 97%, except RFAM database which includes the full seed database sequences
-
-The accuracy (based on sensitivity and selectivity) is very good for all databases, however the "sensitive" databases will run at least 2x slower.
+Each archive contains the reference FASTA and family map. 
+Build indexes with your installed SortMeRNA version.
 
 ## Taxonomies
 
