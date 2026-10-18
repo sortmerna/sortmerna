@@ -33,7 +33,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ### C API library (experimental)
 
-Adding a C API library (details below). The main functionality is unchanged. The library is non-intrusive and allows for programmatic access to the main Sortmerna functionality.
+Adding a C API library (details below). The main functionality is unchanged. The library is static self-contained, and allows for programmatic access to the main Sortmerna functionality.
 
 
 ## Getting Started
@@ -54,9 +54,10 @@ conda config --add channels conda-forge
 
 conda search sortmerna
 
- Name      Version Build                         Channel     Subdir  
+ Name              Version Build                 Channel     Subdir  
 ──────────────────────────────────────────────────────────────────────
- sortmerna 7.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
+ sortmerna 7.1.0   py311h19982a8_0 (+  4 builds) conda-forge linux-64
+ sortmerna 7.0.0   py310hea66570_0 (+  9 builds) conda-forge linux-64
  sortmerna 6.0.2   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 6.0.1   py310hea66570_0 (+  4 builds) conda-forge linux-64
  sortmerna 6.0.0   py310hea66570_0 (+  4 builds) conda-forge linux-64
