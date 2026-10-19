@@ -7,9 +7,18 @@ info: |
     1     1     0    0       0        0         0     0    0      0      1    1     2      2
 args:
   -ref: [ {{ REF_DIR }}/smr_v4.3_fast_db.fasta ]  # 64M
+  #-ref: [ {{ REF_DIR }}/smr_v6.0.2_fast_db/smr_v6.0.2_fast_db.fasta ]  # 85M
   -reads: [ {{ DATA_DIR }}/20260720_generated_reads_100000_3500.fasta ]  # 3500 x 100000 reads
   -fastx:
   -blast: '1 cigar qcov'
   -workdir: {{ WRK_DIR }}
   -threads: '{{THREADS or 4}}'
   -index: '{{INDEX or 1}}'  # 1 is the default
+time:
+  wsl_ubuntu_24.04.2_LTS_xps15i9_16_32:
+    7.0.1:
+      threads: 4
+      times:
+        # indexing  read_count  readfeed  align  summary  report   tot,sec
+        -     -          -        0.2      296     0.2      0.6     297      # db 4.3.0
+        -     -          -        0.3      273     0.2      0.7     275      # db 6.0.2
