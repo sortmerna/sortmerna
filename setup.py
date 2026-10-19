@@ -76,6 +76,7 @@ CONDA   = 'conda'
 ALL     = 'all'
 IBZIP2    = 'indexed_bzip2'
 BBHASH    = 'bbhash'
+CXXOPTS   = 'cxxopts'
 PARASAIL  = 'parasail'
 
 ENV = None # WSL | LNX_AWS | LNX_TRAVIS
@@ -701,6 +702,16 @@ def bbhash_build(**kw) -> tuple[int, list[str], list[str]]:
     return git_clone(url, src, shallow=shallow)
 #END bbhash_build
 
+def cxxopts_build(**kw) -> tuple[int, list[str], list[str]]:
+    '''
+    header-only cxxopts command line option parser - clone only
+    '''
+    url = kw.get(CXXOPTS).get('url')
+    src = kw.get(CXXOPTS).get('src')
+    shallow = kw.get(CXXOPTS).get('shallow')
+    return git_clone(url, src, shallow=shallow)
+#END cxxopts_build
+
 def parasail_build(**kw) -> tuple[int, list[str], list[str]]:
     '''
     Build parasail SIMD alignment library using CMake (replaces SSW)
@@ -812,7 +823,7 @@ if __name__ == "__main__":
     p0.add_argument('--winhome', dest='winhome', help='when building on WSL - home directory on Windows side e.g. /mnt/c/Users/XX')
     subpar = p0.add_subparsers(dest='name', help='package to build/process')
 
-    p_all = subpar.add_parser('all', help='build zlib + rocksdb + indexed_bzip2 + bbhash + sortmerna')
+    p_all = subpar.add_parser('all', help='build zlib + rocksdb + indexed_bzip2 + bbhash + cxxopts + parasail + sortmerna')
     p_all.add_argument('-b', '--btype', dest='btype', default='release', help='Build type: release | debug')
     p_all.add_argument('--cmake-preset', dest='cmake_preset', help='CMake preset')
     p_all.add_argument('-c', '--clean', action='store_true', help='clean build directory')
@@ -827,6 +838,7 @@ if __name__ == "__main__":
     p_all.add_argument('--rocksdb-git', action='store_true', help='use rocksdb git repo as source. Otherwise tarball')
     p_all.add_argument('--indexed-bzip2-dist', dest='indexed_bzip2_dist', help='indexed_bzip2 installation directory')
     p_all.add_argument('--bbhash-dist', dest='bbhash_dist', help='bbhash installation directory')
+    p_all.add_argument('--cxxopts-dist', dest='cxxopts_dist', help='cxxopts installation directory')
     p_all.add_argument('--parasail-dist', dest='parasail_dist', help='parasail installation directory')
     p_all.add_argument('--pt_smr', dest='pt_smr', default='t1', help='Sortmerna Linkage type t1 | t2 | t3')
     p_all.add_argument('--pt_zlib', dest='pt_zlib', help='Zlib Linkage type t1 | t2 | t3')
@@ -859,6 +871,9 @@ if __name__ == "__main__":
 
     p_bbhash = subpar.add_parser('bbhash', help='clone bbhash (BooPHF header-only MPHF library)')
     p_bbhash.add_argument('--bbhash-dist', dest='bbhash_dist', help='bbhash installation directory')
+
+    p_cxxopts = subpar.add_parser('cxxopts', help='clone cxxopts (header-only CLI option parser)')
+    p_cxxopts.add_argument('--cxxopts-dist', dest='cxxopts_dist', help='cxxopts installation directory')
 
     p_parasail = subpar.add_parser('parasail', help='build parasail SIMD alignment library')
     p_parasail.add_argument('--parasail-dist', dest='parasail_dist', help='parasail installation directory')
@@ -919,6 +934,12 @@ if __name__ == "__main__":
     else:
         config['bbhash']['dist'] = f"{config['bbhash']['src']}"
 
+    # cxxopts
+    if getattr(args, 'cxxopts_dist', None):
+        config['cxxopts']['dist'] = args.cxxopts_dist
+    else:
+        config['cxxopts']['dist'] = f"{config['cxxopts']['src']}"
+
     # parasail
     if getattr(args, 'parasail_dist', None):
         config['parasail']['dist'] = args.parasail_dist
@@ -947,6 +968,8 @@ if __name__ == "__main__":
         if rcode == 0:
             rcode, sout, eout = bbhash_build(**config)
         if rcode == 0:
+            rcode, sout, eout = cxxopts_build(**config)
+        if rcode == 0:
             rcode, sout, eout = parasail_build(**config)
         if rcode == 0:
             rcode, sout, eout = smr_build(btype=getattr(args, 'btype', 'release'), **config)
@@ -964,6 +987,8 @@ if __name__ == "__main__":
         indexed_bzip2_build(**config)
     elif args.name == BBHASH:
         bbhash_build(**config)
+    elif args.name == CXXOPTS:
+        cxxopts_build(**config)
     elif args.name == PARASAIL:
         parasail_build(**config)
     elif args.name == CMAKE:

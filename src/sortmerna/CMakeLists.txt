@@ -191,6 +191,7 @@ target_include_directories(smr_objs
 	PUBLIC
 		${CMAKE_SOURCE_DIR}/include
 		${CMAKE_SOURCE_DIR}/3rdparty/bbhash
+		${CMAKE_SOURCE_DIR}/3rdparty/cxxopts/include
 		${PARASAIL_INCLUDE_DIR}
 )
 

@@ -12,6 +12,7 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 
 ## Table of Contents
 
+- [What's new in 8.0.0](#whats-new-in-800)
 - [What's new in 7.1.0](#whats-new-in-710)
 - [Getting Started](#getting-started)
   - [Using Conda package](#using-conda-package)
@@ -28,6 +29,18 @@ SortMeRNA is also available through the [nf-core RNA-Seq pipeline v.3.26.0](http
 - [Contributors](#contributors)
 - [Third-party dependencies](#third-party-dependencies)
 - [Support](#support)
+
+## What's new in 8.0.0
+
+### Using [CXXOPTS](https://github.com/jarro2783/cxxopts.git) library for options processing
+
+The options processing and display improved and enhanced:
+  - Dashes and underscores are interchangeable ('--paired-out' == '--paired_out').
+  - A value may follow the name or be attached with '=' ('--threads 4' == '--threads=4').
+  - Options summary: '-h' lists the options
+  - Full options info: '--help' prints the full reference
+  - Single option help: 'sortmerna <option> -h' explains a single option e.g. 'sortmerna index -h'.
+  - Option names may be given with one or two leading dashes ('-ref' == '--ref') as before
 
 ## What's new in 7.1.0
 
@@ -134,6 +147,10 @@ sortmerna -h
 
 * The only required options are `--ref` and `--reads`
 * Options (any) can be specified usig a single dash e.g. `-ref` and `-reads`
+* Dashes and underscores in option names are interchangeable e.g. `--paired-out` and `--paired_out`
+* A value can follow the option name or be attached with `=` e.g. `--threads 4` and `--threads=4`
+* `sortmerna -h` lists the options, `sortmerna --help` prints the full reference, and
+  `sortmerna <option> -h` explains a single option e.g. `sortmerna index -h`
 * Both plain `fasta/fastq` and archived `fasta.gz/fastq.gz` files are accepted
 * file extensions `.fastq, .fastq.gz, .fq, .fq.gz, .fasta, ...` are optional. The format and compression are automatically recognized
 * Relative paths are accepted

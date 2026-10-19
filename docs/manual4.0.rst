@@ -92,6 +92,34 @@ For reference, a sample trace of a successful execution is provided. The trace i
 Options
 -------
 
+Option name syntax
+##################
+
+Option names are accepted in several equivalent spellings:
+
+* one or two leading dashes - :code:`-ref` is the same as :code:`--ref`
+* dashes and underscores are interchangeable - :code:`--paired-out` is the same as
+  :code:`--paired_out`. The dashed form is the canonical one used throughout this
+  manual and in the program's own help output
+* a value may follow the name as a separate argument or be attached with :code:`=` -
+  :code:`--threads 4` is the same as :code:`--threads=4`
+
+Single-character options are short options and take a single dash e.g. :code:`-N`,
+:code:`-F`, :code:`-R`, :code:`-L`, :code:`-m`, :code:`-v`, :code:`-e`.
+
+Getting help
+############
+
+::
+
+    sortmerna -h              # compact list of all options
+    sortmerna --help          # full reference, with the extended descriptions
+    sortmerna index -h        # everything about a single option
+    sortmerna -h paired_out   # the same, either argument order, either spelling
+
+Option reference
+################
+
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |Option             |argument|description                                                                                                              |default              |
 +===================+========+=========================================================================================================================+=====================+
@@ -117,25 +145,25 @@ Options
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-other]           |Boolean |Create Non-aligned reads output file. Must be used with :code:`fastx`                                                    |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-num_alignments]  |        |Positive integer (>=0). Report first INT alignments per read reaching E-value. If Int = 0, all alignments will be output |False                |  
+|[-num-alignments]  |        |Positive integer (>=0). Report first INT alignments per read reaching E-value. If Int = 0, all alignments will be output |False                |  
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-best]            |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-min_lis]         |        |                                                                                                                         |                     |
+|[-min-lis]         |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-print_all_reads] |        |                                                                                                                         |                     |
+|[-print-all-reads] |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-paired_in]       |        |                                                                                                                         |                     |
+|[-paired-in]       |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-paired_out]      |        |                                                                                                                         |                     |
+|[-paired-out]      |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-match]           |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-mismatch]        |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-gap_open]        |        |                                                                                                                         |                     |
+|[-gap-open]        |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
-|[-gap_ext]         |        |                                                                                                                         |                     |
+|[-gap-ext]         |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
 |[-a]               |        |                                                                                                                         |                     |
 +-------------------+--------+-------------------------------------------------------------------------------------------------------------------------+---------------------+
@@ -205,7 +233,7 @@ Example: multiple databases and the fastes alignment option
     sortmerna -ref $SMR_HOME/data/silva-bac-16s-database-id85.fasta \
     -ref $SMR_HOME/data/silva-arc-16s-database-id95.fasta \
     -reads $SMR_HOME/data/set2_environmental_study_550_amplicon.fasta \
-    -sam -fastx -blast 1 -num_alignments 1 -v
+    -sam -fastx -blast 1 -num-alignments 1 -v
 
 Filtering paired-end reads
 ##########################
@@ -305,9 +333,9 @@ The number (or percentage if followed by %) of nucleotides to add to each edge o
 
 :: 
 
-    -full_search flag
+    -full-search flag
 
-During the index traversal, if a seed match is found with 0-errors, SortMeRNA will stop searching for further 1-error matches. This heuristic is based upon the assumption that 0-error matches are more signicant than 1-error matches. By turning it off using the --full_search flag, the sensitivity may increase (often by less than 1%) but with up to four-fold decrease in speed. 
+During the index traversal, if a seed match is found with 0-errors, SortMeRNA will stop searching for further 1-error matches. This heuristic is based upon the assumption that 0-error matches are more signicant than 1-error matches. By turning it off using the --full-search flag, the sensitivity may increase (often by less than 1%) but with up to four-fold decrease in speed. 
 
 ::
 
