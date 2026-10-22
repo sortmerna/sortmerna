@@ -2020,6 +2020,32 @@ def generate_index_stats(args: Namespace):
     _update_jinja_indices(jinja_file, indices_stats)
     print(f'{ST} done')
 
+# run.py scan_gz <gz_file> [<gz_file> ...]
+def scan_gz_0_parts(gz_file: Path) -> int:
+    '''
+    count empty gzip members consisting of a single empty stored final block,
+    as written by libdeflate for empty input (e.g. fastp output).
+    Such members made the indexed gz readfeed fail in sortmerna <= 7.0.0 (issue 466) with:
+      "The inflate wrapper offset (..) does not match the requested exact stop offset .."
+
+    args:
+      - gz_file  gzipped file to scan
+    return: number of empty stored-block members found
+    '''
+    import mmap
+    ST = '[scan_gz_0_parts]'
+    pat = b'\x01\x00\x00\xff\xff' + b'\x00' * 8   # empty stored final block + CRC32=0 + ISIZE=0
+    with open(gz_file, 'rb') as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:
+        n, i = 0, m.find(pat)
+        while i >= 0:
+            j = i + len(pat)
+            if j == len(m) or m[j:j+2] == b'\x1f\x8b':  # followed by the next member or EOF
+                n += 1
+            i = m.find(pat, i + 1)
+    print(f'{ST} {gz_file} empty stored-block gzip members: {n}')
+    return n
+#END scan_gz_0_parts
+
 
 if __name__ == "__main__":
     '''
@@ -2040,6 +2066,9 @@ if __name__ == "__main__":
       '--build-dir' and '--btype' instead of '--smr-exe' and '--data-dir':
       - python scripts/run.py test api [--build-dir build] [--btype release|debug]
       - python scripts/run.py test smr_api_bundle_link   |_ a single one, by its ctest name
+
+      Count empty stored-block gzip members (issue 466):
+      - python scripts/run.py scan_gz file1.fastq.gz [file2.fastq.gz ...]
     '''
     ST = '[run.py:__main__]'
     is_opts_ok = True
@@ -2145,6 +2174,10 @@ if __name__ == "__main__":
                     help='nucleotide alphabet to sample from (default: ACGU)')
     p7.add_argument('--seed', dest='seed', type=int, help='RNG seed for reproducible output')
     p7.add_argument('-w', '--workdir', dest='workdir', help='working directory for the output file')
+
+    # scan gz files for empty stored-block members (issue 466)
+    p8 = subpar.add_parser('scan_gz', help='count empty stored-block gzip members (issue 466)')
+    p8.add_argument('gz_file', nargs='+', help='gzipped file(s) to scan')
 
     args = p0.parse_args()
 
@@ -2335,6 +2368,9 @@ if __name__ == "__main__":
         generate_reads(length=args.length, count=args.count, out=args.out,
                        fmt=args.fmt, alphabet=args.alphabet, seed=args.seed,
                        workdir=args.workdir)
+    elif 'scan_gz' == args.cmd:
+        for gz_file in args.gz_file:
+            scan_gz_0_parts(Path(gz_file))
     else:
         ...
 #END main

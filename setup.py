@@ -689,6 +689,19 @@ def indexed_bzip2_build(**kw) -> tuple[int, list[str], list[str]]:
     if rcode == 0:
         cmd = ['git', 'submodule', 'update', '--init', '--recursive']
         rcode, sout, eout = proc_run(cmd, src, capture=True)
+    # local fixes not yet merged upstream - apply unless already applied
+    #   rapidgzip_empty_stored_member.patch - issue #466: empty gzip member (stored block)
+    #     made the indexed per-slot readers stop mid-chunk
+    #     upstream: https://github.com/mxmlnkn/librapidarchive/pull/27 - drop the patch once merged
+    patch_dir = Path(__file__).resolve().parent / '3rdparty' / 'patches'
+    for patch in sorted(patch_dir.glob('rapidgzip_*.patch')):
+        if rcode != 0:
+            break
+        is_applied, _, _ = proc_run(['git', 'apply', '--check', '-R', str(patch)], src, capture=True)
+        if is_applied == 0:
+            print(f'[indexed_bzip2_build] patch already applied: {patch.name}')
+            continue
+        rcode, sout, eout = proc_run(['git', 'apply', str(patch)], src, capture=True)
     return rcode, sout, eout
 #END indexed_bzip2_build
 
