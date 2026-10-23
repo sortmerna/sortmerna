@@ -42,6 +42,8 @@ The options processing and display improved and enhanced:
   - Single option help: 'sortmerna <option> -h' explains a single option e.g. 'sortmerna index -h'.
   - Option names may be given with one or two leading dashes ('-ref' == '--ref') as before
 
+Fixes [issue 466](https://github.com/sortmerna/sortmerna/issues/466)
+
 ## What's new in 7.1.0
 
 ### C API library (experimental)
