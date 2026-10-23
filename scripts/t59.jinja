@@ -1,0 +1,40 @@
+# t59:
+name: 1 ref, 2 gz pair with empty gzip members, issue 466
+info: |
+  Regression test for issue 466: the indexed gz feed (default '-readfeed 0') aborted with
+    "The inflate wrapper offset (..) does not match the requested exact stop offset .."
+  when a reads file contained an empty gzip member whose deflate stream is a single empty
+  stored block '01 00 00 ff ff' (written by libdeflate for empty input e.g. fastp output).
+  The reads are set4_mate_pairs_metatranscriptomics_[1|2].fastq recompressed as multi-member gzip,
+  500 reads per member, with an empty stored-block member after every 2nd member.
+  Generated with test_data/refs/scripts/gen_empty_member_gz.py:
+    gen_empty_member_gz.py set4_mate_pairs_metatranscriptomics_1.fastq \
+      set4_mate_pairs_metatranscriptomics_1_empty_member.fastq.gz 1 500 stored 2
+  Outputs must equal those of '-readfeed 1' on the same input.
+      input type         |               output type                  |    alignment type
+  refs  reads  zip  pair | pair_in  pair_out  out2  sout  zout  other | best  N  min_lis seeds
+    1     2     1    1       1        0         1     0     1      1      1    1     2      2
+args:
+  -ref: [ {{ REF_DIR }}/silva-arc-16s-database-id95.fasta ]
+  -reads:
+    - {{ DATA_DIR if DATA_DIR }}/set4_mate_pairs_metatranscriptomics_1_empty_member.fastq.gz  # 5,000 reads
+    - {{ DATA_DIR if DATA_DIR }}/set4_mate_pairs_metatranscriptomics_2_empty_member.fastq.gz  # 5,000 reads
+  -fastx:
+  -paired_in:
+  -out2:
+  -other:
+  -v:
+  -threads: '{{THREADS or 4}}'
+  -workdir: {{ WRK_DIR }}
+validate:
+  func:
+  variant: sanger  # fastq quality variant
+  files:
+    aligned.log:
+      num_reads: 10000
+      num_hits:   4078
+      num_fail:   5922
+    aligned_fwd.fq.gz: 3654  # paired_in
+    aligned_rev.fq.gz: 3654
+    other_fwd.fq.gz:   1346
+    other_rev.fq.gz:   1346
