@@ -45,10 +45,13 @@ jobs:
     - name: verify gcc
       run: gcc --version
 
+    - name: setup conda
+      uses: ./.github/actions/setup-conda
+
     - name: build
       run: |
         eval "$(conda shell.bash activate)"
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+        conda env list
         python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist

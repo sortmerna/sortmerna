@@ -39,21 +39,12 @@ jobs:
     #- name: verify gcc
     #  run: gcc --version
 
-    - name: install conda
-      run: |
-        wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
-        bash Miniforge3-$(uname)-$(uname -m).sh -b -p "${HOME}/conda"
-        source "${HOME}/conda/etc/profile.d/conda.sh"
-        source "${HOME}/conda/etc/profile.d/mamba.sh"
-        #conda activate
-        eval "$(conda shell.bash activate)"
-        mamba install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+    - name: setup conda
+      uses: ./.github/actions/setup-conda
 
     - name: build
       run: |
-        source "${HOME}/conda/etc/profile.d/conda.sh"
-        source "${HOME}/conda/etc/profile.d/mamba.sh"
-        conda activate
+        eval "$(conda shell.bash activate)"
         conda env list
         python setup.py all
         echo "=== listing dist/ ==="

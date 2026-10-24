@@ -1,0 +1,57 @@
+name: setup conda
+description: Use an existing conda if available, otherwise download and install Miniforge. Then install build packages into base.
+
+inputs:
+  packages:
+    description: 'Space separated list of conda-forge packages to install into base'
+    required: false
+    default: 'pyyaml jinja2 requests ninja cmake'
+  prefix:
+    description: 'Install location used when no conda is found (default: $HOME/conda)'
+    required: false
+    default: ''
+
+outputs:
+  conda-root:
+    description: 'Base directory of the conda found or installed'
+    value: ${{ steps.setup.outputs.conda-root }}
+
+runs:
+  using: composite
+  steps:
+  - name: find or install conda
+    id: setup
+    shell: bash
+    env:
+      INPUT_PACKAGES: ${{ inputs.packages }}
+      INPUT_PREFIX: ${{ inputs.prefix }}
+    run: |
+      set -euo pipefail
+      prefix="${INPUT_PREFIX:-${HOME}/conda}"
+
+      if command -v conda >/dev/null 2>&1; then
+        conda_exe="$(command -v conda)"
+        echo "conda found on PATH: ${conda_exe}"
+      elif [ -n "${CONDA:-}" ] && [ -x "${CONDA}/bin/conda" ]; then
+        conda_exe="${CONDA}/bin/conda"
+        echo "conda found via CONDA env var: ${conda_exe}"
+      elif [ -x "${prefix}/bin/conda" ]; then
+        conda_exe="${prefix}/bin/conda"
+        echo "conda found in prefix: ${conda_exe}"
+      else
+        installer="Miniforge3-$(uname)-$(uname -m).sh"
+        echo "conda not found - installing ${installer} into ${prefix}"
+        curl -fsSL -o "${RUNNER_TEMP}/${installer}" \
+          "https://github.com/conda-forge/miniforge/releases/latest/download/${installer}"
+        bash "${RUNNER_TEMP}/${installer}" -b -p "${prefix}"
+        rm -f "${RUNNER_TEMP}/${installer}"
+        conda_exe="${prefix}/bin/conda"
+      fi
+
+      root="$("${conda_exe}" info --base)"
+      "${root}/bin/conda" --version
+      echo "${root}/bin" >> "${GITHUB_PATH}"
+      echo "conda-root=${root}" >> "${GITHUB_OUTPUT}"
+
+      # word splitting of the package list is intended
+      "${root}/bin/conda" install -n base -c conda-forge -y ${INPUT_PACKAGES}

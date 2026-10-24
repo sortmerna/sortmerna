@@ -45,17 +45,11 @@ jobs:
     - name: verify gcc
       run: gcc --version
 
-    - name: install miniforge (conda not preinstalled on ubuntu-24.04-arm)
-      run: |
-        wget -q "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
-        bash Miniforge3-Linux-aarch64.sh -b -p "${HOME}/conda"
-        source "${HOME}/conda/etc/profile.d/conda.sh"
-        eval "$(conda shell.bash activate)"
-        mamba install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+    - name: setup conda
+      uses: ./.github/actions/setup-conda
 
     - name: build
       run: |
-        source "${HOME}/conda/etc/profile.d/conda.sh"
         eval "$(conda shell.bash activate)"
         conda env list
         python setup.py all

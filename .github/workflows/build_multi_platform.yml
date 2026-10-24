@@ -29,6 +29,9 @@ jobs:
     - name: git checkout
       uses: actions/checkout@v4
 
+    - name: setup conda
+      uses: ./.github/actions/setup-conda
+
     - name: build on linux
       if: runner.os == 'Linux'
       run: |
@@ -38,7 +41,7 @@ jobs:
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
         gcc --version
         eval "$(conda shell.bash activate)"
-        conda install -c conda-forge -y pyyaml jinja2 requests ninja cmake
+        conda env list
         python setup.py all
         echo "=== listing dist/ ==="
         ls -l ./dist
@@ -47,16 +50,7 @@ jobs:
       # latest macos is arm64 based
       if: runner.os == 'macOS'
       run: |
-        wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
-        bash Miniforge3-$(uname)-$(uname -m).sh -b -p "${HOME}/conda"
-        source "${HOME}/conda/etc/profile.d/conda.sh"
-        source "${HOME}/conda/etc/profile.d/mamba.sh"
-        #conda activate
         eval "$(conda shell.bash activate)"
-        mamba install -c conda-forge -y pyyaml jinja2 requests ninja cmake
-        source "${HOME}/conda/etc/profile.d/conda.sh"
-        source "${HOME}/conda/etc/profile.d/mamba.sh"
-        conda activate
         conda env list
         python setup.py all
         echo "=== listing dist/ ==="
@@ -100,11 +94,15 @@ jobs:
         install: |
           apt-get update -q -y
           apt-get install -q -y gcc g++ wget file python3 git
-          wget https://github.com/conda-forge/miniforge/releases/download/23.11.0-0/Mambaforge-23.11.0-0-Linux-aarch64.sh
-          bash Mambaforge-23.11.0-0-Linux-aarch64.sh -b
+          if ! command -v conda >/dev/null 2>&1 && [ ! -x "${HOME}/conda/bin/conda" ]; then
+            wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+            bash Miniforge3-Linux-aarch64.sh -b -p "${HOME}/conda"
+            rm -f Miniforge3-Linux-aarch64.sh
+          fi
         run: |
           set -x
-          export PATH=${HOME}/mambaforge/bin:$PATH
+          command -v conda >/dev/null 2>&1 || export PATH=${HOME}/conda/bin:$PATH
+          conda --version
           eval "$(conda shell.bash activate)"
           conda install -c conda-forge -y cmake pyyaml jinja2 requests ninja
           cd /sortmerna
