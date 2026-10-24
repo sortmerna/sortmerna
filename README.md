@@ -106,7 +106,7 @@ Issue the following bash commands:
 pushd ~
 
 # get the distro
-wget https://github.com/sortmerna/sortmerna/releases/download/v8.8.0/sortmerna-8.0.0-Linux.sh
+wget https://github.com/sortmerna/sortmerna/releases/download/v8.0.0/sortmerna-8.0.0-Linux.sh
 
 # view the installer usage
 bash sortmerna-8.0.0-Linux.sh --help
