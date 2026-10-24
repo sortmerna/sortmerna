@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
     steps:
     - name: git checkout
       uses: actions/checkout@v4
@@ -74,39 +74,3 @@ jobs:
     #      dist/sortmerna*Linux.deb
     #      dist/sortmerna*Linux.sh
     #      dist/sortmerna*Linux.tar.gz
-
-  build-linux-aarch64:
-    name: Build on Linux ARM64
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: git checkout
-      uses: actions/checkout@v4
-
-    - name: Build
-      uses: uraimo/run-on-arch-action@v2
-      with:
-        arch: aarch64
-        distro: ubuntu20.04
-        githubToken: ${{ github.token }}
-        dockerRunArgs: |
-          --volume "${PWD}:/sortmerna"
-        install: |
-          apt-get update -q -y
-          apt-get install -q -y gcc g++ wget file python3 git
-          if ! command -v conda >/dev/null 2>&1 && [ ! -x "${HOME}/conda/bin/conda" ]; then
-            wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
-            bash Miniforge3-Linux-aarch64.sh -b -p "${HOME}/conda"
-            rm -f Miniforge3-Linux-aarch64.sh
-          fi
-        run: |
-          set -x
-          command -v conda >/dev/null 2>&1 || export PATH=${HOME}/conda/bin:$PATH
-          conda --version
-          eval "$(conda shell.bash activate)"
-          conda install -c conda-forge -y cmake pyyaml jinja2 requests ninja
-          cd /sortmerna
-          python3 setup.py all
-          echo "=== listing files ==="
-          ls -laR
-    
