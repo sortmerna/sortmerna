@@ -91,8 +91,12 @@ which sortmerna
 # check version
 sortmerna --version
 
-# view help
-sortmerna -h
+# help
+sortmerna -h  # list available commands
+sortmerna --help  # view full help
+sortmerna index -h  # view the selected command help (--index)
+sortmerna paired-in -h
+sortmerna paired_in -h
 ```
 
 ### Using GitHub release binaries on Linux
