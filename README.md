@@ -270,9 +270,8 @@ Maintained by the team at [Clarity Genomics Inc](https://www.clarity-genomics.co
 
 ## Third-party dependencies
 
-Refer to `3rdparty.jinja` for the full list of bundled libraries. In 6.x these include: 
-Zlib, RocksDB, Rapidgzip (indexed_bzip2), BBHash (replaces CMPH), Parasail (replaces SSW), 
-ALP, and concurrentqueue.
+Refer to `3rdparty.jinja` for the full list of bundled libraries. In 8.x these include: 
+Zlib, RocksDB, Rapidgzip (indexed_bzip2), BBHash, Parasail, ALP, CPPOPTS.
 
 ## Support
 
