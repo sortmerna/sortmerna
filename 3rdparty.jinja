@@ -1,7 +1,7 @@
 {%- set zlib_static_release = 'zlibstatic.lib' %}
 {%- set zlib_static_debug = 'zlibstaticd.lib' %}
 {%- set rocksdbver = 'v7.10.2' %}
-{%- set zlibver = 'v1.3.1' %}
+{%- set zlibver = 'v1.3.2' %}  {#- keep in sync with indexed_bzip2/src/external/zlib (rapidgzip builds its own copy) #}
 
 zlib:
   url: https://github.com/madler/zlib.git
@@ -28,8 +28,8 @@ rocksdb:
   is_checkout: true
 
 indexed_bzip2:
-  note: header-only rapidgzip library for seekable parallel gzip decompression
-  url: https://github.com/mxmlnkn/indexed_bzip2.git
+  note: header-only rapidgzip library for seekable parallel gzip decompression. Issue 466 fixed upstream since 2e2761b
+  url: https://github.com/mxmlnkn/librapidarchive.git  # renamed from indexed_bzip2
   commit: master
   shallow: true
   src: 3rdparty/indexed_bzip2 # relative to sortmerna
