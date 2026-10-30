@@ -1284,6 +1284,11 @@ void Readfeed::build_chunk_offsets()
 				}
 				pos += static_cast<uint64_t>(n);
 			}
+			// A last line with no '\n' still ends at EOF. Count it, or no
+			// slot's byte range reaches it and it is never read.
+			if (!atLineStart) {
+				newlineEnds.push_back(pos);
+			}
 
 			// Capture the now-complete block map so init_reading can replay it into
 			// each per-slot reader, turning seek(bytes_start) from a decompress-to-offset
@@ -1423,6 +1428,11 @@ void Readfeed::build_flat_chunk_offsets()
 					}
 				}
 				pos += static_cast<uint64_t>(n);
+			}
+			// A last line with no '\n' still ends at EOF. Count it, or no
+			// slot's byte range reaches it and it is never read.
+			if (!atLineStart) {
+				newlineEnds.push_back(pos);
 			}
 		}
 
