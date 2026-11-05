@@ -597,10 +597,9 @@ TEST(test_null_log_callback_silent) {
  * tests/golden/{tiny,small} hold the reports of the sortmerna CLI run with the
  * same arguments build_argv() passes (SAM @-header lines are not compared).
  *
- * test_read.fasta and set7_arc_bac_16S_database_match.fasta have no trailing
- * newline, and the CLI's read parser currently drops the last line of such a
- * file: AB271211 is read as 1440 of its 1487 nt, and random2 as an empty
- * sequence. The goldens, and the smr_run expectations below, reflect that. */
+ * test_read.fasta and set7_arc_bac_16S_database_match.fasta end without a
+ * newline, so these goldens also hold a last line that has none: all 1487 nt
+ * of AB271211, and the sequence of random2. */
 
 TEST(test_golden_tiny_blast) {
     char *wdir = make_tmpdir();
@@ -851,16 +850,16 @@ TEST(test_run_tiny_per_read_output) {
     ASSERT_NOT_NULL(out->ref_end);
     ASSERT_NOT_NULL(out->cigar);
 
-    /* golden tiny/aligned.blast (read truncated to 1440 nt, see above) */
+    /* golden tiny/aligned.blast */
     ASSERT_STR_EQ(out->read_ids[0], "AB271211");
     ASSERT_EQ_INT(out->aligned[0], 1);
     ASSERT_TRUE(out->ref_start[0] == 1);
-    ASSERT_TRUE(out->ref_end[0] == 1399);
-    ASSERT_DOUBLE_NEAR(out->identity[0], 92.3, 0.05);
+    ASSERT_TRUE(out->ref_end[0] == 1446);
+    ASSERT_DOUBLE_NEAR(out->identity[0], 92.5, 0.05);
     ASSERT_DOUBLE_NEAR(out->coverage[0], 97.2, 0.05);
     ASSERT_NOT_NULL(out->cigar[0]);
     ASSERT_STR_EQ(out->cigar[0],
-        "41S16I57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1213M");
+        "41S16I57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1260M");
 
     smr_output_free(out);
     smr_ctx_destroy(ctx);
@@ -1122,9 +1121,9 @@ TEST(test_run_tiny_strand_score_edit) {
     ASSERT_NOT_NULL(out->score);
     ASSERT_NOT_NULL(out->edit_distance);
 
-    /* golden tiny/aligned.sam: FLAG=0 -> forward, AS:i:2336, NM:i:110 */
+    /* golden tiny/aligned.sam: FLAG=0 -> forward, AS:i:2430, NM:i:110 */
     ASSERT_EQ_INT(out->strand[0], 1);
-    ASSERT_EQ_INT(out->score[0], 2336);
+    ASSERT_EQ_INT(out->score[0], 2430);
     ASSERT_EQ_INT(out->edit_distance[0], 110);
 
     smr_output_free(out);
@@ -1233,9 +1232,8 @@ TEST(test_run_reverse_strand) {
     ASSERT_NOT_NULL(out->edit_distance);
 
     /* reverse-complement read: strand must be 0. Score and edit distance
-     * are those of the CLI on the same read (FLAG=16, AS:i:2430, NM:i:110);
-     * this is the full 1487 nt read, so it scores higher than the truncated
-     * test_read.fasta record. */
+     * are those of the CLI on the same read (FLAG=16, AS:i:2430, NM:i:110),
+     * the same as the forward read's in tiny/aligned.sam. */
     ASSERT_EQ_INT(out->strand[0], 0);
     ASSERT_EQ_INT(out->score[0], 2430);
     ASSERT_EQ_INT(out->edit_distance[0], 110);
@@ -2480,6 +2478,113 @@ TEST(test_index_load_seqs_several_references) {
     free_fasta(&read);
 }
 
+/* ---- Reads file without a final newline ---- */
+
+static int write_text(const char *path, const char *text) {
+    FILE *f = fopen(path, "wb");
+    if (!f) return 0;
+    size_t len = strlen(text);
+    int ok = fwrite(text, 1, len, f) == len;
+    return fclose(f) == 0 && ok;
+}
+
+/* smr_run of one reads file against test_ref.fasta, reports in wdir. */
+static smr_output_t *run_against_test_ref(const char *reads_path, const char *wdir) {
+    smr_config_t cfg;
+    smr_config_init(&cfg);
+    cfg.num_threads = 1;
+    cfg.workdir = wdir;
+    smr_context_t *ctx = smr_ctx_create(&cfg);
+    if (!ctx) return NULL;
+    const char *refs[] = { SMR_DATA_DIR "/test_ref.fasta" };
+    const char *reads[] = { reads_path };
+    smr_output_t *out = NULL;
+    smr_stats_t stats;
+    if (smr_run(ctx, refs, 1, reads, 1, &out, &stats) != SMR_OK) out = NULL;
+    smr_ctx_destroy(ctx);
+    return out;
+}
+
+/* The last line of a reads file belongs to its last record whether or not a
+ * newline ends it. Run `text` as given and with a newline appended: the
+ * alignments and the SAM records, SEQ and QUAL included, must be the same. */
+static void check_final_newline_irrelevant(const char *text, const char *ext) {
+    char dir[512], wd_bare[512], wd_nl[512], bare[600], nl[600], sam_bare[600], sam_nl[600];
+    ASSERT_NOT_NULL(make_tmpdir());
+    snprintf(dir, sizeof(dir), "%s", _tmpdir_buf);
+    ASSERT_NOT_NULL(make_tmpdir());
+    snprintf(wd_bare, sizeof(wd_bare), "%s", _tmpdir_buf);
+    ASSERT_NOT_NULL(make_tmpdir());
+    snprintf(wd_nl, sizeof(wd_nl), "%s", _tmpdir_buf);
+    snprintf(bare, sizeof(bare), "%s/reads.%s", dir, ext);
+    snprintf(nl, sizeof(nl), "%s/reads_nl.%s", dir, ext);
+
+    size_t len = strlen(text);
+    char *text_nl = malloc(len + 2);
+    memcpy(text_nl, text, len);
+    text_nl[len] = '\n';
+    text_nl[len + 1] = '\0';
+    ASSERT_TRUE(write_text(bare, text));
+    ASSERT_TRUE(write_text(nl, text_nl));
+    free(text_nl);
+
+    smr_output_t *a = run_against_test_ref(bare, wd_bare);
+    smr_output_t *b = run_against_test_ref(nl, wd_nl);
+    ASSERT_NOT_NULL(a);
+    ASSERT_NOT_NULL(b);
+    ASSERT_EQ_U64(a->num_reads, b->num_reads);
+    ASSERT_EQ_U64(b->num_aligned, b->num_reads); /* every record aligns */
+    for (uint64_t i = 0; i < b->num_reads; i++) {
+        ASSERT_EQ_INT(a->aligned[i], b->aligned[i]);
+        ASSERT_EQ_INT(a->ref_end[i], b->ref_end[i]);
+        ASSERT_EQ_INT(a->score[i], b->score[i]);
+        ASSERT_STR_EQ(a->cigar[i], b->cigar[i]);
+    }
+    snprintf(sam_bare, sizeof(sam_bare), "%s/aligned.sam", wd_bare);
+    snprintf(sam_nl, sizeof(sam_nl), "%s/aligned.sam", wd_nl);
+    ASSERT_TRUE(files_match(sam_bare, sam_nl, 1));
+
+    smr_output_free(a);
+    smr_output_free(b);
+    rm_rf(dir);
+    rm_rf(wd_bare);
+    rm_rf(wd_nl);
+}
+
+/* AB271211 wrapped at 60 columns: its 47 nt last line is the one at stake. */
+TEST(test_run_fasta_without_final_newline) {
+    struct fasta read;
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/test_read.fasta", &read));
+    const char *seq = read.seqs[0].sequence;
+    size_t len = strlen(seq);
+    ASSERT_TRUE(len % 60 != 0);
+    char *text = malloc(len + len / 60 + 16);
+    char *w = text + sprintf(text, ">AB271211");
+    for (size_t i = 0; i < len; i += 60)
+        w += sprintf(w, "\n%.60s", seq + i);
+    check_final_newline_irrelevant(text, "fasta");
+    free(text);
+    free_fasta(&read);
+}
+
+/* Two records: without a final newline it is the second one's quality line
+ * that has none. */
+TEST(test_run_fastq_without_final_newline) {
+    struct fasta read;
+    ASSERT_TRUE(load_fasta(SMR_DATA_DIR "/test_read.fasta", &read));
+    const char *seq = read.seqs[0].sequence;
+    size_t len = strlen(seq);
+    char *qual = malloc(len + 1);
+    memset(qual, 'I', len);
+    qual[len] = '\0';
+    char *text = malloc(4 * len + 32);
+    sprintf(text, "@r1\n%s\n+\n%s\n@r2\n%s\n+\n%s", seq, qual, seq, qual);
+    check_final_newline_irrelevant(text, "fastq");
+    free(text);
+    free(qual);
+    free_fasta(&read);
+}
+
 TEST_MAIN_BEGIN()
     RUN_TEST(test_config_init_sets_struct_size);
     RUN_TEST(test_config_struct_size_is_first_field);
@@ -2592,4 +2697,6 @@ TEST_MAIN_BEGIN()
     RUN_TEST(test_index_load_seqs_rejects_bad_input);
     RUN_TEST(test_index_load_seqs_temp_dir_removed);
     RUN_TEST(test_index_load_seqs_several_references);
+    RUN_TEST(test_run_fasta_without_final_newline);
+    RUN_TEST(test_run_fastq_without_final_newline);
 TEST_MAIN_END()
