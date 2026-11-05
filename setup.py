@@ -118,12 +118,14 @@ def load_tar(url, tgtd):
 def git_clone(url:str, 
               repo_dir:str, 
               shallow:bool=False, 
-              force:bool=False) -> tuple[int, list[str], list[str]]:
+              force:bool=False,
+              commit:str=None) -> tuple[int, list[str], list[str]]:
     '''
     clone a git repo if not already existing
     args:
       - url        url to clone
       - repo_dir   directory where to clone
+      - commit     if given, check out this commit
     '''
     ST = '[git_clone]'
     rcode, sout, eout = 0, None, None
@@ -142,6 +144,9 @@ def git_clone(url:str,
     else: # do clone
         cmd = [ 'git', 'clone', url, repo_dir]
         rcode, sout, eout = proc_run(cmd)
+    if rcode == 0 and commit:
+        cmd = ['git', 'checkout', commit]
+        rcode, sout, eout = proc_run(cmd, repo_dir, capture=True)
     return rcode, sout, eout
 #END git_clone  
 
@@ -685,7 +690,7 @@ def indexed_bzip2_build(**kw) -> tuple[int, list[str], list[str]]:
     url = kw.get(IBZIP2).get('url')
     src = kw.get(IBZIP2).get('src')
     shallow = kw.get(IBZIP2).get('shallow')
-    rcode, sout, eout = git_clone(url, src, shallow=shallow)
+    rcode, sout, eout = git_clone(url, src, shallow=shallow, commit=kw.get(IBZIP2).get('commit'))
     if rcode == 0:
         cmd = ['git', 'submodule', 'update', '--init', '--recursive']
         rcode, sout, eout = proc_run(cmd, src, capture=True)
@@ -699,7 +704,7 @@ def bbhash_build(**kw) -> tuple[int, list[str], list[str]]:
     url = kw.get(BBHASH).get('url')
     src = kw.get(BBHASH).get('src')
     shallow = kw.get(BBHASH).get('shallow')
-    return git_clone(url, src, shallow=shallow)
+    return git_clone(url, src, shallow=shallow, commit=kw.get(BBHASH).get('commit'))
 #END bbhash_build
 
 def cxxopts_build(**kw) -> tuple[int, list[str], list[str]]:
@@ -709,7 +714,7 @@ def cxxopts_build(**kw) -> tuple[int, list[str], list[str]]:
     url = kw.get(CXXOPTS).get('url')
     src = kw.get(CXXOPTS).get('src')
     shallow = kw.get(CXXOPTS).get('shallow')
-    return git_clone(url, src, shallow=shallow)
+    return git_clone(url, src, shallow=shallow, commit=kw.get(CXXOPTS).get('commit'))
 #END cxxopts_build
 
 def parasail_build(**kw) -> tuple[int, list[str], list[str]]:
@@ -724,7 +729,7 @@ def parasail_build(**kw) -> tuple[int, list[str], list[str]]:
     shallow = kw.get(PARASAIL).get('shallow', False)
     btype = kw.get(PARASAIL).get('cmake_build_type', 'Release')
 
-    rcode, sout, eout = git_clone(url, src, shallow=shallow)
+    rcode, sout, eout = git_clone(url, src, shallow=shallow, commit=kw.get(PARASAIL).get('commit'))
     if rcode != 0:
         return rcode, sout, eout
 
