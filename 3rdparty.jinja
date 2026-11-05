@@ -30,7 +30,7 @@ rocksdb:
 indexed_bzip2:
   note: header-only rapidgzip library for seekable parallel gzip decompression. Issue 466 fixed upstream since 2e2761b
   url: https://github.com/mxmlnkn/librapidarchive.git  # renamed from indexed_bzip2
-  commit: master
+  commit: 9965b1d4d7bf5c0141420c24fabb2e450d8282b1
   shallow: true
   src: 3rdparty/indexed_bzip2 # relative to sortmerna
   dist: {{indexed_bzip2_dist}} # '--indexed-bzip2-dist' or default '3rdparty/indexed_bzip2' (setup.py)
@@ -38,7 +38,7 @@ indexed_bzip2:
 bbhash:
   note: header-only minimal perfect hash function (BBHash/BooPHF) - replaces cmph
   url: https://github.com/rizkg/BBHash.git
-  commit: master
+  commit: be4220c8f8580299b212a0c6c6c867528a0f07ac
   shallow: true
   src: 3rdparty/bbhash # relative to sortmerna
   dist: {{bbhash_dist}} # '--bbhash-dist' or default '3rdparty/bbhash' (setup.py)
@@ -46,7 +46,7 @@ bbhash:
 cxxopts:
   note: header-only command line option parser - replaces the hand-rolled argv parser
   url: https://github.com/jarro2783/cxxopts.git
-  commit: master
+  commit: bb791540908e3dc623f54b34898c6ad3e47292ab  # not v3.3.1: needs jarro2783/cxxopts#488 to parse -N=-3
   shallow: true
   src: 3rdparty/cxxopts # relative to sortmerna
   dist: {{cxxopts_dist}} # '--cxxopts-dist' or default '3rdparty/cxxopts' (setup.py)
@@ -54,7 +54,7 @@ cxxopts:
 parasail:
   note: SIMD-accelerated pairwise sequence alignment library (replaces SSW)
   url: https://github.com/jeffdaily/parasail.git
-  commit: master
+  commit: fb985ee4f2302c72c87d7d56443712b2d920b106
   shallow: true
   src: 3rdparty/parasail
   build: build/3rdparty/parasail
