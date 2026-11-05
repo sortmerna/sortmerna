@@ -855,11 +855,11 @@ TEST(test_run_tiny_per_read_output) {
     ASSERT_EQ_INT(out->aligned[0], 1);
     ASSERT_TRUE(out->ref_start[0] == 1);
     ASSERT_TRUE(out->ref_end[0] == 1446);
-    ASSERT_DOUBLE_NEAR(out->identity[0], 92.5, 0.05);
-    ASSERT_DOUBLE_NEAR(out->coverage[0], 97.2, 0.05);
+    ASSERT_DOUBLE_NEAR(out->identity[0], 93.5, 0.05);
+    ASSERT_DOUBLE_NEAR(out->coverage[0], 96.2, 0.05);
     ASSERT_NOT_NULL(out->cigar[0]);
     ASSERT_STR_EQ(out->cigar[0],
-        "41S16I57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1260M");
+        "57S57M2I12M2D4M2I29M1D11M2I3M2D11M1I7M1D13M5D4M3D9M2D3M7D1260M");
 
     smr_output_free(out);
     smr_ctx_destroy(ctx);
@@ -1121,10 +1121,10 @@ TEST(test_run_tiny_strand_score_edit) {
     ASSERT_NOT_NULL(out->score);
     ASSERT_NOT_NULL(out->edit_distance);
 
-    /* golden tiny/aligned.sam: FLAG=0 -> forward, AS:i:2430, NM:i:110 */
+    /* golden tiny/aligned.sam: FLAG=0 -> forward, AS:i:2430, NM:i:94 */
     ASSERT_EQ_INT(out->strand[0], 1);
     ASSERT_EQ_INT(out->score[0], 2430);
-    ASSERT_EQ_INT(out->edit_distance[0], 110);
+    ASSERT_EQ_INT(out->edit_distance[0], 94);
 
     smr_output_free(out);
     smr_ctx_destroy(ctx);
@@ -1232,11 +1232,11 @@ TEST(test_run_reverse_strand) {
     ASSERT_NOT_NULL(out->edit_distance);
 
     /* reverse-complement read: strand must be 0. Score and edit distance
-     * are those of the CLI on the same read (FLAG=16, AS:i:2430, NM:i:110),
+     * are those of the CLI on the same read (FLAG=16, AS:i:2430, NM:i:94),
      * the same as the forward read's in tiny/aligned.sam. */
     ASSERT_EQ_INT(out->strand[0], 0);
     ASSERT_EQ_INT(out->score[0], 2430);
-    ASSERT_EQ_INT(out->edit_distance[0], 110);
+    ASSERT_EQ_INT(out->edit_distance[0], 94);
 
     smr_output_free(out);
     smr_ctx_destroy(ctx);

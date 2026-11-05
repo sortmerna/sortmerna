@@ -456,6 +456,13 @@ void compute_lis_alignment( Read& read, Runopts& opts,
 									alignment.ref_begin1 += alignment.cigar[0] >> 4u;
 									alignment.cigar.erase(alignment.cigar.begin());
 								}
+								// Likewise, leading I ops when traceback exits through the reference
+								// boundary (j<0): the remaining query positions are dumped as I. Strip
+								// them and advance read_begin1, so they are soft-clipped instead.
+								while (!alignment.cigar.empty() && (alignment.cigar[0] & 0xfu) == 1) {
+									alignment.read_begin1 += alignment.cigar[0] >> 4u;
+									alignment.cigar.erase(alignment.cigar.begin());
+								}
 							}
 							alignment.ref_end1  = parasail_result_get_end_ref(presult)   + ref_offset;
 							alignment.read_end1 = parasail_result_get_end_query(presult) + que_offset;
