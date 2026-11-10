@@ -23,8 +23,18 @@ permissions:
 
 jobs:
   build-linux-arm64:
-    name: Build on Linux ARM64
-    runs-on: ubuntu-24.04-arm
+    name: Build on Linux ARM64 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # latest arm image (no 'latest' alias for arm) - artifact names unchanged
+          - os: ubuntu-24.04-arm
+            suffix: ''
+          # oldest available arm image (older glibc -> more portable binaries)
+          - os: ubuntu-22.04-arm
+            suffix: '-ubuntu22.04'
 
     steps:
     - name: git checkout
@@ -56,12 +66,14 @@ jobs:
         echo "=== listing dist/ ==="
         ls -l ./dist
 
-    - name: rename artifacts with -aarch64 suffix
+    - name: rename artifacts with -aarch64 and image suffix
+      env:
+        SUFFIX: ${{ matrix.suffix }}
       run: |
         cd dist
         for f in sortmerna*Linux.deb sortmerna*Linux.sh sortmerna*Linux.tar.gz; do
           [ -f "$f" ] || continue
-          new="${f%-Linux.*}-Linux-aarch64.${f##*-Linux.}"
+          new="${f%-Linux.*}-Linux-aarch64${SUFFIX}.${f##*-Linux.}"
           mv "$f" "$new"
           echo "renamed: $f -> $new"
         done
@@ -70,9 +82,9 @@ jobs:
     - name: upload
       uses: actions/upload-artifact@v4
       with:
-        name: linux-arm64
+        name: linux-arm64${{ matrix.suffix }}
         retention-days: 3
         path: |
-          dist/sortmerna*Linux-aarch64.deb
-          dist/sortmerna*Linux-aarch64.sh
-          dist/sortmerna*Linux-aarch64.tar.gz
+          dist/sortmerna*Linux-aarch64${{ matrix.suffix }}.deb
+          dist/sortmerna*Linux-aarch64${{ matrix.suffix }}.sh
+          dist/sortmerna*Linux-aarch64${{ matrix.suffix }}.tar.gz

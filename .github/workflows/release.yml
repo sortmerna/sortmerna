@@ -2,6 +2,8 @@ name: release
 
 # Assembles a draft GitHub release for a given tag:
 #   - builds Linux x64, Linux arm64, macOS arm64 artifacts via reusable workflows
+#     (each Linux arch is built on the latest image and on ubuntu-22.04; the
+#     22.04 artifacts carry a '-ubuntu22.04' suffix so names don't collide)
 #   - copies the four reference database files from a prior release
 #   - attaches everything to a draft release with notes taken from the tag annotation
 #

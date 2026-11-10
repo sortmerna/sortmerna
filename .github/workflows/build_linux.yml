@@ -23,8 +23,18 @@ permissions:
     
 jobs:
   build-linux:
-    name: build on Linux
-    runs-on: ubuntu-latest
+    name: build on Linux (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # latest image - artifact names unchanged
+          - os: ubuntu-latest
+            suffix: ''
+          # oldest available image (older glibc -> more portable binaries)
+          - os: ubuntu-22.04
+            suffix: '-ubuntu22.04'
 
     steps:
     - name: git checkout
@@ -56,13 +66,27 @@ jobs:
         echo "=== listing dist/ ==="
         ls -l ./dist
 
+    - name: rename artifacts with image suffix
+      if: matrix.suffix != ''
+      env:
+        SUFFIX: ${{ matrix.suffix }}
+      run: |
+        cd dist
+        for f in sortmerna*Linux.deb sortmerna*Linux.sh sortmerna*Linux.tar.gz; do
+          [ -f "$f" ] || continue
+          new="${f%-Linux.*}-Linux${SUFFIX}.${f##*-Linux.}"
+          mv "$f" "$new"
+          echo "renamed: $f -> $new"
+        done
+        ls -l
+
     - name: upload
       uses: actions/upload-artifact@v4
       with:
-        name: linux-x64
+        name: linux-x64${{ matrix.suffix }}
         retention-days: 3
         path: |
-          dist/sortmerna*Linux.deb
-          dist/sortmerna*Linux.sh
-          dist/sortmerna*Linux.tar.gz
+          dist/sortmerna*Linux${{ matrix.suffix }}.deb
+          dist/sortmerna*Linux${{ matrix.suffix }}.sh
+          dist/sortmerna*Linux${{ matrix.suffix }}.tar.gz
     
